@@ -8,19 +8,22 @@ const Stripe = require("stripe");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 
 /* ========================
-   ENV / CONFIG (Render)
+   ENV / CONFIG
    ======================== */
 const BASE_URL = process.env.BASE_URL || "https://lapa-casa-backend.onrender.com";
-const BOOKINGS_WEBAPP_URL = process.env.BOOKINGS_WEBAPP_URL || ""; // GAS WebApp URL (exec)
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";         // MP access token
-const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || process.env.MERCADO_PAGO_CHECKOUT_API_WEBHOOK_SECRET || ""; // secreto firma WH MP
+const BOOKINGS_WEBAPP_URL = process.env.BOOKINGS_WEBAPP_URL || ""; // GAS WebApp URL
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || process.env.MERCADO_PAGO_CHECKOUT_API_WEBHOOK_SECRET || "";
 const STRIPE_SK = process.env.STRIPE_SK || process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ""; // protege /admin
-const CRON_TOKEN = process.env.CRON_TOKEN || "";   // protege /crons
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";         // legado (sigue funcionando)
+const ADMIN_USER = process.env.ADMIN_USER || "admin";      // NUEVO
+const ADMIN_PASS = process.env.ADMIN_PASS || ADMIN_TOKEN;  // NUEVO (si no pones, usa ADMIN_TOKEN)
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || ADMIN_TOKEN || "change-me"; // NUEVO
+const ADMIN_SESSION_TTL_HOURS = Number(process.env.ADMIN_SESSION_TTL_HOURS || 12);
+const CRON_TOKEN = process.env.CRON_TOKEN || "";
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 
-// CORS allowlist coma-separada. Vacío = abierto.
 const CORS_ALLOW_ORIGINS = (process.env.CORS_ALLOW_ORIGINS || "").split(",").map(s=>s.trim()).filter(Boolean);
 
 // Buffers anti-overbooking
@@ -30,7 +33,7 @@ const ROOM_BUFFER_3 = Number(process.env.ROOM_BUFFER_3 || DEFAULT_ROOM_BUFFER);
 const ROOM_BUFFER_5 = Number(process.env.ROOM_BUFFER_5 || DEFAULT_ROOM_BUFFER);
 const ROOM_BUFFER_6 = Number(process.env.ROOM_BUFFER_6 || DEFAULT_ROOM_BUFFER);
 
-// iCal IMPORT por cuarto (Hostelworld/Airbnb/etc). Pegar URLs ICS aquí como env vars.
+// iCal IMPORT (opcional)
 const ICAL_ROOM_1 = process.env.ICAL_ROOM_1 || "";
 const ICAL_ROOM_3 = process.env.ICAL_ROOM_3 || "";
 const ICAL_ROOM_5 = process.env.ICAL_ROOM_5 || "";
@@ -71,7 +74,6 @@ app.post(["/webhooks/stripe","/api/webhooks/stripe"], express.raw({ type: "appli
       return res.status(400).send("invalid signature");
     }
 
-    // Idempotencia (dedupe por event.id)
     if (isDuplicateEvent(`stripe:${event.id}`)) return res.status(200).send("dup");
 
     const t = event.type;
@@ -145,7 +147,7 @@ function rateLimit(maxPerMin = 60) {
   };
 }
 
-// Logs memoria + dedupe webhooks
+// Logs + dedupe
 const LOG_MAX = 200;
 const logs = [];
 function logPush(type, payload){ logs.push({ ts: Date.now(), type, payload }); if (logs.length>LOG_MAX) logs.shift(); }
@@ -169,35 +171,32 @@ app.get(["/","/api/health"], (_req, res) => {
 /* ========================
    Stripe Checkout Session
    ======================== */
-function handleStripeSession(){
-  return async (req, res) => {
-    try {
-      if (!stripe) return res.status(400).json({ error: "stripe_not_configured" });
-      const order = req.body?.order || {};
-      const amountBRL = Math.max(100, Math.round((order.total || 0) * 100)); // mínimo R$1,00
+app.post(["/payments/stripe/session","/api/payments/stripe/session"], rateLimit(30), async (req, res) => {
+  try {
+    if (!stripe) return res.status(400).json({ error: "stripe_not_configured" });
+    const order = req.body?.order || {};
+    const amountBRL = Math.max(100, Math.round((order.total || 0) * 100)); // mínimo R$1,00
 
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        payment_method_types: ["card"],
-        currency: "brl",
-        line_items: [{
-          price_data: { currency:"brl", product_data: { name:"Reserva Lapa Casa Hostel" }, unit_amount: amountBRL },
-          quantity: 1
-        }],
-        client_reference_id: order.bookingId || null,
-        metadata: { bookingId: order.bookingId || "", email: order.email || "", nights: String(order.nights || 1) },
-        success_url: `${BASE_URL}/book?paid=1`,
-        cancel_url: `${BASE_URL}/book?cancel=1`,
-      });
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      currency: "brl",
+      line_items: [{
+        price_data: { currency:"brl", product_data: { name:"Reserva Lapa Casa Hostel" }, unit_amount: amountBRL },
+        quantity: 1
+      }],
+      client_reference_id: order.bookingId || null,
+      metadata: { bookingId: order.bookingId || "", email: order.email || "", nights: String(order.nights || 1) },
+      success_url: `${BASE_URL}/book?paid=1`,
+      cancel_url: `${BASE_URL}/book?cancel=1`,
+    });
 
-      res.json({ id: session.id });
-    } catch (err) {
-      logPush("stripe_error", { where: "create_session", msg: err?.message || String(err) });
-      res.status(500).json({ error: "stripe_session_error" });
-    }
-  };
-}
-app.post(["/payments/stripe/session","/api/payments/stripe/session"], rateLimit(30), handleStripeSession());
+    res.json({ id: session.id });
+  } catch (err) {
+    logPush("stripe_error", { where: "create_session", msg: err?.message || String(err) });
+    res.status(500).json({ error: "stripe_session_error" });
+  }
+});
 
 /* ========================
    Mercado Pago Preference
@@ -209,44 +208,38 @@ app.get(["/pago-exitoso-test","/api/pago-exitoso-test"], (_req, res) =>
 app.get(["/pago-fallido-test","/api/pago-fallido-test"], (_req, res) =>
   res.type("html").send(`<!doctype html><meta charset="utf-8"><title>Pago rechazado</title><body style="font-family:Arial;text-align:center;padding:50px"><h1 style="color:red">❌ Pago rechazado</h1><p>Tu pago de prueba fue rechazado o cancelado.</p></body>`)
 );
-
-function handleCreatePreference(){
-  return async (req, res) => {
-    try {
-      if (!mpClient) return res.status(500).json({ error: "mp_token_missing" });
-      const { title="Reserva Lapa Casa Hostel", unit_price=100, quantity=1, currency_id="BRL", metadata={} } = req.body || {};
-      const orderId = (metadata && (metadata.orderId || metadata.bookingId)) || `order-${Date.now()}`;
-      const pref = new Preference(mpClient);
-      const body = {
-        items: [{ title, unit_price: Number(unit_price), quantity: Number(quantity), currency_id }],
-        back_urls: { success: `${BASE_URL}/pago-exitoso-test`, failure: `${BASE_URL}/pago-fallido-test`, pending: `${BASE_URL}/pago-fallido-test` },
-        auto_return: "approved",
-        metadata,
-        external_reference: orderId,
-        notification_url: `${BASE_URL}/webhooks/mp`,
-      };
-      const result = await pref.create({ body });
-      const initPoint = result.init_point || result.body?.init_point;
-      const id = result.id || result.body?.id;
-      res.json({ preferenceId: id, init_point: initPoint });
-    } catch (err) {
-      logPush("mp_error", { where: "create_preference", msg: err?.message || String(err) });
-      res.status(500).json({ error: "mp_preference_failed" });
-    }
-  };
-}
-app.post(["/payments/mp/preference","/api/payments/mp/preference"], rateLimit(30), handleCreatePreference());
+app.post(["/payments/mp/preference","/api/payments/mp/preference"], rateLimit(30), async (req, res) => {
+  try {
+    if (!mpClient) return res.status(500).json({ error: "mp_token_missing" });
+    const { title="Reserva Lapa Casa Hostel", unit_price=100, quantity=1, currency_id="BRL", metadata={} } = req.body || {};
+    const orderId = (metadata && (metadata.orderId || metadata.bookingId)) || `order-${Date.now()}`;
+    const pref = new Preference(mpClient);
+    const body = {
+      items: [{ title, unit_price: Number(unit_price), quantity: Number(quantity), currency_id }],
+      back_urls: { success: `${BASE_URL}/pago-exitoso-test`, failure: `${BASE_URL}/pago-fallido-test`, pending: `${BASE_URL}/pago-fallido-test` },
+      auto_return: "approved",
+      metadata,
+      external_reference: orderId,
+      notification_url: `${BASE_URL}/webhooks/mp`,
+    };
+    const result = await pref.create({ body });
+    const initPoint = result.init_point || result.body?.init_point;
+    const id = result.id || result.body?.id;
+    res.json({ preferenceId: id, init_point: initPoint });
+  } catch (err) {
+    logPush("mp_error", { where: "create_preference", msg: err?.message || String(err) });
+    res.status(500).json({ error: "mp_preference_failed" });
+  }
+});
 
 /* ========================
-   Webhook Mercado Pago (con firma + dedupe)
+   Webhook Mercado Pago (firma + dedupe)
    ======================== */
 function verifyMpSignature(req, paymentId) {
   try {
     const sig = req.headers["x-signature"];
     const reqId = req.headers["x-request-id"];
     if (!MP_WEBHOOK_SECRET || !sig || !reqId || !paymentId) return false;
-
-    // x-signature: "ts=1699999999,v1=abcdef..."
     const parts = String(sig).split(",");
     let ts, v1;
     for (const p of parts) {
@@ -275,23 +268,21 @@ app.post(["/webhooks/mp","/api/webhooks/mp"], async (req, res) => {
       return res.status(200).send("ok");
     }
 
-    // Verificación de firma (si configuraste MP_WEBHOOK_SECRET)
     if (MP_WEBHOOK_SECRET) {
       const ok = verifyMpSignature(req, paymentId);
       if (!ok) {
         logPush("mp_signature_fail", { paymentId });
-        return res.status(401).send("invalid signature"); // corta si no valida
+        return res.status(401).send("invalid signature");
       }
     }
 
-    // Idempotencia dedupe por paymentId
     if (isDuplicateEvent(`mp:${paymentId}`)) return res.status(200).send("dup");
 
     if (!mpClient) return res.status(200).send("ok");
     const pay = new Payment(mpClient);
     const payment = await pay.get({ id: paymentId });
-    const status = payment?.status; // approved | rejected | pending | refunded | canceled
-    const externalRef = payment?.external_reference || ""; // orderId / bookingId
+    const status = payment?.status;
+    const externalRef = payment?.external_reference || "";
     const total = payment?.transaction_amount;
 
     logPush("mp_event", { paymentId, status, externalRef, total });
@@ -311,44 +302,40 @@ app.post(["/webhooks/mp","/api/webhooks/mp"], async (req, res) => {
 /* ========================
    Forward a Google Sheets (idempotencia + retry)
    ======================== */
-function handleBookings(){
-  return async (req, res) => {
-    try {
-      if (!BOOKINGS_WEBAPP_URL) return res.status(500).json({ ok:false, error:"no_webhook_url" });
-      const body = req.body || {};
-      const booking_id = body.booking_id || body.bookingId || `BKG-${Date.now()}`;
+app.post(["/bookings","/api/bookings"], rateLimit(60), async (req, res) => {
+  try {
+    if (!BOOKINGS_WEBAPP_URL) return res.status(500).json({ ok:false, error:"no_webhook_url" });
+    const body = req.body || {};
+    const booking_id = body.booking_id || body.bookingId || `BKG-${Date.now()}`;
 
-      const payload = {
-        action: "upsert_booking",
-        booking_id,
-        nombre: body.nombre || "",
-        email: body.email || "",
-        telefono: body.telefono || "",
-        entrada: body.entrada || "",
-        salida: body.salida || "",
-        hombres: Number(body.hombres || 0),
-        mujeres: Number(body.mujeres || 0),
-        camas_json: JSON.stringify(body.camas || {}),
-        total: Number(body.total || 0),
-        pay_status: body.pay_status || "pending",
-      };
+    const payload = {
+      action: "upsert_booking",
+      booking_id,
+      nombre: body.nombre || "",
+      email: body.email || "",
+      telefono: body.telefono || "",
+      entrada: body.entrada || "",
+      salida: body.salida || "",
+      hombres: Number(body.hombres || 0),
+      mujeres: Number(body.mujeres || 0),
+      camas_json: JSON.stringify(body.camas || {}),
+      total: Number(body.total || 0),
+      pay_status: body.pay_status || "pending",
+    };
 
-      // Intento con retry + fallback create
-      let j = await postToSheets(payload);
-      if (!j?.ok) {
-        const fallback = { ...payload }; delete fallback.action;
-        j = await postToSheets(fallback);
-      }
-
-      invalidateAvailabilityCache();
-      return res.status(j?.ok ? 200 : 500).json(j);
-    } catch (e) {
-      logPush("bookings_error", { msg: e?.message || String(e) });
-      return res.status(500).json({ ok:false, error:"forward_failed" });
+    let j = await postToSheets(payload);
+    if (!j?.ok) {
+      const fallback = { ...payload }; delete fallback.action;
+      j = await postToSheets(fallback);
     }
-  };
-}
-app.post(["/bookings","/api/bookings"], rateLimit(60), handleBookings());
+
+    invalidateAvailabilityCache();
+    return res.status(j?.ok ? 200 : 500).json(j);
+  } catch (e) {
+    logPush("bookings_error", { msg: e?.message || String(e) });
+    return res.status(500).json({ ok:false, error:"forward_failed" });
+  }
+});
 
 /* ========================
    Availability (cache TTL)
@@ -356,154 +343,333 @@ app.post(["/bookings","/api/bookings"], rateLimit(60), handleBookings());
 const availabilityCache = new Map(); // key = from:to -> {ts,data}
 const AVAIL_TTL_MS = 60_000;
 
-function handleAvailability(){
-  return async (req, res) => {
-    try {
-      const from = String(req.query.from || "").slice(0,10);
-      const to = String(req.query.to || "").slice(0,10);
-      if (!from || !to) return res.status(400).json({ ok:false, error:"missing_from_to" });
+app.get(["/availability","/api/availability"], async (req, res) => {
+  try {
+    const from = String(req.query.from || "").slice(0,10);
+    const to = String(req.query.to || "").slice(0,10);
+    if (!from || !to) return res.status(400).json({ ok:false, error:"missing_from_to" });
 
-      const key = `${from}:${to}`; const now = Date.now();
-      const cached = availabilityCache.get(key);
-      if (cached && now - cached.ts < AVAIL_TTL_MS) return res.json(cached.data);
+    const key = `${from}:${to}`; const now = Date.now();
+    const cached = availabilityCache.get(key);
+    if (cached && now - cached.ts < AVAIL_TTL_MS) return res.json(cached.data);
 
-      const rows = await fetchRowsFromSheet_();
-      const occupied = calcOccupiedBeds_(rows, from, to);
-      const out = { ok:true, from, to, occupied };
-      availabilityCache.set(key, { ts: now, data: out });
-      return res.json(out);
-    } catch (e) {
-      logPush("availability_error", { msg: e?.message || String(e) });
-      return res.status(500).json({ ok:false, error:"availability_failed" });
-    }
-  };
-}
-app.get(["/availability","/api/availability"], handleAvailability());
+    const rows = await fetchRowsFromSheet_();
+    const occupied = calcOccupiedBeds_(rows, from, to);
+    const out = { ok:true, from, to, occupied };
+    availabilityCache.set(key, { ts: now, data: out });
+    return res.json(out);
+  } catch (e) {
+    logPush("availability_error", { msg: e?.message || String(e) });
+    return res.status(500).json({ ok:false, error:"availability_failed" });
+  }
+});
 
 /* ========================
    HOLDs anti-overbooking
    ======================== */
 const holdsMem = new Map(); // holdId -> {expiresAt}
 
-function handleHoldStart(){
-  return async (req, res) => {
-    try {
-      const b = req.body || {};
-      const holdId = b.holdId || b.bookingId || `HOLD-${Date.now()}`;
-      const ttlMin = Number(b.ttlMinutes || HOLD_TTL_MINUTES);
-      const expiresAt = Date.now() + ttlMin * 60_000;
+app.post(["/holds/start","/api/holds/start"], rateLimit(60), async (req, res) => {
+  try {
+    const b = req.body || {};
+    const holdId = b.holdId || b.bookingId || `HOLD-${Date.now()}`;
+    const ttlMin = Number(b.ttlMinutes || HOLD_TTL_MINUTES);
+    const expiresAt = Date.now() + ttlMin * 60_000;
 
-      const payload = {
-        action: "upsert_booking",
-        booking_id: holdId,
-        nombre: b.nombre || "HOLD",
-        email: b.email || "",
-        telefono: b.telefono || "",
-        entrada: b.entrada || "",
-        salida: b.salida || "",
-        hombres: Number(b.hombres || 0),
-        mujeres: Number(b.mujeres || 0),
-        camas_json: JSON.stringify(b.camas || {}),
-        total: Number(b.total || 0),
-        pay_status: "hold"
-      };
-      await postToSheets(payload);
+    const payload = {
+      action: "upsert_booking",
+      booking_id: holdId,
+      nombre: b.nombre || "HOLD",
+      email: b.email || "",
+      telefono: b.telefono || "",
+      entrada: b.entrada || "",
+      salida: b.salida || "",
+      hombres: Number(b.hombres || 0),
+      mujeres: Number(b.mujeres || 0),
+      camas_json: JSON.stringify(b.camas || {}),
+      total: Number(b.total || 0),
+      pay_status: "hold"
+    };
+    await postToSheets(payload);
 
-      holdsMem.set(holdId, { expiresAt });
-      invalidateAvailabilityCache();
-      return res.json({ ok:true, holdId, expiresAt });
-    } catch (e) {
-      logPush("hold_start_error", { msg: e?.message || String(e) });
-      return res.status(500).json({ ok:false, error:"hold_start_failed" });
-    }
-  };
-}
-function handleHoldRelease(){
-  return async (req, res) => {
-    try {
-      const holdId = req.body?.holdId || "";
-      if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
-      await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status:"released" });
-      holdsMem.delete(holdId);
-      invalidateAvailabilityCache();
-      return res.json({ ok:true, holdId });
-    } catch (e) {
-      logPush("hold_release_error", { msg: e?.message || String(e) });
-      return res.status(500).json({ ok:false, error:"hold_release_failed" });
-    }
-  };
-}
-function handleHoldConfirm(){
-  return async (req, res) => {
-    try {
-      const holdId = req.body?.holdId || "";
-      const newStatus = req.body?.status || "paid"; // paid|pending
-      if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
-      await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status: newStatus });
-      holdsMem.delete(holdId);
-      invalidateAvailabilityCache();
-      return res.json({ ok:true, holdId, status:newStatus });
-    } catch (e) {
-      logPush("hold_confirm_error", { msg: e?.message || String(e) });
-      return res.status(500).json({ ok:false, error:"hold_confirm_failed" });
-    }
-  };
-}
-app.post(["/holds/start","/api/holds/start"], rateLimit(60), handleHoldStart());
-app.post(["/holds/release","/api/holds/release"], rateLimit(60), handleHoldRelease());
-app.post(["/holds/confirm","/api/holds/confirm"], rateLimit(60), handleHoldConfirm());
+    holdsMem.set(holdId, { expiresAt });
+    invalidateAvailabilityCache();
+    return res.json({ ok:true, holdId, expiresAt });
+  } catch (e) {
+    logPush("hold_start_error", { msg: e?.message || String(e) });
+    return res.status(500).json({ ok:false, error:"hold_start_failed" });
+  }
+});
+
+app.post(["/holds/release","/api/holds/release"], rateLimit(60), async (req, res) => {
+  try {
+    const holdId = req.body?.holdId || "";
+    if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
+
+    await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status:"released" });
+
+    holdsMem.delete(holdId);
+    invalidateAvailabilityCache();
+    return res.json({ ok:true, holdId });
+  } catch (e) {
+    logPush("hold_release_error", { msg: e?.message || String(e) });
+    return res.status(500).json({ ok:false, error:"hold_release_failed" });
+  }
+});
+
+app.post(["/holds/confirm","/api/holds/confirm"], rateLimit(60), async (req, res) => {
+  try {
+    const holdId = req.body?.holdId || "";
+    const newStatus = req.body?.status || "paid"; // paid|pending
+    if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
+
+    await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status: newStatus });
+
+    holdsMem.delete(holdId);
+    invalidateAvailabilityCache();
+    return res.json({ ok:true, holdId, status:newStatus });
+  } catch (e) {
+    logPush("hold_confirm_error", { msg: e?.message || String(e) });
+    return res.status(500).json({ ok:false, error:"hold_confirm_failed" });
+  }
+});
 
 /* ========================
-   Admin (token) + CSV
+   Admin con login/sesión (cookie)
+   ======================== */
+// Cookies: parseo simple
+function parseCookies(req){
+  const h = req.headers.cookie || "";
+  const out = {};
+  h.split(";").forEach(p=>{
+    const i=p.indexOf("="); if(i>0){ const k=p.slice(0,i).trim(); const v=decodeURIComponent(p.slice(i+1).trim()); out[k]=v;}
+  });
+  return out;
+}
+function sign(v){ return crypto.createHmac("sha256", ADMIN_SESSION_SECRET).update(v).digest("hex"); }
+function createAdminToken(user, ttlHours){
+  const exp = Date.now() + (ttlHours||ADMIN_SESSION_TTL_HOURS)*3600*1000;
+  const payload = JSON.stringify({ u:user, exp });
+  const b64 = Buffer.from(payload,"utf8").toString("base64url");
+  const sig = sign(b64);
+  return `${b64}.${sig}`;
+}
+function readAdminToken(token){
+  try{
+    const [b64, sig] = String(token||"").split(".");
+    if (!b64 || !sig) return null;
+    if (sign(b64) !== sig) return null;
+    const p = JSON.parse(Buffer.from(b64,"base64url").toString("utf8"));
+    if (!p.exp || p.exp < Date.now()) return null;
+    return p;
+  }catch{ return null; }
+}
+function isAdminAuthed(req){
+  const bearer = (req.headers.authorization || "").split(" ")[1] || req.query.token || "";
+  if (ADMIN_TOKEN && bearer === ADMIN_TOKEN) return true;
+  const tok = parseCookies(req)["adm_sess"];
+  const p = readAdminToken(tok);
+  return !!p;
+}
+function setAdminCookie(res, token, maxAgeMs){
+  const parts = [`adm_sess=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", "Secure"];
+  if (maxAgeMs) parts.push(`Max-Age=${Math.floor(maxAgeMs/1000)}`);
+  res.setHeader("Set-Cookie", parts.join("; "));
+}
+
+app.post(["/api/admin/login","/admin/login"], async (req, res) => {
+  try{
+    const { user, pass, remember } = req.body || {};
+    if (!user || !pass) return res.status(400).json({ ok:false, error:"missing_credentials" });
+    if (user !== ADMIN_USER || pass !== ADMIN_PASS) return res.status(401).json({ ok:false, error:"invalid_credentials" });
+    const ttlH = remember ? 24*14 : ADMIN_SESSION_TTL_HOURS; // 14 días si recuerda
+    const tok = createAdminToken(user, ttlH);
+    setAdminCookie(res, tok, ttlH*3600*1000);
+    return res.json({ ok:true });
+  }catch(e){
+    return res.status(500).json({ ok:false, error:"login_failed" });
+  }
+});
+
+app.post(["/api/admin/logout","/admin/logout"], (_req, res) => {
+  res.setHeader("Set-Cookie", "adm_sess=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0");
+  res.json({ ok:true });
+});
+
+app.post(["/api/admin/update-booking","/admin/update-booking"], async (req, res) => {
+  try{
+    if (!isAdminAuthed(req)) return res.status(401).json({ ok:false, error:"unauthorized" });
+    const { booking_id, pay_status, total, nombre, email, telefono, entrada, salida, hombres, mujeres, camas_json } = req.body || {};
+    if (!booking_id) return res.status(400).json({ ok:false, error:"missing_booking_id" });
+
+    const payload = { action:"upsert_booking", booking_id };
+    if (pay_status != null) payload.pay_status = String(pay_status);
+    if (total != null) payload.total = Number(total||0);
+    if (nombre != null) payload.nombre = String(nombre||"");
+    if (email != null) payload.email = String(email||"");
+    if (telefono != null) payload.telefono = String(telefono||"");
+    if (entrada != null) payload.entrada = String(entrada||"");
+    if (salida != null) payload.salida = String(salida||"");
+    if (hombres != null) payload.hombres = Number(hombres||0);
+    if (mujeres != null) payload.mujeres = Number(mujeres||0);
+    if (camas_json != null) payload.camas_json = String(camas_json||"");
+
+    const j = await postToSheets(payload);
+    invalidateAvailabilityCache();
+    return res.status(j?.ok ? 200 : 500).json(j);
+  }catch(e){
+    return res.status(500).json({ ok:false, error:"update_failed" });
+  }
+});
+
+/* ========================
+   Admin UI (HTML)
    ======================== */
 app.get(["/admin","/api/admin"], async (req, res) => {
-  const bearer = (req.headers.authorization || "").split(" ")[1] || req.query.token || "";
-  if (!ADMIN_TOKEN || bearer !== ADMIN_TOKEN) return res.status(401).send("Unauthorized");
+  const authed = isAdminAuthed(req);
 
-  const envState = {
-    BASE_URL,
-    BOOKINGS_WEBAPP_URL: !!BOOKINGS_WEBAPP_URL,
-    MP_ACCESS_TOKEN: redact(MP_ACCESS_TOKEN),
-    MP_WEBHOOK_SECRET: MP_WEBHOOK_SECRET ? "set" : "—",
-    STRIPE_SK: redact(STRIPE_SK),
-    STRIPE_WEBHOOK_SECRET: redact(STRIPE_WEBHOOK_SECRET),
-    ADMIN_TOKEN: ADMIN_TOKEN ? "set" : "—",
-    CRON_TOKEN: CRON_TOKEN ? "set" : "—",
-    HOLD_TTL_MINUTES,
-    CORS_ALLOW_ORIGINS: CORS_ALLOW_ORIGINS.join(",") || "(open)",
-    DEFAULT_ROOM_BUFFER,
-    ROOM_BUFFER_1, ROOM_BUFFER_3, ROOM_BUFFER_5, ROOM_BUFFER_6
-  };
+  if (!authed) {
+    const html = `<!doctype html><meta charset="utf-8">
+    <title>Login · Lapa Admin</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:#f6f8fa;margin:0;display:grid;place-items:center;height:100vh;color:#111}
+      .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;min-width:320px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+      h1{margin:0 0 10px;font-size:18px}
+      label{font-size:13px;color:#6b7280;display:block;margin:10px 0 6px}
+      input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px}
+      button{margin-top:12px;width:100%;padding:10px;border:0;border-radius:10px;background:#111;color:#fff;font-weight:700;cursor:pointer}
+      .muted{color:#6b7280;font-size:12px;margin-top:8px}
+    </style>
+    <div class="card">
+      <h1>Entrar al Admin</h1>
+      <label>Usuario</label>
+      <input id="u" placeholder="admin" />
+      <label>Clave</label>
+      <input id="p" type="password" placeholder="••••••••" />
+      <label class="muted"><input id="r" type="checkbox" /> Recordarme</label>
+      <button id="b">Entrar</button>
+      <div id="m" class="muted"></div>
+    </div>
+    <script>
+      document.getElementById('b').onclick = async () => {
+        const user = document.getElementById('u').value.trim();
+        const pass = document.getElementById('p').value;
+        const remember = document.getElementById('r').checked;
+        const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user,pass,remember})});
+        if(!r.ok){ document.getElementById('m').textContent='Error de login'; return; }
+        location.href='/admin';
+      };
+    </script>`;
+    return res.type("html").send(html);
+  }
 
   let rows = [];
-  try { rows = await fetchRowsFromSheet_(); }
-  catch (e) { logPush("admin_error", { where:"rows", msg: e?.message || String(e) }); }
-
+  try { rows = await fetchRowsFromSheet_(); } catch {}
   const lastLogs = [...logs].reverse().slice(0, 50);
+
   const html = `<!doctype html><meta charset="utf-8">
   <title>Lapa Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:20px;color:#111}
-    h1{margin:0 0 10px} code,pre{background:#f6f8fa;padding:4px 6px;border-radius:6px}
-    table{border-collapse:collapse;width:100%;margin-top:10px}
-    th,td{border:1px solid #e5e7eb;padding:6px 8px;font-size:13px;text-align:left}
-    th{background:#fafafa}.muted{color:#6b7280} a.btn{display:inline-block;margin-top:8px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;text-decoration:none}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:18px;color:#111}
+    h1{margin:0 0 8px;font-size:20px}
+    .grid{display:grid;gap:12px}
+    .cols{grid-template-columns:repeat(2,minmax(260px,1fr))}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px}
+    label{display:block;font-size:12px;color:#6b7280;margin:6px 0 4px}
+    input,select{width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px}
+    button{padding:8px 12px;border:0;border-radius:10px;background:#111;color:#fff;font-weight:700;cursor:pointer}
+    .row{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+    pre{white-space:pre-wrap;background:#f6f8fa;border-radius:8px;padding:8px;font-size:12px}
+    .muted{color:#6b7280;font-size:12px}
+    .right{display:flex;gap:8px;justify-content:flex-end}
   </style>
-  <h1>Admin</h1>
-  <h3>ENV</h3>
-  <pre>${escapeHTML(JSON.stringify(envState,null,2))}</pre>
-  <h3>Últimas reservas (max 50)</h3>
-  <pre class="muted">${escapeHTML(JSON.stringify(rows.slice(-50),null,2))}</pre>
-  <h3>Logs recientes</h3>
-  <pre>${escapeHTML(JSON.stringify(lastLogs,null,2))}</pre>
-  <a class="btn" href="/admin/rows.csv?token=${encodeURIComponent(bearer)}">Descargar CSV</a>
-  `;
-  res.type("html").send(html);
+  <h1>Panel Admin</h1>
+  <div class="row right">
+    <a href="/admin/rows.csv" class="muted">Descargar CSV</a>
+    <button id="logout">Salir</button>
+  </div>
+
+  <div class="grid cols">
+    <div class="card">
+      <h3>Actualizar reserva</h3>
+      <label>Booking ID</label><input id="b_id" placeholder="BKG-..." />
+      <label>Estatus pago</label>
+      <select id="b_status">
+        <option value="">(sin cambiar)</option>
+        <option>paid</option>
+        <option>pending</option>
+        <option>authorized</option>
+        <option>in_process</option>
+        <option>refunded</option>
+        <option>failed</option>
+        <option>hold</option>
+        <option>released</option>
+        <option>canceled</option>
+      </select>
+      <label>Total (BRL)</label><input id="b_total" type="number" min="0" step="1" />
+      <div class="row"><button id="b_save">Guardar</button><span id="b_msg" class="muted"></span></div>
+    </div>
+
+    <div class="card">
+      <h3>HOLDs</h3>
+      <label>Booking/HOLD ID</label><input id="h_id" placeholder="HOLD-..." />
+      <div class="row">
+        <button id="h_release">Liberar HOLD</button>
+        <button id="h_confirm">Confirmar (paid)</button>
+        <button id="h_pending">Confirmar (pending)</button>
+        <span id="h_msg" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Últimas reservas (sample)</h3>
+      <pre class="muted">${escapeHTML(JSON.stringify(rows.slice(-10),null,2))}</pre>
+    </div>
+
+    <div class="card">
+      <h3>Logs recientes</h3>
+      <pre>${escapeHTML(JSON.stringify(lastLogs,null,2))}</pre>
+    </div>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    $('#logout').onclick = async ()=>{ await fetch('/api/admin/logout',{method:'POST'}); location.href='/admin'; };
+    $('#b_save').onclick = async ()=>{
+      const booking_id = $('#b_id').value.trim();
+      const pay_status = $('#b_status').value;
+      const total = $('#b_total').value ? Number($('#b_total').value) : undefined;
+      if(!booking_id){ $('#b_msg').textContent='Poné booking_id'; return; }
+      const r = await fetch('/api/admin/update-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({booking_id,pay_status,total})});
+      $('#b_msg').textContent = r.ok ? '✓ guardado' : '✗ error';
+      setTimeout(()=>$('#b_msg').textContent='',1500);
+    };
+    $('#h_release').onclick = async ()=>{
+      const holdId = $('#h_id').value.trim(); if(!holdId){ $('#h_msg').textContent='Poné HOLD id'; return; }
+      const r = await fetch('/api/holds/release',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId})});
+      $('#h_msg').textContent = r.ok ? '✓ liberado' : '✗ error';
+      setTimeout(()=>$('#h_msg').textContent='',1500);
+    };
+    $('#h_confirm').onclick = async ()=>{
+      const holdId = $('#h_id').value.trim(); if(!holdId){ $('#h_msg').textContent='Poné HOLD id'; return; }
+      const r = await fetch('/api/holds/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId,status:'paid'})});
+      $('#h_msg').textContent = r.ok ? '✓ confirmado' : '✗ error';
+      setTimeout(()=>$('#h_msg').textContent='',1500);
+    };
+    $('#h_pending').onclick = async ()=>{
+      const holdId = $('#h_id').value.trim(); if(!holdId){ $('#h_msg').textContent='Poné HOLD id'; return; }
+      const r = await fetch('/api/holds/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId,status:'pending'})});
+      $('#h_msg').textContent = r.ok ? '✓ confirmado' : '✗ error';
+      setTimeout(()=>$('#h_msg').textContent='',1500);
+    };
+  </script>`;
+  return res.type("html").send(html);
 });
 
 app.get(["/admin/rows.csv","/api/admin/rows.csv"], async (req, res) => {
-  const bearer = (req.headers.authorization || "").split(" ")[1] || req.query.token || "";
-  if (!ADMIN_TOKEN || bearer !== ADMIN_TOKEN) return res.status(401).send("Unauthorized");
+  if (!isAdminAuthed(req)) return res.status(401).send("Unauthorized");
   try {
     const rows = await fetchRowsFromSheet_();
     const csv = toCSV_(rows, SHEET_HEADERS);
@@ -517,7 +683,7 @@ app.get(["/admin/rows.csv","/api/admin/rows.csv"], async (req, res) => {
 });
 
 /* ========================
-   iCal EXPORT + IMPORT (Hostelworld/Airbnb/…)
+   iCal EXPORT + IMPORT (opcional)
    ======================== */
 app.get(["/ical/:roomId.ics","/api/ical/:roomId.ics"], async (req, res) => {
   try {
@@ -537,7 +703,6 @@ app.get(["/ical/:roomId.ics","/api/ical/:roomId.ics"], async (req, res) => {
   }
 });
 
-// Pull de iCal externos -> upsert en Sheets para bloquear
 app.get(["/crons/ical-pull","/api/crons/ical-pull"], async (req, res) => {
   try {
     if (!CRON_TOKEN || (req.query.token || "") !== CRON_TOKEN) return res.status(401).json({ ok:false, error:"unauthorized" });
@@ -554,7 +719,7 @@ app.get(["/crons/ical-pull","/api/crons/ical-pull"], async (req, res) => {
       const text = await (await fetch(url)).text();
       const events = parseICS_(text);
       const cap = ROOMS[roomId].cap;
-      const camas = Array.from({length:cap}, (_,i)=>i+1); // bloquear todas
+      const camas = Array.from({length:cap}, (_,i)=>i+1);
 
       for (const ev of events) {
         const bid = makeIcalBookingId_(roomId, ev.start, ev.end, url);
@@ -596,10 +761,8 @@ async function fetchRowsFromSheet_() {
 function calcOccupiedBeds_(rows, from, to) {
   const start = new Date(from + "T00:00:00");
   const end = new Date(to + "T00:00:00");
-  const occupied = {}; // roomId -> Set()
-
-  // Estados que bloquean
-  const ACTIVE = new Set(["paid","pending","authorized","in_process","approved","hold","released"]); // released cuenta como bloqueado hasta sweep
+  const occupied = {};
+  const ACTIVE = new Set(["paid","pending","authorized","in_process","approved","hold","released"]);
 
   for (const row of rows) {
     const status = String(row.pay_status || "").toLowerCase();
@@ -608,7 +771,7 @@ function calcOccupiedBeds_(rows, from, to) {
     const entrada = row.entrada ? new Date(String(row.entrada) + "T00:00:00") : null;
     const salida  = row.salida  ? new Date(String(row.salida)  + "T00:00:00") : null;
     if (!entrada || !salida) continue;
-    if (!(entrada < end && salida > start)) continue; // overlap
+    if (!(entrada < end && salida > start)) continue;
 
     let cjson = row.camas_json || row.camas || "";
     try { if (typeof cjson === "string") cjson = cjson ? JSON.parse(cjson) : {}; } catch { cjson = {}; }
@@ -620,7 +783,6 @@ function calcOccupiedBeds_(rows, from, to) {
     }
   }
 
-  // Aplicar buffers (ocupación virtual)
   const buffers = {
     "1": Math.max(0, Math.min(ROOMS["1"].cap, ROOM_BUFFER_1)),
     "3": Math.max(0, Math.min(ROOMS["3"].cap, ROOM_BUFFER_3)),
@@ -645,7 +807,7 @@ function calcOccupiedBeds_(rows, from, to) {
 }
 
 function countBedsByDay_(rows, roomId) {
-  const counts = {}; // 'YYYY-MM-DD' -> number
+  const counts = {};
   const ACTIVE = new Set(["paid","pending","authorized","in_process","approved","hold"]);
   for (const row of rows) {
     const status = String(row.pay_status || "").toLowerCase();
@@ -721,7 +883,6 @@ function formatICSDateTime_(d){
     + "Z";
 }
 function escapeICS_(s){ return String(s).replace(/([,;])/g,"\\$1").replace(/\n/g,"\\n"); }
-
 function parseICS_(text) {
   const lines = String(text||"").split(/\r?\n/);
   const events = [];
@@ -787,7 +948,7 @@ async function fetchWithRetry(url, opts={}, attempts=3){
       return r;
     }catch(err){
       e = err;
-      await new Promise(r => setTimeout(r, 400 * Math.pow(2,i))); // 400ms, 800ms, 1600ms
+      await new Promise(r => setTimeout(r, 400 * Math.pow(2,i)));
     }
   }
   throw e;

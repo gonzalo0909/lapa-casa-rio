@@ -10,6 +10,6 @@ app.get(["/availability", "/api/availability"], (req, res) => {
     ok: true,
     from,
     to,
-    occupied: {} // { "1":[1,2], "3":[...], ... } si luego lo conectamos a Sheets
+    occupied: {} // { "1":[1,2], "3":[...], ... } si luego lo conectamos a Sheet
   });
 });

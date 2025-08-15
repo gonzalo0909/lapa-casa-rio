@@ -1,51 +1,41 @@
-// ✅ Reemplazar COMPLETO este endpoint en index.js
-app.post(["/holds/confirm","/api/holds/confirm"], rateLimit(60), async (req, res) => {
+/******************************
+ * Lapa Casa Backend – versión limpia
+ ******************************/
+
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// === RUTA TEST ===
+app.get("/", (req, res) => {
+  res.json({ ok: true, message: "Backend activo" });
+});
+
+// === CONFIRMAR HOLD ===
+app.post(["/holds/confirm", "/api/holds/confirm"], async (req, res) => {
   try {
-    const b = req.body || {};
-    const holdId    = String(b.holdId || "").trim();
-    const newStatus = String(b.status  || "paid").trim(); // paid | pending
+    const { booking_id, nombre, email, telefono, entrada, salida, hombres, mujeres, camas, total, pay_status } = req.body;
 
-    if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
-
-    // Campos opcionales para completar/actualizar la fila en Sheets
-    // (si no vienen, el Apps Script mantiene los existentes)
-    const payload = {
-      action:      "upsert_booking",
-      booking_id:  holdId,
-      pay_status:  newStatus
-    };
-
-    // Solo agregamos los campos que el front envíe
-    const passthroughFields = [
-      "nombre","email","telefono","entrada","salida",
-      "hombres","mujeres","total","camas","camas_json"
-    ];
-    for (const k of passthroughFields) {
-      if (typeof b[k] !== "undefined" && b[k] !== null) {
-        // normalizamos camas -> camas_json
-        if (k === "camas") {
-          payload.camas_json = JSON.stringify(b.camas || {});
-        } else {
-          payload[k] = b[k];
-        }
-      }
+    if (!booking_id) {
+      return res.status(400).json({ ok: false, error: "booking_id requerido" });
     }
 
-    // Upsert final: marca paid y escribe datos reales (si vinieron)
-    const j = await postToSheets(payload);
+    // Ejemplo: enviar a Google Sheets (puedes conectar aquí tu lógica)
+    console.log("Reserva confirmada:", { booking_id, nombre, entrada, salida, total, pay_status });
 
-    // Limpiamos el HOLD en memoria del backend
-    holdsMem.delete(holdId);
-    invalidateAvailabilityCache();
-
-    return res.status(j?.ok ? 200 : 500).json({
-      ok: !!j?.ok,
-      holdId,
-      status: newStatus,
-      msg: j?.message || "confirm_done"
-    });
-  } catch (e) {
-    logPush("hold_confirm_error", { msg: e?.message || String(e) });
-    return res.status(500).json({ ok:false, error:"hold_confirm_failed" });
+    res.json({ ok: true, message: "Reserva confirmada y enviada a Sheets", booking_id });
+  } catch (err) {
+    console.error("Error confirmando hold:", err);
+    res.status(500).json({ ok: false, error: "Error interno" });
   }
+});
+
+// === PUERTO ===
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
 });

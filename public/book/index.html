@@ -1,95 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Reservas — Lapa Casa Hostel</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lapa Casa Hostel - Reservas</title>
+  <style>
+    :root { --gap: 12px; --rosa:#F03DDB; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif; margin:0; padding:16px; color:#222; background:#fff; }
+    header, footer { text-align:center; padding:12px; }
+    .row { max-width: 1080px; margin: 0 auto; display:grid; gap:var(--gap); }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:14px; background:#fff; }
+    .grid { display:grid; gap:10px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(200px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(180px, 1fr)); }
+    @media (max-width:720px){ .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; } }
+    label { display:block; font-size:14px; margin-bottom:6px; color:#374151; }
+    input[type="date"], input[type="number"], input[type="text"], input[type="email"], input[type="tel"] { width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; }
+    .ctr { display:flex; align-items:center; gap:6px; }
+    .ctr button { padding:6px 10px; border:0; border-radius:8px; background:#f59e0b; color:white; font-weight:700; cursor:pointer; }
+    .btn { background:#f59e0b; color:white; border:0; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; }
+    .btn.secondary { background:#111; }
+    .btn.ghost { background:transparent; color:#111; border:1px solid #e5e7eb; }
+    .btn:disabled { background:#d1d5db; cursor:not-allowed; }
+    .muted { color:#6b7280; font-size:14px; }
+    .err { color:#b91c1c; font-weight:600; }
+    .rooms { display:grid; gap:var(--gap); }
+    .room { border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
+    .room h3 { margin:0 0 6px 0; font-size:16px; }
+    .beds { display:grid; grid-template-columns: repeat(6, minmax(30px, 1fr)); gap:6px; }
+    @media (max-width:720px){ .beds { grid-template-columns: repeat(4, minmax(30px,1fr)); } }
+    .bed { border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center; font-size:13px; user-select:none; cursor:pointer; }
+    .bed.occupied { background:#f3f4f6; color:#9ca3af; text-decoration:line-through; cursor:not-allowed; }
+    .bed.selected { outline:2px solid #111; font-weight:700; }
+    .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none; }
+    .highlight { color:#F03DDB; font-weight:700; }
+    #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999;}
+    #toast.show { opacity:1; transform:translateY(0); }
+
+    /* 🔹 promos */
+    .promo { display:none; margin:10px auto 0; max-width:1080px; }
+    .promo .box { border:1px dashed #f59e0b; background:#fff8e6; border-radius:12px; padding:10px 12px; text-align:center; }
+    .lang { display:flex; justify-content:center; gap:8px; margin-top:6px; }
+    .lang select { padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; }
+  </style>
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
   <header>
-    <h1>Lapa Casa Hostel · Reservas</h1>
-    <a href="/" style="text-decoration:none">← Volver al inicio</a>
+    <h1 data-i18n="title">Lapa Casa Hostel – Reservas</h1>
+    <p class="muted" data-i18n="subtitle">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
+    <!-- 🔹 i18n: selector -->
+    <div class="lang">
+      <label for="langSel" class="muted" data-i18n="lang_label">Idioma / Language:</label>
+      <select id="langSel" aria-label="Language">
+        <option value="es">ES</option>
+        <option value="en">EN</option>
+      </select>
+    </div>
+    <!-- 🔹 promos: banner -->
+    <div class="promo" id="promoWrap">
+      <div class="box"><span id="promoMsg">Promo activa</span></div>
+    </div>
   </header>
 
-  <main>
-    <form id="bookingForm">
-      <h2>Datos de la reserva</h2>
-      <label>
-        Nombre:
+  <main class="row">
+    <section class="card">
+      <h2 data-i18n="step1">1) Fechas y cantidad</h2>
+      <div class="grid grid-2">
+        <div>
+          <label data-i18n="checkin">Check-in</label>
+          <input id="dateIn" type="date" />
+        </div>
+        <div>
+          <label data-i18n="checkout">Check-out</label>
+          <input id="dateOut" type="date" />
+        </div>
+      </div>
+
+      <div class="grid grid-4" style="margin-top:10px">
+        <div>
+          <label data-i18n="men">Hombres</label>
+          <div class="ctr">
+            <button type="button" id="menMinus">−</button>
+            <input id="men" type="number" min="0" max="38" value="0" />
+            <button type="button" id="menPlus">+</button>
+          </div>
+        </div>
+        <div>
+          <label data-i18n="women">Mujeres</label>
+          <div class="ctr">
+            <button type="button" id="womenMinus">−</button>
+            <input id="women" type="number" min="0" max="38" value="0" />
+            <button type="button" id="womenPlus">+</button>
+          </div>
+        </div>
+        <div class="muted" style="display:flex; align-items:end" data-i18n="capacity">
+          Capacidad total: 38
+        </div>
+        <div style="display:flex; justify-content:end; align-items:end">
+          <button id="checkAvail" class="btn" data-i18n="btn_check">Ver disponibilidad</button>
+        </div>
+      </div>
+      <div id="checkMsg" class="muted" style="margin-top:6px"></div>
+    </section>
+
+    <section id="roomsCard" class="card" style="display:none">
+      <h2 data-i18n="step2">2) Elegí tus camas</h2>
+      <div id="mods" class="muted" style="margin-bottom:8px"></div>
+      <div id="rooms" class="rooms"></div>
+      <div class="actions" style="margin-top:8px">
+        <div>
+          <div data-i18n="selected_prefix">Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
+          <div class="muted"><span data-i18n="total_prefix">Total:</span> R$ <span id="totalPrice">0</span></div>
+        </div>
+        <button id="continueBtn" class="btn" disabled data-i18n="btn_continue">Continuar</button>
+      </div>
+      <p class="warning" id="suggestBox"></p>
+    </section>
+
+    <section id="formCard" class="card" style="display:none">
+      <h2 data-i18n="step3">3) Datos para confirmar</h2>
+      <form id="reserva-form">
+        <label data-i18n="full_name">Nombre completo</label>
         <input type="text" name="nombre" required />
-      </label>
-      <label>
-        Email:
+        <label data-i18n="email">Email</label>
         <input type="email" name="email" required />
-      </label>
-      <label>
-        Teléfono:
+        <label data-i18n="phone">Teléfono</label>
         <input type="tel" name="telefono" required />
-      </label>
-      <label>
-        Entrada:
+        <label data-i18n="in_date">Fecha de entrada</label>
         <input type="date" name="entrada" required />
-      </label>
-      <label>
-        Salida:
+        <label data-i18n="out_date">Fecha de salida</label>
         <input type="date" name="salida" required />
-      </label>
-      <label>
-        Hombres:
-        <input type="number" name="hombres" min="0" value="0" required />
-      </label>
-      <label>
-        Mujeres:
-        <input type="number" name="mujeres" min="0" value="0" required />
-      </label>
 
-      <button type="submit">Continuar a pago →</button>
-    </form>
+        <!-- 🔹 LGPD/GDPR: consentimiento (intacto) -->
+        <label style="margin-top:8px">
+          <input type="checkbox" id="consentChk" />
+          <span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span>
+        </label>
 
-    <div id="paymentSection" style="display:none">
-      <h2>Pago</h2>
-      <div id="wallet_container"></div>
-    </div>
+        <div class="grid grid-3" style="margin-top:10px">
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;" data-i18n="pay_mp_title">Pagar con Mercado Pago</h3>
+            <p class="muted" data-i18n="pay_mp_sub">Pix / tarjeta / boleto (Brasil)</p>
+            <button type="button" id="payMP" class="btn secondary" style="margin-top:8px" data-i18n="pay_mp_btn">Pagar con MP (Sandbox)</button>
+          </div>
+
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;" data-i18n="pay_stripe_title">Pagar con Stripe</h3>
+            <p class="muted" data-i18n="pay_stripe_sub">Tarjeta internacional / débito</p>
+            <button type="button" id="payStripe" class="btn secondary" style="margin-top:8px" data-i18n="pay_stripe_btn">Ir a Checkout (Sandbox)</button>
+          </div>
+
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;" data-i18n="test_title">¿Solo test?</h3>
+            <p class="muted" data-i18n="test_sub">“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.</p>
+            <button type="button" id="simulateOk" class="btn ghost" data-i18n="test_btn">Simular pago aprobado</button>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:12px">
+          <span class="muted"><span data-i18n="pay_state">Estado pago:</span> <span id="payState" class="highlight" data-i18n="pending">pendiente</span></span>
+          <button type="submit" id="submitBtn" class="btn" disabled data-i18n="btn_confirm">Confirmar reserva</button>
+        </div>
+      </form>
+    </section>
   </main>
 
-  <script src="https://sdk.mercadopago.com/js/v2"></script>
-  <script src="https://js.stripe.com/v3/"></script>
+  <footer>
+    <p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p>
+  </footer>
+
+  <div id="toast"></div>
+
   <script>
-    const form = document.getElementById("bookingForm");
-    const paySec = document.getElementById("paymentSection");
-    const mp = new MercadoPago("PUBLIC_KEY_MP");
-
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(form).entries());
-
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const out = await res.json();
-
-      if (out.ok) {
-        form.style.display = "none";
-        paySec.style.display = "block";
-
-        // Mercado Pago ejemplo
-        mp.bricks().create("wallet", "wallet_container", {
-          initialization: { preferenceId: out.mp_preference_id }
-        });
-
-        // Stripe ejemplo
-        const stripe = Stripe("PUBLIC_KEY_STRIPE");
-        const { clientSecret } = out.stripe;
-        const elements = stripe.elements();
-        const card = elements.create("card");
-        card.mount("#wallet_container");
-      } else {
-        alert("Error: " + out.error);
-      }
-    });
-  </script>
-</body>
-</html>
+    // ===== ENDPOINTS (mismo hos

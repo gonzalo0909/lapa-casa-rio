@@ -1,65 +1,65 @@
-// services/holds.js
 "use strict";
-
 /**
- * HOLDs in-memory (simple) + helpers to mirror Sheet state.
- * ENV: HOLD_TTL_MINUTES (default 10)
+ * /services/holds.js
+ * Bloqueos temporales de camas (para evitar overbooking)
  */
-const { postToSheets } = require("./sheets");
+
+const express = require("express");
+const router = express.Router();
+
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 
-const holdsMem = new Map(); // holdId -> { expiresAt }
+// Memoria simple en backend (puede migrar a Redis/DB)
+let holds = {};
 
-function ttlMs(min=HOLD_TTL_MINUTES){ return Math.max(1, min) * 60_000; }
-
-async function createHold({ holdId, payload, ttlMinutes }){
-  const id = holdId || `HOLD-${Date.now()}`;
-  const expiresAt = Date.now() + ttlMs(ttlMinutes);
-  await postToSheets({
-    action:"upsert_booking",
-    booking_id: id,
-    nombre: payload.nombre || "HOLD",
-    email: payload.email || "",
-    telefono: payload.telefono || "",
-    entrada: payload.entrada || "",
-    salida: payload.salida || "",
-    hombres: Number(payload.hombres || 0),
-    mujeres: Number(payload.mujeres || 0),
-    camas_json: JSON.stringify(payload.camas || {}),
-    total: Number(payload.total || 0),
-    pay_status: "hold"
-  });
-  holdsMem.set(id, { expiresAt });
-  return { ok:true, holdId:id, expiresAt };
-}
-
-async function releaseHold(holdId){
-  if (!holdId) return { ok:false, error:"missing_holdId" };
-  await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status:"released" });
-  holdsMem.delete(holdId);
-  return { ok:true, holdId };
-}
-
-async function confirmHold(holdId, status="paid"){
-  if (!holdId) return { ok:false, error:"missing_holdId" };
-  await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status: status });
-  holdsMem.delete(holdId);
-  return { ok:true, holdId, status };
-}
-
-function sweepExpired(){
+/* ================== HELPERS ================== */
+function cleanExpired() {
   const now = Date.now();
-  let pruned = 0;
-  for (const [id,meta] of holdsMem.entries()){
-    if (meta.expiresAt < now) { holdsMem.delete(id); pruned++; }
+  for (const k of Object.keys(holds)) {
+    if (holds[k].expires <= now) delete holds[k];
   }
-  return { pruned, holds: holdsMem.size };
 }
 
-module.exports = {
-  holdsMem,
-  createHold,
-  releaseHold,
-  confirmHold,
-  sweepExpired
-};
+/* ================== RUTAS ================== */
+// Crear hold
+router.post("/start", (req, res) => {
+  cleanExpired();
+  const { room_id, count = 1 } = req.body || {};
+  if (!room_id) return res.status(400).json({ ok: false, error: "missing_room_id" });
+
+  const key = `${room_id}-${Date.now()}`;
+  holds[key] = {
+    room_id,
+    count,
+    created: Date.now(),
+    expires: Date.now() + HOLD_TTL_MINUTES * 60 * 1000
+  };
+  res.json({ ok: true, hold_id: key, ttl_minutes: HOLD_TTL_MINUTES });
+});
+
+// Confirmar hold
+router.post("/confirm", (req, res) => {
+  const { hold_id } = req.body || {};
+  if (!hold_id || !holds[hold_id]) return res.status(400).json({ ok: false, error: "invalid_hold" });
+  const data = holds[hold_id];
+  delete holds[hold_id];
+  res.json({ ok: true, confirmed: data });
+});
+
+// Liberar hold manual
+router.post("/release", (req, res) => {
+  const { hold_id } = req.body || {};
+  if (hold_id && holds[hold_id]) {
+    delete holds[hold_id];
+    return res.json({ ok: true, released: hold_id });
+  }
+  res.json({ ok: false, error: "not_found" });
+});
+
+// Sweep (limpieza manual)
+router.post("/sweep", (_req, res) => {
+  cleanExpired();
+  res.json({ ok: true, holds_count: Object.keys(holds).length });
+});
+
+module.exports = router;

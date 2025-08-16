@@ -1,96 +1,69 @@
-// services/payments-mp.js
 "use strict";
-
 /**
- * Mercado Pago: preference + webhook verify/dispatch
- * ENV: MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET
+ * /services/payments-mp.js
+ * Mercado Pago Checkout + Webhooks
  */
-const crypto = require("crypto");
-const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 
-function getMpClient(){
-  const token = process.env.MP_ACCESS_TOKEN || "";
-  return token ? new MercadoPagoConfig({ accessToken: token }) : null;
-}
+const express = require("express");
+const fetch = require("node-fetch");
+const router = express.Router();
 
-async function createPreference({ title="Reserva Lapa Casa Hostel", unit_price=100, quantity=1, currency_id="BRL", metadata={} }, { baseUrl }){
-  const client = getMpClient();
-  if (!client) throw new Error("mp_token_missing");
-  const orderId = (metadata && (metadata.orderId || metadata.bookingId)) || `order-${Date.now()}`;
-  const pref = new Preference(client);
-  const body = {
-    items: [{ title, unit_price: Number(unit_price), quantity: Number(quantity), currency_id }],
-    back_urls: {
-      success: `${baseUrl}/pago-exitoso-test`,
-      failure: `${baseUrl}/book?cancel=1`,
-      pending: `${baseUrl}/book?cancel=1`
-    },
-    auto_return: "approved",
-    metadata,
-    external_reference: orderId,
-    notification_url: `${baseUrl}/webhooks/mp`,
-  };
-  const result = await pref.create({ body });
-  return {
-    preferenceId: result.id || result.body?.id,
-    init_point: result.init_point || result.body?.init_point
-  };
-}
+const MP_TOKEN = process.env.MP_ACCESS_TOKEN || "";
+const FRONTEND_URL = process.env.FRONTEND_URL || "";
 
-function verifyMpSignature(req, paymentId){
-  try{
-    const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || process.env.MERCADO_PAGO_CHECKOUT_API_WEBHOOK_SECRET || "";
-    const sig = req.headers["x-signature"];
-    const reqId = req.headers["x-request-id"];
-    if (!MP_WEBHOOK_SECRET || !sig || !reqId || !paymentId) return false;
-    const parts = String(sig).split(",");
-    let ts, v1;
-    for (const p of parts) {
-      const [k,v] = p.split("="); if (!k || !v) continue;
-      if (k.trim()==="ts") ts=v.trim();
-      if (k.trim()==="v1") v1=v.trim();
-    }
-    if (!ts || !v1) return false;
-    const manifest = `id:${paymentId};request-id:${reqId};ts:${ts};`;
-    const calc = crypto.createHmac("sha256", MP_WEBHOOK_SECRET).update(manifest).digest("hex");
-    return calc === v1;
-  }catch{ return false; }
-}
+/* ================== CREAR PREFERENCE ================== */
+router.post("/create_preference", async (req, res) => {
+  try {
+    if (!MP_TOKEN) return res.status(500).json({ ok: false, error: "mp_not_configured" });
 
-function buildMpWebhookHandler({ notifySheets, isDuplicate, log }){
-  const client = getMpClient();
-  return async function handler(req,res){
-    try{
-      const type = req.query.type || req.body?.type;
-      const paymentId = req.query["data.id"] || req.body?.data?.id || req.body?.id;
-      if (type !== "payment" || !paymentId) { log("mp_event_ignored",{ type, paymentId }); return res.status(200).send("ok"); }
+    const { booking_id, total, currency = "BRL" } = req.body || {};
+    if (!booking_id || !total) return res.status(400).json({ ok: false, error: "missing_params" });
 
-      if (process.env.MP_WEBHOOK_SECRET) {
-        const ok = verifyMpSignature(req, paymentId);
-        if (!ok) { log("mp_signature_fail",{ paymentId }); return res.status(401).send("invalid signature"); }
-      }
-      if (isDuplicate(`mp:${paymentId}`)) return res.status(200).send("dup");
-      if (!client) return res.status(200).send("ok");
+    const preference = {
+      items: [{
+        title: `Reserva ${booking_id}`,
+        unit_price: Number(total),
+        quantity: 1,
+        currency_id: currency
+      }],
+      back_urls: {
+        success: `${FRONTEND_URL}?status=success&booking=${booking_id}`,
+        failure: `${FRONTEND_URL}?status=failure&booking=${booking_id}`,
+        pending: `${FRONTEND_URL}?status=pending&booking=${booking_id}`
+      },
+      auto_return: "approved",
+      metadata: { booking_id }
+    };
 
-      const pay = new Payment(client);
-      const payment = await pay.get({ id: paymentId });
-      const status = payment?.status;
-      const externalRef = payment?.external_reference || "";
-      const total = payment?.transaction_amount;
+    const r = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${MP_TOKEN}`
+      },
+      body: JSON.stringify(preference)
+    });
 
-      log("mp_event",{ paymentId, status, externalRef, total });
-      if (externalRef) await notifySheets(externalRef, status, total);
-      res.status(200).send("ok");
-    }catch(e){
-      log("mp_error",{ where:"webhook", msg:e?.message||String(e) });
-      res.status(200).send("ok");
-    }
-  };
-}
+    const out = await r.json();
+    res.json({ ok: true, init_point: out.init_point, id: out.id });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+});
 
-module.exports = {
-  getMpClient,
-  createPreference,
-  verifyMpSignature,
-  buildMpWebhookHandler
-};
+/* ================== WEBHOOK ================== */
+router.post("/webhook", async (req, res) => {
+  try {
+    const body = req.body || {};
+    console.log("🔔 Webhook Mercado Pago:", body);
+
+    // Aquí se debería validar y luego llamar a bookings/payment_update
+    // Ejemplo: if (body.type === "payment" && body.data && body.data.id)
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+});
+
+module.exports = router;

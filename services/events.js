@@ -1,3 +1,4 @@
+// /services/events.js
 "use strict";
 
 /**
@@ -139,7 +140,6 @@ async function loadAll() {
     }
   }
   if (!out.length) {
-    // Fallback mínimo
     out = [
       { title: "Roda de Samba da Lapa", start: new Date().toISOString(), venue: "Arcos da Lapa", source: "fallback" },
       { title: "Feira de Lavradio", start: new Date(Date.now() + 86400000).toISOString(), venue: "Rua do Lavradio", source: "fallback" },

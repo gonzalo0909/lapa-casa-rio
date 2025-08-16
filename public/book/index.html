@@ -40,7 +40,6 @@
     #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999;}
     #toast.show { opacity:1; transform:translateY(0); }
 
-    /* 🔹 promos */
     .promo { display:none; margin:10px auto 0; max-width:1080px; }
     .promo .box { border:1px dashed #f59e0b; background:#fff8e6; border-radius:12px; padding:10px 12px; text-align:center; }
     .lang { display:flex; justify-content:center; gap:8px; margin-top:6px; }
@@ -52,7 +51,6 @@
   <header>
     <h1 data-i18n="title">Lapa Casa Hostel – Reservas</h1>
     <p class="muted" data-i18n="subtitle">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
-    <!-- 🔹 i18n: selector -->
     <div class="lang">
       <label for="langSel" class="muted" data-i18n="lang_label">Idioma / Language:</label>
       <select id="langSel" aria-label="Language">
@@ -60,7 +58,6 @@
         <option value="en">EN</option>
       </select>
     </div>
-    <!-- 🔹 promos: banner -->
     <div class="promo" id="promoWrap">
       <div class="box"><span id="promoMsg">Promo activa</span></div>
     </div>
@@ -135,7 +132,6 @@
         <label data-i18n="out_date">Fecha de salida</label>
         <input type="date" name="salida" required />
 
-        <!-- 🔹 LGPD/GDPR: consentimiento (intacto) -->
         <label style="margin-top:8px">
           <input type="checkbox" id="consentChk" />
           <span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span>
@@ -189,7 +185,7 @@
     const STRIPE_PK = "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
     const stripe = Stripe(STRIPE_PK);
 
-    // ===== ROOMS (igual que antes)
+    // ===== ROOMS
     const ROOMS = {
       1: { name: "Cuarto 1 (12 mixto)", cap: 12, basePrice: 55, femaleOnly: false },
       3: { name: "Cuarto 3 (12 mixto)", cap: 12, basePrice: 55, femaleOnly: false },
@@ -234,7 +230,7 @@
     function fmtBRL(n){ return Number(n||0).toLocaleString('pt-BR'); }
     function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(()=>toastEl.classList.remove('show'), 2200); }
 
-    // ===== pricing mods (como ya tenías)
+    // ===== pricing mods
     function priceModifiers(start,end){
       const tags=new Set(); let weekend=false; let highMonth=false; let eventPeak=false;
       const nights=diffNights(start,end); if(!nights) return {factor:1,tags:[]};
@@ -247,11 +243,17 @@
     }
     function pricePerBed(roomId,start,end){ const base=ROOMS[roomId].basePrice; const mods=priceModifiers(start,end); return Math.round(base*mods.factor); }
 
-    // ===== botones +/- (igual)
+    // ===== botones +/-
     menMinus.onclick=()=>{ menEl.value=Math.max(0,(+menEl.value||0)-1); };
     menPlus.onclick =()=>{ menEl.value=Math.min(38,(+menEl.value||0)+1); };
     womenMinus.onclick=()=>{ womenEl.value=Math.max(0,(+womenEl.value||0)-1); };
     womenPlus.onclick =()=>{ womenEl.value=Math.min(38,(+womenEl.value||0)+1); };
+
+    // ===== restaurar HOLD persistido (evita perder booking_id)
+    (function restoreHold(){
+      const savedHold = localStorage.getItem('lapa-hold-id');
+      if (savedHold) currentHoldId = savedHold;
+    })();
 
     // ===== consultar disponibilidad
     $('#checkAvail').addEventListener('click',async ()=> {
@@ -351,6 +353,7 @@
         const j = await r.json();
         if(!r.ok || !j.ok) throw new Error(j.error || 'No se pudo crear HOLD');
         currentHoldId = j.holdId || order.bookingId;
+        localStorage.setItem('lapa-hold-id', currentHoldId); // ✅ persistir hold
         formCard.style.display='block';
         document.querySelector('#reserva-form [name="entrada"]').value=dateInEl.value;
         document.querySelector('#reserva-form [name="salida"]').value=dateOutEl.value;
@@ -408,7 +411,7 @@
     $('#reserva-form').addEventListener('submit', async (e)=>{
       e.preventDefault();
       if (!$('#consentChk').checked) { alert(I18N[LANG].need_consent||'Debes aceptar la política de privacidad.'); return; }
-      const ok = (payStateEl.textContent || '').toLowerCase().includes(I18N[LANG].approved || 'aprob') || window.__simApproved;
+      const ok = (payStateEl.textContent || '').toLowerCase().includes((I18N[LANG].approved||'aprob')) || window.__simApproved;
       if(!ok){ alert(I18N[LANG].need_payment||'Necesitás completar el pago o usar Simular pago aprobado.'); return; }
       try{
         const r = await fetch(HOLDS_CONFIRM_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ holdId: currentHoldId, status:'paid' }) });
@@ -419,12 +422,18 @@
       }catch(e){ console.error(e); alert((I18N[LANG].confirm_err||'Error confirmando reserva: ') + e.message); }
     });
 
-    window.addEventListener('beforeunload', ()=>{ try{ if(currentHoldId && !paidFinal){ navigator.sendBeacon(HOLDS_RELEASE_ENDPOINT, new Blob([JSON.stringify({holdId: currentHoldId})], {type:'application/json'})); } }catch(_){ } });
+    window.addEventListener('beforeunload', ()=>{
+      try{
+        const hid = currentHoldId || localStorage.getItem('lapa-hold-id');
+        if(hid && !paidFinal){
+          navigator.sendBeacon(HOLDS_RELEASE_ENDPOINT, new Blob([JSON.stringify({holdId: hid})], {type:'application/json'}));
+        }
+      }catch(_){}
+    });
 
     (function checkPaidParam(){ const p=new URLSearchParams(location.search); if (p.get('paid')==='1'){ payStateEl.textContent=I18N[LANG].approved||'aprobado'; submitBtn.disabled=false; window.__simApproved=true; }})();
 
-    // ===== 🔹 Promos (solo banner informativo; NO cambia precios)
-    // Editá estas fechas/textos cuando quieras
+    // ===== Promos (banner informativo; NO cambia precios)
     const PROMOS = [
       // { from:"2025-02-01", to:"2025-02-28", msg_es:"Promo Carnaval: -10% directo", msg_en:"Carnival Promo: -10% direct" },
       // { from:"2025-07-01", to:"2025-07-15", msg_es:"Invierno carioca: 3x2", msg_en:"Winter in Rio: 3 nights pay 2" },
@@ -437,136 +446,10 @@
       $('#promoMsg').textContent = (LANG==='en' ? (p.msg_en||p.msg_es) : (p.msg_es||p.msg_en));
     }
 
-    // ===== 🔹 i18n mínimo
+    // ===== i18n mínimo
     const I18N = {
-      es:{
-        title:"Lapa Casa Hostel – Reservas",
-        subtitle:"Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).",
-        lang_label:"Idioma / Language:",
-        step1:"1) Fechas y cantidad",
-        step2:"2) Elegí tus camas",
-        step3:"3) Datos para confirmar",
-        checkin:"Check-in",
-        checkout:"Check-out",
-        men:"Hombres",
-        women:"Mujeres",
-        capacity:"Capacidad total: 38",
-        btn_check:"Ver disponibilidad",
-        selected_prefix:"Seleccionadas:",
-        total_prefix:"Total:",
-        btn_continue:"Continuar",
-        full_name:"Nombre completo",
-        email:"Email",
-        phone:"Teléfono",
-        in_date:"Fecha de entrada",
-        out_date:"Fecha de salida",
-        consent:"Acepto recibir comunicaciones y la política de privacidad.",
-        pay_mp_title:"Pagar con Mercado Pago",
-        pay_mp_sub:"Pix / tarjeta / boleto (Brasil)",
-        pay_mp_btn:"Pagar con MP (Sandbox)",
-        pay_stripe_title:"Pagar con Stripe",
-        pay_stripe_sub:"Tarjeta internacional / débito",
-        pay_stripe_btn:"Ir a Checkout (Sandbox)",
-        test_title:"¿Solo test?",
-        test_sub:"“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.",
-        test_btn:"Simular pago aprobado",
-        pay_state:"Estado pago:",
-        pending:"pendiente",
-        btn_confirm:"Confirmar reserva",
-        err_dates:"Elegí check-in y check-out.",
-        err_co:"El check-out debe ser posterior al check-in.",
-        err_qty:"Indicá al menos 1 huésped.",
-        checking:"Consultando disponibilidad...",
-        updated:"Disponibilidad actualizada",
-        err_avail:"Error consultando disponibilidad.",
-        no_beds:"No hay camas disponibles.",
-        avail_of:"Disponibles:",
-        price_bed:"Precio por cama:",
-        nights:"Noches:",
-        female_rule:"El cuarto femenino requiere al menos 1 mujer.",
-        select_exact:"Seleccioná exactamente {n} camas.",
-        pick_beds:"Seleccioná camas primero.",
-        fill_name_email:"Completá nombre y email.",
-        need_consent:"Debes aceptar la política de privacidad.",
-        cant_register:"No se pudo registrar la reserva: ",
-        cant_pref:"No se pudo crear preferencia",
-        pay_mp_err:"Error iniciando pago (MP): ",
-        cant_session:"No se pudo crear sesión de Stripe",
-        pay_stripe_err:"Error iniciando pago (Stripe): ",
-        approved:"aprobado",
-        need_payment:"Necesitás completar el pago o usar Simular pago aprobado.",
-        cant_confirm:"No se pudo confirmar HOLD",
-        book_ok:"Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'.",
-        hold_ok:"Camas reservadas por 10 min (HOLD)",
-        tag_weekend:"Fin de semana +10%",
-        tag_high:"Alta (Dic–Feb) +20%",
-        tag_peak:"Evento pico +15%",
-        mods:"Modificadores: "
-      },
-      en:{
-        title:"Lapa Casa Hostel – Bookings",
-        subtitle:"Choose dates and quantity, then pick specific beds (triple bunks).",
-        lang_label:"Idioma / Language:",
-        step1:"1) Dates & guests",
-        step2:"2) Pick your beds",
-        step3:"3) Details to confirm",
-        checkin:"Check-in",
-        checkout:"Check-out",
-        men:"Men",
-        women:"Women",
-        capacity:"Total capacity: 38",
-        btn_check:"Check availability",
-        selected_prefix:"Selected:",
-        total_prefix:"Total:",
-        btn_continue:"Continue",
-        full_name:"Full name",
-        email:"Email",
-        phone:"Phone",
-        in_date:"Arrival date",
-        out_date:"Departure date",
-        consent:"I accept communications and the privacy policy.",
-        pay_mp_title:"Pay with Mercado Pago",
-        pay_mp_sub:"Pix / card / boleto (Brazil)",
-        pay_mp_btn:"Pay with MP (Sandbox)",
-        pay_stripe_title:"Pay with Stripe",
-        pay_stripe_sub:"International card / debit",
-        pay_stripe_btn:"Go to Checkout (Sandbox)",
-        test_title:"Testing only?",
-        test_sub:"“Simulate approved payment” lets you confirm without MP/Stripe.",
-        test_btn:"Simulate approved payment",
-        pay_state:"Payment state:",
-        pending:"pending",
-        btn_confirm:"Confirm booking",
-        err_dates:"Pick check-in and check-out.",
-        err_co:"Check-out must be after check-in.",
-        err_qty:"Add at least 1 guest.",
-        checking:"Checking availability...",
-        updated:"Availability updated",
-        err_avail:"Error fetching availability.",
-        no_beds:"No beds available.",
-        avail_of:"Free:",
-        price_bed:"Price per bed:",
-        nights:"Nights:",
-        female_rule:"Female room requires at least 1 woman.",
-        select_exact:"Select exactly {n} beds.",
-        pick_beds:"Pick beds first.",
-        fill_name_email:"Fill name and email.",
-        need_consent:"You must accept the privacy policy.",
-        cant_register:"Could not register booking: ",
-        cant_pref:"Could not create preference",
-        pay_mp_err:"Error starting payment (MP): ",
-        cant_session:"Could not create Stripe session",
-        pay_stripe_err:"Error starting payment (Stripe): ",
-        approved:"approved",
-        need_payment:"You need to finish payment or use Simulate approved payment.",
-        cant_confirm:"Could not confirm HOLD",
-        book_ok:"Booking registered. Webhooks will mark it 'paid/approved'.",
-        hold_ok:"Beds held for 10 min (HOLD)",
-        tag_weekend:"Weekend +10%",
-        tag_high:"High season (Dec–Feb) +20%",
-        tag_peak:"Event peak +15%",
-        mods:"Modifiers: "
-      }
+      es:{ title:"Lapa Casa Hostel – Reservas", subtitle:"Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).", lang_label:"Idioma / Language:", step1:"1) Fechas y cantidad", step2:"2) Elegí tus camas", step3:"3) Datos para confirmar", checkin:"Check-in", checkout:"Check-out", men:"Hombres", women:"Mujeres", capacity:"Capacidad total: 38", btn_check:"Ver disponibilidad", selected_prefix:"Seleccionadas:", total_prefix:"Total:", btn_continue:"Continuar", full_name:"Nombre completo", email:"Email", phone:"Teléfono", in_date:"Fecha de entrada", out_date:"Fecha de salida", consent:"Acepto recibir comunicaciones y la política de privacidad.", pay_mp_title:"Pagar con Mercado Pago", pay_mp_sub:"Pix / tarjeta / boleto (Brasil)", pay_mp_btn:"Pagar con MP (Sandbox)", pay_stripe_title:"Pagar con Stripe", pay_stripe_sub:"Tarjeta internacional / débito", pay_stripe_btn:"Ir a Checkout (Sandbox)", test_title:"¿Solo test?", test_sub:"“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.", test_btn:"Simular pago aprobado", pay_state:"Estado pago:", pending:"pendiente", btn_confirm:"Confirmar reserva", err_dates:"Elegí check-in y check-out.", err_co:"El check-out debe ser posterior al check-in.", err_qty:"Indicá al menos 1 huésped.", checking:"Consultando disponibilidad...", updated:"Disponibilidad actualizada", err_avail:"Error consultando disponibilidad.", no_beds:"No hay camas disponibles.", avail_of:"Disponibles:", price_bed:"Precio por cama:", nights:"Noches:", female_rule:"El cuarto femenino requiere al menos 1 mujer.", select_exact:"Seleccioná exactamente {n} camas.", pick_beds:"Seleccioná camas primero.", fill_name_email:"Completá nombre y email.", need_consent:"Debes aceptar la política de privacidad.", cant_register:"No se pudo registrar la reserva: ", cant_pref:"No se pudo crear preferencia", pay_mp_err:"Error iniciando pago (MP): ", cant_session:"No se pudo crear sesión de Stripe", pay_stripe_err:"Error iniciando pago (Stripe): ", approved:"aprobado", need_payment:"Necesitás completar el pago o usar Simular pago aprobado.", cant_confirm:"No se pudo confirmar HOLD", book_ok:"Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'.", hold_ok:"Camas reservadas por 10 min (HOLD)", tag_weekend:"Fin de semana +10%", tag_high:"Alta (Dic–Feb) +20%", tag_peak:"Evento pico +15%", mods:"Modificadores: " },
+      en:{ title:"Lapa Casa Hostel – Bookings", subtitle:"Choose dates and quantity, then pick specific beds (triple bunks).", lang_label:"Idioma / Language:", step1:"1) Dates & guests", step2:"2) Pick your beds", step3:"3) Details to confirm", checkin:"Check-in", checkout:"Check-out", men:"Men", women:"Women", capacity:"Total capacity: 38", btn_check:"Check availability", selected_prefix:"Selected:", total_prefix:"Total:", btn_continue:"Continue", full_name:"Full name", email:"Email", phone:"Phone", in_date:"Arrival date", out_date:"Departure date", consent:"I accept communications and the privacy policy.", pay_mp_title:"Pay with Mercado Pago", pay_mp_sub:"Pix / card / boleto (Brazil)", pay_mp_btn:"Pay with MP (Sandbox)", pay_stripe_title:"Pay with Stripe", pay_stripe_sub:"International card / debit", pay_stripe_btn:"Go to Checkout (Sandbox)", test_title:"Testing only?", test_sub:"“Simulate approved payment” lets you confirm without MP/Stripe.", test_btn:"Simulate approved payment", pay_state:"Payment state:", pending:"pending", btn_confirm:"Confirm booking", err_dates:"Pick check-in and check-out.", err_co:"Check-out must be after check-in.", err_qty:"Add at least 1 guest.", checking:"Checking availability...", updated:"Availability updated", err_avail:"Error fetching availability.", no_beds:"No beds available.", avail_of:"Free:", price_bed:"Price per bed:", nights:"Nights:", female_rule:"Female room requires at least 1 woman.", select_exact:"Select exactly {n} beds.", pick_beds:"Pick beds first.", fill_name_email:"Fill name and email.", need_consent:"You must accept the privacy policy.", cant_register:"Could not register booking: ", cant_pref:"Could not create preference", pay_mp_err:"Error starting payment (MP): ", cant_session:"Could not create Stripe session", pay_stripe_err:"Error starting payment (Stripe): ", approved:"approved", need_payment:"You need to finish payment or use Simulate approved payment.", cant_confirm:"Could not confirm HOLD", book_ok:"Booking registered. Webhooks will mark it 'paid/approved'.", hold_ok:"Beds held for 10 min (HOLD)", tag_weekend:"Weekend +10%", tag_high:"High season (Dec–Feb) +20%", tag_peak:"Event peak +15%", mods:"Modifiers: " }
     };
     let LANG = 'es';
     function setLang(lang='es'){
@@ -575,7 +458,6 @@
         const key = n.getAttribute("data-i18n");
         const dict = I18N[LANG];
         if (dict[key]) {
-          // soporta placeholder {n} en 1 sitio (select_exact)
           let txt = String(dict[key]);
           if (key==='select_exact'){
             const needed = Number($('#needed')?.textContent||0);
@@ -584,13 +466,10 @@
           n.textContent = txt;
         }
       });
-      // Sync “pending/approved” label
       if (payStateEl) payStateEl.textContent = (window.__simApproved ? (I18N[LANG].approved||'approved') : (I18N[LANG].pending||'pending'));
-      // Banner promos (texto según idioma)
       showPromoIfAny();
     }
 
-    // auto idioma por navegador (es/en)
     (function initLang(){
       const nav = (navigator.language||'es').slice(0,2).toLowerCase();
       const initial = (nav==='en'?'en':'es');
@@ -599,7 +478,6 @@
       $('#langSel').addEventListener('change', e=> setLang(e.target.value));
     })();
 
-    // init promos
     showPromoIfAny();
   </script>
 </body>

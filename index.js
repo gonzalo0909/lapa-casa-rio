@@ -4,6 +4,7 @@
  * - Mantiene: /book (front), /availability, /bookings, /holds/*
  * - Agrega:   /payments/mp/preference  +  /webhooks/mp
  *             /payments/stripe/session +  /webhooks/stripe
+ *             /events (/api/events)
  * - Integra con Google Apps Script (BOOKINGS_WEBAPP_URL)
  */
 
@@ -46,7 +47,8 @@ app.post(["/webhooks/stripe","/api/webhooks/stripe"], express.raw({ type: "appli
 
     const notifySheets = async (bookingId, status, total) => {
       if (!bookingId || !BOOKINGS_WEBAPP_URL) return;
-      await postToSheets({ action:"payment_update", booking_id: bookingId, status, total });
+      const r = await postToSheets({ action:"payment_update", booking_id: bookingId, status, total });
+      if (!r?.ok) logPush("payment_update_not_found", { provider:"stripe", bookingId, status, total, raw:r });
       invalidateAvailabilityCache();
     };
 
@@ -107,6 +109,10 @@ app.get(["/","/api/health"], (req,res)=>{
   if (req.path === "/") return res.send("Backend Lapa Casa activo 🚀");
   res.json({ ok:true, service:"lapa-casa-backend", ts:Date.now() });
 });
+
+/* === Webhook GET health (evita confusión al abrir en navegador) === */
+app.get(["/webhooks/mp","/api/webhooks/mp"], (_req,res)=> res.status(200).send("ok"));
+app.get(["/webhooks/stripe","/api/webhooks/stripe"], (_req,res)=> res.status(200).send("ok"));
 
 /* ========= Stripe: crear Checkout Session ========= */
 app.post(["/payments/stripe/session","/api/payments/stripe/session"], rateLimit(30), async (req,res)=>{
@@ -207,7 +213,8 @@ app.post(["/webhooks/mp","/api/webhooks/mp"], async (req,res)=>{
     logPush("mp_event", { paymentId, status, externalRef, total });
 
     if (BOOKINGS_WEBAPP_URL && externalRef) {
-      await postToSheets({ action:"payment_update", booking_id: externalRef, status, total });
+      const r = await postToSheets({ action:"payment_update", booking_id: externalRef, status, total });
+      if (!r?.ok) logPush("payment_update_not_found", { provider:"mp", bookingId: externalRef, status, total, raw:r });
       invalidateAvailabilityCache();
     }
     res.status(200).send("ok");
@@ -335,7 +342,11 @@ app.post(["/holds/release","/api/holds/release"], rateLimit(60), async (req,res)
   try{
     const holdId = req.body?.holdId || "";
     if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
-    await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status:"released" });
+
+    // ✅ Solo actualizar estado si existe (no crear filas vacías)
+    const r = await postToSheets({ action:"payment_update", booking_id: holdId, status:"released" });
+    if (!r?.ok) logPush("payment_update_not_found", { provider:"hold_release", bookingId: holdId, status:"released", raw:r });
+
     holdsMem.delete(holdId);
     invalidateAvailabilityCache();
     res.json({ ok:true, holdId });
@@ -350,7 +361,11 @@ app.post(["/holds/confirm","/api/holds/confirm"], rateLimit(60), async (req,res)
     const holdId = req.body?.holdId || "";
     const newStatus = req.body?.status || "paid";
     if (!holdId) return res.status(400).json({ ok:false, error:"missing_holdId" });
-    await postToSheets({ action:"upsert_booking", booking_id: holdId, pay_status: newStatus });
+
+    // ✅ Solo actualizar estado si existe (no crear filas vacías)
+    const r = await postToSheets({ action:"payment_update", booking_id: holdId, status:newStatus });
+    if (!r?.ok) logPush("payment_update_not_found", { provider:"hold_confirm", bookingId: holdId, status:newStatus, raw:r });
+
     holdsMem.delete(holdId);
     invalidateAvailabilityCache();
     res.json({ ok:true, holdId, status:newStatus });
@@ -359,6 +374,10 @@ app.post(["/holds/confirm","/api/holds/confirm"], rateLimit(60), async (req,res)
     res.status(500).json({ ok:false, error:"hold_confirm_failed" });
   }
 });
+
+/* ========= Events API ========= */
+const eventsHandler = require("./services/events");
+app.get(["/api/events","/events"], eventsHandler);
 
 /* ========= Helpers Sheets / Avail ========= */
 async function fetchRowsFromSheet_() {

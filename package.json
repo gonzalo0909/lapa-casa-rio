@@ -1,6 +1,6 @@
 {
   "name": "lapa-casa-backend",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Backend/API + estáticos (web y /book) para Lapa Casa",
   "main": "index.js",
   "type": "commonjs",

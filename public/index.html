@@ -1,354 +1,113 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lapa Casa Hostel - Reservas</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lapa Casa Hostel — Santa Teresa, Río de Janeiro</title>
+  <meta name="description" content="Hostel boutique en Santa Teresa, Río de Janeiro. Camas cómodas, ubicación perfecta, reservas directas y agenda de eventos culturales & música en Río." />
+  <link rel="canonical" href="/" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
   <style>
-    :root { --gap: 12px; --rosa:#F03DDB; }
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif; margin:0; padding:16px; color:#222; background:#fff; }
-    header, footer { text-align:center; padding:12px; }
-    .row { max-width: 1080px; margin: 0 auto; display:grid; gap:var(--gap); }
-    .card { border:1px solid #e5e7eb; border-radius:12px; padding:14px; background:#fff; }
-    .grid { display:grid; gap:10px; }
-    .grid-2 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
-    .grid-3 { grid-template-columns: repeat(3, minmax(200px, 1fr)); }
-    .grid-4 { grid-template-columns: repeat(4, minmax(180px, 1fr)); }
-    @media (max-width:720px){ .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; } }
-    label { display:block; font-size:14px; margin-bottom:6px; color:#374151; }
-    input[type="date"], input[type="number"], input[type="text"], input[type="email"], input[type="tel"] { width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; }
-    .ctr { display:flex; align-items:center; gap:6px; }
-    .ctr button { padding:6px 10px; border:0; border-radius:8px; background:#f59e0b; color:white; font-weight:700; cursor:pointer; }
-    .btn { background:#f59e0b; color:white; border:0; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; }
-    .btn.secondary { background:#111; }
-    .btn.ghost { background:transparent; color:#111; border:1px solid #e5e7eb; }
-    .btn:disabled { background:#d1d5db; cursor:not-allowed; }
-    .muted { color:#6b7280; font-size:14px; }
-    .err { color:#b91c1c; font-weight:600; }
-    .rooms { display:grid; gap:var(--gap); }
-    .room { border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
-    .room h3 { margin:0 0 6px 0; font-size:16px; }
-    .beds { display:grid; grid-template-columns: repeat(6, minmax(30px, 1fr)); gap:6px; }
-    @media (max-width:720px){ .beds { grid-template-columns: repeat(4, minmax(30px,1fr)); } }
-    .bed { border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center; font-size:13px; user-select:none; cursor:pointer; }
-    .bed.occupied { background:#f3f4f6; color:#9ca3af; text-decoration:line-through; cursor:not-allowed; }
-    .bed.selected { outline:2px solid #111; font-weight:700; }
-    .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none; }
-    .highlight { color:#F03DDB; font-weight:700; }
-    #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999;}
-    #toast.show { opacity:1; transform:translateY(0); }
-
-    /* 🔹 promos */
-    .promo { display:none; margin:10px auto 0; max-width:1080px; }
-    .promo .box { border:1px dashed #f59e0b; background:#fff8e6; border-radius:12px; padding:10px 12px; text-align:center; }
-    .lang { display:flex; justify-content:center; gap:8px; margin-top:6px; }
-    .lang select { padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; }
+    :root{--bg:#fff;--fg:#111;--muted:#6b7280;--brand:#f59e0b;--brand2:#F03DDB;--line:#e5e7eb;--radius:14px;--gap:14px;--shadow:0 10px 20px rgba(0,0,0,.06)}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+    a{color:var(--fg);text-decoration:none} a.btn{color:#fff}
+    header{padding:28px 16px 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8f0)}
+    .row{max-width:1080px;margin:0 auto;display:grid;gap:var(--gap)}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:var(--shadow)}
+    .title{font-weight:800;font-size:20px}
+    nav{display:flex;gap:10px;align-items:center}
+    .btn{display:inline-flex;align-items:center;gap:8px;background:var(--brand);padding:10px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:700;box-shadow:var(--shadow)}
+    .btn.ghost{background:transparent;color:#111;border:1px solid var(--line)}
+    .hero{display:grid;gap:16px;padding:10px 0 6px}
+    .hero h1{margin:6px 0 0;font-size:clamp(26px,5vw,38px);line-height:1.1}
+    .muted{color:var(--muted);font-size:14px}
+    .grid{display:grid;gap:var(--gap)} .grid-3{grid-template-columns:repeat(3,minmax(200px,1fr))} @media (max-width:820px){.grid-3{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+    .pill{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:#444;background:#fff}
+    footer{padding:18px;border-top:1px solid var(--line);text-align:center;margin-top:20px}
   </style>
-  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
   <header>
-    <h1 data-i18n="title">Lapa Casa Hostel – Reservas</h1>
-    <p class="muted" data-i18n="subtitle">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
-    <!-- 🔹 i18n: selector -->
-    <div class="lang">
-      <label for="langSel" class="muted" data-i18n="lang_label">Idioma / Language:</label>
-      <select id="langSel" aria-label="Language">
-        <option value="es">ES</option>
-        <option value="en">EN</option>
-      </select>
-    </div>
-    <!-- 🔹 promos: banner -->
-    <div class="promo" id="promoWrap">
-      <div class="box"><span id="promoMsg">Promo activa</span></div>
+    <div class="row">
+      <div class="top">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <div class="title">Lapa Casa Hostel</div>
+            <div class="muted">Santa Teresa · Río de Janeiro</div>
+          </div>
+        </div>
+        <nav>
+          <a href="/book" class="btn">Reservar ahora →</a>
+        </nav>
+      </div>
+
+      <div class="hero">
+        <h1>Dormí en el corazón bohemio de Río</h1>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="pill">📍 Santa Teresa (cerca de Lapa)</span>
+          <span class="pill">💸 Mejor precio directo</span>
+          <span class="pill">☕ Cocina & espacios comunes</span>
+        </div>
+        <p class="muted">Camas cómodas, gente buena onda, y una terraza lista para el atardecer. Reservá directo y aprovechá las mejores condiciones.</p>
+        <div class="grid grid-3">
+          <div class="card">
+            <h3 style="margin:0 0 6px 0">Camas & cuartos</h3>
+            <p class="muted">Mixtos y femenino. Literas triples, lockers, enchufes y luz individual.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px 0">Ubicación</h3>
+            <p class="muted">Entre Lapa y Santa Teresa. Bondinho, Escadaria Selarón y centros culturales.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px 0">Agenda de Río</h3>
+            <p class="muted">Música, cultura y ferias. Curamos eventos por barrio y fecha.</p>
+          </div>
+        </div>
+        <div>
+          <a href="/book" class="btn">Ver disponibilidad →</a>
+          <a target="_blank" rel="noopener" class="btn ghost" href="https://maps.google.com/?q=Santa+Teresa+Rio+de+Janeiro">Ver en mapa</a>
+        </div>
+      </div>
     </div>
   </header>
 
-  <main class="row">
+  <main class="row" style="padding:16px">
     <section class="card">
-      <h2 data-i18n="step1">1) Fechas y cantidad</h2>
-      <div class="grid grid-2">
-        <div>
-          <label data-i18n="checkin">Check-in</label>
-          <input id="dateIn" type="date" />
-        </div>
-        <div>
-          <label data-i18n="checkout">Check-out</label>
-          <input id="dateOut" type="date" />
-        </div>
-      </div>
-
-      <div class="grid grid-4" style="margin-top:10px">
-        <div>
-          <label data-i18n="men">Hombres</label>
-          <div class="ctr">
-            <button type="button" id="menMinus">−</button>
-            <input id="men" type="number" min="0" max="38" value="0" />
-            <button type="button" id="menPlus">+</button>
-          </div>
-        </div>
-        <div>
-          <label data-i18n="women">Mujeres</label>
-          <div class="ctr">
-            <button type="button" id="womenMinus">−</button>
-            <input id="women" type="number" min="0" max="38" value="0" />
-            <button type="button" id="womenPlus">+</button>
-          </div>
-        </div>
-        <div class="muted" style="display:flex; align-items:end" data-i18n="capacity">
-          Capacidad total: 38
-        </div>
-        <div style="display:flex; justify-content:end; align-items:end">
-          <button id="checkAvail" class="btn" data-i18n="btn_check">Ver disponibilidad</button>
-        </div>
-      </div>
-      <div id="checkMsg" class="muted" style="margin-top:6px"></div>
-    </section>
-
-    <section id="roomsCard" class="card" style="display:none">
-      <h2 data-i18n="step2">2) Elegí tus camas</h2>
-      <div id="mods" class="muted" style="margin-bottom:8px"></div>
-      <div id="rooms" class="rooms"></div>
-      <div class="actions" style="margin-top:8px">
-        <div>
-          <div data-i18n="selected_prefix">Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
-          <div class="muted"><span data-i18n="total_prefix">Total:</span> R$ <span id="totalPrice">0</span></div>
-        </div>
-        <button id="continueBtn" class="btn" disabled data-i18n="btn_continue">Continuar</button>
-      </div>
-      <p class="warning" id="suggestBox"></p>
-    </section>
-
-    <section id="formCard" class="card" style="display:none">
-      <h2 data-i18n="step3">3) Datos para confirmar</h2>
-      <form id="reserva-form">
-        <label data-i18n="full_name">Nombre completo</label>
-        <input type="text" name="nombre" required />
-        <label data-i18n="email">Email</label>
-        <input type="email" name="email" required />
-        <label data-i18n="phone">Teléfono</label>
-        <input type="tel" name="telefono" required />
-        <label data-i18n="in_date">Fecha de entrada</label>
-        <input type="date" name="entrada" required />
-        <label data-i18n="out_date">Fecha de salida</label>
-        <input type="date" name="salida" required />
-
-        <!-- 🔹 LGPD/GDPR: consentimiento (intacto) -->
-        <label style="margin-top:8px">
-          <input type="checkbox" id="consentChk" />
-          <span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span>
-        </label>
-
-        <div class="grid grid-3" style="margin-top:10px">
-          <div class="card">
-            <h3 style="margin:0 0 8px 0;" data-i18n="pay_mp_title">Pagar con Mercado Pago</h3>
-            <p class="muted" data-i18n="pay_mp_sub">Pix / tarjeta / boleto (Brasil)</p>
-            <button type="button" id="payMP" class="btn secondary" style="margin-top:8px" data-i18n="pay_mp_btn">Pagar con MP (Sandbox)</button>
-          </div>
-
-          <div class="card">
-            <h3 style="margin:0 0 8px 0;" data-i18n="pay_stripe_title">Pagar con Stripe</h3>
-            <p class="muted" data-i18n="pay_stripe_sub">Tarjeta internacional / débito</p>
-            <button type="button" id="payStripe" class="btn secondary" style="margin-top:8px" data-i18n="pay_stripe_btn">Ir a Checkout (Sandbox)</button>
-          </div>
-
-          <div class="card">
-            <h3 style="margin:0 0 8px 0;" data-i18n="test_title">¿Solo test?</h3>
-            <p class="muted" data-i18n="test_sub">“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.</p>
-            <button type="button" id="simulateOk" class="btn ghost" data-i18n="test_btn">Simular pago aprobado</button>
-          </div>
-        </div>
-
-        <div class="actions" style="margin-top:12px">
-          <span class="muted"><span data-i18n="pay_state">Estado pago:</span> <span id="payState" class="highlight" data-i18n="pending">pendiente</span></span>
-          <button type="submit" id="submitBtn" class="btn" disabled data-i18n="btn_confirm">Confirmar reserva</button>
-        </div>
-      </form>
+      <h2 style="margin:0 0 8px 0">Agenda de Río (música & cultura)</h2>
+      <p class="muted" id="evtMsg">Cargando…</p>
+      <div id="evtList" class="grid" style="grid-template-columns:repeat(3,minmax(200px,1fr));gap:12px"></div>
     </section>
   </main>
 
   <footer>
-    <p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p>
+    <div class="row">
+      <p class="muted">© <span id="y"></span> Lapa Casa Hostel · Santa Teresa, Río de Janeiro · <a href="/book">/book</a></p>
+    </div>
   </footer>
 
-  <div id="toast"></div>
-
   <script>
-    // ===== ENDPOINTS (mismo host)
-    const MP_PREFERENCE_ENDPOINT  = "/payments/mp/preference";
-    const BOOKINGS_ENDPOINT       = "/bookings";
-    const STRIPE_SESSION_ENDPOINT = "/payments/stripe/session";
-    const HOLDS_START_ENDPOINT    = "/holds/start";
-    const HOLDS_RELEASE_ENDPOINT  = "/holds/release";
-    const HOLDS_CONFIRM_ENDPOINT  = "/holds/confirm";
-    const AVAILABILITY_ENDPOINT   = "/availability";
+    document.getElementById("y").textContent = new Date().getFullYear();
 
-    // Stripe PK (pública)
-    const STRIPE_PK = "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
-    const stripe = Stripe(STRIPE_PK);
-
-    // ===== ROOMS (igual que antes)
-    const ROOMS = {
-      1: { name: "Cuarto 1 (12 mixto)", cap: 12, basePrice: 55, femaleOnly: false },
-      3: { name: "Cuarto 3 (12 mixto)", cap: 12, basePrice: 55, femaleOnly: false },
-      5: { name: "Cuarto 5 (7 mixto)",  cap: 7,  basePrice: 55, femaleOnly: false },
-      6: { name: "Cuarto 6 (7 femenino)", cap: 7, basePrice: 60, femaleOnly: true  }
-    };
-
-    // ===== util UI
-    const $ = (s)=>document.querySelector(s);
-    const dateInEl   = $('#dateIn');
-    const dateOutEl  = $('#dateOut');
-    const menEl      = $('#men');
-    const womenEl    = $('#women');
-    const menMinus   = $('#menMinus');
-    const menPlus    = $('#menPlus');
-    const womenMinus = $('#womenMinus');
-    const womenPlus  = $('#womenPlus');
-    const roomsWrap  = $('#rooms');
-    const roomsCard  = $('#roomsCard');
-    const formCard   = $('#formCard');
-    const neededEl   = $('#needed');
-    const selCountEl = $('#selCount');
-    const totalPriceEl = $('#totalPrice');
-    const continueBtn  = $('#continueBtn');
-    const suggestBox   = $('#suggestBox');
-    const checkMsg     = $('#checkMsg');
-    const payStateEl   = $('#payState');
-    const submitBtn    = $('#submitBtn');
-    const simulateOkBtn= $('#simulateOk');
-    const payMPBtn     = $('#payMP');
-    const payStripeBtn = $('#payStripe');
-    const modsEl       = $('#mods');
-    const toastEl      = $('#toast');
-
-    let selection = {};
-    let allowMaleUseFemale=false;
-    let currentHoldId = null;
-    let paidFinal = false;
-
-    function toISO(d){ return new Date(d + 'T00:00:00'); }
-    function diffNights(a,b){ if(!a||!b) return 0; const ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); }
-    function fmtBRL(n){ return Number(n||0).toLocaleString('pt-BR'); }
-    function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(()=>toastEl.classList.remove('show'), 2200); }
-
-    // ===== pricing mods
-    function priceModifiers(start,end){
-      const tags=new Set(); let weekend=false; let highMonth=false; let eventPeak=false;
-      const nights=diffNights(start,end); if(!nights) return {factor:1,tags:[]};
-      for(let i=0;i<nights;i++){ const d=new Date(toISO(start)); d.setDate(d.getDate()+i); const day=d.getDay(); if([0,5,6].includes(day)) weekend=true; const m=d.getMonth(); if([11,0,1].includes(m)) highMonth=true; }
-      if(weekend) tags.add(I18N[LANG].tag_weekend || 'Fin de semana +10%');
-      if(highMonth) tags.add(I18N[LANG].tag_high || 'Alta (Dic–Feb) +20%');
-      if(nights>=3) { eventPeak=true; tags.add(I18N[LANG].tag_peak || 'Evento pico +15%'); }
-      const factor=(weekend?1.10:1.0)*(highMonth?1.20:1.0)*(eventPeak?1.15:1.0);
-      return { factor, tags:[...tags] };
-    }
-    function pricePerBed(roomId,start,end){ const base=ROOMS[roomId].basePrice; const mods=priceModifiers(start,end); return Math.round(base*mods.factor); }
-
-    // ===== botones +/- (igual)
-    menMinus.onclick=()=>{ menEl.value=Math.max(0,(+menEl.value||0)-1); };
-    menPlus.onclick =()=>{ menEl.value=Math.min(38,(+menEl.value||0)+1); };
-    womenMinus.onclick=()=>{ womenEl.value=Math.max(0,(+womenEl.value||0)-1); };
-    womenPlus.onclick =()=>{ womenEl.value=Math.min(38,(+womenEl.value||0)+1); };
-
-    // === recuperar HOLD persistido (para evitar IDs nuevos y releases huérfanos)
-    (function restoreHold(){
-      try {
-        const savedHold = localStorage.getItem('lapa-hold-id');
-        if (savedHold) currentHoldId = savedHold;
-      } catch(_) {}
-    })();
-
-    // ===== consultar disponibilidad
-    $('#checkAvail').addEventListener('click',async ()=> {
-      const dIn=dateInEl.value, dOut=dateOutEl.value; const men=(+menEl.value||0), women=(+womenEl.value||0); const qty=men+women;
-      if(!dIn || !dOut){ checkMsg.innerHTML='<span class="err">'+(I18N[LANG].err_dates||'Elegí check-in y check-out.')+'</span>'; return; }
-      if(dOut<=dIn){ checkMsg.innerHTML='<span class="err">'+(I18N[LANG].err_co||'El check-out debe ser posterior al check-in.')+'</span>'; return; }
-      if(qty<1){ checkMsg.innerHTML='<span class="err">'+(I18N[LANG].err_qty||'Indicá al menos 1 huésped.')+'</span>'; return; }
-      checkMsg.textContent=I18N[LANG].checking||'Consultando disponibilidad...';
-      try{
-        const r = await fetch(`${AVAILABILITY_ENDPOINT}?from=${encodeURIComponent(dIn)}&to=${encodeURIComponent(dOut)}`);
-        const j = await r.json();
-        if(!r.ok || !j.ok){ throw new Error('No se pudo obtener disponibilidad'); }
-        renderAvailability(dIn,dOut,men,women,j.occupied||{});
-        const mods = priceModifiers(dIn,dOut);
-        modsEl.textContent = mods.tags.length ? ((I18N[LANG].mods||'Modificadores: ') + mods.tags.join(' · ')) : '';
-        checkMsg.textContent=I18N[LANG].updated||'Disponibilidad actualizada';
-      }catch(e){
-        console.error(e); checkMsg.innerHTML='<span class="err">'+(I18N[LANG].err_avail||'Error consultando disponibilidad.')+'</span>';
+    fetch("/api/events").then(r=>r.json()).then(j=>{
+      const list = Array.isArray(j.events)? j.events : [];
+      const listEl = document.getElementById("evtList");
+      const msgEl  = document.getElementById("evtMsg");
+      if (!list.length){ msgEl.textContent="Pronto publicaremos la agenda actualizada."; return; }
+      msgEl.textContent="";
+      for (const ev of list.slice(0,6)) {
+        const d = document.createElement("div");
+        d.className="card";
+        d.innerHTML = `<div class="pill">${new Date(ev.start).toLocaleDateString()}</div><h4 style="margin:6px 0">${esc(ev.title||"Evento")}</h4><div class="muted">${esc(ev.venue||"")}</div>`;
+        listEl.appendChild(d);
       }
+    }).catch(_=>{
+      document.getElementById("evtMsg").textContent="No pudimos cargar la agenda ahora.";
     });
 
-    function renderAvailability(dateIn,dateOut,men,women,occupied){
-      selection={}; roomsWrap.innerHTML='';
-      const qty=men+women; if(qty===0){ roomsCard.style.display='none'; return; }
-      roomsCard.style.display='block'; formCard.style.display='none';
-      const nights=diffNights(dateIn,dateOut); neededEl.textContent=qty; selCountEl.textContent=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display='none';
-
-      const freeByRoom={};
-      [1,3,5,6].forEach(id=>{
-        const occ=new Set((occupied&&occupied[id])||[]);
-        const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b);
-        freeByRoom[id]=free;
-      });
-
-      allowMaleUseFemale=(men>=32 && women===0 && [1,3,5,6].every(id=>freeByRoom[id].length===ROOMS[id].cap));
-
-      const toShow=[];
-      if(qty>0){
-        if(freeByRoom[1].length) toShow.push(1);
-        if(qty>=13 && freeByRoom[3].length) toShow.push(3);
-        if(freeByRoom[5].length) toShow.push(5);
-        if((women>=1 || allowMaleUseFemale) && freeByRoom[6].length) toShow.push(6);
-      }
-      if(!toShow.length){ roomsWrap.innerHTML='<p>'+ (I18N[LANG].no_beds||'No hay camas disponibles.') +'</p>'; return; }
-
-      toShow.forEach(id=>{
-        const r=ROOMS[id], libres=freeByRoom[id], pBed=pricePerBed(id,dateIn,dateOut);
-        const capMsg=`<span class="muted">${I18N[LANG].avail_of||'Disponibles:'} ${libres.length}/${r.cap} · ${I18N[LANG].price_bed||'Precio por cama:'} R$ ${pBed} · ${I18N[LANG].nights||'Noches:'} ${nights}</span>`;
-        const roomDiv=document.createElement('div'); roomDiv.className='room';
-        roomDiv.innerHTML=`<h3>${r.name}</h3><div>${capMsg}</div><div class="beds" id="beds-${id}"></div>`;
-        roomsWrap.appendChild(roomDiv); selection[id]=new Set();
-        const grid=roomDiv.querySelector('#beds-'+id);
-        for(let b=1;b<=r.cap;b++){
-          const occ=new Set((occupied&&occupied[id])||[]);
-          const btn=document.createElement('div');
-          btn.className='bed'+(occ.has(b)?' occupied':''); btn.textContent=b;
-          if(!occ.has(b)){ btn.title=`Cama ${b}`; btn.addEventListener('click',()=>toggleBed(id,b,dateIn,dateOut)); }
-          grid.appendChild(btn);
-        }
-      });
-      refreshTotals(men,women,dateIn,dateOut);
-    }
-
-    function toggleBed(roomId,bedId,dateIn,dateOut){
-      const set=selection[roomId]||new Set();
-      if(ROOMS[roomId].femaleOnly && !allowMaleUseFemale && (+womenEl.value||0)<1){ alert(I18N[LANG].female_rule||'El cuarto femenino requiere al menos 1 mujer.'); return; }
-      if(set.has(bedId)){ set.delete(bedId); } else { set.add(bedId); }
-      selection[roomId]=set;
-      refreshTotals(+menEl.value||0,+womenEl.value||0,dateIn,dateOut);
-      const grid=document.getElementById('beds-'+roomId); const node=Array.from(grid.children)[bedId-1]; if(!node||node.classList.contains('occupied')) return; node.classList.toggle('selected',set.has(bedId));
-    }
-
-    function refreshTotals(men,women,start,end){
-      const needed=men+women; const nights=diffNights(start,end);
-      let selectedCount=0,total=0,selectedInFemale=0;
-      Object.entries(selection).forEach(([id,set])=>{
-        const size=set.size; selectedCount+=size;
-        const pBed=pricePerBed(+id,start,end);
-        total+=size*pBed*Math.max(1,nights);
-        if(ROOMS[id].femaleOnly) selectedInFemale+=size;
-      });
-      selCountEl.textContent=selectedCount; totalPriceEl.textContent=fmtBRL(total);
-      let ok=(selectedCount===needed && needed>0); if(!allowMaleUseFemale && selectedInFemale>women) ok=false;
-      continueBtn.disabled=!ok;
-      suggestBox.style.display= ok ? 'none' : 'block';
-      suggestBox.textContent = ok ? '' : ((selectedInFemale>women)?(I18N[LANG].female_rule||'El cuarto femenino requiere al menos 1 mujer.'):(I18N[LANG].select_exact||`Seleccioná exactamente ${needed} camas.`));
-    }
-
-    $('#continueBtn').addEventListener('click',async ()=>{
-      const order = buildOrderBase();
-      const camas = currentSelectionObject();
-      if(!order.total){ alert(I18N[LANG].pick_beds||'Seleccioná camas
+    function esc(s){ return String(s||"").replace(/[&<>"]/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[m])); }
+  </script>
+</body>
+</html>

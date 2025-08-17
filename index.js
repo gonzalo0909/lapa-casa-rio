@@ -4,7 +4,7 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
-const cookieSession = require("cookie-session"); // ⬅️ reemplaza express-session
+const cookieSession = require("cookie-session");
 
 const app = express();
 const COMMIT = process.env.COMMIT || "dev";
@@ -25,18 +25,18 @@ app.use(cors({
   allowedHeaders:["Content-Type","Stripe-Signature"],
 }));
 
-// ===== Sesiones Admin (cookie-session, apto prod)
-app.set("trust proxy", 1); // necesario en Render para cookies secure
+// ===== Sesiones (cookie-session, apto prod)
+app.set("trust proxy", 1);
 app.use(cookieSession({
   name: "lc.sid",
   keys: [process.env.ADMIN_SESSION_SECRET || "changeme"],
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+  maxAge: 7*24*60*60*1000,
   sameSite: "lax",
-  secure: true,     // cookie solo sobre HTTPS
-  httpOnly: true
+  secure: true,
+  httpOnly: true,
 }));
 
-// ===== Static público
+// ===== Static (front)
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 
 // ===== Services
@@ -46,24 +46,43 @@ const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./servic
 const { createCheckoutSession, buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { createPreference, buildMpWebhookHandler } = require("./services/payments-mp");
 
-// ===== Admin routes
-app.use("/admin", require("./routes/admin"));
+// ===== Admin (opcional: usa ./routes/admin si existe)
+let adminRouter = null;
+try { adminRouter = require("./routes/admin"); }
+catch { /* fallback mínimo para no romper si no está */ 
+  adminRouter = express.Router();
+  adminRouter.get("/", (_req,res)=> res.status(200).json({ ok:true, admin:false }));
+}
+app.use("/admin", adminRouter);
 
-// ===== Stripe raw webhook FIRST
+// ===== Stripe raw webhook FIRST (antes del json parser)
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
     notifySheets,
-    isDuplicate: (()=>{ const m=new Map(); return (k)=>{const t=Date.now(); if(m.has(k)) return true; m.set(k,t); return false; };})(),
+    isDuplicate: deduper(), // simple dedupe en memoria
     log: (...a)=>console.log("[stripe]",...a),
   })
 );
 
-// JSON parser (resto)
+// ===== JSON parser (todo lo demás)
 app.use(express.json({ limit:"2mb" }));
 
-// ===== Health
+// ===== Health/Diag
 app.get("/api/health", (_req,res)=> res.json({ ok:true, service:"lapa-casa-backend", commit:COMMIT, now:new Date().toISOString() }));
+app.get("/api/diag", (_req,res)=> res.json({
+  ok:true, commit:COMMIT,
+  env:{
+    BASE_URL:!!process.env.BASE_URL,
+    CORS_ALLOW_ORIGINS:allowList.length,
+    HOLD_TTL_MINUTES:HOLD_TTL_MINUTES,
+    BOOKINGS_WEBHOOK_URL:!!(process.env.BOOKINGS_WEBHOOK_URL || process.env.BOOKINGS_WEBAPP_URL),
+    STRIPE_SECRET_KEY:!!process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET:!!process.env.STRIPE_WEBHOOK_SECRET,
+    MP_ACCESS_TOKEN:!!process.env.MP_ACCESS_TOKEN,
+    ENABLE_EVENTS:String(process.env.ENABLE_EVENTS||"")
+  }
+}));
 
 // ===== Disponibilidad
 app.get("/api/availability", async (req,res)=>{
@@ -80,9 +99,20 @@ app.get("/api/availability", async (req,res)=>{
 });
 
 // ===== Holds
-function holdsStartHandler(req,res){ try{ const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{}); res.json(holds.createHold({ holdId, ttlMinutes, payload })); }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); } }
-function holdsConfirmHandler(req,res){ try{ const { holdId } = Object(req.body||{}); res.json(holds.confirmHold(String(holdId||""))); }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); } }
-function holdsReleaseHandler(req,res){ try{ const { holdId } = Object(req.body||{}); res.json(holds.releaseHold(String(holdId||""))); }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); } }
+function holdsStartHandler(req,res){
+  try{
+    const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{});
+    res.json(holds.createHold({ holdId, ttlMinutes, payload }));
+  }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+}
+function holdsConfirmHandler(req,res){
+  try{ const { holdId } = Object(req.body||{}); res.json(holds.confirmHold(String(holdId||""))); }
+  catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+}
+function holdsReleaseHandler(req,res){
+  try{ const { holdId } = Object(req.body||{}); res.json(holds.releaseHold(String(holdId||""))); }
+  catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+}
 app.post("/holds/start", holdsStartHandler);
 app.post("/holds/confirm", holdsConfirmHandler);
 app.post("/holds/release", holdsReleaseHandler);
@@ -90,7 +120,7 @@ app.post("/api/holds/start", holdsStartHandler);
 app.post("/api/holds/confirm", holdsConfirmHandler);
 app.post("/api/holds/release", holdsReleaseHandler);
 
-// ===== Cron holds sweep (GAS)
+// ===== Cron holds sweep (desde GAS)
 app.get("/crons/holds-sweep", (req,res)=>{
   const tok = (req.query?.token||"").toString();
   if (!CRON_TOKEN || tok !== CRON_TOKEN) return res.status(401).json({ ok:false, error:"unauthorized" });
@@ -128,13 +158,28 @@ app.post("/payments/mp/preference", async (req,res)=>{
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
-const { buildMpWebhookHandler } = require("./services/payments-mp");
-app.post("/webhooks/mp", buildMpWebhookHandler({ notifySheets, isDuplicate:()=>false, log:(...a)=>console.log("[mp]",...a) }));
+app.post("/webhooks/mp", buildMpWebhookHandler({
+  notifySheets,
+  isDuplicate: deduper(),
+  log: (...a)=>console.log("[mp]",...a),
+}));
 app.get("/webhooks/mp", (_req,res)=> res.json({ ok:true, ping:true }));
 
-// ===== Páginas SPA-ish
+// ===== Eventos (opcional)
+let eventsModule = null; try { eventsModule = require("./services/events"); } catch {}
+if (eventsModule) {
+  if (typeof eventsModule === "function") app.get("/api/events", eventsModule);
+  else if (typeof eventsModule.eventsHandler === "function") app.get("/api/events", eventsModule.eventsHandler);
+  else app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
+} else {
+  app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
+}
+
+// ===== Páginas directas
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname, "public", "book.html")));
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname, "admin", "index.html")));
+
+// ===== 404 SPA-ish (GET sin extensión → /public/<path>/index.html)
 app.use((req,res,next)=>{
   if (req.method!=="GET" || path.extname(req.path)) return next();
   const safe = path.join(__dirname, "public", req.path, "index.html");
@@ -148,6 +193,17 @@ function getBaseUrl(req){
   const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   return `${proto}://${host}`;
+}
+function deduper(max=1000, ttl=10*60*1000){
+  const m=new Map();
+  return (key)=>{
+    const now=Date.now();
+    for (const [k,ts] of m) if (now-ts>ttl) m.delete(k);
+    if (m.has(key)) return true;
+    m.set(key, now);
+    if (m.size>max) m.delete(m.keys().next().value);
+    return false;
+  };
 }
 
 // ===== Start

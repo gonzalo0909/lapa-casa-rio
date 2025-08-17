@@ -1,5 +1,6 @@
 "use strict";
 
+require("dotenv").config();
 /**
  * Lapa Casa — Backend (Express) COMPAT
  * Mantiene el front tal cual. API de reservas, pagos, holds, eventos y webhooks.

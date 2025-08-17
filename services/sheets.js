@@ -1,40 +1,87 @@
+// lapa-casa-backend/services/sheets.js
 "use strict";
-const fetch = require("node-fetch");
 
-const GAS_URL = process.env.BOOKINGS_WEBAPP_URL; // .../exec
+/**
+ * Sheets/GAS bridge para:
+ *  - fetchRowsFromSheet(): lee reservas desde GAS
+ *  - calcOccupiedBeds(rows, fromISO, toISO): ocupa por reservas + holds + buffer
+ *  - notifySheets({ booking_id, status, total }): actualiza estado de pago en GAS
+ *
+ * Requisitos ENV:
+ *  - BOOKINGS_WEBAPP_URL  (URL del Web App de GAS .../exec)
+ *  - BOOKING_BUFFER_PER_ROOM (opcional, default 0)
+ * Node >= 18 (usa fetch nativo)
+ */
+
+const GAS_URL = (process.env.BOOKINGS_WEBAPP_URL || "").trim();
 if (!GAS_URL) throw new Error("Falta env BOOKINGS_WEBAPP_URL");
 
-async function getRows() {
+const BUFFER = Number(process.env.BOOKING_BUFFER_PER_ROOM || 0);
+
+// Capacidades (deben reflejar el front)
+const ROOMS = { "1": 12, "3": 12, "5": 7, "6": 7 };
+
+// Estados que cuentan como ocupados en disponibilidad
+const BUSY_STATUSES = new Set(["paid", "authorized", "in_process"]);
+
+/* ===================== Helpers ===================== */
+
+function iso10(s) { return String(s || "").slice(0, 10); }
+
+// rangos [start, end) en ISO yyyy-mm-dd
+function overlaps(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+function clampBeds(arr, cap) {
+  if (!Array.isArray(arr)) return [];
+  const clean = arr
+    .map(Number)
+    .filter((n) => Number.isFinite(n) && n >= 1 && n <= cap);
+  return Array.from(new Set(clean)).sort((a, b) => a - b);
+}
+
+function parseCamasJson(s) {
+  if (!s) return {};
+  try { return typeof s === "string" ? JSON.parse(s) : s || {}; }
+  catch { return {}; }
+}
+
+function addBuffer(occMap) {
+  if (!BUFFER) return occMap;
+  const out = {};
+  for (const k of Object.keys(occMap)) {
+    const cap = ROOMS[k] || 0;
+    const set = new Set(occMap[k] || []);
+    for (let i = 1; i <= Math.min(BUFFER, cap); i++) set.add(i);
+    out[k] = Array.from(set).sort((a, b) => a - b);
+  }
+  return out;
+}
+
+function mergeOccupied(a, b) {
+  const out = {};
+  for (const k of Object.keys(ROOMS)) {
+    const set = new Set([...(a[k] || []), ...(b[k] || [])]);
+    out[k] = Array.from(set).sort((x, y) => x - y);
+  }
+  return out;
+}
+
+/* ===================== API: GAS ===================== */
+
+async function fetchRowsFromSheet() {
   const url = `${GAS_URL}?mode=rows`;
-  const r = await fetch(url, { timeout: 15000 });
-  if (!r.ok) throw new Error(`GAS rows ${r.status}`);
-  const j = await r.json();
-  if (!j.ok || !Array.isArray(j.rows)) return [];
+  const res = await fetch(url, { method: "GET", headers: { "Accept": "application/json" } });
+  if (!res.ok) throw new Error(`GAS rows ${res.status}`);
+  const j = await res.json();
+  if (!j || !j.ok || !Array.isArray(j.rows)) return [];
   return j.rows;
 }
 
-async function upsertPaid(booking) {
-  const r = await fetch(GAS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "upsert_booking",
-      booking_id: booking.booking_id || booking.bookingId,
-      nombre: booking.nombre || "",
-      email: booking.email || "",
-      telefono: booking.telefono || "",
-      entrada: booking.entrada,
-      salida: booking.salida,
-      hombres: booking.hombres || 0,
-      mujeres: booking.mujeres || 0,
-      camas: booking.camas || {},
-      total: booking.total || 0,
-      pay_status: "paid",
-    }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.ok) throw new Error(`GAS upsert failed: ${j.error || r.status}`);
-  return j;
-}
+/* ============ Negocio: disponibilidad ============ */
 
-module.exports = { getRows, upsertPaid };
+function occupiedFromRows(rows, fromISO, toISO) {
+  const occ = { "1": [], "3": [], "5": [], "6": [] };
+  for (const r of rows) {
+    const status =

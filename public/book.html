@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservas · Lapa Casa Hostel</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/book.js"></script>
+</head>
+<body>
+  <header>
+    <h1>🛏️ Reservar en Lapa Casa Hostel</h1>
+    <nav>
+      <a href="index.html">Inicio</a>
+      <a href="book.html" class="active">Reservar</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="booking-form">
+      <h2>Hacé tu reserva</h2>
+      <form id="bookingForm">
+        <label>
+          Fecha de entrada:
+          <input type="date" name="entrada" required />
+        </label>
+        <label>
+          Fecha de salida:
+          <input type="date" name="salida" required />
+        </label>
+        <label>
+          Hombres:
+          <input type="number" name="hombres" min="0" value="0" required />
+        </label>
+        <label>
+          Mujeres:
+          <input type="number" name="mujeres" min="0" value="0" required />
+        </label>
+        <button type="submit" class="btn">Ver disponibilidad</button>
+      </form>
+      <div id="bookingResult"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Lapa Casa Hostel · Río de Janeiro</p>
+  </footer>
+</body>
+</html>

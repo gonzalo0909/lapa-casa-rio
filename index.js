@@ -2,15 +2,7 @@
 
 /**
  * Lapa Casa — Backend (Express) COMPAT
- * Mantiene el front/productión tal cual (no cambia HTML).
- * Expone API de reservas, pagos (Stripe/MP), holds, agenda y webhooks.
- *
- * ENV:
- *  BASE_URL, CORS_ALLOW_ORIGINS, HOLD_TTL_MINUTES=10, CRON_TOKEN
- *  BOOKINGS_WEBHOOK_URL
- *  STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
- *  MP_ACCESS_TOKEN
- *  ENABLE_EVENTS=1 (opcional), EVENTS_TTL_HOURS, EVENTS_FEEDS
+ * Mantiene el front tal cual. API de reservas, pagos, holds, eventos y webhooks.
  */
 
 const path = require("path");
@@ -46,7 +38,7 @@ const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./servic
 const { createCheckoutSession, buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { createPreference, buildMpWebhookHandler } = require("./services/payments-mp");
 
-// events.js puede exportar un handler por defecto o { eventsHandler }
+// events.js puede exportar handler por defecto o { eventsHandler }
 let eventsModule = null; try { eventsModule = require("./services/events"); } catch {}
 
 // ===== Helpers
@@ -113,24 +105,33 @@ app.get("/api/availability", async (req,res)=>{
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// ===== Holds (nombres actuales + alias)
-app.post("/holds/start", (req,res)=>{
-  try{ const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{});
+// ===== Holds (handlers compartidos + alias /api/holds/*)
+function holdsStartHandler(req,res){
+  try{
+    const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{});
     res.json(holds.createHold({ holdId, ttlMinutes, payload }));
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
-app.post("/holds/confirm", (req,res)=>{
-  try{ const { holdId } = Object(req.body||{}); res.json(holds.confirmHold(String(holdId||""))); }
-  catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
-app.post("/holds/release", (req,res)=>{
-  try{ const { holdId } = Object(req.body||{}); res.json(holds.releaseHold(String(holdId||""))); }
-  catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
-// alias legacy (por si tu front usa /api/holds/*)
-app.post("/api/holds/start", (req,res)=> app._router.handle(req,res,()=>{}, "POST", "/holds/start"));
-app.post("/api/holds/confirm", (req,res)=> app._router.handle(req,res,()=>{}, "POST", "/holds/confirm"));
-app.post("/api/holds/release", (req,res)=> app._router.handle(req,res,()=>{}, "POST", "/holds/release"));
+}
+function holdsConfirmHandler(req,res){
+  try{
+    const { holdId } = Object(req.body||{});
+    res.json(holds.confirmHold(String(holdId||"")));
+  }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+}
+function holdsReleaseHandler(req,res){
+  try{
+    const { holdId } = Object(req.body||{});
+    res.json(holds.releaseHold(String(holdId||"")));
+  }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+}
+
+app.post("/holds/start", holdsStartHandler);
+app.post("/holds/confirm", holdsConfirmHandler);
+app.post("/holds/release", holdsReleaseHandler);
+// alias legacy
+app.post("/api/holds/start", holdsStartHandler);
+app.post("/api/holds/confirm", holdsConfirmHandler);
+app.post("/api/holds/release", holdsReleaseHandler);
 
 // ===== Cron holds sweep (GAS)
 app.get("/crons/holds-sweep", (req,res)=>{
@@ -141,7 +142,7 @@ app.get("/crons/holds-sweep", (req,res)=>{
 
 // ===== Bookings
 app.use("/bookings", bookingsRouter);
-// alias legacy: /api/bookings
+// alias legacy
 app.use("/api/bookings", bookingsRouter);
 
 // ===== Pagos — Stripe
@@ -153,7 +154,7 @@ app.post("/payments/stripe/session", async (req,res)=>{
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
-// alias legacy: algunos front antiguos usaban /payments/stripe/create_intent
+// alias legacy
 app.post("/payments/stripe/create_intent", async (req,res)=>{
   try{
     const order = Object(req.body?.order || req.body || {});
@@ -192,9 +193,7 @@ if (eventsModule) {
 }
 
 // ===== Páginas (no cambiamos tu HTML)
-// /book resuelve al build que ya tienes en public/book/index.html
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname, "public", "book", "index.html")));
-// /admin opcional (si subes admin/index.html)
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname, "admin", "index.html")));
 
 // ===== 404 SPA-ish (solo GET sin extensión)

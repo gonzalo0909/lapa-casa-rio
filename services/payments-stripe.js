@@ -42,13 +42,13 @@ function buildStripeWebhookHandler({ notifySheets, isDuplicate = ()=>false, log 
         const s = event.data.object;
         const bid = s?.metadata?.booking_id || s?.client_reference_id || "";
         const amt = (s?.amount_total || 0) / 100;
-        if (bid) await notifySheets(bid, "paid", amt);
+        if (bid) await notifySheets({ action:"payment_update", booking_id: bid, total: amt, status:"paid" });
         log("stripe_checkout_ok", { type:event.type, bid, amt });
       } else if (event.type === "payment_intent.succeeded") {
         const pi = event.data.object;
         const bid = pi?.metadata?.booking_id || "";
         const amt = (pi?.amount_received || pi?.amount || 0) / 100;
-        if (bid) await notifySheets(bid, "paid", amt);
+        if (bid) await notifySheets({ action:"payment_update", booking_id: bid, total: amt, status:"paid" });
         log("stripe_pi_ok", { bid, amt });
       } else {
         log("stripe_event_skip", { type: event.type });

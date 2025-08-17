@@ -7,7 +7,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { postToSheets, fetchRowsFromSheet } = require("./sheets");
+const { notifySheets, fetchRowsFromSheet } = require("./sheets");
 
 /* ============ GET (debug) ============ */
 router.get("/", async (_req, res) => {
@@ -40,7 +40,7 @@ router.post("/", async (req, res) => {
       pay_status: (b.pay_status || "").trim()
     };
 
-    const out = await postToSheets(payload);
+    const out = await notifySheets(payload);
     res.json({
       ok: true,
       booking_id: out.booking_id || booking_id,

@@ -7,14 +7,15 @@
   "scripts": {
     "start": "node index.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "mercadopago": "^2.2.6",
-    "node-fetch": "^3.3.2",
     "stripe": "^12.5.0"
   }
 }

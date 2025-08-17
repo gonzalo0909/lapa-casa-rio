@@ -1,59 +1,236 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Lapa Casa Hostel — Santa Teresa, Río de Janeiro</title>
-  <meta name="description" content="Hostel boutique en Santa Teresa, Río de Janeiro. Camas cómodas, ubicación perfecta, reservas directas y agenda cultural." />
-  <link rel="canonical" href="/" />
-  <meta name="robots" content="index,follow,max-image-preview:large" />
-  <link rel="stylesheet" href="/css/main.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reservar — Lapa Casa Hostel</title>
+  <meta name="description" content="Reserva camas o suite en Lapa Casa Hostel (Santa Teresa, Río de Janeiro). Precios en BRL, pagos con tarjeta o PIX.">
+  <style>
+    :root{--bg:#ffffff;--fg:#111827;--muted:#6b7280;--line:#e5e7eb;--brand:#F03DDB;--ok:#22c55e;--bad:#ef4444;--radius:14px;--gap:14px;--shadow:0 10px 20px rgba(0,0,0,.06);--maxw:1080px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+    a{color:var(--fg);text-decoration:none}
+    header{padding:20px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8f8)}
+    .wrap{max-width:var(--maxw);margin:0 auto}
+    .top{display:flex;align-items:center;gap:12px}
+    h1{font-size:22px;margin:0}
+    .btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;font-weight:600;box-shadow:var(--shadow)}
+    .btn-outline{background:#fff;color:var(--brand);border:2px solid var(--brand)}
+    main{padding:20px 16px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:var(--gap);align-items:start}
+    .card{border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+    .pad{padding:16px}
+    .muted{color:var(--muted)}
+    label{display:block;font-weight:600;margin-bottom:6px}
+    input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+    .rooms{display:grid;gap:var(--gap)}
+    .room{border:1px solid var(--line);border-radius:12px;padding:12px}
+    .room h4{margin:0 0 6px}
+    .total{font-size:20px;font-weight:700}
+    .error{color:var(--bad);margin-top:6px}
+    .ok{color:var(--ok)}
+    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .center{text-align:center}
+    .hidden{display:none !important}
+    footer{padding:22px 16px;border-top:1px solid var(--line);margin-top:24px;background:#fafafa}
+    @media (max-width:960px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
-  <header class="header">
-    <div class="row top">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <div class="title">Lapa Casa Hostel</div>
-          <div class="muted">Santa Teresa · Río de Janeiro</div>
-        </div>
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <a href="/" class="btn-outline">← Volver</a>
+        <h1>Reservar</h1>
+        <div style="margin-left:auto"><a class="btn-outline" href="#ayuda">Ayuda</a></div>
       </div>
-      <nav><a href="/reservas/" class="btn">Reservar ahora →</a></nav>
     </div>
   </header>
 
-  <main class="row hero">
-    <h1>Dormí en el corazón bohemio de Río</h1>
-    <div class="badges">
-      <span class="pill">📍 Santa Teresa (cerca de Lapa)</span>
-      <span class="pill">💸 Mejor precio directo</span>
-      <span class="pill">☕ Cocina & espacios comunes</span>
+  <main>
+    <div class="wrap grid">
+      <!-- IZQ: Estancia + Camas (como tenías) -->
+      <section class="card">
+        <div class="pad">
+          <h2>Datos de la estancia</h2>
+          <div class="row">
+            <div><label>Entrada</label><input type="date" id="entrada" required></div>
+            <div><label>Salida</label><input type="date" id="salida" required></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label>Hombres</label><input type="number" id="hombres" min="0" value="0" /></div>
+            <div><label>Mujeres</label><input type="number" id="mujeres" min="0" value="0" /></div>
+          </div>
+
+          <h3 style="margin-top:18px">Elegí tu cama</h3>
+          <p class="muted">Seleccioná cuarto y camas disponibles (por día). El sistema reserva por cama.</p>
+          <div id="rooms" class="rooms"></div>
+
+          <!-- DATOS PERSONALES (después de elegir camas, como pediste) -->
+          <h3 style="margin-top:18px">Tus datos</h3>
+          <div class="row">
+            <div><label>Nombre</label><input type="text" id="nombre" placeholder="Tu nombre" required /></div>
+            <div><label>Email</label><input type="email" id="email" placeholder="tu@email.com" required /></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label>Teléfono</label><input type="text" id="telefono" placeholder="+55 21 9...." /></div>
+            <div>
+              <label>Género</label>
+              <select id="genero">
+                <option value="">Prefiero no decir</option>
+                <option value="m">Hombre</option>
+                <option value="f">Mujer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex" style="margin-top:14px">
+            <div class="total">Total: <span id="total">R$ 0</span></div>
+            <div class="muted">R$55 por noche por persona (base)</div>
+          </div>
+
+          <div id="err" class="error hidden"></div>
+
+          <div class="flex" style="margin-top:14px">
+            <button id="btnReservar" class="btn">Reservar</button>
+            <button id="btnPagarStripe" class="btn-outline">Pagar con tarjeta (Stripe)</button>
+            <button id="btnPagarMP" class="btn-outline">Pagar con Mercado Pago</button>
+            <span id="holdMsg" class="muted"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- DER: Estado / Ayuda -->
+      <aside class="card">
+        <div class="pad">
+          <h2>Estado</h2>
+          <div id="status" class="muted">Completá fechas para ver disponibilidad.</div>
+
+          <h3 id="ayuda" style="margin-top:16px">Ayuda</h3>
+          <ul class="muted">
+            <li>Check-in: 14:00–22:00</li>
+            <li>Cocina compartida (sin comidas)</li>
+            <li>Cancelación flexible 48h</li>
+            <li>Pago seguro (Stripe / MP)</li>
+          </ul>
+        </div>
+      </aside>
     </div>
-    <p class="muted">Camas cómodas, buena onda y terraza para el atardecer. Reservá directo con mejores condiciones.</p>
-
-    <section class="cards">
-      <div class="card"><h3>Camas & cuartos</h3><p class="muted">Mixtos y femenino. Literas, lockers y luz individual.</p></div>
-      <div class="card"><h3>Ubicación</h3><p class="muted">Entre Lapa y Santa Teresa. Todo a mano.</p></div>
-      <div class="card"><h3>Agenda</h3><p class="muted">Música y cultura por fecha y barrio.</p></div>
-    </section>
-
-    <div class="actions">
-      <a href="/reservas/" class="btn">Ver disponibilidad →</a>
-      <a target="_blank" rel="noopener" class="btn ghost" href="https://maps.google.com/?q=Santa+Teresa+Rio+de+Janeiro">Ver en mapa</a>
-    </div>
-
-    <section class="card agenda">
-      <h2>Agenda de Río (música & cultura)</h2>
-      <p id="evtMsg" class="muted">Cargando…</p>
-      <div id="evtList" class="evt-grid"></div>
-    </section>
   </main>
 
-  <footer class="footer">
-    © <span id="y"></span> Lapa Casa Hostel · <a href="/reservas/">/reservas</a>
+  <footer>
+    <div class="wrap center muted">© Lapa Casa Hostel — Santa Teresa, RJ</div>
   </footer>
 
-  <script defer src="/js/home.js"></script>
+  <script>
+    const state = { holdId:null, camas:{}, occupied:{}, total:0 };
+    const PRICE_PER_NIGHT = 55;
+
+    const $ = s=>document.querySelector(s);
+    const esc = s=>String(s||"").replace(/[&<>"]/g,m=>m==="&"?"&amp;":m==="<"?"&lt;":"&gt;");
+    const iso = d=>d.toISOString().slice(0,10);
+
+    function showErr(msg){ const el=$("#err"); el.textContent = msg||""; el.classList.toggle("hidden", !msg); }
+    function nightsBetween(a,b){ const A=new Date(a+"T00:00:00"), B=new Date(b+"T00:00:00"); if (isNaN(A)||isNaN(B)||B<=A) return 0; return Math.round((B-A)/86400000); }
+    function calcTotal(){ const n=nightsBetween($("#entrada").value,$("#salida").value); const g=(+$("#hombres").value||0)+(+$("#mujeres").value||0); state.total=g*n*PRICE_PER_NIGHT; $("#total").textContent="R$ "+state.total; return state.total; }
+
+    async function fetchAvailability(){
+      const entrada=$("#entrada").value, salida=$("#salida").value; if(!entrada||!salida) return;
+      $("#status").textContent="Consultando disponibilidad…";
+      try{
+        const u=new URL("/api/availability", window.location.origin); u.searchParams.set("from",entrada); u.searchParams.set("to",salida);
+        const r=await fetch(u); const j=await r.json();
+        if(!j||!j.ok) throw new Error(j?.error||"availability_error");
+        state.occupied=j.occupied||{}; renderRooms(); $("#status").textContent="Disponibilidad actualizada.";
+      }catch(e){ $("#status").innerHTML='<span class="error">Error consultando disponibilidad.</span>'; }
+    }
+
+    function renderRooms(){
+      const cont=$("#rooms"); cont.innerHTML="";
+      const rooms=[{id:"1",name:"Cuarto 1 — Mixto (12 camas)"},{id:"3",name:"Cuarto 3 — Femenino (12 camas)"},{id:"5",name:"Cuarto 5 — Mixto (7 camas)"},{id:"6",name:"Cuarto 6 — Mixto (7 camas)"}];
+      for(const r of rooms){
+        const div=document.createElement("div"); div.className="room";
+        div.innerHTML=`<h4>${esc(r.name)}</h4><div class="muted">Seleccioná camas (por número)</div><div class="flex" style="margin-top:8px" id="beds-${r.id}"></div>`;
+        cont.appendChild(div);
+        const totalBeds=(r.id==="1"||r.id==="3")?12:7; const wrap=div.querySelector(`#beds-${r.id}`);
+        for(let n=1;n<=totalBeds;n++){
+          const btn=document.createElement("button"); btn.type="button"; btn.className="btn-outline"; btn.style="padding:6px 10px;border-radius:10px"; btn.textContent=`Cama ${n}`;
+          if(isBedOccupiedAnyDay(r.id,n)){ btn.disabled=true; btn.style.opacity=.4; }
+          btn.addEventListener("click",()=>{ toggleBed(r.id,n); btn.classList.toggle("btn",isSelected(r.id,n)); btn.classList.toggle("btn-outline",!isSelected(r.id,n)); });
+          wrap.appendChild(btn);
+        }
+      }
+    }
+
+    function isBedOccupiedAnyDay(roomId,bed){
+      const entrada=$("#entrada").value, salida=$("#salida").value; const nights=nightsBetween(entrada,salida); if(!nights) return false;
+      let d=new Date(entrada+"T00:00:00");
+      for(let i=0;i<nights;i++){ const key=iso(d); const occ=state.occupied?.[key]?.[roomId]||[]; if(occ.includes(bed)) return true; d=new Date(d.getTime()+86400000); }
+      return false;
+    }
+    function isSelected(roomId,bed){ const arr=state.camas[roomId]||[]; return arr.includes(bed); }
+    function toggleBed(roomId,bed){ const arr=state.camas[roomId]||[]; const i=arr.indexOf(bed); if(i===-1) arr.push(bed); else arr.splice(i,1); state.camas[roomId]=arr; }
+
+    async function startHold(){
+      const id="HOLD-"+Date.now();
+      try{
+        const r=await fetch("/holds/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:id,ttlMinutes:10,payload:{}})});
+        const j=await r.json(); if(!j.ok) throw new Error(j.error||"hold_failed");
+        state.holdId=id; $("#holdMsg").textContent="Reserva temporal activa (10 min).";
+      }catch(e){ $("#holdMsg").textContent="No se pudo activar la reserva temporal."; }
+    }
+    async function releaseHold(){ if(!state.holdId) return; try{ await fetch("/holds/release",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:state.holdId})}); }catch(_){} state.holdId=null; $("#holdMsg").textContent=""; }
+    async function confirmHold(){ if(!state.holdId) return; try{ await fetch("/holds/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:state.holdId})}); }catch(_){} state.holdId=null; $("#holdMsg").textContent=""; }
+
+    async function reservar(){
+      showErr("");
+      const entrada=$("#entrada").value, salida=$("#salida").value; if(!entrada||!salida) return showErr("Elegí fechas.");
+      const hombres=+($("#hombres").value||0), mujeres=+($("#mujeres").value||0); const guests=Math.max(0,hombres)+Math.max(0,mujeres);
+      if(guests<=0) return showErr("Indicá cuántas personas.");
+      if(!$("#nombre").value.trim()) return showErr("Falta nombre.");
+      if(!$("#email").value.trim()) return showErr("Falta email.");
+      if(!state.holdId) await startHold();
+
+      const payload={ nombre:$("#nombre").value.trim(), email:$("#email").value.trim(), telefono:$("#telefono").value.trim(), entrada, salida, hombres, mujeres, camas:state.camas, total:calcTotal(), pay_status:"" };
+      try{
+        const r=await fetch("/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        const j=await r.json(); if(!j||!j.ok) throw new Error(j?.error||"booking_failed");
+        $("#status").innerHTML=`<span class="ok">Reserva creada.</span> ID: ${j.booking_id}`; await confirmHold();
+      }catch(e){ showErr("No se pudo crear la reserva."); }
+    }
+
+    async function payStripe(){
+      showErr(""); const entrada=$("#entrada").value, salida=$("#salida").value; if(!entrada||!salida) return showErr("Elegí fechas.");
+      const total=calcTotal(); const booking_id="BKG-"+Date.now(); if(!state.holdId) await startHold();
+      try{
+        const r=await fetch("/payments/stripe/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:{booking_id,total}})});
+        const j=await r.json(); if(!j||!j.url) throw new Error("stripe_failed"); window.location.href=j.url;
+      }catch(e){ showErr("No se pudo iniciar el pago con tarjeta."); }
+    }
+
+    async function payMP(){
+      showErr(""); const total=calcTotal(); const booking_id="BKG-"+Date.now(); if(!state.holdId) await startHold();
+      try{
+        const r=await fetch("/payments/mp/preference",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:{booking_id,total}})});
+        const j=await r.json(); if(!j||!j.init_point) throw new Error("mp_failed"); window.location.href=j.init_point;
+      }catch(e){ showErr("No se pudo iniciar el pago con Mercado Pago."); }
+    }
+
+    $("#entrada").addEventListener("change",()=>{ calcTotal(); fetchAvailability(); });
+    $("#salida").addEventListener("change",()=>{ calcTotal(); fetchAvailability(); });
+    $("#hombres").addEventListener("input", calcTotal);
+    $("#mujeres").addEventListener("input", calcTotal);
+    $("#btnReservar").addEventListener("click", reservar);
+    $("#btnPagarStripe").addEventListener("click", payStripe);
+    $("#btnPagarMP").addEventListener("click", payMP);
+
+    (function initDates(){
+      const today=new Date(); const tomorrow=new Date(Date.now()+86400000);
+      $("#entrada").value=iso(today); $("#salida").value=iso(tomorrow); calcTotal(); fetchAvailability();
+    })();
+
+    window.addEventListener("beforeunload", releaseHold);
+  </script>
 </body>
 </html>

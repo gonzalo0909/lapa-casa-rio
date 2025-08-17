@@ -1,55 +1,48 @@
 "use strict";
+
 /**
  * /services/bookings.js
- * Altas, updates y sync con Google Sheets
+ * Gestión de reservas (crear, modificar, cancelar)
  */
 
-const express = require("express");
 const { upsertBooking, updatePayment } = require("./sheets");
+const { startHold, releaseHold } = require("./holds");
+const { v4: uuidv4 } = require("uuid");
 
-const router = express.Router();
+let bookings = {}; // memoria temporal { booking_id: {...} }
 
-/* ================== RUTAS ================== */
-// Alta / upsert reserva
-router.post("/", async (req, res) => {
-  try {
-    const b = req.body || {};
-    const booking = {
-      booking_id: b.booking_id || `PING-${Date.now()}`,
-      nombre: b.nombre || "",
-      email: b.email || "",
-      telefono: b.telefono || "",
-      entrada: b.entrada || "",
-      salida: b.salida || "",
-      hombres: Number(b.hombres || 0),
-      mujeres: Number(b.mujeres || 0),
-      camas_json: JSON.stringify(b.camas || []),
-      total: Number(b.total || 0),
-      pay_status: b.pay_status || "pending",
-      created_at: new Date().toISOString()
-    };
-    const out = await upsertBooking(booking);
-    res.json({ ok: true, booking, sheet: out });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: String(e.message || e) });
-  }
-});
+/* Crear reserva */
+function createBooking(data={}) {
+  const booking_id = uuidv4();
+  const booking = { booking_id, status:"pending", ...data };
+  bookings[booking_id] = booking;
 
-// Update pago
-router.post("/payment_update", async (req, res) => {
-  try {
-    const { booking_id, status } = req.body || {};
-    if (!booking_id) return res.status(400).json({ ok: false, error: "missing_booking_id" });
-    const out = await updatePayment(booking_id, status);
-    res.json({ ok: true, sheet: out });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: String(e.message || e) });
-  }
-});
+  // sincronizar en Sheets
+  upsertBooking(booking).catch(err=>console.error("Sheet error",err));
+  return { ok:true, booking };
+}
 
-// Diagnóstico
-router.get("/diag", (_req, res) => {
-  res.json({ ok: true, service: "bookings", ts: Date.now() });
-});
+/* Confirmar pago */
+function confirmPayment(booking_id, status="paid") {
+  const b = bookings[booking_id];
+  if (!b) return { ok:false, error:"not_found" };
+  b.status = status;
 
-module.exports = router;
+  updatePayment(booking_id, status).catch(err=>console.error("Sheet error",err));
+  return { ok:true, booking:b };
+}
+
+/* Cancelar reserva */
+function cancelBooking(booking_id) {
+  if (!bookings[booking_id]) return { ok:false, error:"not_found" };
+  delete bookings[booking_id];
+  releaseHold(booking_id);
+  return { ok:true, booking_id };
+}
+
+/* Listar reservas */
+function listBookings() {
+  return Object.values(bookings);
+}
+
+module.exports = { createBooking, confirmPayment, cancelBooking, listBookings };

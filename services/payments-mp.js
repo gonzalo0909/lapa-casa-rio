@@ -5,11 +5,6 @@
  * Exporta:
  *  - createPreference(order,{baseUrl})
  *  - buildMpWebhookHandler({notifySheets,isDuplicate,log})
- *
- * Webhooks soportados:
- *  - ?type=payment&data.id=PAYMENT_ID
- *  - ?topic=merchant_order&id=MO_ID
- *  - (equivalentes vía body)
  */
 
 const {
@@ -142,8 +137,11 @@ function buildMpWebhookHandler({ notifySheets, isDuplicate = () => false, log = 
 
 /* ===== Utils ===== */
 async function safeNotify(fn, bookingId, status, amount, log) {
-  try { await fn(bookingId, status, amount); }
-  catch (e) { log("notify_error", { bookingId, status, amount, err: String(e?.message || e) }); }
+  try {
+    await fn({ action:"payment_update", booking_id: bookingId, total: amount, status });
+  } catch (e) {
+    log("notify_error", { bookingId, status, amount, err: String(e?.message || e) });
+  }
 }
 
 module.exports = { createPreference, buildMpWebhookHandler };

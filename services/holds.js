@@ -1,129 +1,100 @@
 "use strict";
-const { ROOMS, overlaps } = require("./availability");
-const { upsertPaid } = require("./sheets");
+/**
+ * sheets.js
+ * - fetchRowsFromSheet(): lee filas desde GAS Web App (?mode=rows)
+ * - calcOccupiedBeds(rows, fromISO, toISO, holdsMap, bufferPerRoom): ocupa camas por rango
+ * - notifySheets(payload): POST a BOOKINGS_WEBAPP_URL (payment_update/upsert)
+ */
+const fetch = require("node-fetch");
 
-const TTL_MIN = Number(process.env.HOLD_TTL_MINUTES || 10);
-const CRON_TOKEN = process.env.CRON_TOKEN || "";
-const holds = new Map(); // holdId -> { entrada, salida, camas:{roomId:[beds]}, expiresAt, ...payload }
+const ROWS_URL = String(process.env.BOOKINGS_WEBAPP_URL || "").trim(); // GAS Web App
+const BUFFER_PER_ROOM = Number(process.env.BOOKING_BUFFER_PER_ROOM || 0);
 
-function now() { return Date.now(); }
-function ttl() { return now() + TTL_MIN * 60 * 1000; }
-
-function normalizeCamas(camas = {}) {
-  const out = {};
-  for (const k of ["1", "3", "5", "6"]) {
-    const cap = ROOMS[Number(k)];
-    const arr = Array.isArray(camas[k]) ? camas[k] : [];
-    const clean = arr.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n >= 1 && n <= cap);
-    out[k] = Array.from(new Set(clean)).sort((a, b) => a - b);
-  }
-  return out;
+function parseISO(s){ return new Date(String(s).slice(0,10)+"T00:00:00Z"); }
+function overlap(aStart,aEnd,bStart,bEnd){
+  // [start, end) interseca
+  return aStart < bEnd && bStart < aEnd;
 }
 
-function occupiedFromHoldsRange(fromISO, toISO) {
-  const occ = { "1": [], "3": [], "5": [], "6": [] };
-  for (const h of holds.values()) {
-    if (h.expiresAt <= now()) continue;
-    if (!overlaps(fromISO, toISO, h.entrada, h.salida)) continue;
-    const camas = h.camas || {};
-    for (const k of ["1", "3", "5", "6"]) occ[k].push(...(camas[k] || []));
-  }
-  for (const k of Object.keys(occ)) {
-    occ[k] = Array.from(new Set(occ[k])).sort((a, b) => a - b);
-  }
-  return occ;
+async function fetchRowsFromSheet() {
+  if (!ROWS_URL) throw new Error("BOOKINGS_WEBAPP_URL_missing");
+  const url = ROWS_URL + (ROWS_URL.includes("?") ? "&" : "?") + "mode=rows";
+  const res = await fetch(url, { headers:{ "Accept":"application/json" }});
+  const j = await res.json();
+  if (!res.ok || !j || !j.ok) throw new Error("rows_fetch_error");
+  // normaliza tipos
+  return (j.rows || []).map(r => ({
+    booking_id: String(r.booking_id||""),
+    entrada: String(r.entrada||""),
+    salida:  String(r.salida||""),
+    camas_json: String(r.camas_json||""),
+    pay_status: String(r.pay_status||""),
+    total: Number(r.total||0)
+  }));
 }
 
-function collides(entrada, salida, camas) {
-  // verificar colisión contra otros holds vigentes
-  for (const [_, h] of holds) {
-    if (h.expiresAt <= now()) continue;
-    if (!overlaps(entrada, salida, h.entrada, h.salida)) continue;
-    for (const k of ["1", "3", "5", "6"]) {
-      const set = new Set(h.camas[k] || []);
-      for (const bed of camas[k] || []) {
-        if (set.has(bed)) return true;
+/**
+ * rows: [{entrada, salida, camas_json, pay_status}]
+ * fromISO/toISO: "YYYY-MM-DD"
+ * holdsMap (opcional): { "1": Set(1,2), "3": Set(5) ... } para sumar holds activos
+ */
+function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = BUFFER_PER_ROOM) {
+  const from = parseISO(fromISO);
+  const to   = parseISO(toISO);
+
+  const occupied = { "1": new Set(), "3": new Set(), "5": new Set(), "6": new Set() };
+
+  // Ocupación por reservas confirmadas/pendientes que bloquean inventario
+  for (const r of rows) {
+    const a = r.entrada ? parseISO(r.entrada) : null;
+    const b = r.salida  ? parseISO(r.salida)  : null;
+    if (!a || !b || !(a<b)) continue;
+    if (!overlap(a,b,from,to)) continue;
+
+    let camas = {};
+    try { camas = r.camas_json ? JSON.parse(r.camas_json) : {}; } catch {}
+    for (const roomId of Object.keys(camas||{})) {
+      (camas[roomId]||[]).forEach(bed => occupied[roomId]?.add(Number(bed)));
+    }
+  }
+
+  // Buffer por cuarto (si se usa)
+  if (bufferPerRoom > 0) {
+    for (const roomId of Object.keys(occupied)) {
+      let added = 0, bed = 1;
+      while (added < bufferPerRoom && bed <= 60) {
+        if (!occupied[roomId].has(bed)) { occupied[roomId].add(bed); added++; }
+        bed++;
       }
     }
   }
-  return false;
-}
 
-async function start(req, res) {
-  try {
-    const { holdId, entrada, salida, camas = {}, nombre = "", email = "", telefono = "", hombres = 0, mujeres = 0, total = 0 } = req.body || {};
-    if (!holdId || !entrada || !salida) return res.status(400).json({ ok: false, error: "faltan_campos" });
-
-    const norm = normalizeCamas(camas);
-    if (collides(entrada, salida, norm)) return res.status(409).json({ ok: false, error: "collision" });
-
-    holds.set(holdId, {
-      holdId, entrada, salida,
-      camas: norm,
-      nombre, email, telefono, hombres, mujeres, total,
-      expiresAt: ttl(),
-    });
-    return res.json({ ok: true, holdId, expiresAt: holds.get(holdId).expiresAt });
-  } catch (e) {
-    console.error("holds.start", e);
-    res.status(500).json({ ok: false, error: "hold_start_failed" });
+  // Sumar holds activos
+  for (const roomId of Object.keys(holdsMap||{})) {
+    const set = holdsMap[roomId];
+    if (set && set.forEach) set.forEach(bed => occupied[roomId]?.add(Number(bed)));
   }
+
+  // a arrays (shape esperado por el front: { "1":[...], "3":[...] })
+  const out = {};
+  for (const k of Object.keys(occupied)) out[k] = Array.from(occupied[k]).sort((a,b)=>a-b);
+  return out;
 }
 
-async function release(req, res) {
-  try {
-    const { holdId } = req.body || {};
-    if (!holdId) return res.status(400).json({ ok: false, error: "holdId_requerido" });
-    holds.delete(holdId);
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error("holds.release", e);
-    res.status(500).json({ ok: false, error: "hold_release_failed" });
-  }
+async function notifySheets(payload) {
+  if (!ROWS_URL) throw new Error("BOOKINGS_WEBAPP_URL_missing");
+  const res = await fetch(ROWS_URL, {
+    method: "POST",
+    headers: { "Content-Type":"application/json", "Accept":"application/json" },
+    body: JSON.stringify(payload || {})
+  });
+  const j = await res.json().catch(()=> ({}));
+  if (!res.ok || !j) throw new Error("sheets_notify_error");
+  return j;
 }
 
-async function confirm(req, res) {
-  try {
-    const { holdId, status = "paid" } = req.body || {};
-    if (!holdId) return res.status(400).json({ ok: false, error: "holdId_requerido" });
-    const h = holds.get(holdId);
-    if (!h) return res.status(404).json({ ok: false, error: "hold_not_found" });
-
-    if (String(status).toLowerCase() === "paid") {
-      await upsertPaid({
-        booking_id: holdId,
-        nombre: h.nombre, email: h.email, telefono: h.telefono,
-        entrada: h.entrada, salida: h.salida,
-        hombres: h.hombres, mujeres: h.mujeres,
-        camas: h.camas, total: h.total,
-      });
-    }
-    holds.delete(holdId);
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error("holds.confirm", e);
-    res.status(500).json({ ok: false, error: "hold_confirm_failed" });
-  }
-}
-
-async function sweep(req, res) {
-  try {
-    const token = String(req.query.token || "");
-    if (!CRON_TOKEN || token !== CRON_TOKEN) return res.status(401).json({ ok: false, error: "unauthorized" });
-    const ts = now();
-    let removed = 0;
-    for (const [id, h] of holds) {
-      if (h.expiresAt <= ts) { holds.delete(id); removed++; }
-    }
-    return res.json({ ok: true, removed, ts });
-  } catch (e) {
-    console.error("holds.sweep", e);
-    res.status(500).json({ ok: false, error: "holds_sweep_failed" });
-  }
-}
-
-function provideOccupied({ fromISO, toISO }) {
-  return occupiedFromHoldsRange(fromISO, toISO);
-}
-
-module.exports = { start, release, confirm, sweep, provideOccupied };
+module.exports = {
+  fetchRowsFromSheet,
+  calcOccupiedBeds,
+  notifySheets
+};

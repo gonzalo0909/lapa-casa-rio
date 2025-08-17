@@ -7,7 +7,6 @@
 
 const path = require("path");
 const express = require("express");
-const session = require("express-session");
 const cors = require("cors");
 
 const app = express();
@@ -29,23 +28,15 @@ app.use(cors({
   allowedHeaders:["Content-Type","Stripe-Signature"],
 }));
 
-// ===== Sesión (para /api/admin)
-app.use(session({
-  secret: process.env.SESSION_SECRET || "lapa-casa-secret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false } // en Render proxy, si usás HTTPS directo, poner true
-}));
-
 // ===== Static (no tocamos tu front)
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 
 // ===== Services
 const holds = require("./services/holds");
 const bookingsRouter = require("./services/bookings");
-const adminRouter = require("./routes/admin");
 const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./services/sheets");
 const { createCheckoutSession, buildStripeWebhookHandler } = require("./services/payments-stripe");
+// ⬇️ IMPORT ÚNICO (consolidado) — evita “Identifier has already been declared”
 const { createPreference, buildMpWebhookHandler } = require("./services/payments-mp");
 
 // events.js puede exportar handler por defecto o { eventsHandler }
@@ -72,7 +63,7 @@ function deduper(max=1000, ttl=10*60*1000){
 }
 const isDup = deduper();
 
-// ===== Stripe raw webhook FIRST
+// ===== Stripe raw webhook FIRST (antes del body-parser JSON)
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
@@ -93,7 +84,7 @@ app.get("/api/diag", (_req,res)=> res.json({
     BASE_URL:!!process.env.BASE_URL,
     CORS_ALLOW_ORIGINS:allowList.length,
     HOLD_TTL_MINUTES:HOLD_TTL_MINUTES,
-    BOOKINGS_WEBAPP_URL: !!process.env.BOOKINGS_WEBAPP_URL,
+    BOOKINGS_WEBHOOK_URL:!!process.env.BOOKINGS_WEBHOOK_URL,
     STRIPE_SECRET_KEY:!!process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET:!!process.env.STRIPE_WEBHOOK_SECRET,
     MP_ACCESS_TOKEN:!!process.env.MP_ACCESS_TOKEN,
@@ -101,7 +92,7 @@ app.get("/api/diag", (_req,res)=> res.json({
   }
 }));
 
-// ===== Disponibilidad (mezcla Sheet + HOLDs en memoria)
+// ===== Disponibilidad
 app.get("/api/availability", async (req,res)=>{
   try{
     const from = (req.query.from||"").toString().slice(0,10);
@@ -109,11 +100,8 @@ app.get("/api/availability", async (req,res)=>{
     const today = new Date();
     const dFrom = from || today.toISOString().slice(0,10);
     const dTo = to || new Date(today.getTime()+30*86400000).toISOString().slice(0,10);
-
     const rows = await fetchRowsFromSheet();
-    const occHolds = holds.getOccupiedBedsBetween(dFrom, dTo);
-    const occupied = calcOccupiedBeds(rows, dFrom, dTo, occHolds);
-
+    const occupied = calcOccupiedBeds(rows, dFrom, dTo);
     res.json({ ok:true, from:dFrom, to:dTo, occupied });
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
 });
@@ -158,9 +146,6 @@ app.use("/bookings", bookingsRouter);
 // alias legacy
 app.use("/api/bookings", bookingsRouter);
 
-// ===== Admin (API)
-app.use("/api/admin", adminRouter);
-
 // ===== Pagos — Stripe
 app.post("/payments/stripe/session", async (req,res)=>{
   try{
@@ -191,7 +176,6 @@ app.post("/payments/mp/preference", async (req,res)=>{
 });
 
 // Webhook MP
-const { buildMpWebhookHandler } = require("./services/payments-mp");
 const mpWebhook = buildMpWebhookHandler({
   notifySheets,
   isDuplicate: isDup,
@@ -212,7 +196,6 @@ if (eventsModule) {
 // ===== Páginas (no cambiamos tu HTML)
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname, "public", "book", "index.html")));
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname, "admin", "index.html")));
-app.get("/pago-exitoso-test", (_req,res)=> res.sendFile(path.join(__dirname, "public", "pago-exitoso-test.html")));
 
 // ===== 404 SPA-ish (solo GET sin extensión)
 app.use((req,res,next)=>{

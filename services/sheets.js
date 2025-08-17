@@ -5,7 +5,6 @@
  * - calcOccupiedBeds(rows, fromISO, toISO, holdsMap, bufferPerRoom): ocupa camas por rango
  * - notifySheets(payload): POST a BOOKINGS_WEBAPP_URL (payment_update/upsert)
  */
-const fetch = require("node-fetch");
 
 const ROWS_URL = String(process.env.BOOKINGS_WEBAPP_URL || "").trim();
 const BUFFER_PER_ROOM = Number(process.env.BOOKING_BUFFER_PER_ROOM || 0);
@@ -55,6 +54,7 @@ function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = B
     }
   }
 
+  // buffer por cuarto
   if (bufferPerRoom > 0) {
     for (const roomId of Object.keys(occupied)) {
       let added = 0, bed = 1;
@@ -65,6 +65,7 @@ function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = B
     }
   }
 
+  // overlay holds
   for (const roomId of Object.keys(holdsMap||{})) {
     const set = holdsMap[roomId];
     if (set && set.forEach) set.forEach(bed => occupied[roomId]?.add(Number(bed)));

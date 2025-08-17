@@ -1,65 +1,43 @@
 "use strict";
+
 /**
  * /services/holds.js
- * Bloqueos temporales de camas (para evitar overbooking)
+ * Manejo de "holds" (bloqueos temporales de camas)
  */
 
-const express = require("express");
-const router = express.Router();
-
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
+let holds = {}; // { hold_id: { expires:number, data:{} } }
 
-// Memoria simple en backend (puede migrar a Redis/DB)
-let holds = {};
-
-/* ================== HELPERS ================== */
-function cleanExpired() {
-  const now = Date.now();
-  for (const k of Object.keys(holds)) {
-    if (holds[k].expires <= now) delete holds[k];
-  }
+/* Crear hold */
+function startHold(hold_id, data={}) {
+  const expires = Date.now() + HOLD_TTL_MINUTES * 60 * 1000;
+  holds[hold_id] = { expires, data };
+  return { ok:true, hold_id, expires };
 }
 
-/* ================== RUTAS ================== */
-// Crear hold
-router.post("/start", (req, res) => {
-  cleanExpired();
-  const { room_id, count = 1 } = req.body || {};
-  if (!room_id) return res.status(400).json({ ok: false, error: "missing_room_id" });
+/* Confirmar hold → se mantiene */
+function confirmHold(hold_id) {
+  const h = holds[hold_id];
+  if (!h) return { ok:false, error:"hold_not_found" };
+  return { ok:true, hold_id, data:h.data };
+}
 
-  const key = `${room_id}-${Date.now()}`;
-  holds[key] = {
-    room_id,
-    count,
-    created: Date.now(),
-    expires: Date.now() + HOLD_TTL_MINUTES * 60 * 1000
-  };
-  res.json({ ok: true, hold_id: key, ttl_minutes: HOLD_TTL_MINUTES });
-});
-
-// Confirmar hold
-router.post("/confirm", (req, res) => {
-  const { hold_id } = req.body || {};
-  if (!hold_id || !holds[hold_id]) return res.status(400).json({ ok: false, error: "invalid_hold" });
-  const data = holds[hold_id];
-  delete holds[hold_id];
-  res.json({ ok: true, confirmed: data });
-});
-
-// Liberar hold manual
-router.post("/release", (req, res) => {
-  const { hold_id } = req.body || {};
-  if (hold_id && holds[hold_id]) {
+/* Liberar hold */
+function releaseHold(hold_id) {
+  if (holds[hold_id]) {
     delete holds[hold_id];
-    return res.json({ ok: true, released: hold_id });
+    return { ok:true };
   }
-  res.json({ ok: false, error: "not_found" });
-});
+  return { ok:false, error:"hold_not_found" };
+}
 
-// Sweep (limpieza manual)
-router.post("/sweep", (_req, res) => {
-  cleanExpired();
-  res.json({ ok: true, holds_count: Object.keys(holds).length });
-});
+/* Limpiar holds expirados */
+function sweepHolds() {
+  const now = Date.now();
+  for (const [id,h] of Object.entries(holds)) {
+    if (h.expires < now) delete holds[id];
+  }
+  return { ok:true, active:Object.keys(holds).length };
+}
 
-module.exports = router;
+module.exports = { startHold, confirmHold, releaseHold, sweepHolds };

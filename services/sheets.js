@@ -1,13 +1,8 @@
 "use strict";
 /**
  * /services/sheets.js
- * - fetchRowsFromSheet(): lee filas desde GAS Web App (?mode=rows)
- * - calcOccupiedBeds(rows, fromISO, toISO, holdsMap, bufferPerRoom): ocupa camas por rango
- * - notifySheets(payload): POST a BOOKINGS_WEBAPP_URL (payment_update / upsert_booking)
- * - Alias exportados: postToSheets (→ notifySheets), getRows (→ fetchRowsFromSheet)
+ * Usa fetch nativo (Node 18+)
  */
-const fetch = require("node-fetch");
-
 const ROWS_URL = String(process.env.BOOKINGS_WEBAPP_URL || "").trim();
 const BUFFER_PER_ROOM = Number(process.env.BOOKING_BUFFER_PER_ROOM || 0);
 
@@ -30,11 +25,6 @@ async function fetchRowsFromSheet() {
   }));
 }
 
-/**
- * rows: [{entrada, salida, camas_json, pay_status}]
- * fromISO/toISO: "YYYY-MM-DD"
- * holdsMap: { "1": Set, "3": Set, "5": Set, "6": Set }
- */
 function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = BUFFER_PER_ROOM) {
   const from = parseISO(fromISO);
   const to   = parseISO(toISO);
@@ -85,12 +75,10 @@ async function notifySheets(payload) {
   return j;
 }
 
-/* ===== Exports ===== */
 module.exports = {
   fetchRowsFromSheet,
   calcOccupiedBeds,
   notifySheets,
-  // Aliases para compatibilidad con tus otros módulos:
   postToSheets: notifySheets,
   getRows: fetchRowsFromSheet,
 };

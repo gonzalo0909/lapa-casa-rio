@@ -3,8 +3,10 @@
  * /services/sheets.js
  * - fetchRowsFromSheet(): lee filas desde GAS Web App (?mode=rows)
  * - calcOccupiedBeds(rows, fromISO, toISO, holdsMap, bufferPerRoom): ocupa camas por rango
- * - notifySheets(payload): POST a BOOKINGS_WEBAPP_URL (payment_update/upsert)
+ * - notifySheets(payload): POST a BOOKINGS_WEBAPP_URL (payment_update / upsert_booking)
+ * - Alias exportados: postToSheets (→ notifySheets), getRows (→ fetchRowsFromSheet)
  */
+const fetch = require("node-fetch");
 
 const ROWS_URL = String(process.env.BOOKINGS_WEBAPP_URL || "").trim();
 const BUFFER_PER_ROOM = Number(process.env.BOOKING_BUFFER_PER_ROOM || 0);
@@ -17,9 +19,7 @@ async function fetchRowsFromSheet() {
   const url = ROWS_URL + (ROWS_URL.includes("?") ? "&" : "?") + "mode=rows";
   const res = await fetch(url, { headers:{ "Accept":"application/json" }});
   const j = await res.json();
-  if (!res.ok || !j || j.ok !== true || !Array.isArray(j.rows)) {
-    throw new Error("rows_fetch_error");
-  }
+  if (!res.ok || !j || j.ok !== true || !Array.isArray(j.rows)) throw new Error("rows_fetch_error");
   return j.rows.map(r => ({
     booking_id: String(r.booking_id||""),
     entrada: String(r.entrada||""),
@@ -38,7 +38,6 @@ async function fetchRowsFromSheet() {
 function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = BUFFER_PER_ROOM) {
   const from = parseISO(fromISO);
   const to   = parseISO(toISO);
-
   const occupied = { "1": new Set(), "3": new Set(), "5": new Set(), "6": new Set() };
 
   for (const r of rows) {
@@ -54,7 +53,6 @@ function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = B
     }
   }
 
-  // buffer por cuarto
   if (bufferPerRoom > 0) {
     for (const roomId of Object.keys(occupied)) {
       let added = 0, bed = 1;
@@ -65,7 +63,6 @@ function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = B
     }
   }
 
-  // overlay holds
   for (const roomId of Object.keys(holdsMap||{})) {
     const set = holdsMap[roomId];
     if (set && set.forEach) set.forEach(bed => occupied[roomId]?.add(Number(bed)));
@@ -88,4 +85,12 @@ async function notifySheets(payload) {
   return j;
 }
 
-module.exports = { fetchRowsFromSheet, calcOccupiedBeds, notifySheets };
+/* ===== Exports ===== */
+module.exports = {
+  fetchRowsFromSheet,
+  calcOccupiedBeds,
+  notifySheets,
+  // Aliases para compatibilidad con tus otros módulos:
+  postToSheets: notifySheets,
+  getRows: fetchRowsFromSheet,
+};

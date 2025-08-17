@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Resultado de pago — Lapa Casa Hostel</title>
+  <meta name="description" content="Estado de tu pago en Lapa Casa Hostel (Stripe / Mercado Pago).">
+  <style>
+    :root{
+      --bg:#ffffff; --fg:#111827; --muted:#6b7280; --line:#e5e7eb;
+      --brand:#F03DDB; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444;
+      --radius:14px; --gap:14px; --shadow:0 10px 20px rgba(0,0,0,.06);
+      --maxw:960px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+    header{padding:20px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8fb)}
+    .wrap{max-width:var(--maxw);margin:0 auto}
+    h1{margin:0;font-size:clamp(22px,4vw,28px)}
+    main{padding:24px 16px}
+    .card{border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+    .pad{padding:18px}
+    .muted{color:var(--muted)}
+    .msg{border-radius:12px;padding:14px;margin:0 0 12px 0;font-weight:600}
+    .ok{background:#ecfdf5;border:1px solid #86efac;color:#065f46}
+    .warn{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12}
+    .bad{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+    .row{display:grid;gap:12px;grid-template-columns:1fr}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:2px 6px}
+    .btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;font-weight:700;text-decoration:none}
+    .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
+    footer{padding:18px;border-top:1px solid var(--line);text-align:center;margin-top:24px;background:#fafafa}
+    .pairs{display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center}
+    @media (max-width:640px){ .pairs{grid-template-columns:1fr} .pairs b{display:block;margin-top:6px} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Resultado de pago</h1>
+      <p class="muted" id="sub">Estamos validando tu operación…</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="card">
+        <div class="pad">
+          <div id="msg" class="msg warn">Procesando…</div>
+
+          <div class="row">
+            <div>
+              <h3 style="margin:6px 0 8px 0">Detalle</h3>
+              <div class="pairs">
+                <b>Booking ID</b><div id="bkg" class="kbd">—</div>
+                <b>Proveedor</b><div id="prov">—</div>
+                <b>Estado</b><div id="estado">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <a href="/book" class="btn">Volver a reservas</a>
+            <a id="tryAgain" href="/book" class="btn ghost">Intentar de nuevo</a>
+          </div>
+
+          <p class="muted" style="margin-top:10px">
+            * La confirmación final llega por webhook a nuestra hoja (puede demorar unos minutos).
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    © Lapa Casa Hostel — Santa Teresa, RJ
+  </footer>
+
+  <script>
+    (function(){
+      const q = new URLSearchParams(location.search);
+
+      // Campos que pueden llegar desde Stripe o MP
+      // Stripe: success_url ...?booking_id=..., sin "status" (usamos 'success' por llegada a esta página)
+      // MP: back_urls agrega ?status / ?collection_status / ?external_reference / ?payment_id / ?merchant_order_id
+      const statusRaw = (q.get("status") || q.get("collection_status") || "").toLowerCase();
+      const mpTopic   = (q.get("topic") || "").toLowerCase();           // por si llegó desde notificación manual
+      const provider  = q.get("provider") || (q.get("preference_id") ? "mercado_pago" : q.get("session_id") ? "stripe" : (mpTopic ? "mercado_pago" : ""));
+      const bookingId = q.get("booking_id") || q.get("external_reference") || "";
+
+      // Deduce estado final unificado
+      // success | pending | cancel
+      let state = "pending";
+      if (statusRaw === "approved" || statusRaw === "success") state = "success";
+      else if (statusRaw === "in_process" || statusRaw === "pending") state = "pending";
+      else if (statusRaw === "rejected" || statusRaw === "cancel" || statusRaw === "failure") state = "cancel";
+      else {
+        // Si no vino status (caso Stripe success_url), lo tomamos como success "optimista"
+        if (provider === "stripe" && bookingId) state = "success";
+      }
+
+      // Pinta UI
+      const sub = document.getElementById("sub");
+      const msg = document.getElementById("msg");
+      const bkg = document.getElementById("bkg");
+      const prov= document.getElementById("prov");
+      const est = document.getElementById("estado");
+      const tryAgain = document.getElementById("tryAgain");
+
+      bkg.textContent = bookingId || "—";
+      prov.textContent = provider ? provider.replace("_"," ").toUpperCase() : "—";
+
+      if (state === "success"){
+        msg.className = "msg ok";
+        msg.textContent = "✅ ¡Pago confirmado! Tu reserva quedará marcada como “paid”.";
+        est.textContent = "Aprobado";
+        sub.textContent = "Gracias. En minutos verás el estado sincronizado.";
+        tryAgain.style.display = "none";
+      } else if (state === "pending"){
+        msg.className = "msg warn";
+        msg.textContent = "⏳ Pago pendiente. Estamos esperando confirmación del procesador.";
+        est.textContent = "Pendiente";
+        sub.textContent = "No hace falta que hagas nada; te avisaremos si cambia.";
+      } else {
+        msg.className = "msg bad";
+        msg.textContent = "⚠️ Pago cancelado o rechazado. Podés intentar nuevamente.";
+        est.textContent = "Cancelado/Rechazado";
+        sub.textContent = "Revisá el medio de pago o probá con otra opción (PIX/MP o tarjeta).";
+      }
+
+      // Accesos directos útiles (no sensibles)
+      const pi = q.get("payment_id");          // MP
+      const mo = q.get("merchant_order_id");   // MP
+      const si = q.get("session_id");          // Stripe (si lo usás)
+      if (pi || mo || si){
+        const dbg = document.createElement("div");
+        dbg.className = "muted";
+        dbg.style.marginTop = "10px";
+        dbg.textContent = "Ref: " + [
+          si ? ("Stripe session=" + si) : null,
+          pi ? ("MP payment=" + pi) : null,
+          mo ? ("MP order=" + mo) : null
+        ].filter(Boolean).join(" · ");
+        msg.insertAdjacentElement("afterend", dbg);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,68 +1,136 @@
 "use strict";
-/**
- * /services/holds.js — HOLD por reserva con TTL
- */
-const DEFAULT_TTL_MIN = 10;
-const holdsById = new Map(); // holdId → { expiresAt, camas:{roomId:number[]}, meta:{} }
-const ROOMS = ["1","3","5","6"];
-const now = () => Date.now();
 
-function normCamas(c) {
-  const out = {};
-  const src = c && typeof c === "object" ? c : {};
-  for (const k of Object.keys(src)) {
-    const rid = String(k);
-    const arr = Array.isArray(src[k]) ? src[k] : [];
-    out[rid] = Array.from(new Set(arr.map(n => Number(n)).filter(n => Number.isFinite(n) && n > 0)));
-  }
-  return out;
+const crypto = require("crypto");
+
+const {
+BOOKINGS_WEBAPP_URL = "",
+} = process.env;
+
+// Helpers internos (no dependen de sheets.js)
+async function postGAS(payload) {
+if (!BOOKINGS_WEBAPP_URL) {
+return { ok: false, data: { error: "no_webhook_url" } };
+}
+const r = await fetch(BOOKINGS_WEBAPP_URL, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(payload),
+});
+const text = await r.text();
+let data;
+try { data = JSON.parse(text); } catch { data = { raw: text }; }
+return { ok: r.ok, data };
 }
 
-function createHold({ holdId, ttlMinutes = DEFAULT_TTL_MIN, payload = {} } = {}) {
-  const id  = String(holdId || "").trim() || `HOLD-${Date.now()}`;
-  const ttl = Math.max(1, Number(ttlMinutes || DEFAULT_TTL_MIN));
-  const exp = now() + ttl * 60 * 1000;
-
-  const camas = normCamas(payload.camas || payload.camas_json || {});
-  const meta  = { ...payload, camas };
-
-  holdsById.set(id, { expiresAt: exp, camas, meta });
-  return { ok: true, holdId: id, expiresAt: new Date(exp).toISOString(), ttlMinutes: ttl };
+function toBookingId(seed) {
+const s = String(seed || Date.now());
+return "BKG-" + crypto.createHash("sha1").update(s).digest("hex").slice(0, 12);
 }
 
-function confirmHold(holdId) {
-  const id = String(holdId || "");
-  const removed = holdsById.delete(id);
-  return { ok: true, holdId: id, removed: !!removed, status: "confirmed" };
+function toISODate(d) {
+if (!d) return "";
+const dt = new Date(String(d));
+if (isNaN(dt)) return "";
+return dt.toISOString().slice(0, 10);
 }
 
-function releaseHold(holdId) {
-  const id = String(holdId || "");
-  const removed = holdsById.delete(id);
-  return { ok: true, holdId: id, removed: !!removed, status: "released" };
+function normalizeCamas(camas) {
+if (!camas) return {};
+if (typeof camas === "string") {
+try { const j = JSON.parse(camas); return (j && typeof j === "object") ? j : {}; }
+catch { return {}; }
+}
+if (typeof camas === "object" && !Array.isArray(camas)) return camas;
+return {};
 }
 
-function sweepExpired() {
-  const t = now();
-  let removed = 0;
-  for (const [id, h] of holdsById) {
-    if (!h || t >= h.expiresAt) { holdsById.delete(id); removed++; }
-  }
-  return { removed, remaining: holdsById.size };
+function sanitizeNumber(n, def = 0) {
+const x = Number(n);
+return Number.isFinite(x) && x >= 0 ? x : def;
 }
 
-function getHoldsMap() {
-  const out = {};
-  for (const r of ROOMS) out[r] = new Set();
-  const t = now();
-  for (const h of holdsById.values()) {
-    if (!h || t >= h.expiresAt) continue;
-    for (const rid of Object.keys(h.camas || {})) {
-      const set = out[rid] || (out[rid] = new Set());
-      for (const b of h.camas[rid]) set.add(Number(b));
-    }
-  }
-  return out;
+function buildPayload(input) {
+const inObj = input || {};
+const booking_id = inObj.booking_id || inObj.bookingId || toBookingId(${inObj.email || ""}|${inObj.entrada || ""}|${inObj.salida || ""}|${Date.now()});
+
+const entrada = toISODate(inObj.entrada);
+const salida = toISODate(inObj.salida);
+
+const hombres = sanitizeNumber(inObj.hombres, 0);
+const mujeres = sanitizeNumber(inObj.mujeres, 0);
+
+const camas = normalizeCamas(inObj.camas || inObj.camas_json || {});
+const camas_json = JSON.stringify(camas);
+
+const total = sanitizeNumber(inObj.total, 0);
+const pay_status = String(inObj.pay_status || "pending").toLowerCase();
+
+const nowIso = new Date().toISOString();
+
+return {
+action: "upsert_booking",
+booking_id,
+nombre: String(inObj.nombre || "").trim() || "Huésped",
+email: String(inObj.email || "").trim(),
+telefono: String(inObj.telefono || "").trim(),
+entrada,
+salida,
+hombres,
+mujeres,
+camas_json,
+total,
+pay_status,
+created_at: inObj.created_at || nowIso,
+// campos extras “opcionales” pasan directo si existen
+notes: inObj.notes || "",
+channel: inObj.channel || "direct",
+source: inObj.source || "web",
+};
 }
 
-module.exports = { createHold, confirmHold, releaseHold, sweepExpired, getHoldsMap };
+async function upsertBooking(input) {
+const payload = buildPayload(input);
+
+// validaciones básicas
+if (!payload.entrada || !payload.salida) {
+return { ok: false, error: "invalid_dates", payload };
+}
+if (payload.salida <= payload.entrada) {
+return { ok: false, error: "checkout_before_checkin", payload };
+}
+
+// 1) intento principal con action=upsert_booking
+const r1 = await postGAS(payload);
+if (r1.ok && r1.data && r1.data.ok !== false) {
+return { ok: true, booking_id: payload.booking_id, response: r1.data };
+}
+
+// 2) fallback (algunos GAS esperan payload “plano” sin action)
+const fb = { ...payload };
+delete fb.action;
+const r2 = await postGAS(fb);
+if (r2.ok && r2.data && r2.data.ok !== false) {
+return { ok: true, booking_id: payload.booking_id, response: r2.data, fallback: true };
+}
+
+return { ok: false, error: (r2.data && (r2.data.error || r2.data.raw)) || "upsert_failed", response: r2.data };
+}
+
+// (Opcional) helper para transformar una selección de camas desde el front
+// { "1":[1,2], "3":[4,5] } -> valida y ordena
+function normalizeFrontSelection(sel) {
+const out = {};
+const obj = normalizeCamas(sel);
+for (const [roomId, beds] of Object.entries(obj)) {
+const arr = Array.isArray(beds) ? beds : [];
+const clean = Array.from(new Set(arr.map(n => Number(n)).filter(n => Number.isInteger(n) && n > 0))).sort((a,b)=>a-b);
+if (clean.length) out[String(roomId)] = clean;
+}
+return out;
+}
+
+module.exports = {
+upsertBooking,
+buildPayload,
+normalizeFrontSelection,
+}

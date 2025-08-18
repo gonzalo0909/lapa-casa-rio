@@ -1,11 +1,10 @@
-// /index.js
+// index.js
 "use strict";
 /**
- * Lapa Casa — Backend (Express) FINAL (una sola pieza)
+ * Lapa Casa — Backend (Express) FINAL
  * Mantiene el layout tal cual (home y /book). API: reservas, disponibilidad (con HOLD),
  * pagos (Stripe/MP), webhooks, admin, eventos. Sesión con cookie-session (sin MemoryStore).
  */
-
 require("dotenv").config();
 const path = require("path");
 const express = require("express");
@@ -18,39 +17,36 @@ const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 const CRON_TOKEN = String(process.env.CRON_TOKEN || "").trim();
 const isProd = String(process.env.NODE_ENV || "").toLowerCase() === "production";
 
-// ===== CORS
+/* ---------- CORS ---------- */
 const allowList = String(process.env.CORS_ALLOW_ORIGINS || "")
-  .split(",")
-  .map(s => s.trim())
-  .filter(Boolean);
-
+  .split(",").map(s=>s.trim()).filter(Boolean);
 app.use(cors({
-  origin: (origin, cb) => {
+  origin: (origin, cb)=>{
     if (!origin) return cb(null, true);
-    const ok = !allowList.length || allowList.some(a => {
+    const ok = !allowList.length || allowList.some(a=>{
       if (!a) return false;
       try { return new URL(origin).hostname === a; } catch { return origin.includes(a); }
     });
     return ok ? cb(null, true) : cb(new Error("CORS blocked"), false);
   },
-  credentials: true,
-  methods: ["GET","POST","OPTIONS"],
-  allowedHeaders: ["Content-Type","Stripe-Signature"],
+  credentials:true,
+  methods:["GET","POST","OPTIONS"],
+  allowedHeaders:["Content-Type","Stripe-Signature"],
 }));
 
-// ===== Static (no tocamos tu front)
+/* ---------- Static ---------- */
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 
-// ===== Sesión (sin MemoryStore)
+/* ---------- Sesión (cookie-session) ---------- */
 app.set("trust proxy", 1);
 app.use(cookieSession({
   name: "lc_admin",
   keys: [ process.env.ADMIN_SESSION_SECRET || "change_me" ],
-  maxAge: 12 * 60 * 60 * 1000, // 12h
+  maxAge: 12 * 60 * 60 * 1000,
   sameSite: "lax",
   secure: isProd
 }));
-// shim para routes/admin.js (req.session.destroy)
+// shim destroy() para routes/admin.js
 app.use((req,res,next)=>{
   if (req.session && typeof req.session.destroy !== "function") {
     req.session.destroy = (cb)=>{ req.session = null; if (cb) cb(); };
@@ -58,17 +54,15 @@ app.use((req,res,next)=>{
   next();
 });
 
-// ===== Services
-const holds = require("./services/holds"); // TTL + getHoldsMap()
-const bookingsRouter = require("./services/bookings"); // Router POST/GET
+/* ---------- Services ---------- */
+const holds = require("./services/holds");
+const bookingsRouter = require("./services/bookings");
 const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./services/sheets");
 const { createCheckoutSession, buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { createPreference, buildMpWebhookHandler } = require("./services/payments-mp");
-
-// Eventos (puede exportar función o handler)
 let eventsModule = null; try { eventsModule = require("./services/events"); } catch {}
 
-// ===== Helpers
+/* ---------- Helpers ---------- */
 function getBaseUrl(req){
   const env = (process.env.BASE_URL || "").replace(/\/+$/,"");
   if (env) return env;
@@ -89,7 +83,7 @@ function deduper(max=1000, ttl=10*60*1000){
 }
 const isDup = deduper();
 
-// ===== Stripe webhook (raw primero)
+/* ---------- Webhook Stripe (raw primero) ---------- */
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
@@ -99,10 +93,10 @@ app.post("/webhooks/stripe",
   })
 );
 
-// JSON parser (resto)
+/* ---------- JSON parser resto ---------- */
 app.use(express.json({ limit:"2mb" }));
 
-// ===== Health/Diag
+/* ---------- Health/Diag ---------- */
 app.get("/api/health", (_req,res)=> res.json({ ok:true, service:"lapa-casa-backend", commit:COMMIT, now:new Date().toISOString() }));
 app.get("/api/diag", (_req,res)=> res.json({
   ok:true, commit:COMMIT,
@@ -118,7 +112,7 @@ app.get("/api/diag", (_req,res)=> res.json({
   }
 }));
 
-// ===== Disponibilidad (incluye HOLDs) + alias
+/* ---------- Disponibilidad (incluye HOLDs) + alias ---------- */
 async function availabilityHandler(req,res){
   try{
     const q = req.query||{};
@@ -138,10 +132,14 @@ async function availabilityHandler(req,res){
 app.get("/availability", availabilityHandler);
 app.get("/api/availability", availabilityHandler);
 
-// ===== Holds (start/confirm/release) + cron sweep (y alias /api/*)
+/* ---------- HOLDs start/confirm/release + cron + alias ---------- */
 function holdsStartHandler(req,res){
   try{
-    const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{});
+    const body = Object(req.body||{});
+    const holdId = body.holdId;
+    const ttlMinutes = body.ttlMinutes ?? HOLD_TTL_MINUTES;
+    // Compat: si no viene payload, usamos el cuerpo completo (como envía el front actual)
+    const payload = (body && typeof body.payload === "object") ? body.payload : body;
     res.json(holds.createHold({ holdId, ttlMinutes, payload }));
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
 }
@@ -156,6 +154,7 @@ function holdsReleaseHandler(req,res){
 app.post("/holds/start", holdsStartHandler);
 app.post("/holds/confirm", holdsConfirmHandler);
 app.post("/holds/release", holdsReleaseHandler);
+// alias legacy
 app.post("/api/holds/start", holdsStartHandler);
 app.post("/api/holds/confirm", holdsConfirmHandler);
 app.post("/api/holds/release", holdsReleaseHandler);
@@ -166,11 +165,11 @@ app.get("/crons/holds-sweep", (req,res)=>{
   res.json({ ok:true, ...holds.sweepExpired() });
 });
 
-// ===== Bookings (router) + alias
+/* ---------- Bookings (router) + alias ---------- */
 app.use("/bookings", bookingsRouter);
 app.use("/api/bookings", bookingsRouter);
 
-// ===== Pagos — Stripe (front envía {order})
+/* ---------- Pagos Stripe ---------- */
 app.post("/payments/stripe/session", async (req,res)=>{
   try{
     const order = Object(req.body?.order || req.body || {});
@@ -189,7 +188,7 @@ app.post("/payments/stripe/create_intent", async (req,res)=>{
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// ===== Pagos — Mercado Pago (compat con body del front actual)
+/* ---------- Pagos Mercado Pago (compat body front actual) ---------- */
 app.post("/payments/mp/preference", async (req,res)=>{
   try{
     const b = Object(req.body||{});
@@ -203,7 +202,7 @@ app.post("/payments/mp/preference", async (req,res)=>{
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// ===== Webhook MP
+/* ---------- Webhook MP ---------- */
 const mpWebhook = buildMpWebhookHandler({
   notifySheets,
   isDuplicate: isDup,
@@ -212,42 +211,38 @@ const mpWebhook = buildMpWebhookHandler({
 app.post("/webhooks/mp", mpWebhook);
 app.get("/webhooks/mp", (_req,res)=> res.json({ ok:true, ping:true }));
 
-// ===== Eventos
+/* ---------- Eventos ---------- */
 if (eventsModule) {
-  if (typeof eventsModule === "function") {
-    app.get("/api/events", eventsModule);
-  } else if (typeof eventsModule.eventsHandler === "function") {
-    app.get("/api/events", eventsModule.eventsHandler);
-  } else if (typeof eventsModule.getEvents === "function") {
+  if (typeof eventsModule === "function") app.get("/api/events", eventsModule);
+  else if (typeof eventsModule.eventsHandler === "function") app.get("/api/events", eventsModule.eventsHandler);
+  else if (typeof eventsModule.getEvents === "function") {
     app.get("/api/events", async (_req,res)=>{
       try { const events = await eventsModule.getEvents(); res.json({ ok:true, events }); }
       catch { res.json({ ok:true, events: [] }); }
     });
-  } else {
-    app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
-  }
+  } else app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
 } else {
   app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
 }
 
-// ===== Admin (router + html)
+/* ---------- Admin ---------- */
 try {
   const adminRouter = require("./routes/admin");
   app.use("/admin", adminRouter);
 } catch { /* admin opcional */ }
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname, "admin", "index.html")));
 
-// ===== Páginas (no cambiamos tu HTML)
+/* ---------- Páginas ---------- */
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname, "public", "book", "index.html")));
 
-// ===== 404 SPA-ish (GET sin extensión)
+/* ---------- 404 SPA-ish ---------- */
 app.use((req,res,next)=>{
   if (req.method!=="GET" || path.extname(req.path)) return next();
   const safe = path.join(__dirname, "public", req.path, "index.html");
   res.sendFile(safe, (err)=> err ? res.status(404).send("Not found") : undefined);
 });
 
-// ===== Start
+/* ---------- Start ---------- */
 if (require.main === module) {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, ()=> console.log(`[lapa-casa] up :${PORT} commit=${COMMIT}`));

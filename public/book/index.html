@@ -3,343 +3,243 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Lapa Casa — Reservas</title>
-<meta name="description" content="Reserva camas, bloquea un HOLD y paga con Stripe o Mercado Pago."/>
+<title>Reservas — Lapa Casa</title>
+<meta name="description" content="Reserva en Lapa Casa Hostel (formulario, disponibilidad y pago)."/>
 <style>
-  :root{--brand:#F03DDB;--fg:#111827;--muted:#6b7280;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--warn:#f59e0b;--radius:14px;--shadow:0 10px 20px rgba(0,0,0,.06)}
-  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:linear-gradient(180deg,#fff,#fff8fb)}
-  header,footer{border-color:var(--line)}
-  header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8fb)} .wrap{max-width:1100px;margin:0 auto;padding:16px}
-  .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{font-weight:900}.muted{color:var(--muted)}
-  main{padding:18px 16px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)} .pad{padding:18px}
-  label{display:block;margin:.4rem 0 .2rem 0;font-weight:600} input,select{width:100%;padding:.6rem;border:1px solid var(--line);border-radius:10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;font-weight:800;text-decoration:none;border:0;cursor:pointer}
-  .btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line)}
-  .msg{border-radius:10px;padding:10px;margin:10px 0 0 0;font-weight:600}
-  .ok{background:#ecfdf5;border:1px solid #86efac;color:#065f46}.bad{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}.warn{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12}
-  .beds{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
-  .bed{padding:8px;border:1px solid var(--line);border-radius:10px;text-align:center;cursor:pointer;user-select:none}
-  .bed.busy{background:#f3f4f6;color:#9ca3af;cursor:not-allowed}
-  .bed.sel{outline:2px solid var(--brand);font-weight:800}
-  .room{margin:10px 0 0 0;border-top:1px dashed var(--line);padding-top:10px}
-  .tag{display:inline-block;background:#f3f4f6;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:.9rem;margin-right:6px}
-  .flex{display:flex;gap:10px;flex-wrap:wrap}
-  .right .card+.card{margin-top:16px}
-  @media (max-width:960px){ .grid{grid-template-columns:1fr} }
+  :root{--brand:#F03DDB;--fg:#111827;--muted:#6b7280;--line:#e5e7eb;--bg:#fafafa;--r:14px;--max:1000px}
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+  header{padding:18px 16px;background:linear-gradient(180deg,#fff,#fff8fb);border-bottom:1px solid var(--line)}
+  .wrap{max-width:var(--max);margin:0 auto}
+  h1{margin:0;font-size:clamp(22px,4vw,28px)}
+  main{padding:22px 16px}
+  .grid{display:grid;gap:16px;grid-template-columns:1fr;align-items:start}
+  @media(min-width:900px){.grid{grid-template-columns:420px 1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  label{display:block;margin-bottom:12px}
+  input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px}
+  .row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:none;border-radius:12px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer}
+  .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .muted{color:var(--muted)} .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px}
+  .msg{margin-top:10px;font-weight:600}
+  table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+  .right{text-align:right}
 </style>
 </head>
 <body>
-<header>
-  <div class="wrap top">
-    <div class="logo">🏠 Lapa Casa Hostel</div>
-    <nav class="flex">
-      <a class="btn ghost" href="/">Home</a>
-      <a class="btn" href="/pago-exitoso-test/">Pago</a>
-      <a class="btn ghost" href="/admin/">Admin</a>
-    </nav>
-  </div>
-</header>
+<header><div class="wrap">
+  <h1>Reservas</h1>
+  <p class="muted">Elegí fechas, completa tus datos y pagá con Stripe o Mercado Pago.</p>
+</div></header>
 
-<main>
-  <div class="wrap grid">
-    <!-- Columna izquierda: Formulario -->
-    <section class="card left">
-      <div class="pad">
-        <h2 style="margin:0 0 8px 0">Reservar</h2>
-        <p class="muted" style="margin:0 0 10px 0">Elegí fechas, camas, bloqueá un <b>HOLD</b> y pagá.</p>
+<main><div class="wrap">
+  <div class="grid">
+    <!-- FORMULARIO -->
+    <section class="card">
+      <h2 style="margin:4px 0 12px 0">Tu reserva</h2>
+      <form id="bookingForm">
+        <input type="hidden" name="bookingId" id="bookingId"/>
 
-        <form id="form">
-          <div class="row">
-            <div>
-              <label for="entrada">Entrada</label>
-              <input id="entrada" name="entrada" type="date" required />
-            </div>
-            <div>
-              <label for="salida">Salida</label>
-              <input id="salida" name="salida" type="date" required />
-            </div>
-          </div>
+        <label>Nombre
+          <input id="nombre" name="nombre" required placeholder="Tu nombre"/>
+        </label>
+        <label>Email
+          <input id="email" name="email" type="email" required placeholder="tu@email.com"/>
+        </label>
+        <div class="row">
+          <label>Entrada
+            <input id="entrada" name="entrada" type="date" required/>
+          </label>
+          <label>Salida
+            <input id="salida" name="salida" type="date" required/>
+          </label>
+        </div>
+        <div class="row">
+          <label>Hombres
+            <input id="hombres" name="hombres" type="number" min="0" value="1"/>
+          </label>
+          <label>Mujeres
+            <input id="mujeres" name="mujeres" type="number" min="0" value="0"/>
+          </label>
+        </div>
+        <label>Total (BRL)
+          <input id="total" name="total" type="number" min="0" step="1" placeholder="Ej: 300" required/>
+        </label>
 
-          <div class="row">
-            <div>
-              <label for="nombre">Nombre</label>
-              <input id="nombre" name="nombre" placeholder="Nombre y apellido" required />
-            </div>
-            <div>
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" placeholder="tucorreo@dominio.com" required />
-            </div>
-          </div>
-
-          <div class="row">
-            <div>
-              <label for="hombres">Hombres</label>
-              <input id="hombres" name="hombres" type="number" min="0" value="1"/>
-            </div>
-            <div>
-              <label for="mujeres">Mujeres</label>
-              <input id="mujeres" name="mujeres" type="number" min="0" value="0"/>
-            </div>
-          </div>
-
-          <div class="room">
-            <div class="flex" style="align-items:center;justify-content:space-between">
-              <strong>Camas por cuarto</strong>
-              <span class="muted" id="legend">Ocupadas: gris · Libres: blanco · Selección: borde rosa</span>
-            </div>
-            <div id="rooms"></div>
-          </div>
-
-          <div class="row" style="margin-top:10px">
-            <div>
-              <label for="total">Total (BRL)</label>
-              <input id="total" name="total" type="number" min="0" value="0" />
-            </div>
-            <div>
-              <label>&nbsp;</label>
-              <div class="flex">
-                <button type="button" id="btnHold" class="btn">🔒 HOLD</button>
-                <button type="button" id="btnRelease" class="btn ghost">Liberar HOLD</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="holdMsg" class="msg warn" style="display:none"></div>
-
-          <div class="flex" style="margin-top:12px">
-            <button type="button" id="payStripe" class="btn">💳 Pagar con Stripe</button>
-            <button type="button" id="payMP" class="btn ghost">⚡ Mercado Pago</button>
-            <button type="submit" class="btn ghost">Guardar en Sheets</button>
-          </div>
-        </form>
-      </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn" id="btnGuardar" type="submit">Guardar reserva</button>
+          <button class="btn ghost" id="btnStripe" type="button" disabled>Pago con tarjeta (Stripe)</button>
+          <button class="btn ghost" id="btnMP" type="button" disabled>Pago con Mercado Pago</button>
+        </div>
+        <div id="formMsg" class="msg muted"></div>
+      </form>
     </section>
 
-    <!-- Columna derecha: Disponibilidad y resumen -->
-    <aside class="right">
-      <section class="card">
-        <div class="pad">
-          <h3 style="margin:0 0 8px 0">Disponibilidad</h3>
-          <div id="avail" class="muted">—</div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="pad">
-          <h3 style="margin:0 0 8px 0">Resumen</h3>
-          <div id="summary" class="muted">Completá el formulario…</div>
-        </div>
-      </section>
-    </aside>
+    <!-- DISPONIBILIDAD -->
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:4px 0">Disponibilidad</h2>
+        <span class="pill" id="rangePill">—</span>
+      </div>
+      <p class="muted" style="margin-top:-4px">Vista rápida por cuarto (ocupadas vs libres).</p>
+      <table id="availTbl">
+        <thead><tr><th>Cuarto</th><th>Ocupadas</th><th>Libres</th><th class="right">Camas ocupadas</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="availMsg" class="msg muted"></div>
+    </section>
   </div>
-</main>
+</div></main>
 
-<footer>
-  <div class="wrap" style="text-align:center;padding:16px">© Lapa Casa Hostel — Santa Teresa, RJ</div>
+<footer style="text-align:center;padding:18px;border-top:1px solid var(--line);background:#fff">
+  © Lapa Casa Hostel — Santa Teresa, RJ
 </footer>
 
 <script>
-(() => {
-  const $ = (q)=>document.querySelector(q);
-  const $$ = (q)=>Array.from(document.querySelectorAll(q));
-  const fmtBeds = (arr)=> (arr && arr.length)? arr.join(", ") : "—";
-  const CAPACITY = { "1":12, "3":12, "5":7, "6":7 }; // ajustar si cambia
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const form = $("bookingForm");
+  const btnStripe = $("btnStripe");
+  const btnMP = $("btnMP");
+  const btnGuardar = $("btnGuardar");
+  const formMsg = $("formMsg");
+  const rangePill = $("rangePill");
+  const availTbody = document.querySelector("#availTbl tbody");
+  const availMsg = $("availMsg");
 
-  // Estado simple
-  const state = {
-    occupied: {"1":[],"3":[],"5":[],"6":[]},
-    selected: {"1":[],"3":[],"5":[],"6":[]},
-    holdId: null,
-    holdExpiresAt: null
-  };
+  // genera/recupera bookingId para amarrar pago
+  const initialBkg = (new URLSearchParams(location.search)).get("booking_id");
+  const bookingId = initialBkg || `BKG-${Date.now()}`;
+  $("bookingId").value = bookingId;
 
-  // Init fechas
-  const d = new Date(); d.setDate(d.getDate()+3);
-  $("#entrada").value = d.toISOString().slice(0,10);
-  d.setDate(d.getDate()+3);
-  $("#salida").value = d.toISOString().slice(0,10);
-
-  // Render resumen
-  function renderSummary(){
-    const sel = Object.entries(state.selected)
-      .filter(([_,a])=>a.length)
-      .map(([r,a])=>`Cuarto ${r}: ${fmtBeds(a)}`).join(" · ");
-    $("#summary").innerHTML = `
-      <div class="tag">Entrada: ${$("#entrada").value}</div>
-      <div class="tag">Salida: ${$("#salida").value}</div>
-      <div class="tag">H: ${$("#hombres").value} · M: ${$("#mujeres").value}</div>
-      <div style="margin-top:6px">${ sel || '<span class="muted">Sin camas seleccionadas</span>' }</div>
-      <div class="muted" style="margin-top:6px">Total BRL: <b>${Number($("#total").value||0)}</b></div>
-    `;
+  // fechas mínimas
+  const today = new Date().toISOString().slice(0,10);
+  $("entrada").value = today;
+  $("salida").value = today;
+  $("entrada").addEventListener("change", syncDates);
+  $("salida").addEventListener("change", syncDates);
+  function syncDates(){
+    const a = $("entrada").value, b = $("salida").value;
+    if (a && b && a>b) $("salida").value = a;
+    renderAvailability();
   }
 
-  // Render disponibilidad + selectores de cama
-  function renderRooms(){
-    const cont = $("#rooms"); cont.innerHTML = "";
-    Object.keys(CAPACITY).forEach(roomId=>{
-      const total = CAPACITY[roomId];
-      const occ = new Set(state.occupied[roomId] || []);
-      const sel = new Set(state.selected[roomId] || []);
-      const wrap = document.createElement("div");
-      wrap.innerHTML = `<div class="muted" style="margin:8px 0 4px 0"><b>Cuarto ${roomId}</b> · Ocupadas: ${occ.size} / ${total}</div>`;
-      const grid = document.createElement("div"); grid.className = "beds";
-      for (let n=1;n<=total;n++){
-        const div = document.createElement("div");
-        const busy = occ.has(n);
-        const selected = sel.has(n);
-        div.className = "bed" + (busy? " busy":"") + (selected? " sel": "");
-        div.textContent = n;
-        if (!busy){
-          div.addEventListener("click", ()=>{
-            const arr = state.selected[roomId] || [];
-            const i = arr.indexOf(n);
-            if (i>=0) arr.splice(i,1); else arr.push(n);
-            state.selected[roomId] = arr.sort((a,b)=>a-b);
-            renderRooms(); renderSummary();
-          });
-        }
-        grid.appendChild(div);
-      }
-      wrap.appendChild(grid);
-      cont.appendChild(wrap);
-    });
-  }
-
-  async function fetchAvailability(){
-    const from = $("#entrada").value, to = $("#salida").value;
-    $("#avail").textContent = "Cargando…";
+  // disponibilidad
+  async function renderAvailability(){
+    const from = $("entrada").value, to = $("salida").value;
+    if (!from || !to) return;
+    rangePill.textContent = `${from} → ${to}`;
+    availTbody.innerHTML = `<tr><td colspan="4" class="muted">Cargando…</td></tr>`;
     try{
       const r = await fetch(`/api/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
       const j = await r.json();
-      if (!j.ok) throw new Error("availability_error");
-      state.occupied = j.occupied || state.occupied;
-      $("#avail").innerHTML = Object.keys(CAPACITY).map(roomId=>{
-        const total = CAPACITY[roomId]; const occ = (state.occupied[roomId]||[]).length;
-        return `<div class="tag">Cuarto ${roomId}: libres ${Math.max(total-occ,0)}</div>`;
-      }).join(" ");
-      renderRooms();
-    }catch{
-      $("#avail").textContent = "No disponible.";
+      if (!j.ok) throw new Error(j.error||"availability_failed");
+      const CAP = { "1":12, "3":12, "5":7, "6":7 };
+      const rows = [];
+      for (const roomId of Object.keys(CAP)){
+        const occ = j.occupied?.[roomId] || [];
+        const total= CAP[roomId];
+        rows.push(`<tr>
+          <td>#${roomId}</td>
+          <td>${occ.length}/${total}</td>
+          <td>${Math.max(total-occ.length,0)}</td>
+          <td class="right">${occ.length? occ.join(", ") : "—"}</td>
+        </tr>`);
+      }
+      availTbody.innerHTML = rows.join("") || `<tr><td colspan="4">Sin datos</td></tr>`;
+      availMsg.textContent = "";
+    }catch(e){
+      availTbody.innerHTML = `<tr><td colspan="4">No disponible</td></tr>`;
+      availMsg.textContent = "No se pudo obtener disponibilidad.";
     }
   }
+  renderAvailability();
 
-  function camasPayload(){
-    const out={}; Object.keys(state.selected).forEach(r=>{
-      if ((state.selected[r]||[]).length) out[r] = state.selected[r];
-    });
-    return out;
-  }
-
-  function setHoldMsg(kind, text){
-    const box = $("#holdMsg");
-    box.style.display = "block";
-    box.className = "msg " + (kind||"warn");
-    box.textContent = text;
-  }
-
-  async function startHold(){
-    const p = {
-      entrada: $("#entrada").value,
-      salida: $("#salida").value,
-      nombre: $("#nombre").value,
-      email: $("#email").value,
-      hombres: Number($("#hombres").value||0),
-      mujeres: Number($("#mujeres").value||0),
-      camas: camasPayload(),
-      total: Number($("#total").value||0),
-      ttlMinutes: 10
-    };
-    if (!Object.keys(p.camas).length) { setHoldMsg("bad","Elegí al menos una cama."); return; }
-    try{
-      const r = await fetch("/api/holds/start", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(p) });
-      const j = await r.json();
-      if (j.ok){
-        state.holdId = j.holdId; state.holdExpiresAt = j.expiresAt;
-        setHoldMsg("ok", `HOLD activo (#${state.holdId}). Expira: ${new Date(j.expiresAt).toLocaleTimeString()}`);
-      } else throw new Error(j.error||"hold_failed");
-    }catch(e){ setHoldMsg("bad","No se pudo iniciar HOLD."); }
-    await fetchAvailability();
-  }
-
-  async function releaseHold(){
-    if (!state.holdId) { setHoldMsg("warn","No hay HOLD activo."); return; }
-    try{
-      const r = await fetch("/api/holds/release", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ holdId: state.holdId })});
-      const j = await r.json();
-      if (j.ok){ setHoldMsg("warn","HOLD liberado."); state.holdId=null; state.holdExpiresAt=null; }
-      else throw new Error();
-    }catch{ setHoldMsg("bad","No se pudo liberar HOLD."); }
-    await fetchAvailability();
-  }
-
-  // Guardar/Upsert directo a Sheets vía backend
-  async function upsertBooking(status="pending"){
+  // guardar / upsert (no paga todavía)
+  form.addEventListener("submit", async (ev)=>{
+    ev.preventDefault();
+    btnGuardar.disabled = true; formMsg.textContent = "Guardando…";
     const payload = {
-      bookingId: state.holdId || `BKG-${Date.now()}`,
-      entrada: $("#entrada").value,
-      salida:  $("#salida").value,
-      nombre:  $("#nombre").value,
-      email:   $("#email").value,
-      hombres: Number($("#hombres").value||0),
-      mujeres: Number($("#mujeres").value||0),
-      camas:   camasPayload(),
-      total:   Number($("#total").value||0),
-      pay_status: status
+      booking_id: $("bookingId").value,
+      nombre: $("nombre").value.trim(),
+      email: $("email").value.trim(),
+      entrada: $("entrada").value,
+      salida:  $("salida").value,
+      hombres: Number($("hombres").value || 0),
+      mujeres: Number($("mujeres").value || 0),
+      total:   Number($("total").value || 0),
+      pay_status: "pending",
+      camas:{} // sin selección de cama en esta versión
     };
-    const r = await fetch("/api/bookings", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
-    const j = await r.json(); if (!j.ok) throw new Error(j.error||"bookings_error");
-    return payload.bookingId;
-  }
-
-  async function payStripe(){
     try{
-      const bid = await upsertBooking("hold");
-      const total = Number($("#total").value||0);
-      const r = await fetch("/payments/stripe/session", {
+      const r = await fetch("/api/bookings", {
         method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ order:{ booking_id: bid, total } })
+        body: JSON.stringify(payload)
       });
       const j = await r.json();
-      if (j && (j.url || j.id)){
-        location.href = j.url || `/pago-exitoso-test/?provider=stripe&session_id=${encodeURIComponent(j.id)}&booking_id=${encodeURIComponent(bid)}&status=success`;
-      } else throw new Error();
-    }catch{ setHoldMsg("bad","Stripe: no se pudo crear sesión."); }
-  }
-
-  async function payMP(){
-    try{
-      const bid = await upsertBooking("hold");
-      const total = Number($("#total").value||0);
-      const r = await fetch("/payments/mp/preference", {
-        method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ order:{ booking_id: bid, total } })
-      });
-      const j = await r.json();
-      if (j && j.init_point) location.href = j.init_point;
-      else throw new Error();
-    }catch{ setHoldMsg("bad","Mercado Pago: no se pudo crear preferencia."); }
-  }
-
-  // Listeners
-  $("#entrada").addEventListener("change", fetchAvailability);
-  $("#salida").addEventListener("change", fetchAvailability);
-  ["hombres","mujeres","total","nombre","email"].forEach(id=> $("#"+id).addEventListener("input", renderSummary));
-  $("#btnHold").addEventListener("click", startHold);
-  $("#btnRelease").addEventListener("click", releaseHold);
-  $("#payStripe").addEventListener("click", payStripe);
-  $("#payMP").addEventListener("click", payMP);
-
-  $("#form").addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    try{ await upsertBooking("pending"); setHoldMsg("ok","Reserva guardada en Sheets."); }
-    catch{ setHoldMsg("bad","No se pudo guardar."); }
+      if (!j.ok) throw new Error(j.error||"save_failed");
+      formMsg.textContent = "✅ Reserva guardada. Elegí método de pago.";
+      btnStripe.disabled = false;
+      btnMP.disabled = false;
+    }catch(e){
+      formMsg.textContent = "❌ Error: " + (e.message || "no se pudo guardar");
+    }finally{
+      btnGuardar.disabled = false;
+    }
   });
 
-  // Primera carga
-  renderSummary();
-  fetchAvailability();
+  // pago Stripe
+  btnStripe.addEventListener("click", async ()=>{
+    btnStripe.disabled = true; formMsg.textContent = "Creando pago (Stripe)…";
+    const order = {
+      booking_id: $("bookingId").value,
+      total: Number($("total").value || 0),
+      email: $("email").value.trim(),
+      nights: nightsDiff($("entrada").value, $("salida").value)
+    };
+    try{
+      const r = await fetch("/payments/stripe/session", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ order })
+      });
+      const j = await r.json();
+      if (!j.ok && !j.url) throw new Error(j.error||"stripe_failed");
+      location.href = j.url || `/pago-exitoso-test?provider=stripe&booking_id=${encodeURIComponent(order.booking_id)}`;
+    }catch(e){
+      formMsg.textContent = "❌ Stripe: " + (e.message||"error");
+      btnStripe.disabled = false;
+    }
+  });
+
+  // pago Mercado Pago
+  btnMP.addEventListener("click", async ()=>{
+    btnMP.disabled = true; formMsg.textContent = "Creando pago (Mercado Pago)…";
+    const order = {
+      booking_id: $("bookingId").value,
+      total: Number($("total").value || 0)
+    };
+    try{
+      const r = await fetch("/payments/mp/preference", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ order })
+      });
+      const j = await r.json();
+      if (!j.ok && !j.init_point) throw new Error(j.error||"mp_failed");
+      // redirige a MP
+      location.href = j.init_point;
+    }catch(e){
+      formMsg.textContent = "❌ Mercado Pago: " + (e.message||"error");
+      btnMP.disabled = false;
+    }
+  });
+
+  function nightsDiff(a,b){
+    if(!a||!b) return 1;
+    const d1=new Date(a+"T00:00:00Z"), d2=new Date(b+"T00:00:00Z");
+    const n=Math.max(1,Math.round((d2-d1)/(1000*60*60*24)));
+    return n;
+  }
 })();
 </script>
 </body>

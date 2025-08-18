@@ -1,13 +1,15 @@
 "use strict";
 
 /**
- * Lapa Casa — Backend (Express) COMPAT
- * Mantiene el front tal cual. API de reservas, pagos, holds, eventos y webhooks.
+ * Lapa Casa — Backend (Express) FINAL
+ * Mantiene el front tal cual. API: reservas, pagos, holds, eventos, webhooks, admin.
  */
 
+require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const session = require("express-session");
 
 const app = express();
 const COMMIT = process.env.COMMIT || "dev";
@@ -28,18 +30,23 @@ app.use(cors({
   allowedHeaders:["Content-Type","Stripe-Signature"],
 }));
 
-// ===== Static (no tocamos tu front)
+// ===== Static
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 
+// ===== Sessions (admin)
+app.use(session({
+  secret: process.env.ADMIN_SESSION_SECRET || "change_me",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { sameSite: "lax", secure: "auto" }
+}));
+
 // ===== Services
-const holds = require("./services/holds");
-const bookingsRouter = require("./services/bookings");
+const holds = require("./services/holds"); // NUEVO (TTL + create/confirm/release/sweep)
+const bookingsRouter = require("./services/bookings"); // NUEVO (router)
 const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./services/sheets");
 const { createCheckoutSession, buildStripeWebhookHandler } = require("./services/payments-stripe");
-// ⬇️ IMPORT ÚNICO (consolidado) — evita “Identifier has already been declared”
 const { createPreference, buildMpWebhookHandler } = require("./services/payments-mp");
-
-// events.js puede exportar handler por defecto o { eventsHandler }
 let eventsModule = null; try { eventsModule = require("./services/events"); } catch {}
 
 // ===== Helpers
@@ -63,7 +70,7 @@ function deduper(max=1000, ttl=10*60*1000){
 }
 const isDup = deduper();
 
-// ===== Stripe raw webhook FIRST (antes del body-parser JSON)
+// ===== Stripe webhook (raw primero)
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
@@ -84,7 +91,7 @@ app.get("/api/diag", (_req,res)=> res.json({
     BASE_URL:!!process.env.BASE_URL,
     CORS_ALLOW_ORIGINS:allowList.length,
     HOLD_TTL_MINUTES:HOLD_TTL_MINUTES,
-    BOOKINGS_WEBHOOK_URL:!!process.env.BOOKINGS_WEBHOOK_URL,
+    BOOKINGS_WEBAPP_URL:!!process.env.BOOKINGS_WEBAPP_URL,
     STRIPE_SECRET_KEY:!!process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET:!!process.env.STRIPE_WEBHOOK_SECRET,
     MP_ACCESS_TOKEN:!!process.env.MP_ACCESS_TOKEN,
@@ -92,70 +99,63 @@ app.get("/api/diag", (_req,res)=> res.json({
   }
 }));
 
-// ===== Disponibilidad
-app.get("/api/availability", async (req,res)=>{
+// ===== Disponibilidad (incluye holds activos) + alias
+async function availabilityHandler(_req,res){
   try{
-    const from = (req.query.from||"").toString().slice(0,10);
-    const to   = (req.query.to||"").toString().slice(0,10);
+    const q = _req.query||{};
+    const from = (q.from||"").toString().slice(0,10);
+    const to   = (q.to||"").toString().slice(0,10);
     const today = new Date();
     const dFrom = from || today.toISOString().slice(0,10);
     const dTo = to || new Date(today.getTime()+30*86400000).toISOString().slice(0,10);
+
     const rows = await fetchRowsFromSheet();
-    const occupied = calcOccupiedBeds(rows, dFrom, dTo);
+    const holdsMap = holds.getHoldsMap();
+    const occupied = calcOccupiedBeds(rows, dFrom, dTo, holdsMap);
+
     res.json({ ok:true, from:dFrom, to:dTo, occupied });
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
+}
+app.get("/availability", availabilityHandler);
+app.get("/api/availability", availabilityHandler);
 
-// ===== Holds (handlers compartidos + alias /api/holds/*)
-function holdsStartHandler(req,res){
+// ===== Holds (TTL) + alias /api/...
+app.post("/holds/start", (req,res)=>{
   try{
-    const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{});
+    const { holdId, ttlMinutes=HOLD_TTL_MINUTES, ...payload } = Object(req.body||{});
     res.json(holds.createHold({ holdId, ttlMinutes, payload }));
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-}
-function holdsConfirmHandler(req,res){
-  try{
-    const { holdId } = Object(req.body||{});
-    res.json(holds.confirmHold(String(holdId||"")));
-  }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-}
-function holdsReleaseHandler(req,res){
-  try{
-    const { holdId } = Object(req.body||{});
-    res.json(holds.releaseHold(String(holdId||"")));
-  }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-}
-
-app.post("/holds/start", holdsStartHandler);
-app.post("/holds/confirm", holdsConfirmHandler);
-app.post("/holds/release", holdsReleaseHandler);
-// alias legacy
-app.post("/api/holds/start", holdsStartHandler);
-app.post("/api/holds/confirm", holdsConfirmHandler);
-app.post("/api/holds/release", holdsReleaseHandler);
-
-// ===== Cron holds sweep (GAS)
+});
+app.post("/holds/confirm", (req,res)=>{
+  try{ res.json(holds.confirmHold(String(req.body?.holdId||""))); }
+  catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+});
+app.post("/holds/release", (req,res)=>{
+  try{ res.json(holds.releaseHold(String(req.body?.holdId||""))); }
+  catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+});
 app.get("/crons/holds-sweep", (req,res)=>{
   const tok = (req.query?.token||"").toString();
   if (!CRON_TOKEN || tok !== CRON_TOKEN) return res.status(401).json({ ok:false, error:"unauthorized" });
   res.json({ ok:true, ...holds.sweepExpired() });
 });
+app.post("/api/holds/start", (req,res)=>app._router.handle(req,res,()=>{}, "post","/holds/start"));
+app.post("/api/holds/confirm", (req,res)=>app._router.handle(req,res,()=>{}, "post","/holds/confirm"));
+app.post("/api/holds/release", (req,res)=>app._router.handle(req,res,()=>{}, "post","/holds/release"));
 
-// ===== Bookings
+// ===== Bookings (router) + alias
 app.use("/bookings", bookingsRouter);
-// alias legacy
 app.use("/api/bookings", bookingsRouter);
 
 // ===== Pagos — Stripe
 app.post("/payments/stripe/session", async (req,res)=>{
   try{
-    const order = Object(req.body?.order || {});
+    const order = Object(req.body?.order || req.body || {});
     if (!("total" in order)) throw new Error("missing_total");
     const out = await createCheckoutSession(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
-// alias legacy
 app.post("/payments/stripe/create_intent", async (req,res)=>{
   try{
     const order = Object(req.body?.order || req.body || {});
@@ -165,17 +165,21 @@ app.post("/payments/stripe/create_intent", async (req,res)=>{
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// ===== Pagos — Mercado Pago
+// ===== Pagos — Mercado Pago (acepta body del front actual)
 app.post("/payments/mp/preference", async (req,res)=>{
   try{
-    const order = Object(req.body?.order || {});
+    const b = Object(req.body||{});
+    const order = b.order ? b.order : {
+      booking_id: b.metadata?.bookingId || b.booking_id || b.bookingId,
+      total: Number(b.unit_price || b.total || 0)
+    };
     if (!("total" in order)) throw new Error("missing_total");
     const out = await createPreference(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// Webhook MP
+// ===== Webhook MP
 const mpWebhook = buildMpWebhookHandler({
   notifySheets,
   isDuplicate: isDup,
@@ -193,11 +197,17 @@ if (eventsModule) {
   app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
 }
 
-// ===== Páginas (no cambiamos tu HTML)
-app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname, "public", "book", "index.html")));
+// ===== Admin (router + html)
+try {
+  const adminRouter = require("./routes/admin");
+  app.use("/admin", adminRouter);
+} catch { /* admin opcional */ }
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname, "admin", "index.html")));
 
-// ===== 404 SPA-ish (solo GET sin extensión)
+// ===== Páginas
+app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname, "public", "book", "index.html")));
+
+// ===== 404 SPA-ish (GET sin extensión)
 app.use((req,res,next)=>{
   if (req.method!=="GET" || path.extname(req.path)) return next();
   const safe = path.join(__dirname, "public", req.path, "index.html");

@@ -1,3 +1,4 @@
+// services/bookings.js
 "use strict";
 /**
  * /services/bookings.js — Router Express
@@ -6,10 +7,9 @@
  */
 const express = require("express");
 const router = express.Router();
-
 const { postToSheets, fetchRowsFromSheet } = require("./sheets");
 
-// Parseo JSON solo para este router
+// JSON solo para este router
 router.use(express.json({ limit: "1mb" }));
 
 // Crea/actualiza una reserva en Sheets

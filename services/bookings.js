@@ -1,34 +1,42 @@
 "use strict";
 /**
- * /services/bookings.js
- * - createBooking(payload): guarda reserva en Google Sheets
- * - listBookings(): devuelve todas las reservas
+ * /services/bookings.js — Router Express
+ * POST /        → upsert_booking (Sheets)
+ * GET  /        → rows (Sheets)
  */
-
+const express = require("express");
+const router = express.Router();
 const { postToSheets, fetchRowsFromSheet } = require("./sheets");
 
-/**
- * Crea una nueva reserva en la hoja
- */
-async function createBooking(payload) {
-  if (!payload || !payload.entrada || !payload.salida || !payload.nombre) {
-    throw new Error("booking_payload_incomplete");
-  }
+router.post("/", express.json(), async (req,res)=>{
+  try{
+    const p = Object(req.body||{});
+    const booking_id = String(p.booking_id || p.bookingId || `BKG-${Date.now()}`);
+    const payload = {
+      action: "upsert_booking",
+      booking_id,
+      nombre:   p.nombre||"",
+      email:    p.email||"",
+      telefono: p.telefono||"",
+      entrada:  p.entrada||"",
+      salida:   p.salida||"",
+      hombres:  Number(p.hombres||0),
+      mujeres:  Number(p.mujeres||0),
+      total:    Number(p.total||0),
+      camas:    p.camas || {},
+      pay_status: p.pay_status || "pending"
+    };
+    const out = await postToSheets(payload);
+    if (!out || out.ok!==true) throw new Error(out?.error || "sheets_error");
+    res.json({ ok:true, booking_id });
+  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
+});
 
-  const res = await postToSheets({
-    action: "upsert_booking",
-    ...payload
-  });
+router.get("/", async (_req,res)=>{
+  try{
+    const rows = await fetchRowsFromSheet();
+    res.json({ ok:true, rows });
+  }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+});
 
-  if (!res.ok) throw new Error("booking_create_failed");
-  return res;
-}
-
-/**
- * Lista todas las reservas de la hoja
- */
-async function listBookings() {
-  return await fetchRowsFromSheet();
-}
-
-module.exports = { createBooking, listBookings };
+module.exports = router;

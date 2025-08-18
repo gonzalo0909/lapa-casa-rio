@@ -1,9 +1,8 @@
 "use strict";
 /**
  * Lapa Casa — Backend (Express)
- * - Estáticos (home y /book), reservas (Sheets), disponibilidad + HOLDs,
- *   pagos Stripe/MP con webhooks, admin opcional, eventos opcional.
- * - Incluye wrapper asMiddleware() para evitar "Router.use() requires a middleware function…".
+ * Estáticos, reservas (Sheets), disponibilidad + HOLDs, pagos Stripe/MP, webhooks, admin, eventos.
+ * FIX: carga robusta del router de bookings para evitar "Object" en Router.use().
  */
 require("dotenv").config();
 
@@ -30,8 +29,12 @@ app.use(cors({
     if (!origin) return cb(null, true);
     const ok = !allowList.length || allowList.some(a=>{
       if (!a) return false;
-      try { return new URL(origin).hostname === a || new URL(origin).hostname.endsWith(`.${a}`); }
-      catch { return origin.includes(a); }
+      try {
+        const host = new URL(origin).hostname;
+        return host === a || host.endsWith(`.${a}`);
+      } catch {
+        return origin.includes(a);
+      }
     });
     return ok ? cb(null, true) : cb(new Error("CORS blocked"), false);
   },
@@ -44,7 +47,7 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname,"public","book","index.html")));
 
-/* ---------- Sesión (cookie-session) ---------- */
+/* ---------- Sesión ---------- */
 app.use(cookieSession({
   name: "lc_admin",
   keys: [ process.env.ADMIN_SESSION_SECRET || "change_me" ],
@@ -52,7 +55,6 @@ app.use(cookieSession({
   sameSite: "lax",
   secure: isProd
 }));
-// shim destroy() para algunos routers
 app.use((req,res,next)=>{
   if (req.session && typeof req.session.destroy !== "function") {
     req.session.destroy = (cb)=>{ req.session = null; if (cb) cb(); };
@@ -80,31 +82,34 @@ function deduper(max=1000, ttl=10*60*1000){
   };
 }
 const isDup = deduper();
+
+/** Acepta: función Express, {default:fn}, {router:fn}, o objetos con .handle(req,res,next) */
 function asMiddleware(mod, name) {
-  const m = mod && (mod.default || mod.router || mod);
-  if (typeof m !== "function") {
-    throw new TypeError(`${name} no es un middleware Express (recibí ${typeof m})`);
+  const cand = mod && (mod.default || mod.router || mod);
+  if (typeof cand === "function") return cand;
+  if (cand && typeof cand.handle === "function") {
+    return (req,res,next)=> cand.handle(req,res,next);
   }
-  return m;
+  throw new TypeError(`${name} no es un middleware Express (recibí ${typeof cand})`);
 }
 
 /* ---------- Services ---------- */
-const holds = require("./services/holds");
-const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./services/sheets");
+const holds = require("./services/holds.js");
+const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./services/sheets.js");
 
-// Stripe (solo si hay claves)
+// Stripe (opcional)
 let stripeSvc = null;
-try { stripeSvc = require("./services/payments-stripe"); } catch {}
+try { stripeSvc = require("./services/payments-stripe.js"); } catch {}
 const stripeKeysOK = !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
 
-// MP (solo si hay token)
+// MP (opcional)
 let mpSvc = null;
-try { mpSvc = require("./services/payments-mp"); } catch {}
+try { mpSvc = require("./services/payments-mp.js"); } catch {}
 const mpOK = !!process.env.MP_ACCESS_TOKEN;
 
 // Eventos (opcional)
 let eventsModule = null;
-try { eventsModule = require("./services/events"); } catch {}
+try { eventsModule = require("./services/events.js"); } catch {}
 
 /* ---------- Webhook Stripe (raw primero) ---------- */
 if (stripeSvc && stripeKeysOK) {
@@ -141,7 +146,7 @@ app.get("/api/diag", (_req,res)=> res.json({
   }
 }));
 
-/* ---------- Disponibilidad (incluye HOLDs) ---------- */
+/* ---------- Disponibilidad (con HOLDs) ---------- */
 async function availabilityHandler(req,res){
   try{
     const q = req.query||{};
@@ -161,13 +166,13 @@ async function availabilityHandler(req,res){
 app.get("/availability", availabilityHandler);
 app.get("/api/availability", availabilityHandler);
 
-/* ---------- HOLDs start/confirm/release + cron ---------- */
+/* ---------- HOLDs ---------- */
 function holdsStartHandler(req,res){
   try{
     const body = Object(req.body||{});
     const holdId = body.holdId;
     const ttlMinutes = body.ttlMinutes ?? HOLD_TTL_MINUTES;
-    const payload = (body && typeof body.payload === "object") ? body.payload : body; // compat front
+    const payload = (body && typeof body.payload === "object") ? body.payload : body;
     res.json(holds.createHold({ holdId, ttlMinutes, payload }));
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
 }
@@ -182,7 +187,6 @@ function holdsReleaseHandler(req,res){
 app.post("/holds/start", holdsStartHandler);
 app.post("/holds/confirm", holdsConfirmHandler);
 app.post("/holds/release", holdsReleaseHandler);
-// alias legacy
 app.post("/api/holds/start", holdsStartHandler);
 app.post("/api/holds/confirm", holdsConfirmHandler);
 app.post("/api/holds/release", holdsReleaseHandler);
@@ -194,13 +198,15 @@ app.get("/crons/holds-sweep", (req,res)=>{
 });
 
 /* ---------- Bookings Router (Sheets) ---------- */
-const bookingsRouter = asMiddleware(require("./services/bookings"), "bookingsRouter");
+/*  ⚠️ Importa el ARCHIVO EXACTO para evitar colisiones con carpeta "services/bookings/" */
+const bookingsMod = require("./services/bookings.js");
+const bookingsRouter = asMiddleware(bookingsMod, "bookingsRouter");
 app.use("/bookings", bookingsRouter);
 app.use("/api/bookings", bookingsRouter);
 
 /* ---------- Admin (opcional) ---------- */
 try {
-  const adminRouter = asMiddleware(require("./routes/admin"), "adminRouter");
+  const adminRouter = asMiddleware(require("./routes/admin.js"), "adminRouter");
   app.use("/admin", adminRouter);
 } catch (e) {
   console.warn("[admin] opcional:", e.message);
@@ -217,8 +223,6 @@ if (stripeSvc && stripeKeysOK) {
       res.json({ ok:true, ...out });
     }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
   });
-
-  // alias compat
   app.post("/payments/stripe/create_intent", async (req,res)=>{
     try{
       const order = Object(req.body?.order || req.body || {});
@@ -243,7 +247,6 @@ if (mpSvc && mpOK) {
       res.json({ ok:true, ...out });
     }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
   });
-
   const mpWebhook = mpSvc.buildMpWebhookHandler({
     notifySheets,
     isDuplicate: isDup,
@@ -269,9 +272,8 @@ if (eventsModule) {
   app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
 }
 
-/* ---------- Páginas extra ---------- */
+/* ---------- Página de retorno de pago ---------- */
 app.get("/pago-exitoso-test", (_req,res)=> {
-  // Servido como página estática en /public/pago-exitoso-test/index.html
   res.sendFile(path.join(__dirname, "public", "pago-exitoso-test", "index.html"));
 });
 
@@ -289,3 +291,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+

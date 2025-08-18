@@ -1,39 +1,54 @@
-
+// index.js
 "use strict";
 require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const Stripe = require("stripe");
+const { MercadoPagoConfig } = require("mercadopago");
 const path = require("path");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const bookingsRoutes = require("./routes/bookings");
+const availabilityRoutes = require("./routes/availability");
+const eventsRoutes = require("./routes/events");
+const holdsRoutes = require("./routes/holds");
 
-// ===== Middlewares =====
+// ====== ENV
+const BASE_URL = (process.env.BASE_URL || "").replace(/\/$/, "") || "https://lapa-casa-backend.onrender.com";
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
+const STRIPE_SK = process.env.STRIPE_SK || process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+const ADMIN_USER = process.env.ADMIN_USER || "";
+const ADMIN_PASS = process.env.ADMIN_PASS || "";
+const ADMIN_REALM = "LapaCasaAdmin";
+const CRON_TOKEN = process.env.CRON_TOKEN || "";
+const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
+
+const app = express();
+
+// ====== MIDDLEWARE
 app.use(helmet());
-app.use(cors({ origin: "*" }));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ===== Static (front-end) =====
-app.use(express.static(path.join(__dirname, "public")));
+// ====== ROUTES
+app.use("/bookings", bookingsRoutes);
+app.use("/availability", availabilityRoutes);
+app.use("/events", eventsRoutes);
+app.use("/holds", holdsRoutes);
 
-// ===== Routes =====
-app.use("/api/payments", require("./routes/payments"));   // Stripe + MP
-app.use("/api/webhooks", require("./routes/webhooks"));   // Webhooks
-app.use("/api/diag", require("./routes/diag"));           // Diagnóstico
-app.use("/api/bookings", require("./routes/bookings"));   // Reservas
-app.use("/api/events", require("./routes/events"));       // Eventos
-app.use("/api/holds", require("./routes/holds"));         // Holds (anti-overbooking)
-app.use("/admin", require("./routes/admin"));             // Panel admin
-
-// ===== Fallback =====
-app.use((req, res) => {
-  res.status(404).json({ ok: false, error: "not_found" });
+// ====== HEALTH CHECK
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "lapa-casa-backend", ts: Date.now() });
 });
 
-// ===== Server =====
+// ====== STATIC (public)
+app.use(express.static(path.join(__dirname, "public")));
+
+// ====== START
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Lapa Casa backend online en puerto ${PORT}`);
+  console.log(`🚀 Backend Lapa Casa escuchando en http://localhost:${PORT}`);
 });

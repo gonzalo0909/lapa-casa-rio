@@ -1,4 +1,3 @@
-// index.js
 "use strict";
 /**
  * Lapa Casa — Backend (Express) FINAL
@@ -138,8 +137,7 @@ function holdsStartHandler(req,res){
     const body = Object(req.body||{});
     const holdId = body.holdId;
     const ttlMinutes = body.ttlMinutes ?? HOLD_TTL_MINUTES;
-    // Compat: si no viene payload, usamos el cuerpo completo (como envía el front actual)
-    const payload = (body && typeof body.payload === "object") ? body.payload : body;
+    const payload = (body && typeof body.payload === "object") ? body.payload : body; // compat front actual
     res.json(holds.createHold({ holdId, ttlMinutes, payload }));
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
 }

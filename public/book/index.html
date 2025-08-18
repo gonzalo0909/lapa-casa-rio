@@ -1,309 +1,346 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Reservas — Lapa Casa Hostel</title>
-  <meta name="description" content="Reservá tu cama, bloqueá con HOLD y pagá por Stripe o Mercado Pago." />
-  <style>
-    :root{
-      --brand:#F03DDB; --fg:#111827; --muted:#6b7280; --line:#e5e7eb; --bg:#fff;
-      --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; --radius:14px; --shadow:0 10px 20px rgba(0,0,0,.06);
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:linear-gradient(180deg,#fff,#fff8fb)}
-    header{padding:18px 16px;border-bottom:1px solid var(--line)}
-    h1{margin:0;font-size:clamp(22px,4vw,28px)}
-    main{padding:18px 16px;max-width:1100px;margin:0 auto;display:grid;gap:16px}
-    .grid{display:grid;gap:16px}
-    .cols{grid-template-columns:1fr 1fr}
-    .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .pad{padding:16px}
-    label{font-weight:600;font-size:14px}
-    input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px}
-    .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
-    .btn{display:inline-flex;gap:8px;align-items:center;border:0;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer;text-decoration:none}
-    .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
-    .muted{color:var(--muted)}
-    .msg{border-radius:12px;padding:12px;margin:0 0 10px 0;font-weight:600}
-    .ok{background:#ecfdf5;border:1px solid #86efac;color:#065f46}
-    .warn{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12}
-    .bad{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
-    .beds{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px}
-    .bed{display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fafafa;cursor:pointer;user-select:none}
-    .bed.sel{outline:2px solid var(--brand);background:#fff}
-    .bed.off{opacity:.45;cursor:not-allowed;background:#f3f4f6}
-    .pair{display:grid;grid-template-columns:140px 1fr;gap:8px}
-    .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:2px 6px}
-    .hint{font-size:12px}
-    @media (max-width:920px){ .cols{grid-template-columns:1fr} .pair{grid-template-columns:1fr} .pair b{margin-top:6px} }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lapa Casa — Reservas</title>
+<meta name="description" content="Reserva camas, bloquea un HOLD y paga con Stripe o Mercado Pago."/>
+<style>
+  :root{--brand:#F03DDB;--fg:#111827;--muted:#6b7280;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--warn:#f59e0b;--radius:14px;--shadow:0 10px 20px rgba(0,0,0,.06)}
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--fg);background:linear-gradient(180deg,#fff,#fff8fb)}
+  header,footer{border-color:var(--line)}
+  header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8fb)} .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{font-weight:900}.muted{color:var(--muted)}
+  main{padding:18px 16px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)} .pad{padding:18px}
+  label{display:block;margin:.4rem 0 .2rem 0;font-weight:600} input,select{width:100%;padding:.6rem;border:1px solid var(--line);border-radius:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{display:inline-block;padding:10px 14px;border-radius:12px;background:var(--brand);color:#fff;font-weight:800;text-decoration:none;border:0;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line)}
+  .msg{border-radius:10px;padding:10px;margin:10px 0 0 0;font-weight:600}
+  .ok{background:#ecfdf5;border:1px solid #86efac;color:#065f46}.bad{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}.warn{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12}
+  .beds{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
+  .bed{padding:8px;border:1px solid var(--line);border-radius:10px;text-align:center;cursor:pointer;user-select:none}
+  .bed.busy{background:#f3f4f6;color:#9ca3af;cursor:not-allowed}
+  .bed.sel{outline:2px solid var(--brand);font-weight:800}
+  .room{margin:10px 0 0 0;border-top:1px dashed var(--line);padding-top:10px}
+  .tag{display:inline-block;background:#f3f4f6;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:.9rem;margin-right:6px}
+  .flex{display:flex;gap:10px;flex-wrap:wrap}
+  .right .card+.card{margin-top:16px}
+  @media (max-width:960px){ .grid{grid-template-columns:1fr} }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Reservas — Lapa Casa</h1>
-    <div class="muted">Elegí fechas, camas, bloqueá con HOLD y pagá.</div>
-  </header>
+<header>
+  <div class="wrap top">
+    <div class="logo">🏠 Lapa Casa Hostel</div>
+    <nav class="flex">
+      <a class="btn ghost" href="/">Home</a>
+      <a class="btn" href="/pago-exitoso-test/">Pago</a>
+      <a class="btn ghost" href="/admin/">Admin</a>
+    </nav>
+  </div>
+</header>
 
-  <main class="grid">
-    <!-- Mensajes -->
-    <section class="card"><div class="pad">
-      <div id="msg" class="msg warn">Completá las fechas para ver disponibilidad.</div>
-      <div class="pair"><b>HOLD</b><div>
-        <span id="holdInfo" class="muted">—</span>
-        <button id="btnRelease" class="btn ghost" style="margin-left:8px;display:none">Liberar HOLD</button>
-      </div></div>
-    </div></section>
+<main>
+  <div class="wrap grid">
+    <!-- Columna izquierda: Formulario -->
+    <section class="card left">
+      <div class="pad">
+        <h2 style="margin:0 0 8px 0">Reservar</h2>
+        <p class="muted" style="margin:0 0 10px 0">Elegí fechas, camas, bloqueá un <b>HOLD</b> y pagá.</p>
 
-    <section class="grid cols">
-      <!-- Form -->
-      <div class="card"><div class="pad">
-        <h3 style="margin:0 0 8px 0">Datos</h3>
-        <div class="row">
-          <div><label>Check-in</label><input id="inDate" type="date"></div>
-          <div><label>Check-out</label><input id="outDate" type="date"></div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div><label>Nombre</label><input id="name"></div>
-          <div><label>Email</label><input id="email" type="email"></div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div><label>Hombres</label><input id="men" type="number" min="0" value="1"></div>
-          <div><label>Mujeres</label><input id="women" type="number" min="0" value="0"></div>
-        </div>
-        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-          <button id="btnAvail" class="btn">Ver disponibilidad</button>
-          <button id="btnHold" class="btn ghost" disabled>Empezar HOLD</button>
-        </div>
-        <div class="muted hint" style="margin-top:8px">
-          * El HOLD bloquea las camas por ~10 minutos para evitar overbooking.
-        </div>
-      </div></div>
-
-      <!-- Pago -->
-      <div class="card"><div class="pad">
-        <h3 style="margin:0 0 8px 0">Pago</h3>
-        <div class="row">
-          <div><label>Total (R$)</label><input id="total" type="number" min="0" value="0"></div>
-          <div>
-            <label>Proveedor</label>
-            <select id="provider">
-              <option value="stripe">Stripe (tarjeta)</option>
-              <option value="mp">Mercado Pago (PIX/bol/cc)</option>
-            </select>
+        <form id="form">
+          <div class="row">
+            <div>
+              <label for="entrada">Entrada</label>
+              <input id="entrada" name="entrada" type="date" required />
+            </div>
+            <div>
+              <label for="salida">Salida</label>
+              <input id="salida" name="salida" type="date" required />
+            </div>
           </div>
-        </div>
-        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-          <button id="btnPay" class="btn" disabled>Confirmar & Pagar</button>
-          <a href="/pago-exitoso-test" class="btn ghost">Ver página de resultado</a>
-        </div>
-        <div class="muted hint" style="margin-top:8px">
-          * Tras pagar, volverás a <span class="kbd">/pago-exitoso-test</span> con tu <b>booking_id</b>.
-        </div>
-      </div></div>
+
+          <div class="row">
+            <div>
+              <label for="nombre">Nombre</label>
+              <input id="nombre" name="nombre" placeholder="Nombre y apellido" required />
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="tucorreo@dominio.com" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="hombres">Hombres</label>
+              <input id="hombres" name="hombres" type="number" min="0" value="1"/>
+            </div>
+            <div>
+              <label for="mujeres">Mujeres</label>
+              <input id="mujeres" name="mujeres" type="number" min="0" value="0"/>
+            </div>
+          </div>
+
+          <div class="room">
+            <div class="flex" style="align-items:center;justify-content:space-between">
+              <strong>Camas por cuarto</strong>
+              <span class="muted" id="legend">Ocupadas: gris · Libres: blanco · Selección: borde rosa</span>
+            </div>
+            <div id="rooms"></div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div>
+              <label for="total">Total (BRL)</label>
+              <input id="total" name="total" type="number" min="0" value="0" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <div class="flex">
+                <button type="button" id="btnHold" class="btn">🔒 HOLD</button>
+                <button type="button" id="btnRelease" class="btn ghost">Liberar HOLD</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="holdMsg" class="msg warn" style="display:none"></div>
+
+          <div class="flex" style="margin-top:12px">
+            <button type="button" id="payStripe" class="btn">💳 Pagar con Stripe</button>
+            <button type="button" id="payMP" class="btn ghost">⚡ Mercado Pago</button>
+            <button type="submit" class="btn ghost">Guardar en Sheets</button>
+          </div>
+        </form>
+      </div>
     </section>
 
-    <!-- Disponibilidad / Selección -->
-    <section class="card"><div class="pad">
-      <h3 style="margin:0 0 8px 0">Camas</h3>
-      <div class="muted" style="margin-bottom:6px">Tocá para seleccionar. Gris = ocupada / buffer / en HOLD.</div>
-      <div id="roomsWrap" class="grid" style="gap:22px"></div>
-    </div></section>
+    <!-- Columna derecha: Disponibilidad y resumen -->
+    <aside class="right">
+      <section class="card">
+        <div class="pad">
+          <h3 style="margin:0 0 8px 0">Disponibilidad</h3>
+          <div id="avail" class="muted">—</div>
+        </div>
+      </section>
 
-    <!-- Resumen -->
-    <section class="card"><div class="pad">
-      <h3 style="margin:0 0 8px 0">Resumen</h3>
-      <div class="pair"><b>Booking ID</b><div class="kbd" id="bid">—</div></div>
-      <div class="pair"><b>Fechas</b><div id="sumDates">—</div></div>
-      <div class="pair"><b>Personas</b><div id="sumPax">—</div></div>
-      <div class="pair"><b>Camas</b><div id="sumBeds">—</div></div>
-    </div></section>
-  </main>
+      <section class="card">
+        <div class="pad">
+          <h3 style="margin:0 0 8px 0">Resumen</h3>
+          <div id="summary" class="muted">Completá el formulario…</div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
 
-  <script>
-    // ---- Config front (capacidad por cuarto) ----
-    const CAPACITY = { "1": 12, "3": 12, "5": 7, "6": 7 };
+<footer>
+  <div class="wrap" style="text-align:center;padding:16px">© Lapa Casa Hostel — Santa Teresa, RJ</div>
+</footer>
 
-    // ---- State ----
-    const state = {
-      in: "", out: "", name:"", email:"", men:1, women:0,
-      occupied: { "1":[], "3":[], "5":[], "6":[] },
-      selected: { "1":[], "3":[], "5":[], "6":[] },
-      holdId: "", expiresAt: 0
+<script>
+(() => {
+  const $ = (q)=>document.querySelector(q);
+  const $$ = (q)=>Array.from(document.querySelectorAll(q));
+  const fmtBeds = (arr)=> (arr && arr.length)? arr.join(", ") : "—";
+  const CAPACITY = { "1":12, "3":12, "5":7, "6":7 }; // ajustar si cambia
+
+  // Estado simple
+  const state = {
+    occupied: {"1":[],"3":[],"5":[],"6":[]},
+    selected: {"1":[],"3":[],"5":[],"6":[]},
+    holdId: null,
+    holdExpiresAt: null
+  };
+
+  // Init fechas
+  const d = new Date(); d.setDate(d.getDate()+3);
+  $("#entrada").value = d.toISOString().slice(0,10);
+  d.setDate(d.getDate()+3);
+  $("#salida").value = d.toISOString().slice(0,10);
+
+  // Render resumen
+  function renderSummary(){
+    const sel = Object.entries(state.selected)
+      .filter(([_,a])=>a.length)
+      .map(([r,a])=>`Cuarto ${r}: ${fmtBeds(a)}`).join(" · ");
+    $("#summary").innerHTML = `
+      <div class="tag">Entrada: ${$("#entrada").value}</div>
+      <div class="tag">Salida: ${$("#salida").value}</div>
+      <div class="tag">H: ${$("#hombres").value} · M: ${$("#mujeres").value}</div>
+      <div style="margin-top:6px">${ sel || '<span class="muted">Sin camas seleccionadas</span>' }</div>
+      <div class="muted" style="margin-top:6px">Total BRL: <b>${Number($("#total").value||0)}</b></div>
+    `;
+  }
+
+  // Render disponibilidad + selectores de cama
+  function renderRooms(){
+    const cont = $("#rooms"); cont.innerHTML = "";
+    Object.keys(CAPACITY).forEach(roomId=>{
+      const total = CAPACITY[roomId];
+      const occ = new Set(state.occupied[roomId] || []);
+      const sel = new Set(state.selected[roomId] || []);
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `<div class="muted" style="margin:8px 0 4px 0"><b>Cuarto ${roomId}</b> · Ocupadas: ${occ.size} / ${total}</div>`;
+      const grid = document.createElement("div"); grid.className = "beds";
+      for (let n=1;n<=total;n++){
+        const div = document.createElement("div");
+        const busy = occ.has(n);
+        const selected = sel.has(n);
+        div.className = "bed" + (busy? " busy":"") + (selected? " sel": "");
+        div.textContent = n;
+        if (!busy){
+          div.addEventListener("click", ()=>{
+            const arr = state.selected[roomId] || [];
+            const i = arr.indexOf(n);
+            if (i>=0) arr.splice(i,1); else arr.push(n);
+            state.selected[roomId] = arr.sort((a,b)=>a-b);
+            renderRooms(); renderSummary();
+          });
+        }
+        grid.appendChild(div);
+      }
+      wrap.appendChild(grid);
+      cont.appendChild(wrap);
+    });
+  }
+
+  async function fetchAvailability(){
+    const from = $("#entrada").value, to = $("#salida").value;
+    $("#avail").textContent = "Cargando…";
+    try{
+      const r = await fetch(`/api/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      const j = await r.json();
+      if (!j.ok) throw new Error("availability_error");
+      state.occupied = j.occupied || state.occupied;
+      $("#avail").innerHTML = Object.keys(CAPACITY).map(roomId=>{
+        const total = CAPACITY[roomId]; const occ = (state.occupied[roomId]||[]).length;
+        return `<div class="tag">Cuarto ${roomId}: libres ${Math.max(total-occ,0)}</div>`;
+      }).join(" ");
+      renderRooms();
+    }catch{
+      $("#avail").textContent = "No disponible.";
+    }
+  }
+
+  function camasPayload(){
+    const out={}; Object.keys(state.selected).forEach(r=>{
+      if ((state.selected[r]||[]).length) out[r] = state.selected[r];
+    });
+    return out;
+  }
+
+  function setHoldMsg(kind, text){
+    const box = $("#holdMsg");
+    box.style.display = "block";
+    box.className = "msg " + (kind||"warn");
+    box.textContent = text;
+  }
+
+  async function startHold(){
+    const p = {
+      entrada: $("#entrada").value,
+      salida: $("#salida").value,
+      nombre: $("#nombre").value,
+      email: $("#email").value,
+      hombres: Number($("#hombres").value||0),
+      mujeres: Number($("#mujeres").value||0),
+      camas: camasPayload(),
+      total: Number($("#total").value||0),
+      ttlMinutes: 10
     };
+    if (!Object.keys(p.camas).length) { setHoldMsg("bad","Elegí al menos una cama."); return; }
+    try{
+      const r = await fetch("/api/holds/start", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(p) });
+      const j = await r.json();
+      if (j.ok){
+        state.holdId = j.holdId; state.holdExpiresAt = j.expiresAt;
+        setHoldMsg("ok", `HOLD activo (#${state.holdId}). Expira: ${new Date(j.expiresAt).toLocaleTimeString()}`);
+      } else throw new Error(j.error||"hold_failed");
+    }catch(e){ setHoldMsg("bad","No se pudo iniciar HOLD."); }
+    await fetchAvailability();
+  }
 
-    // ---- Helpers ----
-    const $ = (s)=>document.querySelector(s);
-    const msg = $("#msg"), roomsWrap = $("#roomsWrap");
-    const btnAvail = $("#btnAvail"), btnHold = $("#btnHold"), btnPay = $("#btnPay");
-    const holdInfo = $("#holdInfo"), btnRelease = $("#btnRelease");
-    const bid = $("#bid"), sumDates = $("#sumDates"), sumBeds = $("#sumBeds"), sumPax = $("#sumPax");
+  async function releaseHold(){
+    if (!state.holdId) { setHoldMsg("warn","No hay HOLD activo."); return; }
+    try{
+      const r = await fetch("/api/holds/release", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ holdId: state.holdId })});
+      const j = await r.json();
+      if (j.ok){ setHoldMsg("warn","HOLD liberado."); state.holdId=null; state.holdExpiresAt=null; }
+      else throw new Error();
+    }catch{ setHoldMsg("bad","No se pudo liberar HOLD."); }
+    await fetchAvailability();
+  }
 
-    function setMsg(kind, text){ msg.className = "msg "+kind; msg.textContent = text; }
-    function iso(d){ return String(d||"").slice(0,10); }
-    function toMoney(n){ return Math.max(0, Math.round(Number(n||0))); }
-    function pick(arr, n){ return Array.from(new Set((arr||[]).map(x=>Number(x)).filter(x=>Number.isFinite(x)))).slice(0,n); }
-    function nonEmptyCamas(c){ const o={}; for(const k of Object.keys(c)) if(Array.isArray(c[k])&&c[k].length) o[k]=c[k]; return o; }
-    function camasCount(c){ return Object.values(c).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0); }
+  // Guardar/Upsert directo a Sheets vía backend
+  async function upsertBooking(status="pending"){
+    const payload = {
+      bookingId: state.holdId || `BKG-${Date.now()}`,
+      entrada: $("#entrada").value,
+      salida:  $("#salida").value,
+      nombre:  $("#nombre").value,
+      email:   $("#email").value,
+      hombres: Number($("#hombres").value||0),
+      mujeres: Number($("#mujeres").value||0),
+      camas:   camasPayload(),
+      total:   Number($("#total").value||0),
+      pay_status: status
+    };
+    const r = await fetch("/api/bookings", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error||"bookings_error");
+    return payload.bookingId;
+  }
 
-    async function jget(url){ const r=await fetch(url,{headers:{Accept:"application/json"}}); if(!r.ok) throw new Error(r.status); return r.json(); }
-    async function jpost(url,body){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(body||{})}); const t=await r.text(); try{ const j=JSON.parse(t); if(!r.ok||j.ok===false) throw new Error(j.error||r.status); return j; }catch{ if(!r.ok) throw new Error(t||r.status); return {ok:true}; } }
+  async function payStripe(){
+    try{
+      const bid = await upsertBooking("hold");
+      const total = Number($("#total").value||0);
+      const r = await fetch("/payments/stripe/session", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ order:{ booking_id: bid, total } })
+      });
+      const j = await r.json();
+      if (j && (j.url || j.id)){
+        location.href = j.url || `/pago-exitoso-test/?provider=stripe&session_id=${encodeURIComponent(j.id)}&booking_id=${encodeURIComponent(bid)}&status=success`;
+      } else throw new Error();
+    }catch{ setHoldMsg("bad","Stripe: no se pudo crear sesión."); }
+  }
 
-    // ---- Render camas ----
-    function renderRooms(){
-      roomsWrap.innerHTML = "";
-      for (const rid of Object.keys(CAPACITY)){
-        const total = CAPACITY[rid];
-        const occ = new Set(state.occupied[rid]||[]);
-        const sel = new Set(state.selected[rid]||[]);
-        const box = document.createElement("div");
-        box.innerHTML = `<div class="muted" style="margin-bottom:6px"><b>Cuarto ${rid}</b> — ${total} camas</div>`;
-        const grid = document.createElement("div"); grid.className="beds";
-        for (let b=1;b<=total;b++){
-          const d = document.createElement("div");
-          d.className = "bed" + (occ.has(b) ? " off" : sel.has(b) ? " sel" : "");
-          d.textContent = b;
-          if (!occ.has(b)){
-            d.addEventListener("click", ()=>{
-              if (sel.has(b)) sel.delete(b); else sel.add(b);
-              state.selected[rid] = Array.from(sel).sort((a,b)=>a-b);
-              renderRooms(); renderSummary(); btnHold.disabled = camasCount(nonEmptyCamas(state.selected))===0 || !state.in || !state.out;
-            });
-          }
-          grid.appendChild(d);
-        }
-        box.appendChild(grid);
-        roomsWrap.appendChild(box);
-      }
-    }
+  async function payMP(){
+    try{
+      const bid = await upsertBooking("hold");
+      const total = Number($("#total").value||0);
+      const r = await fetch("/payments/mp/preference", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ order:{ booking_id: bid, total } })
+      });
+      const j = await r.json();
+      if (j && j.init_point) location.href = j.init_point;
+      else throw new Error();
+    }catch{ setHoldMsg("bad","Mercado Pago: no se pudo crear preferencia."); }
+  }
 
-    function renderSummary(){
-      bid.textContent = state.holdId || "—";
-      sumDates.textContent = state.in && state.out ? `${state.in} → ${state.out}` : "—";
-      sumPax.textContent = `${Number(state.men||0)} H / ${Number(state.women||0)} M`;
-      const parts = [];
-      for (const rid of Object.keys(state.selected)){
-        const arr = state.selected[rid];
-        if (arr && arr.length) parts.push(`Cuarto ${rid}: ${arr.join(", ")}`);
-      }
-      sumBeds.textContent = parts.length ? parts.join(" · ") : "—";
-    }
+  // Listeners
+  $("#entrada").addEventListener("change", fetchAvailability);
+  $("#salida").addEventListener("change", fetchAvailability);
+  ["hombres","mujeres","total","nombre","email"].forEach(id=> $("#"+id).addEventListener("input", renderSummary));
+  $("#btnHold").addEventListener("click", startHold);
+  $("#btnRelease").addEventListener("click", releaseHold);
+  $("#payStripe").addEventListener("click", payStripe);
+  $("#payMP").addEventListener("click", payMP);
 
-    function startHoldCountdown(){
-      if (!state.expiresAt) return;
-      const tick = ()=>{
-        const ms = state.expiresAt - Date.now();
-        if (ms <= 0){ holdInfo.textContent = "Expiró el HOLD"; btnPay.disabled = true; setMsg("bad","⚠️ HOLD vencido. Volvé a crearlo para pagar."); return; }
-        const m = Math.floor(ms/60000), s = Math.floor((ms%60000)/1000);
-        holdInfo.textContent = `Activo (${m}:${String(s).padStart(2,"0")}) • ${state.holdId}`;
-        requestAnimationFrame(()=>setTimeout(tick,500));
-      };
-      tick();
-    }
+  $("#form").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    try{ await upsertBooking("pending"); setHoldMsg("ok","Reserva guardada en Sheets."); }
+    catch{ setHoldMsg("bad","No se pudo guardar."); }
+  });
 
-    // ---- Eventos UI ----
-    $("#inDate").addEventListener("change", e=>{ state.in = iso(e.target.value); renderSummary(); });
-    $("#outDate").addEventListener("change", e=>{ state.out= iso(e.target.value); renderSummary(); });
-    $("#name").addEventListener("input", e=> state.name = e.target.value);
-    $("#email").addEventListener("input", e=> state.email = e.target.value);
-    $("#men").addEventListener("input", e=> { state.men = Number(e.target.value||0); renderSummary(); });
-    $("#women").addEventListener("input", e=> { state.women = Number(e.target.value||0); renderSummary(); });
-
-    btnAvail.addEventListener("click", async ()=>{
-      try{
-        if (!state.in || !state.out) return setMsg("bad","Elegí check-in y check-out.");
-        setMsg("warn","Buscando disponibilidad…");
-        const j = await jget(`/api/availability?from=${encodeURIComponent(state.in)}&to=${encodeURIComponent(state.out)}`);
-        state.occupied = j.occupied || state.occupied;
-        // limpiar selección que choque con ocupados
-        for (const rid of Object.keys(state.selected)){
-          state.selected[rid] = (state.selected[rid]||[]).filter(b=>!(state.occupied[rid]||[]).includes(b));
-        }
-        renderRooms(); renderSummary();
-        const totals = Object.keys(CAPACITY).map(rid=>`${rid}: ${CAPACITY[rid] - (state.occupied[rid]||[]).length}/${CAPACITY[rid]} libres`).join(" · ");
-        setMsg("ok",`Disponibilidad lista (${totals}). Seleccioná camas y creá el HOLD.`);
-        btnHold.disabled = camasCount(nonEmptyCamas(state.selected))===0;
-      }catch(e){ setMsg("bad","Error obteniendo disponibilidad."); }
-    });
-
-    $("#btnRelease").addEventListener("click", async ()=>{
-      try{
-        if (!state.holdId) return;
-        await jpost("/api/holds/release", { holdId: state.holdId });
-        state.holdId = ""; state.expiresAt = 0; holdInfo.textContent = "—";
-        btnRelease.style.display="none"; btnPay.disabled = true;
-        setMsg("warn","HOLD liberado.");
-        renderSummary();
-      }catch{ setMsg("bad","No se pudo liberar el HOLD."); }
-    });
-
-    btnHold.addEventListener("click", async ()=>{
-      try{
-        const camas = nonEmptyCamas(state.selected);
-        if (!Object.keys(camas).length) return setMsg("bad","Seleccioná al menos una cama.");
-        if (!state.in || !state.out) return setMsg("bad","Completá las fechas.");
-        setMsg("warn","Creando HOLD…");
-        const payload = {
-          holdId: `HOLD-${Date.now()}`,
-          ttlMinutes: 10,
-          payload: {
-            camas,
-            entrada: state.in, salida: state.out,
-            nombre: state.name, email: state.email,
-            hombres: Number(state.men||0), mujeres: Number(state.women||0),
-            total: toMoney($("#total").value||0), pay_status:"hold"
-          }
-        };
-        const r = await jpost("/api/holds/start", payload);
-        state.holdId = r.holdId; state.expiresAt = r.expiresAt ? Date.parse(r.expiresAt) : (Date.now()+9*60000);
-        bid.textContent = state.holdId;
-        btnRelease.style.display="inline-flex";
-        btnPay.disabled = false;
-        setMsg("ok",`HOLD creado. Tenés unos minutos para pagar.`);
-        startHoldCountdown();
-      }catch(e){ setMsg("bad","Error creando HOLD."); }
-    });
-
-    btnPay.addEventListener("click", async ()=>{
-      try{
-        if (!state.holdId) return setMsg("bad","Creá un HOLD antes de pagar.");
-        setMsg("warn","Guardando reserva…");
-        // 1) Upsert en Sheets vía backend
-        await jpost("/api/bookings", {
-          booking_id: state.holdId,
-          nombre: state.name, email: state.email,
-          telefono:"", entrada: state.in, salida: state.out,
-          hombres: Number(state.men||0), mujeres: Number(state.women||0),
-          camas: state.selected, total: toMoney($("#total").value||0),
-          pay_status:"pending"
-        });
-
-        // 2) Redirigir a pago
-        const provider = $("#provider").value;
-        const order = { bookingId: state.holdId, booking_id: state.holdId, total: toMoney($("#total").value||0) };
-        if (provider === "stripe"){
-          setMsg("warn","Abriendo Stripe…");
-          const s = await jpost("/payments/stripe/session", { order });
-          if (s.url) location.href = s.url; else if (s.id) location.href = `/pago-exitoso-test?booking_id=${encodeURIComponent(state.holdId)}&provider=stripe&session_id=${encodeURIComponent(s.id)}&status=success`;
-          else setMsg("bad","Stripe no devolvió URL.");
-        } else {
-          setMsg("warn","Abriendo Mercado Pago…");
-          const m = await jpost("/payments/mp/preference", { order });
-          if (m.init_point) location.href = m.init_point;
-          else setMsg("bad","MP no devolvió init_point.");
-        }
-      }catch(e){ setMsg("bad","No se pudo iniciar el pago."); }
-    });
-
-    // Init
-    (function initDates(){
-      const today = new Date(); const iso = (d)=>d.toISOString().slice(0,10);
-      const inD = new Date(today.getTime()+2*86400000);
-      const outD= new Date(today.getTime()+5*86400000);
-      $("#inDate").value = iso(inD); $("#outDate").value = iso(outD);
-      state.in = iso(inD); state.out = iso(outD);
-      renderRooms(); renderSummary();
-    })();
-  </script>
+  // Primera carga
+  renderSummary();
+  fetchAvailability();
+})();
+</script>
 </body>
 </html>

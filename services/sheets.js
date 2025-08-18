@@ -1,41 +1,29 @@
 "use strict";
 /**
- * /services/sheets.js
- * Lee filas desde GAS WebApp, envía updates y calcula ocupación.
- * Requiere Node 18+ (fetch nativo).
+ * /services/sheets.js — Fetch a GAS + ocupación + notifier
  */
-
 const ROWS_URL = String(process.env.BOOKINGS_WEBAPP_URL || "").trim();
 const BUFFER_PER_ROOM = Number(process.env.BOOKING_BUFFER_PER_ROOM || 0);
 
 function parseISO(s){ return new Date(String(s).slice(0,10)+"T00:00:00Z"); }
 function overlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
 
-/** GET filas normalizadas desde GAS (?mode=rows) */
 async function fetchRowsFromSheet() {
   if (!ROWS_URL) throw new Error("BOOKINGS_WEBAPP_URL_missing");
   const url = ROWS_URL + (ROWS_URL.includes("?") ? "&" : "?") + "mode=rows";
   const res = await fetch(url, { headers:{ "Accept":"application/json" }});
-  const j = await res.json().catch(()=> ({}));
-  if (!res.ok || !j || j.ok !== true || !Array.isArray(j.rows)) {
-    throw new Error("rows_fetch_error");
-  }
+  const j = await res.json();
+  if (!res.ok || !j || j.ok !== true || !Array.isArray(j.rows)) throw new Error("rows_fetch_error");
   return j.rows.map(r => ({
     booking_id: String(r.booking_id||""),
-    entrada:    String(r.entrada||""),
-    salida:     String(r.salida||""),
+    entrada: String(r.entrada||""),
+    salida:  String(r.salida||""),
     camas_json: String(r.camas_json||""),
     pay_status: String(r.pay_status||""),
-    total:      Number(r.total||0)
+    total: Number(r.total||0)
   }));
 }
 
-/**
- * Calcula camas ocupadas por cuarto en [fromISO, toISO)
- * - rows: filas de fetchRowsFromSheet()
- * - holdsMap: { "1":Set(...), "3":Set(...), "5":Set(...), "6":Set(...) }
- * - bufferPerRoom: reserva ficticia N camas por cuarto (overbooking guard)
- */
 function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = BUFFER_PER_ROOM) {
   const from = parseISO(fromISO);
   const to   = parseISO(toISO);
@@ -50,20 +38,10 @@ function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = B
     let camas = {};
     try { camas = r.camas_json ? JSON.parse(r.camas_json) : {}; } catch {}
     for (const roomId of Object.keys(camas||{})) {
-      for (const bed of (camas[roomId]||[])) {
-        const n = Number(bed);
-        if (Number.isFinite(n)) occupied[roomId]?.add(n);
-      }
+      (camas[roomId]||[]).forEach(bed => occupied[roomId]?.add(Number(bed)));
     }
   }
 
-  // Suma HOLDs vigentes
-  for (const roomId of Object.keys(holdsMap||{})) {
-    const set = holdsMap[roomId];
-    if (set && set.forEach) set.forEach(bed => occupied[roomId]?.add(Number(bed)));
-  }
-
-  // Buffer sintético por cuarto (si se configura)
   if (bufferPerRoom > 0) {
     for (const roomId of Object.keys(occupied)) {
       let added = 0, bed = 1;
@@ -74,13 +52,16 @@ function calcOccupiedBeds(rows, fromISO, toISO, holdsMap = {}, bufferPerRoom = B
     }
   }
 
-  // → arrays ordenados
+  for (const roomId of Object.keys(holdsMap||{})) {
+    const set = holdsMap[roomId];
+    if (set && set.forEach) set.forEach(bed => occupied[roomId]?.add(Number(bed)));
+  }
+
   const out = {};
   for (const k of Object.keys(occupied)) out[k] = Array.from(occupied[k]).sort((a,b)=>a-b);
   return out;
 }
 
-/** POST hacia GAS (upsert_booking, payment_update, etc.) */
 async function notifySheets(payload) {
   if (!ROWS_URL) throw new Error("BOOKINGS_WEBAPP_URL_missing");
   const res = await fetch(ROWS_URL, {

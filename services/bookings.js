@@ -1,55 +1,68 @@
-// services/bookings.js
 "use strict";
 /**
- * /services/bookings.js — Router Express
- * POST /        → upsert_booking (Sheets)
- * GET  /        → rows (Sheets)
+ * /services/holds.js — HOLD por reserva con TTL
  */
-const express = require("express");
-const router = express.Router();
-const { postToSheets, fetchRowsFromSheet } = require("./sheets");
+const DEFAULT_TTL_MIN = 10;
+const holdsById = new Map(); // holdId → { expiresAt, camas:{roomId:number[]}, meta:{} }
+const ROOMS = ["1","3","5","6"];
+const now = () => Date.now();
 
-// JSON solo para este router
-router.use(express.json({ limit: "1mb" }));
-
-// Crea/actualiza una reserva en Sheets
-router.post("/", async (req, res) => {
-  try {
-    const p = Object(req.body || {});
-    const booking_id = String(p.booking_id || p.bookingId || `BKG-${Date.now()}`);
-
-    const payload = {
-      action: "upsert_booking",
-      booking_id,
-      nombre:   p.nombre   || "",
-      email:    p.email    || "",
-      telefono: p.telefono || "",
-      entrada:  p.entrada  || "",
-      salida:   p.salida   || "",
-      hombres:  Number(p.hombres || 0),
-      mujeres:  Number(p.mujeres || 0),
-      total:    Number(p.total   || 0),
-      camas:    p.camas || {},
-      pay_status: p.pay_status || "pending",
-    };
-
-    const out = await postToSheets(payload);
-    if (!out || out.ok !== true) throw new Error(out?.error || "sheets_error");
-
-    res.json({ ok: true, booking_id });
-  } catch (e) {
-    res.status(400).json({ ok: false, error: String(e.message || e) });
+function normCamas(c) {
+  const out = {};
+  const src = c && typeof c === "object" ? c : {};
+  for (const k of Object.keys(src)) {
+    const rid = String(k);
+    const arr = Array.isArray(src[k]) ? src[k] : [];
+    out[rid] = Array.from(new Set(arr.map(n => Number(n)).filter(n => Number.isFinite(n) && n > 0)));
   }
-});
+  return out;
+}
 
-// Lista reservas desde Sheets
-router.get("/", async (_req, res) => {
-  try {
-    const rows = await fetchRowsFromSheet();
-    res.json({ ok: true, rows });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: String(e.message || e) });
+function createHold({ holdId, ttlMinutes = DEFAULT_TTL_MIN, payload = {} } = {}) {
+  const id  = String(holdId || "").trim() || `HOLD-${Date.now()}`;
+  const ttl = Math.max(1, Number(ttlMinutes || DEFAULT_TTL_MIN));
+  const exp = now() + ttl * 60 * 1000;
+
+  const camas = normCamas(payload.camas || payload.camas_json || {});
+  const meta  = { ...payload, camas };
+
+  holdsById.set(id, { expiresAt: exp, camas, meta });
+  return { ok: true, holdId: id, expiresAt: new Date(exp).toISOString(), ttlMinutes: ttl };
+}
+
+function confirmHold(holdId) {
+  const id = String(holdId || "");
+  const removed = holdsById.delete(id);
+  return { ok: true, holdId: id, removed: !!removed, status: "confirmed" };
+}
+
+function releaseHold(holdId) {
+  const id = String(holdId || "");
+  const removed = holdsById.delete(id);
+  return { ok: true, holdId: id, removed: !!removed, status: "released" };
+}
+
+function sweepExpired() {
+  const t = now();
+  let removed = 0;
+  for (const [id, h] of holdsById) {
+    if (!h || t >= h.expiresAt) { holdsById.delete(id); removed++; }
   }
-});
+  return { removed, remaining: holdsById.size };
+}
 
-module.exports = router;
+function getHoldsMap() {
+  const out = {};
+  for (const r of ROOMS) out[r] = new Set();
+  const t = now();
+  for (const h of holdsById.values()) {
+    if (!h || t >= h.expiresAt) continue;
+    for (const rid of Object.keys(h.camas || {})) {
+      const set = out[rid] || (out[rid] = new Set());
+      for (const b of h.camas[rid]) set.add(Number(b));
+    }
+  }
+  return out;
+}
+
+module.exports = { createHold, confirmHold, releaseHold, sweepExpired, getHoldsMap };

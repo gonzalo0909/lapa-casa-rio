@@ -2,7 +2,7 @@
 /**
  * Lapa Casa — Backend (Express)
  * Estáticos, reservas (Sheets), disponibilidad + HOLDs, pagos Stripe/MP, webhooks, admin, eventos.
- * FIX: carga robusta del router de bookings para evitar "Object" en Router.use().
+ * FIX: si services/bookings.js no exporta un router válido, usa un fallback interno.
  */
 require("dotenv").config();
 
@@ -28,7 +28,6 @@ app.use(cors({
   origin: (origin, cb)=>{
     if (!origin) return cb(null, true);
     const ok = !allowList.length || allowList.some(a=>{
-      if (!a) return false;
       try {
         const host = new URL(origin).hostname;
         return host === a || host.endsWith(`.${a}`);
@@ -83,31 +82,21 @@ function deduper(max=1000, ttl=10*60*1000){
 }
 const isDup = deduper();
 
-/** Acepta: función Express, {default:fn}, {router:fn}, o objetos con .handle(req,res,next) */
-function asMiddleware(mod, name) {
-  const cand = mod && (mod.default || mod.router || mod);
-  if (typeof cand === "function") return cand;
-  if (cand && typeof cand.handle === "function") {
-    return (req,res,next)=> cand.handle(req,res,next);
-  }
-  throw new TypeError(`${name} no es un middleware Express (recibí ${typeof cand})`);
-}
-
-/* ---------- Services ---------- */
+/* ---------- Services base ---------- */
 const holds = require("./services/holds.js");
 const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./services/sheets.js");
 
-// Stripe (opcional)
+/* ---------- Stripe opcional ---------- */
 let stripeSvc = null;
 try { stripeSvc = require("./services/payments-stripe.js"); } catch {}
 const stripeKeysOK = !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
 
-// MP (opcional)
+/* ---------- MP opcional ---------- */
 let mpSvc = null;
 try { mpSvc = require("./services/payments-mp.js"); } catch {}
 const mpOK = !!process.env.MP_ACCESS_TOKEN;
 
-// Eventos (opcional)
+/* ---------- Eventos opcional ---------- */
 let eventsModule = null;
 try { eventsModule = require("./services/events.js"); } catch {}
 
@@ -197,17 +186,78 @@ app.get("/crons/holds-sweep", (req,res)=>{
   res.json({ ok:true, ...holds.sweepExpired() });
 });
 
-/* ---------- Bookings Router (Sheets) ---------- */
-/*  ⚠️ Importa el ARCHIVO EXACTO para evitar colisiones con carpeta "services/bookings/" */
-const bookingsMod = require("./services/bookings.js");
-const bookingsRouter = asMiddleware(bookingsMod, "bookingsRouter");
+/* ---------- Bookings Router (con fallback) ---------- */
+function isCallableRouter(x){
+  return typeof x === "function";
+}
+function wrapHandle(obj){
+  // si viene como objeto con .handle, lo adapto
+  if (obj && typeof obj.handle === "function") {
+    return (req,res,next)=> obj.handle(req,res,next);
+  }
+  return null;
+}
+
+let bookingsRouter = null;
+try {
+  // intenta distintas formas de export
+  const mod = require("./services/bookings.js");
+  bookingsRouter =
+    (mod && (mod.default || mod.router || mod)) || null;
+
+  if (!isCallableRouter(bookingsRouter)) {
+    const wrapped = wrapHandle(bookingsRouter);
+    if (wrapped) bookingsRouter = wrapped;
+  }
+} catch (e) {
+  console.warn("[bookings] no se pudo cargar services/bookings.js:", e.message);
+}
+
+if (!isCallableRouter(bookingsRouter)) {
+  // Fallback mínimo para no romper deploy
+  console.warn("[bookings] usando FALLBACK interno (POST/GET contra Sheets)");
+  const r = express.Router();
+  r.use(express.json({ limit:"1mb" }));
+  r.post("/", async (req,res)=>{
+    try{
+      const p = Object(req.body || {});
+      const booking_id = String(p.booking_id || p.bookingId || `BKG-${Date.now()}`);
+      const payload = {
+        action:"upsert_booking",
+        booking_id,
+        nombre:   p.nombre   || "",
+        email:    p.email    || "",
+        telefono: p.telefono || "",
+        entrada:  p.entrada  || "",
+        salida:   p.salida   || "",
+        hombres:  Number(p.hombres || 0),
+        mujeres:  Number(p.mujeres || 0),
+        total:    Number(p.total   || 0),
+        camas:    p.camas || {},
+        pay_status: p.pay_status || "pending",
+      };
+      const out = await notifySheets(payload);
+      if (!out || out.ok !== true) throw new Error(out?.error || "sheets_error");
+      res.json({ ok:true, booking_id });
+    }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
+  });
+  r.get("/", async (_req,res)=>{
+    try{
+      const rows = await fetchRowsFromSheet();
+      res.json({ ok:true, rows });
+    }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
+  });
+  bookingsRouter = r;
+}
+
 app.use("/bookings", bookingsRouter);
 app.use("/api/bookings", bookingsRouter);
 
 /* ---------- Admin (opcional) ---------- */
 try {
-  const adminRouter = asMiddleware(require("./routes/admin.js"), "adminRouter");
-  app.use("/admin", adminRouter);
+  const adminMod = require("./routes/admin.js");
+  const adminRouter = isCallableRouter(adminMod) ? adminMod : (adminMod?.default || adminMod?.router || wrapHandle(adminMod));
+  if (adminRouter) app.use("/admin", adminRouter);
 } catch (e) {
   console.warn("[admin] opcional:", e.message);
 }
@@ -233,7 +283,7 @@ if (stripeSvc && stripeKeysOK) {
   });
 }
 
-/* ---------- Pagos Mercado Pago ---------- */
+/* ---------- Pagos MP ---------- */
 if (mpSvc && mpOK) {
   app.post("/payments/mp/preference", async (req,res)=>{
     try{
@@ -291,4 +341,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-

@@ -80,24 +80,21 @@
     (function(){
       const q = new URLSearchParams(location.search);
 
-      // Campos que pueden llegar desde Stripe o MP
-      // Stripe: success_url ...?booking_id=..., sin "status" (usamos 'success' por llegada a esta página)
-      // MP: back_urls agrega ?status / ?collection_status / ?external_reference / ?payment_id / ?merchant_order_id
+      // Detecta origen y datos
       const statusRaw = (q.get("status") || q.get("collection_status") || "").toLowerCase();
-      const mpTopic   = (q.get("topic") || "").toLowerCase();           // por si llegó desde notificación manual
-      const provider  = q.get("provider") || (q.get("preference_id") ? "mercado_pago" : q.get("session_id") ? "stripe" : (mpTopic ? "mercado_pago" : ""));
+      const mpTopic   = (q.get("topic") || "").toLowerCase();
+      const provider  = q.get("provider")
+        || (q.get("preference_id") ? "mercado_pago"
+        :  q.get("session_id") ? "stripe"
+        :  mpTopic ? "mercado_pago" : "");
       const bookingId = q.get("booking_id") || q.get("external_reference") || "";
 
-      // Deduce estado final unificado
-      // success | pending | cancel
+      // Estado unificado
       let state = "pending";
-      if (statusRaw === "approved" || statusRaw === "success") state = "success";
-      else if (statusRaw === "in_process" || statusRaw === "pending") state = "pending";
-      else if (statusRaw === "rejected" || statusRaw === "cancel" || statusRaw === "failure") state = "cancel";
-      else {
-        // Si no vino status (caso Stripe success_url), lo tomamos como success "optimista"
-        if (provider === "stripe" && bookingId) state = "success";
-      }
+      if (["approved","success"].includes(statusRaw)) state = "success";
+      else if (["in_process","pending"].includes(statusRaw)) state = "pending";
+      else if (["rejected","cancel","failure"].includes(statusRaw)) state = "cancel";
+      else if (provider === "stripe" && bookingId) state = "success"; // éxito optimista por success_url
 
       // Pinta UI
       const sub = document.getElementById("sub");
@@ -128,18 +125,18 @@
         sub.textContent = "Revisá el medio de pago o probá con otra opción (PIX/MP o tarjeta).";
       }
 
-      // Accesos directos útiles (no sensibles)
-      const pi = q.get("payment_id");          // MP
-      const mo = q.get("merchant_order_id");   // MP
-      const si = q.get("session_id");          // Stripe (si lo usás)
+      // Debug opcional (IDs)
+      const pi = q.get("payment_id");
+      const mo = q.get("merchant_order_id");
+      const si = q.get("session_id");
       if (pi || mo || si){
         const dbg = document.createElement("div");
         dbg.className = "muted";
         dbg.style.marginTop = "10px";
         dbg.textContent = "Ref: " + [
-          si ? ("Stripe session=" + si) : null,
-          pi ? ("MP payment=" + pi) : null,
-          mo ? ("MP order=" + mo) : null
+          si && ("Stripe session=" + si),
+          pi && ("MP payment=" + pi),
+          mo && ("MP order=" + mo)
         ].filter(Boolean).join(" · ");
         msg.insertAdjacentElement("afterend", dbg);
       }

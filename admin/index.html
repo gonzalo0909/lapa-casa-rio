@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Lapa Casa</title>
+  <style>
+    :root{--brand:#F03DDB;--line:#e5e7eb;--muted:#6b7280;--ok:#16a34a;--bad:#ef4444}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
+    header{padding:16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8fb)}
+    h1{margin:0;font-size:20px} main{max-width:1024px;margin:0 auto;padding:16px}
+    .card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;margin:12px 0}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:720px){.row{grid-template-columns:1fr}}
+    label{font-weight:600;margin:6px 0 4px;display:block} input,button,select{padding:10px;border:1px solid var(--line);border-radius:10px;width:100%}
+    button{background:var(--brand);color:#fff;border:none;font-weight:700;cursor:pointer}
+    button.ghost{background:#fff;color:#111;border:1px solid var(--line)}
+    table{width:100%;border-collapse:collapse;margin-top:12px} th,td{border:1px solid var(--line);padding:8px;font-size:14px}
+    th{background:#faf5ff;text-align:left} .muted{color:var(--muted)} .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+    .ok{color:var(--ok)} .bad{color:var(--bad)} .flex{display:flex;gap:8px;flex-wrap:wrap} .right{margin-left:auto}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="flex" style="align-items:center">
+      <h1>Panel Admin — Lapa Casa</h1>
+      <span id="commit" class="muted right"></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Login -->
+    <section id="loginCard" class="card">
+      <h3>Acceso</h3>
+      <div class="row">
+        <div>
+          <label>Usuario</label>
+          <input id="user" autocomplete="username" />
+        </div>
+        <div>
+          <label>Contraseña</label>
+          <input id="pass" type="password" autocomplete="current-password" />
+        </div>
+      </div>
+      <div class="flex" style="margin-top:12px">
+        <button id="btnLogin">Entrar</button>
+        <span id="loginMsg" class="muted"></span>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dash" class="card" style="display:none">
+      <div class="flex" style="align-items:center">
+        <h3 style="margin:0">Dashboard</h3>
+        <button id="btnLogout" class="ghost right">Salir</button>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <div class="card">
+          <h4 style="margin-top:0">Disponibilidad</h4>
+          <div class="row">
+            <div><label>Desde</label><input id="from" type="date"></div>
+            <div><label>Hasta</label><input id="to" type="date"></div>
+          </div>
+          <div class="flex" style="margin-top:10px">
+            <button id="btnAvail">Consultar</button>
+            <span id="availMsg" class="muted"></span>
+          </div>
+          <table id="availTable" style="display:none">
+            <thead><tr><th>Cuarto</th><th>Total</th><th>Ocupadas</th><th>Libres</th><th>Camas ocupadas</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h4 style="margin-top:0">Reservas</h4>
+          <div class="flex">
+            <button id="btnRows">Cargar reservas</button>
+            <span id="rowsMsg" class="muted"></span>
+          </div>
+          <div style="max-height:360px;overflow:auto">
+            <table id="rowsTable" style="display:none">
+              <thead>
+                <tr>
+                  <th>booking_id</th><th>nombre</th><th>entrada</th><th>salida</th>
+                  <th>pay_status</th><th>total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4 style="margin-top:0">Diagnóstico</h4>
+        <div class="flex">
+          <button id="btnDiag">/api/diag</button>
+          <span id="diagMsg" class="muted"></span>
+        </div>
+        <pre id="diagOut" style="white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px;max-height:240px;overflow:auto"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (sel)=>document.querySelector(sel);
+
+    const fmtBeds = (arr)=> Array.isArray(arr)? arr.join(", ") : "";
+    const todayISO = ()=> new Date().toISOString().slice(0,10);
+    const plusDays = (d)=>{ const t = new Date(); t.setDate(t.getDate()+d); return t.toISOString().slice(0,10); };
+
+    async function getJSON(url, opts){ const r = await fetch(url, opts); const j = await r.json(); if(!r.ok) throw new Error(j.error||r.status); return j; }
+
+    // Login
+    $("#btnLogin").onclick = async ()=>{
+      $("#loginMsg").textContent = "…";
+      try{
+        const j = await getJSON("/admin/login", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ user: $("#user").value, pass: $("#pass").value })
+        });
+        if (j.ok){ $("#loginCard").style.display="none"; $("#dash").style.display="block"; $("#loginMsg").textContent=""; }
+      }catch(e){ $("#loginMsg").textContent = "Credenciales inválidas"; }
+    };
+    $("#btnLogout").onclick = async ()=>{
+      try{ await getJSON("/admin/logout",{ method:"POST" }); location.reload(); }catch{}
+    };
+
+    // Disponibilidad
+    $("#from").value = todayISO();
+    $("#to").value   = plusDays(14);
+    $("#btnAvail").onclick = async ()=>{
+      $("#availMsg").textContent = "Consultando…";
+      $("#availTable").style.display="none";
+      try{
+        const q = new URLSearchParams({ from: $("#from").value, to: $("#to").value });
+        const j = await getJSON("/api/availability?"+q.toString());
+        const CAP = { "1":12, "3":12, "5":7, "6":7 }; // espejo del backend
+        const tb = $("#availTable tbody"); tb.innerHTML="";
+        for (const roomId of Object.keys(CAP)){
+          const occ = j.occupied?.[roomId] || [];
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${roomId}</td><td>${CAP[roomId]}</td><td>${occ.length}</td><td>${Math.max(CAP[roomId]-occ.length,0)}</td><td>${fmtBeds(occ)}</td>`;
+          tb.appendChild(tr);
+        }
+        $("#availTable").style.display="table";
+        $("#availMsg").textContent = "OK";
+      }catch(e){ $("#availMsg").textContent = "Error: "+e.message; }
+    };
+
+    // Reservas
+    $("#btnRows").onclick = async ()=>{
+      $("#rowsMsg").textContent = "Cargando…";
+      $("#rowsTable").style.display="none";
+      try{
+        const j = await getJSON("/api/bookings");
+        const tb = $("#rowsTable tbody"); tb.innerHTML="";
+        (j.rows||[]).slice(0,200).forEach(r=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${r.booking_id||""}</td>
+            <td>${r.nombre||""}</td>
+            <td>${r.entrada||""}</td>
+            <td>${r.salida||""}</td>
+            <td><span class="pill">${r.pay_status||""}</span></td>
+            <td>${r.total||0}</td>`;
+          tb.appendChild(tr);
+        });
+        $("#rowsTable").style.display="table";
+        $("#rowsMsg").textContent = `Mostrando ${Math.min((j.rows||[]).length,200)} filas`;
+      }catch(e){ $("#rowsMsg").textContent = "Error: "+e.message; }
+    };
+
+    // Diag
+    $("#btnDiag").onclick = async ()=>{
+      $("#diagMsg").textContent = "Leyendo…";
+      $("#diagOut").textContent = "";
+      try{
+        const j = await getJSON("/api/diag");
+        $("#diagOut").textContent = JSON.stringify(j,null,2);
+        $("#diagMsg").textContent = "OK";
+        $("#commit").textContent = j.commit ? ("commit: "+j.commit) : "";
+      }catch(e){ $("#diagMsg").textContent = "Error: "+e.message; }
+    };
+  </script>
+</body>
+</html>

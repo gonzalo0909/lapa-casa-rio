@@ -1,17 +1,10 @@
 "use strict";
 /**
  * /services/holds.js — HOLD por reserva con TTL
- * API:
- *  createHold({ holdId, ttlMinutes, payload:{ camas, ... } })
- *  confirmHold(holdId)
- *  releaseHold(holdId)
- *  sweepExpired()
- *  getHoldsMap()  → { "1": Set([...]), "3": Set([...]), "5": Set([...]), "6": Set([...]) }
  */
-
-const DEFAULT_TTL_MIN = Number(process.env.HOLD_TTL_MINUTES || 10);
+const DEFAULT_TTL_MIN = 10;
+const holdsById = new Map(); // holdId → { expiresAt, camas:{roomId:number[]}, meta:{} }
 const ROOMS = ["1","3","5","6"];
-const holdsById = new Map(); // holdId → { expiresAt:number, camas:{roomId:number[]}, meta:{} }
 const now = () => Date.now();
 
 function normCamas(c) {
@@ -20,7 +13,7 @@ function normCamas(c) {
   for (const k of Object.keys(src)) {
     const rid = String(k);
     const arr = Array.isArray(src[k]) ? src[k] : [];
-    out[rid] = Array.from(new Set(arr.map(Number).filter(n => Number.isFinite(n) && n > 0)));
+    out[rid] = Array.from(new Set(arr.map(n => Number(n)).filter(n => Number.isFinite(n) && n > 0)));
   }
   return out;
 }
@@ -59,7 +52,8 @@ function sweepExpired() {
 }
 
 function getHoldsMap() {
-  const out = {}; for (const r of ROOMS) out[r] = new Set();
+  const out = {};
+  for (const r of ROOMS) out[r] = new Set();
   const t = now();
   for (const h of holdsById.values()) {
     if (!h || t >= h.expiresAt) continue;

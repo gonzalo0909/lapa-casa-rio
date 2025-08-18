@@ -5,183 +5,124 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — Lapa Casa</title>
   <style>
-    :root{--brand:#F03DDB;--line:#e5e7eb;--muted:#6b7280;--ok:#16a34a;--bad:#ef4444}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
-    header{padding:16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8fb)}
-    h1{margin:0;font-size:20px} main{max-width:1024px;margin:0 auto;padding:16px}
-    .card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;margin:12px 0}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:720px){.row{grid-template-columns:1fr}}
-    label{font-weight:600;margin:6px 0 4px;display:block} input,button,select{padding:10px;border:1px solid var(--line);border-radius:10px;width:100%}
-    button{background:var(--brand);color:#fff;border:none;font-weight:700;cursor:pointer}
-    button.ghost{background:#fff;color:#111;border:1px solid var(--line)}
-    table{width:100%;border-collapse:collapse;margin-top:12px} th,td{border:1px solid var(--line);padding:8px;font-size:14px}
-    th{background:#faf5ff;text-align:left} .muted{color:var(--muted)} .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
-    .ok{color:var(--ok)} .bad{color:var(--bad)} .flex{display:flex;gap:8px;flex-wrap:wrap} .right{margin-left:auto}
+    :root{--line:#e5e7eb;--muted:#6b7280;--brand:#F03DDB}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:#fff}
+    header{padding:16px;border-bottom:1px solid var(--line)} h1{margin:0;font-size:20px}
+    main{max-width:980px;margin:0 auto;padding:16px}
+    .card{border:1px solid var(--line);border-radius:12px}
+    .pad{padding:16px}
+    .row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    label{font-weight:600;font-size:14px} input{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px}
+    .btn{display:inline-flex;gap:8px;align-items:center;border:0;padding:10px 14px;border-radius:10px;background:var(--brand);color:#fff;cursor:pointer}
+    .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
+    .muted{color:var(--muted)} pre{white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:10px;padding:12px}
+    table{width:100%;border-collapse:collapse;font-size:14px} th,td{border:1px solid var(--line);padding:8px;text-align:left}
+    .hide{display:none}
   </style>
 </head>
 <body>
-  <header>
-    <div class="flex" style="align-items:center">
-      <h1>Panel Admin — Lapa Casa</h1>
-      <span id="commit" class="muted right"></span>
-    </div>
-  </header>
-
+  <header><h1>Admin — Lapa Casa</h1><div class="muted">Login simple con sesión (cookie-session)</div></header>
   <main>
-    <!-- Login -->
-    <section id="loginCard" class="card">
-      <h3>Acceso</h3>
-      <div class="row">
-        <div>
-          <label>Usuario</label>
-          <input id="user" autocomplete="username" />
+    <!-- LOGIN -->
+    <section id="loginBox" class="card">
+      <div class="pad">
+        <h3 style="margin:0 0 8px 0">Iniciar sesión</h3>
+        <div class="row">
+          <div><label>Usuario</label><input id="user" autocomplete="username" /></div>
+          <div><label>Contraseña</label><input id="pass" type="password" autocomplete="current-password" /></div>
         </div>
-        <div>
-          <label>Contraseña</label>
-          <input id="pass" type="password" autocomplete="current-password" />
+        <div style="margin-top:12px;display:flex;gap:10px">
+          <button id="btnLogin" class="btn">Entrar</button>
+          <button id="btnDiag" class="btn ghost">Ver /api/diag</button>
         </div>
-      </div>
-      <div class="flex" style="margin-top:12px">
-        <button id="btnLogin">Entrar</button>
-        <span id="loginMsg" class="muted"></span>
+        <div id="loginMsg" class="muted" style="margin-top:10px"></div>
+        <pre id="diagBox" class="hide"></pre>
       </div>
     </section>
 
-    <!-- Dashboard -->
-    <section id="dash" class="card" style="display:none">
-      <div class="flex" style="align-items:center">
-        <h3 style="margin:0">Dashboard</h3>
-        <button id="btnLogout" class="ghost right">Salir</button>
-      </div>
-
-      <div class="row" style="margin-top:12px">
-        <div class="card">
-          <h4 style="margin-top:0">Disponibilidad</h4>
-          <div class="row">
-            <div><label>Desde</label><input id="from" type="date"></div>
-            <div><label>Hasta</label><input id="to" type="date"></div>
-          </div>
-          <div class="flex" style="margin-top:10px">
-            <button id="btnAvail">Consultar</button>
-            <span id="availMsg" class="muted"></span>
-          </div>
-          <table id="availTable" style="display:none">
-            <thead><tr><th>Cuarto</th><th>Total</th><th>Ocupadas</th><th>Libres</th><th>Camas ocupadas</th></tr></thead>
-            <tbody></tbody>
-          </table>
+    <!-- PANEL -->
+    <section id="panelBox" class="card hide" style="margin-top:16px">
+      <div class="pad">
+        <h3 style="margin:0 0 8px 0">Panel</h3>
+        <div class="muted">Sesión activa. Usá los atajos:</div>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <button id="btnShowDiag" class="btn ghost">/api/diag</button>
+          <button id="btnList" class="btn">Listar reservas</button>
+          <button id="btnLogout" class="btn ghost">Salir</button>
         </div>
-
-        <div class="card">
-          <h4 style="margin-top:0">Reservas</h4>
-          <div class="flex">
-            <button id="btnRows">Cargar reservas</button>
-            <span id="rowsMsg" class="muted"></span>
-          </div>
-          <div style="max-height:360px;overflow:auto">
-            <table id="rowsTable" style="display:none">
-              <thead>
-                <tr>
-                  <th>booking_id</th><th>nombre</th><th>entrada</th><th>salida</th>
-                  <th>pay_status</th><th>total</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h4 style="margin-top:0">Diagnóstico</h4>
-        <div class="flex">
-          <button id="btnDiag">/api/diag</button>
-          <span id="diagMsg" class="muted"></span>
-        </div>
-        <pre id="diagOut" style="white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px;max-height:240px;overflow:auto"></pre>
+        <div id="panelMsg" class="muted" style="margin-top:10px"></div>
+        <pre id="panelDiag" class="hide"></pre>
+        <div id="listWrap" class="hide" style="margin-top:10px;overflow:auto;max-height:60vh"></div>
       </div>
     </section>
   </main>
 
   <script>
-    const $ = (sel)=>document.querySelector(sel);
+    const $ = (s)=>document.querySelector(s);
+    const loginBox = $("#loginBox"), panelBox = $("#panelBox");
+    const loginMsg = $("#loginMsg"), diagBox = $("#diagBox");
+    const panelMsg = $("#panelMsg"), panelDiag = $("#panelDiag"), listWrap = $("#listWrap");
 
-    const fmtBeds = (arr)=> Array.isArray(arr)? arr.join(", ") : "";
-    const todayISO = ()=> new Date().toISOString().slice(0,10);
-    const plusDays = (d)=>{ const t = new Date(); t.setDate(t.getDate()+d); return t.toISOString().slice(0,10); };
-
-    async function getJSON(url, opts){ const r = await fetch(url, opts); const j = await r.json(); if(!r.ok) throw new Error(j.error||r.status); return j; }
+    async function json(url, opt){ const r=await fetch(url, opt||{}); const t=await r.text(); try{ return {ok:r.ok, code:r.status, data:JSON.parse(t)} }catch{ return {ok:r.ok, code:r.status, data:t} } }
 
     // Login
-    $("#btnLogin").onclick = async ()=>{
-      $("#loginMsg").textContent = "…";
-      try{
-        const j = await getJSON("/admin/login", {
-          method:"POST", headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ user: $("#user").value, pass: $("#pass").value })
-        });
-        if (j.ok){ $("#loginCard").style.display="none"; $("#dash").style.display="block"; $("#loginMsg").textContent=""; }
-      }catch(e){ $("#loginMsg").textContent = "Credenciales inválidas"; }
-    };
-    $("#btnLogout").onclick = async ()=>{
-      try{ await getJSON("/admin/logout",{ method:"POST" }); location.reload(); }catch{}
-    };
+    $("#btnLogin").addEventListener("click", async ()=>{
+      loginMsg.textContent = "Ingresando…";
+      const body = { user: $("#user").value, pass: $("#pass").value };
+      const r = await json("/admin/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+      if (r.ok && r.data && r.data.ok){
+        loginMsg.textContent = "OK. Cargando panel…";
+        loginBox.classList.add("hide"); panelBox.classList.remove("hide");
+      } else {
+        loginMsg.textContent = "Credenciales inválidas.";
+      }
+    });
 
-    // Disponibilidad
-    $("#from").value = todayISO();
-    $("#to").value   = plusDays(14);
-    $("#btnAvail").onclick = async ()=>{
-      $("#availMsg").textContent = "Consultando…";
-      $("#availTable").style.display="none";
-      try{
-        const q = new URLSearchParams({ from: $("#from").value, to: $("#to").value });
-        const j = await getJSON("/api/availability?"+q.toString());
-        const CAP = { "1":12, "3":12, "5":7, "6":7 }; // espejo del backend
-        const tb = $("#availTable tbody"); tb.innerHTML="";
-        for (const roomId of Object.keys(CAP)){
-          const occ = j.occupied?.[roomId] || [];
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${roomId}</td><td>${CAP[roomId]}</td><td>${occ.length}</td><td>${Math.max(CAP[roomId]-occ.length,0)}</td><td>${fmtBeds(occ)}</td>`;
-          tb.appendChild(tr);
-        }
-        $("#availTable").style.display="table";
-        $("#availMsg").textContent = "OK";
-      }catch(e){ $("#availMsg").textContent = "Error: "+e.message; }
-    };
+    // Ver diag sin login
+    $("#btnDiag").addEventListener("click", async ()=>{
+      const r = await json("/api/diag");
+      diagBox.classList.remove("hide");
+      diagBox.textContent = JSON.stringify(r.data, null, 2);
+    });
 
-    // Reservas
-    $("#btnRows").onclick = async ()=>{
-      $("#rowsMsg").textContent = "Cargando…";
-      $("#rowsTable").style.display="none";
-      try{
-        const j = await getJSON("/api/bookings");
-        const tb = $("#rowsTable tbody"); tb.innerHTML="";
-        (j.rows||[]).slice(0,200).forEach(r=>{
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${r.booking_id||""}</td>
-            <td>${r.nombre||""}</td>
-            <td>${r.entrada||""}</td>
-            <td>${r.salida||""}</td>
-            <td><span class="pill">${r.pay_status||""}</span></td>
-            <td>${r.total||0}</td>`;
-          tb.appendChild(tr);
-        });
-        $("#rowsTable").style.display="table";
-        $("#rowsMsg").textContent = `Mostrando ${Math.min((j.rows||[]).length,200)} filas`;
-      }catch(e){ $("#rowsMsg").textContent = "Error: "+e.message; }
-    };
+    // Panel: diag
+    $("#btnShowDiag").addEventListener("click", async ()=>{
+      panelMsg.textContent = "Cargando /api/diag…";
+      const r = await json("/api/diag"); panelMsg.textContent="";
+      panelDiag.classList.remove("hide");
+      panelDiag.textContent = JSON.stringify(r.data, null, 2);
+    });
 
-    // Diag
-    $("#btnDiag").onclick = async ()=>{
-      $("#diagMsg").textContent = "Leyendo…";
-      $("#diagOut").textContent = "";
+    // Panel: listar reservas (usa /api/bookings del backend)
+    $("#btnList").addEventListener("click", async ()=>{
+      panelMsg.textContent = "Leyendo reservas…";
+      const r = await json("/api/bookings"); panelMsg.textContent="";
+      const rows = (r.data && r.data.rows) ? r.data.rows.slice(-50).reverse() : [];
+      if (!rows.length){ listWrap.classList.remove("hide"); listWrap.innerHTML = "<div class='muted'>Sin datos.</div>"; return; }
+      // render tabla simple
+      const headers = Object.keys(rows[0]);
+      let html = "<table><thead><tr>"+headers.map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>";
+      for (const row of rows){
+        html += "<tr>"+headers.map(h=>`<td>${row[h] ?? ""}</td>`).join("")+"</tr>";
+      }
+      html += "</tbody></table>";
+      listWrap.classList.remove("hide");
+      listWrap.innerHTML = html;
+    });
+
+    // Logout
+    $("#btnLogout").addEventListener("click", async ()=>{
+      await json("/admin/logout", { method:"POST" });
+      location.reload();
+    });
+
+    // Si ya hay sesión, mostramos panel (petición a /admin/ devuelve 200 si pasa guardia)
+    (async function autoCheck(){
       try{
-        const j = await getJSON("/api/diag");
-        $("#diagOut").textContent = JSON.stringify(j,null,2);
-        $("#diagMsg").textContent = "OK";
-        $("#commit").textContent = j.commit ? ("commit: "+j.commit) : "";
-      }catch(e){ $("#diagMsg").textContent = "Error: "+e.message; }
-    };
+        const r = await fetch("/admin/", { method:"GET" });
+        if (r.status===200){ loginBox.classList.add("hide"); panelBox.classList.remove("hide"); }
+      }catch{}
+    })();
   </script>
 </body>
 </html>

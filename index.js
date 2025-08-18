@@ -1,15 +1,16 @@
+// /index.js
 "use strict";
 /**
- * Lapa Casa — Backend (Express) FINAL
- * Mantiene el layout tal cual (home y /book).
- * API: reservas, disponibilidad (con HOLD), pagos, webhooks, admin, eventos.
+ * Lapa Casa — Backend (Express) FINAL (una sola pieza)
+ * Mantiene el layout tal cual (home y /book). API: reservas, disponibilidad (con HOLD),
+ * pagos (Stripe/MP), webhooks, admin, eventos. Sesión con cookie-session (sin MemoryStore).
  */
 
 require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
-const session = require("express-session");
+const cookieSession = require("cookie-session");
 
 const app = express();
 const COMMIT = process.env.COMMIT || "dev";
@@ -19,33 +20,43 @@ const isProd = String(process.env.NODE_ENV || "").toLowerCase() === "production"
 
 // ===== CORS
 const allowList = String(process.env.CORS_ALLOW_ORIGINS || "")
-  .split(",").map(s=>s.trim()).filter(Boolean);
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: (origin, cb)=>{
+  origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    const ok = !allowList.length || allowList.some(a=>{
+    const ok = !allowList.length || allowList.some(a => {
       if (!a) return false;
-      if (origin.includes(a)) return true; // soporta dominios sin esquema en env
-      try { return (new URL(origin).hostname) === a; } catch { return false; }
+      try { return new URL(origin).hostname === a; } catch { return origin.includes(a); }
     });
     return ok ? cb(null, true) : cb(new Error("CORS blocked"), false);
   },
-  credentials:true,
-  methods:["GET","POST","OPTIONS"],
-  allowedHeaders:["Content-Type","Stripe-Signature"],
+  credentials: true,
+  methods: ["GET","POST","OPTIONS"],
+  allowedHeaders: ["Content-Type","Stripe-Signature"],
 }));
 
 // ===== Static (no tocamos tu front)
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 
-// ===== Sessions (admin)
+// ===== Sesión (sin MemoryStore)
 app.set("trust proxy", 1);
-app.use(session({
-  secret: process.env.ADMIN_SESSION_SECRET || "change_me",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { sameSite: "lax", secure: isProd }
+app.use(cookieSession({
+  name: "lc_admin",
+  keys: [ process.env.ADMIN_SESSION_SECRET || "change_me" ],
+  maxAge: 12 * 60 * 60 * 1000, // 12h
+  sameSite: "lax",
+  secure: isProd
 }));
+// shim para routes/admin.js (req.session.destroy)
+app.use((req,res,next)=>{
+  if (req.session && typeof req.session.destroy !== "function") {
+    req.session.destroy = (cb)=>{ req.session = null; if (cb) cb(); };
+  }
+  next();
+});
 
 // ===== Services
 const holds = require("./services/holds"); // TTL + getHoldsMap()
@@ -54,7 +65,7 @@ const { fetchRowsFromSheet, calcOccupiedBeds, notifySheets } = require("./servic
 const { createCheckoutSession, buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { createPreference, buildMpWebhookHandler } = require("./services/payments-mp");
 
-// Eventos (puede exportar getEvents())
+// Eventos (puede exportar función o handler)
 let eventsModule = null; try { eventsModule = require("./services/events"); } catch {}
 
 // ===== Helpers
@@ -127,30 +138,33 @@ async function availabilityHandler(req,res){
 app.get("/availability", availabilityHandler);
 app.get("/api/availability", availabilityHandler);
 
-// ===== Holds (start/confirm/release) + cron sweep + alias
-app.post("/holds/start", (req,res)=>{
+// ===== Holds (start/confirm/release) + cron sweep (y alias /api/*)
+function holdsStartHandler(req,res){
   try{
     const { holdId, ttlMinutes=HOLD_TTL_MINUTES, payload={} } = Object(req.body||{});
     res.json(holds.createHold({ holdId, ttlMinutes, payload }));
   }catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
-app.post("/holds/confirm", (req,res)=>{
+}
+function holdsConfirmHandler(req,res){
   try{ res.json(holds.confirmHold(String(req.body?.holdId||""))); }
   catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
-app.post("/holds/release", (req,res)=>{
+}
+function holdsReleaseHandler(req,res){
   try{ res.json(holds.releaseHold(String(req.body?.holdId||""))); }
   catch(e){ res.status(500).json({ ok:false, error:String(e.message||e) }); }
-});
+}
+app.post("/holds/start", holdsStartHandler);
+app.post("/holds/confirm", holdsConfirmHandler);
+app.post("/holds/release", holdsReleaseHandler);
+app.post("/api/holds/start", holdsStartHandler);
+app.post("/api/holds/confirm", holdsConfirmHandler);
+app.post("/api/holds/release", holdsReleaseHandler);
+
 app.get("/crons/holds-sweep", (req,res)=>{
   const tok = (req.query?.token||"").toString();
   if (!CRON_TOKEN || tok !== CRON_TOKEN) return res.status(401).json({ ok:false, error:"unauthorized" });
   res.json({ ok:true, ...holds.sweepExpired() });
 });
-// alias legacy
-app.post("/api/holds/start", (req,res)=> app._router.handle(req,res,()=>{}, "post","/holds/start"));
-app.post("/api/holds/confirm", (req,res)=> app._router.handle(req,res,()=>{}, "post","/holds/confirm"));
-app.post("/api/holds/release", (req,res)=> app._router.handle(req,res,()=>{}, "post","/holds/release"));
 
 // ===== Bookings (router) + alias
 app.use("/bookings", bookingsRouter);
@@ -165,7 +179,7 @@ app.post("/payments/stripe/session", async (req,res)=>{
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
-// compat viejo alias
+// compat alias
 app.post("/payments/stripe/create_intent", async (req,res)=>{
   try{
     const order = Object(req.body?.order || req.body || {});
@@ -199,15 +213,19 @@ app.post("/webhooks/mp", mpWebhook);
 app.get("/webhooks/mp", (_req,res)=> res.json({ ok:true, ping:true }));
 
 // ===== Eventos
-if (eventsModule && typeof eventsModule.getEvents === "function") {
-  app.get("/api/events", async (_req,res)=>{
-    try {
-      const events = await eventsModule.getEvents();
-      res.json({ ok:true, events });
-    } catch (e) {
-      res.status(200).json({ ok:true, events: [] });
-    }
-  });
+if (eventsModule) {
+  if (typeof eventsModule === "function") {
+    app.get("/api/events", eventsModule);
+  } else if (typeof eventsModule.eventsHandler === "function") {
+    app.get("/api/events", eventsModule.eventsHandler);
+  } else if (typeof eventsModule.getEvents === "function") {
+    app.get("/api/events", async (_req,res)=>{
+      try { const events = await eventsModule.getEvents(); res.json({ ok:true, events }); }
+      catch { res.json({ ok:true, events: [] }); }
+    });
+  } else {
+    app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
+  }
 } else {
   app.get("/api/events", (_req,res)=> res.json({ ok:true, events: [] }));
 }
@@ -235,4 +253,3 @@ if (require.main === module) {
   app.listen(PORT, ()=> console.log(`[lapa-casa] up :${PORT} commit=${COMMIT}`));
 }
 module.exports = app;
-

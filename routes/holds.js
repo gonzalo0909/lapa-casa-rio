@@ -12,8 +12,10 @@ const {
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 const router = Router();
 
-// POST /holds/start
-// body: { holdId?, ttlMinutes?, nombre,email,telefono,entrada,salida,hombres,mujeres,camas,total }
+/**
+ * POST /holds/start
+ * body: { holdId?, ttlMinutes?, nombre,email,telefono,entrada,salida,hombres,mujeres,camas,total }
+ */
 router.post("/start", async (req, res) => {
   try {
     const b = req.body || {};
@@ -22,15 +24,21 @@ router.post("/start", async (req, res) => {
       ...b,
       camas: b.camas || b.camas_json || {},
     };
-    const out = createHold({ holdId: b.holdId || b.bookingId, ttlMinutes: ttl, payload });
+    const out = createHold({
+      holdId: b.holdId || b.bookingId,
+      ttlMinutes: ttl,
+      payload,
+    });
     return res.json(out);
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e) });
   }
 });
 
-// POST /holds/confirm
-// body: { holdId, status? }  (status default "paid")
+/**
+ * POST /holds/confirm
+ * body: { holdId, status? }  (status default "paid")
+ */
 router.post("/confirm", async (req, res) => {
   try {
     const id = String(req.body?.holdId || "");
@@ -44,8 +52,10 @@ router.post("/confirm", async (req, res) => {
   }
 });
 
-// POST /holds/release
-// body: { holdId }
+/**
+ * POST /holds/release
+ * body: { holdId }
+ */
 router.post("/release", async (req, res) => {
   try {
     const id = String(req.body?.holdId || "");
@@ -57,14 +67,22 @@ router.post("/release", async (req, res) => {
   }
 });
 
-// GET /holds/state  (opcional, útil para debug)
+/**
+ * GET /holds/state
+ * Devuelve resumen de holds activos por habitación
+ */
 router.get("/state", (_req, res) => {
   const map = getHoldsMap();
-  const counts = Object.fromEntries(Object.entries(map).map(([k, v]) => [k, Array.from(v).length]));
+  const counts = Object.fromEntries(
+    Object.entries(map).map(([k, v]) => [k, Array.from(v).length])
+  );
   res.json({ ok: true, rooms: counts });
 });
 
-// GET /holds/sweep  (limpia vencidos; protegelo con un token si querés)
+/**
+ * GET /holds/sweep
+ * Limpia holds vencidos (para usar con cron)
+ */
 router.get("/sweep", (_req, res) => {
   const out = sweepExpired();
   res.json({ ok: true, ...out });

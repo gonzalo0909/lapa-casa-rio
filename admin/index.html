@@ -5,124 +5,165 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — Lapa Casa</title>
   <style>
-    :root{--line:#e5e7eb;--muted:#6b7280;--brand:#F03DDB}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:#fff}
-    header{padding:16px;border-bottom:1px solid var(--line)} h1{margin:0;font-size:20px}
-    main{max-width:980px;margin:0 auto;padding:16px}
-    .card{border:1px solid var(--line);border-radius:12px}
-    .pad{padding:16px}
-    .row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
-    label{font-weight:600;font-size:14px} input{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px}
-    .btn{display:inline-flex;gap:8px;align-items:center;border:0;padding:10px 14px;border-radius:10px;background:var(--brand);color:#fff;cursor:pointer}
+    :root{--brand:#F03DDB;--line:#e5e7eb;--ok:#16a34a;--bad:#ef4444;--muted:#6b7280}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
+    header{padding:16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fff8fb)}
+    h1{margin:0;font-size:20px}
+    main{max-width:960px;margin:0 auto;padding:16px}
+    .card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;margin:12px 0}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
     .btn.ghost{background:#fff;color:#111;border:1px solid var(--line)}
-    .muted{color:var(--muted)} pre{white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:10px;padding:12px}
-    table{width:100%;border-collapse:collapse;font-size:14px} th,td{border:1px solid var(--line);padding:8px;text-align:left}
-    .hide{display:none}
+    label{display:block;margin:8px 0 4px} input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px}
+    .grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .muted{color:var(--muted)} .ok{color:var(--ok)} .bad{color:var(--bad)}
+    table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid var(--line);font-size:14px}
+    code{background:#f3f4f6;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
   </style>
 </head>
 <body>
-  <header><h1>Admin — Lapa Casa</h1><div class="muted">Login simple con sesión (cookie-session)</div></header>
+  <header><h1>Panel Admin — Lapa Casa</h1></header>
   <main>
-    <!-- LOGIN -->
-    <section id="loginBox" class="card">
-      <div class="pad">
-        <h3 style="margin:0 0 8px 0">Iniciar sesión</h3>
-        <div class="row">
-          <div><label>Usuario</label><input id="user" autocomplete="username" /></div>
-          <div><label>Contraseña</label><input id="pass" type="password" autocomplete="current-password" /></div>
+    <!-- Login -->
+    <section class="card" id="loginCard">
+      <h3>Acceso</h3>
+      <div class="grid">
+        <div>
+          <label>Usuario</label>
+          <input id="user" autocomplete="username" />
         </div>
-        <div style="margin-top:12px;display:flex;gap:10px">
-          <button id="btnLogin" class="btn">Entrar</button>
-          <button id="btnDiag" class="btn ghost">Ver /api/diag</button>
+        <div>
+          <label>Contraseña</label>
+          <input id="pass" type="password" autocomplete="current-password" />
         </div>
-        <div id="loginMsg" class="muted" style="margin-top:10px"></div>
-        <pre id="diagBox" class="hide"></pre>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btnLogin">Ingresar</button>
+        <button class="btn ghost" id="btnLogout" style="display:none">Salir</button>
+        <span id="loginMsg" class="muted"></span>
       </div>
     </section>
 
-    <!-- PANEL -->
-    <section id="panelBox" class="card hide" style="margin-top:16px">
-      <div class="pad">
-        <h3 style="margin:0 0 8px 0">Panel</h3>
-        <div class="muted">Sesión activa. Usá los atajos:</div>
-        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-          <button id="btnShowDiag" class="btn ghost">/api/diag</button>
-          <button id="btnList" class="btn">Listar reservas</button>
-          <button id="btnLogout" class="btn ghost">Salir</button>
-        </div>
-        <div id="panelMsg" class="muted" style="margin-top:10px"></div>
-        <pre id="panelDiag" class="hide"></pre>
-        <div id="listWrap" class="hide" style="margin-top:10px;overflow:auto;max-height:60vh"></div>
+    <!-- Acciones rápidas -->
+    <section class="card">
+      <h3>Diagnóstico rápido</h3>
+      <div class="row" style="margin:8px 0 12px">
+        <button class="btn ghost" id="btnDiag">Backend /api/diag</button>
+        <button class="btn ghost" id="btnBookings">Ver reservas (Sheets)</button>
+        <a class="btn" href="/book" target="_blank">Abrir /book</a>
       </div>
+      <div id="diagOut" class="muted"></div>
+    </section>
+
+    <!-- Tabla reservas -->
+    <section class="card" id="rowsCard" style="display:none">
+      <h3>Reservas recientes</h3>
+      <div class="muted" id="rowsInfo"></div>
+      <div style="overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:10px; margin-top:10px">
+        <table id="rowsTable">
+          <thead>
+            <tr>
+              <th>booking_id</th><th>entrada</th><th>salida</th>
+              <th>hombres</th><th>mujeres</th><th>total</th><th>pay_status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:8px">Fuente: <code>/api/bookings</code></p>
     </section>
   </main>
 
   <script>
     const $ = (s)=>document.querySelector(s);
-    const loginBox = $("#loginBox"), panelBox = $("#panelBox");
-    const loginMsg = $("#loginMsg"), diagBox = $("#diagBox");
-    const panelMsg = $("#panelMsg"), panelDiag = $("#panelDiag"), listWrap = $("#listWrap");
+    const loginCard = $("#loginCard");
+    const btnLogin = $("#btnLogin");
+    const btnLogout = $("#btnLogout");
+    const loginMsg = $("#loginMsg");
+    const user = $("#user");
+    const pass = $("#pass");
 
-    async function json(url, opt){ const r=await fetch(url, opt||{}); const t=await r.text(); try{ return {ok:r.ok, code:r.status, data:JSON.parse(t)} }catch{ return {ok:r.ok, code:r.status, data:t} } }
+    const btnDiag = $("#btnDiag");
+    const btnBookings = $("#btnBookings");
+    const diagOut = $("#diagOut");
+    const rowsCard = $("#rowsCard");
+    const rowsInfo = $("#rowsInfo");
+    const rowsTBody = $("#rowsTable tbody");
 
-    // Login
-    $("#btnLogin").addEventListener("click", async ()=>{
-      loginMsg.textContent = "Ingresando…";
-      const body = { user: $("#user").value, pass: $("#pass").value };
-      const r = await json("/admin/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
-      if (r.ok && r.data && r.data.ok){
-        loginMsg.textContent = "OK. Cargando panel…";
-        loginBox.classList.add("hide"); panelBox.classList.remove("hide");
-      } else {
-        loginMsg.textContent = "Credenciales inválidas.";
-      }
-    });
+    function setLoggedUI(logged){
+      btnLogout.style.display = logged ? "" : "none";
+      btnLogin.style.display  = logged ? "none" : "";
+      user.disabled = logged; pass.disabled = logged;
+      loginMsg.textContent = logged ? "Sesión activa" : "No autenticado";
+      loginMsg.className = logged ? "ok" : "bad";
+    }
 
-    // Ver diag sin login
-    $("#btnDiag").addEventListener("click", async ()=>{
-      const r = await json("/api/diag");
-      diagBox.classList.remove("hide");
-      diagBox.textContent = JSON.stringify(r.data, null, 2);
-    });
-
-    // Panel: diag
-    $("#btnShowDiag").addEventListener("click", async ()=>{
-      panelMsg.textContent = "Cargando /api/diag…";
-      const r = await json("/api/diag"); panelMsg.textContent="";
-      panelDiag.classList.remove("hide");
-      panelDiag.textContent = JSON.stringify(r.data, null, 2);
-    });
-
-    // Panel: listar reservas (usa /api/bookings del backend)
-    $("#btnList").addEventListener("click", async ()=>{
-      panelMsg.textContent = "Leyendo reservas…";
-      const r = await json("/api/bookings"); panelMsg.textContent="";
-      const rows = (r.data && r.data.rows) ? r.data.rows.slice(-50).reverse() : [];
-      if (!rows.length){ listWrap.classList.remove("hide"); listWrap.innerHTML = "<div class='muted'>Sin datos.</div>"; return; }
-      // render tabla simple
-      const headers = Object.keys(rows[0]);
-      let html = "<table><thead><tr>"+headers.map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>";
-      for (const row of rows){
-        html += "<tr>"+headers.map(h=>`<td>${row[h] ?? ""}</td>`).join("")+"</tr>";
-      }
-      html += "</tbody></table>";
-      listWrap.classList.remove("hide");
-      listWrap.innerHTML = html;
-    });
-
-    // Logout
-    $("#btnLogout").addEventListener("click", async ()=>{
-      await json("/admin/logout", { method:"POST" });
-      location.reload();
-    });
-
-    // Si ya hay sesión, mostramos panel (petición a /admin/ devuelve 200 si pasa guardia)
-    (async function autoCheck(){
+    async function login(){
+      loginMsg.textContent = "ingresando…"; loginMsg.className="muted";
       try{
-        const r = await fetch("/admin/", { method:"GET" });
-        if (r.status===200){ loginBox.classList.add("hide"); panelBox.classList.remove("hide"); }
-      }catch{}
-    })();
+        const r = await fetch("/admin/login", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ user: user.value, pass: pass.value })
+        });
+        const j = await r.json();
+        if (r.ok && j.ok){ setLoggedUI(true); }
+        else { loginMsg.textContent = "Credenciales inválidas"; loginMsg.className="bad"; }
+      }catch(e){ loginMsg.textContent = "Error de red"; loginMsg.className="bad"; }
+    }
+    async function logout(){
+      try{ await fetch("/admin/logout", { method:"POST" }); }
+      catch{}
+      setLoggedUI(false);
+    }
+
+    async function showDiag(){
+      diagOut.textContent = "Consultando…";
+      try{
+        const r = await fetch("/api/diag");
+        const j = await r.json();
+        diagOut.innerHTML = r.ok
+          ? `<div><b>commit</b>: <code>${j.commit||"dev"}</code> · <b>now</b>: <code>${j.now||""}</code></div>
+             <div class="muted" style="margin-top:6px"><b>env</b>: ${Object.keys(j.env||{}).map(k=>`${k}:${j.env[k]?"✔":"—"}`).join(" · ")}</div>`
+          : `<span class="bad">Error diag</span>`;
+      }catch(e){ diagOut.textContent = "Error diag"; }
+    }
+
+    async function showBookings(){
+      rowsCard.style.display = "";
+      rowsInfo.textContent = "Cargando…";
+      rowsTBody.innerHTML = "";
+      try{
+        const r = await fetch("/api/bookings");
+        const j = await r.json();
+        if (!r.ok || !j.ok) throw new Error("api");
+        const rows = (j.rows||[]).slice(-100).reverse(); // últimas 100
+        rowsInfo.textContent = `Mostrando ${rows.length} filas (máx 100).`;
+        rows.forEach(row=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.booking_id||""}</td>
+            <td>${row.entrada||""}</td>
+            <td>${row.salida||""}</td>
+            <td>${row.hombres||0}</td>
+            <td>${row.mujeres||0}</td>
+            <td>${row.total||0}</td>
+            <td>${row.pay_status||""}</td>`;
+          rowsTBody.appendChild(tr);
+        });
+      }catch(e){
+        rowsInfo.innerHTML = `<span class="bad">No se pudieron leer reservas.</span>`;
+      }
+    }
+
+    // eventos
+    btnLogin.addEventListener("click", login);
+    btnLogout.addEventListener("click", logout);
+    btnDiag.addEventListener("click", showDiag);
+    btnBookings.addEventListener("click", showBookings);
+
+    // estado inicial
+    setLoggedUI(false);
+    showDiag();
   </script>
 </body>
 </html>

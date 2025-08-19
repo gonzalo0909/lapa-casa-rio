@@ -3,11 +3,14 @@
 const express = require("express");
 const router = express.Router();
 const {
-  upsertBooking,   // ✅ usar el nombre correcto
+  upsertBooking,
   listBookings,
 } = require("../services/bookings");
 
-// GET /bookings?from=YYYY-MM-DD&to=YYYY-MM-DD  → lista (últimas / rango)
+// Alias para compatibilidad previa
+const saveBooking = upsertBooking;
+
+// GET /bookings?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/", async (req, res) => {
   try {
     const { from, to } = req.query || {};
@@ -18,10 +21,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /bookings  → crea/actualiza una reserva completa (upsert)
+// POST /bookings → upsert
 router.post("/", async (req, res) => {
   try {
-    const saved = await upsertBooking(req.body || {}); // ✅ corrige nombre
+    const saved = await saveBooking(req.body || {});
     res.json({ ok: true, booking: saved });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });

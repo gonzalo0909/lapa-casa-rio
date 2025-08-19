@@ -9,6 +9,7 @@
   <style>
     :root { --gap:12px; --rosa:#F03DDB; --line:#e5e7eb; --warn:#f59e0b; --muted:#6b7280 }
     * { box-sizing:border-box }
+    html, body { height:100% }
     body { font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif; margin:0; padding:16px; color:#222; background:#fff }
     header, footer { text-align:center; padding:12px }
     .row { max-width:1080px; margin:0 auto; display:grid; gap:var(--gap) }
@@ -21,8 +22,8 @@
     label { display:block; font-size:14px; margin-bottom:6px; color:#374151 }
     input[type="date"],input[type="number"],input[type="text"],input[type="email"],input[type="tel"]{ width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:14px }
     .ctr { display:flex; align-items:center; gap:6px }
-    .ctr button { padding:6px 10px; border:0; border-radius:8px; background:var(--warn); color:#fff; font-weight:700; cursor:pointer }
-    .btn { background:var(--warn); color:#fff; border:0; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer }
+    .ctr button { padding:6px 10px; border:0; border-radius:8px; background:var(--warn); color:#fff; font-weight:700; cursor:pointer; position:relative; z-index:2 }
+    .btn { background:var(--warn); color:#fff; border:0; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; position:relative; z-index:2 }
     .btn.secondary { background:#111 }
     .btn.ghost { background:transparent; color:#111; border:1px solid var(--line) }
     .btn:disabled { background:#d1d5db; cursor:not-allowed }
@@ -38,10 +39,19 @@
     .bed.selected { outline:2px solid #111; font-weight:700 }
     .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap }
     .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none }
-    #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999 }
-    #toast.show { opacity:1; transform:translateY(0) }
+    /* --- FIX overlays invisibles que roban clics --- */
+    #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999; pointer-events:none }
+    #toast.show { opacity:1; transform:translateY(0); pointer-events:auto }
+    /* Si algún elemento está oculto/invisible, no intercepta clics */
+    *[aria-hidden="true"], *[hidden], *[style*="opacity: 0"] { pointer-events:none !important; }
+    main, .row, .card, footer { position:relative; z-index:1 }
   </style>
   <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    /* Configurá tu backend aquí si no lo tenés ya en otra parte */
+    window.BACKEND_BASE_URL = window.BACKEND_BASE_URL || "/api"; // o "https://tu-backend.com"
+    window.STRIPE_PUBLISHABLE_KEY = window.STRIPE_PUBLISHABLE_KEY || "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
+  </script>
 </head>
 <body>
   <header>
@@ -153,13 +163,13 @@
     <p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p>
   </footer>
 
-  <div id="toast"></div>
+  <div id="toast" aria-live="polite"></div>
 
   <script>
   (function(){
     "use strict";
 
-    /* ===== CONFIG — usa tus endpoints reales del backend ===== */
+    /* ===== CONFIG ===== */
     var API_BASE = (window.BACKEND_BASE_URL || "").replace(/\/$/, "");
     function endpoint(p){ return API_BASE ? API_BASE + p : p; }
     var MP_PREFERENCE_ENDPOINT  = endpoint("/payments/mp/preference");
@@ -168,12 +178,12 @@
     var HOLDS_RELEASE_ENDPOINT  = endpoint("/holds/release");
     var HOLDS_CONFIRM_ENDPOINT  = endpoint("/holds/confirm");
     var AVAILABILITY_ENDPOINT   = endpoint("/availability");
-    var PAY_STATUS_ENDPOINT     = endpoint("/payments/status"); // opcional
+    var PAY_STATUS_ENDPOINT     = endpoint("/payments/status");
     var STRIPE_PK = window.STRIPE_PUBLISHABLE_KEY || "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
     var __stripeInst=null; 
     function getStripe(){ if(typeof window.Stripe==="undefined") return null; return (__stripeInst = __stripeInst || window.Stripe(STRIPE_PK)); }
 
-    /* ===== DOM (robusto: falla si falta algo) ===== */
+    /* ===== DOM ===== */
     function $id(id){
       var el = document.getElementById(id);
       if (!el) { console.error("Falta elemento #"+id); throw new Error("missing_"+id); }
@@ -375,6 +385,7 @@
 
     /* ===== disponibilidad ===== */
     checkAvail.addEventListener('click', function(){
+      console.log("CLICK checkAvail");
       var dIn = dateInEl.value;
       var dOut= dateOutEl.value;
       var men = Number(menEl.value||0);
@@ -396,7 +407,7 @@
           modsEl.textContent = (mods.tags && mods.tags.length) ? ("Modificadores: "+mods.tags.join(' · ')) : '';
           checkMsg.textContent='Disponibilidad actualizada';
         })
-        .catch(function(){ checkMsg.innerHTML='<span class="err">Error consultando disponibilidad.</span>'; });
+        .catch(function(err){ console.error("AVAIL ERROR", err); checkMsg.innerHTML='<span class="err">Error consultando disponibilidad.</span>'; });
     });
 
     /* ===== HOLD + form ===== */
@@ -421,6 +432,7 @@
     }
 
     continueBtn.addEventListener('click', function(){
+      console.log("CLICK continuar");
       var order=buildOrderBase();
       if(!order.total){ alert("Seleccioná camas primero."); return; }
       var holdPayload={ holdId:order.bookingId, nombre:order.nombre||"HOLD", email:order.email||"", telefono:order.telefono||"", entrada:order.entrada, salida:order.salida, hombres:order.hombres, mujeres:order.mujeres, camas:order.camas, total:order.total };
@@ -437,11 +449,12 @@
           requestAnimationFrame(function(){ window.scrollTo({ top: formCard.offsetTop-10, behavior:'smooth' }); });
           toast("Camas reservadas por 10 min (HOLD)");
         })
-        .catch(function(e){ alert("Error creando HOLD: "+e.message); });
+        .catch(function(e){ console.error("HOLD ERROR", e); alert("Error creando HOLD: "+e.message); });
     });
 
     /* ===== Simular pago aprobado ===== */
     simulateOkBtn.addEventListener('click', function(){
+      console.log("CLICK simulateOk");
       payStateEl.textContent="aprobado";
       submitBtn.disabled=false;
       window.__simApproved=true;
@@ -450,12 +463,12 @@
     /* ===== Mercado Pago ===== */
     var mpBusy=false;
     payMPBtn.addEventListener('click', function(){
+      console.log("CLICK payMP");
       if(mpBusy) return; mpBusy=true; payMPBtn.disabled=true;
       var order=buildOrderBase();
       if(!order.total){ alert("Seleccioná camas primero."); mpBusy=false; payMPBtn.disabled=false; return; }
       if(!order.nombre || !order.email){ alert("Completá nombre y email."); mpBusy=false; payMPBtn.disabled=false; return; }
       if(!document.getElementById('consentChk').checked){ alert("Debes aceptar la política de privacidad."); mpBusy=false; payMPBtn.disabled=false; return; }
-      var payload = { title:'Reserva Lapa Casa Hostel', unit_price:order.total, quantity:1, currency_id:'BRL', metadata:{ bookingId:order.bookingId, email:order.email } };
       fetch(MP_PREFERENCE_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:{ booking_id:order.bookingId, total:order.total } }) })
         .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
         .then(function(res){
@@ -463,13 +476,14 @@
           try{ localStorage.setItem('lapa-last-booking', JSON.stringify(order)); }catch(_){}
           window.location.href=res.j.init_point;
         })
-        .catch(function(e){ alert("Error iniciando pago (MP): "+e.message); })
+        .catch(function(e){ console.error("MP ERROR", e); alert("Error iniciando pago (MP): "+e.message); })
         .finally(function(){ mpBusy=false; payMPBtn.disabled=false; });
     });
 
     /* ===== Stripe ===== */
     var stripeBusy=false;
     payStripeBtn.addEventListener('click', function(){
+      console.log("CLICK payStripe");
       if(stripeBusy) return; stripeBusy=true; payStripeBtn.disabled=true;
       var order=buildOrderBase();
       if(!order.total){ alert("Seleccioná camas primero."); stripeBusy=false; payStripeBtn.disabled=false; return; }
@@ -484,13 +498,14 @@
           return s.redirectToCheckout({ sessionId:res.j.id });
         })
         .then(function(ret){ if(ret && ret.error) throw ret.error; })
-        .catch(function(e){ alert("Error iniciando pago (Stripe): "+e.message); })
+        .catch(function(e){ console.error("STRIPE ERROR", e); alert("Error iniciando pago (Stripe): "+e.message); })
         .finally(function(){ stripeBusy=false; payStripeBtn.disabled=false; });
     });
 
-    /* ===== Confirmar (verifica pago si hay endpoint) ===== */
+    /* ===== Confirmar ===== */
     reservaForm.addEventListener('submit', function(e){
       e.preventDefault();
+      console.log("CLICK submit");
       submitBtn.disabled = true;
       if(!document.getElementById('consentChk').checked){ alert("Debes aceptar la política de privacidad."); submitBtn.disabled=false; return; }
       var order = buildOrderBase();
@@ -501,7 +516,7 @@
         fetch(HOLDS_CONFIRM_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ holdId:currentHoldId||order.bookingId, status:'paid' }) })
           .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
           .then(function(res){ if(!res.ok || !res.j || res.j.ok!==true) throw new Error(res.j && res.j.error ? res.j.error : "No se pudo confirmar HOLD"); paidFinal=true; alert("✅ Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'."); })
-          .catch(function(e){ alert("Error confirmando reserva: "+e.message); submitBtn.disabled=false; });
+          .catch(function(e){ console.error("CONFIRM ERROR", e); alert("Error confirmando reserva: "+e.message); submitBtn.disabled=false; });
       }
 
       if(order.bookingId && PAY_STATUS_ENDPOINT){
@@ -524,22 +539,24 @@
       }catch(_){}
     });
 
-    /* ===== rehidratación de pago (opcional) ===== */
+    /* ===== modo diagnóstico opcional ===== */
+    (function debugClicks(){
+      if (!window.__dbgClick) return;
+      document.addEventListener('mousemove', function(e){
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (el && el !== debugClicks.__last) {
+          debugClicks.__last = el;
+          console.log("[hover top]", el.tagName, el.id ? "#"+el.id:"", el.className ? "."+String(el.className).split(" ").join("."):"");
+        }
+      }, {passive:true});
+    })();
+
+    /* ===== rehidratación ===== */
     (function restorePaidState(){
       var p=new URLSearchParams(location.search);
       if(p.get('paid')==='1'){ payStateEl.textContent="aprobado"; submitBtn.disabled=false; window.__simApproved=true; }
-      try{
-        var cached = JSON.parse(localStorage.getItem('lapa-last-booking')||'null');
-        if(cached && cached.bookingId && PAY_STATUS_ENDPOINT){
-          fetch(PAY_STATUS_ENDPOINT+"?bookingId="+encodeURIComponent(cached.bookingId))
-            .then(function(r){ if(!r.ok) return null; return r.json(); })
-            .then(function(js){ if(js && (js.paid===true || js.status==='approved'||js.status==='paid')){ payStateEl.textContent="aprobado"; submitBtn.disabled=false; window.__simApproved=true; }})
-            .catch(function(){});
-        }
-      }catch(_){}
     })();
   })();
   </script>
 </body>
 </html>
-

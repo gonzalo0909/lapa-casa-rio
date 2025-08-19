@@ -1,14 +1,14 @@
 "use strict";
 /**
- * /public/js/book.js — Front de reservas Lapa Casa
+ * /public/js/book.js — demo opcional; usa endpoints actuales
  */
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("bookingForm");
   const btnStripe = document.getElementById("payStripe");
   const btnMP     = document.getElementById("payMP");
 
-  async function api(path, data={}) {
-    const res = await fetch(`/api/${path}`, {
+  async function api(url, data={}) {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -25,27 +25,26 @@ document.addEventListener("DOMContentLoaded", () => {
       telefono: form.telefono.value,
       hombres : Number(form.hombres.value||0),
       mujeres : Number(form.mujeres.value||0),
-      camas   : {}, // se completará con selección UI
+      camas   : {}, // tu UI debería llenar esto
     };
 
     try {
-      // 1. Crear reserva provisional (HOLD)
-      const hold = await api("bookings", { action:"hold", ...data });
-      if (!hold.ok) return alert("⚠️ Error creando reserva: " + hold.error);
+      const hold = await fetch("/holds/start", {
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ ...data, holdId:`BKG-${Date.now()}`, total: 1 }) // total real debe venir de UI
+      }).then(r=>r.json());
 
-      const booking_id = hold.booking_id;
-      const total = hold.total;
+      if (!hold.ok) return alert("⚠️ Error creando HOLD: " + (hold.error||""));
 
-      // 2. Redirigir a pago
+      const booking_id = hold.holdId;
+
       if (payMethod === "stripe") {
-        const r = await api("payments/stripe", { booking_id, total });
+        const r = await api("/payments/stripe/session", { order:{ booking_id } });
         if (r?.url) window.location.href = r.url;
+      } else if (payMethod === "mp") {
+        const r = await api("/payments/mp/preference", { order:{ booking_id } });
+        if (r?.init_point) window.location.href = r.init_point;
       }
-      else if (payMethod === "mp") {
-        const r = await api("payments/mp", { booking_id, total });
-        if (r?.url) window.location.href = r.url;
-      }
-
     } catch (err) {
       console.error(err);
       alert("❌ Error conectando con servidor");
@@ -55,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (form) {
     form.addEventListener("submit", e => {
       e.preventDefault();
-      alert("👉 Elige método de pago abajo (Stripe o MP).");
+      alert("👉 Elegí método de pago abajo (Stripe o MP).");
     });
   }
   if (btnStripe) btnStripe.addEventListener("click", ()=> startBooking("stripe"));

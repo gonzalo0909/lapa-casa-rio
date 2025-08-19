@@ -7,7 +7,7 @@ const { buildStripeWebhookHandler } = require("../services/payments-stripe");
 const { buildMpWebhookHandler } = require("../services/payments-mp");
 const { notifySheets } = require("../services/sheets");
 
-// deduper simple en memoria
+// ===== Deduper simple (evita procesar el mismo evento 2 veces)
 function deduper(max = 1000, ttlMs = 10 * 60 * 1000) {
   const m = new Map();
   return (key) => {
@@ -19,31 +19,16 @@ function deduper(max = 1000, ttlMs = 10 * 60 * 1000) {
     return false;
   };
 }
-const isDup = deduper();
+const isDuplicate = deduper();
+const log = (...a) => console.log("[webhook]", ...a);
 
-// Stripe requiere raw body SOLO aquí
-router.post(
-  "/stripe",
-  express.raw({ type: "application/json" }),
-  buildStripeWebhookHandler({
-    notifySheets: (p) => notifySheets(p),
-    isDuplicate: isDup,
-    log: (...a) => console.log("[stripe]", ...a),
-  })
-);
+// ===== Stripe (raw body requerido)
+const stripeHandler = buildStripeWebhookHandler({ notifySheets, isDuplicate, log });
+router.post("/stripe", express.raw({ type: "application/json" }), stripeHandler);
 
-// Mercado Pago acepta JSON normal
-router.post(
-  "/mp",
-  express.json(),
-  buildMpWebhookHandler({
-    notifySheets: (p) => notifySheets(p),
-    isDuplicate: isDup,
-    log: (...a) => console.log("[mp]", ...a),
-  })
-);
-
-// ping opcional
+// ===== Mercado Pago
+const mpHandler = buildMpWebhookHandler({ notifySheets, isDuplicate, log });
+router.post("/mp", mpHandler);
 router.get("/mp", (_req, res) => res.json({ ok: true, ping: true }));
 
 module.exports = router;

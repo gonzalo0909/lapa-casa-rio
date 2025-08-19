@@ -41,7 +41,11 @@
     .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none }
     #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999; pointer-events:none }
     #toast.show { opacity:1; transform:translateY(0); pointer-events:auto }
-    *[aria-hidden="true"], *[hidden], *[style*="opacity: 0"] { pointer-events:none !important; }
+
+    /* FIX: NO bloquear clics globalmente */
+    [hidden] { display:none !important; }     /* sin tocar pointer-events */
+    button, .btn, .bed { pointer-events:auto; position:relative; z-index:2; }
+
     main, .row, .card, footer { position:relative; z-index:1 }
   </style>
   <script src="https://js.stripe.com/v3/"></script>

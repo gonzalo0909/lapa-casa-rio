@@ -4,9 +4,13 @@ const fetch_ = global.fetch;
 
 let cache = { key: "", ts: 0, data: [], ttlHours: 24 };
 
-const { EVENTBRITE_TOKEN = "" } = process.env;
-// acepta ambos nombres de env
-const ICS_LIST = (process.env.EVENTS_ICS_URLS || process.env.EVENTS_FEEDS || "").split(",").map(s=>s.trim()).filter(Boolean);
+// Soporta ambas ENV: EVENTS_ICS_URLS y/o EVENTS_FEEDS
+const {
+  EVENTBRITE_TOKEN = "",
+  EVENTS_ICS_URLS = "",
+  EVENTS_FEEDS = "",
+  EVENTS_TTL_HOURS = ""
+} = process.env;
 
 function toISO(x) { const d = new Date(x); return isNaN(d) ? null : d.toISOString(); }
 function hash(s) { return crypto.createHash("sha1").update(String(s)).digest("hex").slice(0, 12); }
@@ -14,7 +18,7 @@ function keyFor(from, to, limit) { return [from.toISOString().slice(0,10), to.to
 function withinTTL(ts, ttlHours) { return (Date.now() - ts) < ttlHours * 3600 * 1000; }
 function getCacheInfo() { return { items: cache.data.length, age_s: Math.floor((Date.now() - cache.ts) / 1000), ttl_h: cache.ttlHours }; }
 
-async function getEvents({ from = new Date(), to = new Date(Date.now()+30*864e5), limit = 50, refresh = false, ttlHours = 24 } = {}) {
+async function getEvents({ from = new Date(), to = new Date(Date.now()+30*864e5), limit = 50, refresh = false, ttlHours = (Number(EVENTS_TTL_HOURS)||24) } = {}) {
   const k = keyFor(from, to, limit);
   if (!refresh && cache.key === k && withinTTL(cache.ts, cache.ttlHours)) return cache.data.slice(0, limit);
   const list = [];
@@ -22,7 +26,12 @@ async function getEvents({ from = new Date(), to = new Date(Date.now()+30*864e5)
     try { list.push(...await fromEventbrite({ from, to, limit })); }
     catch (e) { console.warn("[events] Eventbrite:", e.message); }
   }
-  for (const url of ICS_LIST) {
+
+  // Combina ICS de ambas envs
+  const envIcs = [EVENTS_ICS_URLS, EVENTS_FEEDS].join(",")
+    .split(",").map(s => s.trim()).filter(Boolean);
+
+  for (const url of envIcs) {
     try {
       const ics = await (await fetch_(url)).text();
       const evs = parseICS(ics).map(e => normalize({
@@ -85,7 +94,7 @@ function deduplicate(list) {
   }
   return out;
 }
-// ICS parser (simple)
+// ICS parser
 function parseICS(icsText) {
   const icsToIso = (v) => {
     if (!v) return null;
@@ -117,3 +126,4 @@ function parseICS(icsText) {
 }
 
 module.exports = { getEvents, getCacheInfo };
+

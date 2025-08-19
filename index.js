@@ -1,106 +1,177 @@
 "use strict";
 
-/* Index delgado: configura middlewares, estáticos y monta rutas. */
+/**
+ * Lapa Casa — Backend thin index (Express)
+ * Endpoints: health, availability, bookings, holds, payments (Stripe/MP), webhooks, events
+ * Sirve estáticos /, /book/, /admin/ y fallback SPA-ish.
+ */
+
 require("dotenv").config();
 
 const path = require("path");
 const express = require("express");
-const helmet = require("helmet");
 const cors = require("cors");
+const helmet = require("helmet");
+const cookieSession = require("cookie-session");
 
+// === ENV
+const PORT = process.env.PORT || 3000;
+const COMMIT = process.env.COMMIT || "dev";
+const BASE_URL = (process.env.BASE_URL || "").replace(/\/+$/,"");
+const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
+const CORS_ALLOW = String(process.env.CORS_ALLOW_ORIGINS || "")
+  .split(",").map(s=>s.trim()).filter(Boolean);
+const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "change-me";
+
+// ==== App
 const app = express();
 app.set("trust proxy", 1);
 
-/* ===== Seguridad / CORS / Sesión */
-app.use(helmet({ crossOriginResourcePolicy: false }));
+// ==== Helpers
+function getBaseUrl(req){
+  if (BASE_URL) return BASE_URL;
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host  = req.headers["x-forwarded-host"]  || req.headers.host;
+  return `${proto}://${host}`;
+}
+function deduper(max=1000, ttlMs=10*60*1000){
+  const m=new Map();
+  return (key)=>{
+    const now=Date.now();
+    for (const [k,ts] of m) if (now-ts>ttlMs) m.delete(k);
+    if (m.has(key)) return true;
+    m.set(key, now);
+    if (m.size>max) m.delete(m.keys().next().value);
+    return false;
+  };
+}
+const isDup = deduper();
 
-const allowList = String(process.env.CORS_ALLOW_ORIGINS || "")
-  .split(",").map(s => s.trim()).filter(Boolean);
-
+// ==== CORS
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    if (!allowList.length) return cb(null, true);
-    return cb(null, allowList.includes(origin) ? true : false);
+  origin: (origin, cb)=>{
+    if (!origin) return cb(null,true);
+    if (!CORS_ALLOW.length) return cb(null,true);
+    try{
+      const host = new URL(origin).hostname.toLowerCase();
+      const allowHosts = CORS_ALLOW.map(v=>v.replace(/^https?:\/\//,"").toLowerCase());
+      const ok = allowHosts.some(a => host===a || host.endsWith("."+a));
+      return cb(null, ok);
+    }catch{ return cb(null,false); }
   },
-  credentials: true,
-  methods: ["GET","POST","OPTIONS"],
-  allowedHeaders: ["Content-Type","Stripe-Signature"]
+  credentials:true,
+  methods:["GET","POST","OPTIONS"],
+  allowedHeaders:["Content-Type","Stripe-Signature"]
 }));
 
-const session = require("./middleware/session");
-app.use(session);
+// ==== Security
+app.use(helmet({ crossOriginResourcePolicy:false }));
 
-/* ===== Webhooks (Stripe necesita body RAW) */
-app.use("/webhooks/mp", express.json({ limit: "2mb", type: "*/*" })); // solo MP JSON
-app.use("/webhooks", require("./routes/webhooks"));
+// ==== Static first (landing, /book/, /admin/, etc.)
+app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
 
-/* ===== Parsers generales (después de /webhooks para no romper Stripe) */
-app.use(express.json({ limit: "2mb" }));
+// Friendly routes for directories without trailing slash
+app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname,"public","book","index.html")));
+app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname,"public","admin","index.html")));
 
-/* ===== Estáticos */
-app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
+// ==== Sessions (para /admin/login en router)
+app.use(cookieSession({
+  name:"sess",
+  secret: SESSION_SECRET,
+  sameSite:"lax",
+  httpOnly:true,
+}));
 
-/* ===== Rutas API */
+// ==== Stripe webhook (RAW *antes* del JSON parser)
+const { buildStripeWebhookHandler } = require("./services/payments-stripe");
+const { buildMpWebhookHandler }     = require("./services/payments-mp");
+const { notifySheets }              = require("./services/sheets");
+
+app.post("/webhooks/stripe",
+  express.raw({ type:"application/json" }),
+  buildStripeWebhookHandler({
+    notifySheets,
+    isDuplicate: isDup,
+    log: (...a)=>console.log("[stripe]",...a),
+  })
+);
+
+// MP webhook (no requiere raw)
+app.post("/webhooks/mp",
+  buildMpWebhookHandler({
+    notifySheets,
+    isDuplicate: isDup,
+    log: (...a)=>console.log("[mp]",...a),
+  })
+);
+
+// ==== JSON parser (después del webhook RAW)
+app.use(express.json());
+
+// ==== Routers (API)
 app.use("/api/health", require("./routes/health"));
-app.use("/api/availability", require("./routes/availability"));
-app.use("/availability", require("./routes/availability"));           // alias
-app.use("/api/events", require("./routes/events"));
+app.use("/availability", require("./routes/availability"));
+app.use("/bookings", require("./routes/bookings"));
+app.use("/api/bookings", require("./routes/bookings")); // alias
+app.use("/holds", require("./routes/holds"));
+try { app.use("/api/events", require("./routes/events")); } catch { /* opcional */ }
 
-app.use("/api/holds", require("./routes/holds"));
-app.use("/holds", require("./routes/holds"));                          // alias
+// ==== Payments public endpoints (compat con front)
+const stripeSrv = require("./services/payments-stripe");
+const mpSrv     = require("./services/payments-mp");
 
-app.use("/api/bookings", require("./routes/bookings"));
-
-/* ===== Pagos (endpoints usados por el front) */
-const { createCheckoutSession } = require("./services/payments-stripe");
-const { createPreference } = require("./services/payments-mp");
-
-const BASE_URL = (process.env.BASE_URL || "").replace(/\/+$/,"") || "http://localhost:3000";
-
-app.post("/payments/stripe/session", async (req, res) => {
-  try {
+app.post("/payments/stripe/session", async (req,res)=>{
+  try{
     const order = Object(req.body?.order || req.body || {});
-    if (!("total" in order)) return res.status(400).json({ ok:false, error:"missing_total" });
-    const out = await createCheckoutSession(order, { baseUrl: BASE_URL });
+    if (!("total" in order)) throw new Error("missing_total");
+    const out = await stripeSrv.createCheckoutSession(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
-  } catch (e) {
-    res.status(500).json({ ok:false, error:String(e.message||e) });
-  }
+  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-app.post("/payments/mp/preference", async (req, res) => {
-  try {
+app.post("/payments/mp/preference", async (req,res)=>{
+  try{
     const order = Object(req.body?.order || req.body || {});
-    if (!("total" in order)) return res.status(400).json({ ok:false, error:"missing_total" });
-    const out = await createPreference(order, { baseUrl: BASE_URL });
+    if (!("total" in order)) throw new Error("missing_total");
+    const out = await mpSrv.createPreference(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
-  } catch (e) {
-    res.status(500).json({ ok:false, error:String(e.message||e) });
+  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
+});
+
+// Pago OK de prueba (fallback si no subiste el HTML a /public/pago-exitoso-test/index.html)
+app.get("/pago-exitoso-test", (req,res)=>{
+  const file = path.join(__dirname,"public","pago-exitoso-test","index.html");
+  res.sendFile(file, (err)=> {
+    if (err) {
+      res.type("html").send(`<!doctype html><meta charset="utf-8"><title>Pago aprobado</title>
+        <body style="font-family:Arial;text-align:center;padding:50px">
+        <h1 style="color:green">✅ Pago aprobado</h1>
+        <p><a href="/book/?paid=1">Volver a reservar</a></p></body>`);
+    }
+  });
+});
+
+// ==== Health/Diag simple
+app.get("/api/diag", (_req,res)=> res.json({
+  ok:true, service:"lapa-casa-backend", commit:COMMIT, now:new Date().toISOString(),
+  env:{
+    BASE_URL: !!BASE_URL,
+    HOLD_TTL_MINUTES,
+    CORS_ALLOW_ORIGINS: CORS_ALLOW.length,
   }
+}));
+
+// ==== 404 SPA-ish (GET sin extensión -> intenta /public/<path>/index.html)
+app.use((req,res,next)=>{
+  if (req.method !== "GET") return next();
+  if (path.extname(req.path)) return next();
+  const safe = path.join(__dirname, "public", req.path, "index.html");
+  res.sendFile(safe, (err)=> err ? res.status(404).send("Not found") : undefined);
 });
 
-/* ===== Cron holds sweep (para GAS) */
-const { sweepExpired } = require("./services/holds");
-app.get("/api/crons/holds-sweep", (req, res) => {
-  const tok = String(req.query?.token || "");
-  const CRON_TOKEN = String(process.env.CRON_TOKEN || "").trim();
-  if (!CRON_TOKEN || tok !== CRON_TOKEN) return res.status(401).json({ ok:false, error:"unauthorized" });
-  res.json({ ok:true, ...sweepExpired() });
-});
-
-/* ===== Admin (login/logout por sesión) */
-app.use("/admin", require("./routes/admin"));
-
-/* ===== 404 SPA-ish (GET sin extensión → index.html de /public) */
-app.use((req, res, next) => {
-  if (req.method !== "GET" || path.extname(req.path)) return next();
-  const file = path.join(__dirname, "public", req.path, "index.html");
-  res.sendFile(file, err => err ? res.status(404).send("Not found") : undefined);
-});
-
-/* ===== Start */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`[lapa-casa] up :${PORT}`));
+// ==== Start
+if (require.main === module) {
+  app.listen(PORT, ()=> console.log(`[lapa-casa] up :${PORT} commit=${COMMIT}`));
+}
 
 module.exports = app;

@@ -54,28 +54,17 @@
     <p class="muted" data-i18n="subtitle">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
     <div class="lang">
       <label for="langSel" class="muted" data-i18n="lang_label">Idioma / Language:</label>
-      <select id="langSel" aria-label="Language">
-        <option value="es">ES</option>
-        <option value="en">EN</option>
-      </select>
+      <select id="langSel" aria-label="Language"><option value="es">ES</option><option value="en">EN</option></select>
     </div>
-    <div class="promo" id="promoWrap">
-      <div class="box"><span id="promoMsg">Promo activa</span></div>
-    </div>
+    <div class="promo" id="promoWrap"><div class="box"><span id="promoMsg">Promo activa</span></div></div>
   </header>
 
   <main class="row">
     <section class="card">
       <h2 data-i18n="step1">1) Fechas y cantidad</h2>
       <div class="grid grid-2">
-        <div>
-          <label data-i18n="checkin">Check-in</label>
-          <input id="dateIn" type="date" />
-        </div>
-        <div>
-          <label data-i18n="checkout">Check-out</label>
-          <input id="dateOut" type="date" />
-        </div>
+        <div><label data-i18n="checkin">Check-in</label><input id="dateIn" type="date" /></div>
+        <div><label data-i18n="checkout">Check-out</label><input id="dateOut" type="date" /></div>
       </div>
 
       <div class="grid grid-4" style="margin-top:10px">
@@ -95,9 +84,7 @@
             <button type="button" id="womenPlus" aria-label="más mujeres">+</button>
           </div>
         </div>
-        <div class="muted" style="display:flex; align-items:end" data-i18n="capacity">
-          Capacidad total: 38
-        </div>
+        <div class="muted" style="display:flex; align-items:end" data-i18n="capacity">Capacidad total: 38</div>
         <div style="display:flex; justify-content:end; align-items:end">
           <button id="checkAvail" class="btn" data-i18n="btn_check" type="button">Ver disponibilidad</button>
         </div>
@@ -122,37 +109,17 @@
     <section id="formCard" class="card" style="display:none">
       <h2 data-i18n="step3">3) Datos para confirmar</h2>
       <form id="reserva-form">
-        <label data-i18n="full_name">Nombre completo</label>
-        <input type="text" name="nombre" required />
-        <label data-i18n="email">Email</label>
-        <input type="email" name="email" required />
-        <label data-i18n="phone">Teléfono</label>
-        <input type="tel" name="telefono" required />
-        <label data-i18n="in_date">Fecha de entrada</label>
-        <input type="date" name="entrada" required />
-        <label data-i18n="out_date">Fecha de salida</label>
-        <input type="date" name="salida" required />
-        <label style="margin-top:8px">
-          <input type="checkbox" id="consentChk" />
-          <span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span>
-        </label>
+        <label data-i18n="full_name">Nombre completo</label><input type="text" name="nombre" required />
+        <label data-i18n="email">Email</label><input type="email" name="email" required />
+        <label data-i18n="phone">Teléfono</label><input type="tel" name="telefono" required />
+        <label data-i18n="in_date">Fecha de entrada</label><input type="date" name="entrada" required />
+        <label data-i18n="out_date">Fecha de salida</label><input type="date" name="salida" required />
+        <label style="margin-top:8px"><input type="checkbox" id="consentChk" /><span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span></label>
 
         <div class="grid grid-3" style="margin-top:10px">
-          <div class="card">
-            <h3 style="margin:0 0 8px 0;" data-i18n="pay_mp_title">Pagar con Mercado Pago</h3>
-            <p class="muted" data-i18n="pay_mp_sub">Pix / tarjeta / boleto (Brasil)</p>
-            <button type="button" id="payMP" class="btn secondary" style="margin-top:8px" data-i18n="pay_mp_btn">Pagar con MP (Sandbox)</button>
-          </div>
-          <div class="card">
-            <h3 style="margin:0 0 8px 0;" data-i18n="pay_stripe_title">Pagar con Stripe</h3>
-            <p class="muted" data-i18n="pay_stripe_sub">Tarjeta internacional / débito</p>
-            <button type="button" id="payStripe" class="btn secondary" style="margin-top:8px" data-i18n="pay_stripe_btn">Ir a Checkout (Sandbox)</button>
-          </div>
-          <div class="card">
-            <h3 style="margin:0 0 8px 0;" data-i18n="test_title">¿Solo test?</h3>
-            <p class="muted" data-i18n="test_sub">“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.</p>
-            <button type="button" id="simulateOk" class="btn ghost" data-i18n="test_btn">Simular pago aprobado</button>
-          </div>
+          <div class="card"><h3 style="margin:0 0 8px 0;" data-i18n="pay_mp_title">Pagar con Mercado Pago</h3><p class="muted" data-i18n="pay_mp_sub">Pix / tarjeta / boleto (Brasil)</p><button type="button" id="payMP" class="btn secondary" style="margin-top:8px" data-i18n="pay_mp_btn">Pagar con MP (Sandbox)</button></div>
+          <div class="card"><h3 style="margin:0 0 8px 0;" data-i18n="pay_stripe_title">Pagar con Stripe</h3><p class="muted" data-i18n="pay_stripe_sub">Tarjeta internacional / débito</p><button type="button" id="payStripe" class="btn secondary" style="margin-top:8px" data-i18n="pay_stripe_btn">Ir a Checkout (Sandbox)</button></div>
+          <div class="card"><h3 style="margin:0 0 8px 0;" data-i18n="test_title">¿Solo test?</h3><p class="muted" data-i18n="test_sub">“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.</p><button type="button" id="simulateOk" class="btn ghost" data-i18n="test_btn">Simular pago aprobado</button></div>
         </div>
 
         <div class="actions" style="margin-top:12px">
@@ -163,101 +130,268 @@
     </section>
   </main>
 
-  <footer>
-    <p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p>
-  </footer>
-
+  <footer><p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p></footer>
   <div id="toast"></div>
 
   <script>
+  (function(){
+    // ===== Config
+    var API_BASE=(window.BACKEND_BASE_URL||"").replace(/\/$/,"");
+    function endpoint(p){return API_BASE?API_BASE+p:p;}
+    var MP_PREF=endpoint("/payments/mp/preference");
+    var STRIPE_SES=endpoint("/payments/stripe/session");
+    var HOLDS_START=endpoint("/holds/start");
+    var HOLDS_RELEASE=endpoint("/holds/release");
+    var HOLDS_CONFIRM=endpoint("/holds/confirm");
+    var AVAIL=endpoint("/availability");
+    var PAY_STATUS=endpoint("/payments/status");
+
+    var STRIPE_PK=window.STRIPE_PUBLISHABLE_KEY||"pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
+    var __stripe=null; function getStripe(){return (typeof Stripe==="function")?(__stripe||(__stripe=Stripe(STRIPE_PK))):null;}
+
+    var ROOMS={1:{name:"Cuarto 1 (12 mixto)",cap:12,basePrice:55,femaleOnly:false},
+               3:{name:"Cuarto 3 (12 mixto)",cap:12,basePrice:55,femaleOnly:false},
+               5:{name:"Cuarto 5 (7 mixto)", cap:7, basePrice:55,femaleOnly:false},
+               6:{name:"Cuarto 6 (7 femenino)",cap:7, basePrice:60,femaleOnly:true}};
+
+    function $(s){return document.querySelector(s);}
+    var dateInEl=$("#dateIn"),dateOutEl=$("#dateOut");
+    var menEl=$("#men"),womenEl=$("#women");
+    var roomsWrap=$("#rooms"),roomsCard=$("#roomsCard"),formCard=$("#formCard");
+    var neededEl=$("#needed"),selCountEl=$("#selCount"),totalPriceEl=$("#totalPrice");
+    var continueBtn=$("#continueBtn"),suggestBox=$("#suggestBox"),checkMsg=$("#checkMsg");
+    var payStateEl=$("#payState"),submitBtn=$("#submitBtn");
+    var modsEl=$("#mods"),toastEl=$("#toast");
+
+    var selection={},holdId=null,paidFinal=false,LANG="es",internalTotal=0,lastOrder=null;
+
+    // ===== fechas mínimas
+    (function(){var n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);
+      var f=(d)=>{var y=d.getFullYear(),m=("0"+(d.getMonth()+1)).slice(-2),dd=("0"+d.getDate()).slice(-2);return y+"-"+m+"-"+dd;};
+      var a=f(n),b=f(t); if(dateInEl){dateInEl.min=a;if(!dateInEl.value)dateInEl.value=a;}
+      if(dateOutEl){dateOutEl.min=b;if(!dateOutEl.value||dateOutEl.value<=dateInEl.value)dateOutEl.value=b;}
+    })();
+
+    // ===== helpers
+    function toISO(d){return new Date(d+"T00:00:00");}
+    function nights(a,b){if(!a||!b)return 0;var ms=toISO(b)-toISO(a);return Math.max(0,Math.round(ms/86400000));}
+    function fmtBRL(n){return Number(n||0).toLocaleString("pt-BR",{maximumFractionDigits:0});}
+    function toast(s){if(!toastEl)return;toastEl.textContent=s;toastEl.classList.add("show");setTimeout(()=>toastEl.classList.remove("show"),2000);}
+    function clamp(n,min,max){n=(+n||0);return Math.max(min,Math.min(max,n));}
+
+    // i18n corto
+    var I18N={es:{err_dates:"Elegí check-in y check-out.",err_co:"El check-out debe ser posterior.",err_qty:"Indicá al menos 1 huésped.",
+      checking:"Consultando disponibilidad...",updated:"Disponibilidad actualizada",err_avail:"Error consultando.",
+      no_beds:"No hay camas disponibles.",avail_of:"Disponibles:",price_bed:"Precio por cama:",nights:"Noches:",
+      female_rule:"El cuarto femenino requiere al menos 1 mujer.",select_exact:"Seleccioná exactamente {n} camas.",
+      pick_beds:"Seleccioná camas primero.",fill_name_email:"Completá nombre y email.",need_consent:"Acepta la política.",
+      approved:"aprobado",need_payment:"Primero finalizá el pago (o Simular aprobado).",
+      cant_confirm:"No se pudo confirmar HOLD",confirm_err:"Error confirmando: ",hold_err:"Error creando HOLD: ",
+      book_ok:"Reserva registrada. Webhooks marcarán 'paid'.",hold_ok:"Camas reservadas por 10 min (HOLD)",
+      tag_weekend:"Fin de semana +10%",tag_high:"Alta (Dic–Feb) +20%",mods:"Modificadores: ",
+      title:"Lapa Casa Hostel – Reservas",subtitle:"Elegí fechas y cantidad. Luego seleccioná camas.",
+      lang_label:"Idioma / Language:",step1:"1) Fechas y cantidad",checkin:"Check-in",checkout:"Check-out",
+      men:"Hombres",women:"Mujeres",capacity:"Capacidad total: 38",btn_check:"Ver disponibilidad",
+      step2:"2) Elegí tus camas",selected_prefix:"Seleccionadas:",total_prefix:"Total:",btn_continue:"Continuar",
+      step3:"3) Datos para confirmar",full_name:"Nombre completo",email:"Email",phone:"Teléfono",
+      in_date:"Entrada",out_date:"Salida",consent:"Acepto comunicaciones y privacidad.",
+      pay_mp_title:"Pagar con Mercado Pago",pay_mp_sub:"Pix / tarjeta / boleto",pay_mp_btn:"Pagar con MP (Sandbox)",
+      pay_stripe_title:"Pagar con Stripe",pay_stripe_sub:"Tarjeta internacional / débito",pay_stripe_btn:"Ir a Checkout (Sandbox)",
+      test_title:"¿Solo test?",test_sub:"“Simular pago aprobado” habilita Confirmar.",test_btn:"Simular pago aprobado",
+      pay_state:"Estado pago:",pending:"pendiente",btn_confirm:"Confirmar reserva"}};
+
+    function priceMods(a,b){
+      var w=false,h=false; var n=nights(a,b); if(!n)return{factor:1,tags:[]};
+      var base=toISO(a); for(var i=0;i<n;i++){var d=new Date(base.getTime());d.setDate(d.getDate()+i);
+        var dow=d.getDay(); if(dow===0||dow===5||dow===6)w=true; var m=d.getMonth(); if(m===11||m===0||m===1)h=true;}
+      var tags=[]; if(w)tags.push(I18N[LANG].tag_weekend); if(h)tags.push(I18N[LANG].tag_high);
+      return {factor:(w?1.10:1)*(h?1.20:1),tags:tags};
+    }
+    function pricePerBed(roomId,a,b){return Math.round(ROOMS[roomId].basePrice*priceMods(a,b).factor);}
+
+    // stepper robusto + delegación
+    function step(input,delta){
+      var min=+(input.min||0),max=+(input.max||38),cur=+(input.value||0);
+      var next=clamp(cur+delta,min,max);
+      var other=(input===menEl)?+(womenEl.value||0):+(menEl.value||0);
+      if(next+other>38)next=38-other;
+      input.value=clamp(next,min,max);
+      input.dispatchEvent(new Event("input",{bubbles:true}));
+      input.dispatchEvent(new Event("change",{bubbles:true}));
+    }
+    document.addEventListener("click",function(e){
+      var id=(e.target&&e.target.id)||"";
+      if(id==="menMinus"){e.preventDefault();step(menEl,-1);}
+      if(id==="menPlus"){e.preventDefault();step(menEl,1);}
+      if(id==="womenMinus"){e.preventDefault();step(womenEl,-1);}
+      if(id==="womenPlus"){e.preventDefault();step(womenEl,1);}
+    },true);
+
+    // enforce total 38
+    function enforceTotals(){
+      var m=+(menEl.value||0),w=+(womenEl.value||0); if(m+w>38){
+        if(document.activeElement===menEl)menEl.value=38-w; else womenEl.value=38-m;
+      }
+    }
+    menEl.addEventListener("input",enforceTotals);
+    womenEl.addEventListener("input",enforceTotals);
+
+    // Render disponibilidad
+    function renderAvailability(a,b,men,women,occupied){
+      selection={}; roomsWrap.innerHTML=""; var qty=men+women; if(qty===0){roomsCard.style.display="none";return;}
+      roomsCard.style.display="block"; formCard.style.display="none";
+      var n=nights(a,b); neededEl.textContent=qty; selCountEl.textContent=0; internalTotal=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display="none";
+      var freeBy={}; [1,3,5,6].forEach(function(id){var occ=new Set((occupied&&occupied[id])||[]),free=[]; for(var bed=1;bed<=ROOMS[id].cap;bed++) if(!occ.has(bed)) free.push(bed); freeBy[id]=free;});
+      var hasW=women>=1,toShow={};
+      if(!hasW){toShow[1]=true; if(qty>12){toShow[3]=true;toShow[5]=true;}}
+      else {toShow[1]=true;toShow[5]=true;toShow[6]=true; if(qty>12)toShow[3]=true;}
+      var final=[1,3,5,6].filter(id=>toShow[id]&&freeBy[id].length>0);
+      if(!final.length){roomsWrap.innerHTML="<p>"+I18N[LANG].no_beds+"</p>";return;}
+      final.forEach(function(id){
+        var r=ROOMS[id], libres=freeBy[id], p=pricePerBed(id,a,b);
+        var capMsg='<span class="muted">'+I18N[LANG].avail_of+' '+libres.length+'/'+r.cap+' · '+I18N[LANG].price_bed+' R$ '+p+' · '+I18N[LANG].nights+' '+n+'</span>';
+        var div=document.createElement("div"); div.className="room"; div.innerHTML='<h3>'+r.name+'</h3><div>'+capMsg+'</div><div class="beds" id="beds-'+id+'"></div>';
+        roomsWrap.appendChild(div); selection[id]=new Set(); var grid=div.querySelector("#beds-"+id); var occ=new Set((occupied&&occupied[id])||[]);
+        for(var bnum=1;bnum<=r.cap;bnum++){
+          var btn=document.createElement("button"); btn.type="button"; btn.className="bed"+(occ.has(bnum)?" occupied":""); btn.textContent=bnum;
+          if(!occ.has(bnum)){
+            (function(roomId,bedId,ref){ ref.addEventListener("click",function(){ toggleBed(roomId,bedId,a,b,ref); }); ref.addEventListener("keydown",function(ev){ if(ev.key==="Enter"||ev.code==="Space"){ev.preventDefault();ref.click();}}); })(id,bnum,btn);
+          }else btn.disabled=true;
+          grid.appendChild(btn);
+        }
+      });
+      refreshTotals(men,women,a,b);
+    }
+
+    function toggleBed(roomId,bedId,a,b,btn){
+      var set=selection[roomId]||new Set();
+      if(ROOMS[roomId].femaleOnly && +(womenEl.value||0)<1){alert(I18N[LANG].female_rule);return;}
+      if(set.has(bedId)) set.delete(bedId); else set.add(bedId);
+      selection[roomId]=set; refreshTotals(+menEl.value||0,+womenEl.value||0,a,b);
+      if(!btn||btn.classList.contains("occupied"))return;
+      if(set.has(bedId)){btn.classList.add("selected");btn.setAttribute("aria-pressed","true");}
+      else {btn.classList.remove("selected");btn.setAttribute("aria-pressed","false");}
+    }
+
+    function refreshTotals(men,women,a,b){
+      var need=men+women; var n=nights(a,b); var count=0,total=0,femSel=0;
+      for(var id in selection){var set=selection[id]; var size=set.size; count+=size; var p=pricePerBed(+id,a,b); total+=size*p*Math.max(1,n); if(ROOMS[id].femaleOnly)femSel+=size;}
+      selCountEl.textContent=count; internalTotal=total; totalPriceEl.textContent=fmtBRL(total);
+      var ok=(count===need && need>0); if(femSel>women) ok=false;
+      continueBtn.disabled=!ok; suggestBox.style.display= ok?"none":"block";
+      suggestBox.textContent= ok?"":((femSel>women)?I18N[LANG].female_rule:I18N[LANG].select_exact.replace("{n}",need));
+    }
+
+    function currentCamas(){var o={}; for(var id in selection)o[id]=Array.from(selection[id]||[]); return o;}
+
+    // Check disponibilidad
+    document.getElementById("checkAvail").addEventListener("click",function(){
+      var a=dateInEl.value,b=dateOutEl.value,men=+menEl.value||0,women=+womenEl.value||0,qty=men+women;
+      if(!a||!b){checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_dates+'</span>';return;}
+      if(b<=a){checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_co+'</span>';return;}
+      if(qty<1){checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_qty+'</span>';return;}
+      if(qty>38){checkMsg.innerHTML='<span class="err">Máximo 38 huéspedes.</span>';return;}
+      checkMsg.textContent=I18N[LANG].checking;
+      fetch(AVAIL+"?from="+encodeURIComponent(a)+"&to="+encodeURIComponent(b),{headers:{Accept:"application/json"}})
+        .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
+          if(!res.ok||!res.j||res.j.ok!==true) throw new Error("avail_fail");
+          renderAvailability(a,b,men,women,res.j.occupied||{});
+          var mods=priceMods(a,b); modsEl.textContent=(mods.tags&&mods.tags.length)?("Modificadores: "+mods.tags.join(" · ")):"";
+          checkMsg.textContent=I18N[LANG].updated;
+        }).catch(()=>{checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_avail+'</span>';});
+    });
+
+    // HOLD + formulario
+    document.getElementById("continueBtn").addEventListener("click",function(){
+      var camas=currentCamas(); var a=dateInEl.value,b=dateOutEl.value; if(!internalTotal){alert(I18N[LANG].pick_beds);return;}
+      var order={bookingId:holdId||("BKG-"+Date.now()),nombre:"",email:"",telefono:"",entrada:a,salida:b,hombres:+menEl.value||0,mujeres:+womenEl.value||0,camas:camas,total:internalTotal,nights:nights(a,b)};
+      fetch(HOLDS_START,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:order.bookingId,ttlMinutes:10,nombre:"HOLD",email:"",telefono:"",entrada:a,salida:b,hombres:order.hombres,mujeres:order.mujeres,camas:camas,total:internalTotal})})
+        .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
+          if(!res.ok||!res.j||res.j.ok!==true) throw new Error(res.j&&res.j.error||"No se pudo crear HOLD");
+          holdId=res.j.holdId||order.bookingId; formCard.style.display="block";
+          var inEl=document.querySelector('#reserva-form [name="entrada"]'); var outEl=document.querySelector('#reserva-form [name="salida"]');
+          if(inEl)inEl.value=a; if(outEl)outEl.value=b; requestAnimationFrame(()=>window.scrollTo({top:formCard.offsetTop-10,behavior:"smooth"}));
+          toast(I18N[LANG].hold_ok); lastOrder=order; try{localStorage.setItem("lapa-last-booking",JSON.stringify(order));}catch(_){}
+        }).catch(e=>alert(I18N[LANG].hold_err+e.message));
+    });
+
+    // Simular aprobado
+    document.getElementById("simulateOk").addEventListener("click",function(){payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true;});
+
+    // Mercado Pago
     (function(){
-      // ====== CONFIG (front/back separados soportados)
-      var API_BASE = (window.BACKEND_BASE_URL || "").replace(/\/$/, ""); // ej: "https://tu-backend.com"
-      function endpoint(p){ return API_BASE ? API_BASE + p : p; }
+      var busy=false;
+      document.getElementById("payMP").addEventListener("click",function(){
+        if(busy)return; busy=true; this.disabled=true;
+        var a=dateInEl.value,b=dateOutEl.value; var order=lastOrder||{bookingId:holdId||("BKG-"+Date.now()),entrada:a,salida:b,hombres:+menEl.value||0,mujeres:+womenEl.value||0,camas:currentCamas(),total:internalTotal};
+        var nombre=document.querySelector('#reserva-form [name="nombre"]')?.value||"", email=document.querySelector('#reserva-form [name="email"]')?.value||"";
+        if(!order.total){alert(I18N[LANG].pick_beds);busy=false;this.disabled=false;return;}
+        if(!nombre||!email){alert(I18N[LANG].fill_name_email);busy=false;this.disabled=false;return;}
+        if(!document.getElementById("consentChk").checked){alert(I18N[LANG].need_consent);busy=false;this.disabled=false;return;}
+        fetch(MP_PREF,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:{...order,booking_id:order.bookingId}})})
+          .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
+            if(!res.ok||!res.j||!res.j.init_point) throw new Error(res.j&&res.j.error||"No se pudo crear preferencia");
+            window.location.href=res.j.init_point;
+          }).catch(e=>alert("Error MP: "+e.message)).finally(()=>{busy=false;this.disabled=false;});
+      });
+    })();
 
-      var MP_PREFERENCE_ENDPOINT  = endpoint("/payments/mp/preference");
-      var BOOKINGS_ENDPOINT       = endpoint("/bookings");
-      var STRIPE_SESSION_ENDPOINT = endpoint("/payments/stripe/session");
-      var HOLDS_START_ENDPOINT    = endpoint("/holds/start");
-      var HOLDS_RELEASE_ENDPOINT  = endpoint("/holds/release");
-      var HOLDS_CONFIRM_ENDPOINT  = endpoint("/holds/confirm");
-      var AVAILABILITY_ENDPOINT   = endpoint("/availability");
-      var PAY_STATUS_ENDPOINT     = endpoint("/payments/status"); // opcional
+    // Stripe
+    (function(){
+      var busy=false;
+      document.getElementById("payStripe").addEventListener("click",function(){
+        if(busy)return; busy=true; this.disabled=true;
+        var a=dateInEl.value,b=dateOutEl.value; var order=lastOrder||{bookingId:holdId||("BKG-"+Date.now()),entrada:a,salida:b,hombres:+menEl.value||0,mujeres:+womenEl.value||0,camas:currentCamas(),total:internalTotal};
+        var nombre=document.querySelector('#reserva-form [name="nombre"]')?.value||"", email=document.querySelector('#reserva-form [name="email"]')?.value||"";
+        if(!order.total){alert(I18N[LANG].pick_beds);busy=false;this.disabled=false;return;}
+        if(!nombre||!email){alert(I18N[LANG].fill_name_email);busy=false;this.disabled=false;return;}
+        if(!document.getElementById("consentChk").checked){alert(I18N[LANG].need_consent);busy=false;this.disabled=false;return;}
+        fetch(STRIPE_SES,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:{...order,booking_id:order.bookingId}})})
+          .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
+            if(!res.ok||!res.j||!res.j.id) throw new Error(res.j&&res.j.error||"No se pudo crear sesión");
+            var s=getStripe(); if(!s){alert("Stripe no disponible ahora."); return;}
+            return s.redirectToCheckout({sessionId:res.j.id});
+          }).then(ret=>{if(ret&&ret.error)throw ret.error;})
+          .catch(e=>alert("Error Stripe: "+e.message))
+          .finally(()=>{busy=false;this.disabled=false;});
+      });
+    })();
 
-      // ====== Stripe (lazy)
-      var STRIPE_PK = window.STRIPE_PUBLISHABLE_KEY || "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
-      var __stripeInst=null; 
-      function getStripe(){ if(typeof window.Stripe==="undefined") return null; return (__stripeInst = __stripeInst || window.Stripe(STRIPE_PK)); }
-
-      // ====== Rooms (precios base configurables)
-      var ROOMS = {
-        1:{ name:"Cuarto 1 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
-        3:{ name:"Cuarto 3 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
-        5:{ name:"Cuarto 5 (7 mixto)",  cap:7,  basePrice:55, femaleOnly:false },
-        6:{ name:"Cuarto 6 (7 femenino)", cap:7, basePrice:60, femaleOnly:true }
+    // Confirmar (verifica pago por /payments/status si existe)
+    document.getElementById("reserva-form").addEventListener("submit",function(e){
+      e.preventDefault(); submitBtn.disabled=true;
+      if(!document.getElementById("consentChk").checked){alert(I18N[LANG].need_consent); submitBtn.disabled=false; return;}
+      var order=lastOrder||{bookingId:holdId||("BKG-"+Date.now())};
+      var paidOk = (payStateEl.textContent||"").toLowerCase().includes(I18N[LANG].approved.slice(0,5)) || window.__simApproved===true;
+      var doConfirm=function(){
+        if(!paidOk){alert(I18N[LANG].need_payment); submitBtn.disabled=false; return;}
+        fetch(HOLDS_CONFIRM,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:holdId||order.bookingId,status:"paid"})})
+          .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
+            if(!res.ok||!res.j||res.j.ok!==true) throw new Error(res.j&&res.j.error||I18N[LANG].cant_confirm);
+            paidFinal=true; alert("✅ "+I18N[LANG].book_ok);
+          }).catch(e=>{alert(I18N[LANG].confirm_err+e.message); submitBtn.disabled=false;});
       };
+      if(PAY_STATUS && order.bookingId){
+        fetch(PAY_STATUS+"?bookingId="+encodeURIComponent(order.bookingId))
+          .then(rs=>rs.ok?rs.json():null)
+          .then(js=>{ if(js&&(js.paid===true||js.status==="approved"||js.status==="paid")) paidOk=true;})
+          .finally(doConfirm);
+      }else doConfirm();
+    });
 
-      function $(s){ return document.querySelector(s); }
-      var dateInEl=$('#dateIn'), dateOutEl=$('#dateOut');
-      var menEl=$('#men'), womenEl=$('#women');
-      var roomsWrap=$('#rooms'), roomsCard=$('#roomsCard'), formCard=$('#formCard');
-      var neededEl=$('#needed'), selCountEl=$('#selCount'), totalPriceEl=$('#totalPrice');
-      var continueBtn=$('#continueBtn'), suggestBox=$('#suggestBox'), checkMsg=$('#checkMsg');
-      var payStateEl=$('#payState'), submitBtn=$('#submitBtn');
-      var simulateOkBtn=$('#simulateOk'), payMPBtn=$('#payMP'), payStripeBtn=$('#payStripe');
-      var modsEl=$('#mods'), toastEl=$('#toast');
+    // liberar hold al salir
+    window.addEventListener("beforeunload",function(){try{if(holdId && !paidFinal){var data=new Blob([JSON.stringify({holdId:holdId})],{type:"application/json"}); navigator.sendBeacon(HOLDS_RELEASE,data);}}catch(_){};});
 
-      var selection={}, currentHoldId=null, paidFinal=false, LANG='es';
-      var internalTotal = 0; // total confiable
-      var lastOrderCache = null;
+    // idioma (auto)
+    (function(){var nav=(navigator.language||"es").slice(0,2).toLowerCase(); var initial=(nav==="en"?"en":"es"); document.getElementById("langSel").value=initial; LANG=initial;})();
 
-      // ====== Fechas locales
-      (function initDates(){
-        function toLocalYmd(d){ var y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2); return y+'-'+m+'-'+day; }
-        var now = new Date(), tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
-        var tz = toLocalYmd(now), tmr = toLocalYmd(tomorrow);
-        if(dateInEl){ dateInEl.min = tz; if(!dateInEl.value) dateInEl.value = tz; }
-        if(dateOutEl){ dateOutEl.min = tmr; if(!dateOutEl.value || dateOutEl.value<=dateInEl.value) dateOutEl.value = tmr; }
-      })();
-
-      // ====== Helpers
-      function toISO(d){ return new Date(d+'T00:00:00'); }
-      function diffNights(a,b){ if(!a||!b) return 0; var ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); }
-      function fmtBRL(n){ return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0, maximumFractionDigits:0}); }
-      function toast(msg){ if(!toastEl) return; toastEl.textContent=msg; toastEl.classList.add('show'); setTimeout(function(){ toastEl.classList.remove('show'); },2200); }
-      function clamp(n,min,max){ n = (typeof n==='number' && isFinite(n))?n:0; return Math.max(min, Math.min(max, n)); }
-
-      // ====== i18n
-      var I18N={ es:{
-        err_dates:"Elegí check-in y check-out.", err_co:"El check-out debe ser posterior al check-in.", err_qty:"Indicá al menos 1 huésped.",
-        checking:"Consultando disponibilidad...", updated:"Disponibilidad actualizada", err_avail:"Error consultando disponibilidad.",
-        no_beds:"No hay camas disponibles.", avail_of:"Disponibles:", price_bed:"Precio por cama:", nights:"Noches:",
-        female_rule:"El cuarto femenino requiere al menos 1 mujer.", select_exact:"Seleccioná exactamente {n} camas.",
-        pick_beds:"Seleccioná camas primero.", fill_name_email:"Completá nombre y email.", need_consent:"Debes aceptar la política de privacidad.",
-        cant_register:"No se pudo registrar la reserva: ", cant_pref:"No se pudo crear preferencia", pay_mp_err:"Error iniciando pago (MP): ",
-        cant_session:"No se pudo crear sesión de Stripe", pay_stripe_err:"Error iniciando pago (Stripe): ",
-        approved:"aprobado", need_payment:"Necesitás completar el pago o usar Simular pago aprobado.",
-        cant_confirm:"No se pudo confirmar HOLD", confirm_err:"Error confirmando reserva: ", hold_err:"Error creando HOLD: ",
-        book_ok:"Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'.", hold_ok:"Camas reservadas por 10 min (HOLD)",
-        tag_weekend:"Fin de semana +10%", tag_high:"Alta (Dic–Feb) +20%", mods:"Modificadores: ",
-        title:"Lapa Casa Hostel – Reservas", subtitle:"Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).",
-        lang_label:"Idioma / Language:", step1:"1) Fechas y cantidad", checkin:"Check-in", checkout:"Check-out",
-        men:"Hombres", women:"Mujeres", capacity:"Capacidad total: 38", btn_check:"Ver disponibilidad",
-        step2:"2) Elegí tus camas", selected_prefix:"Seleccionadas:", total_prefix:"Total:", btn_continue:"Continuar",
-        step3:"3) Datos para confirmar", full_name:"Nombre completo", email:"Email", phone:"Teléfono",
-        in_date:"Fecha de entrada", out_date:"Fecha de salida", consent:"Acepto recibir comunicaciones y la política de privacidad.",
-        pay_mp_title:"Pagar con Mercado Pago", pay_mp_sub:"Pix / tarjeta / boleto (Brasil)", pay_mp_btn:"Pagar con MP (Sandbox)",
-        pay_stripe_title:"Pagar con Stripe", pay_stripe_sub:"Tarjeta internacional / débito", pay_stripe_btn:"Ir a Checkout (Sandbox)",
-        test_title:"¿Solo test?", test_sub:"“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.", test_btn:"Simular pago aprobado",
-        pay_state:"Estado pago:", pending:"pendiente", btn_confirm:"Confirmar reserva"
-      }, en:{
-        err_dates:"Pick check-in and check-out.", err_co:"Check-out must be after check-in.", err_qty:"Add at least 1 guest.",
-        checking:"Checking availability...", updated:"Availability updated", err_avail:"Error fetching availability.",
-        no_beds:"No beds available.", avail_of:"Free:", price_bed:"Price per bed:", nights:"Nights:",
-        female_rule:"Female room requires at least 1 woman.", select_exact:"Select exactly {n} beds.",
-        pick_beds:"Pick beds first.", fill_name_email:"Fill name and email.", need_consent:"You must accept the privacy policy.",
-        cant_register:"Could not register booking: ", cant_pref:"Could not create preference", pay_mp_err:"Error starting payment (MP): ",
-        cant_session:"Could not create Stripe session", pay_stripe_err:"Error starting payment (Stripe): ",
-        approved:"approved", need_payment:"You need to finish payment or use Simulate approved payment.",
-        cant_confirm:"Could not confirm HOLD", confirm_err:"Error confirming booking: ", hold_err:"Error creating HOLD: ",
-        book_ok:"Booking registered. Webhooks will mark it 'paid/approved'.", hold_ok:"Beds held for 10 min (
+    // ===== Helpers de consola (para test)
+    window.__LAPA={
+      click:function(id){var el=document.getElementById(id); if(!el) throw new Error("No existe #"+id); el.click();},
+      ids:function(){return Array.from(document.querySelectorAll("button[id]")).map(b=>b.id);},
+      state:function(){return {men:+menEl.value||0,women:+womenEl.value||0,holdId:holdId,selected:Object.fromEntries(Object.entries(selection).map(([k,v])=>[k,Array.from(v)])),total:internalTotal};}
+    };
+  })();
+  </script>
+</body>
+</html>

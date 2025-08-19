@@ -171,294 +171,455 @@
 
   <script>
     (function(){
-      // ===== Endpoints
-      const MP_PREFERENCE_ENDPOINT  = "/payments/mp/preference";
-      const BOOKINGS_ENDPOINT       = "/bookings";
-      const STRIPE_SESSION_ENDPOINT = "/payments/stripe/session";
-      const HOLDS_START_ENDPOINT    = "/holds/start";
-      const HOLDS_RELEASE_ENDPOINT  = "/holds/release";
-      const HOLDS_CONFIRM_ENDPOINT  = "/holds/confirm";
-      const AVAILABILITY_ENDPOINT   = "/availability";
+      // ====== CONFIG (front/back separados soportados)
+      var API_BASE = (window.BACKEND_BASE_URL || "").replace(/\/$/, ""); // ej: "https://tu-backend.com"
+      function endpoint(p){ return API_BASE ? API_BASE + p : p; }
 
-      // ===== Stripe (lazy)
-      const STRIPE_PK = "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
-      let __stripeInst=null; const getStripe=()=>{ if(!window.Stripe) return null; return __stripeInst ||= window.Stripe(STRIPE_PK); };
+      var MP_PREFERENCE_ENDPOINT  = endpoint("/payments/mp/preference");
+      var BOOKINGS_ENDPOINT       = endpoint("/bookings");
+      var STRIPE_SESSION_ENDPOINT = endpoint("/payments/stripe/session");
+      var HOLDS_START_ENDPOINT    = endpoint("/holds/start");
+      var HOLDS_RELEASE_ENDPOINT  = endpoint("/holds/release");
+      var HOLDS_CONFIRM_ENDPOINT  = endpoint("/holds/confirm");
+      var AVAILABILITY_ENDPOINT   = endpoint("/availability");
+      var PAY_STATUS_ENDPOINT     = endpoint("/payments/status"); // opcional
 
-      // ===== Rooms
-      const ROOMS = {
+      // ====== Stripe (lazy)
+      var STRIPE_PK = window.STRIPE_PUBLISHABLE_KEY || "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
+      var __stripeInst=null; 
+      function getStripe(){ if(typeof window.Stripe==="undefined") return null; return (__stripeInst = __stripeInst || window.Stripe(STRIPE_PK)); }
+
+      // ====== Rooms (precios base configurables)
+      var ROOMS = {
         1:{ name:"Cuarto 1 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
-        3:{ name:"Cuarto 3 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
-        5:{ name:"Cuarto 5 (7 mixto)",  cap:7,  basePrice:55, femaleOnly:false },
-        6:{ name:"Cuarto 6 (7 femenino)", cap:7, basePrice:60, femaleOnly:true }
+        3:{ name:"Cuarto 3 (12 mixto)", cap:12, basePrice:55, femaleOnly:false }, // 1 y 3 = R$55
+        5:{ name:"Cuarto 5 (7 mixto)",  cap:7,  basePrice:55, femaleOnly:false }, // puede ajustarse si decides otro valor
+        6:{ name:"Cuarto 6 (7 femenino)", cap:7, basePrice:60, femaleOnly:true }  // femenino exclusivo
       };
 
-      // ===== Shortcuts
-      const $ = s=>document.querySelector(s);
-      const dateInEl=$('#dateIn'), dateOutEl=$('#dateOut');
-      const menEl=$('#men'), womenEl=$('#women');
-      const menMinus=$('#menMinus'), menPlus=$('#menPlus');
-      const womenMinus=$('#womenMinus'), womenPlus=$('#womenPlus');
-      const roomsWrap=$('#rooms'), roomsCard=$('#roomsCard'), formCard=$('#formCard');
-      const neededEl=$('#needed'), selCountEl=$('#selCount'), totalPriceEl=$('#totalPrice');
-      const continueBtn=$('#continueBtn'), suggestBox=$('#suggestBox'), checkMsg=$('#checkMsg');
-      const payStateEl=$('#payState'), submitBtn=$('#submitBtn');
-      const simulateOkBtn=$('#simulateOk'), payMPBtn=$('#payMP'), payStripeBtn=$('#payStripe');
-      const modsEl=$('#mods'), toastEl=$('#toast');
+      // ====== Shortcuts
+      function $(s){ return document.querySelector(s); }
+      var dateInEl=$('#dateIn'), dateOutEl=$('#dateOut');
+      var menEl=$('#men'), womenEl=$('#women');
+      var menMinus=$('#menMinus'), menPlus=$('#menPlus');
+      var womenMinus=$('#womenMinus'), womenPlus=$('#womenPlus');
+      var roomsWrap=$('#rooms'), roomsCard=$('#roomsCard'), formCard=$('#formCard');
+      var neededEl=$('#needed'), selCountEl=$('#selCount'), totalPriceEl=$('#totalPrice');
+      var continueBtn=$('#continueBtn'), suggestBox=$('#suggestBox'), checkMsg=$('#checkMsg');
+      var payStateEl=$('#payState'), submitBtn=$('#submitBtn');
+      var simulateOkBtn=$('#simulateOk'), payMPBtn=$('#payMP'), payStripeBtn=$('#payStripe');
+      var modsEl=$('#mods'), toastEl=$('#toast');
 
-      let selection={}, allowMaleUseFemale=false, currentHoldId=null, paidFinal=false, LANG='es';
+      var selection={}, currentHoldId=null, paidFinal=false, LANG='es';
+      var internalTotal = 0; // total confiable
+      var lastOrderCache = null;
 
-      // ===== Defaults fechas
+      // ====== Fechas locales (sin UTC shift)
       (function initDates(){
-        const tz = new Date().toISOString().slice(0,10);
-        const tmr = new Date(Date.now()+86400000).toISOString().slice(0,10);
+        function toLocalYmd(d){
+          var y=d.getFullYear();
+          var m=('0'+(d.getMonth()+1)).slice(-2);
+          var day=('0'+d.getDate()).slice(-2);
+          return y+'-'+m+'-'+day;
+        }
+        var now = new Date();
+        var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
+        var tz = toLocalYmd(now);
+        var tmr = toLocalYmd(tomorrow);
         if(dateInEl){ dateInEl.min = tz; if(!dateInEl.value) dateInEl.value = tz; }
         if(dateOutEl){ dateOutEl.min = tmr; if(!dateOutEl.value || dateOutEl.value<=dateInEl.value) dateOutEl.value = tmr; }
       })();
 
-      // ===== Helpers
-      const toISO=d=>new Date(d+'T00:00:00');
-      const diffNights=(a,b)=>{ if(!a||!b) return 0; const ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); };
-      const fmtBRL=n=>Number(n||0).toLocaleString('pt-BR');
-      const toast=msg=>{ if(!toastEl) return; toastEl.textContent=msg; toastEl.classList.add('show'); setTimeout(()=>toastEl.classList.remove('show'),2200); };
+      // ====== Helpers
+      function toISO(d){ return new Date(d+'T00:00:00'); }
+      function diffNights(a,b){ if(!a||!b) return 0; var ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); }
+      function fmtBRL(n){ return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0, maximumFractionDigits:0}); }
+      function toast(msg){ if(!toastEl) return; toastEl.textContent=msg; toastEl.classList.add('show'); setTimeout(function(){ toastEl.classList.remove('show'); },2200); }
+      function clamp(n,min,max){ n = (typeof n==='number' && isFinite(n))?n:0; return Math.max(min, Math.min(max, n)); }
 
-      // ===== i18n (mínimo necesario)
-      const I18N={ es:{ err_dates:"Elegí check-in y check-out.", err_co:"El check-out debe ser posterior al check-in.", err_qty:"Indicá al menos 1 huésped.", checking:"Consultando disponibilidad...", updated:"Disponibilidad actualizada", err_avail:"Error consultando disponibilidad.", no_beds:"No hay camas disponibles.", avail_of:"Disponibles:", price_bed:"Precio por cama:", nights:"Noches:", female_rule:"El cuarto femenino requiere al menos 1 mujer.", select_exact:"Seleccioná exactamente {n} camas.", pick_beds:"Seleccioná camas primero.", fill_name_email:"Completá nombre y email.", need_consent:"Debes aceptar la política de privacidad.", cant_register:"No se pudo registrar la reserva: ", cant_pref:"No se pudo crear preferencia", pay_mp_err:"Error iniciando pago (MP): ", cant_session:"No se pudo crear sesión de Stripe", pay_stripe_err:"Error iniciando pago (Stripe): ", approved:"aprobado", need_payment:"Necesitás completar el pago o usar Simular pago aprobado.", cant_confirm:"No se pudo confirmar HOLD", book_ok:"Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'.", hold_ok:"Camas reservadas por 10 min (HOLD)", tag_weekend:"Fin de semana +10%", tag_high:"Alta (Dic–Feb) +20%", tag_peak:"Evento pico +15%", mods:"Modificadores: " },
-                 en:{ err_dates:"Pick check-in and check-out.", err_co:"Check-out must be after check-in.", err_qty:"Add at least 1 guest.", checking:"Checking availability...", updated:"Availability updated", err_avail:"Error fetching availability.", no_beds:"No beds available.", avail_of:"Free:", price_bed:"Price per bed:", nights:"Nights:", female_rule:"Female room requires at least 1 woman.", select_exact:"Select exactly {n} beds.", pick_beds:"Pick beds first.", fill_name_email:"Fill name and email.", need_consent:"You must accept the privacy policy.", cant_register:"Could not register booking: ", cant_pref:"Could not create preference", pay_mp_err:"Error starting payment (MP): ", cant_session:"Could not create Stripe session", pay_stripe_err:"Error starting payment (Stripe): ", approved:"approved", need_payment:"You need to finish payment or use Simulate approved payment.", cant_confirm:"Could not confirm HOLD", book_ok:"Booking registered. Webhooks will mark it 'paid/approved'.", hold_ok:"Beds held for 10 min (HOLD)", tag_weekend:"Weekend +10%", tag_high:"High season (Dec–Feb) +20%", tag_peak:"Event peak +15%", mods:"Modifiers: " } };
-
-      // ===== MODIFICADORES precio
-      function priceModifiers(start,end){
-        const tags=new Set(); let weekend=false, highMonth=false, eventPeak=false;
-        const nights=diffNights(start,end); if(!nights) return {factor:1,tags:[]};
-        for(let i=0;i<nights;i++){
-          const d=new Date(toISO(start)); d.setDate(d.getDate()+i);
-          const day=d.getDay(); if([0,5,6].includes(day)) weekend=true;
-          const m=d.getMonth(); if([11,0,1].includes(m)) highMonth=true;
+      // ====== i18n
+      var I18N={ es:{
+        err_dates:"Elegí check-in y check-out.", err_co:"El check-out debe ser posterior al check-in.", err_qty:"Indicá al menos 1 huésped.",
+        checking:"Consultando disponibilidad...", updated:"Disponibilidad actualizada", err_avail:"Error consultando disponibilidad.",
+        no_beds:"No hay camas disponibles.", avail_of:"Disponibles:", price_bed:"Precio por cama:", nights:"Noches:",
+        female_rule:"El cuarto femenino requiere al menos 1 mujer.", select_exact:"Seleccioná exactamente {n} camas.",
+        pick_beds:"Seleccioná camas primero.", fill_name_email:"Completá nombre y email.", need_consent:"Debes aceptar la política de privacidad.",
+        cant_register:"No se pudo registrar la reserva: ", cant_pref:"No se pudo crear preferencia", pay_mp_err:"Error iniciando pago (MP): ",
+        cant_session:"No se pudo crear sesión de Stripe", pay_stripe_err:"Error iniciando pago (Stripe): ",
+        approved:"aprobado", need_payment:"Necesitás completar el pago o usar Simular pago aprobado.",
+        cant_confirm:"No se pudo confirmar HOLD", confirm_err:"Error confirmando reserva: ", hold_err:"Error creando HOLD: ",
+        book_ok:"Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'.", hold_ok:"Camas reservadas por 10 min (HOLD)",
+        tag_weekend:"Fin de semana +10%", tag_high:"Alta (Dic–Feb) +20%", mods:"Modificadores: ",
+        title:"Lapa Casa Hostel – Reservas", subtitle:"Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).",
+        lang_label:"Idioma / Language:", step1:"1) Fechas y cantidad", checkin:"Check-in", checkout:"Check-out",
+        men:"Hombres", women:"Mujeres", capacity:"Capacidad total: 38", btn_check:"Ver disponibilidad",
+        step2:"2) Elegí tus camas", selected_prefix:"Seleccionadas:", total_prefix:"Total:", btn_continue:"Continuar",
+        step3:"3) Datos para confirmar", full_name:"Nombre completo", email:"Email", phone:"Teléfono",
+        in_date:"Fecha de entrada", out_date:"Fecha de salida", consent:"Acepto recibir comunicaciones y la política de privacidad.",
+        pay_mp_title:"Pagar con Mercado Pago", pay_mp_sub:"Pix / tarjeta / boleto (Brasil)", pay_mp_btn:"Pagar con MP (Sandbox)",
+        pay_stripe_title:"Pagar con Stripe", pay_stripe_sub:"Tarjeta internacional / débito", pay_stripe_btn:"Ir a Checkout (Sandbox)",
+        test_title:"¿Solo test?", test_sub:"“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.", test_btn:"Simular pago aprobado",
+        pay_state:"Estado pago:", pending:"pendiente", btn_confirm:"Confirmar reserva"
+      }, en:{
+        err_dates:"Pick check-in and check-out.", err_co:"Check-out must be after check-in.", err_qty:"Add at least 1 guest.",
+        checking:"Checking availability...", updated:"Availability updated", err_avail:"Error fetching availability.",
+        no_beds:"No beds available.", avail_of:"Free:", price_bed:"Price per bed:", nights:"Nights:",
+        female_rule:"Female room requires at least 1 woman.", select_exact:"Select exactly {n} beds.",
+        pick_beds:"Pick beds first.", fill_name_email:"Fill name and email.", need_consent:"You must accept the privacy policy.",
+        cant_register:"Could not register booking: ", cant_pref:"Could not create preference", pay_mp_err:"Error starting payment (MP): ",
+        cant_session:"Could not create Stripe session", pay_stripe_err:"Error starting payment (Stripe): ",
+        approved:"approved", need_payment:"You need to finish payment or use Simulate approved payment.",
+        cant_confirm:"Could not confirm HOLD", confirm_err:"Error confirming booking: ", hold_err:"Error creating HOLD: ",
+        book_ok:"Booking registered. Webhooks will mark it 'paid/approved'.", hold_ok:"Beds held for 10 min (HOLD)",
+        tag_weekend:"Weekend +10%", tag_high:"High season (Dec–Feb) +20%", mods:"Modifiers: ",
+        title:"Lapa Casa Hostel – Bookings", subtitle:"Pick dates and party size. Then choose specific beds (triple bunks).",
+        lang_label:"Language:", step1:"1) Dates & party size", checkin:"Check-in", checkout:"Check-out",
+        men:"Men", women:"Women", capacity:"Total capacity: 38", btn_check:"Check availability",
+        step2:"2) Choose your beds", selected_prefix:"Selected:", total_prefix:"Total:", btn_continue:"Continue",
+        step3:"3) Details to confirm", full_name:"Full name", email:"Email", phone:"Phone",
+        in_date:"Arrival date", out_date:"Departure date", consent:"I accept communications and the privacy policy.",
+        pay_mp_title:"Pay with Mercado Pago", pay_mp_sub:"Pix / card / boleto (Brazil)", pay_mp_btn:"Pay with MP (Sandbox)",
+        pay_stripe_title:"Pay with Stripe", pay_stripe_sub:"International card / debit", pay_stripe_btn:"Go to Checkout (Sandbox)",
+        test_title:"Testing only?", test_sub:"“Simulate approved payment” enables Confirm without going to MP/Stripe.", test_btn:"Simulate approved payment",
+        pay_state:"Payment state:", pending:"pending", btn_confirm:"Confirm booking"
+      }};
+      function applyI18N(){
+        var nodes = document.querySelectorAll("[data-i18n]");
+        for(var i=0;i<nodes.length;i++){
+          var el = nodes[i];
+          var key = el.getAttribute("data-i18n");
+          var txt = I18N[LANG][key];
+          if(typeof txt === "string") el.textContent = txt;
         }
-        if(weekend) tags.add(I18N[LANG].tag_weekend);
-        if(highMonth) tags.add(I18N[LANG].tag_high);
-        if(nights>=3){ eventPeak=true; tags.add(I18N[LANG].tag_peak); }
-        const factor=(weekend?1.10:1.0)*(highMonth?1.20:1.0)*(eventPeak?1.15:1.0);
-        return { factor, tags:[...tags] };
       }
-      const pricePerBed=(roomId,start,end)=>Math.round(ROOMS[roomId].basePrice*priceModifiers(start,end).factor);
 
-      // ===== STEPPERS (+ / −) — robusto
-      function clamp(n,min,max){ n=Number.isFinite(n)?n:0; return Math.max(min, Math.min(max, n)); }
+      // ====== MODIFICADORES de precio (sin “pico por noches largas”)
+      function priceModifiers(start,end){
+        var tags=[]; var weekend=false, highMonth=false;
+        var nights=diffNights(start,end); if(!nights) return {factor:1,tags:[]};
+        var base = new Date(toISO(start));
+        for(var i=0;i<nights;i++){
+          var d=new Date(base.getTime()); d.setDate(base.getDate()+i);
+          var day=d.getDay(); if(day===0||day===5||day===6) weekend=true;
+          var m=d.getMonth(); if(m===11||m===0||m===1) highMonth=true;
+        }
+        if(weekend) tags.push(I18N[LANG].tag_weekend);
+        if(highMonth) tags.push(I18N[LANG].tag_high);
+        var factor=(weekend?1.10:1.0)*(highMonth?1.20:1.0);
+        return { factor:factor, tags:tags };
+      }
+      function pricePerBed(roomId,start,end){ return Math.round(ROOMS[roomId].basePrice*priceModifiers(start,end).factor); }
+
+      // ====== Stepper (+ / −) con clamp y tope total 38
       function step(input, delta){
-        const min = Number(input.min||0), max = Number(input.max||38);
-        const cur = Number(input.value||0);
-        input.value = clamp(cur + delta, min, max);
+        var min = Number(input.min||0), max = Number(input.max||38);
+        var cur = Number(input.value||0);
+        var next = clamp(cur + delta, min, max);
+        var other = (input===menEl) ? Number(womenEl.value||0) : Number(menEl.value||0);
+        if(next + other > 38) next = 38 - other;
+        input.value = clamp(next, min, max);
       }
-      menMinus?.addEventListener("click", ()=> step(menEl, -1));
-      menPlus ?.addEventListener("click", ()=> step(menEl, +1));
-      womenMinus?.addEventListener("click", ()=> step(womenEl, -1));
-      womenPlus ?.addEventListener("click", ()=> step(womenEl, +1));
+      function enforceTotals(){
+        var men = Number(menEl.value||0), women = Number(womenEl.value||0);
+        var total = men + women;
+        if(total>38){
+          if(document.activeElement===menEl){ menEl.value = 38 - women; }
+          else { womenEl.value = 38 - men; }
+        }
+      }
 
-      // ===== Check availability
-      $('#checkAvail')?.addEventListener('click', async ()=>{
-        const dIn=dateInEl?.value, dOut=dateOutEl?.value;
-        const men=Number(menEl?.value||0), women=Number(womenEl?.value||0), qty=men+women;
+      // ==== LISTENERS “DUROS” (sin ?.):
+      menMinus.addEventListener("click", function(){ step(menEl, -1); });
+      menPlus .addEventListener("click", function(){ step(menEl, +1); });
+      womenMinus.addEventListener("click", function(){ step(womenEl, -1); });
+      womenPlus .addEventListener("click", function(){ step(womenEl, +1); });
+      menEl.addEventListener("input", enforceTotals);
+      womenEl.addEventListener("input", enforceTotals);
+
+      document.getElementById('checkAvail').addEventListener('click', function(){
+        var dIn = dateInEl ? dateInEl.value : "";
+        var dOut= dateOutEl ? dateOutEl.value: "";
+        var men = Number(menEl ? menEl.value : 0);
+        var women = Number(womenEl ? womenEl.value : 0);
+        var qty = men + women;
         if(!dIn||!dOut){ checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_dates+'</span>'; return; }
         if(dOut<=dIn){ checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_co+'</span>'; return; }
         if(qty<1){ checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_qty+'</span>'; return; }
+        if(qty>38){ checkMsg.innerHTML='<span class="err">Máximo 38 huéspedes.</span>'; return; }
         checkMsg.textContent=I18N[LANG].checking;
-        try{
-          const url=`${AVAILABILITY_ENDPOINT}?from=${encodeURIComponent(dIn)}&to=${encodeURIComponent(dOut)}`;
-          const r=await fetch(url, { headers:{ "Accept":"application/json" }});
-          const j=await r.json();
-          if(!r.ok||!j.ok) throw new Error('avail_fail');
-          renderAvailability(dIn,dOut,men,women,j.occupied||{});
-          const mods=priceModifiers(dIn,dOut);
-          modsEl.textContent = mods.tags.length ? (I18N[LANG].mods+mods.tags.join(' · ')) : '';
-          checkMsg.textContent=I18N[LANG].updated;
-        }catch(e){
-          checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_avail+'</span>';
-        }
+        var url = AVAILABILITY_ENDPOINT+"?from="+encodeURIComponent(dIn)+"&to="+encodeURIComponent(dOut);
+        fetch(url, { headers:{ "Accept":"application/json" }})
+          .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+          .then(function(res){
+            if(!res.ok || !res.j || res.j.ok!==true) throw new Error('avail_fail');
+            renderAvailability(dIn,dOut,men,women,res.j.occupied||{});
+            var mods=priceModifiers(dIn,dOut);
+            modsEl.textContent = (mods.tags && mods.tags.length) ? (I18N[LANG].mods+mods.tags.join(' · ')) : '';
+            checkMsg.textContent=I18N[LANG].updated;
+          })
+          .catch(function(){ checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_avail+'</span>'; });
       });
 
-      // ===== Render beds
+      // ====== Render de camas con reglas de visibilidad pedidas
       function renderAvailability(dateIn,dateOut,men,women,occupied){
         selection={}; roomsWrap.innerHTML='';
-        const qty=men+women; if(qty===0){ roomsCard.style.display='none'; return; }
+        var qty=men+women; if(qty===0){ roomsCard.style.display='none'; return; }
         roomsCard.style.display='block'; formCard.style.display='none';
-        const nights=diffNights(dateIn,dateOut);
-        neededEl.textContent=qty; selCountEl.textContent=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display='none';
+        var nights=diffNights(dateIn,dateOut);
+        neededEl.textContent=qty; selCountEl.textContent=0; internalTotal=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display='none';
 
-        const freeByRoom={};
-        [1,3,5,6].forEach(id=>{
-          const occ=new Set((occupied&&occupied[id])||[]);
-          const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b);
+        // mapas libres por cuarto
+        var freeByRoom={};
+        [1,3,5,6].forEach(function(id){
+          var occ=new Set((occupied&&occupied[id])||[]);
+          var free=[]; for(var b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b);
           freeByRoom[id]=free;
         });
 
-        allowMaleUseFemale=(men>=32 && women===0 && [1,3,5,6].every(id=>freeByRoom[id].length===ROOMS[id].cap));
-
-        const toShow=[];
-        if(qty>0){
-          if(freeByRoom[1].length) toShow.push(1);
-          if(qty>=13 && freeByRoom[3].length) toShow.push(3);
-          if(freeByRoom[5].length) toShow.push(5);
-          if((women>=1 || allowMaleUseFemale) && freeByRoom[6].length) toShow.push(6);
+        // Reglas de visibilidad oficiales:
+        // - Solo hombres: ≤12 → 1 ; >12 → 1,3,5
+        // - Con mujer:    ≤12 → 1,5,6 ; >12 → 1,3,5,6
+        var hasWomen = women >= 1;
+        var toShow={};
+        if(!hasWomen){
+          toShow[1]=true;
+          if(qty>12){ toShow[3]=true; toShow[5]=true; }
+        }else{
+          toShow[1]=true; toShow[5]=true; toShow[6]=true;
+          if(qty>12){ toShow[3]=true; }
         }
-        if(!toShow.length){ roomsWrap.innerHTML='<p>'+I18N[LANG].no_beds+'</p>'; return; }
 
-        toShow.forEach(id=>{
-          const r=ROOMS[id], libres=freeByRoom[id], pBed=pricePerBed(id,dateIn,dateOut);
-          const capMsg=`<span class="muted">${I18N[LANG].avail_of} ${libres.length}/${r.cap} · ${I18N[LANG].price_bed} R$ ${pBed} · ${I18N[LANG].nights} ${nights}</span>`;
-          const roomDiv=document.createElement('div'); roomDiv.className='room';
-          roomDiv.innerHTML=`<h3>${r.name}</h3><div>${capMsg}</div><div class="beds" id="beds-${id}"></div>`;
+        // filtrar por disponibilidad real
+        var finalShow = [1,3,5,6].filter(function(id){ return toShow[id] && freeByRoom[id].length>0; });
+        if(finalShow.length===0){ roomsWrap.innerHTML='<p>'+I18N[LANG].no_beds+'</p>'; return; }
+
+        for(var k=0;k<finalShow.length;k++){
+          var id = finalShow[k];
+          var r=ROOMS[id], libres=freeByRoom[id], pBed=pricePerBed(id,dateIn,dateOut);
+          var capMsg='<span class="muted">'+I18N[LANG].avail_of+' '+libres.length+'/'+r.cap+' · '+I18N[LANG].price_bed+' R$ '+pBed+' · '+I18N[LANG].nights+' '+nights+'</span>';
+          var roomDiv=document.createElement('div'); roomDiv.className='room';
+          roomDiv.innerHTML='<h3>'+r.name+'</h3><div>'+capMsg+'</div><div class="beds" id="beds-'+id+'"></div>';
           roomsWrap.appendChild(roomDiv); selection[id]=new Set();
-          const grid=roomDiv.querySelector('#beds-'+id);
-          for(let b=1;b<=r.cap;b++){
-            const occ=new Set((occupied&&occupied[id])||[]);
-            const btn=document.createElement('div');
-            btn.className='bed'+(occ.has(b)?' occupied':''); btn.textContent=b;
-            if(!occ.has(b)){ btn.title=`Cama ${b}`; btn.addEventListener('click',()=>toggleBed(id,b,dateIn,dateOut)); }
+          var grid=roomDiv.querySelector('#beds-'+id);
+          var occ=new Set((occupied&&occupied[id])||[]);
+          for(var b=1;b<=r.cap;b++){
+            var btn=document.createElement('button');
+            btn.type="button";
+            btn.className='bed'+(occ.has(b)?' occupied':'');
+            btn.setAttribute('role','button');
+            btn.setAttribute('aria-pressed','false');
+            btn.setAttribute('tabindex','0');
+            btn.textContent=b;
+            if(!occ.has(b)){
+              (function(roomId,bedId,ref){
+                btn.title='Cama '+bedId;
+                btn.addEventListener('click',function(){ toggleBed(roomId,bedId,dateIn,dateOut,ref); });
+                btn.addEventListener('keydown',function(ev){ if(ev.key==='Enter'||ev.code==='Space'){ ev.preventDefault(); ref.click(); } });
+              })(id,b,btn);
+            }else{
+              btn.disabled = true;
+            }
             grid.appendChild(btn);
           }
-        });
+        }
         refreshTotals(men,women,dateIn,dateOut);
       }
 
-      // ===== Select beds
-      function toggleBed(roomId,bedId,dateIn,dateOut){
-        const set=selection[roomId]||new Set();
-        if(ROOMS[roomId].femaleOnly && !allowMaleUseFemale && (Number(womenEl.value||0)<1)){
+      function toggleBed(roomId,bedId,dateIn,dateOut,btnNode){
+        var set=selection[roomId]||new Set();
+        if(ROOMS[roomId].femaleOnly && Number(womenEl.value||0)<1){
           alert(I18N[LANG].female_rule); return;
         }
         if(set.has(bedId)) set.delete(bedId); else set.add(bedId);
         selection[roomId]=set;
         refreshTotals(Number(menEl.value||0),Number(womenEl.value||0),dateIn,dateOut);
-        const grid=document.getElementById('beds-'+roomId);
-        const node=Array.from(grid.children)[bedId-1];
-        if(!node||node.classList.contains('occupied')) return;
-        node.classList.toggle('selected',set.has(bedId));
+        if(!btnNode || btnNode.classList.contains('occupied')) return;
+        if(set.has(bedId)){ btnNode.classList.add('selected'); btnNode.setAttribute('aria-pressed','true'); }
+        else { btnNode.classList.remove('selected'); btnNode.setAttribute('aria-pressed','false'); }
       }
 
-      // ===== Totals + validation
       function refreshTotals(men,women,start,end){
-        const needed=men+women; const nights=diffNights(start,end);
-        let selectedCount=0,total=0,selectedInFemale=0;
-        Object.entries(selection).forEach(([id,set])=>{
-          const size=set.size; selectedCount+=size;
-          const pBed=pricePerBed(Number(id),start,end);
+        var needed=men+women; var nights=diffNights(start,end);
+        var selectedCount=0,total=0,selectedInFemale=0;
+        for(var id in selection){
+          if(!selection.hasOwnProperty(id)) continue;
+          var set=selection[id];
+          var size=set.size; selectedCount+=size;
+          var pBed=pricePerBed(Number(id),start,end);
           total+=size*pBed*Math.max(1,nights);
           if(ROOMS[id].femaleOnly) selectedInFemale+=size;
-        });
-        selCountEl.textContent=selectedCount; totalPriceEl.textContent=fmtBRL(total);
-        let ok=(selectedCount===needed && needed>0);
-        if(!allowMaleUseFemale && selectedInFemale>women) ok=false;
+        }
+        selCountEl.textContent=selectedCount;
+        internalTotal = total;
+        totalPriceEl.textContent=fmtBRL(total);
+        var ok=(selectedCount===needed && needed>0);
+        if(selectedInFemale>women) ok=false; // cuarto 6 estrictamente femenino
         continueBtn.disabled=!ok;
         suggestBox.style.display= ok ? 'none' : 'block';
-        suggestBox.textContent = ok ? '' :
-          ((selectedInFemale>women)?I18N[LANG].female_rule:
-          I18N[LANG].select_exact.replace('{n}', needed));
+        suggestBox.textContent = ok ? '' : ((selectedInFemale>women)?I18N[LANG].female_rule:I18N[LANG].select_exact.replace('{n}', needed));
       }
 
-      // ===== HOLD + formulario
-      continueBtn?.addEventListener('click',async ()=>{
-        const order=buildOrderBase();
-        const camas=currentSelectionObject();
-        if(!order.total){ alert(I18N[LANG].pick_beds); return; }
-        const holdPayload={ holdId:order.bookingId, nombre:order.nombre||"HOLD", email:order.email||"", telefono:order.telefono||"", entrada:order.entrada, salida:order.salida, hombres:order.hombres, mujeres:order.mujeres, camas, total:order.total };
-        try{
-          const r=await fetch(HOLDS_START_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(holdPayload) });
-          const j=await r.json();
-          if(!r.ok||!j.ok) throw new Error(j.error||'No se pudo crear HOLD');
-          currentHoldId=j.holdId||order.bookingId;
-          formCard.style.display='block';
-          document.querySelector('#reserva-form [name="entrada"]').value=dateInEl.value;
-          document.querySelector('#reserva-form [name="salida"]').value=dateOutEl.value;
-          window.scrollTo({ top: formCard.offsetTop-10, behavior:'smooth' });
-          toast(I18N[LANG].hold_ok);
-        }catch(e){ alert((I18N[LANG].hold_err||'Error creando HOLD: ')+e.message); }
-      });
-
-      const currentSelectionObject=()=>{ const camas={}; for(const [roomId,set] of Object.entries(selection)) camas[roomId]=Array.from(set||[]); return camas; };
+      function currentSelectionObject(){
+        var camas={}; 
+        for(var roomId in selection){ if(selection.hasOwnProperty(roomId)){ camas[roomId]=Array.from(selection[roomId]||[]); } }
+        return camas;
+      }
 
       function buildOrderBase(){
-        const camas=currentSelectionObject();
-        const nights=(function(){ const a=dateInEl.value, b=dateOutEl.value; const ms=new Date(b+'T00:00:00')-new Date(a+'T00:00:00'); return Math.max(1,Math.round(ms/86400000)); })();
-        const totalNum=parseInt((totalPriceEl.textContent||'0').replace(/\./g,'').replace(/,/g,''),10)||0;
-        const bookingId=currentHoldId||('BKG-'+Date.now());
-        return { bookingId, nombre:document.querySelector('#reserva-form [name="nombre"]')?.value||'', email:document.querySelector('#reserva-form [name="email"]')?.value||'', telefono:document.querySelector('#reserva-form [name="telefono"]')?.value||'', entrada:dateInEl.value, salida:dateOutEl.value, hombres:Number(menEl.value||0), mujeres:Number(womenEl.value||0), camas, total:totalNum, nights };
+        var camas=currentSelectionObject();
+        var a=dateInEl.value, b=dateOutEl.value; 
+        var ms=new Date(b+'T00:00:00')-new Date(a+'T00:00:00'); 
+        var nights=Math.max(1,Math.round(ms/86400000));
+        var bookingId=currentHoldId||('BKG-'+Date.now());
+        return {
+          bookingId:bookingId,
+          nombre:document.querySelector('#reserva-form [name="nombre"]')?document.querySelector('#reserva-form [name="nombre"]').value:'',
+          email:document.querySelector('#reserva-form [name="email"]')?document.querySelector('#reserva-form [name="email"]').value:'',
+          telefono:document.querySelector('#reserva-form [name="telefono"]')?document.querySelector('#reserva-form [name="telefono"]').value:'',
+          entrada:dateInEl.value, salida:dateOutEl.value,
+          hombres:Number(menEl.value||0), mujeres:Number(womenEl.value||0),
+          camas:camas, total:internalTotal, nights:nights
+        };
       }
 
-      // ===== Simulador aprobado
-      simulateOkBtn?.addEventListener('click',()=>{ payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true; });
-
-      // ===== Mercado Pago
-      payMPBtn?.addEventListener('click', async ()=>{
-        const order=buildOrderBase();
+      // ====== HOLD + formulario
+      document.getElementById('continueBtn').addEventListener('click', function(){
+        var order=buildOrderBase();
         if(!order.total){ alert(I18N[LANG].pick_beds); return; }
-        if(!order.nombre || !order.email){ alert(I18N[LANG].fill_name_email); return; }
-        if(!$('#consentChk').checked){ alert(I18N[LANG].need_consent); return; }
-        try{
-          const r1=await fetch(BOOKINGS_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ bookingId:order.bookingId, nombre:order.nombre, email:order.email, telefono:order.telefono, entrada:order.entrada, salida:order.salida, hombres:order.hombres, mujeres:order.mujeres, camas:order.camas, total:order.total, pay_status:'pending' })});
-          if(!r1.ok){ const t=await r1.text(); throw new Error(I18N[LANG].cant_register+t); }
-          const r2=await fetch(MP_PREFERENCE_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title:'Reserva Lapa Casa Hostel', unit_price:order.total, quantity:1, currency_id:'BRL', metadata:{ bookingId:order.bookingId, email:order.email } })});
-          const j=await r2.json();
-          if(!r2.ok||!j.init_point) throw new Error(j.error||(I18N[LANG].cant_pref));
-          localStorage.setItem('lapa-last-booking', JSON.stringify(order));
-          window.location.href=j.init_point;
-        }catch(e){ alert(I18N[LANG].pay_mp_err+e.message); }
+        var holdPayload={ holdId:order.bookingId, nombre:order.nombre||"HOLD", email:order.email||"", telefono:order.telefono||"", entrada:order.entrada, salida:order.salida, hombres:order.hombres, mujeres:order.mujeres, camas:order.camas, total:order.total };
+        fetch(HOLDS_START_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(holdPayload) })
+          .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+          .then(function(res){
+            if(!res.ok || !res.j || res.j.ok!==true) throw new Error(res.j && res.j.error ? res.j.error : 'No se pudo crear HOLD');
+            currentHoldId=res.j.holdId||order.bookingId;
+            formCard.style.display='block';
+            var inEl=document.querySelector('#reserva-form [name="entrada"]');
+            var outEl=document.querySelector('#reserva-form [name="salida"]');
+            if(inEl) inEl.value=dateInEl.value;
+            if(outEl) outEl.value=dateOutEl.value;
+            requestAnimationFrame(function(){ window.scrollTo({ top: formCard.offsetTop-10, behavior:'smooth' }); });
+            toast(I18N[LANG].hold_ok);
+          })
+          .catch(function(e){ alert(I18N[LANG].hold_err+e.message); });
       });
 
-      // ===== Stripe
-      payStripeBtn?.addEventListener('click', async ()=>{
-        const order=buildOrderBase();
-        if(!order.total){ alert(I18N[LANG].pick_beds); return; }
-        if(!order.nombre || !order.email){ alert(I18N[LANG].fill_name_email); return; }
-        if(!$('#consentChk').checked){ alert(I18N[LANG].need_consent); return; }
-        try{
-          const r1=await fetch(BOOKINGS_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ bookingId:order.bookingId, nombre:order.nombre, email:order.email, telefono:order.telefono, entrada:order.entrada, salida:order.salida, hombres:order.hombres, mujeres:order.mujeres, camas:order.camas, total:order.total, pay_status:'pending' })});
-          if(!r1.ok){ const t=await r1.text(); throw new Error(I18N[LANG].cant_register+t); }
-          const r2=await fetch(STRIPE_SESSION_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
-          const j=await r2.json();
-          if(!r2.ok||!j.id) throw new Error(j.error||(I18N[LANG].cant_session));
-          localStorage.setItem('lapa-last-booking', JSON.stringify(order));
-          const s=getStripe(); if(!s){ alert("Stripe no disponible ahora."); return; }
-          const { error }=await s.redirectToCheckout({ sessionId:j.id });
-          if(error) throw error;
-        }catch(e){ alert(I18N[LANG].pay_stripe_err+e.message); }
+      // ====== Simulador aprobado
+      document.getElementById('simulateOk').addEventListener('click', function(){ payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true; });
+
+      // ====== Mercado Pago (anti doble clic)
+      var mpBusy=false;
+      document.getElementById('payMP').addEventListener('click', function(){
+        if(mpBusy) return; mpBusy=true; payMPBtn.disabled=true;
+        var order=buildOrderBase();
+        if(!order.total){ alert(I18N[LANG].pick_beds); mpBusy=false; payMPBtn.disabled=false; return; }
+        if(!order.nombre || !order.email){ alert(I18N[LANG].fill_name_email); mpBusy=false; payMPBtn.disabled=false; return; }
+        if(!document.getElementById('consentChk').checked){ alert(I18N[LANG].need_consent); mpBusy=false; payMPBtn.disabled=false; return; }
+        var consent = { accepted:true, ts:new Date().toISOString() };
+        fetch(BOOKINGS_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ...order, pay_status:'pending', consent:consent })})
+          .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(I18N[LANG].cant_register+t); }); })
+          .then(function(){
+            return fetch(MP_PREFERENCE_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title:'Reserva Lapa Casa Hostel', unit_price:order.total, quantity:1, currency_id:'BRL', metadata:{ bookingId:order.bookingId, email:order.email } })});
+          })
+          .then(function(r2){ return r2.json().then(function(j){ return {ok:r2.ok,j:j}; }); })
+          .then(function(res2){
+            if(!res2.ok || !res2.j || !res2.j.init_point) throw new Error(res2.j && res2.j.error ? res2.j.error : I18N[LANG].cant_pref);
+            lastOrderCache = order;
+            try{ localStorage.setItem('lapa-last-booking', JSON.stringify(order)); }catch(_){}
+            window.location.href=res2.j.init_point;
+          })
+          .catch(function(e){ alert(I18N[LANG].pay_mp_err+e.message); })
+          .finally(function(){ mpBusy=false; payMPBtn.disabled=false; });
       });
 
-      // ===== Confirmar
-      document.getElementById('reserva-form')?.addEventListener('submit', async e=>{
+      // ====== Stripe (anti doble clic)
+      var stripeBusy=false;
+      document.getElementById('payStripe').addEventListener('click', function(){
+        if(stripeBusy) return; stripeBusy=true; payStripeBtn.disabled=true;
+        var order=buildOrderBase();
+        if(!order.total){ alert(I18N[LANG].pick_beds); stripeBusy=false; payStripeBtn.disabled=false; return; }
+        if(!order.nombre || !order.email){ alert(I18N[LANG].fill_name_email); stripeBusy=false; payStripeBtn.disabled=false; return; }
+        if(!document.getElementById('consentChk').checked){ alert(I18N[LANG].need_consent); stripeBusy=false; payStripeBtn.disabled=false; return; }
+        var consent = { accepted:true, ts:new Date().toISOString() };
+        fetch(BOOKINGS_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ...order, pay_status:'pending', consent:consent })})
+          .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(I18N[LANG].cant_register+t); }); return r.json(); })
+          .then(function(){ return fetch(STRIPE_SESSION_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:order }) }); })
+          .then(function(r2){ return r2.json().then(function(j){ return {ok:r2.ok,j:j}; }); })
+          .then(function(res2){
+            if(!res2.ok || !res2.j || !res2.j.id) throw new Error(res2.j && res2.j.error ? res2.j.error : I18N[LANG].cant_session);
+            lastOrderCache = order;
+            try{ localStorage.setItem('lapa-last-booking', JSON.stringify(order)); }catch(_){}
+            var s=getStripe(); if(!s){ alert("Stripe no disponible ahora."); return; }
+            return s.redirectToCheckout({ sessionId:res2.j.id });
+          })
+          .then(function(ret){ if(ret && ret.error) throw ret.error; })
+          .catch(function(e){ alert(I18N[LANG].pay_stripe_err+e.message); })
+          .finally(function(){ stripeBusy=false; payStripeBtn.disabled=false; });
+      });
+
+      // ====== Confirmar (una sola vez) + verificación de estado opcional
+      var reservaForm = document.getElementById('reserva-form');
+      reservaForm.addEventListener('submit', function(e){
         e.preventDefault();
-        if(!$('#consentChk').checked){ alert(I18N[LANG].need_consent); return; }
-        const ok=(payStateEl.textContent||'').toLowerCase().includes(I18N[LANG].approved.slice(0,5))||window.__simApproved;
-        if(!ok){ alert(I18N[LANG].need_payment); return; }
-        try{
-          const r=await fetch(HOLDS_CONFIRM_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ holdId:currentHoldId, status:'paid' }) });
-          const j=await r.json();
-          if(!r.ok||!j.ok) throw new Error(j.error||(I18N[LANG].cant_confirm));
-          paidFinal=true; alert("✅ "+I18N[LANG].book_ok);
-        }catch(e){ alert((I18N[LANG].confirm_err||'Error confirmando reserva: ')+e.message); }
+        submitBtn.disabled = true;
+        if(!document.getElementById('consentChk').checked){ alert(I18N[LANG].need_consent); submitBtn.disabled=false; return; }
+        var order = buildOrderBase();
+        // chequeo robusto de pago (si endpoint está disponible)
+        var paidOk = (payStateEl.textContent||'').toLowerCase().indexOf(I18N[LANG].approved.slice(0,5))>-1 || window.__simApproved===true;
+        (function verify(){
+          if(order.bookingId && PAY_STATUS_ENDPOINT){
+            fetch(PAY_STATUS_ENDPOINT+"?bookingId="+encodeURIComponent(order.bookingId))
+              .then(function(rs){ if(!rs.ok) return null; return rs.json(); })
+              .then(function(js){ if(js && (js.paid===true || js.status==='approved'||js.status==='paid')) paidOk = true; })
+              .finally(function(){
+                if(!paidOk){ alert(I18N[LANG].need_payment); submitBtn.disabled=false; return; }
+                fetch(HOLDS_CONFIRM_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ holdId:currentHoldId||order.bookingId, status:'paid' }) })
+                  .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+                  .then(function(res){ if(!res.ok || !res.j || res.j.ok!==true) throw new Error(res.j && res.j.error ? res.j.error : I18N[LANG].cant_confirm); paidFinal=true; alert("✅ "+I18N[LANG].book_ok); })
+                  .catch(function(e){ alert(I18N[LANG].confirm_err+e.message); submitBtn.disabled=false; });
+              });
+          }else{
+            if(!paidOk){ alert(I18N[LANG].need_payment); submitBtn.disabled=false; return; }
+            fetch(HOLDS_CONFIRM_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ holdId:currentHoldId||order.bookingId, status:'paid' }) })
+              .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+              .then(function(res){ if(!res.ok || !res.j || res.j.ok!==true) throw new Error(res.j && res.j.error ? res.j.error : I18N[LANG].cant_confirm); paidFinal=true; alert("✅ "+I18N[LANG].book_ok); })
+              .catch(function(e){ alert(I18N[LANG].confirm_err+e.message); submitBtn.disabled=false; });
+          }
+        })();
       });
 
-      // ===== Liberar HOLD si se cierra sin pagar
-      window.addEventListener('beforeunload', ()=>{
+      // ====== Liberar HOLD si se cierra sin pagar
+      window.addEventListener('beforeunload', function(){
         try{
           if(currentHoldId && !paidFinal){
-            navigator.sendBeacon(HOLDS_RELEASE_ENDPOINT, new Blob([JSON.stringify({holdId:currentHoldId})], {type:'application/json'}));
+            var data = new Blob([JSON.stringify({holdId:currentHoldId})], {type:'application/json'});
+            navigator.sendBeacon(HOLDS_RELEASE_ENDPOINT, data);
           }
         }catch(_){}
       });
 
-      // ===== Param paid=1
-      (function checkPaidParam(){
-        const p=new URLSearchParams(location.search);
+      // ====== Param paid=1 + rehidratación de estado
+      (function restorePaidState(){
+        var p=new URLSearchParams(location.search);
         if(p.get('paid')==='1'){ payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true; }
+        try{
+          var cached = JSON.parse(localStorage.getItem('lapa-last-booking')||'null');
+          if(cached && cached.bookingId && PAY_STATUS_ENDPOINT){
+            fetch(PAY_STATUS_ENDPOINT+"?bookingId="+encodeURIComponent(cached.bookingId))
+              .then(function(r){ if(!r.ok) return null; return r.json(); })
+              .then(function(js){ if(js && (js.paid===true || js.status==='approved'||js.status==='paid')){ payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true; }})
+              .catch(function(){});
+          }
+        }catch(_){}
       })();
 
-      // ===== Idioma
+      // ====== Idioma (aplica en vivo)
       (function initLang(){
-        const nav=(navigator.language||'es').slice(0,2).toLowerCase();
-        const initial=(nav==='en'?'en':'es');
+        var nav=(navigator.language||'es').slice(0,2).toLowerCase();
+        var initial=(nav==='en'?'en':'es');
         document.getElementById('langSel').value=initial;
         LANG=initial;
-        document.getElementById('langSel').addEventListener('change', e=> { LANG = (e.target.value==='en')?'en':'es'; });
+        applyI18N();
+        document.getElementById('langSel').addEventListener('change', function(e){ LANG = (e.target.value==='en')?'en':'es'; applyI18N(); });
       })();
     })();
   </script>

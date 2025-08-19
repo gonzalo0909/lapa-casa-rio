@@ -1,11 +1,9 @@
 "use strict";
-
 /**
  * Lapa Casa — Backend thin index (Express)
  * Endpoints: health, availability, bookings, holds, payments (Stripe/MP), webhooks, events
  * Sirve estáticos /, /book/, /admin/ y fallback SPA-ish.
  */
-
 require("dotenv").config();
 
 const path = require("path");
@@ -61,16 +59,14 @@ app.use(cors({
   },
   credentials:true,
   methods:["GET","POST","OPTIONS"],
-  allowedHeaders:["Content-Type","Stripe-Signature"] // header de Stripe (case-insensitive)
+  allowedHeaders:["Content-Type","Stripe-Signature"]
 }));
 
 // ==== Security
 app.use(helmet({ crossOriginResourcePolicy:false }));
 
-// ==== Static first (landing, /book/, /admin/, etc.)
+// ==== Static first
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
-
-// Friendly routes for directories without trailing slash
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname,"public","book","index.html")));
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname,"public","admin","index.html")));
 
@@ -96,7 +92,7 @@ app.post("/webhooks/stripe",
   })
 );
 
-// MP webhook (no requiere raw)
+// MP webhook
 app.post("/webhooks/mp",
   buildMpWebhookHandler({
     notifySheets,
@@ -111,40 +107,43 @@ app.use(express.json());
 // ==== Routers (API)
 app.use("/api/health", require("./routes/health"));
 app.use("/availability", require("./routes/availability"));
-app.use("/api/availability", require("./routes/availability")); // ✅ alias
 app.use("/bookings", require("./routes/bookings"));
 app.use("/api/bookings", require("./routes/bookings")); // alias
 app.use("/holds", require("./routes/holds"));
-app.use("/crons", require("./routes/crons"));          // ✅ monta crons
-app.use("/api/crons", require("./routes/crons"));      // ✅ alias
 try { app.use("/api/events", require("./routes/events")); } catch { /* opcional */ }
 
-// ==== Payments public endpoints (compat con front)
+// ==== Admin (login/logout) y Crons (sweep holds)
+try { app.use("/admin", require("./routes/admin")); } catch {}
+try { app.use("/api/crons", require("./routes/crons")); } catch {}
+
+// ==== Payments public endpoints
 const stripeSrv = require("./services/payments-stripe");
 const mpSrv     = require("./services/payments-mp");
 
 app.post("/payments/stripe/session", async (req,res)=>{
   try{
-    const order = Object(req.body?.order || req.body || {});
-    if (!("total" in order)) throw new Error("missing_total");
-    const out = await stripeSrv.createCheckoutSession(order, { baseUrl: getBaseUrl(req) });
+    const orderIn = Object(req.body?.order || req.body || {});
+    if (!("total" in orderIn)) throw new Error("missing_total");
+    const out = await stripeSrv.createCheckoutSession(orderIn, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
 app.post("/payments/mp/preference", async (req,res)=>{
   try{
-    const order = Object(req.body?.order || req.body || {});
+    // Soporta {order:{ booking_id, total }} o { unit_price, external_reference, metadata }
+    const b = req.body || {};
+    const order = b.order ? b.order : {
+      booking_id: b.booking_id || b.external_reference || (b.metadata && (b.metadata.booking_id || b.metadata.bookingId)),
+      total: (typeof b.total !== "undefined") ? b.total : b.unit_price
+    };
     if (!("total" in order)) throw new Error("missing_total");
     const out = await mpSrv.createPreference(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// ✅ NEW: estado de pago (consultado por el front)
-app.use("/payments/status", require("./routes/payments-status"));
-
-// Pago OK de prueba (fallback si no subiste el HTML a /public/pago-exitoso-test/index.html)
+// Pago OK test
 app.get("/pago-exitoso-test", (req,res)=>{
   const file = path.join(__dirname,"public","pago-exitoso-test","index.html");
   res.sendFile(file, (err)=> {
@@ -157,7 +156,7 @@ app.get("/pago-exitoso-test", (req,res)=>{
   });
 });
 
-// ==== Health/Diag simple
+// ==== Diag
 app.get("/api/diag", (_req,res)=> res.json({
   ok:true, service:"lapa-casa-backend", commit:COMMIT, now:new Date().toISOString(),
   env:{
@@ -167,7 +166,7 @@ app.get("/api/diag", (_req,res)=> res.json({
   }
 }));
 
-// ==== 404 SPA-ish (GET sin extensión -> intenta /public/<path>/index.html)
+// ==== 404 SPA-ish
 app.use((req,res,next)=>{
   if (req.method !== "GET") return next();
   if (path.extname(req.path)) return next();

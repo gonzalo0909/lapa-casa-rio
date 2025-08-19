@@ -65,4 +65,14 @@ function getHoldsMap() {
   return out;
 }
 
-module.exports = { createHold, confirmHold, releaseHold, sweepExpired, getHoldsMap };
+// NUEVO: leer un HOLD (validación de montos en pagos)
+function getHold(holdId){
+  const id = String(holdId||"").trim();
+  if (!id) return null;
+  const h = holdsById.get(id);
+  if (!h) return null;
+  if (now() >= h.expiresAt) { holdsById.delete(id); return null; }
+  return h;
+}
+
+module.exports = { createHold, confirmHold, releaseHold, sweepExpired, getHoldsMap, getHold };

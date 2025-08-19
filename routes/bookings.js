@@ -3,7 +3,7 @@
 const express = require("express");
 const router = express.Router();
 const {
-  saveBooking,
+  upsertBooking,   // ✅ usar el nombre correcto
   listBookings,
 } = require("../services/bookings");
 
@@ -21,7 +21,7 @@ router.get("/", async (req, res) => {
 // POST /bookings  → crea/actualiza una reserva completa (upsert)
 router.post("/", async (req, res) => {
   try {
-    const saved = await saveBooking(req.body || {});
+    const saved = await upsertBooking(req.body || {}); // ✅ corrige nombre
     res.json({ ok: true, booking: saved });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });

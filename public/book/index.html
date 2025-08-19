@@ -7,69 +7,66 @@
   <meta name="robots" content="index,follow,max-image-preview:large" />
   <link rel="canonical" href="/book" />
   <style>
-    :root { --gap:12px; --rosa:#F03DDB; }
-    * { box-sizing:border-box; }
-    body { font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif; margin:0; padding:16px; color:#222; background:#fff; }
-    header, footer { text-align:center; padding:12px; }
-    .row { max-width:1080px; margin:0 auto; display:grid; gap:var(--gap); }
-    .card { border:1px solid #e5e7eb; border-radius:12px; padding:14px; background:#fff; }
-    .grid { display:grid; gap:10px; }
-    .grid-2 { grid-template-columns:repeat(2,minmax(260px,1fr)); }
-    .grid-3 { grid-template-columns:repeat(3,minmax(200px,1fr)); }
-    .grid-4 { grid-template-columns:repeat(4,minmax(180px,1fr)); }
-    @media (max-width:720px){ .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
-    label { display:block; font-size:14px; margin-bottom:6px; color:#374151; }
-    input[type="date"],input[type="number"],input[type="text"],input[type="email"],input[type="tel"]{ width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; }
-    .ctr { display:flex; align-items:center; gap:6px; }
-    .ctr button { padding:6px 10px; border:0; border-radius:8px; background:#f59e0b; color:#fff; font-weight:700; cursor:pointer; }
-    .btn { background:#f59e0b; color:#fff; border:0; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; }
-    .btn.secondary { background:#111; }
-    .btn.ghost { background:transparent; color:#111; border:1px solid #e5e7eb; }
-    .btn:disabled { background:#d1d5db; cursor:not-allowed; }
-    .muted { color:#6b7280; font-size:14px; }
-    .err { color:#b91c1c; font-weight:600; }
-    .rooms { display:grid; gap:var(--gap); }
-    .room { border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
-    .room h3 { margin:0 0 6px 0; font-size:16px; }
-    .beds { display:grid; grid-template-columns:repeat(6,minmax(30px,1fr)); gap:6px; }
-    @media (max-width:720px){ .beds { grid-template-columns:repeat(4,minmax(30px,1fr)); } }
-    .bed { border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center; font-size:13px; user-select:none; cursor:pointer; }
-    .bed.occupied { background:#f3f4f6; color:#9ca3af; text-decoration:line-through; cursor:not-allowed; }
-    .bed.selected { outline:2px solid #111; font-weight:700; }
-    .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none; }
-    .highlight { color:#F03DDB; font-weight:700; }
-    #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999; }
-    #toast.show { opacity:1; transform:translateY(0); }
-    .promo { display:none; margin:10px auto 0; max-width:1080px; }
-    .promo .box { border:1px dashed #f59e0b; background:#fff8e6; border-radius:12px; padding:10px 12px; text-align:center; }
-    .lang { display:flex; justify-content:center; gap:8px; margin-top:6px; }
-    .lang select { padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; }
+    :root { --gap:12px; --rosa:#F03DDB; --line:#e5e7eb; --warn:#f59e0b; --muted:#6b7280 }
+    * { box-sizing:border-box }
+    body { font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif; margin:0; padding:16px; color:#222; background:#fff }
+    header, footer { text-align:center; padding:12px }
+    .row { max-width:1080px; margin:0 auto; display:grid; gap:var(--gap) }
+    .card { border:1px solid var(--line); border-radius:12px; padding:14px; background:#fff }
+    .grid { display:grid; gap:10px }
+    .grid-2 { grid-template-columns:repeat(2,minmax(260px,1fr)) }
+    .grid-3 { grid-template-columns:repeat(3,minmax(200px,1fr)) }
+    .grid-4 { grid-template-columns:repeat(4,minmax(180px,1fr)) }
+    @media (max-width:720px){ .grid-2,.grid-3,.grid-4{ grid-template-columns:1fr } }
+    label { display:block; font-size:14px; margin-bottom:6px; color:#374151 }
+    input[type="date"],input[type="number"],input[type="text"],input[type="email"],input[type="tel"]{ width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:14px }
+    .ctr { display:flex; align-items:center; gap:6px }
+    .ctr button { padding:6px 10px; border:0; border-radius:8px; background:var(--warn); color:#fff; font-weight:700; cursor:pointer }
+    .btn { background:var(--warn); color:#fff; border:0; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer }
+    .btn.secondary { background:#111 }
+    .btn.ghost { background:transparent; color:#111; border:1px solid var(--line) }
+    .btn:disabled { background:#d1d5db; cursor:not-allowed }
+    .muted { color:var(--muted); font-size:14px }
+    .err { color:#b91c1c; font-weight:600 }
+    .rooms { display:grid; gap:var(--gap) }
+    .room { border:1px solid var(--line); border-radius:10px; padding:10px }
+    .room h3 { margin:0 0 6px 0; font-size:16px }
+    .beds { display:grid; grid-template-columns:repeat(6,minmax(30px,1fr)); gap:6px }
+    @media (max-width:720px){ .beds { grid-template-columns:repeat(4,minmax(30px,1fr)) } }
+    .bed { border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center; font-size:13px; user-select:none; cursor:pointer }
+    .bed.occupied { background:#f3f4f6; color:#9ca3af; text-decoration:line-through; cursor:not-allowed }
+    .bed.selected { outline:2px solid #111; font-weight:700 }
+    .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap }
+    .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none }
+    #toast { position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; font-size:14px; opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999 }
+    #toast.show { opacity:1; transform:translateY(0) }
   </style>
   <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
   <header>
-    <h1 data-i18n="title">Lapa Casa Hostel – Reservas</h1>
-    <p class="muted" data-i18n="subtitle">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
-    <div class="lang">
-      <label for="langSel" class="muted" data-i18n="lang_label">Idioma / Language:</label>
-      <select id="langSel" aria-label="Language"><option value="es">ES</option><option value="en">EN</option></select>
-    </div>
-    <div class="promo" id="promoWrap"><div class="box"><span id="promoMsg">Promo activa</span></div></div>
+    <h1>Lapa Casa Hostel – Reservas</h1>
+    <p class="muted">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
   </header>
 
   <main class="row">
+    <!-- Paso 1 -->
     <section class="card">
-      <h2 data-i18n="step1">1) Fechas y cantidad</h2>
+      <h2>1) Fechas y cantidad</h2>
       <div class="grid grid-2">
-        <div><label data-i18n="checkin">Check-in</label><input id="dateIn" type="date" /></div>
-        <div><label data-i18n="checkout">Check-out</label><input id="dateOut" type="date" /></div>
+        <div>
+          <label>Check-in</label>
+          <input id="dateIn" type="date" />
+        </div>
+        <div>
+          <label>Check-out</label>
+          <input id="dateOut" type="date" />
+        </div>
       </div>
 
       <div class="grid grid-4" style="margin-top:10px">
         <div>
-          <label data-i18n="men">Hombres</label>
+          <label>Hombres</label>
           <div class="ctr">
             <button type="button" id="menMinus" aria-label="menos hombres">−</button>
             <input id="men" type="number" min="0" max="38" value="0" inputmode="numeric" />
@@ -77,321 +74,472 @@
           </div>
         </div>
         <div>
-          <label data-i18n="women">Mujeres</label>
+          <label>Mujeres</label>
           <div class="ctr">
             <button type="button" id="womenMinus" aria-label="menos mujeres">−</button>
             <input id="women" type="number" min="0" max="38" value="0" inputmode="numeric" />
             <button type="button" id="womenPlus" aria-label="más mujeres">+</button>
           </div>
         </div>
-        <div class="muted" style="display:flex; align-items:end" data-i18n="capacity">Capacidad total: 38</div>
+        <div class="muted" style="display:flex; align-items:end">Capacidad total: 38</div>
         <div style="display:flex; justify-content:end; align-items:end">
-          <button id="checkAvail" class="btn" data-i18n="btn_check" type="button">Ver disponibilidad</button>
+          <button id="checkAvail" class="btn" type="button">Ver disponibilidad</button>
         </div>
       </div>
       <div id="checkMsg" class="muted" style="margin-top:6px"></div>
     </section>
 
+    <!-- Paso 2 -->
     <section id="roomsCard" class="card" style="display:none">
-      <h2 data-i18n="step2">2) Elegí tus camas</h2>
+      <h2>2) Elegí tus camas</h2>
       <div id="mods" class="muted" style="margin-bottom:8px"></div>
       <div id="rooms" class="rooms"></div>
       <div class="actions" style="margin-top:8px">
         <div>
-          <div data-i18n="selected_prefix">Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
-          <div class="muted"><span data-i18n="total_prefix">Total:</span> R$ <span id="totalPrice">0</span></div>
+          <div>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
+          <div class="muted">Total: R$ <span id="totalPrice">0</span></div>
         </div>
-        <button id="continueBtn" class="btn" disabled data-i18n="btn_continue" type="button">Continuar</button>
+        <button id="continueBtn" class="btn" disabled type="button">Continuar</button>
       </div>
       <p class="warning" id="suggestBox"></p>
     </section>
 
+    <!-- Paso 3 -->
     <section id="formCard" class="card" style="display:none">
-      <h2 data-i18n="step3">3) Datos para confirmar</h2>
+      <h2>3) Datos para confirmar</h2>
       <form id="reserva-form">
-        <label data-i18n="full_name">Nombre completo</label><input type="text" name="nombre" required />
-        <label data-i18n="email">Email</label><input type="email" name="email" required />
-        <label data-i18n="phone">Teléfono</label><input type="tel" name="telefono" required />
-        <label data-i18n="in_date">Fecha de entrada</label><input type="date" name="entrada" required />
-        <label data-i18n="out_date">Fecha de salida</label><input type="date" name="salida" required />
-        <label style="margin-top:8px"><input type="checkbox" id="consentChk" /><span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span></label>
+        <label>Nombre completo</label>
+        <input type="text" name="nombre" required />
+        <label>Email</label>
+        <input type="email" name="email" required />
+        <label>Teléfono</label>
+        <input type="tel" name="telefono" required />
+        <label>Fecha de entrada</label>
+        <input type="date" name="entrada" required />
+        <label>Fecha de salida</label>
+        <input type="date" name="salida" required />
+        <label style="margin-top:8px">
+          <input type="checkbox" id="consentChk" />
+          <span class="muted">Acepto recibir comunicaciones y la política de privacidad.</span>
+        </label>
 
         <div class="grid grid-3" style="margin-top:10px">
-          <div class="card"><h3 style="margin:0 0 8px 0;" data-i18n="pay_mp_title">Pagar con Mercado Pago</h3><p class="muted" data-i18n="pay_mp_sub">Pix / tarjeta / boleto (Brasil)</p><button type="button" id="payMP" class="btn secondary" style="margin-top:8px" data-i18n="pay_mp_btn">Pagar con MP (Sandbox)</button></div>
-          <div class="card"><h3 style="margin:0 0 8px 0;" data-i18n="pay_stripe_title">Pagar con Stripe</h3><p class="muted" data-i18n="pay_stripe_sub">Tarjeta internacional / débito</p><button type="button" id="payStripe" class="btn secondary" style="margin-top:8px" data-i18n="pay_stripe_btn">Ir a Checkout (Sandbox)</button></div>
-          <div class="card"><h3 style="margin:0 0 8px 0;" data-i18n="test_title">¿Solo test?</h3><p class="muted" data-i18n="test_sub">“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.</p><button type="button" id="simulateOk" class="btn ghost" data-i18n="test_btn">Simular pago aprobado</button></div>
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;">Pagar con Mercado Pago</h3>
+            <p class="muted">Pix / tarjeta / boleto (Brasil)</p>
+            <button type="button" id="payMP" class="btn secondary" style="margin-top:8px">Pagar con MP (Sandbox)</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;">Pagar con Stripe</h3>
+            <p class="muted">Tarjeta internacional / débito</p>
+            <button type="button" id="payStripe" class="btn secondary" style="margin-top:8px">Ir a Checkout (Sandbox)</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;">¿Solo test?</h3>
+            <p class="muted">“Simular pago aprobado” habilita Confirmar sin ir a MP/Stripe.</p>
+            <button type="button" id="simulateOk" class="btn ghost">Simular pago aprobado</button>
+          </div>
         </div>
 
         <div class="actions" style="margin-top:12px">
-          <span class="muted"><span data-i18n="pay_state">Estado pago:</span> <span id="payState" class="highlight" data-i18n="pending">pendiente</span></span>
-          <button type="submit" id="submitBtn" class="btn" disabled data-i18n="btn_confirm">Confirmar reserva</button>
+          <span class="muted">Estado pago: <span id="payState" class="highlight">pendiente</span></span>
+          <button type="submit" id="submitBtn" class="btn" disabled>Confirmar reserva</button>
         </div>
       </form>
     </section>
   </main>
 
-  <footer><p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p></footer>
+  <footer>
+    <p class="muted">&copy; 2025 Lapa Casa Hostel · Santa Teresa, Río de Janeiro</p>
+  </footer>
+
   <div id="toast"></div>
 
   <script>
   (function(){
-    // ===== Config
-    var API_BASE=(window.BACKEND_BASE_URL||"").replace(/\/$/,"");
-    function endpoint(p){return API_BASE?API_BASE+p:p;}
-    var MP_PREF=endpoint("/payments/mp/preference");
-    var STRIPE_SES=endpoint("/payments/stripe/session");
-    var HOLDS_START=endpoint("/holds/start");
-    var HOLDS_RELEASE=endpoint("/holds/release");
-    var HOLDS_CONFIRM=endpoint("/holds/confirm");
-    var AVAIL=endpoint("/availability");
-    var PAY_STATUS=endpoint("/payments/status");
+    "use strict";
 
-    var STRIPE_PK=window.STRIPE_PUBLISHABLE_KEY||"pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
-    var __stripe=null; function getStripe(){return (typeof Stripe==="function")?(__stripe||(__stripe=Stripe(STRIPE_PK))):null;}
+    /* ===== CONFIG — usa tus endpoints reales del backend ===== */
+    var API_BASE = (window.BACKEND_BASE_URL || "").replace(/\/$/, "");
+    function endpoint(p){ return API_BASE ? API_BASE + p : p; }
+    var MP_PREFERENCE_ENDPOINT  = endpoint("/payments/mp/preference");
+    var STRIPE_SESSION_ENDPOINT = endpoint("/payments/stripe/session");
+    var HOLDS_START_ENDPOINT    = endpoint("/holds/start");
+    var HOLDS_RELEASE_ENDPOINT  = endpoint("/holds/release");
+    var HOLDS_CONFIRM_ENDPOINT  = endpoint("/holds/confirm");
+    var AVAILABILITY_ENDPOINT   = endpoint("/availability");
+    var PAY_STATUS_ENDPOINT     = endpoint("/payments/status"); // opcional
+    var STRIPE_PK = window.STRIPE_PUBLISHABLE_KEY || "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
+    var __stripeInst=null; 
+    function getStripe(){ if(typeof window.Stripe==="undefined") return null; return (__stripeInst = __stripeInst || window.Stripe(STRIPE_PK)); }
 
-    var ROOMS={1:{name:"Cuarto 1 (12 mixto)",cap:12,basePrice:55,femaleOnly:false},
-               3:{name:"Cuarto 3 (12 mixto)",cap:12,basePrice:55,femaleOnly:false},
-               5:{name:"Cuarto 5 (7 mixto)", cap:7, basePrice:55,femaleOnly:false},
-               6:{name:"Cuarto 6 (7 femenino)",cap:7, basePrice:60,femaleOnly:true}};
+    /* ===== DOM (robusto: falla si falta algo) ===== */
+    function $id(id){
+      var el = document.getElementById(id);
+      if (!el) { console.error("Falta elemento #"+id); throw new Error("missing_"+id); }
+      return el;
+    }
+    var dateInEl   = $id("dateIn");
+    var dateOutEl  = $id("dateOut");
+    var menEl      = $id("men");
+    var womenEl    = $id("women");
+    var menMinus   = $id("menMinus");
+    var menPlus    = $id("menPlus");
+    var womenMinus = $id("womenMinus");
+    var womenPlus  = $id("womenPlus");
+    var checkAvail = $id("checkAvail");
+    var checkMsg   = $id("checkMsg");
+    var roomsCard  = $id("roomsCard");
+    var roomsWrap  = $id("rooms");
+    var modsEl     = $id("mods");
+    var neededEl   = $id("needed");
+    var selCountEl = $id("selCount");
+    var totalPriceEl = $id("totalPrice");
+    var continueBtn  = $id("continueBtn");
+    var suggestBox   = $id("suggestBox");
+    var formCard     = $id("formCard");
+    var reservaForm  = $id("reserva-form");
+    var payStateEl   = $id("payState");
+    var submitBtn    = $id("submitBtn");
+    var simulateOkBtn= $id("simulateOk");
+    var payMPBtn     = $id("payMP");
+    var payStripeBtn = $id("payStripe");
+    var toastEl      = $id("toast");
 
-    function $(s){return document.querySelector(s);}
-    var dateInEl=$("#dateIn"),dateOutEl=$("#dateOut");
-    var menEl=$("#men"),womenEl=$("#women");
-    var roomsWrap=$("#rooms"),roomsCard=$("#roomsCard"),formCard=$("#formCard");
-    var neededEl=$("#needed"),selCountEl=$("#selCount"),totalPriceEl=$("#totalPrice");
-    var continueBtn=$("#continueBtn"),suggestBox=$("#suggestBox"),checkMsg=$("#checkMsg");
-    var payStateEl=$("#payState"),submitBtn=$("#submitBtn");
-    var modsEl=$("#mods"),toastEl=$("#toast");
+    /* ===== util ===== */
+    function toast(msg){ toastEl.textContent=msg; toastEl.classList.add("show"); setTimeout(function(){ toastEl.classList.remove("show"); },2000); }
+    function clamp(n,min,max){ n = (typeof n==='number' && isFinite(n))?n:0; return Math.max(min, Math.min(max, n)); }
+    function toISO(d){ return new Date(d+'T00:00:00'); }
+    function diffNights(a,b){ if(!a||!b) return 0; var ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); }
+    function fmtBRL(n){ return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0, maximumFractionDigits:0}); }
 
-    var selection={},holdId=null,paidFinal=false,LANG="es",internalTotal=0,lastOrder=null;
-
-    // ===== fechas mínimas
-    (function(){var n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);
-      var f=(d)=>{var y=d.getFullYear(),m=("0"+(d.getMonth()+1)).slice(-2),dd=("0"+d.getDate()).slice(-2);return y+"-"+m+"-"+dd;};
-      var a=f(n),b=f(t); if(dateInEl){dateInEl.min=a;if(!dateInEl.value)dateInEl.value=a;}
-      if(dateOutEl){dateOutEl.min=b;if(!dateOutEl.value||dateOutEl.value<=dateInEl.value)dateOutEl.value=b;}
+    /* ===== init fechas ===== */
+    (function initDates(){
+      function YMD(d){ var y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2); return y+'-'+m+'-'+day; }
+      var now = new Date(), tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
+      dateInEl.min = YMD(now);
+      dateOutEl.min = YMD(tomorrow);
+      if(!dateInEl.value) dateInEl.value = YMD(now);
+      if(!dateOutEl.value || dateOutEl.value<=dateInEl.value) dateOutEl.value = YMD(tomorrow);
     })();
 
-    // ===== helpers
-    function toISO(d){return new Date(d+"T00:00:00");}
-    function nights(a,b){if(!a||!b)return 0;var ms=toISO(b)-toISO(a);return Math.max(0,Math.round(ms/86400000));}
-    function fmtBRL(n){return Number(n||0).toLocaleString("pt-BR",{maximumFractionDigits:0});}
-    function toast(s){if(!toastEl)return;toastEl.textContent=s;toastEl.classList.add("show");setTimeout(()=>toastEl.classList.remove("show"),2000);}
-    function clamp(n,min,max){n=(+n||0);return Math.max(min,Math.min(max,n));}
-
-    // i18n corto
-    var I18N={es:{err_dates:"Elegí check-in y check-out.",err_co:"El check-out debe ser posterior.",err_qty:"Indicá al menos 1 huésped.",
-      checking:"Consultando disponibilidad...",updated:"Disponibilidad actualizada",err_avail:"Error consultando.",
-      no_beds:"No hay camas disponibles.",avail_of:"Disponibles:",price_bed:"Precio por cama:",nights:"Noches:",
-      female_rule:"El cuarto femenino requiere al menos 1 mujer.",select_exact:"Seleccioná exactamente {n} camas.",
-      pick_beds:"Seleccioná camas primero.",fill_name_email:"Completá nombre y email.",need_consent:"Acepta la política.",
-      approved:"aprobado",need_payment:"Primero finalizá el pago (o Simular aprobado).",
-      cant_confirm:"No se pudo confirmar HOLD",confirm_err:"Error confirmando: ",hold_err:"Error creando HOLD: ",
-      book_ok:"Reserva registrada. Webhooks marcarán 'paid'.",hold_ok:"Camas reservadas por 10 min (HOLD)",
-      tag_weekend:"Fin de semana +10%",tag_high:"Alta (Dic–Feb) +20%",mods:"Modificadores: ",
-      title:"Lapa Casa Hostel – Reservas",subtitle:"Elegí fechas y cantidad. Luego seleccioná camas.",
-      lang_label:"Idioma / Language:",step1:"1) Fechas y cantidad",checkin:"Check-in",checkout:"Check-out",
-      men:"Hombres",women:"Mujeres",capacity:"Capacidad total: 38",btn_check:"Ver disponibilidad",
-      step2:"2) Elegí tus camas",selected_prefix:"Seleccionadas:",total_prefix:"Total:",btn_continue:"Continuar",
-      step3:"3) Datos para confirmar",full_name:"Nombre completo",email:"Email",phone:"Teléfono",
-      in_date:"Entrada",out_date:"Salida",consent:"Acepto comunicaciones y privacidad.",
-      pay_mp_title:"Pagar con Mercado Pago",pay_mp_sub:"Pix / tarjeta / boleto",pay_mp_btn:"Pagar con MP (Sandbox)",
-      pay_stripe_title:"Pagar con Stripe",pay_stripe_sub:"Tarjeta internacional / débito",pay_stripe_btn:"Ir a Checkout (Sandbox)",
-      test_title:"¿Solo test?",test_sub:"“Simular pago aprobado” habilita Confirmar.",test_btn:"Simular pago aprobado",
-      pay_state:"Estado pago:",pending:"pendiente",btn_confirm:"Confirmar reserva"}};
-
-    function priceMods(a,b){
-      var w=false,h=false; var n=nights(a,b); if(!n)return{factor:1,tags:[]};
-      var base=toISO(a); for(var i=0;i<n;i++){var d=new Date(base.getTime());d.setDate(d.getDate()+i);
-        var dow=d.getDay(); if(dow===0||dow===5||dow===6)w=true; var m=d.getMonth(); if(m===11||m===0||m===1)h=true;}
-      var tags=[]; if(w)tags.push(I18N[LANG].tag_weekend); if(h)tags.push(I18N[LANG].tag_high);
-      return {factor:(w?1.10:1)*(h?1.20:1),tags:tags};
+    /* ===== precios y rooms ===== */
+    var ROOMS = {
+      1:{ name:"Cuarto 1 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
+      3:{ name:"Cuarto 3 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
+      5:{ name:"Cuarto 5 (7 mixto)",  cap:7,  basePrice:55, femaleOnly:false },
+      6:{ name:"Cuarto 6 (7 femenino)", cap:7, basePrice:60, femaleOnly:true }
+    };
+    function priceModifiers(start,end){
+      var tags=[]; var weekend=false, highMonth=false;
+      var nights=diffNights(start,end); if(!nights) return {factor:1,tags:[]};
+      var base = new Date(toISO(start));
+      for(var i=0;i<nights;i++){
+        var d=new Date(base.getTime()); d.setDate(base.getDate()+i);
+        var day=d.getDay(); if(day===0||day===5||day===6) weekend=true;
+        var m=d.getMonth(); if(m===11||m===0||m===1) highMonth=true;
+      }
+      if(weekend) tags.push("Fin de semana +10%");
+      if(highMonth) tags.push("Alta (Dic–Feb) +20%");
+      var factor=(weekend?1.10:1.0)*(highMonth?1.20:1.0);
+      return { factor:factor, tags:tags };
     }
-    function pricePerBed(roomId,a,b){return Math.round(ROOMS[roomId].basePrice*priceMods(a,b).factor);}
+    function pricePerBed(roomId,start,end){ return Math.round(ROOMS[roomId].basePrice*priceModifiers(start,end).factor); }
 
-    // stepper robusto + delegación
-    function step(input,delta){
-      var min=+(input.min||0),max=+(input.max||38),cur=+(input.value||0);
-      var next=clamp(cur+delta,min,max);
-      var other=(input===menEl)?+(womenEl.value||0):+(menEl.value||0);
-      if(next+other>38)next=38-other;
-      input.value=clamp(next,min,max);
-      input.dispatchEvent(new Event("input",{bubbles:true}));
-      input.dispatchEvent(new Event("change",{bubbles:true}));
+    /* ===== controles hombres/mujeres ===== */
+    function step(input, delta){
+      var min = Number(input.min||0), max = Number(input.max||38);
+      var cur = Number(input.value||0);
+      var next = clamp(cur + delta, min, max);
+      var other = (input===menEl) ? Number(womenEl.value||0) : Number(menEl.value||0);
+      if(next + other > 38) next = 38 - other;
+      input.value = clamp(next, min, max);
     }
-    document.addEventListener("click",function(e){
-      var id=(e.target&&e.target.id)||"";
-      if(id==="menMinus"){e.preventDefault();step(menEl,-1);}
-      if(id==="menPlus"){e.preventDefault();step(menEl,1);}
-      if(id==="womenMinus"){e.preventDefault();step(womenEl,-1);}
-      if(id==="womenPlus"){e.preventDefault();step(womenEl,1);}
-    },true);
-
-    // enforce total 38
     function enforceTotals(){
-      var m=+(menEl.value||0),w=+(womenEl.value||0); if(m+w>38){
-        if(document.activeElement===menEl)menEl.value=38-w; else womenEl.value=38-m;
+      var men = Number(menEl.value||0), women = Number(womenEl.value||0);
+      var total = men + women;
+      if(total>38){
+        if(document.activeElement===menEl){ menEl.value = 38 - women; }
+        else { womenEl.value = 38 - men; }
       }
     }
-    menEl.addEventListener("input",enforceTotals);
-    womenEl.addEventListener("input",enforceTotals);
 
-    // Render disponibilidad
-    function renderAvailability(a,b,men,women,occupied){
-      selection={}; roomsWrap.innerHTML=""; var qty=men+women; if(qty===0){roomsCard.style.display="none";return;}
-      roomsCard.style.display="block"; formCard.style.display="none";
-      var n=nights(a,b); neededEl.textContent=qty; selCountEl.textContent=0; internalTotal=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display="none";
-      var freeBy={}; [1,3,5,6].forEach(function(id){var occ=new Set((occupied&&occupied[id])||[]),free=[]; for(var bed=1;bed<=ROOMS[id].cap;bed++) if(!occ.has(bed)) free.push(bed); freeBy[id]=free;});
-      var hasW=women>=1,toShow={};
-      if(!hasW){toShow[1]=true; if(qty>12){toShow[3]=true;toShow[5]=true;}}
-      else {toShow[1]=true;toShow[5]=true;toShow[6]=true; if(qty>12)toShow[3]=true;}
-      var final=[1,3,5,6].filter(id=>toShow[id]&&freeBy[id].length>0);
-      if(!final.length){roomsWrap.innerHTML="<p>"+I18N[LANG].no_beds+"</p>";return;}
-      final.forEach(function(id){
-        var r=ROOMS[id], libres=freeBy[id], p=pricePerBed(id,a,b);
-        var capMsg='<span class="muted">'+I18N[LANG].avail_of+' '+libres.length+'/'+r.cap+' · '+I18N[LANG].price_bed+' R$ '+p+' · '+I18N[LANG].nights+' '+n+'</span>';
-        var div=document.createElement("div"); div.className="room"; div.innerHTML='<h3>'+r.name+'</h3><div>'+capMsg+'</div><div class="beds" id="beds-'+id+'"></div>';
-        roomsWrap.appendChild(div); selection[id]=new Set(); var grid=div.querySelector("#beds-"+id); var occ=new Set((occupied&&occupied[id])||[]);
-        for(var bnum=1;bnum<=r.cap;bnum++){
-          var btn=document.createElement("button"); btn.type="button"; btn.className="bed"+(occ.has(bnum)?" occupied":""); btn.textContent=bnum;
-          if(!occ.has(bnum)){
-            (function(roomId,bedId,ref){ ref.addEventListener("click",function(){ toggleBed(roomId,bedId,a,b,ref); }); ref.addEventListener("keydown",function(ev){ if(ev.key==="Enter"||ev.code==="Space"){ev.preventDefault();ref.click();}}); })(id,bnum,btn);
-          }else btn.disabled=true;
+    menMinus.addEventListener("click", function(){ step(menEl, -1); });
+    menPlus .addEventListener("click", function(){ step(menEl, +1); });
+    womenMinus.addEventListener("click", function(){ step(womenEl, -1); });
+    womenPlus .addEventListener("click", function(){ step(womenEl, +1); });
+    menEl.addEventListener("input", enforceTotals);
+    womenEl.addEventListener("input", enforceTotals);
+
+    /* ===== estado selección ===== */
+    var selection={}, currentHoldId=null, paidFinal=false, internalTotal=0;
+
+    function currentSelectionObject(){
+      var camas={}; 
+      for(var roomId in selection){ if(selection.hasOwnProperty(roomId)){ camas[roomId]=Array.from(selection[roomId]||[]); } }
+      return camas;
+    }
+
+    function renderAvailability(dateIn,dateOut,men,women,occupied){
+      selection={}; roomsWrap.innerHTML='';
+      var qty=men+women; if(qty===0){ roomsCard.style.display='none'; return; }
+      roomsCard.style.display='block'; formCard.style.display='none';
+      var nights=diffNights(dateIn,dateOut);
+      neededEl.textContent=qty; selCountEl.textContent=0; internalTotal=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display='none';
+
+      var freeByRoom={};
+      [1,3,5,6].forEach(function(id){
+        var occ=new Set((occupied&&occupied[id])||[]);
+        var free=[]; for(var b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b);
+        freeByRoom[id]=free;
+      });
+
+      var hasWomen = women >= 1;
+      var toShow={};
+      if(!hasWomen){
+        toShow[1]=true;
+        if(qty>12){ toShow[3]=true; toShow[5]=true; }
+      }else{
+        toShow[1]=true; toShow[5]=true; toShow[6]=true;
+        if(qty>12){ toShow[3]=true; }
+      }
+
+      var finalShow = [1,3,5,6].filter(function(id){ return toShow[id] && freeByRoom[id].length>0; });
+      if(finalShow.length===0){ roomsWrap.innerHTML='<p>No hay camas disponibles.</p>'; return; }
+
+      for(var k=0;k<finalShow.length;k++){
+        var id = finalShow[k];
+        var r=ROOMS[id], libres=freeByRoom[id], pBed=pricePerBed(id,dateIn,dateOut);
+        var capMsg='<span class="muted">Disponibles: '+libres.length+'/'+r.cap+' · Precio por cama: R$ '+pBed+' · Noches: '+nights+'</span>';
+        var roomDiv=document.createElement('div'); roomDiv.className='room';
+        roomDiv.innerHTML='<h3>'+r.name+'</h3><div>'+capMsg+'</div><div class="beds" id="beds-'+id+'"></div>';
+        roomsWrap.appendChild(roomDiv); selection[id]=new Set();
+        var grid=roomDiv.querySelector('#beds-'+id);
+        var occ=new Set((occupied&&occupied[id])||[]);
+        for(var b=1;b<=r.cap;b++){
+          var btn=document.createElement('button');
+          btn.type="button";
+          btn.className='bed'+(occ.has(b)?' occupied':'');
+          btn.setAttribute('role','button');
+          btn.setAttribute('aria-pressed','false');
+          btn.setAttribute('tabindex','0');
+          btn.textContent=b;
+          if(!occ.has(b)){
+            (function(roomId,bedId,ref){
+              btn.title='Cama '+bedId;
+              btn.addEventListener('click',function(){ toggleBed(roomId,bedId,dateIn,dateOut,ref); });
+              btn.addEventListener('keydown',function(ev){ if(ev.key==='Enter'||ev.code==='Space'){ ev.preventDefault(); ref.click(); } });
+            })(id,b,btn);
+          }else{
+            btn.disabled = true;
+          }
           grid.appendChild(btn);
         }
-      });
-      refreshTotals(men,women,a,b);
+      }
+      refreshTotals(men,women,dateIn,dateOut);
     }
 
-    function toggleBed(roomId,bedId,a,b,btn){
+    function toggleBed(roomId,bedId,dateIn,dateOut,btnNode){
       var set=selection[roomId]||new Set();
-      if(ROOMS[roomId].femaleOnly && +(womenEl.value||0)<1){alert(I18N[LANG].female_rule);return;}
+      if(ROOMS[roomId].femaleOnly && Number(womenEl.value||0)<1){
+        alert("El cuarto femenino requiere al menos 1 mujer."); return;
+      }
       if(set.has(bedId)) set.delete(bedId); else set.add(bedId);
-      selection[roomId]=set; refreshTotals(+menEl.value||0,+womenEl.value||0,a,b);
-      if(!btn||btn.classList.contains("occupied"))return;
-      if(set.has(bedId)){btn.classList.add("selected");btn.setAttribute("aria-pressed","true");}
-      else {btn.classList.remove("selected");btn.setAttribute("aria-pressed","false");}
+      selection[roomId]=set;
+      refreshTotals(Number(menEl.value||0),Number(womenEl.value||0),dateIn,dateOut);
+      if(!btnNode || btnNode.classList.contains('occupied')) return;
+      if(set.has(bedId)){ btnNode.classList.add('selected'); btnNode.setAttribute('aria-pressed','true'); }
+      else { btnNode.classList.remove('selected'); btnNode.setAttribute('aria-pressed','false'); }
     }
 
-    function refreshTotals(men,women,a,b){
-      var need=men+women; var n=nights(a,b); var count=0,total=0,femSel=0;
-      for(var id in selection){var set=selection[id]; var size=set.size; count+=size; var p=pricePerBed(+id,a,b); total+=size*p*Math.max(1,n); if(ROOMS[id].femaleOnly)femSel+=size;}
-      selCountEl.textContent=count; internalTotal=total; totalPriceEl.textContent=fmtBRL(total);
-      var ok=(count===need && need>0); if(femSel>women) ok=false;
-      continueBtn.disabled=!ok; suggestBox.style.display= ok?"none":"block";
-      suggestBox.textContent= ok?"":((femSel>women)?I18N[LANG].female_rule:I18N[LANG].select_exact.replace("{n}",need));
+    function refreshTotals(men,women,start,end){
+      var needed=men+women; var nights=diffNights(start,end);
+      var selectedCount=0,total=0,selectedInFemale=0;
+      for(var id in selection){
+        if(!selection.hasOwnProperty(id)) continue;
+        var set=selection[id];
+        var size=set.size; selectedCount+=size;
+        var pBed=pricePerBed(Number(id),start,end);
+        total+=size*pBed*Math.max(1,nights);
+        if(ROOMS[id].femaleOnly) selectedInFemale+=size;
+      }
+      selCountEl.textContent=selectedCount;
+      internalTotal = total;
+      totalPriceEl.textContent=fmtBRL(total);
+      var ok=(selectedCount===needed && needed>0);
+      if(selectedInFemale>women) ok=false;
+      continueBtn.disabled=!ok;
+      suggestBox.style.display= ok ? 'none' : 'block';
+      suggestBox.textContent = ok ? '' : ((selectedInFemale>women) ? "El cuarto femenino requiere al menos 1 mujer." : ("Seleccioná exactamente "+needed+" camas."));
     }
 
-    function currentCamas(){var o={}; for(var id in selection)o[id]=Array.from(selection[id]||[]); return o;}
+    /* ===== disponibilidad ===== */
+    checkAvail.addEventListener('click', function(){
+      var dIn = dateInEl.value;
+      var dOut= dateOutEl.value;
+      var men = Number(menEl.value||0);
+      var women = Number(womenEl.value||0);
+      var qty = men + women;
+      if(!dIn||!dOut){ checkMsg.innerHTML='<span class="err">Elegí check-in y check-out.</span>'; return; }
+      if(dOut<=dIn){ checkMsg.innerHTML='<span class="err">El check-out debe ser posterior al check-in.</span>'; return; }
+      if(qty<1){ checkMsg.innerHTML='<span class="err">Indicá al menos 1 huésped.</span>'; return; }
+      if(qty>38){ checkMsg.innerHTML='<span class="err">Máximo 38 huéspedes.</span>'; return; }
 
-    // Check disponibilidad
-    document.getElementById("checkAvail").addEventListener("click",function(){
-      var a=dateInEl.value,b=dateOutEl.value,men=+menEl.value||0,women=+womenEl.value||0,qty=men+women;
-      if(!a||!b){checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_dates+'</span>';return;}
-      if(b<=a){checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_co+'</span>';return;}
-      if(qty<1){checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_qty+'</span>';return;}
-      if(qty>38){checkMsg.innerHTML='<span class="err">Máximo 38 huéspedes.</span>';return;}
-      checkMsg.textContent=I18N[LANG].checking;
-      fetch(AVAIL+"?from="+encodeURIComponent(a)+"&to="+encodeURIComponent(b),{headers:{Accept:"application/json"}})
-        .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
-          if(!res.ok||!res.j||res.j.ok!==true) throw new Error("avail_fail");
-          renderAvailability(a,b,men,women,res.j.occupied||{});
-          var mods=priceMods(a,b); modsEl.textContent=(mods.tags&&mods.tags.length)?("Modificadores: "+mods.tags.join(" · ")):"";
-          checkMsg.textContent=I18N[LANG].updated;
-        }).catch(()=>{checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_avail+'</span>';});
+      checkMsg.textContent='Consultando disponibilidad...';
+      var url = AVAILABILITY_ENDPOINT+"?from="+encodeURIComponent(dIn)+"&to="+encodeURIComponent(dOut);
+      fetch(url, { headers:{ "Accept":"application/json" }})
+        .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+        .then(function(res){
+          if(!res.ok || !res.j || res.j.ok!==true) throw new Error('avail_fail');
+          renderAvailability(dIn,dOut,men,women,res.j.occupied||{});
+          var mods=priceModifiers(dIn,dOut);
+          modsEl.textContent = (mods.tags && mods.tags.length) ? ("Modificadores: "+mods.tags.join(' · ')) : '';
+          checkMsg.textContent='Disponibilidad actualizada';
+        })
+        .catch(function(){ checkMsg.innerHTML='<span class="err">Error consultando disponibilidad.</span>'; });
     });
 
-    // HOLD + formulario
-    document.getElementById("continueBtn").addEventListener("click",function(){
-      var camas=currentCamas(); var a=dateInEl.value,b=dateOutEl.value; if(!internalTotal){alert(I18N[LANG].pick_beds);return;}
-      var order={bookingId:holdId||("BKG-"+Date.now()),nombre:"",email:"",telefono:"",entrada:a,salida:b,hombres:+menEl.value||0,mujeres:+womenEl.value||0,camas:camas,total:internalTotal,nights:nights(a,b)};
-      fetch(HOLDS_START,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:order.bookingId,ttlMinutes:10,nombre:"HOLD",email:"",telefono:"",entrada:a,salida:b,hombres:order.hombres,mujeres:order.mujeres,camas:camas,total:internalTotal})})
-        .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
-          if(!res.ok||!res.j||res.j.ok!==true) throw new Error(res.j&&res.j.error||"No se pudo crear HOLD");
-          holdId=res.j.holdId||order.bookingId; formCard.style.display="block";
-          var inEl=document.querySelector('#reserva-form [name="entrada"]'); var outEl=document.querySelector('#reserva-form [name="salida"]');
-          if(inEl)inEl.value=a; if(outEl)outEl.value=b; requestAnimationFrame(()=>window.scrollTo({top:formCard.offsetTop-10,behavior:"smooth"}));
-          toast(I18N[LANG].hold_ok); lastOrder=order; try{localStorage.setItem("lapa-last-booking",JSON.stringify(order));}catch(_){}
-        }).catch(e=>alert(I18N[LANG].hold_err+e.message));
-    });
-
-    // Simular aprobado
-    document.getElementById("simulateOk").addEventListener("click",function(){payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true;});
-
-    // Mercado Pago
-    (function(){
-      var busy=false;
-      document.getElementById("payMP").addEventListener("click",function(){
-        if(busy)return; busy=true; this.disabled=true;
-        var a=dateInEl.value,b=dateOutEl.value; var order=lastOrder||{bookingId:holdId||("BKG-"+Date.now()),entrada:a,salida:b,hombres:+menEl.value||0,mujeres:+womenEl.value||0,camas:currentCamas(),total:internalTotal};
-        var nombre=document.querySelector('#reserva-form [name="nombre"]')?.value||"", email=document.querySelector('#reserva-form [name="email"]')?.value||"";
-        if(!order.total){alert(I18N[LANG].pick_beds);busy=false;this.disabled=false;return;}
-        if(!nombre||!email){alert(I18N[LANG].fill_name_email);busy=false;this.disabled=false;return;}
-        if(!document.getElementById("consentChk").checked){alert(I18N[LANG].need_consent);busy=false;this.disabled=false;return;}
-        fetch(MP_PREF,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:{...order,booking_id:order.bookingId}})})
-          .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
-            if(!res.ok||!res.j||!res.j.init_point) throw new Error(res.j&&res.j.error||"No se pudo crear preferencia");
-            window.location.href=res.j.init_point;
-          }).catch(e=>alert("Error MP: "+e.message)).finally(()=>{busy=false;this.disabled=false;});
-      });
-    })();
-
-    // Stripe
-    (function(){
-      var busy=false;
-      document.getElementById("payStripe").addEventListener("click",function(){
-        if(busy)return; busy=true; this.disabled=true;
-        var a=dateInEl.value,b=dateOutEl.value; var order=lastOrder||{bookingId:holdId||("BKG-"+Date.now()),entrada:a,salida:b,hombres:+menEl.value||0,mujeres:+womenEl.value||0,camas:currentCamas(),total:internalTotal};
-        var nombre=document.querySelector('#reserva-form [name="nombre"]')?.value||"", email=document.querySelector('#reserva-form [name="email"]')?.value||"";
-        if(!order.total){alert(I18N[LANG].pick_beds);busy=false;this.disabled=false;return;}
-        if(!nombre||!email){alert(I18N[LANG].fill_name_email);busy=false;this.disabled=false;return;}
-        if(!document.getElementById("consentChk").checked){alert(I18N[LANG].need_consent);busy=false;this.disabled=false;return;}
-        fetch(STRIPE_SES,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:{...order,booking_id:order.bookingId}})})
-          .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
-            if(!res.ok||!res.j||!res.j.id) throw new Error(res.j&&res.j.error||"No se pudo crear sesión");
-            var s=getStripe(); if(!s){alert("Stripe no disponible ahora."); return;}
-            return s.redirectToCheckout({sessionId:res.j.id});
-          }).then(ret=>{if(ret&&ret.error)throw ret.error;})
-          .catch(e=>alert("Error Stripe: "+e.message))
-          .finally(()=>{busy=false;this.disabled=false;});
-      });
-    })();
-
-    // Confirmar (verifica pago por /payments/status si existe)
-    document.getElementById("reserva-form").addEventListener("submit",function(e){
-      e.preventDefault(); submitBtn.disabled=true;
-      if(!document.getElementById("consentChk").checked){alert(I18N[LANG].need_consent); submitBtn.disabled=false; return;}
-      var order=lastOrder||{bookingId:holdId||("BKG-"+Date.now())};
-      var paidOk = (payStateEl.textContent||"").toLowerCase().includes(I18N[LANG].approved.slice(0,5)) || window.__simApproved===true;
-      var doConfirm=function(){
-        if(!paidOk){alert(I18N[LANG].need_payment); submitBtn.disabled=false; return;}
-        fetch(HOLDS_CONFIRM,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({holdId:holdId||order.bookingId,status:"paid"})})
-          .then(r=>r.json().then(j=>({ok:r.ok,j}))).then(res=>{
-            if(!res.ok||!res.j||res.j.ok!==true) throw new Error(res.j&&res.j.error||I18N[LANG].cant_confirm);
-            paidFinal=true; alert("✅ "+I18N[LANG].book_ok);
-          }).catch(e=>{alert(I18N[LANG].confirm_err+e.message); submitBtn.disabled=false;});
+    /* ===== HOLD + form ===== */
+    function buildOrderBase(){
+      var camas=currentSelectionObject();
+      var a=dateInEl.value, b=dateOutEl.value;
+      var ms=new Date(b+'T00:00:00')-new Date(a+'T00:00:00');
+      var nights=Math.max(1,Math.round(ms/86400000));
+      var bookingId=currentHoldId||('BKG-'+Date.now());
+      var nombre = (document.querySelector('#reserva-form [name="nombre"]')||{}).value || '';
+      var email  = (document.querySelector('#reserva-form [name="email"]') ||{}).value || '';
+      var telefono=(document.querySelector('#reserva-form [name="telefono"]')||{}).value || '';
+      return {
+        bookingId:bookingId,
+        nombre:nombre,
+        email:email,
+        telefono:telefono,
+        entrada:dateInEl.value, salida:dateOutEl.value,
+        hombres:Number(menEl.value||0), mujeres:Number(womenEl.value||0),
+        camas:camas, total:internalTotal, nights:nights
       };
-      if(PAY_STATUS && order.bookingId){
-        fetch(PAY_STATUS+"?bookingId="+encodeURIComponent(order.bookingId))
-          .then(rs=>rs.ok?rs.json():null)
-          .then(js=>{ if(js&&(js.paid===true||js.status==="approved"||js.status==="paid")) paidOk=true;})
-          .finally(doConfirm);
-      }else doConfirm();
+    }
+
+    continueBtn.addEventListener('click', function(){
+      var order=buildOrderBase();
+      if(!order.total){ alert("Seleccioná camas primero."); return; }
+      var holdPayload={ holdId:order.bookingId, nombre:order.nombre||"HOLD", email:order.email||"", telefono:order.telefono||"", entrada:order.entrada, salida:order.salida, hombres:order.hombres, mujeres:order.mujeres, camas:order.camas, total:order.total };
+      fetch(HOLDS_START_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(holdPayload) })
+        .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+        .then(function(res){
+          if(!res.ok || !res.j || res.j.ok!==true) throw new Error(res.j && res.j.error ? res.j.error : 'No se pudo crear HOLD');
+          currentHoldId=res.j.holdId||order.bookingId;
+          formCard.style.display='block';
+          var inEl=document.querySelector('#reserva-form [name="entrada"]');
+          var outEl=document.querySelector('#reserva-form [name="salida"]');
+          if(inEl) inEl.value=dateInEl.value;
+          if(outEl) outEl.value=dateOutEl.value;
+          requestAnimationFrame(function(){ window.scrollTo({ top: formCard.offsetTop-10, behavior:'smooth' }); });
+          toast("Camas reservadas por 10 min (HOLD)");
+        })
+        .catch(function(e){ alert("Error creando HOLD: "+e.message); });
     });
 
-    // liberar hold al salir
-    window.addEventListener("beforeunload",function(){try{if(holdId && !paidFinal){var data=new Blob([JSON.stringify({holdId:holdId})],{type:"application/json"}); navigator.sendBeacon(HOLDS_RELEASE,data);}}catch(_){};});
+    /* ===== Simular pago aprobado ===== */
+    simulateOkBtn.addEventListener('click', function(){
+      payStateEl.textContent="aprobado";
+      submitBtn.disabled=false;
+      window.__simApproved=true;
+    });
 
-    // idioma (auto)
-    (function(){var nav=(navigator.language||"es").slice(0,2).toLowerCase(); var initial=(nav==="en"?"en":"es"); document.getElementById("langSel").value=initial; LANG=initial;})();
+    /* ===== Mercado Pago ===== */
+    var mpBusy=false;
+    payMPBtn.addEventListener('click', function(){
+      if(mpBusy) return; mpBusy=true; payMPBtn.disabled=true;
+      var order=buildOrderBase();
+      if(!order.total){ alert("Seleccioná camas primero."); mpBusy=false; payMPBtn.disabled=false; return; }
+      if(!order.nombre || !order.email){ alert("Completá nombre y email."); mpBusy=false; payMPBtn.disabled=false; return; }
+      if(!document.getElementById('consentChk').checked){ alert("Debes aceptar la política de privacidad."); mpBusy=false; payMPBtn.disabled=false; return; }
+      var payload = { title:'Reserva Lapa Casa Hostel', unit_price:order.total, quantity:1, currency_id:'BRL', metadata:{ bookingId:order.bookingId, email:order.email } };
+      fetch(MP_PREFERENCE_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:{ booking_id:order.bookingId, total:order.total } }) })
+        .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+        .then(function(res){
+          if(!res.ok || !res.j || !res.j.init_point) throw new Error(res.j && res.j.error ? res.j.error : "No se pudo crear preferencia");
+          try{ localStorage.setItem('lapa-last-booking', JSON.stringify(order)); }catch(_){}
+          window.location.href=res.j.init_point;
+        })
+        .catch(function(e){ alert("Error iniciando pago (MP): "+e.message); })
+        .finally(function(){ mpBusy=false; payMPBtn.disabled=false; });
+    });
 
-    // ===== Helpers de consola (para test)
-    window.__LAPA={
-      click:function(id){var el=document.getElementById(id); if(!el) throw new Error("No existe #"+id); el.click();},
-      ids:function(){return Array.from(document.querySelectorAll("button[id]")).map(b=>b.id);},
-      state:function(){return {men:+menEl.value||0,women:+womenEl.value||0,holdId:holdId,selected:Object.fromEntries(Object.entries(selection).map(([k,v])=>[k,Array.from(v)])),total:internalTotal};}
-    };
+    /* ===== Stripe ===== */
+    var stripeBusy=false;
+    payStripeBtn.addEventListener('click', function(){
+      if(stripeBusy) return; stripeBusy=true; payStripeBtn.disabled=true;
+      var order=buildOrderBase();
+      if(!order.total){ alert("Seleccioná camas primero."); stripeBusy=false; payStripeBtn.disabled=false; return; }
+      if(!order.nombre || !order.email){ alert("Completá nombre y email."); stripeBusy=false; payStripeBtn.disabled=false; return; }
+      if(!document.getElementById('consentChk').checked){ alert("Debes aceptar la política de privacidad."); stripeBusy=false; payStripeBtn.disabled=false; return; }
+      fetch(STRIPE_SESSION_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:{ booking_id:order.bookingId, total:order.total } }) })
+        .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+        .then(function(res){
+          if(!res.ok || !res.j || !res.j.id) throw new Error(res.j && res.j.error ? res.j.error : "No se pudo crear sesión de Stripe");
+          try{ localStorage.setItem('lapa-last-booking', JSON.stringify(order)); }catch(_){}
+          var s=getStripe(); if(!s){ alert("Stripe no disponible ahora."); return; }
+          return s.redirectToCheckout({ sessionId:res.j.id });
+        })
+        .then(function(ret){ if(ret && ret.error) throw ret.error; })
+        .catch(function(e){ alert("Error iniciando pago (Stripe): "+e.message); })
+        .finally(function(){ stripeBusy=false; payStripeBtn.disabled=false; });
+    });
+
+    /* ===== Confirmar (verifica pago si hay endpoint) ===== */
+    reservaForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      submitBtn.disabled = true;
+      if(!document.getElementById('consentChk').checked){ alert("Debes aceptar la política de privacidad."); submitBtn.disabled=false; return; }
+      var order = buildOrderBase();
+      var paidOk = (payStateEl.textContent||'').toLowerCase().includes("apro") || window.__simApproved===true;
+
+      function finish(){
+        if(!paidOk){ alert("Necesitás completar el pago o usar Simular pago aprobado."); submitBtn.disabled=false; return; }
+        fetch(HOLDS_CONFIRM_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ holdId:currentHoldId||order.bookingId, status:'paid' }) })
+          .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+          .then(function(res){ if(!res.ok || !res.j || res.j.ok!==true) throw new Error(res.j && res.j.error ? res.j.error : "No se pudo confirmar HOLD"); paidFinal=true; alert("✅ Reserva registrada. Webhooks actualizarán la hoja a 'paid/approved'."); })
+          .catch(function(e){ alert("Error confirmando reserva: "+e.message); submitBtn.disabled=false; });
+      }
+
+      if(order.bookingId && PAY_STATUS_ENDPOINT){
+        fetch(PAY_STATUS_ENDPOINT+"?bookingId="+encodeURIComponent(order.bookingId))
+          .then(function(rs){ if(!rs.ok) return null; return rs.json(); })
+          .then(function(js){ if(js && (js.paid===true || js.status==='approved'||js.status==='paid')) paidOk = true; })
+          .finally(finish);
+      }else{
+        finish();
+      }
+    });
+
+    /* ===== liberar HOLD si te vas sin pagar ===== */
+    window.addEventListener('beforeunload', function(){
+      try{
+        if(currentHoldId && !paidFinal){
+          var data = new Blob([JSON.stringify({holdId:currentHoldId})], {type:'application/json'});
+          navigator.sendBeacon(HOLDS_RELEASE_ENDPOINT, data);
+        }
+      }catch(_){}
+    });
+
+    /* ===== rehidratación de pago (opcional) ===== */
+    (function restorePaidState(){
+      var p=new URLSearchParams(location.search);
+      if(p.get('paid')==='1'){ payStateEl.textContent="aprobado"; submitBtn.disabled=false; window.__simApproved=true; }
+      try{
+        var cached = JSON.parse(localStorage.getItem('lapa-last-booking')||'null');
+        if(cached && cached.bookingId && PAY_STATUS_ENDPOINT){
+          fetch(PAY_STATUS_ENDPOINT+"?bookingId="+encodeURIComponent(cached.bookingId))
+            .then(function(r){ if(!r.ok) return null; return r.json(); })
+            .then(function(js){ if(js && (js.paid===true || js.status==='approved'||js.status==='paid')){ payStateEl.textContent="aprobado"; submitBtn.disabled=false; window.__simApproved=true; }})
+            .catch(function(){});
+        }
+      }catch(_){}
+    })();
   })();
   </script>
 </body>
 </html>
+

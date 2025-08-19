@@ -1,90 +1,68 @@
 "use strict";
-const { Router } = require("express");
-const {
-  createHold,
-  confirmHold,
-  releaseHold,
-  sweepExpired,
-  getHoldsMap,
-} = require("../services/holds");
-
-const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
-const router = Router();
-
 /**
- * POST /holds/start
- * body: { holdId?, ttlMinutes?, nombre,email,telefono,entrada,salida,hombres,mujeres,camas,total }
+ * /services/holds.js — HOLD por reserva con TTL
  */
-router.post("/start", async (req, res) => {
-  try {
-    const b = req.body || {};
-    const ttl = Number(b.ttlMinutes || HOLD_TTL_MINUTES);
-    const payload = {
-      ...b,
-      camas: b.camas || b.camas_json || {},
-    };
-    const out = createHold({
-      holdId: b.holdId || b.bookingId,
-      ttlMinutes: ttl,
-      payload,
-    });
-    return res.json(out);
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e) });
+const DEFAULT_TTL_MIN = 10;
+const holdsById = new Map(); // holdId → { expiresAt, camas:{roomId:number[]}, meta:{} }
+const ROOMS = ["1","3","5","6"];
+const now = () => Date.now();
+
+function normCamas(c) {
+  const out = {};
+  const src = c && typeof c === "object" ? c : {};
+  for (const k of Object.keys(src)) {
+    const rid = String(k);
+    const arr = Array.isArray(src[k]) ? src[k] : [];
+    out[rid] = Array.from(new Set(arr.map(n => Number(n)).filter(n => Number.isFinite(n) && n > 0)));
   }
-});
+  return out;
+}
 
-/**
- * POST /holds/confirm
- * body: { holdId, status? }  (status default "paid")
- */
-router.post("/confirm", async (req, res) => {
-  try {
-    const id = String(req.body?.holdId || "");
-    if (!id) return res.status(400).json({ ok: false, error: "missing_holdId" });
-    const status = String(req.body?.status || "paid");
-    const out = confirmHold(id);
-    out.status = status;
-    return res.json(out);
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e) });
+function createHold({ holdId, ttlMinutes = DEFAULT_TTL_MIN, payload = {} } = {}) {
+  const id  = String(holdId || "").trim() || `HOLD-${Date.now()}`;
+  const ttl = Math.max(1, Number(ttlMinutes || DEFAULT_TTL_MIN));
+  const exp = now() + ttl * 60 * 1000;
+
+  const camas = normCamas(payload.camas || payload.camas_json || {});
+  const meta  = { ...payload, camas };
+
+  holdsById.set(id, { expiresAt: exp, camas, meta });
+  return { ok: true, holdId: id, expiresAt: new Date(exp).toISOString(), ttlMinutes: ttl };
+}
+
+function confirmHold(holdId) {
+  const id = String(holdId || "");
+  const removed = holdsById.delete(id);
+  return { ok: true, holdId: id, removed: !!removed, status: "confirmed" };
+}
+
+function releaseHold(holdId) {
+  const id = String(holdId || "");
+  const removed = holdsById.delete(id);
+  return { ok: true, holdId: id, removed: !!removed, status: "released" };
+}
+
+function sweepExpired() {
+  const t = now();
+  let removed = 0;
+  for (const [id, h] of holdsById) {
+    if (!h || t >= h.expiresAt) { holdsById.delete(id); removed++; }
   }
-});
+  return { removed, remaining: holdsById.size };
+}
 
-/**
- * POST /holds/release
- * body: { holdId }
- */
-router.post("/release", async (req, res) => {
-  try {
-    const id = String(req.body?.holdId || "");
-    if (!id) return res.status(400).json({ ok: false, error: "missing_holdId" });
-    const out = releaseHold(id);
-    return res.json(out);
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e) });
+function getHoldsMap() {
+  const out = {};
+  for (const r of ROOMS) out[r] = new Set();
+  const t = now();
+  for (const h of holdsById.values()) {
+    if (!h || t >= h.expiresAt) continue;
+    for (const rid of Object.keys(h.camas || {})) {
+      const set = out[rid] || (out[rid] = new Set());
+      for (const b of h.camas[rid]) set.add(Number(b));
+    }
   }
-});
+  return out;
+}
 
-/**
- * GET /holds/state
- * Devuelve resumen de holds activos por habitación
- */
-router.get("/state", (_req, res) => {
-  const map = getHoldsMap();
-  const counts = Object.fromEntries(
-    Object.entries(map).map(([k, v]) => [k, Array.from(v).length])
-  );
-  res.json({ ok: true, rooms: counts });
-});
-
-/**
- * GET /holds/sweep
- * Limpia holds vencidos (para usar con cron)
- */
-router.get("/sweep", (_req, res) => {
-  const out = sweepExpired();
-  res.json({ ok: true, ...out });
-});
-
-module.exports = router;
+module.exports = { createHold, confirmHold, releaseHold, sweepExpired, getHoldsMap };

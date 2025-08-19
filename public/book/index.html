@@ -171,8 +171,8 @@
 
   <script>
     (function(){
-      // ====== CONFIG (front/back separados soportados)
-      var API_BASE = (window.BACKEND_BASE_URL || "").replace(/\/$/, ""); // ej: "https://tu-backend.com"
+      // ====== CONFIG
+      var API_BASE = (window.BACKEND_BASE_URL || "").replace(/\/$/, "");
       function endpoint(p){ return API_BASE ? API_BASE + p : p; }
 
       var MP_PREFERENCE_ENDPOINT  = endpoint("/payments/mp/preference");
@@ -184,25 +184,23 @@
       var AVAILABILITY_ENDPOINT   = endpoint("/availability");
       var PAY_STATUS_ENDPOINT     = endpoint("/payments/status"); // opcional
 
-      // ====== Stripe (lazy)
+      // ====== Stripe
       var STRIPE_PK = window.STRIPE_PUBLISHABLE_KEY || "pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh";
       var __stripeInst=null; 
       function getStripe(){ if(typeof window.Stripe==="undefined") return null; return (__stripeInst = __stripeInst || window.Stripe(STRIPE_PK)); }
 
-      // ====== Rooms (precios base configurables)
+      // ====== Rooms
       var ROOMS = {
         1:{ name:"Cuarto 1 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
-        3:{ name:"Cuarto 3 (12 mixto)", cap:12, basePrice:55, femaleOnly:false }, // 1 y 3 = R$55
-        5:{ name:"Cuarto 5 (7 mixto)",  cap:7,  basePrice:55, femaleOnly:false }, // puede ajustarse si decides otro valor
-        6:{ name:"Cuarto 6 (7 femenino)", cap:7, basePrice:60, femaleOnly:true }  // femenino exclusivo
+        3:{ name:"Cuarto 3 (12 mixto)", cap:12, basePrice:55, femaleOnly:false },
+        5:{ name:"Cuarto 5 (7 mixto)",  cap:7,  basePrice:55, femaleOnly:false },
+        6:{ name:"Cuarto 6 (7 femenino)", cap:7, basePrice:60, femaleOnly:true }
       };
 
       // ====== Shortcuts
       function $(s){ return document.querySelector(s); }
       var dateInEl=$('#dateIn'), dateOutEl=$('#dateOut');
       var menEl=$('#men'), womenEl=$('#women');
-      var menMinus=$('#menMinus'), menPlus=$('#menPlus');
-      var womenMinus=$('#womenMinus'), womenPlus=$('#womenPlus');
       var roomsWrap=$('#rooms'), roomsCard=$('#roomsCard'), formCard=$('#formCard');
       var neededEl=$('#needed'), selCountEl=$('#selCount'), totalPriceEl=$('#totalPrice');
       var continueBtn=$('#continueBtn'), suggestBox=$('#suggestBox'), checkMsg=$('#checkMsg');
@@ -211,10 +209,10 @@
       var modsEl=$('#mods'), toastEl=$('#toast');
 
       var selection={}, currentHoldId=null, paidFinal=false, LANG='es';
-      var internalTotal = 0; // total confiable
+      var internalTotal = 0;
       var lastOrderCache = null;
 
-      // ====== Fechas locales (sin UTC shift)
+      // ====== Fechas locales
       (function initDates(){
         function toLocalYmd(d){
           var y=d.getFullYear();
@@ -293,7 +291,7 @@
         }
       }
 
-      // ====== MODIFICADORES de precio (sin “pico por noches largas”)
+      // ====== MODIFICADORES
       function priceModifiers(start,end){
         var tags=[]; var weekend=false, highMonth=false;
         var nights=diffNights(start,end); if(!nights) return {factor:1,tags:[]};
@@ -310,32 +308,42 @@
       }
       function pricePerBed(roomId,start,end){ return Math.round(ROOMS[roomId].basePrice*priceModifiers(start,end).factor); }
 
-      // ====== Stepper (+ / −) con clamp y tope total 38
-      function step(input, delta){
-        var min = Number(input.min||0), max = Number(input.max||38);
-        var cur = Number(input.value||0);
+      // ====== Stepper robusto (delegación)
+      function bump(inputId, delta){
+        var el = document.getElementById(inputId); if(!el) return;
+        var min = +(el.getAttribute("min") || 0);
+        var max = +(el.getAttribute("max") || 38);
+        var men = +(document.getElementById("men").value || 0);
+        var wom = +(document.getElementById("women").value || 0);
+        var cur = +(el.value || 0);
         var next = clamp(cur + delta, min, max);
-        var other = (input===menEl) ? Number(womenEl.value||0) : Number(menEl.value||0);
-        if(next + other > 38) next = 38 - other;
-        input.value = clamp(next, min, max);
+        var other = (inputId==="men") ? wom : men;
+        if (next + other > 38) next = 38 - other;
+        el.value = next;
+        el.dispatchEvent(new Event("input", { bubbles:true }));
+        el.dispatchEvent(new Event("change", { bubbles:true }));
       }
+      document.addEventListener("click", function(e){
+        var id = e.target && e.target.id;
+        if (id==="menMinus"){ e.preventDefault(); bump("men",-1); }
+        if (id==="menPlus"){ e.preventDefault(); bump("men",+1); }
+        if (id==="womenMinus"){ e.preventDefault(); bump("women",-1); }
+        if (id==="womenPlus"){ e.preventDefault(); bump("women",+1); }
+      }, true);
+
       function enforceTotals(){
-        var men = Number(menEl.value||0), women = Number(womenEl.value||0);
+        var men = Number(document.getElementById("men").value||0);
+        var women = Number(document.getElementById("women").value||0);
         var total = men + women;
         if(total>38){
-          if(document.activeElement===menEl){ menEl.value = 38 - women; }
-          else { womenEl.value = 38 - men; }
+          if(document.activeElement && document.activeElement.id==="men"){ document.getElementById("men").value = 38 - women; }
+          else { document.getElementById("women").value = 38 - men; }
         }
       }
+      document.getElementById("men").addEventListener("input", enforceTotals);
+      document.getElementById("women").addEventListener("input", enforceTotals);
 
-      // ==== LISTENERS “DUROS” (sin ?.):
-      menMinus.addEventListener("click", function(){ step(menEl, -1); });
-      menPlus .addEventListener("click", function(){ step(menEl, +1); });
-      womenMinus.addEventListener("click", function(){ step(womenEl, -1); });
-      womenPlus .addEventListener("click", function(){ step(womenEl, +1); });
-      menEl.addEventListener("input", enforceTotals);
-      womenEl.addEventListener("input", enforceTotals);
-
+      // ====== Availability
       document.getElementById('checkAvail').addEventListener('click', function(){
         var dIn = dateInEl ? dateInEl.value : "";
         var dOut= dateOutEl ? dateOutEl.value: "";
@@ -360,7 +368,7 @@
           .catch(function(){ checkMsg.innerHTML='<span class="err">'+I18N[LANG].err_avail+'</span>'; });
       });
 
-      // ====== Render de camas con reglas de visibilidad pedidas
+      // ====== Render beds + reglas
       function renderAvailability(dateIn,dateOut,men,women,occupied){
         selection={}; roomsWrap.innerHTML='';
         var qty=men+women; if(qty===0){ roomsCard.style.display='none'; return; }
@@ -368,7 +376,6 @@
         var nights=diffNights(dateIn,dateOut);
         neededEl.textContent=qty; selCountEl.textContent=0; internalTotal=0; totalPriceEl.textContent=0; continueBtn.disabled=true; suggestBox.style.display='none';
 
-        // mapas libres por cuarto
         var freeByRoom={};
         [1,3,5,6].forEach(function(id){
           var occ=new Set((occupied&&occupied[id])||[]);
@@ -376,9 +383,6 @@
           freeByRoom[id]=free;
         });
 
-        // Reglas de visibilidad oficiales:
-        // - Solo hombres: ≤12 → 1 ; >12 → 1,3,5
-        // - Con mujer:    ≤12 → 1,5,6 ; >12 → 1,3,5,6
         var hasWomen = women >= 1;
         var toShow={};
         if(!hasWomen){
@@ -389,7 +393,6 @@
           if(qty>12){ toShow[3]=true; }
         }
 
-        // filtrar por disponibilidad real
         var finalShow = [1,3,5,6].filter(function(id){ return toShow[id] && freeByRoom[id].length>0; });
         if(finalShow.length===0){ roomsWrap.innerHTML='<p>'+I18N[LANG].no_beds+'</p>'; return; }
 
@@ -453,7 +456,7 @@
         internalTotal = total;
         totalPriceEl.textContent=fmtBRL(total);
         var ok=(selectedCount===needed && needed>0);
-        if(selectedInFemale>women) ok=false; // cuarto 6 estrictamente femenino
+        if(selectedInFemale>women) ok=false;
         continueBtn.disabled=!ok;
         suggestBox.style.display= ok ? 'none' : 'block';
         suggestBox.textContent = ok ? '' : ((selectedInFemale>women)?I18N[LANG].female_rule:I18N[LANG].select_exact.replace('{n}', needed));
@@ -506,7 +509,7 @@
       // ====== Simulador aprobado
       document.getElementById('simulateOk').addEventListener('click', function(){ payStateEl.textContent=I18N[LANG].approved; submitBtn.disabled=false; window.__simApproved=true; });
 
-      // ====== Mercado Pago (anti doble clic)
+      // ====== Mercado Pago (formato unificado)
       var mpBusy=false;
       document.getElementById('payMP').addEventListener('click', function(){
         if(mpBusy) return; mpBusy=true; payMPBtn.disabled=true;
@@ -515,10 +518,12 @@
         if(!order.nombre || !order.email){ alert(I18N[LANG].fill_name_email); mpBusy=false; payMPBtn.disabled=false; return; }
         if(!document.getElementById('consentChk').checked){ alert(I18N[LANG].need_consent); mpBusy=false; payMPBtn.disabled=false; return; }
         var consent = { accepted:true, ts:new Date().toISOString() };
+
+        // Registramos "pending" y pedimos preferencia recibiendo { init_point }
         fetch(BOOKINGS_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ...order, pay_status:'pending', consent:consent })})
           .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(I18N[LANG].cant_register+t); }); })
           .then(function(){
-            return fetch(MP_PREFERENCE_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title:'Reserva Lapa Casa Hostel', unit_price:order.total, quantity:1, currency_id:'BRL', metadata:{ bookingId:order.bookingId, email:order.email } })});
+            return fetch(MP_PREFERENCE_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:{ booking_id:order.bookingId, total:order.total } })});
           })
           .then(function(r2){ return r2.json().then(function(j){ return {ok:r2.ok,j:j}; }); })
           .then(function(res2){
@@ -531,7 +536,7 @@
           .finally(function(){ mpBusy=false; payMPBtn.disabled=false; });
       });
 
-      // ====== Stripe (anti doble clic)
+      // ====== Stripe
       var stripeBusy=false;
       document.getElementById('payStripe').addEventListener('click', function(){
         if(stripeBusy) return; stripeBusy=true; payStripeBtn.disabled=true;
@@ -540,9 +545,10 @@
         if(!order.nombre || !order.email){ alert(I18N[LANG].fill_name_email); stripeBusy=false; payStripeBtn.disabled=false; return; }
         if(!document.getElementById('consentChk').checked){ alert(I18N[LANG].need_consent); stripeBusy=false; payStripeBtn.disabled=false; return; }
         var consent = { accepted:true, ts:new Date().toISOString() };
+
         fetch(BOOKINGS_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ...order, pay_status:'pending', consent:consent })})
           .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(I18N[LANG].cant_register+t); }); return r.json(); })
-          .then(function(){ return fetch(STRIPE_SESSION_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:order }) }); })
+          .then(function(){ return fetch(STRIPE_SESSION_ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order:{ booking_id:order.bookingId, total:order.total } }) }); })
           .then(function(r2){ return r2.json().then(function(j){ return {ok:r2.ok,j:j}; }); })
           .then(function(res2){
             if(!res2.ok || !res2.j || !res2.j.id) throw new Error(res2.j && res2.j.error ? res2.j.error : I18N[LANG].cant_session);
@@ -556,15 +562,15 @@
           .finally(function(){ stripeBusy=false; payStripeBtn.disabled=false; });
       });
 
-      // ====== Confirmar (una sola vez) + verificación de estado opcional
+      // ====== Confirmar
       var reservaForm = document.getElementById('reserva-form');
       reservaForm.addEventListener('submit', function(e){
         e.preventDefault();
         submitBtn.disabled = true;
         if(!document.getElementById('consentChk').checked){ alert(I18N[LANG].need_consent); submitBtn.disabled=false; return; }
         var order = buildOrderBase();
-        // chequeo robusto de pago (si endpoint está disponible)
         var paidOk = (payStateEl.textContent||'').toLowerCase().indexOf(I18N[LANG].approved.slice(0,5))>-1 || window.__simApproved===true;
+
         (function verify(){
           if(order.bookingId && PAY_STATUS_ENDPOINT){
             fetch(PAY_STATUS_ENDPOINT+"?bookingId="+encodeURIComponent(order.bookingId))
@@ -612,7 +618,7 @@
         }catch(_){}
       })();
 
-      // ====== Idioma (aplica en vivo)
+      // ====== Idioma
       (function initLang(){
         var nav=(navigator.language||'es').slice(0,2).toLowerCase();
         var initial=(nav==='en'?'en':'es');

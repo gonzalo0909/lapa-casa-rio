@@ -1,96 +1,96 @@
-/* ===== Reset básico ===== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ===== Base / Tokens ===== */
+:root{
+  --gap:12px; --rosa:#F03DDB; --line:#e5e7eb; --muted:#6b7280;
+  --ok:#16a34a; --bad:#b91c1c; --warn:#f59e0b;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; padding:16px; color:#222; background:#fff;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  line-height:1.45;
 }
 
-body {
-  font-family: Arial, sans-serif;
-  line-height: 1.6;
-  background: #fafafa;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+/* ===== Layout ===== */
+header,footer{text-align:center; padding:12px}
+.row{max-width:1080px; margin:0 auto; display:grid; gap:var(--gap)}
+.card{
+  border:1px solid var(--line); border-radius:12px; padding:14px; background:#fff;
+}
+.grid{display:grid; gap:10px}
+.grid-2{grid-template-columns:repeat(2,minmax(260px,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(200px,1fr))}
+.grid-4{grid-template-columns:repeat(4,minmax(180px,1fr))}
+@media (max-width:720px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
 }
 
-/* ===== Header ===== */
-header {
-  background: #F03DDB;
-  color: white;
-  padding: 1rem;
+/* ===== Typography / helpers ===== */
+h1,h2,h3{margin:0 0 6px 0}
+label{display:block; font-size:14px; margin-bottom:6px; color:#374151}
+.muted{color:var(--muted); font-size:14px}
+.err{color:var(--bad); font-weight:600}
+.ok{color:var(--ok)}
+.bad{color:var(--bad)}
+.highlight{color:var(--rosa); font-weight:700}
+
+/* ===== Inputs / Controls ===== */
+input[type="date"],
+input[type="number"],
+input[type="text"],
+input[type="email"],
+input[type="tel"]{
+  width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:14px;
+}
+.ctr{display:flex; align-items:center; gap:6px}
+.ctr button{
+  padding:6px 10px; border:0; border-radius:8px; background:var(--warn);
+  color:#fff; font-weight:700; cursor:pointer;
 }
 
-header h1 {
-  margin-bottom: .5rem;
+/* ===== Buttons ===== */
+.btn{
+  background:var(--warn); color:#fff; border:0; padding:10px 14px;
+  border-radius:10px; font-weight:700; cursor:pointer
+}
+.btn.secondary{background:#111}
+.btn.ghost{background:transparent; color:#111; border:1px solid var(--line)}
+.btn:disabled{background:#d1d5db; cursor:not-allowed}
+
+/* ===== Rooms / Beds ===== */
+.rooms{display:grid; gap:var(--gap)}
+.room{border:1px solid var(--line); border-radius:10px; padding:10px}
+.room h3{margin:0 0 6px 0; font-size:16px}
+.beds{display:grid; grid-template-columns:repeat(6,minmax(30px,1fr)); gap:6px}
+@media (max-width:720px){ .beds{grid-template-columns:repeat(4,minmax(30px,1fr))} }
+.bed{
+  border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center;
+  font-size:13px; user-select:none; cursor:pointer
+}
+.bed.occupied{background:#f3f4f6; color:#9ca3af; text-decoration:line-through; cursor:not-allowed}
+.bed.selected{outline:2px solid #111; font-weight:700}
+
+.actions{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap}
+.warning{
+  background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px;
+  margin-top:8px; display:none
 }
 
-nav a {
-  color: white;
-  margin-right: 1rem;
-  text-decoration: none;
+/* ===== Toast ===== */
+#toast{
+  position:fixed; right:12px; bottom:12px; background:#111; color:#fff;
+  padding:10px 12px; border-radius:10px; font-size:14px;
+  opacity:0; transform:translateY(10px); transition:all .2s; max-width:90vw; z-index:9999
 }
+#toast.show{opacity:1; transform:translateY(0)}
 
-nav a.active {
-  font-weight: bold;
-  text-decoration: underline;
-}
+/* ===== Promo / Lang ===== */
+.promo{display:none; margin:10px auto 0; max-width:1080px}
+.promo .box{border:1px dashed var(--warn); background:#fff8e6; border-radius:12px; padding:10px 12px; text-align:center}
+.lang{display:flex; justify-content:center; gap:8px; margin-top:6px}
+.lang select{padding:6px 8px; border:1px solid var(--line); border-radius:8px}
 
-/* ===== Main ===== */
-main {
-  flex: 1;
-  padding: 2rem;
-}
-
-.booking-form {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.1);
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.booking-form h2 {
-  margin-bottom: 1rem;
-  color: #F03DDB;
-}
-
-.booking-form label {
-  display: block;
-  margin-bottom: 1rem;
-  font-weight: bold;
-}
-
-.booking-form input {
-  width: 100%;
-  padding: .5rem;
-  margin-top: .25rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.btn {
-  background: #F03DDB;
-  color: white;
-  border: none;
-  padding: .75rem 1.25rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background .2s ease;
-}
-
-.btn:hover {
-  background: #d133bb;
-}
-
-/* ===== Footer ===== */
-footer {
-  background: #333;
-  color: white;
-  text-align: center;
-  padding: 1rem;
-  margin-top: auto;
-}
+/* ===== Tables (admin list) ===== */
+table{width:100%; border-collapse:collapse}
+th,td{padding:8px; border-bottom:1px solid var(--line); font-size:14px}
+code{background:#f3f4f6; border:1px solid var(--line); border-radius:6px; padding:2px 6px}

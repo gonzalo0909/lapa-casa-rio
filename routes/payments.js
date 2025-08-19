@@ -2,26 +2,40 @@
 
 const express = require("express");
 const router = express.Router();
-const stripeSrv = require("../services/payments-stripe");
-const mpSrv = require("../services/payments-mp");
 
-// stripe
-router.post("/stripe/create", async (req, res) => {
+const { createCheckoutSession } = require("../services/payments-stripe");
+const { createPreference } = require("../services/payments-mp");
+
+// base URL (env o inferida del request)
+function getBaseUrl(req) {
+  const env = String(process.env.BASE_URL || "").replace(/\/+$/, "");
+  if (env) return env;
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host  = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${proto}://${host}`;
+}
+
+// POST /payments/stripe/session  -> { order: { booking_id,total,email,nights } } | también plano
+router.post("/stripe/session", async (req, res) => {
   try {
-    const intent = await stripeSrv.createPaymentIntent(req.body);
-    res.json({ ok: true, intent });
+    const order = req.body?.order || req.body || {};
+    if (order.total == null) return res.status(400).json({ ok:false, error:"missing_total" });
+    const out = await createCheckoutSession(order, { baseUrl: getBaseUrl(req) });
+    res.json({ ok:true, ...out });
   } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
+    res.status(500).json({ ok:false, error:String(e.message||e) });
   }
 });
 
-// mercado pago
-router.post("/mp/create", async (req, res) => {
+// POST /payments/mp/preference   -> { order: { booking_id,total } } | también plano
+router.post("/mp/preference", async (req, res) => {
   try {
-    const pref = await mpSrv.createPreference(req.body, { baseUrl: process.env.BASE_URL });
-    res.json({ ok: true, pref });
+    const order = req.body?.order || req.body || {};
+    if (order.total == null) return res.status(400).json({ ok:false, error:"missing_total" });
+    const out = await createPreference(order, { baseUrl: getBaseUrl(req) });
+    res.json({ ok:true, ...out });
   } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
+    res.status(500).json({ ok:false, error:String(e.message||e) });
   }
 });
 

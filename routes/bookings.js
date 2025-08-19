@@ -2,26 +2,29 @@
 
 const express = require("express");
 const router = express.Router();
-const { upsertBooking, listBookings } = require("../services/bookings");
+const {
+  saveBooking,
+  listBookings,
+} = require("../services/bookings");
 
-// obtener reservas
+// GET /bookings?from=YYYY-MM-DD&to=YYYY-MM-DD  → lista (últimas / rango)
 router.get("/", async (req, res) => {
   try {
-    const rows = await listBookings();
+    const { from, to } = req.query || {};
+    const rows = await listBookings({ from, to });
     res.json({ ok: true, rows });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    res.status(500).json({ ok: false, error: String(err.message || err) });
   }
 });
 
-// crear/actualizar reserva
+// POST /bookings  → crea/actualiza una reserva completa (upsert)
 router.post("/", async (req, res) => {
   try {
-    const booking = req.body || {};
-    const saved = await upsertBooking(booking);
+    const saved = await saveBooking(req.body || {});
     res.json({ ok: true, booking: saved });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    res.status(500).json({ ok: false, error: String(err.message || err) });
   }
 });
 

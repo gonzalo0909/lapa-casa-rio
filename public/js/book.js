@@ -1,62 +1,132 @@
 "use strict";
 /**
- * /public/js/book.js — demo opcional; usa endpoints actuales
+ * /public/js/book.js — Versión compatible con el flujo nuevo
+ * - No duplica listeners si el script de /book/index.html ya gestiona la UI
+ * - Crea HOLD antes de iniciar el pago
+ * - Usa endpoints correctos:
+ *    - /holds/start
+ *    - /payments/stripe/session
+ *    - /payments/mp/preference
+ * - Evita reventar si faltan nodos (deploys que no cargan este JS en /book/)
  */
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("bookingForm");
-  const btnStripe = document.getElementById("payStripe");
-  const btnMP     = document.getElementById("payMP");
 
-  async function api(url, data={}) {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return res.json();
+(function () {
+  // Si la página /book/index.html ya define su lógica (continueBtn, payMP, payStripe), no dupliques.
+  var hasNewFlow =
+    document.getElementById("continueBtn") &&
+    document.getElementById("payMP") &&
+    document.getElementById("payStripe") &&
+    document.getElementById("reserva-form");
+
+  if (hasNewFlow) {
+    // El front “nuevo” ya maneja todo. Salimos para no colisionar.
+    return;
   }
 
-  async function startBooking(payMethod) {
-    const data = {
-      entrada : form.entrada.value,
-      salida  : form.salida.value,
-      nombre  : form.nombre.value,
-      email   : form.email.value,
-      telefono: form.telefono.value,
-      hombres : Number(form.hombres.value||0),
-      mujeres : Number(form.mujeres.value||0),
-      camas   : {}, // tu UI debería llenar esto
-    };
+  // ---- Modo compat: formulario simple con id bookingForm (versión anterior)
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("bookingForm");
+    const btnStripe = document.getElementById("payStripe");
+    const btnMP = document.getElementById("payMP");
 
-    try {
-      const hold = await fetch("/holds/start", {
-        method:"POST", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ ...data, holdId:`BKG-${Date.now()}`, total: 1 }) // total real debe venir de UI
-      }).then(r=>r.json());
+    if (!form) return; // esta página no usa el form antiguo
 
-      if (!hold.ok) return alert("⚠️ Error creando HOLD: " + (hold.error||""));
-
-      const booking_id = hold.holdId;
-
-      if (payMethod === "stripe") {
-        const r = await api("/payments/stripe/session", { order:{ booking_id } });
-        if (r?.url) window.location.href = r.url;
-      } else if (payMethod === "mp") {
-        const r = await api("/payments/mp/preference", { order:{ booking_id } });
-        if (r?.init_point) window.location.href = r.init_point;
-      }
-    } catch (err) {
-      console.error(err);
-      alert("❌ Error conectando con servidor");
+    async function apiPost(path, data = {}) {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      let j = null;
+      try { j = await res.json(); } catch {}
+      return { ok: res.ok, data: j };
     }
-  }
 
-  if (form) {
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      alert("👉 Elegí método de pago abajo (Stripe o MP).");
-    });
-  }
-  if (btnStripe) btnStripe.addEventListener("click", ()=> startBooking("stripe"));
-  if (btnMP)     btnMP.addEventListener("click", ()=> startBooking("mp"));
-});
+    // Crea un HOLD y devuelve { bookingId, total }
+    async function createHoldFromForm() {
+      const payload = {
+        holdId: undefined,
+        nombre: form.nombre?.value || "",
+        email: form.email?.value || "",
+        telefono: form.telefono?.value || "",
+        entrada: form.entrada?.value || "",
+        salida: form.salida?.value || "",
+        hombres: Number(form.hombres?.value || 0),
+        mujeres: Number(form.mujeres?.value || 0),
+        camas: {}, // este form antiguo no trae selección por cama
+        total: Number(form.total?.value || 0), // si no hay total, el backend puede recalcular más adelante
+      };
+
+      // Validaciones mínimas
+      if (!payload.entrada || !payload.salida) throw new Error("Elegí fechas.");
+      if (!payload.nombre || !payload.email) throw new Error("Completá nombre y email.");
+
+      const r = await apiPost("/holds/start", payload);
+      if (!r.ok || !r.data || r.data.ok !== true) {
+        throw new Error("No se pudo crear HOLD");
+      }
+      return {
+        bookingId: r.data.holdId,
+        total: payload.total,
+      };
+    }
+
+    async function startStripe() {
+      const { bookingId, total } = await createHoldFromForm();
+      const r = await apiPost("/payments/stripe/session", { order: { bookingId, total } });
+      if (!r.ok || !r.data || !r.data.id) throw new Error(r.data?.error || "No se pudo crear sesión de Stripe");
+      // si hay URL directa, úsala; si no, usa Stripe.js si está disponible
+      if (r.data.url) {
+        window.location.href = r.data.url;
+        return;
+      }
+      // fallback con Stripe.js si está cargado
+      if (window.Stripe) {
+        const stripe = window.Stripe(window.STRIPE_PUBLISHABLE_KEY || "");
+        const ret = await stripe.redirectToCheckout({ sessionId: r.data.id });
+        if (ret && ret.error) throw ret.error;
+      } else {
+        throw new Error("Stripe no disponible en este momento.");
+      }
+    }
+
+    async function startMP() {
+      const { bookingId, total } = await createHoldFromForm();
+      const r = await apiPost("/payments/mp/preference", { order: { bookingId, total } });
+      if (!r.ok || !r.data || !r.data.init_point) throw new Error(r.data?.error || "No se pudo crear preferencia MP");
+      window.location.href = r.data.init_point;
+    }
+
+    // Interacciones
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        alert("Elegí método de pago (Stripe o Mercado Pago).");
+      });
+    }
+    if (btnStripe) {
+      btnStripe.addEventListener("click", async () => {
+        btnStripe.disabled = true;
+        try {
+          await startStripe();
+        } catch (err) {
+          alert("Error iniciando Stripe: " + (err?.message || err));
+        } finally {
+          btnStripe.disabled = false;
+        }
+      });
+    }
+    if (btnMP) {
+      btnMP.addEventListener("click", async () => {
+        btnMP.disabled = true;
+        try {
+          await startMP();
+        } catch (err) {
+          alert("Error iniciando Mercado Pago: " + (err?.message || err));
+        } finally {
+          btnMP.disabled = false;
+        }
+      });
+    }
+  });
+})();

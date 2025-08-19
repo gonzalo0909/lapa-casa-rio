@@ -1,74 +1,46 @@
 "use strict";
 /**
- * services/bookings.js — Lógica de reservas
+ * Upserts y lecturas contra Google Sheets (vía services/sheets).
  */
+const { fetchRowsFromSheet, notifySheets } = require("./sheets");
 
-const { upsertRow, listRows } = require("./sheets");
-const { createHold, confirmHold, releaseHold } = require("./holds");
-
-// util para generar IDs únicos
-function toBookingId(seed = "") {
-  return "BKG-" + Buffer.from(seed).toString("base64url").slice(0, 10);
+function normalize(inObj={}){
+  return {
+    booking_id: String(inObj.booking_id || inObj.bookingId || `BKG-${Date.now()}`),
+    nombre:     inObj.nombre || "",
+    email:      inObj.email || "",
+    telefono:   inObj.telefono || "",
+    entrada:    inObj.entrada || "",
+    salida:     inObj.salida  || "",
+    hombres:    Number(inObj.hombres || 0),
+    mujeres:    Number(inObj.mujeres || 0),
+    camas:      inObj.camas || {},
+    total:      Number(inObj.total || 0),
+    pay_status: inObj.pay_status || "pending",
+  };
 }
 
-/** Guarda o actualiza una reserva */
-async function saveBooking(inObj = {}) {
-  const booking_id =
-    inObj.booking_id ||
-    inObj.bookingId ||
-    toBookingId(
-      `${inObj.email || ""}|${inObj.entrada || ""}|${inObj.salida || ""}|${Date.now()}`
-    );
-
-  const row = {
-    booking_id,
-    nombre: inObj.nombre || "",
-    email: inObj.email || "",
-    telefono: inObj.telefono || "",
-    entrada: inObj.entrada || "",
-    salida: inObj.salida || "",
-    hombres: Number(inObj.hombres || 0),
-    mujeres: Number(inObj.mujeres || 0),
-    camas_json: JSON.stringify(inObj.camas || {}),
-    total: Number(inObj.total || 0),
-    pay_status: inObj.pay_status || "pending",
-    created_at: new Date().toISOString(),
-  };
-
-  await upsertRow(row);
+async function upsertBooking(inObj={}){
+  const row = normalize(inObj);
+  const payload = { action:"upsert_booking", ...row, camas_json: JSON.stringify(row.camas) };
+  delete payload.camas;
+  const r = await notifySheets(payload);
+  if (r && r.ok === false) throw new Error(r.error || "sheets_upsert_failed");
   return row;
 }
 
-/** Lista reservas (puede filtrar por rango de fechas) */
-async function listBookings({ from, to } = {}) {
-  const rows = await listRows();
-  return rows.filter((r) => {
-    const ent = new Date(r.entrada);
-    if (from && ent < new Date(from)) return false;
-    if (to && ent > new Date(to)) return false;
+async function listBookings({ from, to } = {}){
+  const rows = await fetchRowsFromSheet();
+  if (!from && !to) return rows;
+  const a = from ? new Date(from+"T00:00:00Z") : null;
+  const b = to   ? new Date(to  +"T00:00:00Z") : null;
+  return rows.filter(r=>{
+    const d = r.entrada ? new Date(r.entrada+"T00:00:00Z") : null;
+    if (!d) return false;
+    if (a && d < a) return false;
+    if (b && d > b) return false;
     return true;
   });
 }
 
-/** Crea hold temporal para evitar overbooking */
-function holdBooking(holdId, camas = {}, meta = {}) {
-  return createHold({ holdId, ttlMinutes: 10, payload: { camas }, meta });
-}
-
-/** Confirma un hold (cuando se paga) */
-function confirmBookingHold(holdId) {
-  return confirmHold(holdId);
-}
-
-/** Libera un hold (si expira o se cancela) */
-function releaseBookingHold(holdId) {
-  return releaseHold(holdId);
-}
-
-module.exports = {
-  saveBooking,
-  listBookings,
-  holdBooking,
-  confirmBookingHold,
-  releaseBookingHold,
-};
+module.exports = { upsertBooking, listBookings };

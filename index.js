@@ -1,9 +1,10 @@
 "use strict";
-
 /**
- * Lapa Casa — Backend thin index (Express)
- * Endpoints: health, availability, bookings, holds, payments (Stripe/MP), webhooks, events
- * Sirve estáticos /, /book/, /admin/ y fallback SPA-ish.
+ * Lapa Casa — Backend consolidado (Express)
+ * - Monta: health, availability, bookings, holds, payments (Stripe/MP), crons, events, inbound-email
+ * - Webhooks Stripe/MP (raw para Stripe)
+ * - Admin: estáticos + login con cookie-session + whitelist IP opcional
+ * - Endpoints extra: /payments/status
  */
 
 require("dotenv").config();
@@ -22,6 +23,7 @@ const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 const CORS_ALLOW = String(process.env.CORS_ALLOW_ORIGINS || "")
   .split(",").map(s=>s.trim()).filter(Boolean);
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "change-me";
+const INBOUND_TOKEN = (process.env.INBOUND_TOKEN || "").trim();
 
 // ==== App
 const app = express();
@@ -67,14 +69,12 @@ app.use(cors({
 // ==== Security
 app.use(helmet({ crossOriginResourcePolicy:false }));
 
-// ==== Static first (landing, /book/, /admin/, etc.)
+// ==== Static first (landing, /book/, /admin/)
 app.use(express.static(path.join(__dirname, "public"), { extensions:["html"] }));
-
-// Friendly routes for directories without trailing slash
 app.get("/book", (_req,res)=> res.sendFile(path.join(__dirname,"public","book","index.html")));
 app.get("/admin", (_req,res)=> res.sendFile(path.join(__dirname,"public","admin","index.html")));
 
-// ==== Sessions (para /admin/login en router)
+// ==== Sessions (para /admin/login)
 app.use(cookieSession({
   name:"sess",
   secret: SESSION_SECRET,
@@ -82,10 +82,35 @@ app.use(cookieSession({
   httpOnly:true,
 }));
 
+// ==== Admin IP whitelist (opcional)
+const adminIpWhitelist = (process.env.ADMIN_IP_WHITELIST || "")
+  .split(",").map(s=>s.trim()).filter(Boolean);
+function ipAllowed(req){
+  if (!adminIpWhitelist.length) return true;
+  const ip = (req.headers["x-forwarded-for"]||"").split(",")[0].trim() || req.ip || "";
+  const x = ip.toLowerCase();
+  return adminIpWhitelist.some(w=>{
+    const s = w.toLowerCase();
+    if (s.includes("/")) { // prefijo simple
+      const pref = s.split("/")[0];
+      return x.startsWith(pref);
+    }
+    return x===s;
+  });
+}
+// protege POST de login/logout y /admin/* JSON
+app.use((req,res,next)=>{
+  if (req.path.startsWith("/admin") && req.method==="POST" && !ipAllowed(req)){
+    return res.status(403).json({ ok:false, error:"ip_forbidden" });
+  }
+  next();
+});
+
 // ==== Stripe webhook (RAW *antes* del JSON parser)
 const { buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { buildMpWebhookHandler }     = require("./services/payments-mp");
-const { notifySheets }              = require("./services/sheets");
+const { notifySheets, fetchRowsFromSheet } = require("./services/sheets");
+const { getHold } = require("./services/holds");
 
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
@@ -116,14 +141,31 @@ app.use("/api/bookings", require("./routes/bookings")); // alias
 app.use("/holds", require("./routes/holds"));
 try { app.use("/api/events", require("./routes/events")); } catch { /* opcional */ }
 
-// ==== Payments public endpoints (compat con front)
+// admin auth (login/logout)
+try { app.use("/admin", require("./routes/admin-auth")); } catch {}
+
+// crons (para GAS)
+try { app.use("/api/crons", require("./routes/crons")); } catch {}
+
+// inbound email (idempotente) — solo si hay token
+try {
+  if (INBOUND_TOKEN) require("./routes/inbound-email")(app);
+} catch {}
+
+// ==== Payments public endpoints (compat front) — total sólido desde HOLD
 const stripeSrv = require("./services/payments-stripe");
 const mpSrv     = require("./services/payments-mp");
 
 app.post("/payments/stripe/session", async (req,res)=>{
   try{
     const order = Object(req.body?.order || req.body || {});
-    if (!("total" in order)) throw new Error("missing_total");
+    const holdId = order.booking_id || order.bookingId;
+    if (!holdId) throw new Error("missing_booking_id");
+    const hold = getHold(holdId);
+    if (!hold) throw new Error("hold_not_found_or_expired");
+    order.total = Number(hold.meta?.total || 0); // ignora total de cliente
+    order.booking_id = holdId;
+    if (!("total" in order) || order.total <= 0) throw new Error("missing_total");
     const out = await stripeSrv.createCheckoutSession(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
@@ -132,13 +174,31 @@ app.post("/payments/stripe/session", async (req,res)=>{
 app.post("/payments/mp/preference", async (req,res)=>{
   try{
     const order = Object(req.body?.order || req.body || {});
-    if (!("total" in order)) throw new Error("missing_total");
+    const holdId = order.booking_id || order.bookingId;
+    if (!holdId) throw new Error("missing_booking_id");
+    const hold = getHold(holdId);
+    if (!hold) throw new Error("hold_not_found_or_expired");
+    order.total = Number(hold.meta?.total || 0); // ignora total de cliente
+    order.booking_id = holdId;
+    if (!("total" in order) || order.total <= 0) throw new Error("missing_total");
     const out = await mpSrv.createPreference(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
 
-// Pago OK de prueba (fallback si no subiste el HTML a /public/pago-exitoso-test/index.html)
+// Estado de pago (para el front)
+app.get("/payments/status", async (req,res)=>{
+  try{
+    const bookingId = String(req.query.bookingId || req.query.booking_id || "").trim();
+    if (!bookingId) return res.json({ ok:true, paid:false, status:"pending" });
+    const rows = await fetchRowsFromSheet();
+    const row = rows.find(r=> String(r.booking_id||"")===bookingId);
+    const status = (row?.pay_status || "pending").toLowerCase();
+    res.json({ ok:true, paid: status==="paid" || status==="approved", status });
+  }catch(e){ res.json({ ok:true, paid:false, status:"pending" }); }
+});
+
+// Pago OK de prueba (fallback si falta HTML)
 app.get("/pago-exitoso-test", (req,res)=>{
   const file = path.join(__dirname,"public","pago-exitoso-test","index.html");
   res.sendFile(file, (err)=> {
@@ -151,7 +211,7 @@ app.get("/pago-exitoso-test", (req,res)=>{
   });
 });
 
-// ==== Health/Diag simple
+// ==== Diag simple
 app.get("/api/diag", (_req,res)=> res.json({
   ok:true, service:"lapa-casa-backend", commit:COMMIT, now:new Date().toISOString(),
   env:{
@@ -161,7 +221,7 @@ app.get("/api/diag", (_req,res)=> res.json({
   }
 }));
 
-// ==== 404 SPA-ish (GET sin extensión -> intenta /public/<path>/index.html)
+// ==== 404 SPA-ish (GET sin extensión -> /public/<path>/index.html)
 app.use((req,res,next)=>{
   if (req.method !== "GET") return next();
   if (path.extname(req.path)) return next();

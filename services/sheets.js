@@ -1,47 +1,55 @@
-// services/sheets.js
 "use strict";
 
 /**
- * Notificaciones a Google Apps Script / Sheets (webhooks).
- * Usa BOOKING_WEBHOOK_URL_* si están, si no, no rompe.
+ * Envío a Google Sheets via Google Apps Script WebApp (BOOKINGS_WEBAPP_URL).
+ * Usa `fetch` nativo de Node 18+.
  */
 
-const { mapBookingToSheetRow } = require("./sheets-mapper");
+const { mapHoldToSheet, mapPaidToSheet, mapReleaseToSheet } = require("./sheets-mapper");
 
-const WEBHOOK_STRIPE = process.env.BOOKINGS_WEBHOOK_URL_STRIPE || "";
-const WEBHOOK_MP     = process.env.BOOKINGS_WEBHOOK_URL_MP || "";
-const WEBAPP_URL     = process.env.BOOKINGS_WEBAPP_URL || "";
+const WEBAPP_URL = process.env.BOOKINGS_WEBAPP_URL; // ej: https://script.google.com/macros/s/.../exec
 
-async function safePost(url, body){
-  if(!url) return;
-  try{
-    await fetch(url, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
-    });
-  }catch(_e){
-    // swallow
-  }
+async function postToWebApp(payload) {
+  if (!WEBAPP_URL) return { ok: false, skipped: true, reason: "BOOKINGS_WEBAPP_URL not set" };
+  const res = await fetch(WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  let json = null;
+  try { json = await res.json(); } catch { /* WebApp puede responder texto */ }
+  return { ok: res.ok, status: res.status, data: json };
 }
 
-async function notifySheets(payload){
-  const provider = payload.provider || "unknown";
-  const url = provider==="stripe" ? WEBHOOK_STRIPE : (provider==="mp" ? WEBHOOK_MP : WEBAPP_URL);
-  await safePost(url, payload);
+async function notifyHoldStarted(hold) {
+  const payload = mapHoldToSheet(hold);
+  return postToWebApp(payload);
 }
 
-async function notifyBookingRegistered(order){
-  const row = mapBookingToSheetRow(order);
-  await safePost(WEBAPP_URL, { type:"booking_registered", row });
+async function notifyPaid(info) {
+  const payload = mapPaidToSheet(info);
+  return postToWebApp(payload);
 }
 
-async function notifyPaymentUpdate({ provider, bookingId, status, raw }){
-  await notifySheets({ type:"payment_update", provider, bookingId, status, raw });
+async function notifyReleased(hold) {
+  const payload = mapReleaseToSheet(hold);
+  return postToWebApp(payload);
+}
+
+// API genérica para webhooks (lo usa payments-*.js)
+async function notifySheets(genericPayload) {
+  // Acepta objetos con {kind:'hold'|'paid'|'release', ...}
+  const kind = genericPayload?.kind;
+  if (kind === "hold") return notifyHoldStarted(genericPayload);
+  if (kind === "paid") return notifyPaid(genericPayload);
+  if (kind === "release") return notifyReleased(genericPayload);
+  // fallback: intenta mandar tal cual
+  return postToWebApp(genericPayload);
 }
 
 module.exports = {
   notifySheets,
-  notifyBookingRegistered,
-  notifyPaymentUpdate,
+  notifyHoldStarted,
+  notifyPaid,
+  notifyReleased,
 };

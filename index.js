@@ -1,3 +1,4 @@
+// index.js
 "use strict";
 /**
  * Lapa Casa — Backend thin index (Express)
@@ -20,7 +21,6 @@ const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 const CORS_ALLOW = String(process.env.CORS_ALLOW_ORIGINS || "")
   .split(",").map(s=>s.trim()).filter(Boolean);
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "change-me";
-const ENABLE_EVENTS = String(process.env.ENABLE_EVENTS || "0") === "1";
 
 // ==== App
 const app = express();
@@ -60,7 +60,7 @@ app.use(cors({
   },
   credentials:true,
   methods:["GET","POST","OPTIONS"],
-  allowedHeaders:["Content-Type","Stripe-Signature","X-Token"]
+  allowedHeaders:["Content-Type","Stripe-Signature"]
 }));
 
 // ==== Security
@@ -79,11 +79,12 @@ app.use(cookieSession({
   httpOnly:true,
 }));
 
-// ==== Stripe/MP webhooks (RAW *antes* del JSON parser)
+// ==== Webhooks
 const { buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { buildMpWebhookHandler }     = require("./services/payments-mp");
 const { notifySheets }              = require("./services/sheets");
 
+// Stripe (RAW antes del JSON parser)
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
@@ -93,8 +94,11 @@ app.post("/webhooks/stripe",
   })
 );
 
+// JSON parser
+app.use(express.json());
+
+// Mercado Pago (usa JSON)
 app.post("/webhooks/mp",
-  express.raw({ type:"application/json" }),
   buildMpWebhookHandler({
     notifySheets,
     isDuplicate: isDup,
@@ -102,21 +106,18 @@ app.post("/webhooks/mp",
   })
 );
 
-// ==== JSON parser (después del webhook RAW)
-app.use(express.json());
-
 // ==== Routers (API)
 app.use("/api/health", require("./routes/health"));
 app.use("/availability", require("./routes/availability"));
 app.use("/bookings", require("./routes/bookings"));
 app.use("/api/bookings", require("./routes/bookings")); // alias
 app.use("/holds", require("./routes/holds"));
-app.use("/payments", require("./routes/payments-status")); // GET /payments/status
-app.use("/admin", require("./routes/admin"));
-app.use("/api/crons", require("./routes/crons"));
-if (ENABLE_EVENTS) {
-  app.use("/api/events", require("./routes/events"));
-}
+app.use("/payments/status", require("./routes/payments-status"));
+try { app.use("/api/events", require("./routes/events")); } catch { /* opcional */ }
+
+// ==== Admin (login/logout) y Crons (sweep holds)
+try { app.use("/admin", require("./routes/admin")); } catch {}
+try { app.use("/api/crons", require("./routes/crons")); } catch {}
 
 // ==== Payments public endpoints
 const stripeSrv = require("./services/payments-stripe");

@@ -1,142 +1,112 @@
-// services/holds.js
 "use strict";
 
 /**
- * Servicio en memoria para HOLDs/Bookings/Payments.
- * Producción real: reemplazar por DB.
+ * Gestor de HOLDs en memoria (TTL). Si desplegás múltiples réplicas, conviene
+ * mover esto a Redis/DB. Para el MVP en un solo proceso, vale perfecto.
  */
-const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 
-// Capacidad por cuarto
-const ROOMS = { 1:12, 3:12, 5:7, 6:7 };
+const TTL_MIN = Number(process.env.HOLD_TTL_MINUTES || 10);
+const holds = new Map(); // key: holdId  -> value: { ...datos, expiresAt, status }
 
-// Estado en memoria
-const state = {
-  holds: new Map(),   // holdId -> {entrada,salida,camas,total,expiresAt,status}
-  bookings: new Map(),// bookingId -> { ...order, pay_status }
-  payments: new Map() // bookingId -> { status:'pending'|'approved'|'paid'|'failed', provider }
-};
+function now() { return Date.now(); }
+function minutes(ms) { return ms * 60 * 1000; }
 
-function clampBeds(camas){
-  const out = {};
-  for (const id of Object.keys(camas||{})){
-    const rid = String(id);
-    const cap = ROOMS[rid] || 0;
-    const list = Array.from(new Set([...(camas[id]||[]).map(n=>Number(n))]))
-      .filter(n=>n>=1 && n<=cap);
-    out[rid] = list;
+function overlaps(aStart, aEnd, bStart, bEnd) {
+  // [aStart, aEnd) vs [bStart, bEnd)
+  const A = new Date(aStart + "T00:00:00").getTime();
+  const B = new Date(aEnd   + "T00:00:00").getTime();
+  const C = new Date(bStart + "T00:00:00").getTime();
+  const D = new Date(bEnd   + "T00:00:00").getTime();
+  return (A < D) && (C < B);
+}
+
+function conflictsWithActiveHolds(payload) {
+  const { entrada, salida, camas = {} } = payload;
+  const conflicts = [];
+  for (const [id, h] of holds) {
+    if (h.status !== "hold") continue;
+    if (h.expiresAt <= now()) continue;
+    if (!overlaps(entrada, salida, h.entrada, h.salida)) continue;
+    // revisa camas/rooms intersectadas
+    for (const roomId of Object.keys(camas)) {
+      const reqBeds = new Set(camas[roomId]);
+      const otherBeds = new Set((h.camas?.[roomId]) || []);
+      for (const b of reqBeds) {
+        if (otherBeds.has(Number(b))) {
+          conflicts.push({ holdId: id, roomId, bed: Number(b) });
+        }
+      }
+    }
   }
-  return out;
+  return conflicts;
 }
 
-function overlaps(aStart,aEnd,bStart,bEnd){
-  const aS = new Date(aStart+"T00:00:00").getTime();
-  const aE = new Date(aEnd  +"T00:00:00").getTime();
-  const bS = new Date(bStart+"T00:00:00").getTime();
-  const bE = new Date(bEnd  +"T00:00:00").getTime();
-  return (aS < bE) && (bS < aE);
-}
-
-function startHold(holdId, payload){
-  const now = Date.now();
-  const ttl = HOLD_TTL_MINUTES*60*1000;
-  const rec = {
-    id: holdId,
-    entrada: String(payload.entrada||""),
-    salida : String(payload.salida ||""),
-    hombres: Number(payload.hombres||0),
-    mujeres: Number(payload.mujeres||0),
-    camas  : clampBeds(payload.camas||{}),
-    total  : Number(payload.total||0),
-    status : "hold",
-    expiresAt: now + ttl
+function startHold(payload) {
+  const { holdId } = payload;
+  if (!holdId) throw new Error("holdId required");
+  const conflicts = conflictsWithActiveHolds(payload);
+  if (conflicts.length) {
+    const first = conflicts[0];
+    const msg = `conflict: room ${first.roomId} bed ${first.bed} (hold ${first.holdId})`;
+    return { ok: false, error: msg };
+  }
+  const record = {
+    ...payload,
+    status: "hold",
+    createdAt: new Date().toISOString(),
+    expiresAt: now() + minutes(TTL_MIN),
   };
-  if (!rec.entrada || !rec.salida) throw new Error("missing_dates");
-  state.holds.set(holdId, rec);
-  return rec;
+  holds.set(holdId, record);
+  return { ok: true, holdId };
 }
 
-function confirmHold(holdId, status="paid"){
-  const rec = state.holds.get(holdId);
-  if(!rec) return false;
-  rec.status = status;
-  rec.expiresAt = Date.now() + 365*24*3600*1000; // “indefinido” (confirmado)
-  state.holds.set(holdId, rec);
-  state.payments.set(holdId, { status: (status==="paid"?"approved":status), provider:"manual" });
-  return true;
+function confirmHold(holdId, status = "paid") {
+  if (!holds.has(holdId)) return { ok: false, error: "hold_not_found" };
+  const h = holds.get(holdId);
+  h.status = status; // "paid" o "confirmed"
+  h.confirmedAt = new Date().toISOString();
+  holds.set(holdId, h);
+  return { ok: true, hold: h };
 }
 
-function releaseHold(holdId){
-  state.holds.delete(holdId);
+function releaseHold(holdId) {
+  if (!holds.has(holdId)) return { ok: false, error: "hold_not_found" };
+  const h = holds.get(holdId);
+  h.status = "released";
+  h.releasedAt = new Date().toISOString();
+  holds.set(holdId, h);
+  return { ok: true, hold: h };
 }
 
-function getTtlMinutes(){ return HOLD_TTL_MINUTES; }
-
-function sweepExpired(){
-  const now = Date.now();
-  const toDelete = [];
-  for (const [id,rec] of state.holds){
-    if (rec.status==="hold" && rec.expiresAt < now) toDelete.push(id);
-  }
-  toDelete.forEach(id=>state.holds.delete(id));
-  return toDelete;
+function getHold(holdId) {
+  return holds.get(holdId) || null;
 }
 
-function getOccupiedByRange(from,to){
-  const out = { 1:[], 3:[], 5:[], 6:[] };
-  for (const rec of state.holds.values()){
-    if (rec.status!=="hold" && rec.status!=="paid" && rec.status!=="approved") continue;
-    if (overlaps(from,to,rec.entrada,rec.salida)){
-      for (const [rid,list] of Object.entries(rec.camas||{})){
-        out[rid] = out[rid].concat(list);
-      }
-    }
-  }
-  // también bloquear bookings marcados como paid (si existieran camas)
-  for (const booking of state.bookings.values()){
-    const s = String(booking.pay_status||"");
-    if (!/paid|approved/.test(s)) continue;
-    if (overlaps(from,to,booking.entrada,booking.salida)){
-      const camas = clampBeds(booking.camas||{});
-      for (const [rid,list] of Object.entries(camas)){
-        out[rid] = out[rid].concat(list);
-      }
-    }
-  }
-  // dedupe
-  for (const rid of Object.keys(out)){
-    out[rid] = Array.from(new Set(out[rid]));
+function getActiveHoldsSnapshot() {
+  const out = [];
+  for (const [id, h] of holds) {
+    if (h.status === "hold" && h.expiresAt > now()) out.push({ id, ...h });
   }
   return out;
 }
 
-function upsertBooking(id, booking){
-  state.bookings.set(String(id), { ...booking });
-}
-
-function setPaymentStatus(bookingId, status, provider){
-  state.payments.set(String(bookingId), { status, provider });
-  // marcar booking si existe
-  const b = state.bookings.get(String(bookingId));
-  if (b) state.bookings.set(String(bookingId), { ...b, pay_status: status });
-  // si existe hold con mismo id, confírmalo
-  const h = state.holds.get(String(bookingId));
-  if (h) confirmHold(String(bookingId), status==="approved"?"paid":status);
-}
-
-function getPaymentStatus(bookingId){
-  const ps = state.payments.get(String(bookingId)) || { status:"pending" };
-  return ps;
+function sweepExpired() {
+  const removed = [];
+  for (const [id, h] of holds) {
+    if (h.status === "hold" && h.expiresAt <= now()) {
+      holds.delete(id);
+      removed.push(id);
+    }
+  }
+  return { ok: true, removed, count: removed.length };
 }
 
 module.exports = {
   startHold,
   confirmHold,
   releaseHold,
-  getTtlMinutes,
+  getHold,
+  getActiveHoldsSnapshot,
   sweepExpired,
-  getOccupiedByRange,
-  upsertBooking,
-  setPaymentStatus,
-  getPaymentStatus,
+  _holds: holds, // para debug/tests
 };

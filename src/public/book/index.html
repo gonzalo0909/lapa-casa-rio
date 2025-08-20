@@ -1,25 +1,110 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reservas - Lapa Casa Hostel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lapa Casa Hostel - Reservas</title>
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="/book/" />
+
+  <!-- Config para el JS (sin inline JS por CSP) -->
+  <meta name="backend-base-url" content="/api" />
+  <meta name="stripe-pk" content="pk_test_51Ru1ZgGcpzl4zlUFGhibCAqJMKWCse2m2auKYWQkGxBIQ9ZtoGvPwoyrjwzmZYMEq1mbL4XZEo3TP7cuhhUHgtg000iI4zzsRh" />
+
+  <link rel="stylesheet" href="/book/styles.css" />
+  <script src="https://js.stripe.com/v3/" defer></script>
+  <script src="/book/app.js" defer></script>
 </head>
 <body>
-  <h1>📅 Reservar en Lapa Casa Hostel</h1>
-  <p>Este es el frontend de reservas (se conecta al backend).</p>
-  <form id="reserva">
-    <label>Nombre: <input type="text" name="nombre"></label><br>
-    <label>Email: <input type="email" name="email"></label><br>
-    <label>Entrada: <input type="date" name="entrada"></label><br>
-    <label>Salida: <input type="date" name="salida"></label><br>
-    <button type="submit">Reservar</button>
-  </form>
-  <script>
-    document.querySelector("#reserva").addEventListener("submit", e => {
-      e.preventDefault();
-      alert("⚡ Reserva enviada (demo)");
-    });
-  </script>
-</body>
-</html>
+  <header>
+    <h1 data-i18n="title">Lapa Casa Hostel – Reservas</h1>
+    <p class="muted" data-i18n="subtitle">Elegí fechas y cantidad. Luego seleccioná camas específicas (literas triples).</p>
+    <div class="lang">
+      <label for="langSel" class="muted" data-i18n="lang_label">Idioma / Language:</label>
+      <select id="langSel" aria-label="Language">
+        <option value="es">ES</option>
+        <option value="en">EN</option>
+      </select>
+    </div>
+    <div class="promo" id="promoWrap">
+      <div class="box"><span id="promoMsg">Promo activa</span></div>
+    </div>
+  </header>
+
+  <main class="row">
+    <section class="card">
+      <h2 data-i18n="step1">1) Fechas y cantidad</h2>
+      <div class="grid grid-2">
+        <div>
+          <label data-i18n="checkin">Check-in</label>
+          <input id="dateIn" type="date" />
+        </div>
+        <div>
+          <label data-i18n="checkout">Check-out</label>
+          <input id="dateOut" type="date" />
+        </div>
+      </div>
+
+      <div class="grid grid-4" style="margin-top:10px">
+        <div>
+          <label data-i18n="men">Hombres</label>
+          <div class="ctr">
+            <button type="button" id="menMinus" aria-label="menos hombres">−</button>
+            <input id="men" type="number" min="0" max="38" value="0" inputmode="numeric" />
+            <button type="button" id="menPlus" aria-label="más hombres">+</button>
+          </div>
+        </div>
+        <div>
+          <label data-i18n="women">Mujeres</label>
+          <div class="ctr">
+            <button type="button" id="womenMinus" aria-label="menos mujeres">−</button>
+            <input id="women" type="number" min="0" max="38" value="0" inputmode="numeric" />
+            <button type="button" id="womenPlus" aria-label="más mujeres">+</button>
+          </div>
+        </div>
+        <div class="muted" style="display:flex; align-items:end" data-i18n="capacity">
+          Capacidad total: 38
+        </div>
+        <div style="display:flex; justify-content:end; align-items:end">
+          <button id="checkAvail" class="btn" data-i18n="btn_check" type="button">Ver disponibilidad</button>
+        </div>
+      </div>
+      <div id="checkMsg" class="muted" style="margin-top:6px"></div>
+    </section>
+
+    <section id="roomsCard" class="card" style="display:none">
+      <h2 data-i18n="step2">2) Elegí tus camas</h2>
+      <div id="mods" class="muted" style="margin-bottom:8px"></div>
+      <div id="rooms" class="rooms"></div>
+      <div class="actions" style="margin-top:8px">
+        <div>
+          <div data-i18n="selected_prefix">Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
+          <div class="muted"><span data-i18n="total_prefix">Total:</span> R$ <span id="totalPrice">0</span></div>
+        </div>
+        <button id="continueBtn" class="btn" disabled data-i18n="btn_continue" type="button">Continuar</button>
+      </div>
+      <p class="warning" id="suggestBox"></p>
+    </section>
+
+    <section id="formCard" class="card" style="display:none">
+      <h2 data-i18n="step3">3) Datos para confirmar</h2>
+      <form id="reserva-form">
+        <label data-i18n="full_name">Nombre completo</label>
+        <input type="text" name="nombre" required />
+        <label data-i18n="email">Email</label>
+        <input type="email" name="email" required />
+        <label data-i18n="phone">Teléfono</label>
+        <input type="tel" name="telefono" required />
+        <label data-i18n="in_date">Fecha de entrada</label>
+        <input type="date" name="entrada" required />
+        <label data-i18n="out_date">Fecha de salida</label>
+        <input type="date" name="salida" required />
+        <label style="margin-top:8px">
+          <input type="checkbox" id="consentChk" />
+          <span class="muted" data-i18n="consent">Acepto recibir comunicaciones y la política de privacidad.</span>
+        </label>
+
+        <div class="grid grid-3" style="margin-top:10px">
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;" data-i18n="pay_mp_title">Pagar con Mercado Pago</h3>
+            <p class="muted" data-i18n

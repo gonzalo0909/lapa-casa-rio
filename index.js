@@ -1,4 +1,4 @@
-// index.js  (backend Express, con aliases /api añadidos)
+// index.js
 "use strict";
 /**
  * Lapa Casa — Backend thin index (Express)
@@ -79,15 +79,16 @@ app.use(cookieSession({
   httpOnly:true,
 }));
 
-// ==== Stripe & MP services
+// ==== Services
 const stripeSrv = require("./services/payments-stripe");
 const mpSrv     = require("./services/payments-mp");
 
-// ==== Stripe webhook (RAW *antes* del JSON parser)
+// ==== Webhooks
 const { buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { buildMpWebhookHandler }     = require("./services/payments-mp");
 const { notifySheets }              = require("./services/sheets");
 
+// Stripe requiere RAW
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
@@ -97,8 +98,9 @@ app.post("/webhooks/stripe",
   })
 );
 
-// MP webhook
+// MP usa JSON normal (ponemos parser inline para este endpoint)
 app.post("/webhooks/mp",
+  express.json(),
   buildMpWebhookHandler({
     notifySheets,
     isDuplicate: isDup,
@@ -106,22 +108,21 @@ app.post("/webhooks/mp",
   })
 );
 
-// ==== JSON parser (después del webhook RAW)
+// ==== JSON parser (resto de la app)
 app.use(express.json());
 
 // ==== Routers (API sin prefijo y con /api)
 app.use("/api/health", require("./routes/health"));
 try { app.use("/api/events", require("./routes/events")); } catch { /* opcional */ }
 
-// Rutas base (ya existentes)
 app.use("/availability", require("./routes/availability"));
 app.use("/bookings",     require("./routes/bookings"));
 app.use("/holds",        require("./routes/holds"));
 try { app.use("/payments/status", require("./routes/payments-status")); } catch {}
 
-// Aliases con /api para mantener FRONT con BACKEND_BASE_URL="/api"
+// Aliases /api
 app.use("/api/availability", require("./routes/availability"));
-app.use("/api/bookings",     require("./routes/bookings")); // ya existía como alias, se mantiene
+app.use("/api/bookings",     require("./routes/bookings"));
 app.use("/api/holds",        require("./routes/holds"));
 try { app.use("/api/payments/status", require("./routes/payments-status")); } catch {}
 
@@ -153,39 +154,3 @@ app.post("/payments/mp/preference", async (req,res)=>{
     };
     if (!("total" in order)) throw new Error("missing_total");
     const out = await mpSrv.createPreference(order, { baseUrl: getBaseUrl(req) });
-    res.json({ ok:true, ...out });
-  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
-});
-app.post("/api/payments/mp/preference", async (req,res)=>{
-  try{
-    const b = req.body || {};
-    const order = b.order ? b.order : {
-      booking_id: b.booking_id || b.external_reference || (b.metadata && (b.metadata.booking_id || b.metadata.bookingId)),
-      total: (typeof b.total !== "undefined") ? b.total : b.unit_price
-    };
-    if (!("total" in order)) throw new Error("missing_total");
-    const out = await mpSrv.createPreference(order, { baseUrl: getBaseUrl(req) });
-    res.json({ ok:true, ...out });
-  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
-});
-
-// ==== Admin (login/logout) y Crons (sweep holds)
-try { app.use("/admin", require("./routes/admin")); } catch {}
-try { app.use("/api/crons", require("./routes/crons")); } catch {}
-
-// ==== Diag
-app.get("/api/diag", (_req,res)=> res.json({
-  ok:true, service:"lapa-casa-backend", commit:COMMIT, now:new Date().toISOString(),
-  env:{
-    BASE_URL: !!BASE_URL,
-    HOLD_TTL_MINUTES,
-    CORS_ALLOW_ORIGINS: CORS_ALLOW.length,
-  }
-}));
-
-// ==== 404 SPA-ish
-app.use((req,res,next)=>{
-  if (req.method !== "GET") return next();
-  if (path.extname(req.path)) return next();
-  const safe = path.join(__dirname, "public", req.path, "index.html");
-  res.sendFile(safe, (err)=> err ? res

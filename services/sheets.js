@@ -1,54 +1,47 @@
+// services/sheets.js
 "use strict";
 
-// Simulación de "Sheets": almacenamiento en memoria
-const bookings = []; // cada item: { bookingId, entrada, salida, camas:{roomId:[beds]}, ... }
+/**
+ * Notificaciones a Google Apps Script / Sheets (webhooks).
+ * Usa BOOKING_WEBHOOK_URL_* si están, si no, no rompe.
+ */
 
-function overlaps(aStart, aEnd, bStart, bEnd){
-  // rangos de noches [start, end) sin incluir checkout
-  return aStart < bEnd && bStart < aEnd;
-}
+const { mapBookingToSheetRow } = require("./sheets-mapper");
 
-async function notifySheets(_event){ /* no-op de demo */ }
+const WEBHOOK_STRIPE = process.env.BOOKINGS_WEBHOOK_URL_STRIPE || "";
+const WEBHOOK_MP     = process.env.BOOKINGS_WEBHOOK_URL_MP || "";
+const WEBAPP_URL     = process.env.BOOKINGS_WEBAPP_URL || "";
 
-// Agrega/actualiza una fila de reserva (en memoria)
-async function appendBookingRow(b){
-  // Si existe por bookingId, reemplaza; si no, inserta
-  const idx = bookings.findIndex(x => x.bookingId === b.bookingId);
-  if (idx >= 0) bookings[idx] = { ...bookings[idx], ...b };
-  else bookings.push({ ...b });
-  return { ok: true };
-}
-
-// Devuelve mapa de ocupación por habitación en el rango
-async function readOccupiedMap(from, to){
-  const occ = { 1: [], 3: [], 5: [], 6: [] };
-  const seen = { 1: new Set(), 3: new Set(), 5: new Set(), 6: new Set() };
-
-  const aStart = new Date(from + "T00:00:00");
-  const aEnd   = new Date(to   + "T00:00:00");
-
-  for (const b of bookings){
-    if (!b.entrada || !b.salida || !b.camas) continue;
-    const bStart = new Date(b.entrada + "T00:00:00");
-    const bEnd   = new Date(b.salida  + "T00:00:00");
-    if (!overlaps(aStart, aEnd, bStart, bEnd)) continue;
-
-    for (const [roomId, beds] of Object.entries(b.camas || {})){
-      const id = Number(roomId);
-      (beds || []).forEach(bed => seen[id]?.add(Number(bed)));
-    }
+async function safePost(url, body){
+  if(!url) return;
+  try{
+    await fetch(url, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
+  }catch(_e){
+    // swallow
   }
-
-  for (const k of [1,3,5,6]) occ[k] = Array.from(seen[k]).sort((a,b)=>a-b);
-  return occ;
 }
 
-// (Opcional) Exponer las reservas en memoria (solo para depurar)
-function _getAllBookings(){ return bookings.slice(); }
+async function notifySheets(payload){
+  const provider = payload.provider || "unknown";
+  const url = provider==="stripe" ? WEBHOOK_STRIPE : (provider==="mp" ? WEBHOOK_MP : WEBAPP_URL);
+  await safePost(url, payload);
+}
+
+async function notifyBookingRegistered(order){
+  const row = mapBookingToSheetRow(order);
+  await safePost(WEBAPP_URL, { type:"booking_registered", row });
+}
+
+async function notifyPaymentUpdate({ provider, bookingId, status, raw }){
+  await notifySheets({ type:"payment_update", provider, bookingId, status, raw });
+}
 
 module.exports = {
   notifySheets,
-  appendBookingRow,
-  readOccupiedMap,
-  _getAllBookings,
+  notifyBookingRegistered,
+  notifyPaymentUpdate,
 };

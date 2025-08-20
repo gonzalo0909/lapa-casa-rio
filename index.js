@@ -1,7 +1,7 @@
 "use strict";
 /**
  * Lapa Casa — Backend thin index (Express)
- * Endpoints: health, availability, bookings, holds, payments (Stripe/MP), webhooks, events
+ * API completo montado bajo BACKEND_BASE (p.ej. /api)
  * Sirve estáticos /, /book/, /admin/ y fallback SPA-ish.
  */
 require("dotenv").config();
@@ -18,11 +18,9 @@ const COMMIT = process.env.COMMIT || "dev";
 const BASE_URL = (process.env.BASE_URL || "").replace(/\/+$/, "");
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 const CORS_ALLOW = String(process.env.CORS_ALLOW_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+  .split(",").map(s => s.trim()).filter(Boolean);
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "change-me";
-const BACKEND_BASE = process.env.BACKEND_BASE || "/api";
+const BACKEND_BASE = (process.env.BACKEND_BASE || "/api").replace(/\/+$/, "") || "/api";
 
 // ==== App
 const app = express();
@@ -56,10 +54,8 @@ app.use(
       if (!CORS_ALLOW.length) return cb(null, true);
       try {
         const host = new URL(origin).hostname.toLowerCase();
-        const allowHosts = CORS_ALLOW.map((v) =>
-          v.replace(/^https?:\/\//, "").toLowerCase()
-        );
-        const ok = allowHosts.some((a) => host === a || host.endsWith("." + a));
+        const allowHosts = CORS_ALLOW.map(v => v.replace(/^https?:\/\//, "").toLowerCase());
+        const ok = allowHosts.some(a => host === a || host.endsWith("." + a));
         return cb(null, ok);
       } catch {
         return cb(null, false);
@@ -71,27 +67,41 @@ app.use(
   })
 );
 
-// ==== Security
-app.use(helmet({ crossOriginResourcePolicy: false }));
+// ==== Security (CSP compatible con Stripe)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "https://js.stripe.com"],
+        "style-src": ["'self'"],
+        "img-src": ["'self'", "data:"],
+        "connect-src": ["'self'", "https://api.mercadopago.com"],
+        "frame-src": ["'self'", "https://js.stripe.com", "https://checkout.stripe.com"],
+        "frame-ancestors": ["'self'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"]
+      },
+    },
+  })
+);
 
-// ==== Tiny config for frontend (expone BACKEND_BASE al navegador)
+// ==== Tiny config para el front (opcional)
 app.get("/config.js", (_req, res) => {
-  const base = BACKEND_BASE; // p.ej. https://lapacasahostel.com/api o /api
-  res
-    .type("application/javascript")
-    .send(`window.BACKEND_BASE_URL=${JSON.stringify(base)};`);
+  const base = BACKEND_BASE;
+  res.type("application/javascript")
+     .send(`window.BACKEND_BASE_URL=${JSON.stringify(base)};`);
 });
 
 // ==== Static first
-app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
-app.get("/book", (_req, res) =>
-  res.sendFile(path.join(__dirname, "public", "book", "index.html"))
-);
-app.get("/admin", (_req, res) =>
-  res.sendFile(path.join(__dirname, "public", "admin", "index.html"))
-);
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
+app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
+app.get("/book", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "book", "index.html")));
+app.get("/admin", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "admin", "index.html")));
 
-// ==== Sessions (para /admin/login en router)
+// ==== Sessions para /admin/*
 app.use(
   cookieSession({
     name: "sess",
@@ -102,8 +112,8 @@ app.use(
 );
 
 // ==== Stripe webhook (RAW *antes* del JSON parser)
-const { buildStripeWebhookHandler } = require("./services/payments-stripe");
-const { buildMpWebhookHandler } = require("./services/payments-mp");
+const { buildStripeWebhookHandler, createCheckoutSession } = require("./services/payments-stripe");
+const { buildMpWebhookHandler, createPreference } = require("./services/payments-mp");
 const { notifySheets } = require("./services/sheets");
 
 app.post(
@@ -129,44 +139,30 @@ app.post(
 // ==== JSON parser (después del webhook RAW)
 app.use(express.json());
 
-// ==== Routers (API)
-app.use("/api/health", require("./routes/health"));
-app.use("/availability", require("./routes/availability"));
-app.use("/bookings", require("./routes/bookings"));
-app.use("/api/bookings", require("./routes/bookings")); // alias
-app.use("/holds", require("./routes/holds"));
-try {
-  app.use("/api/events", require("./routes/events"));
-} catch { /* opcional */ }
+// ==== API Router (todo bajo BACKEND_BASE)
+const api = express.Router();
 
-// ==== Admin (login/logout) y Crons (sweep holds)
-try {
-  app.use("/admin", require("./routes/admin"));
-} catch {}
-try {
-  app.use("/api/crons", require("./routes/crons"));
-} catch {}
+api.use("/health", require("./routes/health"));
+api.use("/availability", require("./routes/availability"));
+api.use("/bookings", require("./routes/bookings"));
+api.use("/holds", require("./routes/holds"));
+try { api.use("/events", require("./routes/events")); } catch {}
+try { api.use("/crons", require("./routes/crons")); } catch {}
 
-// ==== Payments public endpoints
-const stripeSrv = require("./services/payments-stripe");
-const mpSrv = require("./services/payments-mp");
-
-app.post("/payments/stripe/session", async (req, res) => {
+// Payments públicos (Stripe/MP) — en /api/payments/*
+api.post("/payments/stripe/session", async (req, res) => {
   try {
     const orderIn = Object(req.body?.order || req.body || {});
     if (!("total" in orderIn)) throw new Error("missing_total");
-    const out = await stripeSrv.createCheckoutSession(orderIn, {
-      baseUrl: getBaseUrl(req),
-    });
+    const out = await createCheckoutSession(orderIn, { baseUrl: getBaseUrl(req) });
     res.json({ ok: true, ...out });
   } catch (e) {
     res.status(400).json({ ok: false, error: String(e.message || e) });
   }
 });
 
-app.post("/payments/mp/preference", async (req, res) => {
+api.post("/payments/mp/preference", async (req, res) => {
   try {
-    // Soporta {order:{ booking_id, total }} o { unit_price, external_reference, metadata }
     const b = req.body || {};
     const order = b.order
       ? b.order
@@ -178,32 +174,15 @@ app.post("/payments/mp/preference", async (req, res) => {
           total: typeof b.total !== "undefined" ? b.total : b.unit_price,
         };
     if (!("total" in order)) throw new Error("missing_total");
-    const out = await mpSrv.createPreference(order, {
-      baseUrl: getBaseUrl(req),
-    });
+    const out = await createPreference(order, { baseUrl: getBaseUrl(req) });
     res.json({ ok: true, ...out });
   } catch (e) {
     res.status(400).json({ ok: false, error: String(e.message || e) });
   }
 });
 
-// Pago OK test
-app.get("/pago-exitoso-test", (req, res) => {
-  const file = path.join(__dirname, "public", "pago-exitoso-test", "index.html");
-  res.sendFile(file, (err) => {
-    if (err) {
-      res
-        .type("html")
-        .send(`<!doctype html><meta charset="utf-8"><title>Pago aprobado</title>
-        <body style="font-family:Arial;text-align:center;padding:50px">
-        <h1 style="color:green">✅ Pago aprobado</h1>
-        <p><a href="/book/?paid=1">Volver a reservar</a></p></body>`);
-    }
-  });
-});
-
-// ==== Diag
-app.get("/api/diag", (_req, res) =>
+// Diag
+api.get("/diag", (_req, res) =>
   res.json({
     ok: true,
     service: "lapa-casa-backend",
@@ -213,22 +192,4 @@ app.get("/api/diag", (_req, res) =>
       BASE_URL: !!BASE_URL,
       HOLD_TTL_MINUTES,
       CORS_ALLOW_ORIGINS: CORS_ALLOW.length,
-      BACKEND_BASE: BACKEND_BASE,
-    },
-  })
-);
-
-// ==== 404 SPA-ish
-app.use((req, res, next) => {
-  if (req.method !== "GET") return next();
-  if (path.extname(req.path)) return next();
-  const safe = path.join(__dirname, "public", req.path, "index.html");
-  res.sendFile(safe, (err) => (err ? res.status(404).send("Not found") : undefined));
-});
-
-// ==== Start
-if (require.main === module) {
-  app.listen(PORT, () => console.log(`[lapa-casa] up :${PORT} commit=${COMMIT}`));
-}
-
-module.exports = app;
+      BACKEND_BASE: BACKEND_B

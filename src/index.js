@@ -1,237 +1,161 @@
+// FILE: src/routes/availability.js
 "use strict";
-/**
- * Lapa Casa — Backend Express
- * - API bajo BACKEND_BASE (por defecto /api)
- * - Alias legacy sin /api para compatibilidad
- * - Sirve /, /book/, /admin/, /pago-exitoso-test/
- */
-require("dotenv").config();
 
-const path = require("path");
 const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const cookieSession = require("cookie-session");
+const router = express.Router();
 
-// === ENV
-const PORT = process.env.PORT || 3000;
-const COMMIT = process.env.COMMIT || "dev";
-const BASE_URL = (process.env.BASE_URL || "").replace(/\/+$/, "");
-const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
-const CORS_ALLOW = String(process.env.CORS_ALLOW_ORIGINS || "")
-  .split(",").map(s => s.trim()).filter(Boolean);
-const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "change-me";
-const BACKEND_BASE = (process.env.BACKEND_BASE || "/api").replace(/\/+$/, "") || "/api";
+const { fetchRowsFromSheet, calcOccupiedBeds } = require("../services/sheets");
+const { getHoldsMap } = require("../services/holds");
 
-// ==== App
-const app = express();
-app.set("trust proxy", 1);
+// === Config
+const ROOM_CAPS = { "1": 12, "3": 12, "5": 7, "6": 7 }; // 38 pax (mixto + 6 femenino)
+const AVAIL_TTL_MS = Number(process.env.AVAIL_TTL_MS || 60_000); // 60s
+const MAX_RANGE_DAYS = Number(process.env.AVAIL_MAX_RANGE_DAYS || 60);
 
-// ==== Helpers
-function getBaseUrl(req) {
-  if (BASE_URL) return BASE_URL;
-  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-  return `${proto}://${host}`;
+// Cache simple en memoria: key "from:to" → { ts, data }
+const cache = new Map();
+
+// === Utils
+function asISO(d) {
+  const s = String(d || "").slice(0, 10);
+  // YYYY-MM-DD simple check
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : "";
 }
-function deduper(max = 1000, ttlMs = 10 * 60 * 1000) {
-  const m = new Map();
-  return (key) => {
+
+function daysBetween(a, b) {
+  const ad = new Date(a + "T00:00:00Z");
+  const bd = new Date(b + "T00:00:00Z");
+  return Math.round((bd - ad) / 86_400_000);
+}
+
+function mkRangeOk(from, to) {
+  if (!from || !to) return { ok: false, error: "missing_from_or_to" };
+  if (from >= to) return { ok: false, error: "invalid_range" };
+  if (daysBetween(from, to) > MAX_RANGE_DAYS) return { ok: false, error: "range_too_large" };
+  return { ok: true };
+}
+
+function bedsArray(cap) {
+  return Array.from({ length: cap }, (_, i) => i + 1);
+}
+
+// Une ocupación histórica (Sheets) + holds vivos (memoria) → set de ocupadas por cuarto
+function mergeOccupied(occupiedFromSheets, holdsMap) {
+  // occupiedFromSheets: { "1": Set([...]), ... }
+  // holdsMap: { "1": Set([...]), ... }
+  const out = {};
+  for (const roomId of Object.keys(ROOM_CAPS)) {
+    const s1 = occupiedFromSheets[roomId] || new Set();
+    const s2 = (holdsMap && holdsMap[roomId]) ? holdsMap[roomId] : new Set();
+    const s = new Set(s1);
+    for (const v of s2) s.add(v);
+    out[roomId] = s;
+  }
+  return out;
+}
+
+function computeFreeBeds(mergedOccupied) {
+  const rooms = {};
+  for (const [roomId, cap] of Object.entries(ROOM_CAPS)) {
+    const all = bedsArray(cap);
+    const occ = mergedOccupied[roomId] || new Set();
+    rooms[roomId] = all.filter(n => !occ.has(n));
+  }
+  return rooms;
+}
+
+// === Handler
+// GET /api/availability?from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get("/", async (req, res) => {
+  try {
+    const from = asISO(req.query.from);
+    const to = asISO(req.query.to);
+
+    const rangeOk = mkRangeOk(from, to);
+    if (!rangeOk.ok) {
+      return res.status(400).json({ ok: false, error: rangeOk.error });
+    }
+
+    const key = `${from}:${to}`;
     const now = Date.now();
-    for (const [k, ts] of m) if (now - ts > ttlMs) m.delete(k);
-    if (m.has(key)) return true;
-    m.set(key, now);
-    if (m.size > max) m.delete(m.keys().next().value);
-    return false;
-  };
-}
-const isDup = deduper();
+    const cached = cache.get(key);
+    if (cached && (now - cached.ts) < AVAIL_TTL_MS) {
+      return res.json(cached.data);
+    }
 
-// ==== CORS
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (!CORS_ALLOW.length) return cb(null, true);
-      try {
-        const host = new URL(origin).hostname.toLowerCase();
-        const allowHosts = CORS_ALLOW.map(v => v.replace(/^https?:\/\//, "").toLowerCase());
-        const ok = allowHosts.some(a => host === a || host.endsWith("." + a));
-        return cb(null, ok);
-      } catch {
-        return cb(null, false);
+    // 1) Ocupadas por reservas confirmadas (en Sheets/DB) para el rango
+    // calcOccupiedBeds debe devolver: { "1": Set([1,2,...]), "3": Set([...]), ... }
+    let occupiedBySheet;
+    if (typeof calcOccupiedBeds === "function") {
+      occupiedBySheet = await calcOccupiedBeds(from, to);
+    } else {
+      // Fallback: calcular a partir de las rows si solo tenemos fetchRowsFromSheet
+      const rows = await fetchRowsFromSheet({ mode: "rows", from, to });
+      // Esperamos rows con { entrada, salida, camas_json } o similar
+      const occ = { "1": new Set(), "3": new Set(), "5": new Set(), "6": new Set() };
+      for (const r of Array.isArray(rows) ? rows : []) {
+        // Si la reserva cruza el rango solicitado
+        const rin = String(r.entrada || r.checkin || "").slice(0, 10);
+        const rout = String(r.salida || r.checkout || "").slice(0, 10);
+        if (!rin || !rout) continue;
+        // Intersección de [rin, rout) con [from, to)
+        if (rin < to && rout > from) {
+          // camas_json esperado como {"1":[1,2],"3":[4],...}
+          let cj = r.camas_json;
+          if (typeof cj === "string") {
+            try { cj = JSON.parse(cj); } catch { cj = null; }
+          }
+          if (cj && typeof cj === "object") {
+            for (const k of Object.keys(ROOM_CAPS)) {
+              const arr = Array.isArray(cj[k]) ? cj[k] : [];
+              for (const n of arr) if (Number.isFinite(+n)) occ[k].add(+n);
+            }
+          }
+        }
       }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Stripe-Signature"],
-  })
-);
+      occupiedBySheet = occ;
+    }
 
-// ==== Security (permitimos inline JS y Stripe para que el front funcione)
-app.use(
-  helmet({
-    crossOriginResourcePolicy: false,
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        "default-src": ["'self'"],
-        "script-src": ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"],
-        "connect-src": ["'self'", "https://api.mercadopago.com"],
-        "frame-src": ["'self'", "https://js.stripe.com", "https://checkout.stripe.com"],
-        "frame-ancestors": ["'self'"],
-        "base-uri": ["'self'"],
-        "form-action": ["'self'"]
-      },
-    },
-  })
-);
+    // 2) Holds vivos (anti-overbooking)
+    // getHoldsMap → { "1": Set([...]), "3": Set([...]), ... }
+    let holdsMap = {};
+    try {
+      const m = await getHoldsMap();
+      // Normalizamos a Set
+      for (const k of Object.keys(ROOM_CAPS)) {
+        const arr = m && m[k] ? Array.from(m[k]) : [];
+        holdsMap[k] = new Set(arr.map(Number).filter(n => Number.isFinite(n)));
+      }
+    } catch {
+      // sin holds
+      for (const k of Object.keys(ROOM_CAPS)) holdsMap[k] = new Set();
+    }
 
-// ==== Tiny config para el front (opcional)
-app.get("/config.js", (_req, res) => {
-  res.type("application/javascript")
-     .send(`window.BACKEND_BASE_URL=${JSON.stringify(BACKEND_BASE)};`);
-});
+    // 3) Merge y cálculo de libres
+    const merged = mergeOccupied(occupiedBySheet, holdsMap);
+    const rooms = computeFreeBeds(merged);
 
-// ==== Static first
-const PUBLIC_DIR = path.join(__dirname, "..", "public");
-app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
-app.get("/book", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "book", "index.html")));
-app.get("/admin", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "admin", "index.html")));
+    // 4) Resumen opcional
+    const totals = Object.fromEntries(
+      Object.entries(ROOM_CAPS).map(([k, cap]) => [k, { cap, free: rooms[k].length }])
+    );
+    const totalFree = Object.values(totals).reduce((a, v) => a + v.free, 0);
 
-// ==== Sessions
-app.use(
-  cookieSession({
-    name: "sess",
-    secret: SESSION_SECRET,
-    sameSite: "lax",
-    httpOnly: true,
-  })
-);
+    const payload = {
+      ok: true,
+      range: { from, to },
+      ts: new Date().toISOString(),
+      rooms,        // { "1":[...], "3":[...], "5":[...], "6":[...] }
+      totals,       // { "1":{cap,free}, ... }
+      total_free: totalFree
+    };
 
-// ==== Stripe/MP webhooks (Stripe RAW antes del JSON parser)
-const { buildStripeWebhookHandler, createCheckoutSession } = require("./services/payments-stripe");
-const { buildMpWebhookHandler, createPreference } = require("./services/payments-mp");
-const { notifySheets } = require("./services/sheets");
-
-app.post(
-  "/webhooks/stripe",
-  express.raw({ type: "application/json" }),
-  buildStripeWebhookHandler({ notifySheets, isDuplicate: isDup, log: (...a) => console.log("[stripe]", ...a) })
-);
-app.post(
-  "/webhooks/mp",
-  buildMpWebhookHandler({ notifySheets, isDuplicate: isDup, log: (...a) => console.log("[mp]", ...a) })
-);
-
-// ==== JSON parser (después del webhook RAW)
-app.use(express.json());
-
-// ==== API bajo BACKEND_BASE
-const api = express.Router();
-api.use("/health", require("./routes/health"));
-api.use("/availability", require("./routes/availability"));
-api.use("/bookings", require("./routes/bookings"));
-api.use("/holds", require("./routes/holds"));
-try { api.use("/events", require("./routes/events")); } catch {}
-try { api.use("/crons", require("./routes/crons")); } catch {}
-
-api.post("/payments/stripe/session", async (req, res) => {
-  try {
-    const orderIn = Object(req.body?.order || req.body || {});
-    if (!("total" in orderIn)) throw new Error("missing_total");
-    const out = await createCheckoutSession(orderIn, { baseUrl: getBaseUrl(req) });
-    res.json({ ok: true, ...out });
-  } catch (e) {
-    res.status(400).json({ ok: false, error: String(e.message || e) });
+    cache.set(key, { ts: now, data: payload });
+    return res.json(payload);
+  } catch (err) {
+    console.error("[availability] error:", err);
+    return res.status(500).json({ ok: false, error: "availability_failed" });
   }
 });
 
-api.post("/payments/mp/preference", async (req, res) => {
-  try {
-    const b = req.body || {};
-    const order = b.order
-      ? b.order
-      : {
-          booking_id:
-            b.booking_id ||
-            b.external_reference ||
-            (b.metadata && (b.metadata.booking_id || b.metadata.bookingId)),
-          total: typeof b.total !== "undefined" ? b.total : b.unit_price,
-        };
-    if (!("total" in order)) throw new Error("missing_total");
-    const out = await createPreference(order, { baseUrl: getBaseUrl(req) });
-    res.json({ ok: true, ...out });
-  } catch (e) {
-    res.status(400).json({ ok: false, error: String(e.message || e) });
-  }
-});
-
-api.get("/diag", (_req, res) =>
-  res.json({
-    ok: true,
-    service: "lapa-casa-backend",
-    commit: COMMIT,
-    now: new Date().toISOString(),
-    env: {
-      BASE_URL: !!BASE_URL,
-      HOLD_TTL_MINUTES,
-      CORS_ALLOW_ORIGINS: CORS_ALLOW.length,
-      BACKEND_BASE: BACKEND_BASE,
-    },
-  })
-);
-
-app.use(BACKEND_BASE, api);
-
-// ==== ALIASES LEGACY (sin /api) — para compatibilidad con front/links viejos
-const legacy = express.Router();
-legacy.use("/availability", require("./routes/availability"));
-legacy.use("/bookings", require("./routes/bookings"));
-legacy.use("/holds", require("./routes/holds"));
-legacy.post("/payments/stripe/session", async (req, res) => {
-  try {
-    const orderIn = Object(req.body?.order || req.body || {});
-    if (!("total" in orderIn)) throw new Error("missing_total");
-    const out = await createCheckoutSession(orderIn, { baseUrl: getBaseUrl(req) });
-    res.json({ ok: true, ...out });
-  } catch (e) {
-    res.status(400).json({ ok: false, error: String(e.message || e) });
-  }
-});
-legacy.post("/payments/mp/preference", async (req, res) => {
-  try {
-    const b = req.body || {};
-    const order = b.order
-      ? b.order
-      : {
-          booking_id:
-            b.booking_id ||
-            b.external_reference ||
-            (b.metadata && (b.metadata.booking_id || b.metadata.bookingId)),
-          total: typeof b.total !== "undefined" ? b.total : b.unit_price,
-        };
-    if (!("total" in order)) throw new Error("missing_total");
-    const out = await createPreference(order, { baseUrl: getBaseUrl(req) });
-    res.json({ ok: true, ...out });
-  } catch (e) {
-    res.status(400).json({ ok: false, error: String(e.message || e) });
-  }
-});
-app.use("/", legacy);
-
-// ==== 404 SPA-ish para rutas estáticas tipo /book, /admin
-app.use((req, res, next) => {
-  if (req.method !== "GET") return next();
-  if (path.extname(req.path)) return next();
-  const safe = path.join(PUBLIC_DIR, req.path, "index.html");
-  res.sendFile(safe, (err) => (err ? res.status(404).send("Not found") : undefined));
-});
-
-// ==== Start
-if (require.main === module) {
-  app.listen(PORT, () => console.log(`[lapa-casa] up :${PORT} commit=${COMMIT} api=${BACKEND_BASE}`));
-}
-module.exports = app;
+module.exports = router;

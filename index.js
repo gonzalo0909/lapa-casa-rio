@@ -1,4 +1,4 @@
-// index.js
+// index.js  (backend Express, con aliases /api añadidos)
 "use strict";
 /**
  * Lapa Casa — Backend thin index (Express)
@@ -79,12 +79,15 @@ app.use(cookieSession({
   httpOnly:true,
 }));
 
-// ==== Webhooks
+// ==== Stripe & MP services
+const stripeSrv = require("./services/payments-stripe");
+const mpSrv     = require("./services/payments-mp");
+
+// ==== Stripe webhook (RAW *antes* del JSON parser)
 const { buildStripeWebhookHandler } = require("./services/payments-stripe");
 const { buildMpWebhookHandler }     = require("./services/payments-mp");
 const { notifySheets }              = require("./services/sheets");
 
-// Stripe (RAW antes del JSON parser)
 app.post("/webhooks/stripe",
   express.raw({ type:"application/json" }),
   buildStripeWebhookHandler({
@@ -94,10 +97,7 @@ app.post("/webhooks/stripe",
   })
 );
 
-// JSON parser
-app.use(express.json());
-
-// Mercado Pago (usa JSON)
+// MP webhook
 app.post("/webhooks/mp",
   buildMpWebhookHandler({
     notifySheets,
@@ -106,24 +106,35 @@ app.post("/webhooks/mp",
   })
 );
 
-// ==== Routers (API)
+// ==== JSON parser (después del webhook RAW)
+app.use(express.json());
+
+// ==== Routers (API sin prefijo y con /api)
 app.use("/api/health", require("./routes/health"));
-app.use("/availability", require("./routes/availability"));
-app.use("/bookings", require("./routes/bookings"));
-app.use("/api/bookings", require("./routes/bookings")); // alias
-app.use("/holds", require("./routes/holds"));
-app.use("/payments/status", require("./routes/payments-status"));
 try { app.use("/api/events", require("./routes/events")); } catch { /* opcional */ }
 
-// ==== Admin (login/logout) y Crons (sweep holds)
-try { app.use("/admin", require("./routes/admin")); } catch {}
-try { app.use("/api/crons", require("./routes/crons")); } catch {}
+// Rutas base (ya existentes)
+app.use("/availability", require("./routes/availability"));
+app.use("/bookings",     require("./routes/bookings"));
+app.use("/holds",        require("./routes/holds"));
+try { app.use("/payments/status", require("./routes/payments-status")); } catch {}
 
-// ==== Payments public endpoints
-const stripeSrv = require("./services/payments-stripe");
-const mpSrv     = require("./services/payments-mp");
+// Aliases con /api para mantener FRONT con BACKEND_BASE_URL="/api"
+app.use("/api/availability", require("./routes/availability"));
+app.use("/api/bookings",     require("./routes/bookings")); // ya existía como alias, se mantiene
+app.use("/api/holds",        require("./routes/holds"));
+try { app.use("/api/payments/status", require("./routes/payments-status")); } catch {}
 
+// ==== Payments public endpoints (base y /api)
 app.post("/payments/stripe/session", async (req,res)=>{
+  try{
+    const orderIn = Object(req.body?.order || req.body || {});
+    if (!("total" in orderIn)) throw new Error("missing_total");
+    const out = await stripeSrv.createCheckoutSession(orderIn, { baseUrl: getBaseUrl(req) });
+    res.json({ ok:true, ...out });
+  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
+});
+app.post("/api/payments/stripe/session", async (req,res)=>{
   try{
     const orderIn = Object(req.body?.order || req.body || {});
     if (!("total" in orderIn)) throw new Error("missing_total");
@@ -145,19 +156,22 @@ app.post("/payments/mp/preference", async (req,res)=>{
     res.json({ ok:true, ...out });
   }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
-
-// Pago OK test
-app.get("/pago-exitoso-test", (req,res)=>{
-  const file = path.join(__dirname,"public","pago-exitoso-test","index.html");
-  res.sendFile(file, (err)=> {
-    if (err) {
-      res.type("html").send(`<!doctype html><meta charset="utf-8"><title>Pago aprobado</title>
-        <body style="font-family:Arial;text-align:center;padding:50px">
-        <h1 style="color:green">✅ Pago aprobado</h1>
-        <p><a href="/book/?paid=1">Volver a reservar</a></p></body>`);
-    }
-  });
+app.post("/api/payments/mp/preference", async (req,res)=>{
+  try{
+    const b = req.body || {};
+    const order = b.order ? b.order : {
+      booking_id: b.booking_id || b.external_reference || (b.metadata && (b.metadata.booking_id || b.metadata.bookingId)),
+      total: (typeof b.total !== "undefined") ? b.total : b.unit_price
+    };
+    if (!("total" in order)) throw new Error("missing_total");
+    const out = await mpSrv.createPreference(order, { baseUrl: getBaseUrl(req) });
+    res.json({ ok:true, ...out });
+  }catch(e){ res.status(400).json({ ok:false, error:String(e.message||e) }); }
 });
+
+// ==== Admin (login/logout) y Crons (sweep holds)
+try { app.use("/admin", require("./routes/admin")); } catch {}
+try { app.use("/api/crons", require("./routes/crons")); } catch {}
 
 // ==== Diag
 app.get("/api/diag", (_req,res)=> res.json({
@@ -174,12 +188,4 @@ app.use((req,res,next)=>{
   if (req.method !== "GET") return next();
   if (path.extname(req.path)) return next();
   const safe = path.join(__dirname, "public", req.path, "index.html");
-  res.sendFile(safe, (err)=> err ? res.status(404).send("Not found") : undefined);
-});
-
-// ==== Start
-if (require.main === module) {
-  app.listen(PORT, ()=> console.log(`[lapa-casa] up :${PORT} commit=${COMMIT}`));
-}
-
-module.exports = app;
+  res.sendFile(safe, (err)=> err ? res

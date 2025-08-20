@@ -1,8 +1,9 @@
 "use strict";
 /**
- * Lapa Casa — Backend thin index (Express)
- * API completo montado bajo BACKEND_BASE (p.ej. /api)
- * Sirve estáticos /, /book/, /admin/ y fallback SPA-ish.
+ * Lapa Casa — Backend Express
+ * - API bajo BACKEND_BASE (por defecto /api)
+ * - Alias legacy sin /api para compatibilidad
+ * - Sirve /, /book/, /admin/, /pago-exitoso-test/
  */
 require("dotenv").config();
 
@@ -67,7 +68,7 @@ app.use(
   })
 );
 
-// ==== Security (CSP compatible con Stripe)
+// ==== Security (permitimos inline JS y Stripe para que el front funcione)
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -75,8 +76,8 @@ app.use(
       useDefaults: true,
       directives: {
         "default-src": ["'self'"],
-        "script-src": ["'self'", "https://js.stripe.com"],
-        "style-src": ["'self'"],
+        "script-src": ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+        "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:"],
         "connect-src": ["'self'", "https://api.mercadopago.com"],
         "frame-src": ["'self'", "https://js.stripe.com", "https://checkout.stripe.com"],
@@ -88,20 +89,19 @@ app.use(
   })
 );
 
-// ==== Tiny config para el front (expone BACKEND_BASE al navegador si lo usas)
+// ==== Tiny config para el front (opcional)
 app.get("/config.js", (_req, res) => {
-  const base = BACKEND_BASE; // p.ej. https://lapacasahostel.com/api o /api
   res.type("application/javascript")
-     .send(`window.BACKEND_BASE_URL=${JSON.stringify(base)};`);
+     .send(`window.BACKEND_BASE_URL=${JSON.stringify(BACKEND_BASE)};`);
 });
 
-// ==== Static first (asegurá que ../public exista relativo a este archivo)
-const PUBLIC_DIR = path.join(__dirname, "public");
+// ==== Static first
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
 app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
 app.get("/book", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "book", "index.html")));
 app.get("/admin", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "admin", "index.html")));
 
-// ==== Sessions para /admin/*
+// ==== Sessions
 app.use(
   cookieSession({
     name: "sess",
@@ -111,7 +111,7 @@ app.use(
   })
 );
 
-// ==== Stripe webhook (RAW *antes* del JSON parser)
+// ==== Stripe/MP webhooks (Stripe RAW antes del JSON parser)
 const { buildStripeWebhookHandler, createCheckoutSession } = require("./services/payments-stripe");
 const { buildMpWebhookHandler, createPreference } = require("./services/payments-mp");
 const { notifySheets } = require("./services/sheets");
@@ -119,48 +119,25 @@ const { notifySheets } = require("./services/sheets");
 app.post(
   "/webhooks/stripe",
   express.raw({ type: "application/json" }),
-  buildStripeWebhookHandler({
-    notifySheets,
-    isDuplicate: isDup,
-    log: (...a) => console.log("[stripe]", ...a),
-  })
+  buildStripeWebhookHandler({ notifySheets, isDuplicate: isDup, log: (...a) => console.log("[stripe]", ...a) })
 );
-
-// MP webhook
 app.post(
   "/webhooks/mp",
-  buildMpWebhookHandler({
-    notifySheets,
-    isDuplicate: isDup,
-    log: (...a) => console.log("[mp]", ...a),
-  })
+  buildMpWebhookHandler({ notifySheets, isDuplicate: isDup, log: (...a) => console.log("[mp]", ...a) })
 );
 
 // ==== JSON parser (después del webhook RAW)
 app.use(express.json());
 
-// ==== API Router (todo bajo BACKEND_BASE)
+// ==== API bajo BACKEND_BASE
 const api = express.Router();
-
-// Health
 api.use("/health", require("./routes/health"));
-
-// Availability
 api.use("/availability", require("./routes/availability"));
-
-// Bookings (alias /bookings por compat)
 api.use("/bookings", require("./routes/bookings"));
-
-// Holds
 api.use("/holds", require("./routes/holds"));
+try { api.use("/events", require("./routes/events")); } catch {}
+try { api.use("/crons", require("./routes/crons")); } catch {}
 
-// Events (opcional)
-try { api.use("/events", require("./routes/events")); } catch { /* opcional */ }
-
-// Crons (sweep holds)
-try { api.use("/crons", require("./routes/crons")); } catch { /* opcional */ }
-
-// Payments públicos (Stripe/MP) — ahora en /api/payments/*
 api.post("/payments/stripe/session", async (req, res) => {
   try {
     const orderIn = Object(req.body?.order || req.body || {});
@@ -174,7 +151,6 @@ api.post("/payments/stripe/session", async (req, res) => {
 
 api.post("/payments/mp/preference", async (req, res) => {
   try {
-    // Soporta {order:{ booking_id, total }} o { unit_price, external_reference, metadata }
     const b = req.body || {};
     const order = b.order
       ? b.order
@@ -193,7 +169,6 @@ api.post("/payments/mp/preference", async (req, res) => {
   }
 });
 
-// Diag
 api.get("/diag", (_req, res) =>
   res.json({
     ok: true,
@@ -209,10 +184,45 @@ api.get("/diag", (_req, res) =>
   })
 );
 
-// Monta todo el API en BACKEND_BASE (ej: /api)
 app.use(BACKEND_BASE, api);
 
-// ==== 404 SPA-ish
+// ==== ALIASES LEGACY (sin /api) — para compatibilidad con front/links viejos
+const legacy = express.Router();
+legacy.use("/availability", require("./routes/availability"));
+legacy.use("/bookings", require("./routes/bookings"));
+legacy.use("/holds", require("./routes/holds"));
+legacy.post("/payments/stripe/session", async (req, res) => {
+  try {
+    const orderIn = Object(req.body?.order || req.body || {});
+    if (!("total" in orderIn)) throw new Error("missing_total");
+    const out = await createCheckoutSession(orderIn, { baseUrl: getBaseUrl(req) });
+    res.json({ ok: true, ...out });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: String(e.message || e) });
+  }
+});
+legacy.post("/payments/mp/preference", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const order = b.order
+      ? b.order
+      : {
+          booking_id:
+            b.booking_id ||
+            b.external_reference ||
+            (b.metadata && (b.metadata.booking_id || b.metadata.bookingId)),
+          total: typeof b.total !== "undefined" ? b.total : b.unit_price,
+        };
+    if (!("total" in order)) throw new Error("missing_total");
+    const out = await createPreference(order, { baseUrl: getBaseUrl(req) });
+    res.json({ ok: true, ...out });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: String(e.message || e) });
+  }
+});
+app.use("/", legacy);
+
+// ==== 404 SPA-ish para rutas estáticas tipo /book, /admin
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
   if (path.extname(req.path)) return next();
@@ -224,5 +234,4 @@ app.use((req, res, next) => {
 if (require.main === module) {
   app.listen(PORT, () => console.log(`[lapa-casa] up :${PORT} commit=${COMMIT} api=${BACKEND_BASE}`));
 }
-
 module.exports = app;

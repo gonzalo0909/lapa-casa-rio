@@ -1,26 +1,78 @@
 "use strict";
 
 /**
- * Mercado Pago: crea preferencias y maneja webhooks.
- * SDK oficial: mercadopago
+ * Mercado Pago service (compatible v1 y v2 del SDK).
+ * - createPreference(order)
+ * - buildMpWebhookHandler({ notifySheets, isDuplicate, log })
+ *
+ * Requiere:
+ *   MP_ACCESS_TOKEN
+ *   FRONTEND_URL (fallback "/book/")
  */
 
-const mercadopago = require("mercadopago");
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 const FRONTEND_URL = process.env.FRONTEND_URL || "/book/";
 
-if (ACCESS_TOKEN) {
-  mercadopago.configure({ access_token: ACCESS_TOKEN });
+if (!ACCESS_TOKEN) {
+  throw new Error("MP_ACCESS_TOKEN not set");
+}
+
+let sdkMode = "v2"; // "v1" (legacy configure) o "v2" (MercadoPagoConfig/Preference/Payment)
+let mp = null;
+let Preference = null;
+let Payment = null;
+let mpClient = null;
+
+try {
+  mp = require("mercadopago");
+  // v1 tenía mercadopago.configure
+  if (typeof mp.configure === "function") {
+    sdkMode = "v1";
+    mp.configure({ access_token: ACCESS_TOKEN });
+  } else if (mp.MercadoPagoConfig) {
+    // v2 clases
+    const { MercadoPagoConfig, Preference: PrefCls, Payment: PayCls } = mp;
+    mpClient = new MercadoPagoConfig({ accessToken: ACCESS_TOKEN });
+    Preference = new PrefCls(mpClient);
+    Payment = new PayCls(mpClient);
+    sdkMode = "v2";
+  } else {
+    // algunos empaquetados CJS exportan en default
+    const C = mp.default || mp;
+    if (C && C.MercadoPagoConfig) {
+      const { MercadoPagoConfig, Preference: PrefCls, Payment: PayCls } = C;
+      mpClient = new MercadoPagoConfig({ accessToken: ACCESS_TOKEN });
+      Preference = new PrefCls(mpClient);
+      Payment = new PayCls(mpClient);
+      sdkMode = "v2";
+    } else {
+      throw new Error("Unsupported mercadopago SDK export shape");
+    }
+  }
+} catch (e) {
+  throw new Error("Failed to load mercadopago SDK: " + (e.message || e));
+}
+
+function normalizePrefResponse(resp) {
+  // v2 suele devolver el objeto directo; v1 usa { body }
+  const r = resp?.body || resp?.response || resp;
+  return {
+    id: r?.id || null,
+    init_point: r?.init_point || r?.sandbox_init_point || null,
+  };
+}
+
+function normalizePaymentResponse(resp) {
+  const r = resp?.body || resp?.response || resp;
+  return r || {};
 }
 
 async function createPreference(order, { baseUrl } = {}) {
-  if (!ACCESS_TOKEN) throw new Error("MP_ACCESS_TOKEN not set");
-
   const success = `${FRONTEND_URL}?paid=1`;
   const failure = `${FRONTEND_URL}?mp=failure`;
   const pending = `${FRONTEND_URL}?mp=pending`;
 
-  const preference = {
+  const preferenceBody = {
     items: [
       {
         title: "Reserva Lapa Casa Hostel",
@@ -29,11 +81,7 @@ async function createPreference(order, { baseUrl } = {}) {
         unit_price: Number(order.total || 0),
       },
     ],
-    back_urls: {
-      success,
-      failure,
-      pending,
-    },
+    back_urls: { success, failure, pending },
     auto_return: "approved",
     metadata: {
       bookingId: order.booking_id || order.bookingId || "",
@@ -42,16 +90,23 @@ async function createPreference(order, { baseUrl } = {}) {
     statement_descriptor: "LAPA CASA HOSTEL",
   };
 
-  const resp = await mercadopago.preferences.create(preference);
-  const pref = resp?.body || {};
-  // init_point (prod) / sandbox_init_point (sandbox)
-  return { id: pref.id, init_point: pref.init_point || pref.sandbox_init_point };
+  let resp;
+  if (sdkMode === "v1") {
+    resp = await mp.preferences.create(preferenceBody);
+  } else {
+    resp = await Preference.create({ body: preferenceBody });
+  }
+  const pref = normalizePrefResponse(resp);
+  if (!pref.id || !pref.init_point) {
+    throw new Error("preference_create_failed");
+  }
+  return { id: pref.id, init_point: pref.init_point };
 }
 
 /**
- * Webhook de Mercado Pago.
- * Nota: MP envía notificaciones con `type`/`action`/`data.id`.
- * Cuando sea `type=payment`, consultamos el pago y si está `approved` marcamos como pagado.
+ * Webhook handler de MP:
+ * - Si llega type=payment y data.id => consultamos el pago y si está approved notificamos a Sheets.
+ * - Acepta también query params topic/id como fallback.
  */
 function buildMpWebhookHandler({ notifySheets, isDuplicate, log = () => {} }) {
   return async function mpWebhook(req, res) {
@@ -59,22 +114,27 @@ function buildMpWebhookHandler({ notifySheets, isDuplicate, log = () => {} }) {
       const body = req.body || {};
       const dedupeKey =
         body.id || body.data?.id || body["data.id"] || body.action || JSON.stringify(body).slice(0, 128);
+
       if (isDuplicate && dedupeKey && isDuplicate(`mp:${dedupeKey}`)) {
         return res.json({ ok: true, duplicate: true });
       }
 
-      // Caso 1: notificación directa con status
+      const getPaymentById = async (pid) => {
+        if (sdkMode === "v1") {
+          const r = await mp.payment.findById(pid);
+          return normalizePaymentResponse(r);
+        } else {
+          const r = await Payment.get({ id: pid });
+          return normalizePaymentResponse(r);
+        }
+      };
+
+      // Notificación estándar
       if (body.type === "payment" && body.data?.id) {
         const paymentId = body.data.id;
-        const p = await mercadopago.payment.findById(paymentId);
-        const pay = p?.response || p?.body || {};
+        const pay = await getPaymentById(paymentId);
         const status = (pay.status || "").toLowerCase();
-        const bookingId =
-          pay.metadata?.bookingId ||
-          pay.external_reference ||
-          pay.order?.type ||
-          pay.id;
-
+        const bookingId = pay.metadata?.bookingId || pay.external_reference || String(pay.id || paymentId);
         if (status === "approved") {
           await notifySheets({
             kind: "paid",
@@ -90,17 +150,14 @@ function buildMpWebhookHandler({ notifySheets, isDuplicate, log = () => {} }) {
         return res.json({ ok: true, handled: true });
       }
 
-      // Caso 2: fallback (algunas integraciones envían query param `id`/`topic`)
+      // Fallback con query
       const topic = body.topic || body.type || req.query.topic;
-      const id = body.data?.id || req.query.id || req.query["data.id"];
-      if ((topic === "payment" || topic === "merchant_order") && id) {
+      const qid = body.data?.id || req.query.id || req.query["data.id"];
+      if ((topic === "payment" || topic === "merchant_order") && qid) {
         try {
-          const p = await mercadopago.payment.findById(id);
-          const pay = p?.response || p?.body || {};
+          const pay = await getPaymentById(qid);
           const status = (pay.status || "").toLowerCase();
-          const bookingId =
-            pay.metadata?.bookingId || pay.external_reference || pay.id;
-
+          const bookingId = pay.metadata?.bookingId || pay.external_reference || String(pay.id || qid);
           if (status === "approved") {
             await notifySheets({
               kind: "paid",
@@ -109,17 +166,17 @@ function buildMpWebhookHandler({ notifySheets, isDuplicate, log = () => {} }) {
               holdId: bookingId,
               email: pay.payer?.email || "",
               total: Number(pay.transaction_amount || 0),
-              paymentId: String(id),
+              paymentId: String(qid),
             });
             log("✓ MP approved (fallback)", bookingId);
           }
         } catch (e) {
-          log("MP findById error:", e.message || e);
+          log("MP get error:", e.message || e);
         }
         return res.json({ ok: true, handled: true });
       }
 
-      // Nada reconocido: OK 200 para evitar reintentos infinitos
+      // Nada reconocible → 200 OK para evitar reintentos agresivos
       return res.json({ ok: true, ignored: true });
     } catch (e) {
       log("mp webhook error:", e);

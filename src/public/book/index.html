@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservas - Lapa Casa Hostel</title>
+</head>
+<body>
+  <h1>📅 Reservar en Lapa Casa Hostel</h1>
+  <p>Este es el frontend de reservas (se conecta al backend).</p>
+  <form id="reserva">
+    <label>Nombre: <input type="text" name="nombre"></label><br>
+    <label>Email: <input type="email" name="email"></label><br>
+    <label>Entrada: <input type="date" name="entrada"></label><br>
+    <label>Salida: <input type="date" name="salida"></label><br>
+    <button type="submit">Reservar</button>
+  </form>
+  <script>
+    document.querySelector("#reserva").addEventListener("submit", e => {
+      e.preventDefault();
+      alert("⚡ Reserva enviada (demo)");
+    });
+  </script>
+</body>
+</html>

@@ -1,91 +1,142 @@
+// services/holds.js
 "use strict";
 
-const DEFAULT_TTL_MIN = Number(process.env.HOLD_TTL_MINUTES || 10);
-const holds = new Map();
+/**
+ * Servicio en memoria para HOLDs/Bookings/Payments.
+ * Producción real: reemplazar por DB.
+ */
+const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
 
-function nowMs(){ return Date.now(); }
-function ttlMs(min){ return Math.max(1, Number(min || DEFAULT_TTL_MIN)) * 60 * 1000; }
+// Capacidad por cuarto
+const ROOMS = { 1:12, 3:12, 5:7, 6:7 };
 
-function overlaps(aStart, aEnd, bStart, bEnd){
-  // rangos de noches [start, end) sin incluir checkout
-  return aStart < bEnd && bStart < aEnd;
-}
+// Estado en memoria
+const state = {
+  holds: new Map(),   // holdId -> {entrada,salida,camas,total,expiresAt,status}
+  bookings: new Map(),// bookingId -> { ...order, pay_status }
+  payments: new Map() // bookingId -> { status:'pending'|'approved'|'paid'|'failed', provider }
+};
 
-function startHold(holdId, payload = {}, ttlMin = DEFAULT_TTL_MIN){
-  const exp = nowMs() + ttlMs(ttlMin);
-  const hold = { id: holdId, payload, expiresAt: exp, confirmed: false, createdAt: nowMs() };
-  holds.set(holdId, hold);
-  return hold;
-}
-
-function confirmHold(holdId){
-  const h = holds.get(holdId);
-  if (!h) return null;
-  h.confirmed = true;
-  return h;
-}
-
-function releaseHold(holdId){
-  return holds.delete(holdId);
-}
-
-function getHold(holdId){
-  return holds.get(holdId) || null;
-}
-
-function listActive(){
-  const t = nowMs();
-  const out = [];
-  for (const h of holds.values()){
-    if (!h.confirmed && h.expiresAt > t) out.push(h);
+function clampBeds(camas){
+  const out = {};
+  for (const id of Object.keys(camas||{})){
+    const rid = String(id);
+    const cap = ROOMS[rid] || 0;
+    const list = Array.from(new Set([...(camas[id]||[]).map(n=>Number(n))]))
+      .filter(n=>n>=1 && n<=cap);
+    out[rid] = list;
   }
   return out;
 }
 
-function sweep(){
-  const t = nowMs();
-  let removed = 0;
-  for (const [id, h] of holds) {
-    if (!h.confirmed && h.expiresAt <= t) {
-      holds.delete(id);
-      removed++;
-    }
-  }
-  return removed;
+function overlaps(aStart,aEnd,bStart,bEnd){
+  const aS = new Date(aStart+"T00:00:00").getTime();
+  const aE = new Date(aEnd  +"T00:00:00").getTime();
+  const bS = new Date(bStart+"T00:00:00").getTime();
+  const bE = new Date(bEnd  +"T00:00:00").getTime();
+  return (aS < bE) && (bS < aE);
 }
 
-// Mapa de ocupación por holds activos para un rango
-function getActiveOccupiedMap(from, to){
-  const occ = { 1: [], 3: [], 5: [], 6: [] };
-  const seen = { 1: new Set(), 3: new Set(), 5: new Set(), 6: new Set() };
+function startHold(holdId, payload){
+  const now = Date.now();
+  const ttl = HOLD_TTL_MINUTES*60*1000;
+  const rec = {
+    id: holdId,
+    entrada: String(payload.entrada||""),
+    salida : String(payload.salida ||""),
+    hombres: Number(payload.hombres||0),
+    mujeres: Number(payload.mujeres||0),
+    camas  : clampBeds(payload.camas||{}),
+    total  : Number(payload.total||0),
+    status : "hold",
+    expiresAt: now + ttl
+  };
+  if (!rec.entrada || !rec.salida) throw new Error("missing_dates");
+  state.holds.set(holdId, rec);
+  return rec;
+}
 
-  const aStart = new Date(from + "T00:00:00");
-  const aEnd   = new Date(to   + "T00:00:00");
+function confirmHold(holdId, status="paid"){
+  const rec = state.holds.get(holdId);
+  if(!rec) return false;
+  rec.status = status;
+  rec.expiresAt = Date.now() + 365*24*3600*1000; // “indefinido” (confirmado)
+  state.holds.set(holdId, rec);
+  state.payments.set(holdId, { status: (status==="paid"?"approved":status), provider:"manual" });
+  return true;
+}
 
-  for (const h of listActive()){
-    const p = h.payload || {};
-    if (!p.entrada || !p.salida || !p.camas) continue;
+function releaseHold(holdId){
+  state.holds.delete(holdId);
+}
 
-    const bStart = new Date(p.entrada + "T00:00:00");
-    const bEnd   = new Date(p.salida  + "T00:00:00");
-    if (!overlaps(aStart, aEnd, bStart, bEnd)) continue;
+function getTtlMinutes(){ return HOLD_TTL_MINUTES; }
 
-    for (const [roomId, beds] of Object.entries(p.camas || {})){
-      const id = Number(roomId);
-      (beds || []).forEach(b => seen[id]?.add(Number(b)));
+function sweepExpired(){
+  const now = Date.now();
+  const toDelete = [];
+  for (const [id,rec] of state.holds){
+    if (rec.status==="hold" && rec.expiresAt < now) toDelete.push(id);
+  }
+  toDelete.forEach(id=>state.holds.delete(id));
+  return toDelete;
+}
+
+function getOccupiedByRange(from,to){
+  const out = { 1:[], 3:[], 5:[], 6:[] };
+  for (const rec of state.holds.values()){
+    if (rec.status!=="hold" && rec.status!=="paid" && rec.status!=="approved") continue;
+    if (overlaps(from,to,rec.entrada,rec.salida)){
+      for (const [rid,list] of Object.entries(rec.camas||{})){
+        out[rid] = out[rid].concat(list);
+      }
     }
   }
+  // también bloquear bookings marcados como paid (si existieran camas)
+  for (const booking of state.bookings.values()){
+    const s = String(booking.pay_status||"");
+    if (!/paid|approved/.test(s)) continue;
+    if (overlaps(from,to,booking.entrada,booking.salida)){
+      const camas = clampBeds(booking.camas||{});
+      for (const [rid,list] of Object.entries(camas)){
+        out[rid] = out[rid].concat(list);
+      }
+    }
+  }
+  // dedupe
+  for (const rid of Object.keys(out)){
+    out[rid] = Array.from(new Set(out[rid]));
+  }
+  return out;
+}
 
-  for (const k of [1,3,5,6]) occ[k] = Array.from(seen[k]).sort((a,b)=>a-b);
-  return occ;
+function upsertBooking(id, booking){
+  state.bookings.set(String(id), { ...booking });
+}
+
+function setPaymentStatus(bookingId, status, provider){
+  state.payments.set(String(bookingId), { status, provider });
+  // marcar booking si existe
+  const b = state.bookings.get(String(bookingId));
+  if (b) state.bookings.set(String(bookingId), { ...b, pay_status: status });
+  // si existe hold con mismo id, confírmalo
+  const h = state.holds.get(String(bookingId));
+  if (h) confirmHold(String(bookingId), status==="approved"?"paid":status);
+}
+
+function getPaymentStatus(bookingId){
+  const ps = state.payments.get(String(bookingId)) || { status:"pending" };
+  return ps;
 }
 
 module.exports = {
   startHold,
   confirmHold,
   releaseHold,
-  getHold,
-  listActive,
-  sweep,
-  getActiveOccupiedMap,
+  getTtlMinutes,
+  sweepExpired,
+  getOccupiedByRange,
+  upsertBooking,
+  setPaymentStatus,
+  getPaymentStatus,
 };

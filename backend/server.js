@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
+
 const app = express();
 const bookings = require('./routes/bookings');
 const holds    = require('./routes/holds');
@@ -20,7 +22,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rutas
+// Servir el frontend
+app.use('/', express.static(path.join(__dirname, '..', 'frontend')));
+app.get('/book', (_, res) => {
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+});
+
+// Rutas de la API
 app.use('/bookings', bookings);
 app.use('/holds',    holds);
 app.use('/payments', payments);

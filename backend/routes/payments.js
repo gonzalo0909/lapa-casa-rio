@@ -2,41 +2,36 @@ const express = require('express');
 const router = express.Router();
 const Stripe = require('stripe');
 
-// ===== Stripe (server-side) =====
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ===== Mercado Pago (REST) =====
-// Usamos fetch (Node 22+) para crear la preferencia sin SDKs que cambian API
-
-// Crea preferencia de Mercado Pago
+// ---------- MP: crea preferencia (acepta {order:{...}} o payload plano con unit_price) ----------
 router.post('/mp/preference', async (req, res) => {
   try {
-    // Acepta { order: {...} } o el body directo
-    const order = req.body.order || req.body;
-    if (!order) {
-      return res.status(400).json({ error: 'invalid_payload', detail: 'Falta order' });
+    // Acepta { order: {...} } o el body directo (formato "plano")
+    const payload = req.body.order || req.body;
+
+    // monto: intenta en este orden: total, unit_price, amount, value
+    const rawAmount = payload.total ?? payload.unit_price ?? payload.amount ?? payload.value;
+    const amount = Number(String(rawAmount ?? '').toString().replace(/[^\d.-]/g, ''));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'invalid_amount', detail: 'El monto debe ser > 0' });
     }
 
-    const amount = Number(order.total || 0);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'invalid_amount', detail: 'total debe ser > 0' });
-    }
-    const email = String(order.email || '').trim();
-    if (!email) {
-      return res.status(400).json({ error: 'invalid_email', detail: 'email requerido' });
-    }
+    // email: acepta varias ubicaciones
+    const email =
+      payload.email ||
+      payload.payer?.email ||
+      payload.metadata?.email ||
+      '';
 
     const preference = {
       items: [
-        {
-          title: 'Reserva Lapa Casa Hostel',
-          quantity: 1,
-          currency_id: 'BRL',
-          unit_price: amount
-        }
+        { title: 'Reserva Lapa Casa Hostel', quantity: 1, currency_id: 'BRL', unit_price: amount }
       ],
-      payer: { email },
-      metadata: { bookingId: String(order.bookingId || '') },
+      payer: email ? { email } : undefined,
+      metadata: {
+        bookingId: String(payload.bookingId || payload.metadata?.bookingId || '')
+      },
       back_urls: {
         success: `${process.env.FRONTEND_URL}?paid=1`,
         failure: `${process.env.FRONTEND_URL}?paid=0`,
@@ -61,7 +56,6 @@ router.post('/mp/preference', async (req, res) => {
     }
 
     const mpJson = await mpRes.json();
-    // init_point: link de checkout clásico
     return res.json({ init_point: mpJson.init_point });
   } catch (e) {
     console.error('MP error:', e);
@@ -69,32 +63,28 @@ router.post('/mp/preference', async (req, res) => {
   }
 });
 
-// Crea sesión de Stripe Checkout
+// ---------- Stripe: sesión de checkout (acepta {order:{...}} o payload plano) ----------
 router.post('/stripe/session', async (req, res) => {
   try {
-    const order = req.body.order || req.body;
-    if (!order) {
-      return res.status(400).json({ error: 'invalid_payload', detail: 'Falta order' });
-    }
+    const payload = req.body.order || req.body;
 
-    const amount = Number(order.total || 0);
+    const rawAmount = payload.total ?? payload.amount ?? payload.value ?? payload.unit_price;
+    const amount = Number(String(rawAmount ?? '').toString().replace(/[^\d.-]/g, ''));
     if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'invalid_amount', detail: 'total debe ser > 0' });
+      return res.status(400).json({ error: 'invalid_amount', detail: 'El monto debe ser > 0' });
     }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'brl',
-            product_data: { name: 'Reserva Lapa Casa Hostel' },
-            unit_amount: Math.round(amount * 100) // centavos
-          },
-          quantity: 1
-        }
-      ],
-      metadata: { bookingId: String(order.bookingId || '') },
+      line_items: [{
+        price_data: {
+          currency: 'brl',
+          product_data: { name: 'Reserva Lapa Casa Hostel' },
+          unit_amount: Math.round(amount * 100)
+        },
+        quantity: 1
+      }],
+      metadata: { bookingId: String(payload.bookingId || payload.metadata?.bookingId || '') },
       mode: 'payment',
       success_url: `${process.env.FRONTEND_URL}?paid=1`,
       cancel_url: `${process.env.FRONTEND_URL}?paid=0`
@@ -107,9 +97,8 @@ router.post('/stripe/session', async (req, res) => {
   }
 });
 
-// Webhook Stripe (placeholder)
+// (Opcional) Webhook Stripe
 router.post('/webhooks/stripe', async (req, res) => {
-  // Valida firma con STRIPE_WEBHOOK_SECRET si lo usas
   return res.json({ received: true });
 });
 

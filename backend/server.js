@@ -22,20 +22,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Servir el frontend
+// Endpoint de disponibilidad con prefijo /api
+app.get('/api/availability', (req, res) => {
+  // Puedes usar req.query.from y req.query.to para filtrar
+  res.json({ ok: true, occupied: {} });
+});
+
+// Rutas de la API con prefijo /api
+app.use('/api/bookings', bookings);
+app.use('/api/holds',    holds);
+app.use('/api/payments', payments);
+
+// Servir el frontend estático
 app.use('/', express.static(path.join(__dirname, '..', 'frontend')));
 app.get('/book', (_, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
-// Rutas de la API
-app.use('/bookings', bookings);
-app.use('/holds',    holds);
-app.use('/payments', payments);
-
 // Endpoint de salud
 app.get('/ping', (_, res) => res.json({ ok: true, ts: Date.now() }));
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Servidor escuchando en el puerto ${process.env.PORT || 3000}`);
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Servidor escuchando en el puerto ${port}`);
 });

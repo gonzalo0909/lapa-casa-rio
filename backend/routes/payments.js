@@ -1,15 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const mercadopago = require('mercadopago');
 const Stripe = require('stripe');
 
-// Configurar Mercado Pago con el token de acceso
-mercadopago.configurations.setAccessToken(process.env.MP_ACCESS_TOKEN);
-
-// Configurar Stripe con la clave secreta
+// Inicializamos Stripe con tu clave secreta
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Generar preferencia de Mercado Pago
+// Crear preferencia de Mercado Pago mediante llamada REST
 router.post('/mp/preference', async (req, res) => {
   try {
     const { order } = req.body;
@@ -33,15 +29,29 @@ router.post('/mp/preference', async (req, res) => {
       auto_return: 'approved'
     };
 
-    const response = await mercadopago.preferences.create(preference);
-    return res.json({ init_point: response.body.init_point });
+    const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(preference)
+    });
+
+    if (!mpRes.ok) {
+      const errorBody = await mpRes.text();
+      throw new Error(`MP API error: ${mpRes.status} ${errorBody}`);
+    }
+
+    const mpJson = await mpRes.json();
+    return res.json({ init_point: mpJson.init_point });
   } catch (e) {
     console.error('MP error:', e);
     return res.status(500).json({ error: 'mp_error', detail: String(e) });
   }
 });
 
-// Crear sesión de Stripe
+// Crear una sesión de Stripe
 router.post('/stripe/session', async (req, res) => {
   try {
     const { order } = req.body;
@@ -67,10 +77,9 @@ router.post('/stripe/session', async (req, res) => {
   }
 });
 
-// Webhook de Stripe (igual que antes)
+// Webhook de Stripe
 router.post('/webhooks/stripe', async (req, res) => {
-  // Verifica la firma con STRIPE_WEBHOOK_SECRET y actualiza la reserva
-  res.json({ received:true });
+  res.json({ received: true });
 });
 
 module.exports = router;

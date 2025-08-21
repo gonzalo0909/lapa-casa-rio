@@ -1,0 +1,13 @@
+{
+  "name": "lapa-casa-channel-manager",
+  "version": "1.0.0",
+  "description": "Backend para el channel manager de Lapa Casa Hostel",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}

@@ -1,94 +1,40 @@
-const express = require('express');
+// FILE: backend/routes/payments.js
+"use strict";
+
+const express = require("express");
+const { MercadoPagoConfig, Preference } = require("mercadopago");
+
 const router = express.Router();
-const Stripe = require('stripe');
 
-// Configurar Stripe con tu clave secreta
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-
-// Mercado Pago: generar preferencia mediante llamada REST
-router.post('/mp/preference', async (req, res) => {
-  try {
-    const order = req.body.order || req.body;
-    if (!order) {
-      return res.status(400).json({ error: 'invalid_payload', detail: 'No se recibió un objeto de pedido' });
-    }
-
-    const preference = {
-      items: [{
-        title: 'Reserva Lapa Casa Hostel',
-        quantity: 1,
-        currency_id: 'BRL',
-        unit_price: Number(order.total || 0)
-      }],
-      payer: {
-        email: order.email
-      },
-      metadata: {
-        bookingId: order.bookingId
-      },
-      back_urls: {
-        success: `${process.env.FRONTEND_URL}?paid=1`,
-        failure: `${process.env.FRONTEND_URL}?paid=0`
-      },
-      auto_return: 'approved'
-    };
-
-    const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(preference)
-    });
-
-    if (!mpRes.ok) {
-      const errorBody = await mpRes.text();
-      throw new Error(`MP API error: ${mpRes.status} ${errorBody}`);
-    }
-
-    const mpJson = await mpRes.json();
-    return res.json({ init_point: mpJson.init_point });
-  } catch (e) {
-    console.error('MP error:', e);
-    return res.status(500).json({ error: 'mp_error', detail: String(e) });
-  }
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN
 });
 
-// Stripe: crear una sesión de checkout
-router.post('/stripe/session', async (req, res) => {
+// Ruta de prueba de pago
+router.post("/mp", async (req, res) => {
   try {
-    const order = req.body.order || req.body;
-    if (!order) {
-      return res.status(400).json({ error: 'invalid_payload', detail: 'No se recibió un objeto de pedido' });
-    }
+    const { total } = req.body;
+    if (!total) return res.status(400).json({ error: "missing_total" });
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'brl',
-          product_data: { name: 'Reserva Lapa Casa Hostel' },
-          unit_amount: Number(order.total || 0) * 100
+    const preference = await new Preference(client).create({
+      body: {
+        items: [
+          { title: "Reserva Lapa Casa Hostel", quantity: 1, currency_id: "BRL", unit_price: Number(total) }
+        ],
+        back_urls: {
+          success: `${process.env.FRONTEND_URL}/success`,
+          failure: `${process.env.FRONTEND_URL}/failure`,
+          pending: `${process.env.FRONTEND_URL}/pending`
         },
-        quantity: 1
-      }],
-      metadata: { bookingId: order.bookingId },
-      mode: 'payment',
-      success_url: `${process.env.FRONTEND_URL}?paid=1`,
-      cancel_url: `${process.env.FRONTEND_URL}?paid=0`
+        auto_return: "approved"
+      }
     });
-    res.json({ id: session.id });
-  } catch (e) {
-    console.error('Stripe error:', e);
-    res.status(500).json({ error: 'stripe_error', detail: String(e) });
-  }
-});
 
-// Webhook de Stripe
-router.post('/webhooks/stripe', async (req, res) => {
-  // En producción, valida la firma aquí
-  res.json({ received: true });
+    res.json({ id: preference.id, init_point: preference.init_point });
+  } catch (err) {
+    console.error("MP error:", err);
+    res.status(500).json({ error: "mp_error" });
+  }
 });
 
 module.exports = router;

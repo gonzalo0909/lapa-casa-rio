@@ -4,34 +4,35 @@ const Stripe = require('stripe');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ---------- MP: crea preferencia (acepta {order:{...}} o payload plano con unit_price) ----------
+// ===== Mercado Pago: preferencia con Pix habilitado =====
 router.post('/mp/preference', async (req, res) => {
   try {
-    // Acepta { order: {...} } o el body directo (formato "plano")
     const payload = req.body.order || req.body;
 
-    // monto: intenta en este orden: total, unit_price, amount, value
+    // Monto (>0) — admite total/unit_price/amount/value
     const rawAmount = payload.total ?? payload.unit_price ?? payload.amount ?? payload.value;
-    const amount = Number(String(rawAmount ?? '').toString().replace(/[^\d.-]/g, ''));
+    const amount = Number(String(rawAmount ?? '').replace(/[^\d.-]/g, ''));
     if (!Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ error: 'invalid_amount', detail: 'El monto debe ser > 0' });
     }
 
-    // email: acepta varias ubicaciones
     const email =
-      payload.email ||
-      payload.payer?.email ||
-      payload.metadata?.email ||
-      '';
+      payload.email || payload.payer?.email || payload.metadata?.email || '';
 
     const preference = {
       items: [
         { title: 'Reserva Lapa Casa Hostel', quantity: 1, currency_id: 'BRL', unit_price: amount }
       ],
       payer: email ? { email } : undefined,
-      metadata: {
-        bookingId: String(payload.bookingId || payload.metadata?.bookingId || '')
+      metadata: { bookingId: String(payload.bookingId || payload.metadata?.bookingId || '') },
+
+      // ✅ Habilita Pix en Checkout Pro (y lo deja por defecto)
+      payment_methods: {
+        excluded_payment_types: [],              // no excluimos nada (tarjeta + pix)
+        default_payment_method_id: 'pix'         // Pix será la opción por defecto
       },
+      binary_mode: false,
+
       back_urls: {
         success: `${process.env.FRONTEND_URL}?paid=1`,
         failure: `${process.env.FRONTEND_URL}?paid=0`,
@@ -56,6 +57,7 @@ router.post('/mp/preference', async (req, res) => {
     }
 
     const mpJson = await mpRes.json();
+    // init_point abre Checkout Pro (verás Pix y Tarjeta)
     return res.json({ init_point: mpJson.init_point });
   } catch (e) {
     console.error('MP error:', e);
@@ -63,13 +65,12 @@ router.post('/mp/preference', async (req, res) => {
   }
 });
 
-// ---------- Stripe: sesión de checkout (acepta {order:{...}} o payload plano) ----------
+// ===== Stripe: checkout (sin cambios) =====
 router.post('/stripe/session', async (req, res) => {
   try {
     const payload = req.body.order || req.body;
-
     const rawAmount = payload.total ?? payload.amount ?? payload.value ?? payload.unit_price;
-    const amount = Number(String(rawAmount ?? '').toString().replace(/[^\d.-]/g, ''));
+    const amount = Number(String(rawAmount ?? '').replace(/[^\d.-]/g, ''));
     if (!Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ error: 'invalid_amount', detail: 'El monto debe ser > 0' });
     }
@@ -97,9 +98,7 @@ router.post('/stripe/session', async (req, res) => {
   }
 });
 
-// (Opcional) Webhook Stripe
-router.post('/webhooks/stripe', async (req, res) => {
-  return res.json({ received: true });
-});
+// (opcional) webhook Stripe
+router.post('/webhooks/stripe', async (_req, res) => res.json({ received: true }));
 
 module.exports = router;

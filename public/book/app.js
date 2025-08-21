@@ -194,9 +194,13 @@
     });
 
     const hasWomen = women >= 1;
-    const toShow=new Set();
-    if(!hasWomen){ toShow.add(1); if(qty>12){ toShow.add(3); toShow.add(5); } }
-    else { toShow.add(1); toShow.add(5); toShow.add(6); if(qty>12){ toShow.add(3); } }
+
+    // 🔧 Parche: mostrar SIEMPRE todos los cuartos válidos (no filtrar por qty)
+    const toShow = new Set();
+    toShow.add(1); // mixto 12
+    toShow.add(3); // mixto 12
+    toShow.add(5); // mixto 7
+    if (hasWomen) toShow.add(6); // femenino 7
 
     const finalShow = Array.from(toShow).filter(id=>freeByRoom[id].length>0);
     if(!finalShow.length){ roomsWrap.innerHTML='<p>'+I18N[LANG].no_beds+'</p>'; return; }
@@ -225,17 +229,40 @@
     refreshTotals(men,women,dateIn,dateOut);
   }
 
-  function toggleBed(roomId,bedId,dateIn,dateOut,btnNode){
-    const set=selection[roomId]||new Set();
-    if(ROOMS[roomId].femaleOnly && Number(document.getElementById('women').value||0)<1){
-      alert(I18N[LANG].female_rule); return;
+  // 🔧 Parche: no dejar seleccionar más de las necesarias (y avisar)
+  function toggleBed(roomId, bedId, dateIn, dateOut, btnNode){
+    const set = selection[roomId] || new Set();
+
+    if (ROOMS[roomId].femaleOnly && Number(document.getElementById('women').value||0) < 1) {
+      alert(I18N[LANG].female_rule);
+      return;
     }
-    if(set.has(bedId)) set.delete(bedId); else set.add(bedId);
-    selection[roomId]=set;
-    refreshTotals(Number(document.getElementById('men').value||0),Number(document.getElementById('women').value||0),dateIn,dateOut);
-    if(!btnNode || btnNode.classList.contains('occupied')) return;
-    btnNode.classList.toggle('selected',set.has(bedId));
-    btnNode.setAttribute('aria-pressed', set.has(bedId) ? 'true' : 'false');
+
+    const men = Number(document.getElementById('men').value||0);
+    const women = Number(document.getElementById('women').value||0);
+    const needed = men + women;
+
+    let selectedCount = 0;
+    Object.values(selection).forEach(s => { selectedCount += (s?.size || 0); });
+
+    const isSelected = set.has(bedId);
+
+    if (!isSelected && selectedCount >= needed) {
+      const suggestBox = document.getElementById('suggestBox');
+      suggestBox.style.display = 'block';
+      suggestBox.textContent = I18N[LANG].select_exact.replace('{n}', needed);
+      return;
+    }
+
+    if (isSelected) set.delete(bedId); else set.add(bedId);
+    selection[roomId] = set;
+
+    if (btnNode && !btnNode.classList.contains('occupied')) {
+      btnNode.classList.toggle('selected', set.has(bedId));
+      btnNode.setAttribute('aria-pressed', set.has(bedId) ? 'true' : 'false');
+    }
+
+    refreshTotals(men, women, dateIn, dateOut);
   }
 
   function refreshTotals(men,women,start,end){

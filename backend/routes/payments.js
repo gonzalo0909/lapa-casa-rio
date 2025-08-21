@@ -3,19 +3,16 @@ const router = express.Router();
 const Stripe = require('stripe');
 const { randomUUID } = require('crypto');
 
-// ===== Stripe (tarjeta)
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// helper monto
+// Monto seguro
 function parseAmount(p) {
   const raw = p?.total ?? p?.unit_price ?? p?.amount ?? p?.value;
   const n = Number(String(raw ?? '').replace(/[^\d.-]/g, ''));
   return Number.isFinite(n) ? n : 0;
 }
 
-/* =======================
- * MP — Checkout Pro (tarjeta + Pix en algunas cuentas)
- * ======================= */
+/* ===== Mercado Pago — Checkout Pro (puede o no mostrar Pix) ===== */
 router.post('/mp/preference', async (req, res) => {
   try {
     const p = req.body?.order || req.body || {};
@@ -24,18 +21,14 @@ router.post('/mp/preference', async (req, res) => {
 
     const email = p.email || p.payer?.email || p.metadata?.email || '';
     const bookingId = String(p.bookingId || p.metadata?.bookingId || `BKG-${Date.now()}`);
-    const backBase  = process.env.FRONTEND_URL || 'https://lapacasahostel.com/book';
+    const backBase  = process.env.FRONTEND_URL || '/book';
 
     const preference = {
       items: [{ title: 'Reserva Lapa Casa Hostel', quantity: 1, currency_id: 'BRL', unit_price: amount }],
       payer: email ? { email } : undefined,
       metadata: { bookingId },
       external_reference: bookingId,
-      payment_methods: {
-        excluded_payment_methods: [],
-        excluded_payment_types: [],
-        default_payment_option_id: 'pix'
-      },
+      payment_methods: { default_payment_option_id: 'pix' },
       back_urls: {
         success: `${backBase}?paid=1`,
         failure: `${backBase}?paid=0`,
@@ -68,9 +61,7 @@ router.post('/mp/preference', async (req, res) => {
   }
 });
 
-/* =======================
- * MP — PIX por Checkout Transparente (QR y copia/cola)
- * ======================= */
+/* ===== Mercado Pago — Pix directo (Checkout Transparente) ===== */
 router.post('/mp/pix', async (req, res) => {
   try {
     const p = req.body?.order || req.body || {};
@@ -108,15 +99,14 @@ router.post('/mp/pix', async (req, res) => {
     }
 
     const j = await payRes.json();
-    const tdata = j?.point_of_interaction?.transaction_data || {};
-    // devolvemos lo necesario para mostrar Pix en el front
+    const t = j?.point_of_interaction?.transaction_data || {};
     return res.json({
       id: j.id,
-      status: j.status, // esperado: "pending"
+      status: j.status,
       status_detail: j.status_detail,
-      qr_code_base64: tdata.qr_code_base64 || null,
-      qr_code: tdata.qr_code || null,
-      ticket_url: tdata.ticket_url || null,
+      qr_code_base64: t.qr_code_base64 || null,
+      qr_code: t.qr_code || null,
+      ticket_url: t.ticket_url || null,
       external_reference: bookingId
     });
   } catch (e) {
@@ -125,9 +115,7 @@ router.post('/mp/pix', async (req, res) => {
   }
 });
 
-/* =======================
- * Stripe — tarjeta
- * ======================= */
+/* ===== Stripe — tarjeta ===== */
 router.post('/stripe/session', async (req, res) => {
   try {
     const p = req.body?.order || req.body || {};
@@ -135,7 +123,7 @@ router.post('/stripe/session', async (req, res) => {
     if (amount <= 0) return res.status(400).json({ error: 'invalid_amount' });
 
     const bookingId = String(p.bookingId || p.metadata?.bookingId || `BKG-${Date.now()}`);
-    const backBase  = process.env.FRONTEND_URL || 'https://lapacasahostel.com/book';
+    const backBase  = process.env.FRONTEND_URL || '/book';
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -160,6 +148,7 @@ router.post('/stripe/session', async (req, res) => {
   }
 });
 
+// Webhook Stripe (placeholder)
 router.post('/webhooks/stripe', async (_req, res) => res.json({ received: true }));
 
 module.exports = router;

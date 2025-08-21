@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <title>Lapa Casa Hostel – Reservas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Ajusta si sirves backend en otro path -->
+  <!-- Backend base para fetch -->
   <meta name="backend-base-url" content="/api">
+  <!-- Stripe -->
   <script src="https://js.stripe.com/v3/"></script>
+  <script>window.STRIPE_PUBLISHABLE_KEY = "pk_live_o_test";</script>
   <style>
     :root { --gap:12px; }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;margin:0;padding:16px;color:#222}
@@ -114,6 +116,7 @@
       <input type="date" name="entrada" required />
       <label>Fecha de salida</label>
       <input type="date" name="salida" required />
+
       <label style="margin-top:8px">
         <input type="checkbox" id="consentChk" />
         <span class="muted">Acepto recibir comunicaciones y la política de privacidad.</span>
@@ -164,9 +167,8 @@
 
 <script>
 (function(){
-  // ==== Config
   const API_BASE = (document.querySelector('meta[name="backend-base-url"]')?.getAttribute('content') || '/api').replace(/\/$/,'');
-  const ENDPOINTS = {
+  const EP = {
     AVAIL: API_BASE + '/availability',
     PAY_MP_PREF: API_BASE + '/payments/mp/preference',
     PAY_MP_PIX:  API_BASE + '/payments/mp/pix',
@@ -174,10 +176,9 @@
     HOLDS_START: API_BASE + '/holds/start',
     HOLDS_CONFIRM: API_BASE + '/holds/confirm',
     HOLDS_RELEASE: API_BASE + '/holds/release',
-    PAY_STATUS: API_BASE + '/payments/status' // opcional
+    PAY_STATUS: API_BASE + '/payments/status'
   };
 
-  // ==== Estado
   const ROOMS = {
     1:{ name:'Cuarto 1 (12 mixto)', cap:12, basePrice:55, femaleOnly:false },
     3:{ name:'Cuarto 3 (12 mixto)', cap:12, basePrice:55, femaleOnly:false },
@@ -186,7 +187,6 @@
   };
   let selection={}, currentHoldId=null, paidFinal=false, internalTotal=0;
 
-  // ==== Helpers
   const $=s=>document.querySelector(s);
   const toISO=d=>new Date(d+'T00:00:00');
   const diffNights=(a,b)=>{ if(!a||!b) return 0; const ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000));};
@@ -194,7 +194,6 @@
   const priceModifiers=(start,end)=>{ let weekend=false, high=false; const n=diffNights(start,end); for(let i=0;i<n;i++){ const d=new Date(toISO(start)); d.setDate(d.getDate()+i); if([0,5,6].includes(d.getDay())) weekend=true; if([11,0,1].includes(d.getMonth())) high=true; } return (weekend?1.10:1)*(high?1.20:1); };
   const pricePerBed=(roomId,start,end)=>Math.round(ROOMS[roomId].basePrice*priceModifiers(start,end));
 
-  // Fechas min
   (function initDates(){
     const toYMD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const now = new Date(), tomorrow = new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
@@ -204,7 +203,6 @@
     if(dateOut){ dateOut.min=tmr; if(!dateOut.value||dateOut.value<=dateIn.value) dateOut.value=tmr; }
   })();
 
-  // Stepper personas
   function clamp(n,min,max){ n=Number.isFinite(n)?n:0; return Math.max(min, Math.min(max,n)); }
   function step(input, delta){
     const min=Number(input.min||0), max=Number(input.max||38), cur=Number(input.value||0);
@@ -218,7 +216,6 @@
   $('#womenMinus')?.addEventListener('click',()=>step($('#women'),-1));
   $('#womenPlus')?.addEventListener('click',()=>step($('#women'),+1));
 
-  // Disponibilidad
   $('#checkAvail')?.addEventListener('click', async ()=>{
     const dIn=$('#dateIn').value, dOut=$('#dateOut').value;
     const men=Number($('#men').value||0), women=Number($('#women').value||0), qty=men+women;
@@ -229,18 +226,17 @@
     msg.textContent='Consultando disponibilidad...';
     let occupied={};
     try{
-      const url = `${ENDPOINTS.AVAIL}?from=${encodeURIComponent(dIn)}&to=${encodeURIComponent(dOut)}`;
+      const url = `${EP.AVAIL}?from=${encodeURIComponent(dIn)}&to=${encodeURIComponent(dOut)}`;
       const r = await fetch(url, { headers:{'Accept':'application/json'} });
       const j = await r.json();
       if(r.ok && j && j.ok) occupied = j.occupied || {};
       else throw new Error('avail_fail');
     }catch(_){
-      // Si la API falla, mostramos todo libre (para no frenar ventas)
-      occupied = {};
+      occupied = {}; // fallback: todo libre
       msg.innerHTML='<span class="err">Error consultando disponibilidad. Asumiendo todo libre.</span>';
     }
     renderAvailability(dIn,dOut,men,women,occupied);
-    $('#mods').textContent = ''; // puedes mostrar tags si quieres
+    $('#mods').textContent = '';
     msg.textContent = 'Disponibilidad actualizada';
   });
 
@@ -328,12 +324,11 @@
     };
   }
 
-  // HOLD + mostrar formulario
   $('#continueBtn')?.addEventListener('click', async ()=>{
     const order=buildOrderBase();
     if(!order.total){ alert('Seleccioná camas primero.'); return; }
     try{
-      const r=await fetch(ENDPOINTS.HOLDS_START,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ holdId:order.bookingId, ...order })});
+      const r=await fetch(EP.HOLDS_START,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ holdId:order.bookingId, ...order })});
       const j=await r.json();
       if(!r.ok||!j.ok) throw new Error(j.error||'No se pudo crear HOLD');
       currentHoldId=j.holdId||order.bookingId;
@@ -345,44 +340,49 @@
     }catch(e){ alert('Error creando HOLD: '+e.message); }
   });
 
-  // MP Checkout Pro
   $('#payMP')?.addEventListener('click', async ()=>{
     const order=buildOrderBase();
     if(!order.total){ alert('Seleccioná camas primero.'); return; }
     if(!order.nombre||!order.email){ alert('Completá nombre y email.'); return; }
     if(!$('#consentChk').checked){ alert('Debes aceptar la política de privacidad.'); return; }
     try{
-      const r1=await fetch(ENDPOINTS.PAY_MP_PREF,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ order })});
+      const r1=await fetch(EP.PAY_MP_PREF,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ order })});
       const j=await r1.json(); if(!r1.ok||!j.init_point) throw new Error(j.detail||'mp_error');
       window.location.href=j.init_point;
     }catch(e){ alert('Error iniciando pago (MP): '+e.message); }
   });
 
-  // MP Pix directo (QR)
   $('#payPix')?.addEventListener('click', async ()=>{
     const order=buildOrderBase();
     if(!order.total){ alert('Seleccioná camas primero.'); return; }
     if(!order.email){ alert('Completá email.'); return; }
     try{
-      const r=await fetch(ENDPOINTS.PAY_MP_PIX,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ order })});
+      const r=await fetch(EP.PAY_MP_PIX,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ order })});
       const j=await r.json(); if(!r.ok) throw new Error(j.detail||'pix_error');
       const qr = j.qr_code_base64 ? `data:image/png;base64,${j.qr_code_base64}` : '';
-      $('#pixQr').src = qr; $('#pixCopiaCola').value = j.qr_code || '';
-      const tk = $('#pixTicket'); if(j.ticket_url){ tk.style.display='inline-block'; tk.href=j.ticket_url; } else { tk.style.display='none'; }
-      $('#pixModal').style.display='flex';
-      // Marcamos pago pendiente para poder confirmar al volver del pago manual
-      $('#payState').textContent='pending';
+      document.getElementById('pixQr').src = qr;
+      document.getElementById('pixCopiaCola').value = j.qr_code || '';
+      const tk = document.getElementById('pixTicket');
+      if(j.ticket_url){ tk.style.display='inline-block'; tk.href=j.ticket_url; } else { tk.style.display='none'; }
+      document.getElementById('pixModal').style.display='flex';
+      document.getElementById('payState').textContent='pending';
     }catch(e){ alert('Error PIX: '+e.message); }
   });
-  $('#copyPix')?.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText($('#pixCopiaCola').value); alert('Código Pix copiado'); }catch{ alert('No se pudo copiar'); }});
-  $('#closePix')?.addEventListener('click', ()=>$('#pixModal').style.display='none');
+  document.getElementById('copyPix')?.addEventListener('click', async ()=>{
+    try{
+      const ta=document.getElementById('pixCopiaCola');
+      ta.select(); ta.setSelectionRange(0, 99999);
+      await navigator.clipboard.writeText(ta.value);
+      alert('Código Pix copiado');
+    }catch{ alert('No se pudo copiar'); }
+  });
+  document.getElementById('closePix')?.addEventListener('click', ()=>{ document.getElementById('pixModal').style.display='none'; });
 
-  // Stripe
   $('#payStripe')?.addEventListener('click', async ()=>{
     const order=buildOrderBase();
     if(!order.total){ alert('Seleccioná camas primero.'); return; }
     try{
-      const r=await fetch(ENDPOINTS.PAY_STRIPE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ order })});
+      const r=await fetch(EP.PAY_STRIPE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ order })});
       const j=await r.json(); if(!r.ok||!j.id) throw new Error(j.detail||'stripe_error');
       const stripe = window.Stripe?.(window.STRIPE_PUBLISHABLE_KEY);
       if(!stripe){ alert('Stripe no disponible'); return; }
@@ -391,28 +391,29 @@
     }catch(e){ alert('Error iniciando pago (Stripe): '+e.message); }
   });
 
-  // Confirmar (requiere pago aprobado)
   $('#reserva-form')?.addEventListener('submit', async (e)=>{
     e.preventDefault(); const btn=$('#submitBtn'); btn.disabled=true;
     try{
       if(!$('#consentChk').checked){ alert('Acepta la política.'); btn.disabled=false; return; }
       const order=buildOrderBase();
-      // chequeo opcional al backend (si tenés /payments/status)
       try{
-        const rs=await fetch(`${ENDPOINTS.PAY_STATUS}?bookingId=${encodeURIComponent(order.bookingId)}`);
-        if(rs.ok){ const js=await rs.json(); if(js && (js.paid===true || js.status==='approved'||js.status==='paid')) $('#payState').textContent='aprobado'; }
+        const rs=await fetch(`${EP.PAY_STATUS}?bookingId=${encodeURIComponent(order.bookingId)}`);
+        if(rs.ok){ const js=await rs.json(); if(js && (js.paid===true || js.status==='approved'||js.status==='paid')) document.getElementById('payState').textContent='aprobado'; }
       }catch(_){}
-      const paidOk = ($('#payState').textContent||'').toLowerCase().includes('apro') || $('#payState').textContent==='approved';
+      const paidOk = (document.getElementById('payState').textContent||'').toLowerCase().includes('apro') || document.getElementById('payState').textContent==='approved';
       if(!paidOk){ alert('Necesitás completar el pago.'); btn.disabled=false; return; }
-      const r=await fetch(ENDPOINTS.HOLDS_CONFIRM,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ holdId:currentHoldId||order.bookingId, status:'paid' })});
+      const r=await fetch(EP.HOLDS_CONFIRM,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ holdId:currentHoldId||order.bookingId, status:'paid' })});
       const j=await r.json(); if(!r.ok||!j.ok) throw new Error(j.error||'No se pudo confirmar HOLD');
       paidFinal=true; alert('✅ Reserva registrada');
     }catch(e){ alert('Error confirmando: '+e.message); btn.disabled=false; }
   });
 
-  // Liberar HOLD al salir
   window.addEventListener('beforeunload', ()=>{
-    try{ if(currentHoldId && !paidFinal){ navigator.sendBeacon(ENDPOINTS.HOLDS_RELEASE, new Blob([JSON.stringify({holdId:currentHoldId})], {type:'application/json'})); } }catch(_){}
+    try{
+      if(currentHoldId && !paidFinal){
+        navigator.sendBeacon(EP.HOLDS_RELEASE, new Blob([JSON.stringify({holdId:currentHoldId})], {type:'application/json'}));
+      }
+    }catch(_){}
   });
 })();
 </script>

@@ -1,48 +1,22 @@
-require('dotenv').config();
-const express = require('express');
 const path = require('path');
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
-const bookings = require('./routes/bookings');
-const holds    = require('./routes/holds');
-const payments = require('./routes/payments');
+const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
 
-// CORS
-app.use((req, res, next) => {
-  const allowed = process.env.CORS_ALLOW_ORIGINS.split(',');
-  const origin  = req.headers.origin || '';
-  if (allowed.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
-});
+app.get('/api/ping', (_req, res) => res.json({ ok: true }));
 
-// Endpoint de disponibilidad con prefijo /api
-app.get('/api/availability', (req, res) => {
-  // Puedes usar req.query.from y req.query.to para filtrar
-  res.json({ ok: true, occupied: {} });
-});
+app.use('/api/payments', require('./routes/payments'));
 
-// Rutas de la API con prefijo /api
-app.use('/api/bookings', bookings);
-app.use('/api/holds',    holds);
-app.use('/api/payments', payments);
+const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
+app.use(express.static(FRONTEND_DIR));
+app.get(['/book', '/'], (_req, res) =>
+  res.sendFile(path.join(FRONTEND_DIR, 'index.html'))
+);
 
-// Servir el frontend estático
-app.use('/', express.static(path.join(__dirname, '..', 'frontend')));
-app.get('/book', (_, res) => {
-  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
-});
-
-// Endpoint de salud
-app.get('/ping', (_, res) => res.json({ ok: true, ts: Date.now() }));
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Servidor escuchando en el puerto ${port}`);
-});
+app.listen(PORT, () => console.log(`Server :${PORT}`));

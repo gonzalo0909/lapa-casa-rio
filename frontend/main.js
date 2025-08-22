@@ -155,8 +155,7 @@
   function currentSelectionObject(){ const o={}; for(const [id,set] of Object.entries(selection)) o[id]=Array.from(set||[]); return o; }
   function buildOrderBase(){
     const a=$('#dateIn').value,b=$('#dateOut').value;
-    const nights=Math.max(1,M
-ath.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000));
+    const nights=Math.max(1, Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000));
     return {
       bookingId: currentHoldId||('BKG-'+Date.now()),
       nombre: $('#reserva-form [name="nombre"]')?.value||'',
@@ -194,6 +193,7 @@ ath.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000));
     if (!r.ok || !j.init_point) { alert('Error MP'); return; }
     window.location.href = j.init_point;
   });
+
   document.getElementById('payPix')?.addEventListener('click', async () => {
     const order = buildOrderBase();
     const r = await fetch(EP.PAY_MP_PIX, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
@@ -209,11 +209,14 @@ ath.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000));
     modal.style.display = 'flex';
     const payState = document.getElementById('payState'); if (payState) payState.textContent = j.status || 'pending';
   });
+
   document.getElementById('copyPix')?.addEventListener('click', async () => {
     try { const ta = document.getElementById('pixCopiaCola'); ta.select(); ta.setSelectionRange(0, 99999); await navigator.clipboard.writeText(ta.value); alert('Código Pix copiado'); }
     catch { alert('No se pudo copiar'); }
   });
+
   document.getElementById('closePix')?.addEventListener('click', () => { document.getElementById('pixModal').style.display = 'none'; });
+
   document.getElementById('payStripe')?.addEventListener('click', async () => {
     const order = buildOrderBase();
     const r = await fetch(EP.PAY_STRIPE, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
@@ -253,7 +256,6 @@ ath.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000));
     return fetch(url, Object.assign({}, opts, { headers }));
   }
 
-  // FIX: ruta correcta sin duplicar /api
   $('#btnHealth')?.addEventListener('click', async ()=>{
     const r=await authFetch(API_BASE+'/admin/health'); const j=await r.json().catch(()=>({}));
     $('#healthOut').textContent = JSON.stringify(j,null,2);

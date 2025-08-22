@@ -1,58 +1,101 @@
 "use strict";
 
-const holds = new Map(); // holdId -> hold
-const TTL_MIN = Number(process.env.HOLD_TTL_MINUTES || 10);
-const now = () => Date.now();
+/**
+ * Store de HOLDs en memoria.
+ * TTL: .env HOLD_TTL_MINUTES (default 10).
+ */
+const holds = new Map();
+const DEFAULT_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
+const nowMs = () => Date.now();
 
-function sweep() {
-  const t = now();
+function sweepExpired() {
+  const cutoff = nowMs();
   for (const [id, h] of holds.entries()) {
-    if (!h || !h.expiresAt || h.expiresAt <= t || h.status === "released") holds.delete(id);
+    if (!h || !h.expiresAt || h.expiresAt <= cutoff) holds.delete(id);
   }
 }
-setInterval(sweep, 60_000).unref?.();
 
-function startHold({ holdId, entrada, salida, hombres=0, mujeres=0, camas={}, total=0 }) {
-  sweep();
-  const id = String(holdId || `HOLD-${Date.now()}`);
-  const ttlMs = (TTL_MIN>0?TTL_MIN:10)*60*1000;
-  holds.set(id, {
-    holdId: id, entrada, salida, hombres:Number(hombres), mujeres:Number(mujeres),
-    camas: camas||{}, total:Number(total||0),
-    createdAt: new Date(), ttlMs, expiresAt: now()+ttlMs, status:"hold"
-  });
-  return { holdId:id, expiresAt: now()+ttlMs };
+function listHolds() {
+  sweepExpired();
+  return Array.from(holds.values()).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 }
 
-function confirmHold(holdId, status="paid") { const h=holds.get(String(holdId)); if(!h) return false; h.status=status; return true; }
-function releaseHold(holdId){ const id=String(holdId); if(!holds.has(id)) return false; holds.get(id).status="released"; holds.delete(id); return true; }
+function getHold(holdId) {
+  sweepExpired();
+  return holds.get(String(holdId));
+}
 
-function overlaps(aStart, aEnd, bStart, bEnd){ return (aStart<bEnd && bStart<aEnd); }
+function startHold(payload) {
+  sweepExpired();
+  const p = payload || {};
+  const holdId = String(p.holdId || `HOLD-${Date.now()}`);
+  const ttlMin = DEFAULT_TTL_MINUTES > 0 ? DEFAULT_TTL_MINUTES : 10;
+  const ttlMs = ttlMin * 60 * 1000;
 
-function getHoldsMap(from, to) {
-  sweep();
-  const out = {};
-  const f = new Date(from+"T00:00:00"), t = new Date(to+"T00:00:00");
+  const item = {
+    holdId,
+    entrada: p.entrada || "",
+    salida: p.salida || "",
+    hombres: Number(p.hombres || 0),
+    mujeres: Number(p.mujeres || 0),
+    camas: p.camas || {},           // {roomId: [beds]}
+    total: Number(p.total || 0),
+    createdAt: new Date(),
+    ttlMs,
+    expiresAt: nowMs() + ttlMs,
+    status: "hold"
+  };
+
+  holds.set(holdId, item);
+  return { ok: true, holdId, expiresAt: item.expiresAt };
+}
+
+function confirmHold(holdId, status = "paid") {
+  sweepExpired();
+  const h = holds.get(String(holdId));
+  if (!h) return { ok: false, error: "hold_not_found" };
+  h.status = status;
+  return { ok: true };
+}
+
+function releaseHold(holdId) {
+  sweepExpired();
+  holds.delete(String(holdId));
+  return { ok: true };
+}
+
+/** Mapa de camas ocupadas por HOLDs activos solapados con [from,to) */
+function getHoldsMap(fromYMD, toYMD) {
+  sweepExpired();
+  const out = { 1: new Set(), 3: new Set(), 5: new Set(), 6: new Set() };
+  const f = fromYMD ? new Date(fromYMD + "T00:00:00") : null;
+  const t = toYMD ? new Date(toYMD + "T00:00:00") : null;
+
   for (const h of holds.values()) {
-    if (!(h.status==="hold" || h.status==="paid_pending")) continue;
-    if (!overlaps(f,t,new Date(h.entrada+"T00:00:00"), new Date(h.salida+"T00:00:00"))) continue;
-    for (const [roomId,beds] of Object.entries(h.camas||{})) {
-      const k=String(roomId); if(!out[k]) out[k]=new Set(); (beds||[]).forEach(b=>out[k].add(Number(b)));
+    if (!h || !h.expiresAt || h.expiresAt <= nowMs()) continue;
+    const hin = h.entrada ? new Date(h.entrada + "T00:00:00") : null;
+    const hout = h.salida ? new Date(h.salida + "T00:00:00") : null;
+
+    const overlaps = !f && !t ? true : (!!hin && (!t || hin < t)) && (!!hout && (!f || hout > f));
+    if (!overlaps) continue;
+
+    const camas = h.camas || {};
+    for (const [rid, beds] of Object.entries(camas)) {
+      (beds || []).forEach((b) => out[Number(rid)]?.add(Number(b)));
     }
   }
-  const final={}; for (const [k,set] of Object.entries(out)) final[k]=Array.from(set).sort((a,b)=>a-b);
-  return final;
+
+  const result = {};
+  for (const k of [1, 3, 5, 6]) result[k] = Array.from(out[k] || []).sort((a, b) => a - b);
+  return result;
 }
 
-function listHolds(){
-  sweep();
-  return Array.from(holds.values()).map(h => ({ ...h }));
-}
-function getStats(){
-  sweep();
-  let total=0, active=0, paid_pending=0;
-  for (const h of holds.values()){ total++; if(h.status==="hold") active++; if(h.status==="paid_pending") paid_pending++; }
-  return { total, active, paid_pending };
-}
-
-module.exports = { startHold, confirmHold, releaseHold, getHoldsMap, listHolds, getStats };
+module.exports = {
+  listHolds,
+  getHold,
+  startHold,
+  confirmHold,
+  releaseHold,
+  sweepExpired,
+  getHoldsMap
+};

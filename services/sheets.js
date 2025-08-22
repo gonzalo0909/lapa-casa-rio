@@ -1,62 +1,68 @@
 "use strict";
 
-// Node 18+: fetch global
-const GAS_URL = process.env.BOOKINGS_WEBAPP_URL;
+// Lee filas desde Google Apps Script (code.gs: doGet mode=rows)
+async function fetchRowsFromSheet(from, to){
+  const base = process.env.BOOKINGS_WEBAPP_URL;
+  if(!base) return [];
+  const url = `${base}?mode=rows`;
+  const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+  if(!r.ok) return [];
+  const j = await r.json().catch(()=> ({}));
+  const rows = Array.isArray(j.rows) ? j.rows : [];
+  if(!from && !to) return rows;
 
-async function fetchRowsFromSheet(from, to) {
-  if (!GAS_URL) return [];
-  const u = new URL(GAS_URL);
-  u.searchParams.set("mode","rows");
-  const r = await fetch(u.toString(), { method:"GET" });
-  if (!r.ok) return [];
-  const j = await r.json().catch(()=>({}));
-  const rows = Array.isArray(j.rows)? j.rows : [];
-  if (!from || !to) return rows;
-  const F = new Date(from+"T00:00:00"), T = new Date(to+"T00:00:00");
-  return rows.filter(row=>{
-    const a=(row.entrada||row.checkin||"").slice(0,10);
-    const b=(row.salida ||row.checkout||"").slice(0,10);
-    if(!a||!b) return false;
-    const A=new Date(a+"T00:00:00"), B=new Date(b+"T00:00:00");
-    return (A<T && F<B);
+  const f = from ? new Date(from+'T00:00:00') : null;
+  const t = to   ? new Date(to  +'T00:00:00') : null;
+  return rows.filter(x=>{
+    const din = x.entrada ? new Date(x.entrada+'T00:00:00') : null;
+    const dout= x.salida  ? new Date(x.salida +'T00:00:00') : null;
+    if(f && dout && dout <= f) return false; // se van antes de empezar rango
+    if(t && din && din >= t) return false;   // entran después del rango
+    return true;
   });
 }
 
-function calcOccupiedBeds(rows, holdsMap) {
-  const occupied = {};
-  const add = (rid, bed)=>{ const k=String(rid); if(!occupied[k]) occupied[k]=new Set(); occupied[k].add(Number(bed)); };
-  const PAID = new Set(["paid","approved","processing","authorized","succeeded"]);
-  for (const r of rows) {
-    const st = String(r.pay_status||r.status||"").toLowerCase();
-    if (!PAID.has(st)) continue;
-    const camas = safeParse(r.camas_json);
-    for (const [rid,beds] of Object.entries(camas||{})) (beds||[]).forEach(b=>add(rid,b));
+// Calcula camas ocupadas por room id -> [beds]
+function calcOccupiedBeds(rows, holdsMap){
+  const occ = { 1: new Set(), 3: new Set(), 5: new Set(), 6: new Set() };
+
+  // Confirmadas/pagadas desde Sheets
+  for(const r of rows){
+    const status = String(r.pay_status || '').toLowerCase();
+    if(['approved','paid','confirmed'].includes(status)){
+      try{
+        const camas = r.camas || JSON.parse(r.camas_json || '{}') || {};
+        for(const [roomId, beds] of Object.entries(camas)){
+          (beds || []).forEach(b => occ[Number(roomId)]?.add(Number(b)));
+        }
+      }catch(_){}
+    }
   }
-  for (const [rid,beds] of Object.entries(holdsMap||{})) (beds||[]).forEach(b=>add(rid,b));
-  const out={}; for (const [rid,set] of Object.entries(occupied)) out[rid]=Array.from(set).sort((a,b)=>a-b);
+
+  // Holds vigentes (mapa: { roomId: [beds] })
+  if(holdsMap){
+    for(const [roomId, arr] of Object.entries(holdsMap)){
+      (arr || []).forEach(b => occ[Number(roomId)]?.add(Number(b)));
+    }
+  }
+
+  // Convertir a arrays ordenados
+  const out = {};
+  for(const k of [1,3,5,6]) out[k] = Array.from(occ[k]||[]).sort((a,b)=>a-b);
   return out;
 }
 
-function safeParse(s){ try{ return typeof s==="string"? JSON.parse(s) : (s||{}); }catch{ return {}; } }
-
-async function updatePayment(bookingId, status){
-  if (!GAS_URL || !bookingId) return { ok:false };
-  const r = await fetch(GAS_URL, {
-    method:"POST", headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ action:"payment_update", booking_id:bookingId, pay_status:status })
-  });
-  const j = await r.json().catch(()=>({}));
-  return j;
+// Busca estado de pago por booking_id
+async function getPaymentStatus(bookingId){
+  const base = process.env.BOOKINGS_WEBAPP_URL;
+  if(!base) return null;
+  const url = `${base}?mode=rows`;
+  const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+  if(!r.ok) return null;
+  const j = await r.json().catch(()=> ({}));
+  const rows = Array.isArray(j.rows) ? j.rows : [];
+  const hit = rows.find(x => String(x.booking_id||'') === String(bookingId));
+  return hit ? String(hit.pay_status || '').toLowerCase() : null;
 }
 
-async function upsertBooking(b){
-  if (!GAS_URL) return { ok:false, error:"no_GAS_URL" };
-  const r = await fetch(GAS_URL, {
-    method:"POST", headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ action:"upsert_booking", ...b })
-  });
-  const j = await r.json().catch(()=>({}));
-  return j;
-}
-
-module.exports = { fetchRowsFromSheet, calcOccupiedBeds, updatePayment, upsertBooking };
+module.exports = { fetchRowsFromSheet, calcOccupiedBeds, getPaymentStatus };

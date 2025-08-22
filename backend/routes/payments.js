@@ -1,182 +1,67 @@
 "use strict";
+const path = require("path");
 const express = require("express");
-const router = express.Router();
-const Stripe = require("stripe");
-const { randomUUID } = require("crypto");
+const cors = require("cors");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const FRONTEND = process.env.FRONTEND_URL || "/book";
-const MP_TOKEN = process.env.MP_ACCESS_TOKEN || "";
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-function parseAmount(p) {
-  const raw = p?.total ?? p?.unit_price ?? p?.amount ?? p?.value;
-  const n = Number(String(raw ?? "").replace(/[^\d.-]/g, ""));
-  return Number.isFinite(n) ? n : 0;
-}
+// ===== Stripe webhook RAW ANTES de json() =====
+const payments = require("./routes/payments");
+app.post("/api/payments/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  payments.stripeWebhook
+);
 
-/* ===== Mercado Pago — Checkout Pro ===== */
-router.post("/mp/preference", async (req, res) => {
-  try {
-    const p = req.body?.order || req.body || {};
-    const amount = parseAmount(p);
-    if (amount <= 0) return res.status(400).json({ error: "invalid_amount" });
+// ===== CORS =====
+const ALLOW = String(process.env.CORS_ALLOW_ORIGINS || "")
+  .split(",").map(s => s.trim()).filter(Boolean);
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // curl/health
+    const host = origin.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    return cb(null, ALLOW.includes(host));
+  },
+  credentials: true
+}));
 
-    const email = p.email || p.payer?.email || p.metadata?.email || "";
-    const bookingId = String(p.bookingId || p.metadata?.bookingId || `BKG-${Date.now()}`);
+// ===== JSON body =====
+app.use(express.json({ limit: "1mb" }));
 
-    const preference = {
-      items: [{ title: "Reserva Lapa Casa Hostel", quantity: 1, currency_id: "BRL", unit_price: amount }],
-      payer: email ? { email } : undefined,
-      metadata: { bookingId },
-      external_reference: bookingId,
-      payment_methods: { default_payment_option_id: "pix" },
-      back_urls: {
-        success: `${FRONTEND}?paid=1`,
-        failure: `${FRONTEND}?paid=0`,
-        pending: `${FRONTEND}?paid=pending`
-      },
-      auto_return: "approved",
-      notification_url: process.env.BOOKINGS_WEBHOOK_URL_MP || undefined
-    };
-
-    const r = await fetch("https://api.mercadopago.com/checkout/preferences", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${MP_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(preference)
-    });
-
-    if (!r.ok) {
-      const txt = await r.text();
-      console.error("MP preference failed:", r.status, txt);
-      return res.status(502).json({ error: "mp_error", status: r.status, detail: txt });
+// ===== PING / HEALTH =====
+app.get("/api/ping", (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+app.get("/api/health", async (_req,res)=>{
+  res.json({
+    ok:true,
+    env:{
+      FRONTEND_URL: !!process.env.FRONTEND_URL,
+      MP_ACCESS_TOKEN: !!process.env.MP_ACCESS_TOKEN,
+      STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+      STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
+      BOOKINGS_WEBAPP_URL: !!process.env.BOOKINGS_WEBAPP_URL
     }
-
-    const j = await r.json();
-    res.json({ init_point: j.init_point });
-  } catch (e) {
-    console.error("MP error:", e);
-    res.status(500).json({ error: "mp_error", detail: String(e) });
-  }
+  });
 });
 
-/* ===== Mercado Pago — Pix directo ===== */
-router.post("/mp/pix", async (req, res) => {
-  try {
-    const p = req.body?.order || req.body || {};
-    const amount = parseAmount(p);
-    if (amount <= 0) return res.status(400).json({ error: "invalid_amount" });
+// ===== Rutas API =====
+app.use("/api/availability", require("./routes/availability")); // ya la tenés
+app.use("/api/holds", require("./routes/holds"));               // ya la tenés
+app.use("/api/bookings", require("./routes/bookings"));
+app.use("/api/payments", payments.router);
 
-    const email = (p.email || p.payer?.email || "guest@example.com").toString().trim();
-    const bookingId = String(p.bookingId || p.metadata?.bookingId || `BKG-${Date.now()}`);
-
-    const payload = {
-      transaction_amount: Number(amount),
-      description: "Reserva Lapa Casa Hostel",
-      payment_method_id: "pix",
-      external_reference: bookingId,
-      payer: { email }
-      // opcional: date_of_expiration: new Date(Date.now()+24*3600e3).toISOString()
-    };
-
-    const idemp = randomUUID();
-    const r = await fetch("https://api.mercadopago.com/v1/payments", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${MP_TOKEN}`,
-        "Content-Type": "application/json",
-        "X-Idempotency-Key": idemp
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!r.ok) {
-      const txt = await r.text();
-      console.error("MP PIX payment failed:", r.status, txt);
-      return res.status(502).json({ error: "mp_pix_error", status: r.status, detail: txt });
-    }
-
-    const j = await r.json();
-    const t = j?.point_of_interaction?.transaction_data || {};
-    res.json({
-      id: j.id,
-      status: j.status,
-      status_detail: j.status_detail,
-      qr_code_base64: t.qr_code_base64 || null,
-      qr_code: t.qr_code || null,
-      ticket_url: t.ticket_url || null,
-      external_reference: bookingId
-    });
-  } catch (e) {
-    console.error("MP PIX error:", e);
-    res.status(500).json({ error: "mp_pix_error", detail: String(e) });
-  }
+// ===== Frontend estático =====
+const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
+app.use(express.static(FRONTEND_DIR));
+app.get(["/", "/book", "/admin"], (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
 });
 
-/* ===== Stripe — tarjeta ===== */
-router.post("/stripe/session", async (req, res) => {
-  try {
-    const p = req.body?.order || req.body || {};
-    const amount = parseAmount(p);
-    if (amount <= 0) return res.status(400).json({ error: "invalid_amount" });
-
-    const bookingId = String(p.bookingId || p.metadata?.bookingId || `BKG-${Date.now()}`);
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [{
-        price_data: {
-          currency: "brl",
-          product_data: { name: "Reserva Lapa Casa Hostel" },
-          unit_amount: Math.round(amount * 100)
-        },
-        quantity: 1
-      }],
-      metadata: { bookingId },
-      mode: "payment",
-      success_url: `${FRONTEND}?paid=1`,
-      cancel_url: `${FRONTEND}?paid=0`
-    });
-
-    res.json({ id: session.id });
-  } catch (e) {
-    console.error("Stripe error:", e);
-    res.status(500).json({ error: "stripe_error", detail: String(e) });
-  }
+// ===== 404 / errores =====
+app.use((req, res) => res.status(404).json({ ok:false, error:"not_found" }));
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ ok:false, error:"internal_error" });
 });
 
-/* ===== Webhook MP (normaliza estados) ===== */
-router.post("/mp/webhook", async (req, res) => {
-  try {
-    const data = req.body || {};
-    const id = data.data?.id || data.id || data.resource || null;
-    if (!id) return res.json({ received: true });
-
-    const detail = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
-      headers: { Authorization: `Bearer ${MP_TOKEN}` }
-    }).then(r => r.json());
-
-    const bookingId = detail?.external_reference || detail?.metadata?.bookingId;
-    const status = String(detail?.status || "").toLowerCase();
-
-    if (bookingId) {
-      const sheets = require("../services/sheets");
-      const holds  = require("../services/holdsStore");
-      if (status === "approved") {
-        await sheets.updatePayment(bookingId, "approved");
-        await holds.confirmHold(bookingId, "paid");
-      } else if (["rejected","cancelled","refunded","charged_back"].includes(status)) {
-        await sheets.updatePayment(bookingId, status);
-        await holds.releaseHold(bookingId);
-      }
-    }
-    res.json({ received: true });
-  } catch (e) {
-    console.error("MP webhook error", e);
-    res.status(200).json({ received: true });
-  }
-});
-
-module.exports = router;
+app.listen(PORT, () => console.log(`Server listening on :${PORT}`));

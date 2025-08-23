@@ -18,7 +18,7 @@
     PAY_STATUS: API_BASE + '/bookings/status'
   };
 
-  // Helper fetch JSON
+  // Helper fetch JSON duro contra HTML/errores
   async function fetchJSON(url, opts={}){
     const r = await fetch(url, Object.assign({ headers:{ Accept:'application/json' } }, opts));
     const ct = (r.headers.get('content-type')||'').toLowerCase();
@@ -34,13 +34,13 @@
   // ==== ROUTER (book/admin) ====
   function route(){
     const hash = location.hash || '#/book';
-    $('#book').style.display = hash==='#/book' ? 'block':'none';
-    $('#admin').style.display= hash==='#/admin'? 'block':'none';
+    $('#book') && ($('#book').style.display = hash==='#/book' ? 'block':'none');
+    $('#admin') && ($('#admin').style.display= hash==='#/admin'? 'block':'none');
   }
   window.addEventListener('hashchange', route); route();
 
-  // ==== PING inicial ====
-  (async ()=>{ try{ await fetchJSON(EP.PING); } catch(e){ alert('⚠️ API no disponible: '+String(e.message||e)); } })();
+  // ==== PING inicial (para detectar /api roto) ====
+  (async ()=>{ try{ await fetchJSON(EP.PING); } catch(e){ alert('⚠️ API no disponible o /api apunta al sitio estático.\nDetalle: '+String(e.message||e)); } })();
 
   // ==== LÓGICA DE RESERVAS ====
   const ROOMS = {
@@ -247,14 +247,100 @@
     }catch(e){ alert('Error Stripe: ' + String(e.message||e)); }
   });
 
-  // ==== Confirmar reserva ====
+  // ==== Confirmar reserva (requiere pago aprobado) ====
   $('#reserva-form')?.addEventListener('submit', async (e)=>{
     e.preventDefault(); const btn=$('#submitBtn'); btn.disabled=true;
     try{
-      if(!$('#consentChk').checked){ alert('Acepta la política.'); btn.disabled=false; return; }
+      if(!$('#consentChk').checked){ alert('Aceptá la política.'); btn.disabled=false; return; }
       const order=buildOrderBase();
       try{
         const js=await fetchJSON(`${EP.PAY_STATUS}?bookingId=${encodeURIComponent(order.bookingId)}`);
         if(js&&(js.paid===true||js.status==='approved'||js.status==='paid')) document.getElementById('payState').textContent='aprobado';
       }catch{}
-      const paidOk=(document.getElementById('payState').textContent||'').to
+      const paidTxt=(document.getElementById('payState').textContent||'').toLowerCase();
+      const paidOk= paidTxt.includes('apro') || paidTxt==='approved' || paidTxt==='paid';
+      if(!paidOk){ alert('Necesitás completar el pago.'); btn.disabled=false; return; }
+      await fetchJSON(EP.HOLDS_CONFIRM,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId:currentHoldId||order.bookingId,status:'paid'})});
+      paidFinal=true; alert('✅ Reserva registrada');
+    }catch(e){ alert('Error confirmando: '+String(e.message||e)); btn.disabled=false; }
+  });
+
+  // ==== Liberar HOLD al salir si no se pagó ====
+  window.addEventListener('beforeunload', ()=>{
+    try{
+      if(currentHoldId && !paidFinal){
+        navigator.sendBeacon(EP.HOLDS_RELEASE,new Blob([JSON.stringify({holdId:currentHoldId})],{type:'application/json'}));
+      }
+    }catch{}
+  });
+
+  // ==== ADMIN (simple) ====
+  async function authFetch(url, opts={}){
+    const token=$('#admToken')?.value||'';
+    const headers=Object.assign({}, opts.headers||{}, token? {Authorization:`Bearer ${token}`} : {});
+    return fetch(url, Object.assign({}, opts, { headers }));
+  }
+
+  // Health
+  $('#btnHealth')?.addEventListener('click', async ()=>{
+    try{
+      const r=await authFetch(API_BASE+'/health');
+      const j=await r.json();
+      $('#healthOut').textContent=JSON.stringify(j,null,2);
+    }catch(e){
+      $('#healthOut').textContent=String(e);
+    }
+  });
+
+  // Holds
+  $('#btnHolds')?.addEventListener('click', async ()=>{
+    try{
+      const j=await fetchJSON(API_BASE+'/holds/list');
+      const div=$('#holdsOut');
+      const rows = (j.holds||[]).map(h=>`<tr>
+        <td>${h.holdId}</td>
+        <td>${h.entrada}→${h.salida}</td>
+        <td>${h.status}</td>
+        <td>${Object.entries(h.camas||{}).map(([rid,bs])=>`${rid}:${(bs||[]).join('-')}`).join(', ')}</td>
+        <td>
+          <button data-act="confirm" data-id="${h.holdId}">confirm</button>
+          <button data-act="release" data-id="${h.holdId}">release</button>
+        </td>
+      </tr>`).join('');
+      div.innerHTML = `<table>
+        <thead><tr><th>ID</th><th>Fechas</th><th>Status</th><th>Camas</th><th>Acciones</th></tr></thead>
+        <tbody>${rows||''}</tbody></table>`;
+      div.querySelectorAll('button[data-act]').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          const id=b.getAttribute('data-id'), act=b.getAttribute('data-act');
+          const ep= act==='confirm'? '/holds/confirm':'/holds/release';
+          await fetchJSON(API_BASE+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId:id})});
+          $('#btnHolds').click();
+        });
+      });
+    }catch(e){ $('#holdsOut').textContent=String(e); }
+  });
+
+  // Bookings
+  $('#btnBookings')?.addEventListener('click', async ()=>{
+    try{
+      const qs = new URLSearchParams();
+      if($('#bkFrom')?.value) qs.set('from',$('#bkFrom').value);
+      if($('#bkTo')?.value) qs.set('to',$('#bkTo').value);
+      if($('#bkQ')?.value) qs.set('q',$('#bkQ').value);
+      const j=await fetchJSON(API_BASE+'/bookings?'+qs.toString());
+      const div=$('#bookingsOut');
+      const rows=(j.rows||[]).slice(0,100).map(b=>`<tr>
+        <td>${b.booking_id||''}</td>
+        <td>${b.entrada||''}</td>
+        <td>${b.salida||''}</td>
+        <td>${(b.hombres||0)}+${(b.mujeres||0)}</td>
+        <td>${b.pay_status||''}</td>
+      </tr>`).join('');
+      div.innerHTML=`<table>
+        <thead><tr><th>Booking</th><th>In</th><th>Out</th><th>PAX</th><th>Pay</th></tr></thead>
+        <tbody>${rows}</tbody></table>`;
+    }catch(e){ $('#bookingsOut').textContent=String(e); }
+  });
+
+})();

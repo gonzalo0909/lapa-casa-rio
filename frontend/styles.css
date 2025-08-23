@@ -21,9 +21,10 @@ input,textarea{ width:100%; padding:10px; border:1px solid #e5e7eb; border-radiu
 .rooms { display:grid; gap:var(--gap); }
 .room { border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
 .beds { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
-.bed { border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center; cursor:pointer; }
+.bed { border:1px solid #cfd4da; border-radius:6px; padding:6px 0; text-align:center; cursor:pointer; background:#fff; }
 .bed.occupied { background:#f3f4f6; color:#9ca3af; text-decoration:line-through; cursor:not-allowed; }
 .bed.selected { outline:2px solid #111; font-weight:700; }
+.bed.disabled { background:#fff; color:#9ca3af; cursor:not-allowed; border-style:dashed; }
 .actions { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .warning { background:#fff7e6; border:1px solid #ffd38a; padding:8px 10px; border-radius:8px; margin-top:8px; display:none; }
 .highlight { color:#F03DDB; font-weight:700; }

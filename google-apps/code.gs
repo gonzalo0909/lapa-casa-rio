@@ -46,6 +46,68 @@ function doPost(e) {
 }
 
 /* ========= Core ========= */
-// ... Aquí se incluye íntegra la implementación que ya nos proporcionaste,
-// con las funciones upsertBooking_, createBooking_, updatePayment_,
-// ensureSheet_, mapRowObject_, backups y demás utilidades.
+function ensureSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME, 0);
+    sh.appendRow(HEADERS);
+  }
+  return sh;
+}
+
+function getCurrentHeaders_(sh) {
+  return (sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0]||[]);
+}
+
+function getRows_() {
+  const sh = ensureSheet_();
+  const vals = sh.getDataRange().getValues();
+  const headers = vals.shift();
+  return vals.filter(r => r.join('').trim()!=='').map(r=>{
+    const o={}; headers.forEach((h,i)=>{o[h]=r[i];}); return o;
+  });
+}
+
+function createBooking_(data) {
+  const sh = ensureSheet_();
+  const row = HEADERS.map(h => {
+    if (h==='created_at') return new Date().toISOString();
+    if (h==='camas_json') return JSON.stringify(data.camas||{});
+    return data[h]||'';
+  });
+  sh.appendRow(row);
+  return { ok:true, booking_id:data.booking_id };
+}
+
+function upsertBooking_(data) {
+  const sh = ensureSheet_();
+  const rows = getRows_();
+  const idx = rows.findIndex(r=>String(r.booking_id)===String(data.booking_id));
+  if (idx>=0) {
+    const rowN = idx+2;
+    HEADERS.forEach((h,i)=>{
+      let val='';
+      if(h==='camas_json') val=JSON.stringify(data.camas||{});
+      else if(h==='created_at') val=rows[idx][h]||new Date().toISOString();
+      else val=data[h]||'';
+      sh.getRange(rowN,i+1).setValue(val);
+    });
+    return { ok:true, updated:true, booking_id:data.booking_id };
+  }
+  return createBooking_(data);
+}
+
+function updatePayment_(body) {
+  const sh = ensureSheet_();
+  const rows = getRows_();
+  const idx = rows.findIndex(r=>String(r.booking_id)===String(body.booking_id));
+  if (idx>=0) {
+    sh.getRange(idx+2, HEADERS.indexOf('pay_status')+1).setValue(body.pay_status||'paid');
+    return { ok:true, updated:true, booking_id:body.booking_id };
+  }
+  return { ok:false, error:'booking_not_found' };
+}
+
+/* ========= Utilitarios ========= */
+function json_(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }

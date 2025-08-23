@@ -46,15 +46,25 @@
   const ROOMS = {
     1:{name:'Cuarto 1 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
     3:{name:'Cuarto 3 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
-    5:{name:'Cuarto 5 (7 mixto)', cap:7, basePrice:55,femaleOnly:false},
-    6:{name:'Cuarto 6 (7 femenino)',cap:7, basePrice:60,femaleOnly:true}
+    5:{name:'Cuarto 5 (7 mixto – mayor valor)', cap:7, basePrice:65,femaleOnly:false},
+    6:{name:'Cuarto 6 (7 femenino – exclusivo)',cap:7, basePrice:60,femaleOnly:true}
   };
   let selection={},currentHoldId=null,paidFinal=false,internalTotal=0;
 
   const toISO=d=>new Date(d+'T00:00:00');
   const diffNights=(a,b)=>{ if(!a||!b) return 0; const ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); };
   const fmtBRL=n=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
-  const priceModifiers=(start,end)=>{let weekend=false,high=false;const n=diffNights(start,end);for(let i=0;i<n;i++){const d=new Date(toISO(start));d.setDate(d.getDate()+i);if([0,5,6].includes(d.getDay())) weekend=true;if([11,0,1].includes(d.getMonth())) high=true;}return (weekend?1.10:1)*(high?1.20:1);};
+
+  // Finde = vie(5)/sáb(6)/dom(0); alta: dic-ene-feb
+  const priceModifiers=(start,end)=>{
+    let weekend=false,high=false; const n=diffNights(start,end);
+    for(let i=0;i<n;i++){
+      const d=new Date(toISO(start)); d.setDate(d.getDate()+i);
+      if([5,6,0].includes(d.getDay())) weekend=true;
+      if([11,0,1].includes(d.getMonth())) high=true;
+    }
+    return (weekend?1.10:1)*(high?1.20:1);
+  };
   const pricePerBed=(roomId,start,end)=>Math.round(ROOMS[roomId].basePrice*priceModifiers(start,end));
 
   // ==== Inicializar fechas ====
@@ -83,6 +93,13 @@
 
   function handleCountsChange(){
     const men=Number($('#men').value||0),women=Number($('#women').value||0),qty=men+women;
+
+    // Si mujeres vuelve a 0, limpiar selección del cuarto 6 y rerender si está abierto
+    if(women===0 && selection[6]?.size){
+      selection[6] = new Set();
+      Array.from(document.querySelectorAll('#beds-6 .bed.selected')).forEach(el=>el.classList.remove('selected'));
+    }
+
     if(qty===0){
       selection={}; $('#rooms').innerHTML=''; $('#roomsCard').style.display='none'; $('#formCard').style.display='none';
       $('#selCount').textContent='0'; $('#needed').textContent='0'; $('#totalPrice').textContent='0'; $('#continueBtn').disabled=true;
@@ -118,29 +135,65 @@
     const nights=diffNights(dateIn,dateOut);
     $('#needed').textContent=qty; $('#selCount').textContent=0; internalTotal=0; $('#totalPrice').textContent=0; $('#continueBtn').disabled=true; $('#suggestBox').style.display='none';
 
+    // Calcular libres por cuarto
     const freeByRoom={};
     [1,3,5,6].forEach(id=>{ const occ=new Set((occupied&&occupied[id])||[]); const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b); freeByRoom[id]=free; });
 
-    const hasWomen=women>=1; const toShow=new Set();
-    if(!hasWomen){ toShow.add(1); if(qty>12){ toShow.add(3); toShow.add(5);} }
-    else{ toShow.add(1); toShow.add(5); toShow.add(6); if(qty>12){ toShow.add(3);} }
+    // === Visibilidad de cuartos según reglas del cliente ===
+    const toShow = new Set();
 
-    const finalShow=Array.from(toShow).filter(id=>freeByRoom[id].length>0);
+    if(men>0 && women===0){
+      // Solo hombres
+      toShow.add(1);
+      toShow.add(5);
+      if(men>=13 || (freeByRoom[1].length < men)) toShow.add(3);
+    } else if (men>0 && women>0){
+      // Hombres + mujeres: reglas de hombres + femenino
+      toShow.add(1);
+      toShow.add(5);
+      if(men>=13 || (freeByRoom[1].length < men)) toShow.add(3);
+      toShow.add(6); // exclusivo mujeres (se indica cartel)
+    } else if (men===0 && women>0){
+      // Solo mujeres
+      toShow.add(1);
+      toShow.add(5);
+      toShow.add(6);
+    }
+
+    // Filtrar cuartos sin libres
+    const finalShow=Array.from(toShow).filter(id=> (freeByRoom[id]?.length||0) > 0);
     if(!finalShow.length){ $('#rooms').innerHTML='<p>No hay camas disponibles.</p>'; return; }
 
+    // Aviso proactivo si libres totales < pax
+    const totalLibres = finalShow.reduce((sum,id)=>sum+(freeByRoom[id]?.length||0),0);
+    if(totalLibres < qty){
+      const sb=$('#suggestBox'); sb.style.display='block';
+      sb.textContent='No hay suficientes camas para el grupo en los cuartos disponibles. Probá dividir el grupo, cambiar fechas o reducir pax.';
+    }
+
+    // Pintar cuartos
     finalShow.forEach(id=>{
       const r=ROOMS[id],libres=freeByRoom[id],pBed=pricePerBed(id,dateIn,dateOut);
       const nightsText=nights||1;
-      const capMsg=`<span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}</span>`;
+      const extra = r.femaleOnly ? ' · Exclusivo para mujeres' : '';
+      const capMsg=`<span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}${extra}</span>`;
       const roomDiv=document.createElement('div'); roomDiv.className='room';
       roomDiv.innerHTML=`<h3>${r.name}</h3><div>${capMsg}</div><div class="beds" id="beds-${id}"></div>`;
       $('#rooms').appendChild(roomDiv); selection[id]=new Set();
       const grid=roomDiv.querySelector('#beds-'+id);
       const occ=new Set((occupied&&occupied[id])||[]);
+      const disableFemale = r.femaleOnly && women<1;
+
       for(let b=1;b<=r.cap;b++){
         const btn=document.createElement('button');
-        btn.type='button'; btn.className='bed'+(occ.has(b)?' occupied':''); btn.textContent=b;
-        if(!occ.has(b)) btn.addEventListener('click',()=>toggleBed(id,b,dateIn,dateOut,btn)); else btn.disabled=true;
+        btn.type='button';
+        let cls='bed';
+        if(occ.has(b)) cls+=' occupied';
+        if(disableFemale) cls+=' disabled';
+        btn.className=cls; btn.textContent=b;
+        if(occ.has(b)){ btn.disabled=true; }
+        else if(disableFemale){ btn.disabled=true; btn.title='Exclusivo para mujeres.'; }
+        else { btn.addEventListener('click',()=>toggleBed(id,b,dateIn,dateOut,btn)); }
         grid.appendChild(btn);
       }
     });
@@ -149,7 +202,7 @@
 
   function toggleBed(roomId,bedId,dateIn,dateOut,btn){
     const women=Number($('#women').value||0);
-    if(ROOMS[roomId].femaleOnly && women<1){ alert('El cuarto femenino requiere al menos 1 mujer.'); return; }
+    if(ROOMS[roomId].femaleOnly && women<1){ alert('El cuarto femenino es exclusivo para mujeres.'); return; }
     const set=selection[roomId]||new Set();
     set.has(bedId)? set.delete(bedId): set.add(bedId);
     selection[roomId]=set; btn.classList.toggle('selected', set.has(bedId));
@@ -215,21 +268,30 @@
     try{
       const order = buildOrderBase();
       const j = await fetchJSON(EP.PAY_MP_PIX,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
-      if (!(j.qr_code_base64 || j.ticket_url)) throw new Error('PIX sin QR ni ticket');
+      if (!(j.qr_code_base64 || j.ticket_url || j.qr_code)) throw new Error('PIX sin datos');
       const modal = document.getElementById('pixModal');
       const img   = document.getElementById('pixQr');
       const ta    = document.getElementById('pixCopiaCola');
       const tk    = document.getElementById('pixTicket');
+
+      // Mostrar QR (si viene base64) y copiar/pegar
       img.src = j.qr_code_base64 ? `data:image/png;base64,${j.qr_code_base64}` : '';
+      img.style.display = j.qr_code_base64 ? 'block' : 'none';
       ta.value = j.qr_code || '';
       if (j.ticket_url) { tk.style.display='inline-block'; tk.href = j.ticket_url; } else { tk.style.display='none'; }
       modal.style.display = 'flex';
+
       const payState = document.getElementById('payState'); if (payState) payState.textContent = j.status || 'pending';
     }catch(e){ alert('Error PIX: ' + String(e.message||e)); }
   });
 
   document.getElementById('copyPix')?.addEventListener('click', async () => {
-    try { const ta = document.getElementById('pixCopiaCola'); ta.select(); ta.setSelectionRange(0, 99999); await navigator.clipboard.writeText(ta.value); alert('Código Pix copiado'); }
+    try {
+      const ta = document.getElementById('pixCopiaCola');
+      ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      await navigator.clipboard.writeText(ta.value);
+      alert('Código Pix copiado');
+    }
     catch { alert('No se pudo copiar'); }
   });
 

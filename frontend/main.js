@@ -139,25 +139,26 @@
     const freeByRoom={};
     [1,3,5,6].forEach(id=>{ const occ=new Set((occupied&&occupied[id])||[]); const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b); freeByRoom[id]=free; });
 
-    // === Visibilidad de cuartos según reglas del cliente ===
+    // === Visibilidad de cuartos (Cuarto 3 aparece SOLO si el total supera 12) ===
     const toShow = new Set();
 
     if(men>0 && women===0){
       // Solo hombres
       toShow.add(1);
       toShow.add(5);
-      if(men>=13 || (freeByRoom[1].length < men)) toShow.add(3);
+      if(qty>12) toShow.add(3);
     } else if (men>0 && women>0){
-      // Hombres + mujeres: reglas de hombres + femenino
+      // Hombres + mujeres
       toShow.add(1);
       toShow.add(5);
-      if(men>=13 || (freeByRoom[1].length < men)) toShow.add(3);
-      toShow.add(6); // exclusivo mujeres (se indica cartel)
+      toShow.add(6); // exclusivo mujeres
+      if(qty>12) toShow.add(3);
     } else if (men===0 && women>0){
       // Solo mujeres
       toShow.add(1);
       toShow.add(5);
       toShow.add(6);
+      if(qty>12) toShow.add(3);
     }
 
     // Filtrar cuartos sin libres
@@ -268,7 +269,7 @@
     try{
       const order = buildOrderBase();
       const j = await fetchJSON(EP.PAY_MP_PIX,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
-      if (!(j.qr_code_base64 || j.ticket_url || j.qr_code)) throw new Error('PIX sin datos');
+    if (!(j.qr_code_base64 || j.ticket_url || j.qr_code)) throw new Error('PIX sin datos');
       const modal = document.getElementById('pixModal');
       const img   = document.getElementById('pixQr');
       const ta    = document.getElementById('pixCopiaCola');

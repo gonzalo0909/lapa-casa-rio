@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lapa Casa Hostel – Reservas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- el front toma /api por defecto; BACKEND_BASE_URL vive en el .env del backend -->
+  <meta name="backend-base-url" content="/api" />
+  <meta name="stripe-publishable-key" content="pk_live_o_test" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://js.stripe.com/v3/" defer></script>
+  <script src="/main.js" defer></script>
+</head>
+<body>
+<header>
+  <h1>Lapa Casa Hostel – Reservas</h1>
+  <nav class="lang">
+    <a href="#/book">Reservas</a>
+    <a href="#/admin">Admin</a>
+  </nav>
+</header>
+
+<main class="row">
+  <section id="book" class="card">
+    <h2>1) Fechas y cantidad</h2>
+    <div class="grid grid-2">
+      <div><label>Check-in</label><input id="dateIn" type="date" /></div>
+      <div><label>Check-out</label><input id="dateOut" type="date" /></div>
+    </div>
+    <div class="grid grid-4" style="margin-top:10px">
+      <div>
+        <label>Hombres</label>
+        <div class="ctr">
+          <button type="button" id="menMinus" aria-label="menos hombres">−</button>
+          <input id="men" type="number" min="0" max="38" value="0" inputmode="numeric" />
+          <button type="button" id="menPlus" aria-label="más hombres">+</button>
+        </div>
+      </div>
+      <div>
+        <label>Mujeres</label>
+        <div class="ctr">
+          <button type="button" id="womenMinus" aria-label="menos mujeres">−</button>
+          <input id="women" type="number" min="0" max="38" value="0" inputmode="numeric" />
+          <button type="button" id="womenPlus" aria-label="más mujeres">+</button>
+        </div>
+      </div>
+      <div class="muted" style="display:flex;align-items:end">Capacidad total: 38</div>
+      <div style="display:flex;justify-content:end;align-items:end">
+        <button id="checkAvail" class="btn" type="button">Ver disponibilidad</button>
+      </div>
+    </div>
+    <div id="checkMsg" class="muted" style="margin-top:6px"></div>
+
+    <section id="roomsCard" class="card" style="display:none;margin-top:10px">
+      <h2>2) Elegí tus camas</h2>
+      <div id="mods" class="muted" style="margin-bottom:8px"></div>
+      <div id="rooms" class="rooms"></div>
+      <div class="actions" style="margin-top:8px">
+        <div>
+          <div>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
+          <div class="muted">Total: R$ <span id="totalPrice">0</span></div>
+        </div>
+        <button id="continueBtn" class="btn" disabled type="button">Continuar</button>
+      </div>
+      <p class="warning" id="suggestBox"></p>
+    </section>
+
+    <section id="formCard" class="card" style="display:none;margin-top:10px">
+      <h2>3) Datos para confirmar</h2>
+      <form id="reserva-form">
+        <label>Nombre completo</label><input type="text" name="nombre" required />
+        <label>Email</label><input type="email" name="email" required />
+        <label>Teléfono</label><input type="tel" name="telefono" required />
+        <label>Fecha de entrada</label><input type="date" name="entrada" required />
+        <label>Fecha de salida</label><input type="date" name="salida" required />
+
+        <label style="margin-top:8px">
+          <input type="checkbox" id="consentChk" />
+          <span class="muted">Acepto recibir comunicaciones y la política de privacidad.</span>
+        </label>
+
+        <div class="grid grid-2" style="margin-top:10px">
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;">Mercado Pago (Checkout Pro)</h3>
+            <p class="muted">Pix / tarjeta / boleto (según MP)</p>
+            <button type="button" id="payMP" class="btn secondary" style="margin-top:8px">Pagar con MP</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px 0;">Pix directo (QR)</h3>
+            <p class="muted">Siempre muestra QR y copia/pega</p>
+            <button type="button" id="payPix" class="btn ghost" style="margin-top:8px">Pagar con Pix (QR)</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:10px">
+          <h3 style="margin:0 0 8px 0;">Stripe</h3>
+          <p class="muted">Tarjeta internacional</p>
+          <button type="button" id="payStripe" class="btn secondary" style="margin-top:8px">Ir a Checkout</button>
+        </div>
+
+        <div class="actions" style="margin-top:12px">
+          <span class="muted">Estado pago: <span id="payState" class="highlight">pendiente</span></span>
+          <button type="submit" id="submitBtn" class="btn" disabled>Confirmar reserva</button>
+        </div>
+      </form>
+    </section>
+  </section>
+
+  <section id="admin" class="card" style="display:none">
+    <h2>Admin</h2>
+    <div class="grid grid-3">
+      <div class="card">
+        <h3>Health</h3>
+        <button id="btnHealth" class="btn">Ver estado</button>
+        <pre id="healthOut" class="muted" style="white-space:pre-wrap"></pre>
+      </div>
+      <div class="card">
+        <h3>Holds</h3>
+        <button id="btnHolds" class="btn">Listar holds</button>
+        <div id="holdsOut" class="muted"></div>
+      </div>
+      <div class="card">
+        <h3>Bookings</h3>
+        <div class="grid grid-3">
+          <div><label>Desde</label><input id="bkFrom" type="date" /></div>
+          <div><label>Hasta</label><input id="bkTo" type="date" /></div>
+          <div><label>Buscar</label><input id="bkQ" type="text" placeholder="nombre/email/booking" /></div>
+        </div>
+        <button id="btnBookings" class="btn" style="margin-top:8px">Buscar</button>
+        <div id="bookingsOut" class="muted" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><p class="muted">&copy; 2025 Lapa Casa Hostel</p></footer>
+
+<div id="pixModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px;z-index:9999">
+  <div id="pixBox" style="background:#fff;border-radius:12px;padding:16px;max-width:420px;width:100%">
+    <h3>Pix – escaneá el QR o copia/pega</h3>
+    <img id="pixQr" alt="QR Pix" />
+    <textarea id="pixCopiaCola" readonly style="margin-top:8px;width:100%;height:96px"></textarea>
+    <div class="actions" style="justify-content:flex-end;margin-top:8px">
+      <button id="copyPix" class="btn ghost">Copiar</button>
+      <a id="pixTicket" href="#" target="_blank" rel="noopener" class="btn ghost" style="display:none">Abrir ticket Pix</a>
+      <button id="closePix" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

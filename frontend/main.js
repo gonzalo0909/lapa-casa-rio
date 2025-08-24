@@ -41,7 +41,7 @@
   const ROOMS = {
     1:{name:'Cuarto 1 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
     3:{name:'Cuarto 3 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
-    5:{name:'Cuarto 5 (7 mixto – mayor valor)', cap:7, basePrice:65,femaleOnly:false},
+    5:{name:'Cuarto 5 (7 mixto)', cap:7, basePrice:65,femaleOnly:false},
     6:{name:'Cuarto 6 (7 femenino – exclusivo)',cap:7, basePrice:60,femaleOnly:true}
   };
   let selection={},currentHoldId=null,paidFinal=false,internalTotal=0;

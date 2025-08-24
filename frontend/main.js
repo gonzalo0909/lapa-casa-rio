@@ -139,51 +139,65 @@
     const freeByRoom={};
     [1,3,5,6].forEach(id=>{ const occ=new Set((occupied&&occupied[id])||[]); const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b); freeByRoom[id]=free; });
 
-    // === Visibilidad de cuartos (Cuarto 3 aparece SOLO si el total supera 12) ===
+    // === Reglas de visibilidad ===
+    // - Cuarto 3 aparece SOLO cuando hombres > 12.
+    // - Orden: 1, luego 3 (debajo de 1), luego 5, luego 6.
+    // - Override de 6: si pax total > (12+12+7)=31 y mujeres==0, el 6 deja de ser femenino y se muestra.
+    const paxTotal = qty;
+    const overrideRoom6 = (paxTotal > 31 && women === 0); // pierde exclusividad femenina
     const toShow = new Set();
 
     if(men>0 && women===0){
-      // Solo hombres
       toShow.add(1);
+      if(men>12) toShow.add(3);
       toShow.add(5);
-      if(qty>12) toShow.add(3);
+      if(overrideRoom6) toShow.add(6);
     } else if (men>0 && women>0){
-      // Hombres + mujeres
       toShow.add(1);
+      if(men>12) toShow.add(3);
       toShow.add(5);
-      toShow.add(6); // exclusivo mujeres
-      if(qty>12) toShow.add(3);
+      toShow.add(6); // femenino (no aplica override porque women>0)
     } else if (men===0 && women>0){
-      // Solo mujeres
       toShow.add(1);
       toShow.add(5);
-      toShow.add(6);
-      if(qty>12) toShow.add(3);
+      toShow.add(6); // femenino
+      // (no se agrega 3 porque regla es hombres>12)
     }
 
     // Filtrar cuartos sin libres
-    const finalShow=Array.from(toShow).filter(id=> (freeByRoom[id]?.length||0) > 0);
+    let finalShow=Array.from(toShow).filter(id=> (freeByRoom[id]?.length||0) > 0);
+
+    // Orden forzado: 1,3,5,6 (3 justo debajo de 1 cuando está)
+    const order = [1,3,5,6];
+    finalShow = finalShow.sort((a,b)=> order.indexOf(a)-order.indexOf(b));
+
     if(!finalShow.length){ $('#rooms').innerHTML='<p>No hay camas disponibles.</p>'; return; }
 
     // Aviso proactivo si libres totales < pax
     const totalLibres = finalShow.reduce((sum,id)=>sum+(freeByRoom[id]?.length||0),0);
-    if(totalLibres < qty){
+    if(totalLibres < paxTotal){
       const sb=$('#suggestBox'); sb.style.display='block';
       sb.textContent='No hay suficientes camas para el grupo en los cuartos disponibles. Probá dividir el grupo, cambiar fechas o reducir pax.';
     }
 
     // Pintar cuartos
     finalShow.forEach(id=>{
-      const r=ROOMS[id],libres=freeByRoom[id],pBed=pricePerBed(id,dateIn,dateOut);
+      const r=ROOMS[id];
+      const libres=freeByRoom[id];
+      const pBed=pricePerBed(id,dateIn,dateOut);
       const nightsText=nights||1;
-      const extra = r.femaleOnly ? ' · Exclusivo para mujeres' : '';
-      const capMsg=`<span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}${extra}</span>`;
+
+      // Si aplica override, el 6 NO es exclusivo femenino en este render
+      const isFemaleOnlyHere = (id===6) ? (ROOMS[6].femaleOnly && !overrideRoom6) : false;
+      const extra = (id===6 && isFemaleOnlyHere) ? ' · Exclusivo para mujeres' : '';
+
       const roomDiv=document.createElement('div'); roomDiv.className='room';
-      roomDiv.innerHTML=`<h3>${r.name}</h3><div>${capMsg}</div><div class="beds" id="beds-${id}"></div>`;
+      roomDiv.innerHTML=`<h3>${r.name}</h3><div><span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}${extra}</span></div><div class="beds" id="beds-${id}"></div>`;
       $('#rooms').appendChild(roomDiv); selection[id]=new Set();
+
       const grid=roomDiv.querySelector('#beds-'+id);
       const occ=new Set((occupied&&occupied[id])||[]);
-      const disableFemale = r.femaleOnly && women<1;
+      const disableFemale = (id===6 && isFemaleOnlyHere && Number($('#women').value||0)<1);
 
       for(let b=1;b<=r.cap;b++){
         const btn=document.createElement('button');
@@ -194,35 +208,41 @@
         btn.className=cls; btn.textContent=b;
         if(occ.has(b)){ btn.disabled=true; }
         else if(disableFemale){ btn.disabled=true; btn.title='Exclusivo para mujeres.'; }
-        else { btn.addEventListener('click',()=>toggleBed(id,b,dateIn,dateOut,btn)); }
+        else { btn.addEventListener('click',()=>toggleBed(id,b,dateIn,dateOut,btn,isFemaleOnlyHere)); }
         grid.appendChild(btn);
       }
     });
-    refreshTotals(men,women,dateIn,dateOut);
+    refreshTotals(men,women,dateIn,dateOut,overrideRoom6);
   }
 
-  function toggleBed(roomId,bedId,dateIn,dateOut,btn){
+  function toggleBed(roomId,bedId,dateIn,dateOut,btn,isFemaleOnlyHere){
     const women=Number($('#women').value||0);
-    if(ROOMS[roomId].femaleOnly && women<1){ alert('El cuarto femenino es exclusivo para mujeres.'); return; }
+    if(roomId===6 && isFemaleOnlyHere && women<1){ alert('El cuarto femenino es exclusivo para mujeres.'); return; }
     const set=selection[roomId]||new Set();
     set.has(bedId)? set.delete(bedId): set.add(bedId);
     selection[roomId]=set; btn.classList.toggle('selected', set.has(bedId));
-    refreshTotals(Number($('#men').value||0), Number($('#women').value||0), dateIn, dateOut);
+    refreshTotals(Number($('#men').value||0), Number($('#women').value||0), dateIn, dateOut, isFemaleOnlyHere===false);
   }
 
-  function refreshTotals(men,women,start,end){
+  function refreshTotals(men,women,start,end,room6Override=false){
     const needed=men+women; const nights=diffNights(start,end)||1;
     let selectedCount=0,total=0,femaleSelected=0;
     Object.entries(selection).forEach(([id,set])=>{
       const size=set.size; selectedCount+=size;
       const pBed=pricePerBed(Number(id),start,end); total+=size*pBed*nights;
-      if(ROOMS[id].femaleOnly) femaleSelected+=size;
+      if(Number(id)===6 && !room6Override){ femaleSelected+=size; }
     });
     $('#selCount').textContent=selectedCount; internalTotal=total; $('#totalPrice').textContent=fmtBRL(total);
-    let ok=(selectedCount===needed && needed>0); if(femaleSelected>women) ok=false;
+    let ok=(selectedCount===needed && needed>0);
+    if(!room6Override && femaleSelected>women) ok=false;
+
     $('#continueBtn').disabled=!ok;
     const sb=$('#suggestBox'); sb.style.display= ok ? 'none' : 'block';
-    sb.textContent = ok ? '' : ((femaleSelected>women)?'El cuarto femenino requiere al menos 1 mujer.':`Seleccioná exactamente ${needed} camas.`);
+    if(!ok){
+      sb.textContent = (!room6Override && femaleSelected>women)
+        ? 'El cuarto femenino requiere al menos 1 mujer.'
+        : `Seleccioná exactamente ${needed} camas.`;
+    }
   }
 
   // ==== HOLD ====
@@ -269,7 +289,7 @@
     try{
       const order = buildOrderBase();
       const j = await fetchJSON(EP.PAY_MP_PIX,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
-    if (!(j.qr_code_base64 || j.ticket_url || j.qr_code)) throw new Error('PIX sin datos');
+      if (!(j.qr_code_base64 || j.ticket_url || j.qr_code)) throw new Error('PIX sin datos');
       const modal = document.getElementById('pixModal');
       const img   = document.getElementById('pixQr');
       const ta    = document.getElementById('pixCopiaCola');

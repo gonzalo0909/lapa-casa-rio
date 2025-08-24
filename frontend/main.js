@@ -1,11 +1,9 @@
 (function(){
-  // === Base de API y Stripe ===
   const metaApi = document.querySelector('meta[name="backend-base-url"]')?.getAttribute('content') || '/api';
   const API_BASE = (window.API_BASE || metaApi).replace(/\/$/, '');
   const STRIPE_PK = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute('content') || window.STRIPE_PUBLISHABLE_KEY || '';
   const $ = s=>document.querySelector(s);
 
-  // ==== ENDPOINTS ====
   const EP = {
     PING: API_BASE + '/ping',
     AVAIL: API_BASE + '/availability',
@@ -39,7 +37,7 @@
 
   (async ()=>{ try{ await fetchJSON(EP.PING); } catch(e){ alert('⚠️ API no disponible o /api apunta al sitio estático.\nDetalle: '+String(e.message||e)); } })();
 
-  // ==== LÓGICA DE RESERVAS ====
+  // === Datos
   const ROOMS = {
     1:{name:'Cuarto 1 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
     3:{name:'Cuarto 3 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
@@ -51,14 +49,12 @@
   const toISO=d=>new Date(d+'T00:00:00');
   const diffNights=(a,b)=>{ if(!a||!b) return 0; const ms=toISO(b)-toISO(a); return Math.max(0,Math.round(ms/86400000)); };
   const fmtBRL=n=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
-
-  // Finde = vie(5)/sáb(6)/dom(0); alta: dic-ene-feb
   const priceModifiers=(start,end)=>{
     let weekend=false,high=false; const n=diffNights(start,end);
     for(let i=0;i<n;i++){
       const d=new Date(toISO(start)); d.setDate(d.getDate()+i);
-      if([5,6,0].includes(d.getDay())) weekend=true;
-      if([11,0,1].includes(d.getMonth())) high=true;
+      if([5,6,0].includes(d.getDay())) weekend=true; // vie/sáb/dom
+      if([11,0,1].includes(d.getMonth())) high=true;  // dic/ene/feb
     }
     return (weekend?1.10:1)*(high?1.20:1);
   };
@@ -94,7 +90,7 @@
       Array.from(document.querySelectorAll('#beds-6 .bed.selected')).forEach(el=>el.classList.remove('selected'));
     }
 
-    if(men+women===0){
+    if(qty===0){
       selection={}; $('#rooms').innerHTML=''; $('#roomsCard').style.display='none'; $('#formCard').style.display='none';
       $('#selCount').textContent='0'; $('#needed').textContent='0'; $('#totalPrice').textContent='0'; $('#continueBtn').disabled=true;
       $('#checkMsg').textContent='Seleccioná al menos 1 huésped.'; return;
@@ -131,11 +127,11 @@
     const freeByRoom={};
     [1,3,5,6].forEach(id=>{ const occ=new Set((occupied&&occupied[id])||[]); const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b); freeByRoom[id]=free; });
 
-    // === Reglas de visibilidad ===
+    // Reglas:
     // - 3 aparece solo si hombres > 12
     // - Orden: 1,3,5,6 (3 debajo de 1)
-    // - Override 6 (mixto): paxTotal >= 32 -> sin cartel ni restricción
-    const paxTotal = qty;
+    // - Excepción 6 mixto: paxTotal >= 32 -> sin cartel/restricción
+    const paxTotal = men + women;
     const overrideRoom6 = (paxTotal >= 32);
 
     const toShow = new Set();
@@ -143,17 +139,16 @@
       toShow.add(1);
       if(men>12) toShow.add(3);
       toShow.add(5);
-      if(overrideRoom6) toShow.add(6); // permitir 6 aun sin mujeres
+      if(overrideRoom6) toShow.add(6);
     } else if (men>0 && women>0){
       toShow.add(1);
       if(men>12) toShow.add(3);
       toShow.add(5);
-      toShow.add(6); // hay mujeres: siempre
+      toShow.add(6);
     } else if (men===0 && women>0){
       toShow.add(1);
       toShow.add(5);
       toShow.add(6);
-      // (no 3: regla es hombres>12)
     }
 
     let finalShow=Array.from(toShow).filter(id=> (freeByRoom[id]?.length||0) > 0);
@@ -171,12 +166,18 @@
       const r=ROOMS[id],libres=freeByRoom[id],pBed=pricePerBed(id,dateIn,dateOut);
       const nightsText=nights||1;
 
-      // En override, el 6 NO es exclusivo ni muestra cartel
+      // (1) cartel de exclusivo NO aparece si overrideRoom6
       const isFemaleOnlyHere = (id===6) ? (ROOMS[6].femaleOnly && !overrideRoom6) : false;
       const extra = (id===6 && isFemaleOnlyHere) ? ' · Exclusivo para mujeres' : '';
 
+      // (2) el título del cuarto 6 tampoco dice "femenino – exclusivo" cuando override
+      let roomTitle = r.name;
+      if(id===6 && overrideRoom6){
+        roomTitle = 'Cuarto 6 (7 mixto)'; // sin mención a "exclusivo"
+      }
+
       const roomDiv=document.createElement('div'); roomDiv.className='room';
-      roomDiv.innerHTML=`<h3>${r.name}</h3><div><span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}${extra}</span></div><div class="beds" id="beds-${id}"></div>`;
+      roomDiv.innerHTML=`<h3>${roomTitle}</h3><div><span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}${extra}</span></div><div class="beds" id="beds-${id}"></div>`;
       $('#rooms').appendChild(roomDiv); selection[id]=new Set();
 
       const grid=roomDiv.querySelector('#beds-'+id);
@@ -230,7 +231,7 @@
     }
   }
 
-  // ==== HOLD ====
+  // HOLD
   function buildOrderBase(){
     const a=$('#dateIn').value,b=$('#dateOut').value;
     const nights=Math.max(1, Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000));
@@ -260,7 +261,7 @@
     }catch(e){ alert('Error creando HOLD: ' + String(e.message||e)); }
   });
 
-  // ==== PAGOS ====
+  // Pagos
   document.getElementById('payMP')?.addEventListener('click', async () => {
     try{
       const order = buildOrderBase();
@@ -291,12 +292,7 @@
   });
 
   document.getElementById('copyPix')?.addEventListener('click', async () => {
-    try {
-      const ta = document.getElementById('pixCopiaCola');
-      ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
-      await navigator.clipboard.writeText(ta.value);
-      alert('Código Pix copiado');
-    }
+    try { const ta = document.getElementById('pixCopiaCola'); ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length); await navigator.clipboard.writeText(ta.value); alert('Código Pix copiado'); }
     catch { alert('No se pudo copiar'); }
   });
 
@@ -314,7 +310,7 @@
     }catch(e){ alert('Error Stripe: ' + String(e.message||e)); }
   });
 
-  // ==== Confirmar reserva ====
+  // Confirmar
   $('#reserva-form')?.addEventListener('submit', async (e)=>{
     e.preventDefault(); const btn=$('#submitBtn'); btn.disabled=true;
     try{
@@ -340,7 +336,7 @@
     }catch{}
   });
 
-  // ==== ADMIN ====
+  // Admin
   async function authFetch(url, opts={}){
     const token=$('#admToken')?.value||'';
     const headers=Object.assign({}, opts.headers||{}, token? {Authorization:`Bearer ${token}`} : {});

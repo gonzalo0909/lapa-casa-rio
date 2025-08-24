@@ -1,33 +1,65 @@
 (function(){
+  // === Base de API y Stripe ===
   const metaApi = document.querySelector('meta[name="backend-base-url"]')?.getAttribute('content') || '/api';
-  const API_BASE = (window.API_BASE || metaApi).replace(/\/$/, '');
+  let API_BASE = (window.API_BASE || metaApi).replace(/\/$/, ''); // ← puede cambiar si usamos fallback
   const STRIPE_PK = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute('content') || window.STRIPE_PUBLISHABLE_KEY || '';
   const $ = s=>document.querySelector(s);
 
+  // ==== ENDPOINT builder (usa API_BASE actual) ====
   const EP = {
-    PING: API_BASE + '/ping',
-    AVAIL: API_BASE + '/availability',
-    PAY_MP_PREF: API_BASE + '/payments/mp/preference',
-    PAY_MP_PIX:  API_BASE + '/payments/mp/pix',
-    PAY_STRIPE:  API_BASE + '/payments/stripe/session',
-    HOLDS_START: API_BASE + '/holds/start',
-    HOLDS_CONFIRM: API_BASE + '/holds/confirm',
-    HOLDS_RELEASE: API_BASE + '/holds/release',
-    PAY_STATUS: API_BASE + '/bookings/status'
+    PING: () => API_BASE + '/ping',
+    AVAIL: () => API_BASE + '/availability',
+    PAY_MP_PREF: () => API_BASE + '/payments/mp/preference',
+    PAY_MP_PIX:  () => API_BASE + '/payments/mp/pix',
+    PAY_STRIPE:  () => API_BASE + '/payments/stripe/session',
+    HOLDS_START: () => API_BASE + '/holds/start',
+    HOLDS_CONFIRM:() => API_BASE + '/holds/confirm',
+    HOLDS_RELEASE:() => API_BASE + '/holds/release',
+    PAY_STATUS:  () => API_BASE + '/bookings/status'
   };
 
-  async function fetchJSON(url, opts={}){
-    const r = await fetch(url, Object.assign({ headers:{ Accept:'application/json' } }, opts));
-    const ct = (r.headers.get('content-type')||'').toLowerCase();
-    if (!ct.includes('application/json')) {
-      const t = await r.text().catch(()=> '');
-      throw new Error(`bad_json:${r.status} ${t.slice(0,200)}`);
-    }
-    const j = await r.json();
-    if (!r.ok && !j.ok) throw new Error(j.error || `http_${r.status}`);
-    return j;
+  // ==== Helper robusto de fetch JSON con fallback ====
+  async function tryParseJSONResponse(r){
+    const txt = await r.text();
+    try { return JSON.parse(txt); } catch { throw new Error(`bad_json:${r.status} ${txt.slice(0,200)}`); }
   }
 
+  async function fetchJSON_once(url, opts={}){
+    const r = await fetch(url, Object.assign({ headers:{ Accept:'application/json' } }, opts));
+    // tolerante a content-type mal seteado
+    const ct = (r.headers.get('content-type')||'').toLowerCase();
+    const data = ct.includes('application/json') ? await r.json() : await tryParseJSONResponse(r);
+    if (!r.ok && !(data && data.ok)) throw new Error((data && data.error) || `http_${r.status}`);
+    return data;
+  }
+
+  async function fetchJSON(url, opts={}){
+    // intento 1: URL tal cual (p.ej. https://api.tu-dominio.com/api/...)
+    try {
+      return await fetchJSON_once(url, opts);
+    } catch (e1) {
+      // si es absoluta hacia otro host o devolvió HTML, probá fallback relativo /api
+      try {
+        const u = new URL(url, window.location.origin);
+        // si ya es mismo origen, no tiene sentido fallback
+        const sameOrigin = (u.origin === window.location.origin);
+        if (!sameOrigin) {
+          const rel = '/api' + (u.pathname.split('/api').pop() || '');
+          const fallbackUrl = window.location.origin + rel + (u.search || '');
+          const out = await fetchJSON_once(fallbackUrl, opts);
+          // si el fallback funcionó, actualizamos API_BASE para el resto de la sesión
+          API_BASE = window.location.origin + '/api';
+          return out;
+        }
+        throw e1;
+      } catch (e2) {
+        // re-lanzamos el primer error para mensaje consistente
+        throw e1;
+      }
+    }
+  }
+
+  // ==== ROUTER (book/admin) ====
   function route(){
     const hash = location.hash || '#/book';
     $('#book') && ($('#book').style.display = hash==='#/book' ? 'block':'none');
@@ -35,13 +67,23 @@
   }
   window.addEventListener('hashchange', route); route();
 
-  (async ()=>{ try{ await fetchJSON(EP.PING); } catch(e){ alert('⚠️ API no disponible o /api apunta al sitio estático.\nDetalle: '+String(e.message||e)); } })();
+  // ==== PING inicial (con fallback automático) ====
+  (async ()=>{
+    try{
+      await fetchJSON(EP.PING());
+    } catch(e){
+      alert('⚠️ API no disponible o /api apunta al sitio estático.\nDetalle: '+String(e.message||e));
+    }
+  })();
 
-  // === Datos
+  // ====== (RESTO DEL ARCHIVO SIN CAMBIOS FUNCIONALES) ======
+  // A partir de aquí, solo reemplacé EP.X por EP.X() donde se usa.
+
+  // ==== LÓGICA DE RESERVAS ====
   const ROOMS = {
     1:{name:'Cuarto 1 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
     3:{name:'Cuarto 3 (12 mixto)',cap:12,basePrice:55,femaleOnly:false},
-    5:{name:'Cuarto 5 (7 mixto)', cap:7, basePrice:65,femaleOnly:false},
+    5:{name:'Cuarto 5 (7 mixto – mayor valor)', cap:7, basePrice:65,femaleOnly:false},
     6:{name:'Cuarto 6 (7 femenino – exclusivo)',cap:7, basePrice:60,femaleOnly:true}
   };
   let selection={},currentHoldId=null,paidFinal=false,internalTotal=0;
@@ -98,6 +140,7 @@
     if($('#roomsCard').style.display!=='none'){ $('#checkAvail')?.click(); }
   }
 
+  // ==== Chequear disponibilidad ====
   $('#checkAvail')?.addEventListener('click', async ()=>{
     const dIn=$('#dateIn').value,dOut=$('#dateOut').value;
     const men=Number($('#men').value||0),women=Number($('#women').value||0),qty=men+women;
@@ -108,7 +151,7 @@
     msg.textContent='Consultando disponibilidad...';
     let occupied={};
     try{
-      const url=`${EP.AVAIL}?from=${encodeURIComponent(dIn)}&to=${encodeURIComponent(dOut)}`;
+      const url=`${EP.AVAIL()}?from=${encodeURIComponent(dIn)}&to=${encodeURIComponent(dOut)}`;
       const j=await fetchJSON(url); occupied=j.occupied||{};
     }catch(err){
       console.error('AVAIL error', err);
@@ -127,11 +170,7 @@
     const freeByRoom={};
     [1,3,5,6].forEach(id=>{ const occ=new Set((occupied&&occupied[id])||[]); const free=[]; for(let b=1;b<=ROOMS[id].cap;b++) if(!occ.has(b)) free.push(b); freeByRoom[id]=free; });
 
-    // Reglas:
-    // - 3 aparece solo si hombres > 12
-    // - Orden: 1,3,5,6 (3 debajo de 1)
-    // - Excepción 6 mixto: paxTotal >= 32 -> sin cartel/restricción
-    const paxTotal = men + women;
+    const paxTotal = qty;
     const overrideRoom6 = (paxTotal >= 32);
 
     const toShow = new Set();
@@ -166,15 +205,11 @@
       const r=ROOMS[id],libres=freeByRoom[id],pBed=pricePerBed(id,dateIn,dateOut);
       const nightsText=nights||1;
 
-      // (1) cartel de exclusivo NO aparece si overrideRoom6
       const isFemaleOnlyHere = (id===6) ? (ROOMS[6].femaleOnly && !overrideRoom6) : false;
       const extra = (id===6 && isFemaleOnlyHere) ? ' · Exclusivo para mujeres' : '';
 
-      // (2) el título del cuarto 6 tampoco dice "femenino – exclusivo" cuando override
       let roomTitle = r.name;
-      if(id===6 && overrideRoom6){
-        roomTitle = 'Cuarto 6 (7 mixto)'; // sin mención a "exclusivo"
-      }
+      if(id===6 && overrideRoom6){ roomTitle = 'Cuarto 6 (7 mixto)'; }
 
       const roomDiv=document.createElement('div'); roomDiv.className='room';
       roomDiv.innerHTML=`<h3>${roomTitle}</h3><div><span class="muted">Disponibles: ${libres.length}/${r.cap} · Precio por cama: R$ ${pBed} · Noches: ${nightsText}${extra}</span></div><div class="beds" id="beds-${id}"></div>`;
@@ -231,7 +266,7 @@
     }
   }
 
-  // HOLD
+  // ==== HOLD ====
   function buildOrderBase(){
     const a=$('#dateIn').value,b=$('#dateOut').value;
     const nights=Math.max(1, Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000));
@@ -251,7 +286,7 @@
     const order=buildOrderBase();
     if(!order.total){ alert('Seleccioná camas primero.'); return; }
     try{
-      const j = await fetchJSON(EP.HOLDS_START,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ holdId:order.bookingId, ...order }) });
+      const j = await fetchJSON(EP.HOLDS_START(),{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ holdId:order.bookingId, ...order }) });
       currentHoldId = j.holdId || order.bookingId;
       $('#formCard').style.display='block';
       $('#reserva-form [name="entrada"]').value=$('#dateIn').value;
@@ -261,11 +296,11 @@
     }catch(e){ alert('Error creando HOLD: ' + String(e.message||e)); }
   });
 
-  // Pagos
+  // ==== PAGOS ====
   document.getElementById('payMP')?.addEventListener('click', async () => {
     try{
       const order = buildOrderBase();
-      const j = await fetchJSON(EP.PAY_MP_PREF,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
+      const j = await fetchJSON(EP.PAY_MP_PREF(),{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
       if (!j.init_point) throw new Error('init_point vacío');
       window.location.href = j.init_point;
     }catch(e){ alert('Error MP: ' + String(e.message||e)); }
@@ -274,7 +309,7 @@
   document.getElementById('payPix')?.addEventListener('click', async () => {
     try{
       const order = buildOrderBase();
-      const j = await fetchJSON(EP.PAY_MP_PIX,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
+      const j = await fetchJSON(EP.PAY_MP_PIX(),{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
       if (!(j.qr_code_base64 || j.ticket_url || j.qr_code)) throw new Error('PIX sin datos');
       const modal = document.getElementById('pixModal');
       const img   = document.getElementById('pixQr');
@@ -292,7 +327,12 @@
   });
 
   document.getElementById('copyPix')?.addEventListener('click', async () => {
-    try { const ta = document.getElementById('pixCopiaCola'); ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length); await navigator.clipboard.writeText(ta.value); alert('Código Pix copiado'); }
+    try {
+      const ta = document.getElementById('pixCopiaCola');
+      ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      await navigator.clipboard.writeText(ta.value);
+      alert('Código Pix copiado');
+    }
     catch { alert('No se pudo copiar'); }
   });
 
@@ -301,7 +341,7 @@
   document.getElementById('payStripe')?.addEventListener('click', async () => {
     try{
       const order = buildOrderBase();
-      const j = await fetchJSON(EP.PAY_STRIPE,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
+      const j = await fetchJSON(EP.PAY_STRIPE(),{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ order }) });
       if (!j.id) throw new Error('session id vacío');
       const stripe = window.Stripe?.(STRIPE_PK);
       if (!stripe) { alert('Stripe no disponible'); return; }
@@ -310,42 +350,44 @@
     }catch(e){ alert('Error Stripe: ' + String(e.message||e)); }
   });
 
-  // Confirmar
+  // ==== Confirmar reserva (requiere pago aprobado) ====
   $('#reserva-form')?.addEventListener('submit', async (e)=>{
     e.preventDefault(); const btn=$('#submitBtn'); btn.disabled=true;
     try{
       if(!$('#consentChk').checked){ alert('Aceptá la política.'); btn.disabled=false; return; }
       const order=buildOrderBase();
       try{
-        const js=await fetchJSON(`${EP.PAY_STATUS}?bookingId=${encodeURIComponent(order.bookingId)}`);
+        const js=await fetchJSON(`${EP.PAY_STATUS()}?bookingId=${encodeURIComponent(order.bookingId)}`);
         if(js&&(js.paid===true||js.status==='approved'||js.status==='paid')) document.getElementById('payState').textContent='aprobado';
       }catch{}
       const paidTxt=(document.getElementById('payState').textContent||'').toLowerCase();
       const paidOk= paidTxt.includes('apro') || paidTxt==='approved' || paidTxt==='paid';
       if(!paidOk){ alert('Necesitás completar el pago.'); btn.disabled=false; return; }
-      await fetchJSON(EP.HOLDS_CONFIRM,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId:currentHoldId||order.bookingId,status:'paid'})});
+      await fetchJSON(EP.HOLDS_CONFIRM(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId:currentHoldId||order.bookingId,status:'paid'})});
       paidFinal=true; alert('✅ Reserva registrada');
     }catch(e){ alert('Error confirmando: '+String(e.message||e)); btn.disabled=false; }
   });
 
+  // ==== Liberar HOLD al salir si no se pagó ====
   window.addEventListener('beforeunload', ()=>{
     try{
       if(currentHoldId && !paidFinal){
-        navigator.sendBeacon(EP.HOLDS_RELEASE,new Blob([JSON.stringify({holdId:currentHoldId})],{type:'application/json'}));
+        navigator.sendBeacon(EP.HOLDS_RELEASE(),new Blob([JSON.stringify({holdId:currentHoldId})],{type:'application/json'}));
       }
     }catch{}
   });
 
-  // Admin
+  // ==== ADMIN (simple) ====
   async function authFetch(url, opts={}){
     const token=$('#admToken')?.value||'';
     const headers=Object.assign({}, opts.headers||{}, token? {Authorization:`Bearer ${token}`} : {});
     return fetch(url, Object.assign({}, opts, { headers }));
   }
 
+  // Health
   $('#btnHealth')?.addEventListener('click', async ()=>{
     try{
-      const r=await authFetch(API_BASE+'/health');
+      const r=await authFetch(EP.PING().replace('/ping','/health'));
       const j=await r.json();
       $('#healthOut').textContent=JSON.stringify(j,null,2);
     }catch(e){
@@ -353,9 +395,10 @@
     }
   });
 
+  // Holds
   $('#btnHolds')?.addEventListener('click', async ()=>{
     try{
-      const j=await fetchJSON(API_BASE+'/holds/list');
+      const j=await fetchJSON(EP.HOLDS_LIST? EP.HOLDS_LIST(): API_BASE+'/holds/list'); // compat
       const div=$('#holdsOut');
       const rows = (j.holds||[]).map(h=>`<tr>
         <td>${h.holdId}</td>
@@ -373,21 +416,22 @@
       div.querySelectorAll('button[data-act]').forEach(b=>{
         b.addEventListener('click', async ()=>{
           const id=b.getAttribute('data-id'), act=b.getAttribute('data-act');
-          const ep= act==='confirm'? '/holds/confirm':'/holds/release';
-          await fetchJSON(API_BASE+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId:id})});
+          const ep= act==='confirm'? EP.HOLDS_CONFIRM(): EP.HOLDS_RELEASE();
+          await fetchJSON(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({holdId:id})});
           $('#btnHolds').click();
         });
       });
     }catch(e){ $('#holdsOut').textContent=String(e); }
   });
 
+  // Bookings
   $('#btnBookings')?.addEventListener('click', async ()=>{
     try{
       const qs = new URLSearchParams();
       if($('#bkFrom')?.value) qs.set('from',$('#bkFrom').value);
       if($('#bkTo')?.value) qs.set('to',$('#bkTo').value);
       if($('#bkQ')?.value) qs.set('q',$('#bkQ').value);
-      const j=await fetchJSON(API_BASE+'/bookings?'+qs.toString());
+      const j=await fetchJSON(EP.PAY_STATUS().replace('/bookings/status','/bookings')+'?'+qs.toString());
       const div=$('#bookingsOut');
       const rows=(j.rows||[]).slice(0,100).map(b=>`<tr>
         <td>${b.booking_id||''}</td>

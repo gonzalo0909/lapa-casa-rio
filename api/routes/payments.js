@@ -1,7 +1,7 @@
 /**
- * routes/holds.js
- * Gestiona reservas temporales (HOLD)
- * Permite: crear, listar, confirmar y liberar
+ * routes/payments.js
+ * Gestiona pagos con Stripe
+ * Incluye creación de sesión y webhook
  */
 
 "use strict";
@@ -9,100 +9,85 @@
 const express = require("express");
 const router = express.Router();
 
-const {
-  listHolds,
-  getHold,
-  startHold,
-  confirmHold,
-  releaseHold,
-  getHoldsMap
-} = require("../services/holdsStore");
+const Stripe = require("stripe");
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-/* ===== POST /api/holds/start ===== */
-router.post("/start", (req, res) => {
+/* ====== Crear sesión de pago con Stripe ====== */
+router.post("/stripe/session", async (req, res) => {
   try {
-    const body = req.body || {};
-    const result = startHold({
-      holdId: body.holdId,
-      entrada: body.entrada,
-      salida: body.salida,
-      hombres: body.hombres,
-      mujeres: body.mujeres,
-      camas: body.camas,
-      total: body.total
-    });
-
-    if (!result.ok) {
-      return res.status(400).json({ ok: false, error: "invalid_hold_data" });
+    if (!stripe) {
+      return res.status(500).json({ ok: false, error: "stripe_not_configured" });
     }
 
-    return res.json({
-      ok: true,
-      holdId: result.holdId,
-      expiresAt: result.expiresAt
+    const { order } = req.body || {};
+    if (!order || !order.total) {
+      return res.status(400).json({ ok: false, error: "missing_order_or_total" });
+    }
+
+    const lineItems = [{
+      price_data: {
+        currency: "brl",
+        unit_amount: Math.round(order.total * 100),
+        product_data: {
+          name: `Reserva (${order.nights} noches)`,
+        },
+      },
+      quantity: 1,
+    }];
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      success_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
+      cancel_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=cancel`,
+      metadata: {
+        bookingId: order.bookingId || "",
+      },
     });
+
+    return res.json({ ok: true, id: session.id });
   } catch (err) {
-    console.error("[HOLDS] Error al crear hold:", err.message);
-    return res.status(400).json({ ok: false, error: "bad_request" });
+    console.error("Error al crear sesión de Stripe:", err.message);
+    return res.status(500).json({ ok: false, error: "stripe_session_error" });
   }
 });
 
-/* ===== GET /api/holds/list (para admin) ===== */
-function list(req, res) {
+/* ====== Webhook de Stripe ====== */
+async function stripeWebhook(req, res) {
   try {
-    const holds = listHolds();
-    return res.json({ ok: true, holds });
+    if (!stripe) {
+      return res.status(500).json({ ok: false, error: "stripe_not_configured" });
+    }
+
+    const sig = req.headers["stripe-signature"];
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!sig || !secret) {
+      return res.status(400).json({ ok: false, error: "missing_webhook_signature" });
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    } catch (err) {
+      console.error("Webhook signature error:", err.message);
+      return res.status(400).json({ ok: false, error: "invalid_signature" });
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const bookingId = session.metadata?.bookingId;
+      if (bookingId) {
+        console.log("✅ Pago exitoso para booking:", bookingId);
+      }
+    }
+
+    res.json({ ok: true, received: true });
   } catch (err) {
-    console.error("[HOLDS] Error al listar holds:", err.message);
-    return res.status(500).json({ ok: false, error: "internal_error" });
+    console.error("Error en webhook de Stripe:", err.message);
+    res.status(400).json({ ok: false, error: "webhook_error" });
   }
 }
 
-/* ===== POST /api/holds/confirm ===== */
-function confirm(req, res) {
-  try {
-    const { holdId, status = "paid" } = req.body || {};
-    if (!holdId) {
-      return res.status(400).json({ ok: false, error: "hold_id_required" });
-    }
-
-    const result = confirmHold(holdId, status);
-    if (!result.ok) {
-      return res.status(404).json({ ok: false, error: "hold_not_found" });
-    }
-
-    return res.json({ ok: true, holdId, status });
-  } catch (err) {
-    console.error("[HOLDS] Error al confirmar hold:", err.message);
-    return res.status(500).json({ ok: false, error: "internal_error" });
-  }
-}
-
-/* ===== POST /api/holds/release ===== */
-function release(req, res) {
-  try {
-    const { holdId } = req.body || {};
-    if (!holdId) {
-      return res.status(400).json({ ok: false, error: "hold_id_required" });
-    }
-
-    const result = releaseHold(holdId);
-    if (!result.ok) {
-      return res.status(404).json({ ok: false, error: "hold_not_found" });
-    }
-
-    return res.json({ ok: true, holdId, released: true });
-  } catch (err) {
-    console.error("[HOLDS] Error al liberar hold:", err.message);
-    return res.status(500).json({ ok: false, error: "internal_error" });
-  }
-}
-
-// Exportar rutas y funciones para admin
-module.exports = {
-  router,
-  list,
-  confirm,
-  release,
-  getHoldsMap
-};
+module.exports = { router, stripeWebhook };

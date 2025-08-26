@@ -39,8 +39,8 @@ router.post("/stripe/session", async (req, res) => {
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
-      success_url: `${process.env.BOOKINGS_WEBAPP_URL || "https://lapacasahostel.com"}/#/book?pay=success`,
-      cancel_url: `${process.env.BOOKINGS_WEBAPP_URL || "https://lapacasahostel.com"}/#/book?pay=cancel`,
+      success_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
+      cancel_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=cancel`,
       metadata: {
         bookingId: order.bookingId || "",
       },

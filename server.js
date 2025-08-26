@@ -106,9 +106,7 @@ const adminLimiter = rateLimit({
   max: 60,
 });
 
-/* ================== RUTAS API (orden correcto: API antes que frontend) ================== */
-
-// --- Rutas API ---
+/* ================== RUTAS API ================== */
 app.use("/api/availability", require("./api/routes/availability"));
 app.use("/api/payments", require("./api/routes/payments").router);
 app.use("/api/holds", require("./api/routes/holds").router);
@@ -119,13 +117,19 @@ app.post("/api/holds/confirm", adminLimiter, requireAdmin, require("./api/routes
 app.post("/api/holds/release", adminLimiter, requireAdmin, require("./api/routes/holds").release);
 app.use("/api/bookings", adminLimiter, requireAdmin, require("./api/routes/bookings"));
 
-/* ================== SERVIDOR ESTÁTICO (solo después de API) ================== */
-const FRONTEND_DIR = path.join(__dirname, "../frontend");
+/* ================== SERVIDOR ESTÁTICO ================== */
+// Aseguramos que la carpeta 'frontend' esté en la raíz del proyecto
+const FRONTEND_DIR = path.join(__dirname, "frontend");
 app.use(express.static(FRONTEND_DIR));
 
 // Rutas públicas
-app.get("/", (_, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
-app.get("/book", (_, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
+app.get("/", (_, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+});
+
+app.get("/book", (_, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+});
 
 // Admin (noindex)
 app.get("/admin", (_, res) => {

@@ -1,7 +1,7 @@
 /**
  * routes/payments.js
- * Gestiona pagos con Stripe y Mercado Pago
- * Incluye creación de sesión de pago y webhook
+ * Gestiona pagos con Stripe
+ * Incluye creación de sesión y webhook
  */
 
 "use strict";
@@ -20,23 +20,20 @@ router.post("/stripe/session", async (req, res) => {
     }
 
     const { order } = req.body || {};
-    if (!order) {
-      return res.status(400).json({ ok: false, error: "missing_order" });
+    if (!order || !order.total) {
+      return res.status(400).json({ ok: false, error: "missing_order_or_total" });
     }
 
-    const lineItems = [];
-    if (order.total > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "brl",
-          unit_amount: Math.round(order.total * 100),
-          product_data: {
-            name: `Reserva Lapa Casa Hostel (${order.nights} noches)`,
-          },
+    const lineItems = [{
+      price_data: {
+        currency: "brl",
+        unit_amount: Math.round(order.total * 100),
+        product_data: {
+          name: `Reserva (${order.nights} noches)`,
         },
-        quantity: 1,
-      });
-    }
+      },
+      quantity: 1,
+    }];
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -56,7 +53,7 @@ router.post("/stripe/session", async (req, res) => {
   }
 });
 
-/* ====== Webhook de Stripe (escucha eventos de pago) ====== */
+/* ====== Webhook de Stripe ====== */
 async function stripeWebhook(req, res) {
   try {
     if (!stripe) {
@@ -74,18 +71,16 @@ async function stripeWebhook(req, res) {
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, secret);
     } catch (err) {
-      console.error("Error en firma del webhook:", err.message);
+      console.error("Webhook signature error:", err.message);
       return res.status(400).json({ ok: false, error: "invalid_signature" });
     }
 
-    // Procesar evento
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const bookingId = session.metadata?.bookingId;
-
       if (bookingId) {
-        console.log("✅ Pago confirmado para booking:", bookingId);
-        // Aquí podrías actualizar el estado en Sheets si lo necesitas
+        console.log("✅ Pago exitoso para booking:", bookingId);
+        // Aquí puedes actualizar el estado en Google Sheets si lo necesitas
       }
     }
 

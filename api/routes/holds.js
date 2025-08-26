@@ -1,7 +1,7 @@
 /**
  * routes/holds.js
- * Gestiona reservas temporales (HOLD) por 10 minutos
- * Permite: crear, listar, confirmar y liberar holds
+ * Gestiona reservas temporales (HOLD)
+ * Permite: crear, listar, confirmar y liberar
  */
 
 "use strict";
@@ -18,7 +18,7 @@ const {
   getHoldsMap
 } = require("../services/holdsStore");
 
-/* ===== PUBLIC: Crear un nuevo HOLD ===== */
+/* ===== POST /api/holds/start ===== */
 router.post("/start", (req, res) => {
   try {
     const body = req.body || {};
@@ -47,8 +47,8 @@ router.post("/start", (req, res) => {
   }
 });
 
-/* ===== ADMIN: Listar todos los holds activos ===== */
-router.get("/list", (req, res) => {
+/* ===== GET /api/holds/list (para admin) ===== */
+function list(req, res) {
   try {
     const holds = listHolds();
     return res.json({ ok: true, holds });
@@ -56,10 +56,10 @@ router.get("/list", (req, res) => {
     console.error("[HOLDS] Error al listar holds:", err.message);
     return res.status(500).json({ ok: false, error: "internal_error" });
   }
-});
+}
 
-/* ===== ADMIN: Confirmar un hold (convertir a reserva pagada) ===== */
-router.post("/confirm", (req, res) => {
+/* ===== POST /api/holds/confirm ===== */
+function confirm(req, res) {
   try {
     const { holdId, status = "paid" } = req.body || {};
     if (!holdId) {
@@ -76,10 +76,10 @@ router.post("/confirm", (req, res) => {
     console.error("[HOLDS] Error al confirmar hold:", err.message);
     return res.status(500).json({ ok: false, error: "internal_error" });
   }
-});
+}
 
-/* ===== ADMIN: Liberar un hold (cancelar reserva temporal) ===== */
-router.post("/release", (req, res) => {
+/* ===== POST /api/holds/release ===== */
+function release(req, res) {
   try {
     const { holdId } = req.body || {};
     if (!holdId) {
@@ -96,7 +96,13 @@ router.post("/release", (req, res) => {
     console.error("[HOLDS] Error al liberar hold:", err.message);
     return res.status(500).json({ ok: false, error: "internal_error" });
   }
-});
+}
 
-/* ===== UTILS: Exponer getHoldsMap para otros módulos ===== */
-module.exports = { router, listHolds, confirmHold, releaseHold, getHoldsMap };
+// Exportar rutas y funciones para admin
+module.exports = {
+  router,
+  list,
+  confirm,
+  release,
+  getHoldsMap
+};

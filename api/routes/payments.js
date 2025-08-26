@@ -25,10 +25,10 @@ router.post("/stripe/session", async (req, res) => {
     }
 
     const lineItems = [{
-      price_ {
+      price_data: {
         currency: "brl",
         unit_amount: Math.round(order.total * 100),
-        product_ {
+        product_data: {
           name: `Reserva (${order.nights} noches)`,
         },
       },
@@ -41,7 +41,7 @@ router.post("/stripe/session", async (req, res) => {
       line_items: lineItems,
       success_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
       cancel_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=cancel`,
-      meta {
+      metadata: {
         bookingId: order.bookingId || "",
       },
     });

@@ -25,10 +25,10 @@ router.post("/stripe/session", async (req, res) => {
     }
 
     const lineItems = [{
-      price_data: {
+      price_ {
         currency: "brl",
         unit_amount: Math.round(order.total * 100),
-        product_data: {
+        product_ {
           name: `Reserva (${order.nights} noches)`,
         },
       },
@@ -41,7 +41,7 @@ router.post("/stripe/session", async (req, res) => {
       line_items: lineItems,
       success_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
       cancel_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=cancel`,
-      metadata: {
+      meta {
         bookingId: order.bookingId || "",
       },
     });
@@ -80,7 +80,6 @@ async function stripeWebhook(req, res) {
       const bookingId = session.metadata?.bookingId;
       if (bookingId) {
         console.log("✅ Pago exitoso para booking:", bookingId);
-        // Aquí puedes actualizar el estado en Google Sheets si lo necesitas
       }
     }
 

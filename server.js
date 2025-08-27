@@ -28,12 +28,14 @@ function requireAdmin(req, res, next) {
 }
 
 /* ================== WEBHOOK STRIPE (RAW) ================== */
-const { stripeWebhook } = require("./api/routes/payments");
+const { stripeWebhook, mpWebhook } = require("./api/routes/payments");
 app.post(
   "/api/payments/stripe/webhook",
   express.raw({ type: "application/json" }),
   stripeWebhook
 );
+
+app.post("/api/payments/mp/webhook", mpWebhook);
 
 /* ================== SEGURIDAD ================== */
 app.use(

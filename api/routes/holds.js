@@ -98,7 +98,7 @@ function release(req, res) {
   }
 }
 
-// Exportar rutas y funciones para admin
+// ✅ Esta es la línea que debe estar
 module.exports = {
   router,
   list,

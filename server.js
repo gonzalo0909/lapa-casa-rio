@@ -8,9 +8,9 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-// Middleware: Autenticación para admin
+// === Middleware: Autenticación admin ===
 function requireAdmin(req, res, next) {
   const auth = (req.headers.authorization || "").trim();
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
@@ -20,14 +20,14 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Webhook de Stripe
+// === Webhook de Stripe ===
 const { stripeWebhook } = require("./api/routes/payments");
 app.post("/api/payments/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
-// Seguridad
+// === Seguridad ===
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-// CORS
+// === CORS ===
 const ALLOWED = String(process.env.CORS_ALLOW_ORIGINS || "")
   .split(",")
   .map((s) => s.trim().toLowerCase())
@@ -45,9 +45,10 @@ app.use(
   })
 );
 
+// === Body parser ===
 app.use(express.json({ limit: "1mb" }));
 
-// Rutas API
+// === Rutas API ===
 app.use("/api/availability", require("./api/routes/availability"));
 app.use("/api/payments", require("./api/routes/payments").router);
 app.use("/api/holds", require("./api/routes/holds").router);
@@ -58,29 +59,25 @@ app.post("/api/holds/confirm", rateLimit({ windowMs: 60_000, max: 60 }), require
 app.post("/api/holds/release", rateLimit({ windowMs: 60_000, max: 60 }), requireAdmin, require("./api/routes/holds").release);
 app.use("/api/bookings", rateLimit({ windowMs: 60_000, max: 60 }), requireAdmin, require("./api/routes/bookings"));
 
-// Servidor estático: sirve desde la carpeta actual
-app.use(express.static(path.join(__dirname, "frontend")));
+// === Servidor estático ===
+const FRONTEND_DIR = path.join(__dirname, "frontend");
+app.use(express.static(FRONTEND_DIR));
 
-// Rutas públicas
-app.get("/", (_, res) => res.sendFile(path.join(__dirname, "frontend", "index.html")));
-app.get("/book", (_, res) => res.sendFile(path.join(__dirname, "frontend", "index.html")));
+app.get("/", (_, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
+app.get("/book", (_, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
 app.get("/admin", (_, res) => {
   res.set("X-Robots-Tag", "noindex, nofollow");
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
 });
 
-// Health check
-app.get("/api/ping", (_, res) => res.json({ ok: true }));
-
-// 404
+// === 404 y errores ===
 app.use((_, res) => res.status(404).json({ ok: false, error: "not_found" }));
-
-// Manejo de errores
 app.use((err, _, res, __) => {
   console.error("Error:", err);
   res.status(500).json({ ok: false, error: "internal_error" });
 });
 
+// === Iniciar servidor ===
 app.listen(PORT, () => {
-  console.log(`Servidor listo en puerto ${PORT}`);
+  console.log(`Servidor escuchando en puerto ${PORT}`);
 });

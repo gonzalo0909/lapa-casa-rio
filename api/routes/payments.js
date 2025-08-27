@@ -1,6 +1,6 @@
 /**
  * routes/payments.js
- * Gestiona pagos con Stripe y Mercado Pago
+ * Gestiona pagos con Stripe
  */
 
 "use strict";
@@ -10,11 +10,6 @@ const router = express.Router();
 
 const Stripe = require("stripe");
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
-
-// Cliente de Mercado Pago
-const mercadopago = process.env.MP_ACCESS_TOKEN
-  ? new (require("mercadopago"))({ accessToken: process.env.MP_ACCESS_TOKEN })
-  : null;
 
 /* ===== POST /api/payments/stripe/session ===== */
 router.post("/stripe/session", async (req, res) => {
@@ -28,24 +23,24 @@ router.post("/stripe/session", async (req, res) => {
       return res.status(400).json({ ok: false, error: "missing_order_or_total" });
     }
 
-    const lineItems = [{
-      price_ {
-        currency: "brl",
-        unit_amount: Math.round(order.total * 100),
-        product_ {
-          name: `Reserva (${order.nights} noches)`,
-        },
-      },
-      quantity: 1,
-    }];
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-      line_items: lineItems,
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            unit_amount: Math.round(order.total * 100),
+            product_data: {
+              name: `Reserva (${order.nights} noches)`,
+            },
+          },
+          quantity: 1,
+        },
+      ],
       success_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
       cancel_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=cancel`,
-      meta {
+      metadata: {
         bookingId: order.bookingId || "",
       },
     });
@@ -57,62 +52,41 @@ router.post("/stripe/session", async (req, res) => {
   }
 });
 
-/* ===== POST /api/payments/mp/checkout ===== */
-router.post("/mp/checkout", async (req, res) => {
+/* ===== Webhook de Stripe ===== */
+async function stripeWebhook(req, res) {
   try {
-    if (!mercadopago) {
-      return res.status(500).json({ ok: false, error: "mercadopago_not_configured" });
+    if (!stripe) {
+      return res.status(500).json({ ok: false, error: "stripe_not_configured" });
     }
 
-    const { order } = req.body || {};
-    if (!order || !order.total) {
-      return res.status(400).json({ ok: false, error: "missing_order_or_total" });
+    const sig = req.headers["stripe-signature"];
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!sig || !secret) {
+      return res.status(400).json({ ok: false, error: "missing_webhook_signature" });
     }
 
-    const preference = {
-      items: [
-        {
-          title: `Reserva (${order.nights} noches)`,
-          quantity: 1,
-          currency_id: "BRL",
-          unit_price: order.total,
-        }
-      ],
-      back_urls: {
-        success: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
-        failure: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=fail`,
-        pending: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=pending`
-      },
-      auto_return: "approved",
-      external_reference: order.bookingId,
-      notification_url: `${process.env.WEBHOOK_BASE_URL || "https://api.lapacasahostel.com"}/api/payments/mp/webhook`
-    };
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    } catch (err) {
+      console.error("Webhook signature error:", err.message);
+      return res.status(400).json({ ok: false, error: "invalid_signature" });
+    }
 
-    const pref = await mercadopago.preferences.create(preference);
-    return res.json({ ok: true, init_point: pref.body.init_point });
-  } catch (err) {
-    console.error("Error al crear checkout de Mercado Pago:", err.message);
-    return res.status(500).json({ ok: false, error: "mp_checkout_error" });
-  }
-});
-
-/* ===== Webhook de Mercado Pago ===== */
-async function mpWebhook(req, res) {
-  try {
-    const { id, topic } = req.query || {};
-    if (topic === "payment" && id) {
-      const payment = await mercadopago.payment.findById(id);
-      const bookingId = payment.body.external_reference;
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const bookingId = session.metadata?.bookingId;
       if (bookingId) {
-        console.log("✅ Pago de Mercado Pago confirmado:", bookingId);
-        // Aquí puedes actualizar el estado en Google Sheets
+        console.log("✅ Pago exitoso para booking:", bookingId);
       }
     }
-    res.status(200).send("OK");
+
+    res.json({ ok: true, received: true });
   } catch (err) {
-    console.error("Error en webhook de Mercado Pago:", err.message);
-    res.status(400).send("Error");
+    console.error("Error en webhook de Stripe:", err.message);
+    res.status(400).json({ ok: false, error: "webhook_error" });
   }
 }
 
-module.exports = { router, stripeWebhook, mpWebhook };
+module.exports = { router, stripeWebhook };

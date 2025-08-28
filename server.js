@@ -1,157 +1,153 @@
 /**
- * routes/payments.js
- * Gestiona pagos con Stripe y Mercado Pago
+ * server.js
+ * Backend principal del Channel Manager - Lapa Casa Hostel
+ * Gestiona disponibilidad, holds, pagos y admin
  */
-
 "use strict";
 
+const path = require("path");
 const express = require("express");
-const router = express.Router();
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
-const Stripe = require("stripe");
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+/* ================== APP & PORT ================== */
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Cliente de Mercado Pago (corregido)
-let mercadopago = null;
-if (process.env.MP_ACCESS_TOKEN) {
-  const mp = require("mercadopago");
-  mp.configure({ accessToken: process.env.MP_ACCESS_TOKEN });
-  mercadopago = mp;
+/* Para rate limit y proxies (Render/Nginx/Cloudflare) */
+app.set("trust proxy", 1);
+
+/* ================== AUTENTICACIÓN ADMIN ================== */
+function requireAdmin(req, res, next) {
+  const authHeader = (req.headers.authorization || "").trim();
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+  if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
+    return res.status(401).json({ ok: false, error: "unauthorized" });
+  }
+  next();
 }
 
-/* ===== POST /api/payments/stripe/session ===== */
-router.post("/stripe/session", async (req, res) => {
+/* ================== WEBHOOKS (Stripe RAW primero) ================== */
+const { stripeWebhook, mpWebhook } = require("./api/routes/payments");
+
+/**
+ * IMPORTANTE:
+ * - Stripe requiere el raw body EXACTO para verificar la firma.
+ * - Esta ruta debe declararse ANTES de cualquier app.use(express.json()).
+ */
+app.post("/api/payments/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
+
+/**
+ * Mercado Pago puede llamar GET (?id=&topic=) o POST (JSON).
+ * GET no necesita body parser; POST sí.
+ */
+app.get("/api/payments/mp/webhook", mpWebhook);
+app.post("/api/payments/mp/webhook", express.json(), mpWebhook);
+
+/* ================== SEGURIDAD ================== */
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // tu front usa scripts externos (Stripe)
+  })
+);
+
+/* ================== CORS ================== */
+const ALLOWED_ORIGINS = String(process.env.CORS_ALLOW_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
   try {
-    if (!stripe) {
-      return res.status(500).json({ ok: false, error: "stripe_not_configured" });
-    }
-
-    const { order } = req.body || {};
-    if (!order || !order.total) {
-      return res.status(400).json({ ok: false, error: "missing_order_or_total" });
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "brl",
-            unit_amount: Math.round(order.total * 100),
-            product_data: {
-              name: `Reserva (${order.nights} noches)`,
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
-      cancel_url: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=cancel`,
-      metadata: {
-        bookingId: order.bookingId || "",
-      },
+    const url = new URL(origin);
+    const host = url.hostname.toLowerCase();
+    const full = url.host.toLowerCase();
+    return ALLOWED_ORIGINS.some((domain) => {
+      const domainHost = domain.split(":")[0];
+      return (
+        host === domainHost ||
+        host.endsWith("." + domainHost) ||
+        full === domain ||
+        full.endsWith("." + domain)
+      );
     });
-
-    return res.json({ ok: true, id: session.id });
-  } catch (err) {
-    console.error("Error al crear sesión de Stripe:", err.message);
-    return res.status(500).json({ ok: false, error: "stripe_session_error" });
-  }
-});
-
-/* ===== POST /api/payments/mp/checkout ===== */
-router.post("/mp/checkout", async (req, res) => {
-  try {
-    if (!mercadopago) {
-      return res.status(500).json({ ok: false, error: "mercadopago_not_configured" });
-    }
-
-    const { order } = req.body || {};
-    if (!order || !order.total) {
-      return res.status(400).json({ ok: false, error: "missing_order_or_total" });
-    }
-
-    const preference = {
-      items: [
-        {
-          title: `Reserva (${order.nights} noches)`,
-          quantity: 1,
-          currency_id: "BRL",
-          unit_price: order.total,
-        }
-      ],
-      back_urls: {
-        success: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=success`,
-        failure: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=fail`,
-        pending: `${process.env.FRONTEND_URL || "https://lapacasahostel.com/book"}?pay=pending`
-      },
-      auto_return: "approved",
-      external_reference: order.bookingId,
-      notification_url: `${process.env.WEBHOOK_BASE_URL || "https://api.lapacasahostel.com"}/api/payments/mp/webhook`
-    };
-
-    const pref = await mercadopago.preferences.create(preference);
-    return res.json({ ok: true, init_point: pref.body.init_point });
-  } catch (err) {
-    console.error("Error al crear checkout de Mercado Pago:", err.message);
-    return res.status(500).json({ ok: false, error: "mp_checkout_error" });
-  }
-});
-
-/* ===== Webhook de Mercado Pago ===== */
-async function mpWebhook(req, res) {
-  try {
-    const { id, topic } = req.query || {};
-    if (topic === "payment" && id) {
-      const payment = await mercadopago.payment.findById(id);
-      const bookingId = payment.body.external_reference;
-      if (bookingId) {
-        console.log("✅ Pago de Mercado Pago confirmado:", bookingId);
-      }
-    }
-    res.status(200).send("OK");
-  } catch (err) {
-    console.error("Error en webhook de Mercado Pago:", err.message);
-    res.status(400).send("Error");
+  } catch {
+    const cleanOrigin = origin.replace(/^https?:\/\//, "").replace(/\/$/, "").toLowerCase();
+    const hostNoPort = cleanOrigin.split(":")[0];
+    return ALLOWED_ORIGINS.some(
+      (domain) => cleanOrigin === domain || hostNoPort === domain || cleanOrigin.endsWith("." + domain)
+    );
   }
 }
 
-/* ===== Webhook de Stripe ===== */
-async function stripeWebhook(req, res) {
-  try {
-    if (!stripe) {
-      return res.status(500).json({ ok: false, error: "stripe_not_configured" });
-    }
+app.use(
+  cors({
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+    credentials: true,
+  })
+);
 
-    const sig = req.headers["stripe-signature"];
-    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+/* ================== BODY PARSER (después del webhook Stripe) ================== */
+app.use(express.json({ limit: "1mb" }));
 
-    if (!sig || !secret) {
-      return res.status(400).json({ ok: false, error: "missing_webhook_signature" });
-    }
+/* ================== HEALTH & PING ================== */
+app.get("/api/ping", (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(req.body, sig, secret);
-    } catch (err) {
-      console.error("Webhook signature error:", err.message);
-      return res.status(400).json({ ok: false, error: "invalid_signature" });
-    }
+app.get("/api/health", (_, res) => {
+  res.json({
+    ok: true,
+    env: {
+      FRONTEND_URL: !!process.env.FRONTEND_URL,
+      STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+      STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
+      BOOKINGS_WEBAPP_URL: !!process.env.BOOKINGS_WEBAPP_URL,
+      WEBHOOK_BASE_URL: !!process.env.WEBHOOK_BASE_URL,
+      CORS_ALLOW_ORIGINS: ALLOWED_ORIGINS,
+      ADMIN_TOKEN: !!process.env.ADMIN_TOKEN,
+      MP_ACCESS_TOKEN: !!process.env.MP_ACCESS_TOKEN,
+    },
+  });
+});
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const bookingId = session.metadata?.bookingId;
-      if (bookingId) {
-        console.log("✅ Pago exitoso para booking:", bookingId);
-      }
-    }
+/* ================== RATE LIMITING ================== */
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-    res.json({ ok: true, received: true });
-  } catch (err) {
-    console.error("Error en webhook de Stripe:", err.message);
-    res.status(400).json({ ok: false, error: "webhook_error" });
-  }
-}
+/* ================== RUTAS API ================== */
+app.use("/api/availability", require("./api/routes/availability"));
+app.use("/api/payments", require("./api/routes/payments").router);
+app.use("/api/holds", require("./api/routes/holds").router);
 
-module.exports = { router, stripeWebhook, mpWebhook };
+// Rutas protegidas (Admin)
+app.get("/api/holds/list", adminLimiter, requireAdmin, require("./api/routes/holds").list);
+app.post("/api/holds/confirm", adminLimiter, requireAdmin, require("./api/routes/holds").confirm);
+app.post("/api/holds/release", adminLimiter, requireAdmin, require("./api/routes/holds").release);
+app.use("/api/bookings", adminLimiter, requireAdmin, require("./api/routes/bookings"));
+
+/* ================== SERVIDOR ESTÁTICO ================== */
+const FRONTEND_DIR = path.join(__dirname, "frontend");
+app.use(express.static(FRONTEND_DIR));
+
+// Rutas públicas
+app.get("/", (_, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
+app.get("/book", (_, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
+
+// Admin (noindex)
+app.get("/admin", (_, res) => {
+  res.set("X-Robots-Tag", "noindex, nofollow");
+  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+});
+
+/* ================== 404 & ERRORES ================== */
+app.use((_, res) => res.status(404).json({ ok: false, error: "not_found" }));
+
+app.use((err, _, res, __) => {
+  conso

@@ -28,20 +28,46 @@ const EP = {
   HOLDS_CONFIRM: () => `${API_BASE}/holds/confirm`,
   HOLDS_RELEASE: () => `${API_BASE}/holds/release`,
   PAY_STRIPE: () => `${API_BASE}/payments/stripe/session`,
-  PAY_MP: () => `${API_BASE}/payments/mp/checkout`,
-  PAY_STATUS: () => `${API_BASE}/bookings/status`
+  PAY_MP: () => `${API_BASE}/payments/mp/checkout`
+  // PAY_STATUS eliminado: endpoint inexistente
 };
 
 // === Funciones auxiliares ===
+function calcNights(inDate, outDate) {
+  const d1 = new Date(inDate);
+  const d2 = new Date(outDate);
+  const diff = d2 - d1;
+  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
+}
+
 function buildOrderBase() {
+  const entrada = document.getElementById("dateIn").value;
+  const salida = document.getElementById("dateOut").value;
+  const hombres = parseInt(document.getElementById("men").value, 10);
+  const mujeres = parseInt(document.getElementById("women").value, 10);
+  const guests = hombres + mujeres;
+  const nights = calcNights(entrada, salida);
+
+  // capturar camas seleccionadas
+  const camas = {};
+  document.querySelectorAll(".bed.selected").forEach((el) => {
+    const roomEl = el.closest(".room");
+    const roomId = roomEl?.dataset.room;
+    if (roomId) {
+      if (!camas[roomId]) camas[roomId] = [];
+      camas[roomId].push(el.dataset.bed);
+    }
+  });
+
   return {
-    entrada: document.getElementById("dateIn").value,
-    salida: document.getElementById("dateOut").value,
-    hombres: parseInt(document.getElementById("men").value, 10),
-    mujeres: parseInt(document.getElementById("women").value, 10),
-    total: 110,
-    nights: 1,
-    bookingId: `BOOK_${Date.now()}`
+    entrada,
+    salida,
+    hombres,
+    mujeres,
+    nights,
+    total: guests * nights * 55, // R$55 por persona/noche
+    bookingId: `BOOK_${Date.now()}`,
+    camas
   };
 }
 
@@ -63,9 +89,9 @@ checkAvail?.addEventListener("click", async () => {
     const j = await fetchJSON(EP.AVAIL() + `?from=${from}&to=${to}`);
     if (j.ok) {
       roomsCard.style.display = "block";
-      // Simulación básica de camas
+      // Simulación básica de camas (placeholder hasta que el backend devuelva)
       document.getElementById("rooms").innerHTML = `
-        <div class="room">
+        <div class="room" data-room="1">
           <h3>Habitación 1</h3>
           <div class="bed" data-bed="1">Cama 1</div>
         </div>
@@ -82,7 +108,9 @@ document.getElementById("rooms")?.addEventListener("click", (e) => {
     e.target.classList.toggle("selected");
     const count = document.querySelectorAll(".bed.selected").length;
     document.getElementById("selCount").textContent = count;
-    document.getElementById("needed").textContent = parseInt(document.getElementById("men").value, 10) + parseInt(document.getElementById("women").value, 10);
+    document.getElementById("needed").textContent =
+      parseInt(document.getElementById("men").value, 10) +
+      parseInt(document.getElementById("women").value, 10);
     continueBtn.disabled = count === 0;
   }
 });

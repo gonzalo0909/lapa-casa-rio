@@ -39,6 +39,12 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  // ——— Seguridad: requiere token en query (?token=) ———
+  const token = e?.parameter?.token || '';
+  if (String(token) !== String(CRON_TOKEN)) {
+    return json_({ ok: false, error: 'unauthorized' });
+  }
+
   try {
     if (!e?.postData?.contents) {
       return json_({ ok: false, error: 'Sin cuerpo en la solicitud' });
@@ -57,6 +63,7 @@ function doPost(e) {
     if (action === 'upsert_booking')  return json_(upsertBooking_(body));
     if (action === 'create_booking')  return json_(createBooking_(body));
 
+    // por defecto crea/actualiza
     return json_(createBooking_(body));
   } catch (err) {
     return json_({ ok: false, error: err.message });

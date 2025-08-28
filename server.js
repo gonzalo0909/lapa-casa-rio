@@ -150,4 +150,13 @@ app.get("/admin", (_, res) => {
 app.use((_, res) => res.status(404).json({ ok: false, error: "not_found" }));
 
 app.use((err, _, res, __) => {
-  conso
+  console.error("Error no manejado:", err);
+  res.status(500).json({ ok: false, error: "internal_error" });
+});
+
+/* ================== INICIO DEL SERVIDOR ================== */
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
+});
+
+module.exports = app;

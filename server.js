@@ -37,7 +37,7 @@ function requireAdmin(req, res, next) {
 }
 
 /* ================== WEBHOOKS (Stripe RAW primero) ================== */
-const { stripeWebhook, mpWebhook } = require("./api/routes/payments");
+const { stripeWebhook, mpWebhook } = require("./routes/payments");
 
 /**
  * IMPORTANTE:
@@ -129,15 +129,15 @@ const adminLimiter = rateLimit({
 });
 
 /* ================== RUTAS API ================== */
-app.use("/api/availability", require("./api/routes/availability"));
-app.use("/api/payments", require("./api/routes/payments").router);
-app.use("/api/holds", require("./api/routes/holds").router);
+app.use("/api/availability", require("./routes/availability"));
+app.use("/api/payments", require("./routes/payments").router);
+app.use("/api/holds", require("./routes/holds").router);
 
 // Rutas protegidas (Admin)
-app.get("/api/holds/list", adminLimiter, requireAdmin, require("./api/routes/holds").list);
-app.post("/api/holds/confirm", adminLimiter, requireAdmin, require("./api/routes/holds").confirm);
-app.post("/api/holds/release", adminLimiter, requireAdmin, require("./api/routes/holds").release);
-app.use("/api/bookings", adminLimiter, requireAdmin, require("./api/routes/bookings"));
+app.get("/api/holds/list", adminLimiter, requireAdmin, require("./routes/holds").list);
+app.post("/api/holds/confirm", adminLimiter, requireAdmin, require("./routes/holds").confirm);
+app.post("/api/holds/release", adminLimiter, requireAdmin, require("./routes/holds").release);
+app.use("/api/bookings", adminLimiter, requireAdmin, require("./routes/bookings"));
 
 /* ================== SERVIDOR ESTÁTICO ================== */
 const FRONTEND_DIR = path.join(__dirname, "frontend");

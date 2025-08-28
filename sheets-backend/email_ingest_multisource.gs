@@ -1,8 +1,8 @@
 /**
  * email_ingest_multisource.gs
  * Ingesta de reservas desde emails de múltiples plataformas
- * Plataformas soportadas: Booking.com, Airbnb, Expedia, Hostelworld, Despegar
- * No requiere API oficial. Usa Gmail + Google Sheets.
+ * Plataformas: Booking.com, Airbnb, Expedia, Hostelworld, Despegar
+ * Gmail + Google Sheets, sin APIs oficiales
  */
 
 const INGEST_CONFIG = {
@@ -20,26 +20,17 @@ const INGEST_CONFIG = {
   DEFAULT_PAY_STATUS: 'pending'
 };
 
-/**
- * Instala el trigger para ejecutar cada 10 minutos
- */
+/** Trigger cada 10 minutos */
 function installIngestTrigger() {
   const triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(t => {
-    if (t.getHandlerFunction() === 'fetchAllPlatformEmails') {
-      ScriptApp.deleteTrigger(t);
-    }
+    if (t.getHandlerFunction() === 'fetchAllPlatformEmails') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('fetchAllPlatformEmails')
-    .timeBased()
-    .everyMinutes(10)
-    .create();
+  ScriptApp.newTrigger('fetchAllPlatformEmails').timeBased().everyMinutes(10).create();
   ensureLabel_();
 }
 
-/**
- * Busca emails de todas las plataformas y los procesa
- */
+/** Busca emails de todas las plataformas y los procesa */
 function fetchAllPlatformEmails() {
   ensureLabel_();
   const label = GmailApp.getUserLabelByName(INGEST_CONFIG.LABEL_NAME);
@@ -49,7 +40,7 @@ function fetchAllPlatformEmails() {
 
   threads.forEach(thread => {
     try {
-      const message = thread.getMessages().pop();
+      const message = thread.getMessages().slice(-1)[0];
       const subject = (message.getSubject() || '').trim();
       if (!INGEST_CONFIG.SUBJECT_KEYWORDS.test(subject)) return;
 
@@ -58,24 +49,29 @@ function fetchAllPlatformEmails() {
       if (!platform) return;
 
       const parser = PARSERS[platform];
-      const bookingData = parser ? parser(body, message) : basicParse_(body, platform);
+      const parsed = parser ? parser(body, message) : basicParse_(body, platform);
 
-      if (bookingData && bookingData.booking_id) {
-        upsertBookingToSheet_(bookingData);
+      if (parsed && parsed.booking_id) {
+        // Normalización y defaults
+        parsed.pay_status = parsed.pay_status || INGEST_CONFIG.DEFAULT_PAY_STATUS;
+        parsed.created_at = parsed.created_at || new Date().toISOString();
+        parsed.camas_json = parsed.camas_json || '{}';
+        parsed.telefono = parsed.telefono || '';
+
+        upsertBookingToSheet_(parsed);
         if (INGEST_CONFIG.ONLY_UNREAD) thread.markRead();
         if (label) thread.addLabel(label);
       }
     } catch (e) {
-      console.warn(`Error procesando email: ${e.message}`);
+      console.warn('Error procesando email:', e && e.message ? e.message : e);
     }
   });
 }
 
-// ================== DETECCIÓN DE PLATAFORMA ==================
-
+/* ============= DETECCIÓN DE PLATAFORMA ============= */
 function detectPlatform_(message) {
-  const from = message.getFrom().toLowerCase();
-  const subject = message.getSubject().toLowerCase();
+  const from = String(message.getFrom() || '').toLowerCase();
+  const subject = String(message.getSubject() || '').toLowerCase();
   if (from.includes('booking.com')) return 'booking';
   if (from.includes('airbnb.com') || subject.includes('airbnb')) return 'airbnb';
   if (from.includes('expedia.com')) return 'expedia';
@@ -84,8 +80,7 @@ function detectPlatform_(message) {
   return null;
 }
 
-// ================== PARSERS POR PLATAFORMA ==================
-
+/* ============= PARSERS POR PLATAFORMA ============= */
 const PARSERS = {
   booking: function(body, message) {
     return {
@@ -94,7 +89,7 @@ const PARSERS = {
       email: matchOne_(body, /Email[:\s]+(\S+@\S+)/i),
       telefono: matchOne_(body, /Tel[eé][^:]*[:\s]+([+()\-\s\d]+)/i),
       entrada: normalizeDate_(matchOne_(body, /Check.?in[:\s]+(\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
-      salida: normalizeDate_(matchOne_(body, /Check.?out[:\s]+(\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
+      salida:  normalizeDate_(matchOne_(body, /Check.?out[:\s]+(\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
       hombres: toInt_(matchOne_(body, /Hombres?[:\s]+(\d+)/i)),
       mujeres: toInt_(matchOne_(body, /Mujeres?[:\s]+(\d+)/i)),
       total: toMoney_(matchOne_(body, /Total[:\s]+[R$€]?\s*([\d,\.]+)/i)),
@@ -104,11 +99,11 @@ const PARSERS = {
 
   airbnb: function(body) {
     return {
-      booking_id: matchOne_(body, /Reservation:\s*([A-Z0-9]{8})/i),
+      booking_id: matchOne_(body, /Reservation:\s*([A-Z0-9\-]{6,})/i),
       nombre: matchOne_(body, /Guest:\s*([^\n]+)/i),
       email: matchOne_(body, /Email:\s*(\S+@\S+)/i),
       entrada: normalizeDate_(matchOne_(body, /Check-in:\s*([^\n]+)/i)),
-      salida: normalizeDate_(matchOne_(body, /Check-out:\s*([^\n]+)/i)),
+      salida:  normalizeDate_(matchOne_(body, /Check-out:\s*([^\n]+)/i)),
       hombres: toInt_(matchOne_(body, /Guests?:\s*(\d+)/i)),
       mujeres: 0,
       total: toMoney_(matchOne_(body, /Total:\s*[€$]?\s*([\d,\.]+)/i)),
@@ -118,11 +113,11 @@ const PARSERS = {
 
   expedia: function(body) {
     return {
-      booking_id: matchOne_(body, /Booking\s*ID[:\s]+([A-Z0-9]+)/i),
+      booking_id: matchOne_(body, /Booking\s*ID[:\s]+([A-Z0-9\-]+)/i),
       nombre: matchOne_(body, /Customer Name[:\s]+([^\n]+)/i),
       email: matchOne_(body, /Email[:\s]+(\S+@\S+)/i),
       entrada: normalizeDate_(matchOne_(body, /Arrival:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
-      salida: normalizeDate_(matchOne_(body, /Departure:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
+      salida:  normalizeDate_(matchOne_(body, /Departure:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
       hombres: toInt_(matchOne_(body, /Guests?:\s*(\d+)/i)),
       mujeres: 0,
       total: toMoney_(matchOne_(body, /Total Charge[:\s]+[US]*\$?\s*([\d,\.]+)/i)),
@@ -132,11 +127,11 @@ const PARSERS = {
 
   hostelworld: function(body) {
     return {
-      booking_id: matchOne_(body, /Booking Ref:\s*([A-Z0-9]+)/i),
+      booking_id: matchOne_(body, /Booking Ref:\s*([A-Z0-9\-]+)/i),
       nombre: matchOne_(body, /Name:\s*([^\n]+)/i),
       email: matchOne_(body, /Email:\s*(\S+@\S+)/i),
       entrada: normalizeDate_(matchOne_(body, /Arrival:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
-      salida: normalizeDate_(matchOne_(body, /Departure:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
+      salida:  normalizeDate_(matchOne_(body, /Departure:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
       hombres: toInt_(matchOne_(body, /Male:\s*(\d+)/i)),
       mujeres: toInt_(matchOne_(body, /Female:\s*(\d+)/i)),
       total: toMoney_(matchOne_(body, /Total:\s*€?\s*([\d,\.]+)/i)),
@@ -146,11 +141,11 @@ const PARSERS = {
 
   despegar: function(body) {
     return {
-      booking_id: matchOne_(body, /Reserva:\s*([A-Z0-9]+)/i),
+      booking_id: matchOne_(body, /Reserva:\s*([A-Z0-9\-]+)/i),
       nombre: matchOne_(body, /Nombre:\s*([^\n]+)/i),
       email: matchOne_(body, /Email:\s*(\S+@\S+)/i),
       entrada: normalizeDate_(matchOne_(body, /Check-in:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
-      salida: normalizeDate_(matchOne_(body, /Check-out:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
+      salida:  normalizeDate_(matchOne_(body, /Check-out:\s*([^\d]*\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
       hombres: toInt_(matchOne_(body, /Adultos:\s*(\d+)/i)),
       mujeres: 0,
       total: toMoney_(matchOne_(body, /Total:\s*R?\$?\s*([\d,\.]+)/i)),
@@ -159,12 +154,15 @@ const PARSERS = {
   }
 };
 
-// ================== FUNCIONES AUXILIARES ==================
-
+/* ============= AUXILIARES ============= */
 function buildSearchQuery_() {
   const cutoff = new Date(Date.now() - INGEST_CONFIG.LOOKBACK_DAYS * 86400000);
-  const dateStr = `${cutoff.getFullYear()}/${cutoff.getMonth() + 1}/${cutoff.getDate()}`;
-  return `${INGEST_CONFIG.SENDER_PATTERNS} after:${dateStr}`;
+  const y = cutoff.getFullYear();
+  const m = String(cutoff.getMonth() + 1);
+  const d = String(cutoff.getDate());
+  const after = `${y}/${m}/${d}`;
+  const unread = INGEST_CONFIG.ONLY_UNREAD ? ' is:unread' : '';
+  return `${INGEST_CONFIG.SENDER_PATTERNS} after:${after}${unread}`;
 }
 
 function ensureLabel_() {
@@ -174,17 +172,21 @@ function ensureLabel_() {
 }
 
 function stripHtml_(html) {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  // preservar saltos de línea básicos
+  const withBreaks = String(html || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n');
+  return withBreaks.replace(/<[^>]+>/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\s+/g, ' ').trim();
 }
 
 function matchOne_(text, regex) {
-  const match = regex.exec(text);
-  return match ? match[1].trim() : '';
+  const m = regex.exec(text);
+  return m ? String(m[1]).trim() : '';
 }
 
 function toInt_(str) {
-  const num = parseInt(str, 10);
-  return isNaN(num) ? 0 : num;
+  const n = parseInt(str, 10);
+  return isNaN(n) ? 0 : n;
 }
 
 function toMoney_(str) {
@@ -193,38 +195,39 @@ function toMoney_(str) {
 
 function normalizeDate_(str) {
   if (!str) return '';
-  const cleaned = str.replace(/[^\d\/\-\s]/g, '');
+  const cleaned = String(str).replace(/[^\d\/\-\s]/g, '');
   const parts = cleaned.split(/[/\-\s]/).filter(Boolean);
   if (parts.length !== 3) return '';
   let [d, m, y] = parts;
   if (y.length === 2) y = '20' + y;
-  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 function extractIdFromSubject_(subject) {
-  return matchOne_(subject, /(\d{6,})/);
+  return matchOne_(String(subject || ''), /(\d{6,})/);
 }
 
 function basicParse_(body, source) {
   return {
     booking_id: 'AUTO_' + new Date().getTime(),
-    nombre: matchOne_(body, /(?:Guest|Name|Cliente)[:\s]+([A-Za-z\s]+)/i),
+    nombre: matchOne_(body, /(?:Guest|Name|Cliente)[:\s]+([A-Za-zÀ-ÿ\s]+)/i),
     email: matchOne_(body, /Email[:\s]+(\S+@\S+)/i),
     entrada: normalizeDate_(matchOne_(body, /(?:Check.?in|Arrival)[^\d]*(\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
-    salida: normalizeDate_(matchOne_(body, /(?:Check.?out|Departure)[^\d]*(\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
+    salida:  normalizeDate_(matchOne_(body, /(?:Check.?out|Departure)[^\d]*(\d{1,2}[/\s]\d{1,2}[/\s]\d{2,4})/i)),
     hombres: toInt_(matchOne_(body, /(?:Guests?|Adultos)[:\s]+(\d+)/i)),
-    source: source
+    mujeres: 0,
+    total: toMoney_(matchOne_(body, /Total[:\s]+[R$€$]?\s*([\d,\.]+)/i)),
+    source
   };
 }
 
-// ================== INTEGRACIÓN CON SHEETS ==================
-
+/* ============= INTEGRACIÓN CON SHEETS ============= */
 function upsertBookingToSheet_(data) {
   const sheet = getBookingSheet_();
   const headers = getHeaders_(sheet);
-  const idCol = 1;
-  const values = headers.map(h => data[h] || '');
+  const values = headers.map(h => (data[h] !== undefined && data[h] !== null ? data[h] : ''));
   const rows = sheet.getDataRange().getValues();
+
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(data.booking_id)) {
       sheet.getRange(i + 1, 1, 1, values.length).setValues([values]);
@@ -254,8 +257,7 @@ function getHeaders_(sheet) {
   return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 }
 
-// ================== UTILS ==================
-
+/* ============= UTILS ============= */
 function json_(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }

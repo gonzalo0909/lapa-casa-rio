@@ -1,38 +1,38 @@
 /**
  * services/holdsStore.js
- * Gestiona reservas temporales (HOLDS) en memoria
- * Incluye creación, lectura, confirmación y liberación
- * Maneja expiración automática
+ * Gestiona reservas temporales (HOLDS) en Redis
+ * Persistencia, TTL automático y acceso seguro
  */
 
 "use strict";
 
+const { createClient } = require("redis");
+
+// TTL por defecto: 10 minutos
 const DEFAULT_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
-const nowMs = () => Date.now();
+const TTL_MS = DEFAULT_TTL_MINUTES * 60;
 
-// Almacena todos los holds activos
-const holds = new Map();
+// Cliente Redis
+let client = null;
 
-/**
- * Limpia los holds expirados
- */
-function sweepExpired() {
-  const cutoff = nowMs();
-  for (const [id, hold] of holds.entries()) {
-    if (!hold || !hold.expiresAt || hold.expiresAt <= cutoff) {
-      holds.delete(id);
-    }
+async function connectRedis() {
+  if (client) return client;
+  const url = process.env.REDIS_URL;
+  if (!url) {
+    throw new Error("REDIS_URL no definida en .env");
   }
+  client = createClient({ url });
+  client.on("error", (err) => console.error("Redis error:", err));
+  await client.connect();
+  return client;
 }
 
 /**
- * Devuelve lista de todos los holds activos (ordenados por creación)
+ * Asegura que Redis esté conectado
  */
-function listHolds() {
-  sweepExpired();
-  return Array.from(holds.values()).sort((a, b) => 
-    a.createdAt > b.createdAt ? -1 : 1
-  );
+async function getRedis() {
+  if (!client) await connectRedis();
+  return client;
 }
 
 /**
@@ -40,22 +40,22 @@ function listHolds() {
  * @param {string} holdId
  * @returns {Object|null}
  */
-function getHold(holdId) {
-  sweepExpired();
-  return holds.get(String(holdId)) || null;
+async function getHold(holdId) {
+  const redis = await getRedis();
+  const data = await redis.get(`hold:${holdId}`);
+  return data ? JSON.parse(data) : null;
 }
 
 /**
- * Crea un nuevo hold
+ * Crea un nuevo hold con TTL
  * @param {Object} payload
  * @returns {Object} { ok, holdId, expiresAt }
  */
-function startHold(payload = {}) {
-  sweepExpired();
+async function startHold(payload = {}) {
+  const redis = await getRedis();
   const p = payload;
   const holdId = String(p.holdId || `HOLD-${Date.now()}`);
-  const ttlMin = DEFAULT_TTL_MINUTES > 0 ? DEFAULT_TTL_MINUTES : 10;
-  const ttlMs = ttlMin * 60 * 1000;
+  const ttlMs = DEFAULT_TTL_MINUTES > 0 ? TTL_MS : 60; // en segundos
 
   const item = {
     holdId,
@@ -65,35 +65,36 @@ function startHold(payload = {}) {
     mujeres: Number(p.mujeres || 0),
     camas: p.camas || {},
     total: Number(p.total || 0),
-    createdAt: new Date(),
-    ttlMs,
-    expiresAt: nowMs() + ttlMs,
+    createdAt: new Date().toISOString(),
+    ttlSeconds: ttlMs,
     status: "hold"
   };
 
-  holds.set(holdId, item);
+  await redis.setEx(`hold:${holdId}`, ttlMs, JSON.stringify(item));
 
   return {
     ok: true,
     holdId,
-    expiresAt: item.expiresAt
+    expiresAt: Date.now() + ttlMs * 1000
   };
 }
 
 /**
- * Confirma un hold (cambia estado a "paid", "confirmed", etc.)
+ * Confirma un hold (cambia estado)
  * @param {string} holdId
  * @param {string} status
  * @returns {Object} { ok, error? }
  */
-function confirmHold(holdId, status = "paid") {
-  sweepExpired();
-  const h = holds.get(String(holdId));
-  if (!h) {
+async function confirmHold(holdId, status = "paid") {
+  const redis = await getRedis();
+  const key = `hold:${holdId}`;
+  const data = await redis.get(key);
+  if (!data) {
     return { ok: false, error: "hold_not_found" };
   }
-  h.status = status;
-  holds.set(String(holdId), h);
+  const item = JSON.parse(data);
+  item.status = status;
+  await redis.setEx(key, item.ttlSeconds, JSON.stringify(item));
   return { ok: true };
 }
 
@@ -102,10 +103,23 @@ function confirmHold(holdId, status = "paid") {
  * @param {string} holdId
  * @returns {Object} { ok }
  */
-function releaseHold(holdId) {
-  sweepExpired();
-  holds.delete(String(holdId));
+async function releaseHold(holdId) {
+  const redis = await getRedis();
+  await redis.del(`hold:${holdId}`);
   return { ok: true };
+}
+
+/**
+ * Devuelve todos los holds activos
+ * @returns {Array}
+ */
+async function listHolds() {
+  const redis = await getRedis();
+  const keys = await redis.keys("hold:*");
+  const items = await Promise.all(keys.map(k => redis.get(k)));
+  return items
+    .map(data => JSON.parse(data))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 /**
@@ -114,14 +128,18 @@ function releaseHold(holdId) {
  * @param {string} toYMD - Fecha fin (YYYY-MM-DD)
  * @returns {Object} { 1: [2,5], 3: [1,3], ... }
  */
-function getHoldsMap(fromYMD, toYMD) {
-  sweepExpired();
+async function getHoldsMap(fromYMD, toYMD) {
   const out = { 1: new Set(), 3: new Set(), 5: new Set(), 6: new Set() };
   const f = fromYMD ? new Date(fromYMD + "T00:00:00") : null;
   const t = toYMD ? new Date(toYMD + "T00:00:00") : null;
 
-  for (const h of holds.values()) {
-    if (!h || !h.expiresAt || h.expiresAt <= nowMs()) continue;
+  const redis = await getRedis();
+  const keys = await redis.keys("hold:*");
+  const items = await Promise.all(keys.map(k => redis.get(k)));
+
+  for (const data of items) {
+    const h = JSON.parse(data);
+    if (!h || h.status !== "hold") continue;
 
     const hin = h.entrada ? new Date(h.entrada + "T00:00:00") : null;
     const hout = h.salida ? new Date(h.salida + "T00:00:00") : null;
@@ -145,11 +163,11 @@ function getHoldsMap(fromYMD, toYMD) {
 }
 
 module.exports = {
-  listHolds,
   getHold,
   startHold,
   confirmHold,
   releaseHold,
-  sweepExpired,
-  getHoldsMap
+  listHolds,
+  getHoldsMap,
+  connectRedis // útil para inicializar en server.js
 };

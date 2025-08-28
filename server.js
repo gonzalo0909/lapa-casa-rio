@@ -13,18 +13,18 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
-// Validación crítica: ADMIN_TOKEN obligatorio
-if (!process.env.ADMIN_TOKEN) {
-  console.error("FATAL: Falta ADMIN_TOKEN en .env — No se puede iniciar el servidor");
-  process.exit(1);
-}
-
 /* ================== APP & PORT ================== */
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Para rate limit y proxies (Render/Nginx/Cloudflare)
+/* Para rate limit y proxies (Render/Nginx/Cloudflare) */
 app.set("trust proxy", 1);
+
+/* ================== VALIDACIÓN DE ADMIN_TOKEN ================== */
+if (!process.env.ADMIN_TOKEN) {
+  console.error("FATAL: Falta ADMIN_TOKEN en .env — No se puede iniciar el servidor");
+  process.exit(1);
+}
 
 /* ================== AUTENTICACIÓN ADMIN ================== */
 function requireAdmin(req, res, next) {
@@ -39,7 +39,17 @@ function requireAdmin(req, res, next) {
 /* ================== WEBHOOKS (Stripe RAW primero) ================== */
 const { stripeWebhook, mpWebhook } = require("./api/routes/payments");
 
+/**
+ * IMPORTANTE:
+ * - Stripe requiere el raw body EXACTO para verificar la firma.
+ * - Esta ruta debe declararse ANTES de cualquier app.use(express.json()).
+ */
 app.post("/api/payments/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
+
+/**
+ * Mercado Pago puede llamar GET (?id=&topic=) o POST (JSON).
+ * GET no necesita body parser; POST sí.
+ */
 app.get("/api/payments/mp/webhook", mpWebhook);
 app.post("/api/payments/mp/webhook", express.json(), mpWebhook);
 
@@ -47,7 +57,7 @@ app.post("/api/payments/mp/webhook", express.json(), mpWebhook);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: false, // tu front usa scripts externos (Stripe)
   })
 );
 
@@ -88,7 +98,7 @@ app.use(
   })
 );
 
-/* ================== BODY PARSER ================== */
+/* ================== BODY PARSER (después del webhook Stripe) ================== */
 app.use(express.json({ limit: "1mb" }));
 
 /* ================== HEALTH & PING ================== */
@@ -123,7 +133,7 @@ app.use("/api/availability", require("./api/routes/availability"));
 app.use("/api/payments", require("./api/routes/payments").router);
 app.use("/api/holds", require("./api/routes/holds").router);
 
-// Rutas protegidas
+// Rutas protegidas (Admin)
 app.get("/api/holds/list", adminLimiter, requireAdmin, require("./api/routes/holds").list);
 app.post("/api/holds/confirm", adminLimiter, requireAdmin, require("./api/routes/holds").confirm);
 app.post("/api/holds/release", adminLimiter, requireAdmin, require("./api/routes/holds").release);

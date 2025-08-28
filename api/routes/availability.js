@@ -21,23 +21,29 @@ const cache = new Map();
  */
 router.get("/", async (req, res) => {
   const { from, to } = parseQueryDates(req.query);
-  
-  if (!from || !to) {
-    return sendError(res, 400, "missing_from_to", "Faltan 'from' o 'to' (formato YYYY-MM-DD)");
+
+  // Validación de formato de fecha
+  if (!isValidDate(from)) {
+    return sendError(res, 400, "invalid_from", "Formato de 'from' inválido. Usa YYYY-MM-DD");
+  }
+  if (!isValidDate(to)) {
+    return sendError(res, 400, "invalid_to", "Formato de 'to' inválido. Usa YYYY-MM-DD");
+  }
+  if (new Date(from) >= new Date(to)) {
+    return sendError(res, 400, "invalid_range", "'from' debe ser anterior a 'to'");
   }
 
   const cacheKey = `${from}:${to}`;
   const now = Date.now();
 
-  // Responder desde caché si es válido
   const cached = cache.get(cacheKey);
-  if (cached && (now - cached.ts) < AVAIL_TTL_MS) {
+  if (cached && now - cached.ts < AVAIL_TTL_MS) {
     return res.json({
       ok: true,
       cached: true,
       from,
       to,
-      occupied: cached.data.occupied
+      occupied: cached.data.occupied,
     });
   }
 
@@ -47,13 +53,12 @@ router.get("/", async (req, res) => {
     const occupied = calcOccupiedBeds(rows, holdsMap);
     const data = { from, to, occupied };
 
-    // Guardar en caché
     cache.set(cacheKey, { ts: now, data });
 
     res.json({
       ok: true,
       cached: false,
-      ...data
+      ...data,
     });
   } catch (err) {
     console.error("[Availability] Error al obtener disponibilidad:", err.message);
@@ -61,19 +66,21 @@ router.get("/", async (req, res) => {
   }
 });
 
-// === Funciones auxiliares ===
-
 function parseQueryDates(query) {
   const from = String(query.from || "").slice(0, 10);
   const to = String(query.to || "").slice(0, 10);
   return { from, to };
 }
 
+function isValidDate(date) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(new Date(date));
+}
+
 function sendError(res, status, code, message) {
   return res.status(status).json({
     ok: false,
     error: code,
-    message
+    message,
   });
 }
 

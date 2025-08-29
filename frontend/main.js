@@ -1,7 +1,7 @@
 /**
  * main.js
  * Frontend del sistema de reservas - Lapa Casa Hostel
- * Con control dinámico de cuartos por género y cantidad
+ * Con control dinámico de cuartos, HOLD y pagos
  */
 
 "use strict";
@@ -12,8 +12,12 @@ const STRIPE_KEY = document.querySelector('meta[name="stripe-publishable-key"]')
 
 // === Referencias al DOM ===
 const roomsCard = document.getElementById("roomsCard");
+const formCard = document.getElementById("formCard");
 const checkAvail = document.getElementById("checkAvail");
 const continueBtn = document.getElementById("continueBtn");
+const payStripe = document.getElementById("payStripe");
+const payMP = document.getElementById("payMP");
+const payPix = document.getElementById("payPix");
 
 // === Endpoints API ===
 const EP = {
@@ -224,8 +228,14 @@ document.getElementById("rooms")?.addEventListener("click", (e) => {
   }
 });
 
-// === Botón "Continuar" ===
+// === Botón "Continuar" → Crear HOLD ===
 continueBtn?.addEventListener("click", async () => {
+  const needed = document.getElementById("needed").textContent;
+  if (needed === "0") {
+    alert("Seleccioná al menos un huésped.");
+    return;
+  }
+
   try {
     const order = buildOrderBase();
     const j = await fetchJSON(EP.HOLDS_START(), {
@@ -234,14 +244,63 @@ continueBtn?.addEventListener("click", async () => {
     });
 
     if (j.holdId) {
-      document.getElementById("formCard").style.display = "block";
+      formCard.style.display = "block";
       document.getElementById("payState").textContent = "pendiente";
+      console.log("✅ HOLD creado:", j.holdId);
     } else {
       alert("Error: " + (j.error || "No se creó el hold"));
     }
   } catch (e) {
-    alert("Error creando HOLD: " + e.message);
+    console.error("Error al crear HOLD:", e);
+    alert("No se pudo conectar con el servidor. Intentá nuevamente.");
   }
+});
+
+// === Botón "Pagar con MP" ===
+payMP?.addEventListener("click", async () => {
+  try {
+    const order = buildOrderBase();
+    const j = await fetchJSON(EP.PAY_MP(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order })
+    });
+    if (j.init_point) {
+      window.location.href = j.init_point;
+    } else {
+      alert("Error: " + (j.error || "No se generó el checkout"));
+    }
+  } catch (e) {
+    alert("Error MP: " + (e.message || e));
+  }
+});
+
+// === Botón "Ir a Checkout" (Stripe) ===
+payStripe?.addEventListener("click", async () => {
+  if (!STRIPE_KEY) {
+    alert("Stripe no está configurado correctamente.");
+    return;
+  }
+  try {
+    const order = buildOrderBase();
+    const j = await fetchJSON(EP.PAY_STRIPE(), {
+      method: "POST",
+      body: JSON.stringify({ order })
+    });
+    if (j.id) {
+      const stripe = Stripe(STRIPE_KEY);
+      stripe.redirectToCheckout({ sessionId: j.id });
+    } else {
+      alert("Error: " + (j.error || "No se creó la sesión"));
+    }
+  } catch (e) {
+    alert("Error Stripe: " + (e.message || e));
+  }
+});
+
+// === Botón "Pix (QR)" ===
+payPix?.addEventListener("click", () => {
+  alert("Funcionalidad Pix QR en desarrollo");
 });
 
 // === Inicialización ===

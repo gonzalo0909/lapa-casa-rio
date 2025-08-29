@@ -45,6 +45,7 @@ function buildOrderBase() {
   const nights = calcNights(entrada, salida);
   const totalPrice = guests * nights * 55;
 
+  // Construir objeto de camas seleccionadas
   const camas = {};
   document.querySelectorAll(".bed.selected").forEach(el => {
     const roomEl = el.closest(".room");
@@ -94,7 +95,9 @@ function setupGuestControls() {
   function updateNeeded() {
     const needed = (parseInt(menInput.value || 0) + parseInt(womenInput.value || 0));
     document.getElementById("needed").textContent = needed;
-    continueBtn.disabled = needed > 0 && document.querySelectorAll(".bed.selected").length !== needed;
+    // Deshabilitar "Continuar" si no hay camas seleccionadas
+    const selectedBeds = document.querySelectorAll(".bed.selected").length;
+    continueBtn.disabled = needed > 0 && selectedBeds !== needed;
   }
 
   function updateRooms() {
@@ -233,6 +236,12 @@ continueBtn?.addEventListener("click", async () => {
   const needed = document.getElementById("needed").textContent;
   if (needed === "0") {
     alert("Seleccioná al menos un huésped.");
+    return;
+  }
+
+  const selectedBeds = document.querySelectorAll(".bed.selected");
+  if (selectedBeds.length === 0) {
+    alert("Seleccioná al menos una cama.");
     return;
   }
 

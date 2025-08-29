@@ -1,10 +1,10 @@
+"use strict";
+
 /**
  * availability.js
  * Calcula la disponibilidad de camas combinando bookings (Google Sheets) y holds (memoria)
  * Usa caché simple para mejorar rendimiento (60 segundos)
  */
-
-"use strict";
 
 const express = require("express");
 const router = express.Router();
@@ -22,7 +22,6 @@ const cache = new Map();
 router.get("/", async (req, res) => {
   const { from, to } = parseQueryDates(req.query);
   
-  // Validación de formato y lógica
   if (!from || !to) {
     return sendError(res, 400, "missing_from_to", "Faltan 'from' o 'to' (formato YYYY-MM-DD)");
   }
@@ -38,7 +37,6 @@ router.get("/", async (req, res) => {
   const cacheKey = `${from}:${to}`;
   const now = Date.now();
 
-  // Responder desde caché si es válido
   const cached = cache.get(cacheKey);
   if (cached && (now - cached.ts) < AVAIL_TTL_MS) {
     return res.json({
@@ -52,11 +50,10 @@ router.get("/", async (req, res) => {
 
   try {
     const rows = await fetchRowsFromSheet(from, to);
-    const holdsMap = getHoldsMap(from, to);
+    const holdsMap = await getHoldsMap(from, to);   // ← CORREGIDO con await
     const occupied = calcOccupiedBeds(rows, holdsMap);
     const data = { from, to, occupied };
 
-    // Guardar en caché
     cache.set(cacheKey, { ts: now, data });
 
     res.json({

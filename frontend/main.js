@@ -112,13 +112,13 @@ function setupGuestControls() {
     // === 1. Habitación 1 (mixta) → SIEMPRE PRIMERO ===
     addRoom(roomsDiv, 1, "Mixta", total);
 
-    // === 2. Habitación 5 (mixta) ===
-    addRoom(roomsDiv, 5, "Mixta", total);
-
-    // === 3. Habitación 3 (mixta) → SOLO si hay más de 12 camas ===
+    // === 2. Habitación 3 (mixta) → SOLO si hay más de 12 camas ===
     if (total > 12) {
       addRoom(roomsDiv, 3, "Mixta", total);
     }
+
+    // === 3. Habitación 5 (mixta) ===
+    addRoom(roomsDiv, 5, "Mixta", total);
 
     // === 4. Habitación 6 (solo mujeres) → solo si hay mujeres ===
     if (mujeres > 0) {

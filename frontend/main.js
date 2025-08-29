@@ -1,7 +1,6 @@
 /**
  * main.js
  * Frontend del sistema de reservas - Lapa Casa Hostel
- * Versión corregida y robustecida
  */
 
 "use strict";
@@ -16,6 +15,7 @@ const formCard = document.getElementById("formCard");
 const roomsCard = document.getElementById("roomsCard");
 const checkAvail = document.getElementById("checkAvail");
 const continueBtn = document.getElementById("continueBtn");
+const submitBtn = document.getElementById("submitBtn");
 const payStripe = document.getElementById("payStripe");
 const payMP = document.getElementById("payMP");
 const payPix = document.getElementById("payPix");
@@ -28,17 +28,19 @@ const EP = {
   HOLDS_CONFIRM: () => `${API_BASE}/holds/confirm`,
   HOLDS_RELEASE: () => `${API_BASE}/holds/release`,
   PAY_STRIPE: () => `${API_BASE}/payments/stripe/session`,
-  PAY_MP: () => `${API_BASE}/payments/mp/checkout`
+  PAY_MP: () => `${API_BASE}/payments/mp/checkout`,
+  PAY_STATUS: () => `${API_BASE}/bookings/status`
+};
+
+// === Configuración de habitaciones/camas ===
+const ROOMS = {
+  1: 12,
+  3: 12,
+  5: 7,
+  6: 7
 };
 
 // === Funciones auxiliares ===
-function calcNights(inDate, outDate) {
-  const d1 = new Date(inDate);
-  const d2 = new Date(outDate);
-  const diff = d2 - d1;
-  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
-}
-
 function buildOrderBase() {
   const entrada = document.getElementById("dateIn").value;
   const salida = document.getElementById("dateOut").value;
@@ -46,10 +48,11 @@ function buildOrderBase() {
   const mujeres = parseInt(document.getElementById("women").value, 10);
   const guests = hombres + mujeres;
   const nights = calcNights(entrada, salida);
+  const totalPrice = guests * nights * 55; // R$55 por persona/noche
 
-  // capturar camas seleccionadas
+  // Capturar camas seleccionadas
   const camas = {};
-  document.querySelectorAll(".bed.selected").forEach((el) => {
+  document.querySelectorAll(".bed.selected").forEach(el => {
     const roomEl = el.closest(".room");
     const roomId = roomEl?.dataset.room;
     if (roomId) {
@@ -64,10 +67,17 @@ function buildOrderBase() {
     hombres,
     mujeres,
     nights,
-    total: guests * nights * 55, // R$55 por persona/noche
+    total: totalPrice,
     bookingId: `BOOK_${Date.now()}`,
     camas
   };
+}
+
+function calcNights(inDate, outDate) {
+  const d1 = new Date(inDate);
+  const d2 = new Date(outDate);
+  const diff = d2 - d1;
+  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
 }
 
 async function fetchJSON(url, options = {}) {
@@ -90,6 +100,7 @@ function setupGuestControls() {
   function updateNeeded() {
     const needed = (parseInt(menInput.value || 0) + parseInt(womenInput.value || 0));
     document.getElementById("needed").textContent = needed;
+    continueBtn.disabled = needed > 0 && document.querySelectorAll(".bed.selected").length !== needed;
   }
 
   document.getElementById("menPlus")?.addEventListener("click", () => {
@@ -113,6 +124,36 @@ function setupGuestControls() {
   });
 
   updateNeeded();
+}
+
+// === Render de habitaciones/camas ===
+function renderRooms(occupied = {}) {
+  const roomsDiv = document.getElementById("rooms");
+  roomsDiv.innerHTML = "";
+
+  Object.entries(ROOMS).forEach(([roomId, totalBeds]) => {
+    const roomEl = document.createElement("div");
+    roomEl.className = "room";
+    roomEl.dataset.room = roomId;
+    roomEl.innerHTML = `<h3>Habitación ${roomId}</h3><div class="beds"></div>`;
+    const bedsDiv = roomEl.querySelector(".beds");
+
+    for (let i = 1; i <= totalBeds; i++) {
+      const bedEl = document.createElement("div");
+      bedEl.className = "bed";
+      bedEl.dataset.room = roomId;
+      bedEl.dataset.bed = i;
+      bedEl.textContent = `Cama ${i}`;
+
+      if (occupied[roomId] && occupied[roomId].includes(i)) {
+        bedEl.classList.add("occupied");
+      }
+
+      bedsDiv.appendChild(bedEl);
+    }
+
+    roomsDiv.appendChild(roomEl);
+  });
 }
 
 // === Botón "Ver disponibilidad" ===
@@ -144,19 +185,7 @@ checkAvail?.addEventListener("click", async () => {
     if (j.ok) {
       roomsCard.style.display = "block";
       msgEl.style.display = "none";
-
-      // Aquí deberías renderizar camas reales según la respuesta
-      // Por ahora, placeholder básico
-      document.getElementById("rooms").innerHTML = `
-        <div class="room" data-room="1">
-          <h3>Habitación 1</h3>
-          <div class="beds">
-            <div class="bed" data-bed="1">Cama 1</div>
-            <div class="bed" data-bed="2">Cama 2</div>
-            <div class="bed" data-bed="3">Cama 3</div>
-          </div>
-        </div>
-      `;
+      renderRooms(j.occupied || {});
     } else {
       msgEl.textContent = j.message || "No hay disponibilidad.";
       msgEl.className = "warning";
@@ -194,10 +223,10 @@ continueBtn?.addEventListener("click", async () => {
       formCard.style.display = "block";
       document.getElementById("payState").textContent = "pendiente";
     } else {
-      alert("Error: " + (j.error || "No se pudo reservar"));
+      alert("Error: " + (j.error || "No se creó el hold"));
     }
   } catch (e) {
-    alert("Error creando reserva: " + e.message);
+    alert("Error creando HOLD: " + e.message);
   }
 });
 
@@ -207,6 +236,7 @@ payMP?.addEventListener("click", async () => {
     const order = buildOrderBase();
     const j = await fetchJSON(EP.PAY_MP(), {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ order })
     });
     if (j.init_point) {
@@ -251,7 +281,6 @@ payPix?.addEventListener("click", () => {
 document.getElementById("reserva-form")?.addEventListener("submit", (e) => {
   e.preventDefault();
   alert("Reserva confirmada. Gracias por elegir Lapa Casa Hostel.");
-  // Aquí podrías enviar los datos a Sheets si querés
 });
 
 // === Inicialización ===

@@ -4,10 +4,23 @@
   <meta charset="UTF-8" />
   <title>Lapa Casa Hostel – Reservas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <!-- API base + Stripe key -->
+
+  <!-- Backend y claves -->
   <meta name="backend-base-url" content="https://api.lapacasahostel.com/api"/>
-  <meta name="stripe-publishable-key" content="pk_live_o_test"/>
+  <meta name="stripe-publishable-key" content="pk_live_51Ru1ZLGluCgaZVuWD3f3E1reDyph3sYVTVwxiTtWTq5DWT4m7Nxi2qEojApX75BQzyACKa91bNvgKr9X2sbCnGB000dx3BhRoj"/>
+
+  <!-- SEO seguridad (no indexar Admin SPA) -->
+  <meta name="robots" content="noindex,nofollow">
+
+  <!-- Estilos -->
   <link rel="stylesheet" href="/styles.css"/>
+
+  <!-- Perf Stripe -->
+  <link rel="dns-prefetch" href="https://js.stripe.com">
+  <link rel="preconnect" href="https://js.stripe.com" crossorigin>
+  <link rel="preconnect" href="https://m.stripe.network" crossorigin>
+
+  <!-- Scripts -->
   <script src="https://js.stripe.com/v3/" defer></script>
   <script src="/main.js" defer></script>
 </head>
@@ -21,9 +34,8 @@
   </header>
 
   <main class="row">
-    <!-- BOOK -->
+    <!-- Reservas -->
     <section id="book" class="card">
-      <!-- Fechas y cantidad -->
       <div class="grid grid-2">
         <div>
           <label>Check-in</label>
@@ -40,7 +52,7 @@
           <label>Hombres</label>
           <div class="ctr">
             <button type="button" id="menMinus">−</button>
-            <input id="men" type="number" min="0" max="38" value="0" />
+            <input id="men" type="number" min="0" max="38" value="0"/>
             <button type="button" id="menPlus">+</button>
           </div>
         </div>
@@ -48,7 +60,7 @@
           <label>Mujeres</label>
           <div class="ctr">
             <button type="button" id="womenMinus">−</button>
-            <input id="women" type="number" min="0" max="38" value="0" />
+            <input id="women" type="number" min="0" max="38" value="0"/>
             <button type="button" id="womenPlus">+</button>
           </div>
         </div>
@@ -57,6 +69,7 @@
           <button id="checkAvail" class="btn" type="button">Ver disponibilidad</button>
         </div>
       </div>
+
       <div id="checkMsg" class="muted" style="margin-top:6px"></div>
 
       <!-- Rooms -->
@@ -74,7 +87,7 @@
         <p class="warning" id="suggestBox"></p>
       </section>
 
-      <!-- Formulario -->
+      <!-- Form -->
       <section id="formCard" class="card" style="display:none">
         <h2>Datos para confirmar</h2>
         <form id="reserva-form">
@@ -88,6 +101,7 @@
           <input type="date" name="entrada" required/>
           <label>Fecha de salida</label>
           <input type="date" name="salida" required/>
+
           <label style="margin-top:8px">
             <input type="checkbox" id="consentChk"/>
             <span class="muted">Acepto recibir comunicaciones y la política de privacidad.</span>
@@ -120,11 +134,11 @@
       </section>
     </section>
 
-    <!-- ADMIN -->
+    <!-- Admin -->
     <section id="admin" class="card" style="display:none">
       <h2>Admin</h2>
       <label>Token</label>
-      <input id="admToken" type="text" />
+      <input id="admToken" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"/>
       <button id="btnHealth" class="btn">Health</button>
       <pre id="healthOut"></pre>
 
@@ -143,6 +157,8 @@
     </section>
   </main>
 
-  <footer><p class="muted">&copy; 2025 Lapa Casa Hostel</p></footer>
+  <footer>
+    <p class="muted">&copy; 2025 Lapa Casa Hostel</p>
+  </footer>
 </body>
 </html>

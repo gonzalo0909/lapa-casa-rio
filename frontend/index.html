@@ -9,9 +9,6 @@
   <meta name="backend-base-url" content="https://api.lapacasahostel.com/api"/>
   <meta name="stripe-publishable-key" content="pk_live_51Ru1ZLGluCgaZVuWD3f3E1reDyph3sYVTVwxiTtWTq5DWT4m7Nxi2qEojApX75BQzyACKa91bNvgKr9X2sbCnGB000dx3BhRoj"/>
 
-  <!-- SEO seguridad (no indexar Admin SPA) -->
-  <meta name="robots" content="noindex,nofollow">
-
   <!-- Estilos -->
   <link rel="stylesheet" href="/styles.css"/>
 
@@ -138,7 +135,7 @@
     <section id="admin" class="card" style="display:none">
       <h2>Admin</h2>
       <label>Token</label>
-      <input id="admToken" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"/>
+      <input id="admToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"/>
       <button id="btnHealth" class="btn">Health</button>
       <pre id="healthOut"></pre>
 

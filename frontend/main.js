@@ -1,7 +1,7 @@
 /**
  * main.js
  * Frontend del sistema de reservas - Lapa Casa Hostel
- * Con control dinámico de cuartos por género
+ * Con control dinámico de cuartos por género y cantidad
  */
 
 "use strict";
@@ -11,32 +11,22 @@ const API_BASE = document.querySelector('meta[name="backend-base-url"]')?.getAtt
 const STRIPE_KEY = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute("content") || "";
 
 // === Referencias al DOM ===
-const bookSection = document.getElementById("book");
-const formCard = document.getElementById("formCard");
 const roomsCard = document.getElementById("roomsCard");
 const checkAvail = document.getElementById("checkAvail");
 const continueBtn = document.getElementById("continueBtn");
-const submitBtn = document.getElementById("submitBtn");
-const payStripe = document.getElementById("payStripe");
-const payMP = document.getElementById("payMP");
-const payPix = document.getElementById("payPix");
 
 // === Endpoints API ===
 const EP = {
-  PING: () => `${API_BASE}/ping`,
   AVAIL: () => `${API_BASE}/availability`,
   HOLDS_START: () => `${API_BASE}/holds/start`,
-  HOLDS_CONFIRM: () => `${API_BASE}/holds/confirm`,
-  HOLDS_RELEASE: () => `${API_BASE}/holds/release`,
   PAY_STRIPE: () => `${API_BASE}/payments/stripe/session`,
-  PAY_MP: () => `${API_BASE}/payments/mp/checkout`,
-  PAY_STATUS: () => `${API_BASE}/bookings/status`
+  PAY_MP: () => `${API_BASE}/payments/mp/checkout`
 };
 
 // === Configuración de habitaciones/camas ===
 const ROOMS = {
   1: 12,  // mixta
-  3: 12,  // mixta
+  3: 12,  // mixta (refuerzo)
   5: 7,   // mixta
   6: 7    // solo mujeres
 };
@@ -119,16 +109,18 @@ function setupGuestControls() {
     const roomsDiv = document.getElementById("rooms");
     roomsDiv.innerHTML = "";
 
-    // Mostrar Habitación 1 y 5 (mixtas)
+    // === 1. Habitación 1 (mixta) → SIEMPRE PRIMERO ===
     addRoom(roomsDiv, 1, "Mixta", total);
+
+    // === 2. Habitación 5 (mixta) ===
     addRoom(roomsDiv, 5, "Mixta", total);
 
-    // Si hay más de 12 personas, mostrar Habitación 3
+    // === 3. Habitación 3 (mixta) → SOLO si hay más de 12 camas ===
     if (total > 12) {
       addRoom(roomsDiv, 3, "Mixta", total);
     }
 
-    // Si hay mujeres, mostrar Habitación 6 (solo mujeres)
+    // === 4. Habitación 6 (solo mujeres) → solo si hay mujeres ===
     if (mujeres > 0) {
       const room6 = addRoom(roomsDiv, 6, "Solo mujeres", mujeres);
       const warning = document.createElement("div");
@@ -137,7 +129,7 @@ function setupGuestControls() {
       room6.appendChild(warning);
     }
 
-    // Volver a cargar disponibilidad
+    // Actualizar disponibilidad
     checkAvailability();
   }
 
@@ -170,7 +162,7 @@ function addRoom(container, roomId, type, maxBeds) {
   const bedsDiv = roomEl.querySelector(".beds");
 
   const totalBeds = ROOMS[roomId];
-  const bedsToShow = Math.min(totalBeds, maxBeds > 0 ? totalBeds : 0);
+  const bedsToShow = Math.min(totalBeds, maxBeds);
 
   for (let i = 1; i <= bedsToShow; i++) {
     const bedEl = document.createElement("div");
@@ -232,7 +224,7 @@ document.getElementById("rooms")?.addEventListener("click", (e) => {
   }
 });
 
-// === Botón "Continuar" → Crear HOLD ===
+// === Botón "Continuar" ===
 continueBtn?.addEventListener("click", async () => {
   try {
     const order = buildOrderBase();
@@ -242,7 +234,7 @@ continueBtn?.addEventListener("click", async () => {
     });
 
     if (j.holdId) {
-      formCard.style.display = "block";
+      document.getElementById("formCard").style.display = "block";
       document.getElementById("payState").textContent = "pendiente";
     } else {
       alert("Error: " + (j.error || "No se creó el hold"));
@@ -250,59 +242,6 @@ continueBtn?.addEventListener("click", async () => {
   } catch (e) {
     alert("Error creando HOLD: " + e.message);
   }
-});
-
-// === Botón "Pagar con MP" ===
-payMP?.addEventListener("click", async () => {
-  try {
-    const order = buildOrderBase();
-    const j = await fetchJSON(EP.PAY_MP(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order })
-    });
-    if (j.init_point) {
-      window.location.href = j.init_point;
-    } else {
-      alert("Error: " + (j.error || "No se generó el checkout"));
-    }
-  } catch (e) {
-    alert("Error MP: " + (e.message || e));
-  }
-});
-
-// === Botón "Ir a Checkout" (Stripe) ===
-payStripe?.addEventListener("click", async () => {
-  if (!STRIPE_KEY) {
-    alert("Stripe no está configurado correctamente.");
-    return;
-  }
-  try {
-    const order = buildOrderBase();
-    const j = await fetchJSON(EP.PAY_STRIPE(), {
-      method: "POST",
-      body: JSON.stringify({ order })
-    });
-    if (j.id) {
-      const stripe = Stripe(STRIPE_KEY);
-      stripe.redirectToCheckout({ sessionId: j.id });
-    } else {
-      alert("Error: " + (j.error || "No se creó la sesión"));
-    }
-  } catch (e) {
-    alert("Error Stripe: " + (e.message || e));
-  }
-});
-
-// === Botón "Pix (QR)" ===
-payPix?.addEventListener("click", () => {
-  alert("Funcionalidad Pix QR en desarrollo");
-});
-
-// === Formulario de reserva ===
-document.getElementById("reserva-form")?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  alert("Reserva confirmada. Gracias por elegir Lapa Casa Hostel.");
 });
 
 // === Inicialización ===

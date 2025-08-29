@@ -1,14 +1,13 @@
-/**
- * main.js
- * Frontend del sistema de reservas - Lapa Casa Hostel
- * Con control dinámico de cuartos, HOLD y pagos
- */
-
 "use strict";
 
 // === Variables globales ===
-const API_BASE = document.querySelector('meta[name="backend-base-url"]')?.getAttribute("content") || "";
-const STRIPE_KEY = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute("content") || "";
+const API_BASE = (document.querySelector('meta[name="backend-base-url"]')?.getAttribute("content") || "").trim();
+const STRIPE_KEY = (document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute("content") || "").trim();
+
+if (!API_BASE) {
+  console.error("FATAL: Falta backend-base-url en meta tag");
+  alert("No se puede conectar al sistema de reservas.");
+}
 
 // === Referencias al DOM ===
 const roomsCard = document.getElementById("roomsCard");
@@ -29,30 +28,31 @@ const EP = {
 
 // === Configuración de habitaciones/camas ===
 const ROOMS = {
-  1: 12,  // mixta
-  3: 12,  // mixta (refuerzo)
-  5: 7,   // mixta
-  6: 7    // solo mujeres
+  1: 12,
+  3: 12,
+  5: 7,
+  6: 7
 };
 
 // === Funciones auxiliares ===
 function buildOrderBase() {
   const entrada = document.getElementById("dateIn").value;
   const salida = document.getElementById("dateOut").value;
-  const hombres = parseInt(document.getElementById("men").value, 10);
-  const mujeres = parseInt(document.getElementById("women").value, 10);
+  const hombres = parseInt(document.getElementById("men").value || 0, 10);
+  const mujeres = parseInt(document.getElementById("women").value || 0, 10);
   const guests = hombres + mujeres;
   const nights = calcNights(entrada, salida);
   const totalPrice = guests * nights * 55;
 
-  // Construir objeto de camas seleccionadas
+  if (!entrada || !salida) return null;
+
   const camas = {};
   document.querySelectorAll(".bed.selected").forEach(el => {
     const roomEl = el.closest(".room");
     const roomId = roomEl?.dataset.room;
     if (roomId) {
       if (!camas[roomId]) camas[roomId] = [];
-      camas[roomId].push(el.dataset.bed);
+      camas[roomId].push(parseInt(el.dataset.bed));
     }
   });
 
@@ -87,7 +87,7 @@ async function fetchJSON(url, options = {}) {
   }
 }
 
-// === Control de huéspedes (hombres/mujeres) ===
+// === Control de huéspedes ===
 function setupGuestControls() {
   const menInput = document.getElementById("men");
   const womenInput = document.getElementById("women");
@@ -95,7 +95,6 @@ function setupGuestControls() {
   function updateNeeded() {
     const needed = (parseInt(menInput.value || 0) + parseInt(womenInput.value || 0));
     document.getElementById("needed").textContent = needed;
-    // Deshabilitar "Continuar" si no hay camas seleccionadas
     const selectedBeds = document.querySelectorAll(".bed.selected").length;
     continueBtn.disabled = needed > 0 && selectedBeds !== needed;
   }
@@ -105,7 +104,6 @@ function setupGuestControls() {
     const mujeres = parseInt(womenInput.value || 0);
     const total = hombres + mujeres;
 
-    // Ocultar todo si no hay huéspedes
     if (hombres === 0 && mujeres === 0) {
       document.getElementById("rooms").innerHTML = "";
       roomsCard.style.display = "none";
@@ -116,18 +114,9 @@ function setupGuestControls() {
     const roomsDiv = document.getElementById("rooms");
     roomsDiv.innerHTML = "";
 
-    // === 1. Habitación 1 (mixta) → SIEMPRE PRIMERO ===
     addRoom(roomsDiv, 1, "Mixta", total);
-
-    // === 2. Habitación 3 (mixta) → SOLO si hay más de 12 camas ===
-    if (total > 12) {
-      addRoom(roomsDiv, 3, "Mixta", total);
-    }
-
-    // === 3. Habitación 5 (mixta) ===
+    if (total > 12) addRoom(roomsDiv, 3, "Mixta", total);
     addRoom(roomsDiv, 5, "Mixta", total);
-
-    // === 4. Habitación 6 (solo mujeres) → solo si hay mujeres ===
     if (mujeres > 0) {
       const room6 = addRoom(roomsDiv, 6, "Solo mujeres", mujeres);
       const warning = document.createElement("div");
@@ -136,7 +125,6 @@ function setupGuestControls() {
       room6.appendChild(warning);
     }
 
-    // Actualizar disponibilidad
     checkAvailability();
   }
 
@@ -210,73 +198,58 @@ async function checkAvailability() {
   }
 }
 
-// === Botón "Ver disponibilidad" ===
 checkAvail?.addEventListener("click", () => {
   const from = document.getElementById("dateIn").value;
   const to = document.getElementById("dateOut").value;
   if (!from || !to) return alert("Seleccioná fechas");
-
   checkAvailability();
 });
 
-// === Selección de camas ===
 document.getElementById("rooms")?.addEventListener("click", (e) => {
   if (e.target.classList.contains("bed") && !e.target.classList.contains("occupied")) {
     e.target.classList.toggle("selected");
     const count = document.querySelectorAll(".bed.selected").length;
     document.getElementById("selCount").textContent = count;
-
     const needed = parseInt(document.getElementById("men").value || 0) + parseInt(document.getElementById("women").value || 0);
     continueBtn.disabled = count !== needed;
   }
 });
 
-// === Botón "Continuar" → Crear HOLD ===
 continueBtn?.addEventListener("click", async () => {
-  const needed = document.getElementById("needed").textContent;
-  if (needed === "0") {
-    alert("Seleccioná al menos un huésped.");
+  const order = buildOrderBase();
+  if (!order) {
+    alert("Fechas no válidas");
     return;
   }
-
-  const selectedBeds = document.querySelectorAll(".bed.selected");
-  if (selectedBeds.length === 0) {
+  if (Object.keys(order.camas).length === 0) {
     alert("Seleccioná al menos una cama.");
     return;
   }
 
-  if (selectedBeds.length !== parseInt(needed)) {
-    alert("La cantidad de camas seleccionadas debe coincidir con la cantidad de huéspedes.");
-    return;
-  }
-
   try {
-    const order = buildOrderBase();
     const j = await fetchJSON(EP.HOLDS_START(), {
       method: "POST",
       body: JSON.stringify(order)
     });
 
-    if (j.holdId) {
-      formCard.style.display = "block";
-      document.getElementById("payState").textContent = "pendiente";
-      console.log("✅ HOLD creado:", j.holdId);
-    } else {
+    if (!j.ok || !j.holdId) {
       alert("Error: " + (j.error || "No se creó el hold"));
+      return;
     }
+
+    formCard.style.display = "block";
+    document.getElementById("payState").textContent = "pendiente";
   } catch (e) {
     console.error("Error al crear HOLD:", e);
-    alert("No se pudo conectar con el servidor. Intentá nuevamente.");
+    alert("No se pudo conectar al servidor. Revisa tu conexión.");
   }
 });
 
-// === Botón "Pagar con MP" ===
 payMP?.addEventListener("click", async () => {
   try {
     const order = buildOrderBase();
     const j = await fetchJSON(EP.PAY_MP(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ order })
     });
     if (j.init_point) {
@@ -289,7 +262,6 @@ payMP?.addEventListener("click", async () => {
   }
 });
 
-// === Botón "Ir a Checkout" (Stripe) ===
 payStripe?.addEventListener("click", async () => {
   if (!STRIPE_KEY) {
     alert("Stripe no está configurado correctamente.");
@@ -312,10 +284,8 @@ payStripe?.addEventListener("click", async () => {
   }
 });
 
-// === Botón "Pix (QR)" ===
 payPix?.addEventListener("click", () => {
   alert("Funcionalidad Pix QR en desarrollo");
 });
 
-// === Inicialización ===
 setupGuestControls();

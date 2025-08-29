@@ -1,6 +1,7 @@
 /**
  * main.js
  * Frontend del sistema de reservas - Lapa Casa Hostel
+ * Con control dinámico de cuartos por género
  */
 
 "use strict";
@@ -34,10 +35,10 @@ const EP = {
 
 // === Configuración de habitaciones/camas ===
 const ROOMS = {
-  1: 12,
-  3: 12,
-  5: 7,
-  6: 7
+  1: 12,  // mixta
+  3: 12,  // mixta
+  5: 7,   // mixta
+  6: 7    // solo mujeres
 };
 
 // === Funciones auxiliares ===
@@ -48,9 +49,8 @@ function buildOrderBase() {
   const mujeres = parseInt(document.getElementById("women").value, 10);
   const guests = hombres + mujeres;
   const nights = calcNights(entrada, salida);
-  const totalPrice = guests * nights * 55; // R$55 por persona/noche
+  const totalPrice = guests * nights * 55;
 
-  // Capturar camas seleccionadas
   const camas = {};
   document.querySelectorAll(".bed.selected").forEach(el => {
     const roomEl = el.closest(".room");
@@ -103,99 +103,121 @@ function setupGuestControls() {
     continueBtn.disabled = needed > 0 && document.querySelectorAll(".bed.selected").length !== needed;
   }
 
+  function updateRooms() {
+    const hombres = parseInt(menInput.value || 0);
+    const mujeres = parseInt(womenInput.value || 0);
+    const total = hombres + mujeres;
+
+    // Ocultar todo si no hay huéspedes
+    if (hombres === 0 && mujeres === 0) {
+      document.getElementById("rooms").innerHTML = "";
+      roomsCard.style.display = "none";
+      return;
+    }
+
+    roomsCard.style.display = "block";
+    const roomsDiv = document.getElementById("rooms");
+    roomsDiv.innerHTML = "";
+
+    // Mostrar Habitación 1 y 5 (mixtas)
+    addRoom(roomsDiv, 1, "Mixta", total);
+    addRoom(roomsDiv, 5, "Mixta", total);
+
+    // Si hay más de 12 personas, mostrar Habitación 3
+    if (total > 12) {
+      addRoom(roomsDiv, 3, "Mixta", total);
+    }
+
+    // Si hay mujeres, mostrar Habitación 6 (solo mujeres)
+    if (mujeres > 0) {
+      const room6 = addRoom(roomsDiv, 6, "Solo mujeres", mujeres);
+      const warning = document.createElement("div");
+      warning.className = "warning";
+      warning.textContent = "Este cuarto es exclusivo para mujeres.";
+      room6.appendChild(warning);
+    }
+
+    // Volver a cargar disponibilidad
+    checkAvailability();
+  }
+
   document.getElementById("menPlus")?.addEventListener("click", () => {
     menInput.value = Math.min(38, parseInt(menInput.value || 0) + 1);
-    updateNeeded();
+    updateNeeded(); updateRooms();
   });
-
   document.getElementById("menMinus")?.addEventListener("click", () => {
     menInput.value = Math.max(0, parseInt(menInput.value || 0) - 1);
-    updateNeeded();
+    updateNeeded(); updateRooms();
   });
-
   document.getElementById("womenPlus")?.addEventListener("click", () => {
     womenInput.value = Math.min(38, parseInt(womenInput.value || 0) + 1);
-    updateNeeded();
+    updateNeeded(); updateRooms();
   });
-
   document.getElementById("womenMinus")?.addEventListener("click", () => {
     womenInput.value = Math.max(0, parseInt(womenInput.value || 0) - 1);
-    updateNeeded();
+    updateNeeded(); updateRooms();
   });
 
   updateNeeded();
+  updateRooms();
 }
 
-// === Render de habitaciones/camas ===
-function renderRooms(occupied = {}) {
-  const roomsDiv = document.getElementById("rooms");
-  roomsDiv.innerHTML = "";
+function addRoom(container, roomId, type, maxBeds) {
+  const roomEl = document.createElement("div");
+  roomEl.className = "room";
+  roomEl.dataset.room = roomId;
+  roomEl.innerHTML = `<h3>Habitación ${roomId} (${type})</h3><div class="beds"></div>`;
+  const bedsDiv = roomEl.querySelector(".beds");
 
-  Object.entries(ROOMS).forEach(([roomId, totalBeds]) => {
-    const roomEl = document.createElement("div");
-    roomEl.className = "room";
-    roomEl.dataset.room = roomId;
-    roomEl.innerHTML = `<h3>Habitación ${roomId}</h3><div class="beds"></div>`;
-    const bedsDiv = roomEl.querySelector(".beds");
+  const totalBeds = ROOMS[roomId];
+  const bedsToShow = Math.min(totalBeds, maxBeds > 0 ? totalBeds : 0);
 
-    for (let i = 1; i <= totalBeds; i++) {
-      const bedEl = document.createElement("div");
-      bedEl.className = "bed";
-      bedEl.dataset.room = roomId;
-      bedEl.dataset.bed = i;
-      bedEl.textContent = `Cama ${i}`;
+  for (let i = 1; i <= bedsToShow; i++) {
+    const bedEl = document.createElement("div");
+    bedEl.className = "bed";
+    bedEl.dataset.room = roomId;
+    bedEl.dataset.bed = i;
+    bedEl.textContent = `Cama ${i}`;
+    bedsDiv.appendChild(bedEl);
+  }
 
-      if (occupied[roomId] && occupied[roomId].includes(i)) {
-        bedEl.classList.add("occupied");
-      }
-
-      bedsDiv.appendChild(bedEl);
-    }
-
-    roomsDiv.appendChild(roomEl);
-  });
+  container.appendChild(roomEl);
+  return roomEl;
 }
 
-// === Botón "Ver disponibilidad" ===
-checkAvail?.addEventListener("click", async () => {
+async function checkAvailability() {
   const from = document.getElementById("dateIn").value;
   const to = document.getElementById("dateOut").value;
-  const msgEl = document.getElementById("checkMsg");
-
-  if (!from || !to) {
-    msgEl.textContent = "Seleccioná fechas de entrada y salida.";
-    msgEl.className = "err";
-    msgEl.style.display = "block";
-    return;
-  }
-
-  if (from >= to) {
-    msgEl.textContent = "La fecha de salida debe ser posterior a la de entrada.";
-    msgEl.className = "err";
-    msgEl.style.display = "block";
-    return;
-  }
-
-  msgEl.textContent = "Cargando disponibilidad...";
-  msgEl.className = "muted";
-  msgEl.style.display = "block";
+  if (!from || !to) return;
 
   try {
     const j = await fetchJSON(EP.AVAIL() + `?from=${from}&to=${to}`);
     if (j.ok) {
-      roomsCard.style.display = "block";
-      msgEl.style.display = "none";
-      renderRooms(j.occupied || {});
-    } else {
-      msgEl.textContent = j.message || "No hay disponibilidad.";
-      msgEl.className = "warning";
-      msgEl.style.display = "block";
+      const rooms = document.querySelectorAll(".room");
+      rooms.forEach(room => {
+        const roomId = room.dataset.room;
+        const occupied = j.occupied[roomId] || [];
+        room.querySelectorAll(".bed").forEach(bed => {
+          const bedId = parseInt(bed.dataset.bed);
+          if (occupied.includes(bedId)) {
+            bed.classList.add("occupied");
+            bed.classList.remove("selected");
+          }
+        });
+      });
     }
   } catch (e) {
-    msgEl.textContent = "No se pudo conectar con el servidor.";
-    msgEl.className = "err";
-    console.error("Error al obtener disponibilidad:", e);
+    console.error("Error al cargar disponibilidad:", e);
   }
+}
+
+// === Botón "Ver disponibilidad" ===
+checkAvail?.addEventListener("click", () => {
+  const from = document.getElementById("dateIn").value;
+  const to = document.getElementById("dateOut").value;
+  if (!from || !to) return alert("Seleccioná fechas");
+
+  checkAvailability();
 });
 
 // === Selección de camas ===

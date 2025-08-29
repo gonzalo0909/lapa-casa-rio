@@ -245,6 +245,11 @@ continueBtn?.addEventListener("click", async () => {
     return;
   }
 
+  if (selectedBeds.length !== parseInt(needed)) {
+    alert("La cantidad de camas seleccionadas debe coincidir con la cantidad de huéspedes.");
+    return;
+  }
+
   try {
     const order = buildOrderBase();
     const j = await fetchJSON(EP.HOLDS_START(), {

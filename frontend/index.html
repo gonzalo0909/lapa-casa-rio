@@ -4,29 +4,51 @@
   <meta charset="UTF-8" />
   <title>Lapa Casa Hostel – Reservas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-
-  <!-- Backend y claves -->
-  <meta name="backend-base-url" content="https://api.lapacasahostel.com/api"/>
-  <meta name="stripe-publishable-key" content="pk_live_51Ru1ZLGluCgaZVuWD3f3E1reDyph3sYVTVwxiTtWTq5DWT4m7Nxi2qEojApX75BQzyACKa91bNvgKr9X2sbCnGB000dx3BhRoj"/>
+  <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro. Mejor ubicación, precios justos."/>
+  <meta name="keywords" content="hostel, rio de janeiro, santa teresa, reservas, backpackers"/>
+  
+  <!-- Security Headers -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
+  <meta http-equiv="X-Frame-Options" content="DENY"/>
+  <meta name="referrer" content="strict-origin-when-cross-origin"/>
 
   <!-- Estilos -->
   <link rel="stylesheet" href="/css/style.css"/>
 
-  <!-- Perf Stripe -->
+  <!-- DNS Prefetch -->
   <link rel="dns-prefetch" href="https://js.stripe.com">
   <link rel="preconnect" href="https://js.stripe.com" crossorigin>
-  <link rel="preconnect" href="https://m.stripe.network" crossorigin>
-
-  <!-- Scripts -->
+  
+  <!-- Stripe -->
   <script src="https://js.stripe.com/v3/" defer></script>
+  
+  <!-- App -->
   <script src="/js/main.js" defer></script>
 </head>
 <body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p>Procesando...</p>
+  </div>
+
+  <!-- Error Toast -->
+  <div id="errorToast" class="toast error hidden">
+    <span id="errorMessage"></span>
+    <button id="closeError" class="toast-close">&times;</button>
+  </div>
+
+  <!-- Success Toast -->
+  <div id="successToast" class="toast success hidden">
+    <span id="successMessage"></span>
+    <button id="closeSuccess" class="toast-close">&times;</button>
+  </div>
+
   <header>
     <h1>Lapa Casa Hostel – Reservas</h1>
     <nav class="lang">
-      <a href="#/book">Reservas</a>
-      <a href="#/admin">Admin</a>
+      <a href="#/book" class="nav-link active" data-section="book">Reservas</a>
+      <a href="#/admin" class="nav-link" data-section="admin">Admin</a>
     </nav>
   </header>
 
@@ -35,51 +57,66 @@
     <section id="book" class="card">
       <div class="grid grid-2">
         <div>
-          <label>Check-in</label>
-          <input id="dateIn" type="date"/>
+          <label for="dateIn">Check-in</label>
+          <input id="dateIn" type="date" required aria-describedby="dateInError"/>
+          <div id="dateInError" class="error-text hidden" role="alert"></div>
         </div>
         <div>
-          <label>Check-out</label>
-          <input id="dateOut" type="date"/>
+          <label for="dateOut">Check-out</label>
+          <input id="dateOut" type="date" required aria-describedby="dateOutError"/>
+          <div id="dateOutError" class="error-text hidden" role="alert"></div>
         </div>
       </div>
 
       <div class="grid grid-4" style="margin-top:10px">
         <div>
-          <label>Hombres</label>
+          <label for="men">Hombres</label>
           <div class="ctr">
-            <button type="button" id="menMinus">−</button>
-            <input id="men" type="number" min="0" max="38" value="0"/>
-            <button type="button" id="menPlus">+</button>
+            <button type="button" id="menMinus" aria-label="Disminuir hombres">−</button>
+            <input id="men" type="number" min="0" max="38" value="0" aria-describedby="menError"/>
+            <button type="button" id="menPlus" aria-label="Aumentar hombres">+</button>
           </div>
+          <div id="menError" class="error-text hidden" role="alert"></div>
         </div>
         <div>
-          <label>Mujeres</label>
+          <label for="women">Mujeres</label>
           <div class="ctr">
-            <button type="button" id="womenMinus">−</button>
-            <input id="women" type="number" min="0" max="38" value="0"/>
-            <button type="button" id="womenPlus">+</button>
+            <button type="button" id="womenMinus" aria-label="Disminuir mujeres">−</button>
+            <input id="women" type="number" min="0" max="38" value="0" aria-describedby="womenError"/>
+            <button type="button" id="womenPlus" aria-label="Aumentar mujeres">+</button>
           </div>
+          <div id="womenError" class="error-text hidden" role="alert"></div>
         </div>
-        <div class="muted" style="display:flex;align-items:end">Capacidad total: 38</div>
+        <div class="muted" style="display:flex;align-items:end">
+          Capacidad total: 38
+          <div class="availability-indicator" id="availIndicator"></div>
+        </div>
         <div style="display:flex;justify-content:end;align-items:end">
-          <button id="checkAvail" class="btn" type="button">Ver disponibilidad</button>
+          <button id="checkAvail" class="btn" type="button">
+            <span class="btn-text">Ver disponibilidad</span>
+            <span class="btn-loading hidden">Cargando...</span>
+          </button>
         </div>
       </div>
-
-      <div id="checkMsg" class="muted" style="margin-top:6px"></div>
 
       <!-- Rooms -->
       <section id="roomsCard" class="card" style="display:none">
         <h2>Elegí tus camas</h2>
         <div id="mods" class="muted" style="margin-bottom:8px"></div>
-        <div id="rooms" class="rooms"></div>
+        <div id="rooms" class="rooms" role="group" aria-label="Selección de camas"></div>
         <div class="actions" style="margin-top:8px">
           <div>
             <div>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
             <div class="muted">Total: R$ <span id="totalPrice">0</span></div>
+            <div class="muted">(<span id="nightsCount">0</span> noches)</div>
           </div>
-          <button id="continueBtn" class="btn" disabled type="button">Continuar</button>
+          <button id="continueBtn" class="btn" disabled type="button">
+            <span class="btn-text">Continuar</span>
+            <span class="btn-loading hidden">Procesando...</span>
+          </button>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
         </div>
         <p class="warning" id="suggestBox"></p>
       </section>
@@ -87,45 +124,64 @@
       <!-- Form -->
       <section id="formCard" class="card" style="display:none">
         <h2>Datos para confirmar</h2>
-        <form id="reserva-form">
-          <label>Nombre completo</label>
-          <input type="text" name="nombre" required/>
-          <label>Email</label>
-          <input type="email" name="email" required/>
-          <label>Teléfono</label>
-          <input type="tel" name="telefono" required/>
-          <label>Fecha de entrada</label>
-          <input type="date" name="entrada" required/>
-          <label>Fecha de salida</label>
-          <input type="date" name="salida" required/>
-
-          <label style="margin-top:8px">
-            <input type="checkbox" id="consentChk"/>
-            <span class="muted">Acepto recibir comunicaciones y la política de privacidad.</span>
-          </label>
+        <form id="reserva-form" novalidate>
+          <div class="form-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" name="nombre" required minlength="2" maxlength="100" aria-describedby="nombreError"/>
+            <div id="nombreError" class="error-text hidden" role="alert"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required aria-describedby="emailError"/>
+            <div id="emailError" class="error-text hidden" role="alert"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" name="telefono" required pattern="[0-9+\-\s\(\)]{10,}" aria-describedby="telefonoError"/>
+            <div id="telefonoError" class="error-text hidden" role="alert"></div>
+          </div>
 
           <div class="grid grid-2" style="margin-top:10px">
-            <div class="card">
+            <div class="card payment-option">
               <h3>Mercado Pago (Checkout Pro)</h3>
               <p class="muted">Pix / tarjeta / boleto</p>
-              <button type="button" id="payMP" class="btn secondary">Pagar con MP</button>
+              <button type="button" id="payMP" class="btn secondary">
+                <span class="btn-text">Pagar con MP</span>
+                <span class="btn-loading hidden">Redirigiendo...</span>
+              </button>
             </div>
-            <div class="card">
+            <div class="card payment-option">
               <h3>Pix directo (QR)</h3>
               <p class="muted">Siempre muestra QR</p>
-              <button type="button" id="payPix" class="btn ghost">Pix (QR)</button>
+              <button type="button" id="payPix" class="btn ghost">
+                <span class="btn-text">Pix (QR)</span>
+                <span class="btn-loading hidden">Generando...</span>
+              </button>
             </div>
           </div>
 
-          <div class="card" style="margin-top:10px">
+          <div class="card payment-option" style="margin-top:10px">
             <h3>Stripe</h3>
             <p class="muted">Tarjeta internacional</p>
-            <button type="button" id="payStripe" class="btn secondary">Ir a Checkout</button>
+            <button type="button" id="payStripe" class="btn secondary">
+              <span class="btn-text">Ir a Checkout</span>
+              <span class="btn-loading hidden">Redirigiendo...</span>
+            </button>
           </div>
 
           <div class="actions" style="margin-top:12px">
-            <span class="muted">Estado pago: <span id="payState" class="highlight">pendiente</span></span>
-            <button type="submit" id="submitBtn" class="btn" disabled>Confirmar reserva</button>
+            <div>
+              <span class="muted">Estado pago: <span id="payState" class="highlight">pendiente</span></span>
+              <div class="payment-timer" id="paymentTimer" style="display:none">
+                <span class="muted">Hold expira en: <span id="timerDisplay">10:00</span></span>
+              </div>
+            </div>
+            <button type="submit" id="submitBtn" class="btn" disabled>
+              <span class="btn-text">Confirmar reserva</span>
+              <span class="btn-loading hidden">Confirmando...</span>
+            </button>
           </div>
         </form>
       </section>
@@ -133,29 +189,70 @@
 
     <!-- Admin -->
     <section id="admin" class="card" style="display:none">
-      <h2>Admin</h2>
-      <label>Token</label>
-      <input id="admToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"/>
-      <button id="btnHealth" class="btn">Health</button>
-      <pre id="healthOut"></pre>
-
-      <h3>Holds</h3>
-      <button id="btnHolds" class="btn">Listar Holds</button>
-      <div id="holdsOut"></div>
-
-      <h3>Bookings</h3>
-      <div class="grid grid-3">
-        <input id="bkFrom" type="date" />
-        <input id="bkTo" type="date" />
-        <input id="bkQ" type="text" placeholder="Buscar" />
+      <h2>Panel de Administración</h2>
+      
+      <div class="form-group">
+        <label for="admToken">Token de acceso</label>
+        <input id="admToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="tokenError"/>
+        <div id="tokenError" class="error-text hidden" role="alert"></div>
       </div>
-      <button id="btnBookings" class="btn">Buscar</button>
-      <div id="bookingsOut"></div>
+      
+      <div class="admin-actions">
+        <button id="btnHealth" class="btn">
+          <span class="btn-text">Health Check</span>
+          <span class="btn-loading hidden">Verificando...</span>
+        </button>
+      </div>
+      <pre id="healthOut" class="admin-output"></pre>
+
+      <h3>Reservas Temporales (Holds)</h3>
+      <div class="admin-actions">
+        <button id="btnHolds" class="btn">
+          <span class="btn-text">Listar Holds</span>
+          <span class="btn-loading hidden">Cargando...</span>
+        </button>
+      </div>
+      <div id="holdsOut" class="admin-output"></div>
+
+      <h3>Reservas Confirmadas</h3>
+      <div class="grid grid-3">
+        <div>
+          <label for="bkFrom">Desde</label>
+          <input id="bkFrom" type="date" />
+        </div>
+        <div>
+          <label for="bkTo">Hasta</label>
+          <input id="bkTo" type="date" />
+        </div>
+        <div>
+          <label for="bkQ">Buscar</label>
+          <input id="bkQ" type="text" placeholder="Nombre, email, ID..." />
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button id="btnBookings" class="btn">
+          <span class="btn-text">Buscar Reservas</span>
+          <span class="btn-loading hidden">Buscando...</span>
+        </button>
+      </div>
+      <div id="bookingsOut" class="admin-output"></div>
     </section>
   </main>
 
   <footer>
-    <p class="muted">&copy; 2025 Lapa Casa Hostel</p>
+    <p class="muted">&copy; 2025 Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</p>
   </footer>
+
+  <!-- Configuración (reemplaza meta tags) -->
+  <script>
+    window.HOSTEL_CONFIG = {
+      API_BASE: 'https://api.lapacasahostel.com/api',
+      STRIPE_KEY: 'pk_live_TU_CLAVE_AQUI', // Se cargará dinámicamente
+      PRICE_PER_NIGHT: 55,
+      TOTAL_CAPACITY: 38,
+      ROOMS: { 1: 12, 3: 12, 5: 7, 6: 7 },
+      HOLD_TIMEOUT_MINUTES: 10
+    };
+  </script>
 </body>
 </html>

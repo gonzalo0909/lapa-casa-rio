@@ -50,7 +50,7 @@ router.get("/", async (req, res) => {
 
   try {
     const rows = await fetchRowsFromSheet(from, to);
-    const holdsMap = await getHoldsMap(from, to);   // ← CORREGIDO con await
+    const holdsMap = await getHoldsMap(from, to);   // await corregido
     const occupied = calcOccupiedBeds(rows, holdsMap);
     const data = { from, to, occupied };
 

@@ -8,9 +8,9 @@
 
 const { createClient } = require("redis");
 
-// TTL por defecto: 10 minutos
+// TTL por defecto: 10 minutos (en segundos)
 const DEFAULT_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES || 10);
-const TTL_MS = DEFAULT_TTL_MINUTES * 60;
+const TTL_SECONDS = DEFAULT_TTL_MINUTES * 60;
 
 // Cliente Redis
 let client = null;
@@ -55,7 +55,7 @@ async function startHold(payload = {}) {
   const redis = await getRedis();
   const p = payload;
   const holdId = String(p.holdId || `HOLD-${Date.now()}`);
-  const ttlMs = DEFAULT_TTL_MINUTES > 0 ? TTL_MS : 60; // en segundos
+  const ttlSec = DEFAULT_TTL_MINUTES > 0 ? TTL_SECONDS : 60; // en segundos
 
   const item = {
     holdId,
@@ -66,16 +66,16 @@ async function startHold(payload = {}) {
     camas: p.camas || {},
     total: Number(p.total || 0),
     createdAt: new Date().toISOString(),
-    ttlSeconds: ttlMs,
+    ttlSeconds: ttlSec,
     status: "hold"
   };
 
-  await redis.setEx(`hold:${holdId}`, ttlMs, JSON.stringify(item));
+  await redis.setEx(`hold:${holdId}`, ttlSec, JSON.stringify(item));
 
   return {
     ok: true,
     holdId,
-    expiresAt: Date.now() + ttlMs * 1000
+    expiresAt: Date.now() + ttlSec * 1000
   };
 }
 
@@ -143,8 +143,8 @@ async function getHoldsMap(fromYMD, toYMD) {
 
     const hin = h.entrada ? new Date(h.entrada + "T00:00:00") : null;
     const hout = h.salida ? new Date(h.salida + "T00:00:00") : null;
-    const overlaps = !f && !t 
-      ? true 
+    const overlaps = !f && !t
+      ? true
       : Boolean((!t || (hin && hin < t)) && (!f || (hout && hout > f)));
 
     if (!overlaps) continue;
@@ -169,5 +169,5 @@ module.exports = {
   releaseHold,
   listHolds,
   getHoldsMap,
-  connectRedis // útil para inicializar en server.js
+  connectRedis
 };

@@ -1,9 +1,9 @@
+"use strict";
+
 /**
  * server.js
  * Backend principal del Channel Manager - Lapa Casa Hostel
  */
-
-"use strict";
 
 const path = require("path");
 const express = require("express");
@@ -36,7 +36,7 @@ function requireAdmin(req, res, next) {
 }
 
 /* ================== WEBHOOKS (Stripe RAW primero) ================== */
-const { stripeWebhook, mpWebhook } = require("./api/routes/payments");
+const { stripeWebhook, mpWebhook } = require("./routes/payments");
 
 app.post("/api/payments/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 app.get("/api/payments/mp/webhook", mpWebhook);
@@ -78,10 +78,10 @@ app.get("/api/health", (_, res) => res.json({ ok: true }));
 const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 60 });
 
 /* ================== RUTAS API ================== */
-app.use("/api/availability", require("./api/routes/availability"));
-app.use("/api/payments", require("./api/routes/payments").router);
-app.use("/api/holds", require("./api/routes/holds").router);
-app.use("/api/bookings", adminLimiter, requireAdmin, require("./api/routes/bookings"));
+app.use("/api/availability", require("./routes/availability"));
+app.use("/api/payments", require("./routes/payments").router);
+app.use("/api/holds", require("./routes/holds").router);
+app.use("/api/bookings", adminLimiter, requireAdmin, require("./routes/bookings"));
 
 /* ================== SERVIDOR ESTÁTICO ================== */
 const FRONTEND_DIR = path.join(__dirname, "frontend");

@@ -29,10 +29,10 @@ if (process.env.MP_ACCESS_TOKEN) {
 
 // Helper: valida datos del pedido
 function validateOrder(order) {
-  return order && 
-         typeof order.total === "number" && 
-         order.total > 0 && 
-         order.nights && 
+  return order &&
+         typeof order.total === "number" &&
+         order.total > 0 &&
+         order.nights &&
          order.nights > 0;
 }
 
@@ -105,9 +105,9 @@ router.post("/mp/checkout", async (req, res) => {
       },
     });
 
-    return res.json({ 
-      ok: true, 
-      init_point: response.init_point 
+    return res.json({
+      ok: true,
+      init_point: response.init_point
     });
   } catch (err) {
     console.error("Error creando checkout MP:", err.message);
@@ -136,7 +136,7 @@ async function mpWebhook(req, res) {
 
       if (data.status === "approved" && data.external_reference) {
         console.log("✅ Pago confirmado en MP:", data.external_reference);
-        // Aquí podrías actualizar el estado en Google Sheets
+        // TODO: actualizar estado en Sheets si corresponde
       } else {
         console.log(`⚠️ Pago MP no aprobado: ${data.status}`);
       }
@@ -174,7 +174,7 @@ async function stripeWebhook(req, res) {
     const session = event.data.object;
     if (session.metadata?.bookingId) {
       console.log("✅ Pago completado en Stripe:", session.metadata.bookingId);
-      // Aquí podrías actualizar el estado en Google Sheets
+      // TODO: actualizar estado en Sheets si corresponde
     }
   }
 

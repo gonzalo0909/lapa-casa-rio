@@ -1,7 +1,7 @@
 "use strict";
 
 // === Configuración ===
-const CONFIG = window.HOSTEL_CONFIG || {
+const CONFIG = {
   API_BASE: 'https://api.lapacasahostel.com/api',
   PRICE_PER_NIGHT: 55,
   TOTAL_CAPACITY: 38,
@@ -339,46 +339,64 @@ function updateSelectionCount() {
 }
 
 // === Event Listeners ===
+// === Control de huéspedes ===
 function setupGuestControls() {
   // Botones incremento/decremento
-  document.getElementById("menPlus")?.addEventListener("click", () => {
-    const current = parseInt(elements.men.value || 0, 10);
-    elements.men.value = Math.min(CONFIG.TOTAL_CAPACITY, current + 1);
-    updateCalculations();
-    updateRoomDisplay();
-  });
+  const menPlus = document.getElementById("menPlus");
+  const menMinus = document.getElementById("menMinus");
+  const womenPlus = document.getElementById("womenPlus");
+  const womenMinus = document.getElementById("womenMinus");
 
-  document.getElementById("menMinus")?.addEventListener("click", () => {
-    const current = parseInt(elements.men.value || 0, 10);
-    elements.men.value = Math.max(0, current - 1);
-    updateCalculations();
-    updateRoomDisplay();
-  });
+  if (menPlus) {
+    menPlus.addEventListener("click", () => {
+      const current = parseInt(elements.men.value || 0, 10);
+      elements.men.value = Math.min(CONFIG.TOTAL_CAPACITY, current + 1);
+      updateCalculations();
+      updateRoomDisplay();
+    });
+  }
 
-  document.getElementById("womenPlus")?.addEventListener("click", () => {
-    const current = parseInt(elements.women.value || 0, 10);
-    elements.women.value = Math.min(CONFIG.TOTAL_CAPACITY, current + 1);
-    updateCalculations();
-    updateRoomDisplay();
-  });
+  if (menMinus) {
+    menMinus.addEventListener("click", () => {
+      const current = parseInt(elements.men.value || 0, 10);
+      elements.men.value = Math.max(0, current - 1);
+      updateCalculations();
+      updateRoomDisplay();
+    });
+  }
 
-  document.getElementById("womenMinus")?.addEventListener("click", () => {
-    const current = parseInt(elements.women.value || 0, 10);
-    elements.women.value = Math.max(0, current - 1);
-    updateCalculations();
-    updateRoomDisplay();
-  });
+  if (womenPlus) {
+    womenPlus.addEventListener("click", () => {
+      const current = parseInt(elements.women.value || 0, 10);
+      elements.women.value = Math.min(CONFIG.TOTAL_CAPACITY, current + 1);
+      updateCalculations();
+      updateRoomDisplay();
+    });
+  }
+
+  if (womenMinus) {
+    womenMinus.addEventListener("click", () => {
+      const current = parseInt(elements.women.value || 0, 10);
+      elements.women.value = Math.max(0, current - 1);
+      updateCalculations();
+      updateRoomDisplay();
+    });
+  }
 
   // Input directo
-  elements.men?.addEventListener("input", () => {
-    updateCalculations();
-    updateRoomDisplay();
-  });
+  if (elements.men) {
+    elements.men.addEventListener("input", () => {
+      updateCalculations();
+      updateRoomDisplay();
+    });
+  }
 
-  elements.women?.addEventListener("input", () => {
-    updateCalculations();
-    updateRoomDisplay();
-  });
+  if (elements.women) {
+    elements.women.addEventListener("input", () => {
+      updateCalculations();
+      updateRoomDisplay();
+    });
+  }
 
   // Inicializar
   updateCalculations();

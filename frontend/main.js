@@ -51,15 +51,8 @@ function calcNights(inDate, outDate) {
 }
 
 async function fetchJSON(url, options = {}) {
-  try {
-    const res = await fetch(url, {
-      headers: { "Content-Type": "application/json" },
-      ...options
-    });
-    return await res.json();
-  } catch (err) {
-    throw new Error(`Error de red: ${err.message}`);
-  }
+  const res = await fetch(url, { headers: { "Content-Type": "application/json" }, ...options });
+  return res.json();
 }
 
 function buildOrderBase() {
@@ -194,15 +187,17 @@ checkAvail?.addEventListener("click", async () => {
 
   try {
     const j = await fetchJSON(EP.AVAIL() + `?from=${from}&to=${to}`);
-    if (!j.ok) return alert("No se pudo cargar disponibilidad");
-    renderRooms(j.occupied || {}, hombres, mujeres);
-    selCountEl.textContent = 0;
-    neededEl.textContent = need;
-    continueBtn.disabled = true;
+    // Fallback: si no hay ok o no viene occupied, seguimos con objeto vacío
+    const occ = (j && j.ok && j.occupied) ? j.occupied : {};
+    renderRooms(occ, hombres, mujeres);
   } catch (e) {
-    console.error("Error al cargar disponibilidad:", e);
-    alert("Error al consultar disponibilidad");
+    console.warn("Disponibilidad caída, usando fallback vacío:", e);
+    renderRooms({}, hombres, mujeres); // ← muestra cuartos aunque la API falle
   }
+
+  selCountEl.textContent = 0;
+  neededEl.textContent = need;
+  continueBtn.disabled = true;
 });
 
 // Click en camas: impedir ocupadas/disabled, validar conteo vs needed

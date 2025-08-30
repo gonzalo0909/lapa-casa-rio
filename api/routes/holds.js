@@ -1,7 +1,7 @@
+// File: /routes/holds.js
 "use strict";
 
 /**
- * routes/holds.js
  * Maneja reservas temporales (HOLD): crear, listar, confirmar y liberar
  */
 
@@ -46,7 +46,7 @@ router.post("/start", async (req, res) => {
 });
 
 /* ===== GET /api/holds/list ===== */
-router.get("/list", async (req, res) => {
+async function list(req, res) {
   try {
     const holds = await listHolds();
     return res.json({ ok: true, holds });
@@ -54,10 +54,11 @@ router.get("/list", async (req, res) => {
     console.error("[HOLDS] Error al listar holds:", err.message);
     return res.status(500).json({ ok: false, error: "internal_error" });
   }
-});
+}
+router.get("/list", list);
 
 /* ===== POST /api/holds/confirm ===== */
-router.post("/confirm", async (req, res) => {
+async function confirm(req, res) {
   try {
     const { holdId, status = "paid" } = req.body || {};
     if (!holdId) {
@@ -74,10 +75,11 @@ router.post("/confirm", async (req, res) => {
     console.error("[HOLDS] Error al confirmar hold:", err.message);
     return res.status(500).json({ ok: false, error: "internal_error" });
   }
-});
+}
+router.post("/confirm", confirm);
 
 /* ===== POST /api/holds/release ===== */
-router.post("/release", async (req, res) => {
+async function release(req, res) {
   try {
     const { holdId } = req.body || {};
     if (!holdId) {
@@ -94,6 +96,7 @@ router.post("/release", async (req, res) => {
     console.error("[HOLDS] Error al liberar hold:", err.message);
     return res.status(500).json({ ok: false, error: "internal_error" });
   }
-});
+}
+router.post("/release", release);
 
-module.exports = { router, getHoldsMap };
+module.exports = { router, list, confirm, release, getHoldsMap };

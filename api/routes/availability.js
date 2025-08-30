@@ -21,7 +21,7 @@ const cache = new Map();
  */
 router.get("/", async (req, res) => {
   const { from, to } = parseQueryDates(req.query);
-  
+
   if (!from || !to) {
     return sendError(res, 400, "missing_from_to", "Faltan 'from' o 'to' (formato YYYY-MM-DD)");
   }
@@ -50,20 +50,20 @@ router.get("/", async (req, res) => {
 
   try {
     const rows = await fetchRowsFromSheet(from, to);
-    const holdsMap = await getHoldsMap(from, to);   // await corregido
+    const holdsMap = await getHoldsMap(from, to); // ← await
     const occupied = calcOccupiedBeds(rows, holdsMap);
     const data = { from, to, occupied };
 
     cache.set(cacheKey, { ts: now, data });
 
-    res.json({
+    return res.json({
       ok: true,
       cached: false,
       ...data
     });
   } catch (err) {
     console.error("[Availability] Error al obtener disponibilidad:", err.message);
-    sendError(res, 500, "internal_error", "No se pudo calcular la disponibilidad");
+    return sendError(res, 500, "internal_error", "No se pudo calcular la disponibilidad");
   }
 });
 

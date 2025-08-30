@@ -67,7 +67,7 @@ function isAllowedOrigin(origin) {
 
 app.use(cors({ origin: (origin, cb) => cb(null, isAllowedOrigin(origin)), credentials: true }));
 
-/* ================== BODY PARSER ================== */
+/* ================== BODY PARSER (después de Stripe RAW) ================== */
 app.use(express.json({ limit: "1mb" }));
 
 /* ================== HEALTH & PING ================== */

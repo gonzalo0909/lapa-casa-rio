@@ -53,6 +53,14 @@ function updateCalculations() {
     const nights = calcNights(entrada, salida);
     const total = needed * nights * PRICE_PER_NIGHT;
     document.getElementById("totalPrice").textContent = total;
+    
+    // Actualizar progress bar
+    const progressFill = document.getElementById("progressFill");
+    if (progressFill && needed > 0) {
+      const selectedBeds = document.querySelectorAll(".bed.selected").length;
+      const percentage = (selectedBeds / needed) * 100;
+      progressFill.style.width = `${Math.min(percentage, 100)}%`;
+    }
   }
 }
 
@@ -314,6 +322,13 @@ document.addEventListener("DOMContentLoaded", function() {
       
       const needed = parseInt(document.getElementById("men").value || 0, 10) + 
                     parseInt(document.getElementById("women").value || 0, 10);
+      
+      // Actualizar progress bar
+      const progressFill = document.getElementById("progressFill");
+      if (progressFill && needed > 0) {
+        const percentage = (count / needed) * 100;
+        progressFill.style.width = `${Math.min(percentage, 100)}%`;
+      }
       
       const continueBtn = document.getElementById("continueBtn");
       if (continueBtn) {

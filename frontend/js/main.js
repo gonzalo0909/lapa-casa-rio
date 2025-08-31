@@ -1,12 +1,16 @@
 "use strict";
 
-console.log("Loading main.js with bunk bed layout");
+console.log("Loading main.js with lazy loading");
 
 // Configuración
 const ROOMS = { 1: 12, 3: 12, 5: 7, 6: 7 };
 const PRICE_PER_NIGHT = 55;
 let holdTimer = null;
 let holdTimeLeft = 0;
+
+// Referencias DOM
+const roomsCard = document.getElementById("roomsCard");
+const formCard = document.getElementById("formCard");
 
 // Rate limiting
 const rateLimiter = {
@@ -31,107 +35,32 @@ const rateLimiter = {
   }
 };
 
-// Referencias DOM
-const roomsCard = document.getElementById("roomsCard");
-const formCard = document.getElementById("formCard");
-
-// Funciones de utilidad
-function showError(message) {
-  const errorToast = document.getElementById("errorToast");
-  const errorMessage = document.getElementById("errorMessage");
-  if (errorToast && errorMessage) {
-    errorMessage.textContent = message;
-    errorToast.classList.remove("hidden");
-    setTimeout(() => errorToast.classList.add("hidden"), 5000);
-  }
-}
-
-function showSuccess(message) {
-  const successToast = document.getElementById("successToast");
-  const successMessage = document.getElementById("successMessage");
-  if (successToast && successMessage) {
-    successMessage.textContent = message;
-    successToast.classList.remove("hidden");
-    setTimeout(() => successToast.classList.add("hidden"), 5000);
-  }
-}
-
-function startHoldTimer(minutes = 10) {
-  holdTimeLeft = minutes * 60; // Convertir a segundos
-  const paymentTimer = document.getElementById("paymentTimer");
-  const timerDisplay = document.getElementById("timerDisplay");
-  
-  if (paymentTimer) {
-    paymentTimer.style.display = "block";
-  }
-  
-  holdTimer = setInterval(() => {
-    holdTimeLeft--;
-    
-    if (timerDisplay) {
-      const mins = Math.floor(holdTimeLeft / 60);
-      const secs = holdTimeLeft % 60;
-      timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-    
-    if (holdTimeLeft <= 0) {
-      clearInterval(holdTimer);
-      if (paymentTimer) {
-        paymentTimer.style.display = "none";
+// Lazy loading para imágenes
+function lazyLoadImages() {
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        img.src = img.dataset.src;
+        img.classList.remove('lazy');
+        observer.unobserve(img);
       }
-      showError("Hold expirado. Selecciona nuevamente tus camas.");
-    }
-  }, 1000);
+    });
+  }, {
+    rootMargin: '50px'
+  });
+
+  document.querySelectorAll('img[data-src]').forEach(img => {
+    imageObserver.observe(img);
+  });
 }
 
-function stopHoldTimer() {
-  if (holdTimer) {
-    clearInterval(holdTimer);
-    holdTimer = null;
-  }
-  const paymentTimer = document.getElementById("paymentTimer");
-  if (paymentTimer) {
-    paymentTimer.style.display = "none";
-  }
-}
-
-// Admin token validation
-function validateAdminToken() {
-  const admToken = document.getElementById("admToken");
-  const tokenError = document.getElementById("tokenError");
-  
-  if (!admToken || !tokenError) return false;
-  
-  const token = admToken.value.trim();
-  
-  // Validación básica
-  if (!token) {
-    tokenError.textContent = "Token requerido";
-    tokenError.classList.remove("hidden");
-    return false;
-  }
-  
-  if (token.length < 8) {
-    tokenError.textContent = "Token debe tener al menos 8 caracteres";
-    tokenError.classList.remove("hidden");
-    return false;
-  }
-  
-  tokenError.classList.add("hidden");
-  return true;
-}
-
-// Función sanitización
-function sanitizeInput(input) {
-  if (typeof input !== 'string') return input;
-  
-  return input
-    .trim()
-    .replace(/[<>]/g, '') // Remover < >
-    .replace(/javascript:/gi, '') // Remover javascript:
-    .replace(/on\w+=/gi, '') // Remover onclick=, onload=, etc
-    .replace(/script/gi, '') // Remover script
-    .substring(0, 200); // Máximo 200 caracteres
+// Funciones principales
+function calcNights(inDate, outDate) {
+  const d1 = new Date(inDate);
+  const d2 = new Date(outDate);
+  const diff = d2 - d1;
+  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
 }
 
 function validateAndSanitizeForm() {
@@ -194,108 +123,64 @@ function validateAndSanitizeForm() {
   return isValid;
 }
 
-// Función admin segura
-async function performAdminAction(action, endpoint, data = null) {
-  if (!validateAdminToken()) {
-    showError("Token inválido");
-    return;
+// Funciones de utilidad
+function showError(message) {
+  const errorToast = document.getElementById("errorToast");
+  const errorMessage = document.getElementById("errorMessage");
+  if (errorToast && errorMessage) {
+    errorMessage.textContent = message;
+    errorToast.classList.remove("hidden");
+    setTimeout(() => errorToast.classList.add("hidden"), 5000);
+  }
+}
+
+function showSuccess(message) {
+  const successToast = document.getElementById("successToast");
+  const successMessage = document.getElementById("successMessage");
+  if (successToast && successMessage) {
+    successMessage.textContent = message;
+    successToast.classList.remove("hidden");
+    setTimeout(() => successToast.classList.add("hidden"), 5000);
+  }
+}
+
+function startHoldTimer(minutes = 10) {
+  holdTimeLeft = minutes * 60; // Convertir a segundos
+  const paymentTimer = document.getElementById("paymentTimer");
+  const timerDisplay = document.getElementById("timerDisplay");
+  
+  if (paymentTimer) {
+    paymentTimer.style.display = "block";
   }
   
-  // Rate limiting para admin
-  if (!rateLimiter.canMakeRequest('admin')) {
-    showError("Demasiadas consultas admin. Espera 1 minuto.");
-    return;
-  }
-  
-  const token = document.getElementById("admToken").value.trim();
-  
-  try {
-    const options = {
-      method: data ? 'POST' : 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-Admin-Token': token
+  holdTimer = setInterval(() => {
+    holdTimeLeft--;
+    
+    if (timerDisplay) {
+      const mins = Math.floor(holdTimeLeft / 60);
+      const secs = holdTimeLeft % 60;
+      timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    if (holdTimeLeft <= 0) {
+      clearInterval(holdTimer);
+      if (paymentTimer) {
+        paymentTimer.style.display = "none";
       }
-    };
-    
-    if (data) {
-      options.body = JSON.stringify(data);
+      showError("Hold expirado. Selecciona nuevamente tus camas.");
     }
-    
-    const response = await fetch(`${window.HOSTEL_CONFIG.API_BASE}${endpoint}`, options);
-    
-    if (response.status === 401 || response.status === 403) {
-      showError("Token inválido o sin permisos");
-      return null;
-    }
-    
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-    
-  } catch (error) {
-    console.error(`Error in ${action}:`, error);
-    showError(`Error en ${action}: ${error.message}`);
-    return null;
-  }
+  }, 1000);
 }
 
-// Funciones principales
-function calcNights(inDate, outDate) {
-  const d1 = new Date(inDate);
-  const d2 = new Date(outDate);
-  const diff = d2 - d1;
-  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
-}
-
-function validateForm() {
-  let isValid = true;
-  
-  // Validar nombre
-  const nombre = document.getElementById("nombre");
-  const nombreError = document.getElementById("nombreError");
-  if (nombre && nombreError) {
-    if (!nombre.value || nombre.value.trim().length < 2) {
-      nombreError.textContent = "Nombre debe tener al menos 2 caracteres";
-      nombreError.classList.remove("hidden");
-      isValid = false;
-    } else {
-      nombreError.classList.add("hidden");
-    }
+function stopHoldTimer() {
+  if (holdTimer) {
+    clearInterval(holdTimer);
+    holdTimer = null;
   }
-  
-  // Validar email
-  const email = document.getElementById("email");
-  const emailError = document.getElementById("emailError");
-  if (email && emailError) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.value || !emailRegex.test(email.value)) {
-      emailError.textContent = "Email inválido";
-      emailError.classList.remove("hidden");
-      isValid = false;
-    } else {
-      emailError.classList.add("hidden");
-    }
+  const paymentTimer = document.getElementById("paymentTimer");
+  if (paymentTimer) {
+    paymentTimer.style.display = "none";
   }
-  
-  // Validar teléfono
-  const telefono = document.getElementById("telefono");
-  const telefonoError = document.getElementById("telefonoError");
-  if (telefono && telefonoError) {
-    const phoneRegex = /^[0-9+\-\s\(\)]{10,}$/;
-    if (!telefono.value || !phoneRegex.test(telefono.value)) {
-      telefonoError.textContent = "Teléfono debe tener al menos 10 caracteres";
-      telefonoError.classList.remove("hidden");
-      isValid = false;
-    } else {
-      telefonoError.classList.add("hidden");
-    }
-  }
-  
-  return isValid;
 }
 
 function updateCalculations() {
@@ -436,9 +321,100 @@ function updateRoomDisplay() {
   }
 }
 
+// Admin token validation
+function validateAdminToken() {
+  const admToken = document.getElementById("admToken");
+  const tokenError = document.getElementById("tokenError");
+  
+  if (!admToken || !tokenError) return false;
+  
+  const token = admToken.value.trim();
+  
+  // Validación básica
+  if (!token) {
+    tokenError.textContent = "Token requerido";
+    tokenError.classList.remove("hidden");
+    return false;
+  }
+  
+  if (token.length < 8) {
+    tokenError.textContent = "Token debe tener al menos 8 caracteres";
+    tokenError.classList.remove("hidden");
+    return false;
+  }
+  
+  tokenError.classList.add("hidden");
+  return true;
+}
+
+// Función sanitización
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return input;
+  
+  return input
+    .trim()
+    .replace(/[<>]/g, '') // Remover < >
+    .replace(/javascript:/gi, '') // Remover javascript:
+    .replace(/on\w+=/gi, '') // Remover onclick=, onload=, etc
+    .replace(/script/gi, '') // Remover script
+    .substring(0, 200); // Máximo 200 caracteres
+}
+
+// Función admin segura
+async function performAdminAction(action, endpoint, data = null) {
+  if (!validateAdminToken()) {
+    showError("Token inválido");
+    return;
+  }
+  
+  // Rate limiting para admin
+  if (!rateLimiter.canMakeRequest('admin')) {
+    showError("Demasiadas consultas admin. Espera 1 minuto.");
+    return;
+  }
+  
+  const token = document.getElementById("admToken").value.trim();
+  
+  try {
+    const options = {
+      method: data ? 'POST' : 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-Admin-Token': token
+      }
+    };
+    
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(`${window.HOSTEL_CONFIG.API_BASE}${endpoint}`, options);
+    
+    if (response.status === 401 || response.status === 403) {
+      showError("Token inválido o sin permisos");
+      return null;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+    
+  } catch (error) {
+    console.error(`Error in ${action}:`, error);
+    showError(`Error en ${action}: ${error.message}`);
+    return null;
+  }
+}
+
 // Event listeners
 document.addEventListener("DOMContentLoaded", function() {
-  console.log("DOM loaded - setting up bunk bed controls");
+  console.log("DOM loaded - setting up controls");
+  
+  // Inicializar lazy loading
+  lazyLoadImages();
   
   // Verificar HTTPS en producción
   if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
@@ -537,11 +513,18 @@ document.addEventListener("DOMContentLoaded", function() {
     console.warn("Women minus button not found");
   }
 
-  // Ver disponibilidad (desactivado por ahora)
+  // Ver disponibilidad (con rate limiting)
   const checkAvail = document.getElementById("checkAvail");
   if (checkAvail) {
     checkAvail.addEventListener("click", function() {
       console.log("Check availability clicked");
+      
+      // Rate limiting check
+      if (!rateLimiter.canMakeRequest('availability')) {
+        showError("Demasiadas consultas. Espera 1 minuto.");
+        return;
+      }
+      
       const from = document.getElementById("dateIn").value;
       const to = document.getElementById("dateOut").value;
       if (!from || !to) {

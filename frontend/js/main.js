@@ -98,6 +98,79 @@ function validateAdminToken() {
   return true;
 }
 
+// Función sanitización
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return input;
+  
+  return input
+    .trim()
+    .replace(/[<>]/g, '') // Remover < >
+    .replace(/javascript:/gi, '') // Remover javascript:
+    .replace(/on\w+=/gi, '') // Remover onclick=, onload=, etc
+    .replace(/script/gi, '') // Remover script
+    .substring(0, 200); // Máximo 200 caracteres
+}
+
+function validateAndSanitizeForm() {
+  let isValid = true;
+  
+  // Validar y sanitizar nombre
+  const nombre = document.getElementById("nombre");
+  const nombreError = document.getElementById("nombreError");
+  if (nombre && nombreError) {
+    const sanitizedName = sanitizeInput(nombre.value);
+    nombre.value = sanitizedName;
+    
+    if (!sanitizedName || sanitizedName.length < 2) {
+      nombreError.textContent = "Nombre debe tener al menos 2 caracteres";
+      nombreError.classList.remove("hidden");
+      isValid = false;
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(sanitizedName)) {
+      nombreError.textContent = "Nombre solo puede contener letras y espacios";
+      nombreError.classList.remove("hidden");
+      isValid = false;
+    } else {
+      nombreError.classList.add("hidden");
+    }
+  }
+  
+  // Validar email
+  const email = document.getElementById("email");
+  const emailError = document.getElementById("emailError");
+  if (email && emailError) {
+    const sanitizedEmail = sanitizeInput(email.value).toLowerCase();
+    email.value = sanitizedEmail;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
+      emailError.textContent = "Email inválido";
+      emailError.classList.remove("hidden");
+      isValid = false;
+    } else {
+      emailError.classList.add("hidden");
+    }
+  }
+  
+  // Validar teléfono
+  const telefono = document.getElementById("telefono");
+  const telefonoError = document.getElementById("telefonoError");
+  if (telefono && telefonoError) {
+    const sanitizedPhone = sanitizeInput(telefono.value);
+    telefono.value = sanitizedPhone;
+    
+    const phoneRegex = /^[0-9+\-\s\(\)]{10,}$/;
+    if (!sanitizedPhone || !phoneRegex.test(sanitizedPhone)) {
+      telefonoError.textContent = "Teléfono debe tener al menos 10 caracteres válidos";
+      telefonoError.classList.remove("hidden");
+      isValid = false;
+    } else {
+      telefonoError.classList.add("hidden");
+    }
+  }
+  
+  return isValid;
+}
+
 // Función admin segura
 async function performAdminAction(action, endpoint, data = null) {
   if (!validateAdminToken()) {
@@ -566,13 +639,13 @@ document.addEventListener("DOMContentLoaded", function() {
   const telefonoInput = document.getElementById("telefono");
   
   if (nombreInput) {
-    nombreInput.addEventListener("blur", validateForm);
+    nombreInput.addEventListener("blur", validateAndSanitizeForm);
   }
   if (emailInput) {
-    emailInput.addEventListener("blur", validateForm);
+    emailInput.addEventListener("blur", validateAndSanitizeForm);
   }
   if (telefonoInput) {
-    telefonoInput.addEventListener("blur", validateForm);
+    telefonoInput.addEventListener("blur", validateAndSanitizeForm);
   }
 
   // Configurar cerrar toasts

@@ -10,6 +10,27 @@ const PRICE_PER_NIGHT = 55;
 const roomsCard = document.getElementById("roomsCard");
 const formCard = document.getElementById("formCard");
 
+// Funciones de utilidad
+function showError(message) {
+  const errorToast = document.getElementById("errorToast");
+  const errorMessage = document.getElementById("errorMessage");
+  if (errorToast && errorMessage) {
+    errorMessage.textContent = message;
+    errorToast.classList.remove("hidden");
+    setTimeout(() => errorToast.classList.add("hidden"), 5000);
+  }
+}
+
+function showSuccess(message) {
+  const successToast = document.getElementById("successToast");
+  const successMessage = document.getElementById("successMessage");
+  if (successToast && successMessage) {
+    successMessage.textContent = message;
+    successToast.classList.remove("hidden");
+    setTimeout(() => successToast.classList.add("hidden"), 5000);
+  }
+}
+
 // Funciones principales
 function calcNights(inDate, outDate) {
   const d1 = new Date(inDate);
@@ -298,6 +319,22 @@ document.addEventListener("DOMContentLoaded", function() {
       if (continueBtn) {
         continueBtn.disabled = count !== needed;
       }
+    });
+  }
+
+  // Configurar cerrar toasts
+  const closeError = document.getElementById("closeError");
+  const closeSuccess = document.getElementById("closeSuccess");
+  
+  if (closeError) {
+    closeError.addEventListener("click", function() {
+      document.getElementById("errorToast").classList.add("hidden");
+    });
+  }
+  
+  if (closeSuccess) {
+    closeSuccess.addEventListener("click", function() {
+      document.getElementById("successToast").classList.add("hidden");
     });
   }
 

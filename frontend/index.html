@@ -1,407 +1,261 @@
-"use strict";
-
-console.log("Loading main.js with bunk bed layout");
-
-// Configuración
-const ROOMS = { 1: 12, 3: 12, 5: 7, 6: 7 };
-const PRICE_PER_NIGHT = 55;
-let holdTimer = null;
-let holdTimeLeft = 0;
-
-// Referencias DOM
-const roomsCard = document.getElementById("roomsCard");
-const formCard = document.getElementById("formCard");
-
-// Funciones de utilidad
-function showError(message) {
-  const errorToast = document.getElementById("errorToast");
-  const errorMessage = document.getElementById("errorMessage");
-  if (errorToast && errorMessage) {
-    errorMessage.textContent = message;
-    errorToast.classList.remove("hidden");
-    setTimeout(() => errorToast.classList.add("hidden"), 5000);
-  }
-}
-
-function showSuccess(message) {
-  const successToast = document.getElementById("successToast");
-  const successMessage = document.getElementById("successMessage");
-  if (successToast && successMessage) {
-    successMessage.textContent = message;
-    successToast.classList.remove("hidden");
-    setTimeout(() => successToast.classList.add("hidden"), 5000);
-  }
-}
-
-function startHoldTimer(minutes = 10) {
-  holdTimeLeft = minutes * 60; // Convertir a segundos
-  const paymentTimer = document.getElementById("paymentTimer");
-  const timerDisplay = document.getElementById("timerDisplay");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lapa Casa Hostel – Reservas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro. Mejor ubicación, precios justos."/>
+  <meta name="keywords" content="hostel, rio de janeiro, santa teresa, reservas, backpackers"/>
   
-  if (paymentTimer) {
-    paymentTimer.style.display = "block";
-  }
+  <!-- Security Headers -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
+  <meta http-equiv="X-Frame-Options" content="DENY"/>
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"/>
+  <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains"/>
+  <meta name="referrer" content="strict-origin-when-cross-origin"/>
+
+  <!-- Estilos - CORREGIDO: style.css → styles.css -->
+  <link rel="stylesheet" href="/css/styles.css"/>
+
+  <!-- DNS Prefetch -->
+  <link rel="dns-prefetch" href="https://js.stripe.com">
+  <link rel="preconnect" href="https://js.stripe.com" crossorigin>
   
-  holdTimer = setInterval(() => {
-    holdTimeLeft--;
-    
-    if (timerDisplay) {
-      const mins = Math.floor(holdTimeLeft / 60);
-      const secs = holdTimeLeft % 60;
-      timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-    
-    if (holdTimeLeft <= 0) {
-      clearInterval(holdTimer);
-      if (paymentTimer) {
-        paymentTimer.style.display = "none";
-      }
-      showError("Hold expirado. Selecciona nuevamente tus camas.");
-    }
-  }, 1000);
-}
-
-function stopHoldTimer() {
-  if (holdTimer) {
-    clearInterval(holdTimer);
-    holdTimer = null;
-  }
-  const paymentTimer = document.getElementById("paymentTimer");
-  if (paymentTimer) {
-    paymentTimer.style.display = "none";
-  }
-}
-
-// Funciones principales
-function calcNights(inDate, outDate) {
-  const d1 = new Date(inDate);
-  const d2 = new Date(outDate);
-  const diff = d2 - d1;
-  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
-}
-
-function updateCalculations() {
-  const hombres = parseInt(document.getElementById("men").value || 0, 10);
-  const mujeres = parseInt(document.getElementById("women").value || 0, 10);
-  const needed = hombres + mujeres;
+  <!-- Stripe -->
+  <script src="https://js.stripe.com/v3/" defer></script>
   
-  document.getElementById("needed").textContent = needed;
-  
-  const entrada = document.getElementById("dateIn").value;
-  const salida = document.getElementById("dateOut").value;
-  
-  if (entrada && salida) {
-    const nights = calcNights(entrada, salida);
-    const total = needed * nights * PRICE_PER_NIGHT;
-    document.getElementById("totalPrice").textContent = total;
-    
-    // Actualizar progress bar
-    const progressFill = document.getElementById("progressFill");
-    if (progressFill && needed > 0) {
-      const selectedBeds = document.querySelectorAll(".bed.selected").length;
-      const percentage = (selectedBeds / needed) * 100;
-      progressFill.style.width = `${Math.min(percentage, 100)}%`;
-    }
-  }
-}
+  <!-- App -->
+  <script src="/js/main.js" defer></script>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p>Procesando...</p>
+  </div>
 
-function getBedLevel(bedNumber) {
-  const mod = bedNumber % 3;
-  if (mod === 1) return "Baja";
-  if (mod === 2) return "Media";
-  return "Alta";
-}
+  <!-- Error Toast -->
+  <div id="errorToast" class="toast error hidden">
+    <span id="errorMessage"></span>
+    <button id="closeError" class="toast-close">&times;</button>
+  </div>
 
-function getBedOrderForDisplay(totalBeds) {
-  // Para 12 camas: [3,6,9,12, 2,5,8,11, 1,4,7,10]
-  // Para 7 camas: [3,6, 2,5, 1,4, 7] (7 va al final)
-  const order = [];
-  
-  if (totalBeds === 12) {
-    // 4 literas completas
-    for (let level = 3; level >= 1; level--) {
-      for (let bunk = 0; bunk < 4; bunk++) {
-        const bedNum = bunk * 3 + level;
-        order.push(bedNum);
-      }
-    }
-  } else if (totalBeds === 7) {
-    // 2 literas completas + 1 cama individual
-    for (let level = 3; level >= 1; level--) {
-      for (let bunk = 0; bunk < 2; bunk++) {
-        const bedNum = bunk * 3 + level;
-        order.push(bedNum);
-      }
-    }
-    order.push(7); // Cama individual
-  }
-  
-  return order;
-}
+  <!-- Success Toast -->
+  <div id="successToast" class="toast success hidden">
+    <span id="successMessage"></span>
+    <button id="closeSuccess" class="toast-close">&times;</button>
+  </div>
 
-function addRoom(container, roomId, type, maxBeds) {
-  const roomEl = document.createElement("div");
-  roomEl.className = "room";
-  roomEl.dataset.room = roomId;
-  roomEl.innerHTML = `<h3>Habitación ${roomId} (${type})</h3><div class="beds"></div>`;
-  
-  const bedsDiv = roomEl.querySelector(".beds");
-  const totalBeds = ROOMS[roomId];
-  const bedOrder = getBedOrderForDisplay(totalBeds);
-  
-  // Mostrar TODAS las camas siempre, no solo las necesarias
-  bedOrder.forEach(bedNumber => {
-    const bedEl = document.createElement("div");
-    bedEl.className = "bed";
-    bedEl.dataset.room = roomId;
-    bedEl.dataset.bed = bedNumber;
-    
-    const level = getBedLevel(bedNumber);
-    bedEl.innerHTML = `
-      <div class="bed-number">Cama ${bedNumber}</div>
-      <div class="bed-level">(${level})</div>
-    `;
-    
-    bedsDiv.appendChild(bedEl);
-  });
+  <header>
+    <h1>Lapa Casa Hostel – Reservas</h1>
+    <nav class="lang">
+      <a href="#/book" class="nav-link active" data-section="book">Reservas</a>
+      <a href="#/admin" class="nav-link" data-section="admin">Admin</a>
+    </nav>
+  </header>
 
-  container.appendChild(roomEl);
-  return roomEl;
-}
+  <main class="row">
+    <!-- Reservas -->
+    <section id="book" class="card">
+      <div class="grid grid-2">
+        <div>
+          <label for="dateIn">Check-in</label>
+          <input id="dateIn" type="date" required aria-describedby="dateInError"/>
+          <div id="dateInError" class="error-text hidden" role="alert"></div>
+        </div>
+        <div>
+          <label for="dateOut">Check-out</label>
+          <input id="dateOut" type="date" required aria-describedby="dateOutError"/>
+          <div id="dateOutError" class="error-text hidden" role="alert"></div>
+        </div>
+      </div>
 
-function updateRoomDisplay() {
-  const hombres = parseInt(document.getElementById("men").value || 0, 10);
-  const mujeres = parseInt(document.getElementById("women").value || 0, 10);
-  const total = hombres + mujeres;
+      <div class="grid grid-4" style="margin-top:10px">
+        <div>
+          <label for="men">Hombres</label>
+          <div class="ctr">
+            <button type="button" id="menMinus" aria-label="Disminuir hombres">−</button>
+            <input id="men" type="number" min="0" max="38" value="0" aria-describedby="menError"/>
+            <button type="button" id="menPlus" aria-label="Aumentar hombres">+</button>
+          </div>
+          <div id="menError" class="error-text hidden" role="alert"></div>
+        </div>
+        <div>
+          <label for="women">Mujeres</label>
+          <div class="ctr">
+            <button type="button" id="womenMinus" aria-label="Disminuir mujeres">−</button>
+            <input id="women" type="number" min="0" max="38" value="0" aria-describedby="womenError"/>
+            <button type="button" id="womenPlus" aria-label="Aumentar mujeres">+</button>
+          </div>
+          <div id="womenError" class="error-text hidden" role="alert"></div>
+        </div>
+        <div class="muted" style="display:flex;align-items:end">
+          Capacidad total: 38
+          <div class="availability-indicator" id="availIndicator"></div>
+        </div>
+        <div style="display:flex;justify-content:end;align-items:end">
+          <button id="checkAvail" class="btn" type="button">
+            <span class="btn-text">Ver disponibilidad</span>
+            <span class="btn-loading hidden">Cargando...</span>
+          </button>
+        </div>
+      </div>
 
-  if (total === 0) {
-    document.getElementById("rooms").innerHTML = "";
-    roomsCard.style.display = "none";
-    return;
-  }
+      <!-- Rooms -->
+      <section id="roomsCard" class="card" style="display:none">
+        <h2>Elegí tus camas</h2>
+        <div id="mods" class="muted" style="margin-bottom:8px"></div>
+        <div id="rooms" class="rooms" role="group" aria-label="Selección de camas"></div>
+        <div class="actions" style="margin-top:8px">
+          <div>
+            <div>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></div>
+            <div class="muted">Total: R$ <span id="totalPrice">0</span></div>
+            <div class="muted">(<span id="nightsCount">0</span> noches)</div>
+          </div>
+          <button id="continueBtn" class="btn" disabled type="button">
+            <span class="btn-text">Continuar</span>
+            <span class="btn-loading hidden">Procesando...</span>
+          </button>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <p class="warning" id="suggestBox"></p>
+      </section>
 
-  roomsCard.style.display = "block";
-  const roomsDiv = document.getElementById("rooms");
-  roomsDiv.innerHTML = "";
+      <!-- Form -->
+      <section id="formCard" class="card" style="display:none">
+        <h2>Datos para confirmar</h2>
+        <form id="reserva-form" novalidate>
+          <div class="form-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" name="nombre" required minlength="2" maxlength="100" aria-describedby="nombreError"/>
+            <div id="nombreError" class="error-text hidden" role="alert"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required aria-describedby="emailError"/>
+            <div id="emailError" class="error-text hidden" role="alert"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" name="telefono" required pattern="[0-9+\-\s\(\)]{10,}" aria-describedby="telefonoError"/>
+            <div id="telefonoError" class="error-text hidden" role="alert"></div>
+          </div>
 
-  // Lógica de aparición de habitaciones
-  
-  // Siempre mostrar cuarto 1 y 5 si hay huéspedes
-  if (total > 0) {
-    addRoom(roomsDiv, 1, "Mixta", total);
-    addRoom(roomsDiv, 5, "Mixta", total);
-  }
-  
-  // Cuarto 3 aparece si necesitan más de 12 camas
-  if (total > 12) {
-    // Insertar cuarto 3 después del cuarto 1
-    const room1 = roomsDiv.querySelector('[data-room="1"]');
-    const room3 = addRoom(document.createElement('div'), 3, "Mixta", total);
-    room1.after(room3.children[0]);
-  }
-  
-  // Cuarto 6 (femenino) aparece si hay mujeres
-  if (mujeres > 0) {
-    const room6 = addRoom(roomsDiv, 6, "Solo mujeres", total);
-    const warning = document.createElement("div");
-    warning.className = "warning";
-    warning.textContent = "Este cuarto es exclusivo para mujeres.";
-    room6.appendChild(warning);
-  }
-  
-  // Excepción: si hombres > 31, cuarto 6 puede usarse para hombres
-  if (hombres > 31 && mujeres === 0) {
-    const room6 = addRoom(roomsDiv, 6, "Emergencia (hombres)", total);
-    const warning = document.createElement("div");
-    warning.className = "warning";
-    warning.textContent = "Uso excepcional para capacidad extra.";
-    room6.appendChild(warning);
-  }
-}
+          <div class="grid grid-2" style="margin-top:10px">
+            <div class="card payment-option">
+              <h3>Mercado Pago (Checkout Pro)</h3>
+              <p class="muted">Pix / tarjeta / boleto</p>
+              <button type="button" id="payMP" class="btn secondary">
+                <span class="btn-text">Pagar con MP</span>
+                <span class="btn-loading hidden">Redirigiendo...</span>
+              </button>
+            </div>
+            <div class="card payment-option">
+              <h3>Pix directo (QR)</h3>
+              <p class="muted">Siempre muestra QR</p>
+              <button type="button" id="payPix" class="btn ghost">
+                <span class="btn-text">Pix (QR)</span>
+                <span class="btn-loading hidden">Generando...</span>
+              </button>
+            </div>
+          </div>
 
-// Event listeners
-document.addEventListener("DOMContentLoaded", function() {
-  console.log("DOM loaded - setting up bunk bed controls");
-  
-  // Configurar fecha mínima = hoy
-  const today = new Date().toISOString().split('T')[0];
-  const dateInInput = document.getElementById("dateIn");
-  const dateOutInput = document.getElementById("dateOut");
-  
-  if (dateInInput) {
-    dateInInput.min = today;
-  }
-  if (dateOutInput) {
-    dateOutInput.min = today;
-  }
-  
-  // Botones hombres
-  const menPlus = document.getElementById("menPlus");
-  const menMinus = document.getElementById("menMinus");
-  const womenPlus = document.getElementById("womenPlus");
-  const womenMinus = document.getElementById("womenMinus");
+          <div class="card payment-option" style="margin-top:10px">
+            <h3>Stripe</h3>
+            <p class="muted">Tarjeta internacional</p>
+            <button type="button" id="payStripe" class="btn secondary">
+              <span class="btn-text">Ir a Checkout</span>
+              <span class="btn-loading hidden">Redirigiendo...</span>
+            </button>
+          </div>
 
-  if (menPlus) {
-    menPlus.addEventListener("click", function() {
-      console.log("Men plus clicked");
-      try {
-        const input = document.getElementById("men");
-        if (!input) throw new Error("Men input not found");
-        const current = parseInt(input.value || 0, 10);
-        input.value = Math.min(38, current + 1);
-        updateCalculations();
-        updateRoomDisplay();
-      } catch (error) {
-        console.error("Error in men plus:", error);
-      }
-    });
-  } else {
-    console.warn("Men plus button not found");
-  }
+          <div class="actions" style="margin-top:12px">
+            <div>
+              <span class="muted">Estado pago: <span id="payState" class="highlight">pendiente</span></span>
+              <div class="payment-timer" id="paymentTimer" style="display:none">
+                <span class="muted">Hold expira en: <span id="timerDisplay">10:00</span></span>
+              </div>
+            </div>
+            <button type="submit" id="submitBtn" class="btn" disabled>
+              <span class="btn-text">Confirmar reserva</span>
+              <span class="btn-loading hidden">Confirmando...</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    </section>
 
-  if (menMinus) {
-    menMinus.addEventListener("click", function() {
-      console.log("Men minus clicked");
-      try {
-        const input = document.getElementById("men");
-        if (!input) throw new Error("Men input not found");
-        const current = parseInt(input.value || 0, 10);
-        input.value = Math.max(0, current - 1);
-        updateCalculations();
-        updateRoomDisplay();
-      } catch (error) {
-        console.error("Error in men minus:", error);
-      }
-    });
-  } else {
-    console.warn("Men minus button not found");
-  }
-
-  if (womenPlus) {
-    womenPlus.addEventListener("click", function() {
-      console.log("Women plus clicked");
-      try {
-        const input = document.getElementById("women");
-        if (!input) throw new Error("Women input not found");
-        const current = parseInt(input.value || 0, 10);
-        input.value = Math.min(38, current + 1);
-        updateCalculations();
-        updateRoomDisplay();
-      } catch (error) {
-        console.error("Error in women plus:", error);
-      }
-    });
-  } else {
-    console.warn("Women plus button not found");
-  }
-
-  if (womenMinus) {
-    womenMinus.addEventListener("click", function() {
-      console.log("Women minus clicked");
-      try {
-        const input = document.getElementById("women");
-        if (!input) throw new Error("Women input not found");
-        const current = parseInt(input.value || 0, 10);
-        input.value = Math.max(0, current - 1);
-        updateCalculations();
-        updateRoomDisplay();
-      } catch (error) {
-        console.error("Error in women minus:", error);
-      }
-    });
-  } else {
-    console.warn("Women minus button not found");
-  }
-
-  // Ver disponibilidad (desactivado por ahora)
-  const checkAvail = document.getElementById("checkAvail");
-  if (checkAvail) {
-    checkAvail.addEventListener("click", function() {
-      console.log("Check availability clicked");
-      const from = document.getElementById("dateIn").value;
-      const to = document.getElementById("dateOut").value;
-      if (!from || !to) {
-        alert("Seleccioná fechas");
-        return;
-      }
+    <!-- Admin -->
+    <section id="admin" class="card" style="display:none">
+      <h2>Panel de Administración</h2>
       
-      // Mostrar loading state
-      const btnText = checkAvail.querySelector('.btn-text');
-      const btnLoading = checkAvail.querySelector('.btn-loading');
-      if (btnText && btnLoading) {
-        btnText.classList.add('hidden');
-        btnLoading.classList.remove('hidden');
-        checkAvail.disabled = true;
-      }
+      <div class="form-group">
+        <label for="admToken">Token de acceso</label>
+        <input id="admToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="tokenError"/>
+        <div id="tokenError" class="error-text hidden" role="alert"></div>
+      </div>
       
-      // Simular delay y restaurar
-      setTimeout(() => {
-        if (btnText && btnLoading) {
-          btnText.classList.remove('hidden');
-          btnLoading.classList.add('hidden');
-          checkAvail.disabled = false;
-        }
-      }, 2000);
-      
-      console.log("Availability check disabled for testing");
-    });
-  }
+      <div class="admin-actions">
+        <button id="btnHealth" class="btn">
+          <span class="btn-text">Health Check</span>
+          <span class="btn-loading hidden">Verificando...</span>
+        </button>
+      </div>
+      <pre id="healthOut" class="admin-output"></pre>
 
-  // Selección de camas
-  const roomsContainer = document.getElementById("rooms");
-  if (roomsContainer) {
-    roomsContainer.addEventListener("click", function(e) {
-      const bed = e.target.closest('.bed');
-      if (!bed || bed.classList.contains("occupied")) {
-        return;
-      }
+      <h3>Reservas Temporales (Holds)</h3>
+      <div class="admin-actions">
+        <button id="btnHolds" class="btn">
+          <span class="btn-text">Listar Holds</span>
+          <span class="btn-loading hidden">Cargando...</span>
+        </button>
+      </div>
+      <div id="holdsOut" class="admin-output"></div>
 
-      bed.classList.toggle("selected");
-      
-      const count = document.querySelectorAll(".bed.selected").length;
-      document.getElementById("selCount").textContent = count;
-      
-      const needed = parseInt(document.getElementById("men").value || 0, 10) + 
-                    parseInt(document.getElementById("women").value || 0, 10);
-      
-      // Actualizar progress bar
-      const progressFill = document.getElementById("progressFill");
-      if (progressFill && needed > 0) {
-        const percentage = (count / needed) * 100;
-        progressFill.style.width = `${Math.min(percentage, 100)}%`;
-      }
-      
-      const continueBtn = document.getElementById("continueBtn");
-      if (continueBtn) {
-        continueBtn.disabled = count !== needed;
-        // Iniciar timer cuando se completa la selección
-        if (count === needed && needed > 0) {
-          startHoldTimer(3);
-          showSuccess("Camas reservadas temporalmente por 3 minutos");
-        } else {
-          stopHoldTimer();
-        }
-      }
-    });
-  }
+      <h3>Reservas Confirmadas</h3>
+      <div class="grid grid-3">
+        <div>
+          <label for="bkFrom">Desde</label>
+          <input id="bkFrom" type="date" />
+        </div>
+        <div>
+          <label for="bkTo">Hasta</label>
+          <input id="bkTo" type="date" />
+        </div>
+        <div>
+          <label for="bkQ">Buscar</label>
+          <input id="bkQ" type="text" placeholder="Nombre, email, ID..." />
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button id="btnBookings" class="btn">
+          <span class="btn-text">Buscar Reservas</span>
+          <span class="btn-loading hidden">Buscando...</span>
+        </button>
+      </div>
+      <div id="bookingsOut" class="admin-output"></div>
+    </section>
+  </main>
 
-  // Configurar cerrar toasts
-  const closeError = document.getElementById("closeError");
-  const closeSuccess = document.getElementById("closeSuccess");
-  
-  if (closeError) {
-    closeError.addEventListener("click", function() {
-      document.getElementById("errorToast").classList.add("hidden");
-    });
-  }
-  
-  if (closeSuccess) {
-    closeSuccess.addEventListener("click", function() {
-      document.getElementById("successToast").classList.add("hidden");
-    });
-  }
+  <footer>
+    <p class="muted">&copy; 2025 Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</p>
+  </footer>
 
-  console.log("All event listeners attached");
-  updateCalculations();
-  updateRoomDisplay();
-});
+  <!-- Configuración (reemplaza meta tags) -->
+  <script>
+    window.HOSTEL_CONFIG = {
+      API_BASE: 'https://lapacasahostel.com/api',
+      STRIPE_KEY: 'pk_live_51Ru1ZLGluCgaZVuWD3f3E1reDyph3sYVTVwxiTtWTq5DWT4m7Nxi2qEojApX75BQzyACKa91bNvgKr9X2sbCnGB000dx3BhRoj',
+      MERCADO_PAGO_KEY: 'APP_USR-60dbce07-af99-4e00-8071-5e45e29be08d',
+      PRICE_PER_NIGHT: 55,
+      TOTAL_CAPACITY: 38,
+      ROOMS: { 1: 12, 3: 12, 5: 7, 6: 7 },
+      HOLD_TIMEOUT_MINUTES: 3
+    };
+  </script>
+</body>
+</html>

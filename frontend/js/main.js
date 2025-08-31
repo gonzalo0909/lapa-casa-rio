@@ -153,6 +153,18 @@ function updateRoomDisplay() {
 document.addEventListener("DOMContentLoaded", function() {
   console.log("DOM loaded - setting up bunk bed controls");
   
+  // Configurar fecha mínima = hoy
+  const today = new Date().toISOString().split('T')[0];
+  const dateInInput = document.getElementById("dateIn");
+  const dateOutInput = document.getElementById("dateOut");
+  
+  if (dateInInput) {
+    dateInInput.min = today;
+  }
+  if (dateOutInput) {
+    dateOutInput.min = today;
+  }
+  
   // Botones hombres
   const menPlus = document.getElementById("menPlus");
   const menMinus = document.getElementById("menMinus");

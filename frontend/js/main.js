@@ -254,6 +254,25 @@ document.addEventListener("DOMContentLoaded", function() {
         alert("Seleccioná fechas");
         return;
       }
+      
+      // Mostrar loading state
+      const btnText = checkAvail.querySelector('.btn-text');
+      const btnLoading = checkAvail.querySelector('.btn-loading');
+      if (btnText && btnLoading) {
+        btnText.classList.add('hidden');
+        btnLoading.classList.remove('hidden');
+        checkAvail.disabled = true;
+      }
+      
+      // Simular delay y restaurar
+      setTimeout(() => {
+        if (btnText && btnLoading) {
+          btnText.classList.remove('hidden');
+          btnLoading.classList.add('hidden');
+          checkAvail.disabled = false;
+        }
+      }, 2000);
+      
       console.log("Availability check disabled for testing");
     });
   }

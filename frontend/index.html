@@ -26,6 +26,10 @@
   
   <!-- App -->
   <script src="/js/main.min.js" defer></script>
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="/css/styles.min.css" as="style">
+  <link rel="preload" href="/js/main.min.js" as="script">
 </head>
 <body>
   <!-- Loading Overlay -->
@@ -177,7 +181,7 @@
             <div>
               <span class="muted">Estado pago: <span id="payState" class="highlight">pendiente</span></span>
               <div class="payment-timer" id="paymentTimer" style="display:none">
-                <span class="muted">Hold expira en: <span id="timerDisplay">10:00</span></span>
+                <span class="muted">Hold expira en: <span id="timerDisplay">3:00</span></span>
               </div>
             </div>
             <button type="submit" id="submitBtn" class="btn" disabled>

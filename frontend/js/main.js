@@ -5,6 +5,8 @@ console.log("Loading main.js with bunk bed layout");
 // Configuración
 const ROOMS = { 1: 12, 3: 12, 5: 7, 6: 7 };
 const PRICE_PER_NIGHT = 55;
+let holdTimer = null;
+let holdTimeLeft = 0;
 
 // Referencias DOM
 const roomsCard = document.getElementById("roomsCard");
@@ -28,6 +30,45 @@ function showSuccess(message) {
     successMessage.textContent = message;
     successToast.classList.remove("hidden");
     setTimeout(() => successToast.classList.add("hidden"), 5000);
+  }
+}
+
+function startHoldTimer(minutes = 10) {
+  holdTimeLeft = minutes * 60; // Convertir a segundos
+  const paymentTimer = document.getElementById("paymentTimer");
+  const timerDisplay = document.getElementById("timerDisplay");
+  
+  if (paymentTimer) {
+    paymentTimer.style.display = "block";
+  }
+  
+  holdTimer = setInterval(() => {
+    holdTimeLeft--;
+    
+    if (timerDisplay) {
+      const mins = Math.floor(holdTimeLeft / 60);
+      const secs = holdTimeLeft % 60;
+      timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    if (holdTimeLeft <= 0) {
+      clearInterval(holdTimer);
+      if (paymentTimer) {
+        paymentTimer.style.display = "none";
+      }
+      showError("Hold expirado. Selecciona nuevamente tus camas.");
+    }
+  }, 1000);
+}
+
+function stopHoldTimer() {
+  if (holdTimer) {
+    clearInterval(holdTimer);
+    holdTimer = null;
+  }
+  const paymentTimer = document.getElementById("paymentTimer");
+  if (paymentTimer) {
+    paymentTimer.style.display = "none";
   }
 }
 
@@ -333,6 +374,13 @@ document.addEventListener("DOMContentLoaded", function() {
       const continueBtn = document.getElementById("continueBtn");
       if (continueBtn) {
         continueBtn.disabled = count !== needed;
+        // Iniciar timer cuando se completa la selección
+        if (count === needed && needed > 0) {
+          startHoldTimer(3);
+          showSuccess("Camas reservadas temporalmente por 3 minutos");
+        } else {
+          stopHoldTimer();
+        }
       }
     });
   }

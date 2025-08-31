@@ -8,6 +8,29 @@ const PRICE_PER_NIGHT = 55;
 let holdTimer = null;
 let holdTimeLeft = 0;
 
+// Rate limiting
+const rateLimiter = {
+  requests: new Map(),
+  maxRequests: 5,
+  timeWindow: 60000, // 1 minuto
+  
+  canMakeRequest(key) {
+    const now = Date.now();
+    const requests = this.requests.get(key) || [];
+    
+    // Limpiar requests antiguos
+    const validRequests = requests.filter(time => now - time < this.timeWindow);
+    
+    if (validRequests.length >= this.maxRequests) {
+      return false;
+    }
+    
+    validRequests.push(now);
+    this.requests.set(key, validRequests);
+    return true;
+  }
+};
+
 // Referencias DOM
 const roomsCard = document.getElementById("roomsCard");
 const formCard = document.getElementById("formCard");
@@ -175,6 +198,12 @@ function validateAndSanitizeForm() {
 async function performAdminAction(action, endpoint, data = null) {
   if (!validateAdminToken()) {
     showError("Token inválido");
+    return;
+  }
+  
+  // Rate limiting para admin
+  if (!rateLimiter.canMakeRequest('admin')) {
+    showError("Demasiadas consultas admin. Espera 1 minuto.");
     return;
   }
   

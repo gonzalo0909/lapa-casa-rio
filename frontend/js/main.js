@@ -208,13 +208,12 @@ function updateRoomDisplay() {
     warning.textContent = "Este cuarto es exclusivo para mujeres.";
     room6.appendChild(warning);
   }
-  
-  // Excepción: si hombres > 31, cuarto 6 puede usarse para hombres
-  if (hombres > 31 && mujeres === 0) {
+  // Excepción: si hombres > 31 Y no hay mujeres, cuarto 6 para hombres
+  else if (hombres > 31) {
     const room6 = addRoom(roomsDiv, 6, "Emergencia (hombres)", total);
     const warning = document.createElement("div");
     warning.className = "warning";
-    warning.textContent = "Uso excepcional para capacidad extra.";
+    warning.textContent = "Uso excepcional para capacidad extra de hombres.";
     room6.appendChild(warning);
   }
 }

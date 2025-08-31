@@ -411,6 +411,13 @@ function updateRoomDisplay() {
 document.addEventListener("DOMContentLoaded", function() {
   console.log("DOM loaded - setting up bunk bed controls");
   
+  // Verificar HTTPS en producción
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    console.warn("Redirigiendo a HTTPS...");
+    location.replace(`https:${location.href.substring(location.protocol.length)}`);
+    return;
+  }
+  
   // Configurar fecha mínima = hoy
   const today = new Date().toISOString().split('T')[0];
   const dateInInput = document.getElementById("dateIn");

@@ -72,6 +72,75 @@ function stopHoldTimer() {
   }
 }
 
+// Admin token validation
+function validateAdminToken() {
+  const admToken = document.getElementById("admToken");
+  const tokenError = document.getElementById("tokenError");
+  
+  if (!admToken || !tokenError) return false;
+  
+  const token = admToken.value.trim();
+  
+  // Validación básica
+  if (!token) {
+    tokenError.textContent = "Token requerido";
+    tokenError.classList.remove("hidden");
+    return false;
+  }
+  
+  if (token.length < 8) {
+    tokenError.textContent = "Token debe tener al menos 8 caracteres";
+    tokenError.classList.remove("hidden");
+    return false;
+  }
+  
+  tokenError.classList.add("hidden");
+  return true;
+}
+
+// Función admin segura
+async function performAdminAction(action, endpoint, data = null) {
+  if (!validateAdminToken()) {
+    showError("Token inválido");
+    return;
+  }
+  
+  const token = document.getElementById("admToken").value.trim();
+  
+  try {
+    const options = {
+      method: data ? 'POST' : 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-Admin-Token': token
+      }
+    };
+    
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(`${window.HOSTEL_CONFIG.API_BASE}${endpoint}`, options);
+    
+    if (response.status === 401 || response.status === 403) {
+      showError("Token inválido o sin permisos");
+      return null;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+    
+  } catch (error) {
+    console.error(`Error in ${action}:`, error);
+    showError(`Error en ${action}: ${error.message}`);
+    return null;
+  }
+}
+
 // Funciones principales
 function calcNights(inDate, outDate) {
   const d1 = new Date(inDate);
@@ -426,6 +495,66 @@ document.addEventListener("DOMContentLoaded", function() {
           showSuccess("Camas reservadas temporalmente por 3 minutos");
         } else {
           stopHoldTimer();
+        }
+      }
+    });
+  }
+
+  // Configurar validación token admin
+  const admToken = document.getElementById("admToken");
+  if (admToken) {
+    admToken.addEventListener("blur", validateAdminToken);
+  }
+  
+  // Admin buttons con seguridad
+  const btnHealth = document.getElementById("btnHealth");
+  const btnHolds = document.getElementById("btnHolds");
+  const btnBookings = document.getElementById("btnBookings");
+  
+  if (btnHealth) {
+    btnHealth.addEventListener("click", async function() {
+      const result = await performAdminAction("health check", "/admin/health");
+      if (result) {
+        const healthOut = document.getElementById("healthOut");
+        if (healthOut) {
+          healthOut.textContent = JSON.stringify(result, null, 2);
+        }
+      }
+    });
+  }
+  
+  if (btnHolds) {
+    btnHolds.addEventListener("click", async function() {
+      const result = await performAdminAction("listar holds", "/admin/holds");
+      if (result) {
+        const holdsOut = document.getElementById("holdsOut");
+        if (holdsOut) {
+          holdsOut.innerHTML = `<table><tr><th>ID</th><th>Camas</th><th>Expira</th></tr>` +
+            result.map(hold => `<tr><td>${hold.id}</td><td>${hold.beds.join(',')}</td><td>${hold.expires}</td></tr>`).join('') +
+            `</table>`;
+        }
+      }
+    });
+  }
+  
+  if (btnBookings) {
+    btnBookings.addEventListener("click", async function() {
+      const from = document.getElementById("bkFrom")?.value;
+      const to = document.getElementById("bkTo")?.value;
+      const q = document.getElementById("bkQ")?.value;
+      
+      const params = new URLSearchParams();
+      if (from) params.append('from', from);
+      if (to) params.append('to', to);
+      if (q) params.append('q', q);
+      
+      const result = await performAdminAction("buscar reservas", `/admin/bookings?${params}`);
+      if (result) {
+        const bookingsOut = document.getElementById("bookingsOut");
+        if (bookingsOut) {
+          bookingsOut.innerHTML = `<table><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Check-in</th><th>Camas</th></tr>` +
+            result.map(booking => `<tr><td>${booking.id}</td><td>${booking.nombre}</td><td>${booking.email}</td><td>${booking.dateIn}</td><td>${booking.beds.join(',')}</td></tr>`).join('') +
+            `</table>`;
         }
       }
     });

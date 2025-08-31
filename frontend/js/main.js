@@ -80,6 +80,53 @@ function calcNights(inDate, outDate) {
   return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 1;
 }
 
+function validateForm() {
+  let isValid = true;
+  
+  // Validar nombre
+  const nombre = document.getElementById("nombre");
+  const nombreError = document.getElementById("nombreError");
+  if (nombre && nombreError) {
+    if (!nombre.value || nombre.value.trim().length < 2) {
+      nombreError.textContent = "Nombre debe tener al menos 2 caracteres";
+      nombreError.classList.remove("hidden");
+      isValid = false;
+    } else {
+      nombreError.classList.add("hidden");
+    }
+  }
+  
+  // Validar email
+  const email = document.getElementById("email");
+  const emailError = document.getElementById("emailError");
+  if (email && emailError) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.value || !emailRegex.test(email.value)) {
+      emailError.textContent = "Email inválido";
+      emailError.classList.remove("hidden");
+      isValid = false;
+    } else {
+      emailError.classList.add("hidden");
+    }
+  }
+  
+  // Validar teléfono
+  const telefono = document.getElementById("telefono");
+  const telefonoError = document.getElementById("telefonoError");
+  if (telefono && telefonoError) {
+    const phoneRegex = /^[0-9+\-\s\(\)]{10,}$/;
+    if (!telefono.value || !phoneRegex.test(telefono.value)) {
+      telefonoError.textContent = "Teléfono debe tener al menos 10 caracteres";
+      telefonoError.classList.remove("hidden");
+      isValid = false;
+    } else {
+      telefonoError.classList.add("hidden");
+    }
+  }
+  
+  return isValid;
+}
+
 function updateCalculations() {
   const hombres = parseInt(document.getElementById("men").value || 0, 10);
   const mujeres = parseInt(document.getElementById("women").value || 0, 10);
@@ -382,6 +429,21 @@ document.addEventListener("DOMContentLoaded", function() {
         }
       }
     });
+  }
+
+  // Configurar validaciones en tiempo real
+  const nombreInput = document.getElementById("nombre");
+  const emailInput = document.getElementById("email");
+  const telefonoInput = document.getElementById("telefono");
+  
+  if (nombreInput) {
+    nombreInput.addEventListener("blur", validateForm);
+  }
+  if (emailInput) {
+    emailInput.addEventListener("blur", validateForm);
+  }
+  if (telefonoInput) {
+    telefonoInput.addEventListener("blur", validateForm);
   }
 
   // Configurar cerrar toasts

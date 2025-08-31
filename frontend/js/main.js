@@ -575,3 +575,184 @@ document.addEventListener("DOMContentLoaded", function() {
                     parseInt(document.getElementById("women").value || 0, 10);
       
       // Actualizar progress bar
+      const progressFill = document.getElementById("progressFill");
+      if (progressFill && needed > 0) {
+        const percentage = (count / needed) * 100;
+        progressFill.style.width = `${Math.min(percentage, 100)}%`;
+      }
+      
+      // Controlar botón continuar
+      const continueBtn = document.getElementById("continueBtn");
+      if (continueBtn) {
+        continueBtn.disabled = count !== needed;
+        
+        if (count === needed && needed > 0) {
+          startHoldTimer(3);
+          showSuccess("Camas reservadas temporalmente por 3 minutos");
+        } else {
+          stopHoldTimer();
+        }
+      }
+    });
+  }
+
+  // Event listener para botón continuar
+  const continueBtn = document.getElementById("continueBtn");
+  if (continueBtn) {
+    continueBtn.addEventListener("click", function() {
+      console.log("Continue button clicked");
+      
+      // Verificar que hay camas seleccionadas
+      const selectedBeds = document.querySelectorAll(".bed.selected");
+      const needed = parseInt(document.getElementById("men").value || 0, 10) + 
+                    parseInt(document.getElementById("women").value || 0, 10);
+      
+      if (selectedBeds.length !== needed || needed === 0) {
+        showError("Selecciona exactamente las camas necesarias");
+        return;
+      }
+      
+      // Ocultar tarjeta de habitaciones y mostrar formulario
+      if (roomsCard) {
+        roomsCard.style.display = "none";
+      }
+      if (formCard) {
+        formCard.style.display = "block";
+      }
+      
+      // Calcular noches y precio total
+      const entrada = document.getElementById("dateIn").value;
+      const salida = document.getElementById("dateOut").value;
+      const nights = calcNights(entrada, salida);
+      const total = selectedBeds.length * nights * PRICE_PER_NIGHT;
+      
+      // Actualizar contador de noches
+      const nightsCount = document.getElementById("nightsCount");
+      if (nightsCount) {
+        nightsCount.textContent = nights;
+      }
+      
+      showSuccess(`Proceder al pago: ${selectedBeds.length} camas x ${nights} noches = R$ ${total}`);
+    });
+  } else {
+    console.warn("Continue button not found");
+  }
+
+  // Event listeners para admin
+  const admToken = document.getElementById("admToken");
+  if (admToken) {
+    admToken.addEventListener("blur", validateAdminToken);
+  }
+
+  const btnHealth = document.getElementById("btnHealth");
+  const btnHolds = document.getElementById("btnHolds");
+  const btnBookings = document.getElementById("btnBookings");
+
+  if (btnHealth) {
+    btnHealth.addEventListener("click", async function() {
+      const result = await performAdminAction("health check", "/admin/health");
+      if (result) {
+        const healthOut = document.getElementById("healthOut");
+        if (healthOut) {
+          healthOut.textContent = JSON.stringify(result, null, 2);
+        }
+      }
+    });
+  }
+
+  if (btnHolds) {
+    btnHolds.addEventListener("click", async function() {
+      const result = await performAdminAction("listar holds", "/admin/holds");
+      if (result) {
+        const holdsOut = document.getElementById("holdsOut");
+        if (holdsOut) {
+          holdsOut.innerHTML = `<table><tr><th>ID</th><th>Camas</th><th>Expira</th></tr>` +
+            result.map(hold => `<tr><td>${hold.id}</td><td>${hold.beds.join(',')}</td><td>${hold.expires}</td></tr>`).join('') +
+            `</table>`;
+        }
+      }
+    });
+  }
+
+  if (btnBookings) {
+    btnBookings.addEventListener("click", async function() {
+      const from = document.getElementById("bkFrom")?.value;
+      const to = document.getElementById("bkTo")?.value;
+      const q = document.getElementById("bkQ")?.value;
+      
+      const params = new URLSearchParams();
+      if (from) params.append("from", from);
+      if (to) params.append("to", to);
+      if (q) params.append("q", q);
+      
+      const result = await performAdminAction("buscar reservas", `/admin/bookings?${params}`);
+      if (result) {
+        const bookingsOut = document.getElementById("bookingsOut");
+        if (bookingsOut) {
+          bookingsOut.innerHTML = `<table><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Check-in</th><th>Camas</th></tr>` +
+            result.map(booking => `<tr><td>${booking.id}</td><td>${booking.nombre}</td><td>${booking.email}</td><td>${booking.dateIn}</td><td>${booking.beds.join(',')}</td></tr>`).join('') +
+            `</table>`;
+        }
+      }
+    });
+  }
+
+  // Event listeners para validación de formulario
+  const nombre = document.getElementById("nombre");
+  const email = document.getElementById("email");
+  const telefono = document.getElementById("telefono");
+
+  if (nombre) {
+    nombre.addEventListener("blur", validateAndSanitizeForm);
+  }
+  if (email) {
+    email.addEventListener("blur", validateAndSanitizeForm);
+  }
+  if (telefono) {
+    telefono.addEventListener("blur", validateAndSanitizeForm);
+  }
+
+  // Event listeners para cerrar toasts
+  const closeError = document.getElementById("closeError");
+  const closeSuccess = document.getElementById("closeSuccess");
+
+  if (closeError) {
+    closeError.addEventListener("click", function() {
+      document.getElementById("errorToast").classList.add("hidden");
+    });
+  }
+
+  if (closeSuccess) {
+    closeSuccess.addEventListener("click", function() {
+      document.getElementById("successToast").classList.add("hidden");
+    });
+  }
+
+  // Event listeners para navegación
+  const navLinks = document.querySelectorAll(".nav-link");
+  navLinks.forEach(link => {
+    link.addEventListener("click", function(e) {
+      e.preventDefault();
+      const section = this.dataset.section;
+      
+      // Ocultar todas las secciones
+      document.getElementById("book").style.display = "none";
+      document.getElementById("admin").style.display = "none";
+      
+      // Mostrar la sección seleccionada
+      if (section && document.getElementById(section)) {
+        document.getElementById(section).style.display = "block";
+      }
+      
+      // Actualizar estado activo de navegación
+      navLinks.forEach(l => l.classList.remove("active"));
+      this.classList.add("active");
+    });
+  });
+
+  console.log("All event listeners attached successfully");
+  
+  // Inicializar estado
+  updateCalculations();
+  updateRoomDisplay();
+});

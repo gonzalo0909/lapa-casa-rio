@@ -174,45 +174,73 @@ document.addEventListener("DOMContentLoaded", function() {
   if (menPlus) {
     menPlus.addEventListener("click", function() {
       console.log("Men plus clicked");
-      const input = document.getElementById("men");
-      const current = parseInt(input.value || 0, 10);
-      input.value = Math.min(38, current + 1);
-      updateCalculations();
-      updateRoomDisplay();
+      try {
+        const input = document.getElementById("men");
+        if (!input) throw new Error("Men input not found");
+        const current = parseInt(input.value || 0, 10);
+        input.value = Math.min(38, current + 1);
+        updateCalculations();
+        updateRoomDisplay();
+      } catch (error) {
+        console.error("Error in men plus:", error);
+      }
     });
+  } else {
+    console.warn("Men plus button not found");
   }
 
   if (menMinus) {
     menMinus.addEventListener("click", function() {
       console.log("Men minus clicked");
-      const input = document.getElementById("men");
-      const current = parseInt(input.value || 0, 10);
-      input.value = Math.max(0, current - 1);
-      updateCalculations();
-      updateRoomDisplay();
+      try {
+        const input = document.getElementById("men");
+        if (!input) throw new Error("Men input not found");
+        const current = parseInt(input.value || 0, 10);
+        input.value = Math.max(0, current - 1);
+        updateCalculations();
+        updateRoomDisplay();
+      } catch (error) {
+        console.error("Error in men minus:", error);
+      }
     });
+  } else {
+    console.warn("Men minus button not found");
   }
 
   if (womenPlus) {
     womenPlus.addEventListener("click", function() {
       console.log("Women plus clicked");
-      const input = document.getElementById("women");
-      const current = parseInt(input.value || 0, 10);
-      input.value = Math.min(38, current + 1);
-      updateCalculations();
-      updateRoomDisplay();
+      try {
+        const input = document.getElementById("women");
+        if (!input) throw new Error("Women input not found");
+        const current = parseInt(input.value || 0, 10);
+        input.value = Math.min(38, current + 1);
+        updateCalculations();
+        updateRoomDisplay();
+      } catch (error) {
+        console.error("Error in women plus:", error);
+      }
     });
+  } else {
+    console.warn("Women plus button not found");
   }
 
   if (womenMinus) {
     womenMinus.addEventListener("click", function() {
       console.log("Women minus clicked");
-      const input = document.getElementById("women");
-      const current = parseInt(input.value || 0, 10);
-      input.value = Math.max(0, current - 1);
-      updateCalculations();
-      updateRoomDisplay();
+      try {
+        const input = document.getElementById("women");
+        if (!input) throw new Error("Women input not found");
+        const current = parseInt(input.value || 0, 10);
+        input.value = Math.max(0, current - 1);
+        updateCalculations();
+        updateRoomDisplay();
+      } catch (error) {
+        console.error("Error in women minus:", error);
+      }
     });
+  } else {
+    console.warn("Women minus button not found");
   }
 
   // Ver disponibilidad (desactivado por ahora)

@@ -371,14 +371,67 @@ function updateRoomDisplay() {
     return;
   }
 
-  // Solo mostrar mensaje hasta verificar disponibilidad
+  // AGREGADO: Mostrar habitaciones inmediatamente para feedback del usuario
   roomsCard.style.display = "block";
   const roomsDiv = document.getElementById("rooms");
-  roomsDiv.innerHTML = `
-    <div class="muted" style="text-align: center; padding: 20px;">
-      Haz click en "Ver disponibilidad" para mostrar las habitaciones disponibles
-    </div>
-  `;
+  
+  // Verificar si ya se consultó disponibilidad
+  const hasAvailabilityData = roomsDiv.dataset.availabilityChecked === 'true';
+  
+  if (!hasAvailabilityData) {
+    // Mostrar habitaciones básicas mientras no se verifique disponibilidad
+    roomsDiv.innerHTML = "";
+    
+    // Siempre mostrar cuarto 1 y 5 si hay huéspedes
+    if (total > 0) {
+      addRoom(roomsDiv, 1, "Mixta", total);
+      addRoom(roomsDiv, 5, "Mixta", total);
+    }
+    
+    // Cuarto 3 aparece si necesitan más de 12 camas
+    if (total > 12) {
+      const tempContainer = document.createElement('div');
+      const room3 = addRoom(tempContainer, 3, "Mixta", total);
+      const room1 = roomsDiv.querySelector('[data-room="1"]');
+      if (room1) {
+        room1.after(room3); // CORREGIDO: insertar todo el elemento
+      } else {
+        roomsDiv.appendChild(room3);
+      }
+    }
+    
+    // Cuarto 6 (femenino) aparece si hay mujeres
+    if (mujeres > 0) {
+      const room6 = addRoom(roomsDiv, 6, "Solo mujeres", total);
+      const warning = document.createElement("div");
+      warning.className = "warning";
+      warning.textContent = "Este cuarto es exclusivo para mujeres.";
+      room6.appendChild(warning);
+    }
+    // Excepción: si hombres > 31 Y no hay mujeres, cuarto 6 para hombres
+    else if (hombres > 31) {
+      const room6 = addRoom(roomsDiv, 6, "Emergencia (hombres)", total);
+      const warning = document.createElement("div");
+      warning.className = "warning";
+      warning.textContent = "Uso excepcional para capacidad extra de hombres.";
+      room6.appendChild(warning);
+    }
+    
+    // AGREGADO: Mensaje para verificar disponibilidad
+    const availabilityMessage = document.createElement("div");
+    availabilityMessage.className = "warning";
+    availabilityMessage.style.marginTop = "12px";
+    availabilityMessage.innerHTML = "📅 Haz click en <strong>'Ver disponibilidad'</strong> para confirmar camas libres y continuar";
+    roomsDiv.appendChild(availabilityMessage);
+    
+  } else {
+    // Solo mostrar mensaje inicial sin habitaciones si no hay disponibilidad consultada
+    roomsDiv.innerHTML = `
+      <div class="muted" style="text-align: center; padding: 20px;">
+        Haz click en "Ver disponibilidad" para mostrar las habitaciones disponibles
+      </div>
+    `;
+  }
 }
 
 function displayAvailableRooms(availabilityData) {
@@ -491,7 +544,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const current = parseInt(input.value || 0, 10);
         input.value = Math.min(38, current + 1);
         updateCalculations();
-        // No llamar updateRoomDisplay() aquí
+        updateRoomDisplay(); // AGREGADO: Restaurar funcionalidad de botones
       } catch (error) {
         console.error("Error in men plus:", error);
         showError("Error al aumentar hombres");
@@ -510,7 +563,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const current = parseInt(input.value || 0, 10);
         input.value = Math.max(0, current - 1);
         updateCalculations();
-        // No llamar updateRoomDisplay() aquí
+        updateRoomDisplay(); // AGREGADO: Restaurar funcionalidad de botones
       } catch (error) {
         console.error("Error in men minus:", error);
         showError("Error al disminuir hombres");
@@ -529,7 +582,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const current = parseInt(input.value || 0, 10);
         input.value = Math.min(38, current + 1);
         updateCalculations();
-        // No llamar updateRoomDisplay() aquí
+        updateRoomDisplay(); // AGREGADO: Restaurar funcionalidad de botones
       } catch (error) {
         console.error("Error in women plus:", error);
         showError("Error al aumentar mujeres");
@@ -548,7 +601,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const current = parseInt(input.value || 0, 10);
         input.value = Math.max(0, current - 1);
         updateCalculations();
-        // No llamar updateRoomDisplay() aquí
+        updateRoomDisplay(); // AGREGADO: Restaurar funcionalidad de botones
       } catch (error) {
         console.error("Error in women minus:", error);
         showError("Error al disminuir mujeres");
@@ -614,6 +667,10 @@ document.addEventListener("DOMContentLoaded", function() {
         
         const availabilityData = await response.json();
         
+        // AGREGADO: Marcar que se consultó disponibilidad
+        const roomsDiv = document.getElementById("rooms");
+        roomsDiv.dataset.availabilityChecked = 'true';
+        
         // Mostrar habitaciones disponibles
         displayAvailableRooms(availabilityData);
         showSuccess(`Disponibilidad verificada - ${availabilityData.totalAvailable} camas disponibles`);
@@ -630,6 +687,10 @@ document.addEventListener("DOMContentLoaded", function() {
           totalAvailable: 38,
           occupiedBeds: {}
         };
+        
+        // AGREGADO: Marcar que se consultó disponibilidad (modo offline)
+        const roomsDiv = document.getElementById("rooms");
+        roomsDiv.dataset.availabilityChecked = 'true';
         
         displayAvailableRooms(mockAvailability);
         showSuccess("Disponibilidad verificada (modo offline)");

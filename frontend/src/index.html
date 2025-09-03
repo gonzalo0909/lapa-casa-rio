@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lapa Casa Hostel – Reservas Online</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro"/>
+  
+  <!-- Security Headers -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
+  <meta http-equiv="X-Frame-Options" content="DENY"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'"/>
+  
+  <!-- Styles & Resources -->
+  <link rel="stylesheet" href="/assets/css/styles.css"/>
+  <link rel="preconnect" href="https://js.stripe.com" crossorigin>
+  <link rel="icon" href="/favicon.ico">
+  
+  <!-- Preloads -->
+  <link rel="preload" href="/assets/js/config.js" as="script">
+  <link rel="preload" href="/assets/js/main.js" as="script">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p>Procesando...</p>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="errorToast" class="toast error hidden">
+    <span id="errorMessage"></span>
+    <button id="closeError" class="toast-close">&times;</button>
+  </div>
+  <div id="successToast" class="toast success hidden">
+    <span id="successMessage"></span>
+    <button id="closeSuccess" class="toast-close">&times;</button>
+  </div>
+
+  <header>
+    <h1>Lapa Casa Hostel – Reservas</h1>
+    <nav>
+      <a href="#/book" class="nav-link active" data-section="book">Reservas</a>
+      <a href="#/admin" class="nav-link" data-section="admin">Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SECCIÓN RESERVAS -->
+    <section id="book" class="card">
+      <!-- Fechas -->
+      <div class="grid grid-2">
+        <div>
+          <label for="dateIn">Check-in</label>
+          <input id="dateIn" type="date" required/>
+          <div id="dateInError" class="error-text hidden"></div>
+        </div>
+        <div>
+          <label for="dateOut">Check-out</label>
+          <input id="dateOut" type="date" required/>
+          <div id="dateOutError" class="error-text hidden"></div>
+        </div>
+      </div>
+
+      <!-- Huéspedes -->
+      <div class="grid grid-4">
+        <div>
+          <label for="men">Hombres</label>
+          <div class="counter">
+            <button type="button" id="menMinus">−</button>
+            <input id="men" type="number" min="0" max="38" value="0"/>
+            <button type="button" id="menPlus">+</button>
+          </div>
+        </div>
+        <div>
+          <label for="women">Mujeres</label>
+          <div class="counter">
+            <button type="button" id="womenMinus">−</button>
+            <input id="women" type="number" min="0" max="38" value="0"/>
+            <button type="button" id="womenPlus">+</button>
+          </div>
+        </div>
+        <div class="info">
+          <span>Capacidad: 38</span>
+          <div id="availIndicator" class="indicator"></div>
+        </div>
+        <div class="action">
+          <button id="checkAvail" class="btn primary">
+            <span class="btn-text">Ver disponibilidad</span>
+            <span class="btn-loading hidden">Verificando...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selección de Habitaciones -->
+      <section id="roomsCard" class="card hidden">
+        <h2>Seleccionar Camas</h2>
+        <div id="roomsInfo" class="info-bar"></div>
+        <div id="rooms" class="rooms-grid"></div>
+        
+        <div class="selection-summary">
+          <div class="details">
+            <p>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></p>
+            <p>Total: R$ <span id="totalPrice">0</span> (<span id="nightsCount">0</span> noches)</p>
+          </div>
+          <button id="continueBtn" class="btn primary" disabled>
+            <span class="btn-text">Continuar</span>
+          </button>
+        </div>
+        
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </section>
+
+      <!-- Formulario de Datos -->
+      <section id="formCard" class="card hidden">
+        <h2>Datos de Contacto</h2>
+        <form id="reserva-form">
+          <div class="form-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" required minlength="2" maxlength="100"/>
+            <div id="nombreError" class="error-text hidden"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required/>
+            <div id="emailError" class="error-text hidden"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" required/>
+            <div id="telefonoError" class="error-text hidden"></div>
+          </div>
+
+          <!-- Opciones de Pago -->
+          <div class="payment-options">
+            <div class="payment-method">
+              <h3>Mercado Pago</h3>
+              <p>Pix, tarjeta, boleto bancario</p>
+              <button type="button" id="payMP" class="btn secondary">
+                <span class="btn-text">Pagar con MP</span>
+                <span class="btn-loading hidden">Procesando...</span>
+              </button>
+            </div>
+            
+            <div class="payment-method">
+              <h3>Stripe</h3>
+              <p>Tarjetas internacionales</p>
+              <button type="button" id="payStripe" class="btn secondary">
+                <span class="btn-text">Pagar con tarjeta</span>
+                <span class="btn-loading hidden">Procesando...</span>
+              </button>
+            </div>
+
+            <div class="payment-method">
+              <h3>Pix Directo</h3>
+              <p>Código QR instantáneo</p>
+              <button type="button" id="payPix" class="btn ghost">
+                <span class="btn-text">Generar Pix</span>
+                <span class="btn-loading hidden">Generando...</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Estado del Pago -->
+          <div class="payment-status">
+            <span>Estado: <span id="payState" class="status-pending">Pendiente</span></span>
+            <div id="paymentTimer" class="timer hidden">
+              <span>Hold expira: <span id="timerDisplay">3:00</span></span>
+            </div>
+          </div>
+
+          <!-- Botón Final -->
+          <button type="submit" id="submitBtn" class="btn primary large" disabled>
+            <span class="btn-text">Confirmar Reserva</span>
+            <span class="btn-loading hidden">Confirmando...</span>
+          </button>
+        </form>
+      </section>
+    </section>
+
+    <!-- SECCIÓN ADMIN -->
+    <section id="admin" class="card hidden">
+      <h2>Panel de Administración</h2>
+      
+      <div class="form-group">
+        <label for="admToken">Token de acceso</label>
+        <input id="admToken" type="password" autocomplete="new-password"/>
+        <div id="tokenError" class="error-text hidden"></div>
+      </div>
+      
+      <!-- Health Check -->
+      <div class="admin-section">
+        <button id="btnHealth" class="btn secondary">
+          <span class="btn-text">Health Check</span>
+          <span class="btn-loading hidden">Verificando...</span>
+        </button>
+        <pre id="healthOut" class="output"></pre>
+      </div>
+
+      <!-- Holds -->
+      <div class="admin-section">
+        <h3>Holds Activos</h3>
+        <button id="btnHolds" class="btn secondary">
+          <span class="btn-text">Listar Holds</span>
+          <span class="btn-loading hidden">Cargando...</span>
+        </button>
+        <div id="holdsOut" class="output"></div>
+      </div>
+
+      <!-- Reservas -->
+      <div class="admin-section">
+        <h3>Buscar Reservas</h3>
+        <div class="grid grid-3">
+          <input id="bkFrom" type="date" placeholder="Desde"/>
+          <input id="bkTo" type="date" placeholder="Hasta"/>
+          <input id="bkQ" type="text" placeholder="Buscar..."/>
+        </div>
+        <button id="btnBookings" class="btn secondary">
+          <span class="btn-text">Buscar</span>
+          <span class="btn-loading hidden">Buscando...</span>
+        </button>
+        <div id="bookingsOut" class="output"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/assets/js/config.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="/assets/js/core/error-handler.js"></script>
+  <script src="/assets/js/core/api-client.js"></script>
+  <script src="/assets/js/business/room-manager.js"></script>
+  <script src="/assets/js/business/date-validator.js"></script>
+  <script src="/assets/js/business/form-validator.js"></script>
+  <script src="/assets/js/ui/toast-manager.js"></script>
+  <script src="/assets/js/ui/loading-manager.js"></script>
+  <script src="/assets/js/ui/progress-manager.js"></script>
+  <script src="/assets/js/ui/timer-manager.js"></script>
+  <script src="/assets/js/security/rate-limiter.js"></script>
+  <script src="/assets/js/main.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
+</body>
+</html>

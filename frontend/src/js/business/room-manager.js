@@ -4,44 +4,31 @@ class RoomManager {
     this.PRICE_PER_NIGHT = 55;
   }
   
-  // Reglas de Habitación 6 - CLARIFICADAS
+  // Reglas de Habitación 6 - SIMPLIFICADAS
   getRoom6Availability(men, women) {
-    // REGLA 1: Con mujeres = Solo mujeres
+    // NUEVA REGLA SIMPLE: Siempre disponible
     if (women > 0) {
       return {
         available: true,
-        type: 'Solo mujeres',
-        description: 'Habitación exclusiva para mujeres',
-        allowedGenders: ['women']
+        type: 'Mixta',
+        description: 'Habitación disponible',
+        allowedGenders: ['men', 'women']
       };
     }
     
-    // REGLA 2: Solo hombres ≤31 = Disponible para hombres
-    if (men > 0 && women === 0 && men <= 31) {
+    if (men > 0) {
       return {
         available: true,
-        type: 'Disponible para hombres',
-        description: 'Habitación disponible cuando no hay mujeres',
+        type: 'Disponible',
+        description: 'Habitación disponible',
         allowedGenders: ['men']
       };
     }
     
-    // REGLA 3: Solo hombres >31 = Emergencia
-    if (men > 31 && women === 0) {
-      return {
-        available: true,
-        type: 'Emergencia',
-        description: 'Uso excepcional para >31 hombres',
-        allowedGenders: ['men'],
-        warning: 'Confirmar con recepción'
-      };
-    }
-    
-    // No disponible en otros casos
     return {
       available: false,
       type: 'No disponible',
-      description: 'No disponible para esta configuración'
+      description: 'Selecciona huéspedes'
     };
   }
   
@@ -87,7 +74,7 @@ class RoomManager {
       });
     }
     
-    // Habitación 6 - Lógica condicional
+    // Habitación 6 - LÓGICA SIMPLIFICADA
     const room6Rule = this.getRoom6Availability(men, women);
     if (room6Rule.available && this.isRoomAvailable(6, availabilityData)) {
       rooms.push({
@@ -96,8 +83,8 @@ class RoomManager {
         beds: this.ROOMS[6],
         available: availabilityData.room6 || this.ROOMS[6],
         priority: 4,
-        description: room6Rule.description,
-        warning: room6Rule.warning
+        description: room6Rule.description
+        // Sin warnings raros
       });
     }
     
@@ -143,7 +130,6 @@ class RoomManager {
         <span class="room-type">${room.type}</span>
       </div>
       <div class="room-description">${room.description}</div>
-      ${room.warning ? `<div class="room-warning">⚠️ ${room.warning}</div>` : ''}
       <div class="beds-container"></div>
       <div class="room-info">Disponibles: ${room.available}/${room.beds}</div>
     `;

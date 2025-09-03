@@ -15,14 +15,14 @@
     "test:watch": "jest --watch",
     "lint": "eslint src/js/**/*.js",
     "lint:fix": "eslint src/js/**/*.js --fix",
-    "start": "npm run dev",
+    "start": "http-server src -p $PORT -c-1 --cors",
     "deploy:staging": "npm run build && rsync -avz dist/ staging:/var/www/hostel-staging/",
     "deploy:prod": "npm run build && npm run test && rsync -avz dist/ production:/var/www/hostel/",
     "clean": "rm -rf dist && mkdir -p dist/assets/{css,js,images}"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lapacasahostel/frontend.git"
+    "url": "https://github.com/gonzalo0909/lapa-casa-backend.git"
   },
   "keywords": [
     "hostel",
@@ -35,8 +35,10 @@
   ],
   "author": "Lapa Casa Hostel <dev@lapacasahostel.com>",
   "license": "MIT",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
   "devDependencies": {
-    "http-server": "^14.1.1",
     "postcss": "^8.4.31",
     "postcss-cli": "^10.1.0",
     "autoprefixer": "^10.4.16",

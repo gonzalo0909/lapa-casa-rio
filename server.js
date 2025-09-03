@@ -1,63 +1,137 @@
-{
-  "name": "lapa-casa-hostel-frontend",
-  "version": "2.0.0",
-  "description": "Sistema de reservas frontend para Lapa Casa Hostel - Rio de Janeiro",
-  "main": "src/index.html",
-  "scripts": {
-    "dev": "http-server src -p 3001 -c-1 --cors",
-    "build": "npm run build:css && npm run build:js && npm run optimize",
-    "build:css": "postcss src/assets/css/styles.css -o dist/assets/css/styles.min.css --map",
-    "build:js": "npm run concat:js && npm run minify:js",
-    "concat:js": "cat src/js/config.js src/js/core/*.js src/js/business/*.js src/js/ui/*.js src/js/security/*.js src/js/main.js > dist/assets/js/bundle.js",
-    "minify:js": "terser dist/assets/js/bundle.js -o dist/assets/js/bundle.min.js --source-map",
-    "optimize": "imagemin 'src/assets/images/**/*' --out-dir='dist/assets/images'",
-    "test": "jest --coverage",
-    "test:watch": "jest --watch",
-    "lint": "eslint src/js/**/*.js",
-    "lint:fix": "eslint src/js/**/*.js --fix",
-    "start": "http-server src -p $PORT -c-1 --cors",
-    "deploy:staging": "npm run build && rsync -avz dist/ staging:/var/www/hostel-staging/",
-    "deploy:prod": "npm run build && npm run test && rsync -avz dist/ production:/var/www/hostel/",
-    "clean": "rm -rf dist && mkdir -p dist/assets/{css,js,images}"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/gonzalo0909/lapa-casa-backend.git"
-  },
-  "keywords": [
-    "hostel",
-    "reservas",
-    "booking",
-    "rio-de-janeiro",
-    "santa-teresa",
-    "frontend",
-    "pwa"
-  ],
-  "author": "Lapa Casa Hostel <dev@lapacasahostel.com>",
-  "license": "MIT",
-  "dependencies": {
-    "http-server": "^14.1.1"
-  },
-  "devDependencies": {
-    "postcss": "^8.4.31",
-    "postcss-cli": "^10.1.0",
-    "autoprefixer": "^10.4.16",
-    "cssnano": "^6.0.1",
-    "terser": "^5.24.0",
-    "eslint": "^8.52.0",
-    "jest": "^29.7.0",
-    "imagemin": "^8.0.1",
-    "imagemin-mozjpeg": "^10.0.0",
-    "imagemin-pngquant": "^9.0.2"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie <= 11"
-  ],
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
+const express = require('express');
+const path = require('path');
+const compression = require('compression');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Middleware de compresión
+app.use(compression());
+
+// Headers de seguridad
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  if (isProduction) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
+  
+  // CORS para desarrollo
+  if (!isProduction) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  }
+  
+  next();
+});
+
+// Servir archivos estáticos desde src/
+app.use(express.static(path.join(__dirname, 'src'), {
+  maxAge: isProduction ? '1y' : '0',
+  etag: true,
+  lastModified: true
+}));
+
+// Servir assets con caché largo
+app.use('/assets', express.static(path.join(__dirname, 'src/assets'), {
+  maxAge: isProduction ? '1y' : '0',
+  immutable: isProduction
+}));
+
+// Service Worker
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'src/sw.js'));
+});
+
+// Manifest PWA
+app.get('/manifest.json', (req, res) => {
+  const manifest = {
+    name: "Lapa Casa Hostel - Reservas",
+    short_name: "Lapa Casa",
+    description: "Sistema de reservas para Lapa Casa Hostel",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#f59e0b",
+    icons: [
+      {
+        src: "/favicon.ico",
+        sizes: "64x64 32x32 24x24 16x16",
+        type: "image/x-icon"
+      }
+    ]
+  };
+  
+  res.setHeader('Content-Type', 'application/json');
+  res.json(manifest);
+});
+
+// API Mock para desarrollo (opcional)
+if (!isProduction) {
+  app.post('/api/availability', (req, res) => {
+    setTimeout(() => {
+      res.json({
+        room1: 12,
+        room3: 12,
+        room5: 7,
+        room6: 7,
+        totalAvailable: 38,
+        occupiedBeds: {},
+        message: 'Datos de prueba - modo desarrollo'
+      });
+    }, 1000);
+  });
+  
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: 'development',
+      message: 'Frontend server funcionando'
+    });
+  });
 }
+
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error('Error del servidor:', err);
+  res.status(500).json({
+    error: true,
+    message: isProduction ? 'Error interno del servidor' : err.message
+  });
+});
+
+// Ruta catch-all para SPA (debe ir al final)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'index.html'), (err) => {
+    if (err) {
+      console.error('Error sirviendo index.html:', err);
+      res.status(404).send('Página no encontrada');
+    }
+  });
+});
+
+// Iniciar servidor
+app.listen(PORT, () => {
+  console.log(`🏠 Lapa Casa Hostel Frontend`);
+  console.log(`📱 Puerto: ${PORT}`);
+  console.log(`🚀 Ambiente: ${isProduction ? 'production' : 'development'}`);
+  console.log(`🌐 URL: ${isProduction ? 'https://tu-app.render.com' : `http://localhost:${PORT}`}`);
+});
+
+// Manejo de señales para shutdown graceful
+process.on('SIGTERM', () => {
+  console.log('🛑 Cerrando servidor...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 Cerrando servidor...');
+  process.exit(0);
+});

@@ -4,31 +4,35 @@ class RoomManager {
     this.PRICE_PER_NIGHT = 55;
   }
   
-  // Reglas de Habitación 6 - SIMPLIFICADAS
+  // Reglas de Habitación 6 - DEFINITIVAS
   getRoom6Availability(men, women) {
-    // NUEVA REGLA SIMPLE: Siempre disponible
-    if (women > 0) {
+    const total = men + women;
+    
+    // EXCEPCIÓN: Si más de 31 huéspedes total → Mixto
+    if (total > 31) {
       return {
         available: true,
         type: 'Mixta',
-        description: 'Habitación disponible',
+        description: 'Habitación mixta para grupos grandes',
         allowedGenders: ['men', 'women']
       };
     }
     
-    if (men > 0) {
+    // REGLA NORMAL: Solo mujeres
+    if (women > 0) {
       return {
         available: true,
-        type: 'Disponible',
-        description: 'Habitación disponible',
-        allowedGenders: ['men']
+        type: 'Solo mujeres',
+        description: 'Habitación exclusiva femenina',
+        allowedGenders: ['women']
       };
     }
     
+    // Si solo hay hombres (y ≤31 total) → No disponible
     return {
       available: false,
       type: 'No disponible',
-      description: 'Selecciona huéspedes'
+      description: 'Habitación exclusiva femenina'
     };
   }
   
@@ -74,7 +78,7 @@ class RoomManager {
       });
     }
     
-    // Habitación 6 - LÓGICA SIMPLIFICADA
+    // Habitación 6 - Lógica definitiva
     const room6Rule = this.getRoom6Availability(men, women);
     if (room6Rule.available && this.isRoomAvailable(6, availabilityData)) {
       rooms.push({
@@ -84,7 +88,6 @@ class RoomManager {
         available: availabilityData.room6 || this.ROOMS[6],
         priority: 4,
         description: room6Rule.description
-        // Sin warnings raros
       });
     }
     

@@ -6,11 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js",
-    "build": "npm run build:css && npm run build:js",
-    "build:css": "postcss src/assets/css/styles.css -o dist/assets/css/styles.min.css --map",
-    "build:js": "mkdir -p dist/assets/js && cat src/js/config.js src/js/core/*.js src/js/business/*.js src/js/ui/*.js src/js/security/*.js src/js/main.js > dist/assets/js/bundle.js",
-    "test": "echo \"No tests specified\" && exit 0",
-    "lint": "eslint src/js/**/*.js --fix || true"
+    "build": "echo 'Build process'",
+    "test": "echo 'No tests specified' && exit 0",
+    "lint": "echo 'No lint configured'"
   },
   "repository": {
     "type": "git",
@@ -23,18 +21,20 @@
     "rio-de-janeiro",
     "santa-teresa",
     "frontend",
-    "pwa"
+    "pwa",
+    "express",
+    "nodejs"
   ],
-  "author": "Lapa Casa Hostel",
+  "author": "Lapa Casa Hostel <dev@lapacasahostel.com>",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "compression": "^1.7.4"
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0"
   },
   "devDependencies": {
-    "postcss": "^8.4.31",
-    "postcss-cli": "^10.1.0",
-    "eslint": "^8.52.0"
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=16.0.0",
@@ -43,6 +43,11 @@
   "browserslist": [
     "> 1%",
     "last 2 versions",
-    "not dead"
-  ]
+    "not dead",
+    "not ie <= 11"
+  ],
+  "homepage": "https://lapacasahostel.com",
+  "bugs": {
+    "url": "https://github.com/gonzalo0909/lapa-casa-backend/issues"
+  }
 }

@@ -6,19 +6,17 @@ const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Rutas corregidas para frontend/src
+// Rutas EXACTAS para frontend/src
 const frontendSrcPath = path.join(__dirname, 'frontend', 'src');
 const indexHtmlPath = path.join(frontendSrcPath, 'index.html');
-const assetsPath = path.join(frontendSrcPath, 'assets');
 
-console.log(`Frontend path: ${frontendSrcPath}`);
-console.log(`Index HTML: ${indexHtmlPath}`);
+console.log(`Sirviendo desde: ${frontendSrcPath}`);
 
 // Middlewares
 app.use(compression());
 app.use(express.json());
 
-// Headers de seguridad y CORS
+// Headers CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -26,9 +24,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Servir archivos estáticos desde frontend/src
-app.use('/assets', express.static(assetsPath));
-app.use(express.static(frontendSrcPath));
+// CRÍTICO: Servir archivos estáticos ANTES de las APIs
+// Esto debe ir ANTES de cualquier ruta que pueda interceptar
+app.use(express.static(frontendSrcPath, {
+  dotfiles: 'deny',
+  index: false, // No auto-servir index.html aquí
+  setHeaders: (res, path) => {
+    // Headers específicos por tipo de archivo
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
+
+// Servir assets específicamente
+app.use('/assets', express.static(path.join(frontendSrcPath, 'assets'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
 
 // APIs mock
 app.post('/api/availability', (req, res) => {
@@ -52,8 +72,7 @@ app.post('/api/availability', (req, res) => {
 app.post('/api/bookings', (req, res) => {
   res.json({
     id: `BK${Date.now()}`,
-    status: 'confirmed',
-    message: 'Reserva simulada'
+    status: 'confirmed'
   });
 });
 
@@ -75,8 +94,7 @@ app.post('/api/payments/*', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    timestamp: new Date().toISOString(),
-    frontend: 'funcionando'
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -87,16 +105,46 @@ app.get('/api/admin/*', (req, res) => {
 // Service Worker
 app.get('/sw.js', (req, res) => {
   const swPath = path.join(frontendSrcPath, 'sw.js');
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache');
   if (fs.existsSync(swPath)) {
-    res.setHeader('Content-Type', 'application/javascript');
     res.sendFile(swPath);
   } else {
-    res.status(404).send('SW no encontrado');
+    res.status(404).send('// Service Worker no encontrado');
   }
 });
 
-// Catch-all - servir desde frontend/src
+// Debug route para verificar archivos
+app.get('/debug', (req, res) => {
+  const files = fs.readdirSync(frontendSrcPath, { withFileTypes: true });
+  const structure = files.map(file => {
+    if (file.isDirectory()) {
+      const subFiles = fs.readdirSync(path.join(frontendSrcPath, file.name));
+      return `${file.name}/: ${subFiles.join(', ')}`;
+    }
+    return file.name;
+  });
+  
+  res.send(`
+    <h3>Archivos en ${frontendSrcPath}:</h3>
+    <pre>${structure.join('\n')}</pre>
+    <h3>Test links:</h3>
+    <a href="/assets/css/styles.css">CSS</a> | 
+    <a href="/assets/js/main.js">Main JS</a> | 
+    <a href="/assets/js/config.js">Config JS</a>
+  `);
+});
+
+// IMPORTANTE: Catch-all debe ir AL FINAL
+// Solo servir index.html para rutas que no son archivos
 app.get('*', (req, res) => {
+  // No servir index.html para requests de archivos
+  if (req.path.includes('.js') || req.path.includes('.css') || 
+      req.path.includes('.png') || req.path.includes('.jpg') || 
+      req.path.includes('.ico')) {
+    return res.status(404).send('Archivo no encontrado');
+  }
+  
   if (fs.existsSync(indexHtmlPath)) {
     res.sendFile(indexHtmlPath);
   } else {
@@ -105,6 +153,7 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-  console.log(`Sirviendo desde: ${frontendSrcPath}`);
+  console.log(`Servidor en puerto ${PORT}`);
+  console.log(`Frontend: ${frontendSrcPath}`);
+  console.log(`Debug: /debug`);
 });

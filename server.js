@@ -6,54 +6,33 @@ const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Detectar donde está realmente index.html
-function findIndexHtml() {
-  const possiblePaths = [
-    path.join(__dirname, 'index.html'),           // Raíz
-    path.join(__dirname, 'src', 'index.html'),   // En src/
-    path.join(process.cwd(), 'index.html'),      // Working directory
-    path.join(process.cwd(), 'src', 'index.html') // Working directory + src
-  ];
-  
-  for (const filePath of possiblePaths) {
-    if (fs.existsSync(filePath)) {
-      console.log(`index.html encontrado en: ${filePath}`);
-      return filePath;
-    }
-  }
-  
-  console.error('index.html no encontrado en ninguna ubicación');
-  return null;
+// Rutas corregidas para carpeta frontend
+const frontendPath = path.join(__dirname, 'frontend');
+const indexHtmlPath = path.join(frontendPath, 'index.html');
+const assetsPath = path.join(frontendPath, 'assets');
+
+console.log(`Buscando frontend en: ${frontendPath}`);
+console.log(`Index HTML esperado en: ${indexHtmlPath}`);
+console.log(`Assets esperados en: ${assetsPath}`);
+
+// Verificar si los archivos existen
+if (fs.existsSync(indexHtmlPath)) {
+  console.log('✅ index.html encontrado');
+} else {
+  console.log('❌ index.html NO encontrado');
 }
 
-// Detectar carpeta de assets
-function findAssetsDir() {
-  const possiblePaths = [
-    path.join(__dirname, 'assets'),
-    path.join(__dirname, 'src', 'assets'),
-    path.join(process.cwd(), 'assets'),
-    path.join(process.cwd(), 'src', 'assets')
-  ];
-  
-  for (const dirPath of possiblePaths) {
-    if (fs.existsSync(dirPath)) {
-      console.log(`Assets encontrados en: ${dirPath}`);
-      return dirPath;
-    }
-  }
-  
-  console.log('Carpeta assets no encontrada');
-  return null;
+if (fs.existsSync(assetsPath)) {
+  console.log('✅ Carpeta assets encontrada');
+} else {
+  console.log('❌ Carpeta assets NO encontrada');
 }
-
-const indexHtmlPath = findIndexHtml();
-const assetsPath = findAssetsDir();
 
 // Middlewares
 app.use(compression());
 app.use(express.json());
 
-// Headers de seguridad
+// Headers de seguridad y CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -61,21 +40,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Servir assets si existe
-if (assetsPath) {
-  app.use('/assets', express.static(assetsPath));
-}
+// Servir archivos estáticos desde carpeta frontend
+app.use('/assets', express.static(assetsPath));
+app.use(express.static(frontendPath));
 
-// Servir archivos estáticos desde donde sea que estén
-app.use(express.static(__dirname));
-app.use(express.static(process.cwd()));
-
-// APIs mock
+// APIs mock para desarrollo
 app.post('/api/availability', (req, res) => {
   setTimeout(() => {
     res.json({
       room1: 10,
-      room3: 8, 
+      room3: 8,
       room5: 5,
       room6: 6,
       totalAvailable: 29,
@@ -108,7 +82,9 @@ app.post('/api/payments/*', (req, res) => {
   res.json({
     id: `PAY${Date.now()}`,
     status: 'pending',
-    redirectUrl: '#'
+    redirectUrl: '#',
+    qrCode: 'QR_SIMULADO',
+    pixKey: 'pix@lapacasa.com'
   });
 });
 
@@ -116,10 +92,10 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    indexFound: !!indexHtmlPath,
-    assetsFound: !!assetsPath,
-    workingDir: process.cwd(),
-    __dirname: __dirname
+    frontend: 'funcionando',
+    indexExists: fs.existsSync(indexHtmlPath),
+    assetsExists: fs.existsSync(assetsPath),
+    frontendPath: frontendPath
   });
 });
 
@@ -127,26 +103,41 @@ app.get('/api/admin/*', (req, res) => {
   res.json({ message: 'Admin simulado', data: [] });
 });
 
-// Ruta catch-all - usar el index.html encontrado
+// Service Worker
+app.get('/sw.js', (req, res) => {
+  const swPath = path.join(frontendPath, 'sw.js');
+  if (fs.existsSync(swPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(swPath);
+  } else {
+    res.status(404).send('Service Worker no encontrado');
+  }
+});
+
+// Ruta catch-all - servir index.html desde frontend
 app.get('*', (req, res) => {
-  if (indexHtmlPath && fs.existsSync(indexHtmlPath)) {
+  if (fs.existsSync(indexHtmlPath)) {
     res.sendFile(indexHtmlPath);
   } else {
     res.status(404).send(`
       <h1>Frontend Lapa Casa Hostel</h1>
-      <p>index.html no encontrado</p>
-      <p>Working directory: ${process.cwd()}</p>
-      <p>__dirname: ${__dirname}</p>
-      <p>Archivos en directorio actual:</p>
-      <pre>${fs.readdirSync(process.cwd()).join('\n')}</pre>
+      <p>❌ index.html no encontrado en: ${indexHtmlPath}</p>
+      <p>Estructura del proyecto:</p>
+      <pre>
+├── server.js
+├── package.json
+└── frontend/          ← Aquí deberían estar los archivos
+    ├── index.html
+    ├── assets/
+    └── js/
+      </pre>
+      <p>Archivos en carpeta frontend:</p>
+      <pre>${fs.existsSync(frontendPath) ? fs.readdirSync(frontendPath).join('\n') : 'Carpeta frontend no existe'}</pre>
     `);
   }
 });
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
-  console.log(`Working directory: ${process.cwd()}`);
-  console.log(`__dirname: ${__dirname}`);
-  console.log(`Index HTML: ${indexHtmlPath || 'NO ENCONTRADO'}`);
-  console.log(`Assets: ${assetsPath || 'NO ENCONTRADO'}`);
+  console.log(`Sirviendo frontend desde: ${frontendPath}`);
 });

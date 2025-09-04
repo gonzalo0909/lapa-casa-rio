@@ -3,7 +3,8 @@ class BookingValidator {
     this.config = {
       maxCapacity: window.HOSTEL_CONFIG?.TOTAL_CAPACITY || 38,
       rooms: window.HOSTEL_CONFIG?.ROOMS || { 1: 12, 3: 12, 5: 7, 6: 7 },
-      pricePerNight: window.HOSTEL_CONFIG?.PRICE_PER_NIGHT || 55
+      pricePerNight: window.HOSTEL_CONFIG?.PRICE_PER_NIGHT || 55,
+      capacityThreshold: 31 // Umbral para Room 6 mixta
     };
     
     this.roomTypes = {
@@ -40,7 +41,11 @@ class BookingValidator {
     }
     
     if (men > 0 && women > 0) {
-      warnings.push('Grupo mixto: habitación 6 no disponible');
+      if (total <= this.config.capacityThreshold) {
+        warnings.push('Grupo mixto: habitación 6 no disponible');
+      } else {
+        warnings.push('Grupo grande: habitación 6 abierta como mixta');
+      }
     }
     
     if (total > 24) {
@@ -70,22 +75,33 @@ class BookingValidator {
     }
     
     if (men > 0) {
-      const mixedCapacity = this.config.rooms[1] + this.config.rooms[3] + this.config.rooms[5];
-      
-      if (total > mixedCapacity) {
+      // Si ≤31 personas: no pueden usar Room 6
+      if (total <= this.config.capacityThreshold) {
+        const mixedCapacity = this.config.rooms[1] + this.config.rooms[3] + this.config.rooms[5];
+        
+        if (total > mixedCapacity) {
+          return {
+            canAccommodate: false,
+            availableRooms: [1, 3, 5],
+            recommendedRooms: [],
+            reason: `Grupos mixtos ≤${this.config.capacityThreshold} personas: máximo ${mixedCapacity} (sin habitación 6)`
+          };
+        }
+        
         return {
-          canAccommodate: false,
+          canAccommodate: true,
           availableRooms: [1, 3, 5],
-          recommendedRooms: [],
-          reason: `Grupos con hombres: máximo ${mixedCapacity} personas (sin habitación 6)`
+          recommendedRooms: this.getRecommendedRoomsForMixed(total),
+          reason: null
         };
       }
       
+      // Si >31 personas: pueden usar Room 6 como mixta
       return {
-        canAccommodate: true,
-        availableRooms: [1, 3, 5],
-        recommendedRooms: this.getRecommendedRoomsForMixed(total),
-        reason: null
+        canAccommodate: total <= this.config.maxCapacity,
+        availableRooms: [1, 3, 5, 6],
+        recommendedRooms: this.getRecommendedRoomsForLargeGroup(total),
+        reason: total > this.config.maxCapacity ? 'Excede capacidad total del hostel' : null
       };
     }
     
@@ -117,12 +133,15 @@ class BookingValidator {
     const recommended = [];
     
     recommended.push(1);
-    
     if (total > 12) recommended.push(3);
-    
     if (total > 24) recommended.push(5);
     
     return recommended;
+  }
+  
+  getRecommendedRoomsForLargeGroup(total) {
+    // Para grupos >31, usar todas las habitaciones
+    return [1, 3, 5, 6];
   }
   
   validateBedSelection(selectedBeds, men, women) {
@@ -146,12 +165,17 @@ class BookingValidator {
       }
       
       if (roomNum === 6) {
-        if (men > 0) {
-          errors.push('Habitación 6 es exclusiva para mujeres');
+        // REGLA CORREGIDA: Room 6 permite hombres solo si total > 31
+        if (men > 0 && beds.length > 0 && total <= this.config.capacityThreshold) {
+          errors.push(`Habitación 6 es exclusiva para mujeres (grupos ≤${this.config.capacityThreshold} personas)`);
         }
         
-        if (beds.length > women) {
+        if (total <= this.config.capacityThreshold && beds.length > women) {
           errors.push('Más camas seleccionadas que mujeres en habitación 6');
+        }
+        
+        if (total > this.config.capacityThreshold && beds.length > 0) {
+          warnings.push('Habitación 6 abierta como mixta por capacidad del grupo');
         }
       }
       
@@ -163,11 +187,6 @@ class BookingValidator {
     
     if (Object.keys(bedsByRoom).length > 2) {
       warnings.push('Grupo distribuido en muchas habitaciones');
-    }
-    
-    const room6Beds = bedsByRoom['6']?.length || 0;
-    if (room6Beds > 0 && men > 0) {
-      errors.push('Grupos mixtos no pueden usar habitación 6');
     }
     
     return {
@@ -269,6 +288,7 @@ class BookingValidator {
     };
   }
   
+  // CORREGIDO: Cálculo correcto de nivel de cama para literas de 3 niveles
   getBedLevel(bedNumber) {
     const position = ((bedNumber - 1) % 3) + 1;
     

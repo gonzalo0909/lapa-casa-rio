@@ -34,7 +34,6 @@ class HostelAPIClient {
     
     const finalOptions = { ...defaultOptions, ...options };
     
-    // Setup timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), finalOptions.timeout);
     
@@ -65,8 +64,6 @@ class HostelAPIClient {
     }
   }
   
-  // ENDPOINTS PRINCIPALES
-  
   async checkAvailability(data) {
     return this.makeRequest('/availability', {
       method: 'POST',
@@ -96,8 +93,6 @@ class HostelAPIClient {
     });
   }
   
-  // ENDPOINTS DE PAGO
-  
   async createMercadoPagoPayment(data) {
     return this.makeRequest('/payments/mercadopago', {
       method: 'POST',
@@ -122,8 +117,6 @@ class HostelAPIClient {
   async verifyPayment(paymentId) {
     return this.makeRequest(`/payments/${paymentId}/verify`);
   }
-  
-  // ENDPOINTS ADMIN
   
   async adminHealth(token) {
     return this.makeRequest('/admin/health', {
@@ -176,16 +169,13 @@ class HostelAPIClient {
   }
 }
 
-// Inicialización automática
 window.apiClient = new HostelAPIClient();
 
-// Test inicial de conexión
 window.addEventListener('load', async () => {
   const status = await window.apiClient.testConnection();
   console.log('📡 Estado API:', status);
   
   if (!status.online) {
-    console.warn('⚠️ API offline');
     window.toastManager?.showWarning('Modo sin conexión activo');
   }
 });

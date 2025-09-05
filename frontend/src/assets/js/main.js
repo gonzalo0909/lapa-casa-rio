@@ -2,11 +2,9 @@
 
 console.log("🏠 Lapa Casa Hostel - Sistema de Reservas v2.0");
 
-// Estado global - AHORA MANEJADO POR STATE MANAGER
 let currentBookingData = null;
 let selectedBeds = [];
 
-// Elementos DOM principales
 const elements = {
   roomsCard: document.getElementById("roomsCard"),
   formCard: document.getElementById("formCard"),
@@ -20,7 +18,6 @@ const elements = {
   needed: document.getElementById("needed")
 };
 
-// Inicialización principal
 document.addEventListener("DOMContentLoaded", function() {
   console.log("📡 Inicializando sistema...");
   
@@ -32,18 +29,14 @@ document.addEventListener("DOMContentLoaded", function() {
   setupPaymentButtons();
   setupAdminPanel();
   
-  // NUEVO: Setup integración de estado
   setupStateIntegration();
   
   console.log("✅ Sistema inicializado");
 });
 
-// NUEVO: Configurar integración de estado
 function setupStateIntegration() {
-  // Esperar a que StateIntegration esté disponible
   const waitForIntegration = () => {
-    if (window.stateIntegration && window.stateManager) {
-      // Restaurar estado automáticamente
+    if (window.stateManager && window.stateIntegration) {
       setTimeout(() => {
         restoreApplicationState();
       }, 500);
@@ -51,27 +44,18 @@ function setupStateIntegration() {
       setTimeout(waitForIntegration, 100);
     }
   };
-  
   waitForIntegration();
 }
 
-// NUEVO: Restaurar estado completo de la aplicación
 function restoreApplicationState() {
   const stateManager = window.stateManager;
-  
-  // Restaurar paso actual
   const currentStep = stateManager.getCurrentStep();
-  console.log(`Restaurando aplicación en paso: ${currentStep}`);
   
-  // Mostrar secciones correspondientes al paso actual
   switch (currentStep) {
     case 'rooms':
     case 'beds':
-      if (elements.roomsCard) {
-        elements.roomsCard.classList.remove('hidden');
-      }
+      if (elements.roomsCard) elements.roomsCard.classList.remove('hidden');
       break;
-      
     case 'form':
     case 'payment':
       if (elements.roomsCard) elements.roomsCard.classList.add('hidden');
@@ -79,35 +63,30 @@ function restoreApplicationState() {
       break;
   }
   
-  // Actualizar cálculos si hay criterios de búsqueda
   const searchCriteria = stateManager.getSearchCriteria();
   if (searchCriteria?.dateIn) {
     updateCalculations();
   }
 }
 
-// Configurar inputs de fecha - MEJORADO CON ESTADO
 function setupDateInputs() {
   const today = new Date().toISOString().split("T")[0];
-  
   if (elements.dateIn) {
     elements.dateIn.min = today;
     elements.dateIn.addEventListener('change', () => {
       updateCalculations();
-      saveSearchCriteria(); // NUEVO: Guardar en estado
+      saveSearchCriteria();
     });
   }
-  
   if (elements.dateOut) {
     elements.dateOut.min = today;
     elements.dateOut.addEventListener('change', () => {
       updateCalculations();
-      saveSearchCriteria(); // NUEVO: Guardar en estado
+      saveSearchCriteria();
     });
   }
 }
 
-// Configurar controles de huéspedes - MEJORADO CON ESTADO
 function setupGuestControls() {
   const controls = [
     { plus: 'menPlus', minus: 'menMinus', input: 'men' },
@@ -124,7 +103,7 @@ function setupGuestControls() {
         const current = parseInt(input.value || 0);
         input.value = Math.min(38, current + 1);
         updateCalculations();
-        saveSearchCriteria(); // NUEVO: Guardar en estado
+        saveSearchCriteria();
       });
     }
     
@@ -133,20 +112,19 @@ function setupGuestControls() {
         const current = parseInt(input.value || 0);
         input.value = Math.max(0, current - 1);
         updateCalculations();
-        saveSearchCriteria(); // NUEVO: Guardar en estado
+        saveSearchCriteria();
       });
     }
     
     if (input) {
       input.addEventListener('change', () => {
         updateCalculations();
-        saveSearchCriteria(); // NUEVO: Guardar en estado
+        saveSearchCriteria();
       });
     }
   });
 }
 
-// NUEVO: Guardar criterios de búsqueda en estado
 function saveSearchCriteria() {
   if (!window.stateManager) return;
   
@@ -160,10 +138,8 @@ function saveSearchCriteria() {
   }
 }
 
-// Configurar verificación de disponibilidad - MEJORADO CON RATE LIMITING
 function setupAvailabilityCheck() {
   const checkBtn = document.getElementById("checkAvail");
-  
   if (checkBtn) {
     checkBtn.addEventListener('click', async () => {
       await window.loadingManager?.withLoading(checkBtn, async () => {
@@ -173,16 +149,14 @@ function setupAvailabilityCheck() {
   }
 }
 
-// Verificar disponibilidad - MEJORADO CON ESTADO Y RATE LIMITING
 async function checkAvailability() {
   const dateIn = elements.dateIn?.value;
   const dateOut = elements.dateOut?.value;
   const men = parseInt(elements.men?.value || 0);
   const women = parseInt(elements.women?.value || 0);
   
-  // Validaciones
   if (!dateIn || !dateOut) {
-    showError('Selecciona fechas de entrada y salida');
+    showError('Selecciona fechas');
     return;
   }
   
@@ -192,16 +166,14 @@ async function checkAvailability() {
   }
   
   if (new Date(dateOut) <= new Date(dateIn)) {
-    showError('La fecha de salida debe ser posterior a la entrada');
+    showError('Fecha de salida inválida');
     return;
   }
   
-  // NUEVO: Verificar datos cached en estado
   if (window.stateManager?.isAvailabilityDataValid()) {
     const cachedData = window.stateManager.getAvailabilityData();
     const savedCriteria = window.stateManager.getSearchCriteria();
     
-    // Si los criterios coinciden, usar datos cached
     if (savedCriteria && 
         savedCriteria.dateIn === dateIn && 
         savedCriteria.dateOut === dateOut &&
@@ -210,79 +182,64 @@ async function checkAvailability() {
       
       displayRooms(cachedData);
       elements.roomsCard?.classList.remove('hidden');
-      showSuccess('Disponibilidad cargada desde caché');
+      showSuccess('Disponibilidad desde caché');
       return;
     }
   }
   
   try {
-    // Guardar criterios de búsqueda
     saveSearchCriteria();
     
-    // Llamada al backend con rate limiting automático
     const availability = await window.apiClient.checkAvailability({
-      dateIn,
-      dateOut,
-      guests: { men, women }
+      dateIn, dateOut, guests: { men, women }
     });
     
-    // NUEVO: Guardar disponibilidad en estado
     if (window.stateManager) {
       window.stateManager.setAvailabilityData(availability);
     }
     
-    // Mostrar habitaciones disponibles
     displayRooms(availability);
-    
-    // Actualizar UI
     elements.roomsCard?.classList.remove('hidden');
-    showSuccess(`Disponibilidad verificada - ${availability.totalAvailable} camas disponibles`);
+    showSuccess(`Disponibilidad verificada`);
     
   } catch (error) {
-    console.error('Error verificando disponibilidad:', error);
+    console.error('Error:', error);
     showError(`Error: ${error.message}`);
   }
 }
 
-// Mostrar habitaciones - MEJORADO CON ESTADO
 function displayRooms(availability) {
   const roomsContainer = document.getElementById("rooms");
   if (!roomsContainer) return;
   
   roomsContainer.innerHTML = "";
   
-  // NUEVO: Limpiar selección anterior del estado
   if (window.stateManager) {
     window.stateManager.clearSelectedBeds();
     window.stateManager.clearHold();
   }
   
-  selectedBeds = []; // Mantener compatibilidad
+  selectedBeds = [];
   
   const men = parseInt(elements.men?.value || 0);
   const women = parseInt(elements.women?.value || 0);
   
-  // Usar room manager para mostrar habitaciones
   if (window.roomManager) {
     window.roomManager.display(men, women, availability, roomsContainer);
   }
   
-  // Setup selección de camas con estado integrado
   setupBedSelectionWithState();
 }
 
-// NUEVO: Configurar selección de camas con estado integrado
 function setupBedSelectionWithState() {
   if (window.bedSelectionManager) {
     const roomsContainer = document.getElementById('rooms');
     window.bedSelectionManager.setupBedSelection(roomsContainer);
   } else {
-    // Fallback al método original si bedSelectionManager no está disponible
     setupBedSelectionOriginal();
   }
 }
 
-// Método original de selección (fallback)
 function setupBedSelectionOriginal() {
   const roomsDiv = document.getElementById('rooms');
   if (!roomsDiv) return;
@@ -291,10 +248,8 @@ function setupBedSelectionOriginal() {
     const bed = e.target.closest('.bed');
     if (!bed || bed.classList.contains('occupied')) return;
     
-    // Toggle selección
     bed.classList.toggle('selected');
     
-    // Actualizar contadores
     const selected = document.querySelectorAll('.bed.selected');
     const men = parseInt(elements.men?.value || 0);
     const women = parseInt(elements.women?.value || 0);
@@ -303,13 +258,11 @@ function setupBedSelectionOriginal() {
     if (elements.selCount) elements.selCount.textContent = selected.length;
     if (elements.needed) elements.needed.textContent = needed;
     
-    // Control del botón continuar
     const continueBtn = document.getElementById('continueBtn');
     if (continueBtn) {
       continueBtn.disabled = selected.length !== needed;
       
       if (selected.length === needed && needed > 0) {
-        // NUEVO: Usar state manager para timer
         if (window.stateManager && window.timerManager) {
           const beds = Array.from(selected).map(bed => ({
             room: bed.dataset.room,
@@ -317,35 +270,31 @@ function setupBedSelectionOriginal() {
           }));
           
           window.stateManager.setSelectedBeds(beds);
-          window.timerManager.startHoldTimer(beds, needed, 3);
+          window.timerManager.startHold(3);
         }
         
-        showSuccess('Camas reservadas temporalmente por 3 minutos');
+        showSuccess('Camas reservadas por 3 minutos');
       }
     }
     
-    // Actualizar progreso
     window.progressManager?.update();
   });
   
-  // Botón continuar
   const continueBtn = document.getElementById('continueBtn');
   if (continueBtn) {
     continueBtn.addEventListener('click', handleContinueToForm);
   }
 }
 
-// NUEVO: Manejar continuar al formulario con estado
 function handleContinueToForm() {
   const selected = document.querySelectorAll('.bed.selected');
   const needed = parseInt(elements.men?.value || 0) + parseInt(elements.women?.value || 0);
   
   if (selected.length !== needed) {
-    showError('Selecciona exactamente las camas necesarias');
+    showError('Selecciona todas las camas');
     return;
   }
   
-  // Guardar selección en estado global y state manager
   selectedBeds = Array.from(selected).map(bed => ({
     room: bed.dataset.room,
     bed: bed.dataset.bed
@@ -356,41 +305,29 @@ function handleContinueToForm() {
     window.stateManager.updateStep('form');
   }
   
-  // Ir a formulario
   elements.roomsCard?.classList.add('hidden');
   elements.formCard?.classList.remove('hidden');
   
-  showSuccess('Procede a completar tus datos');
+  showSuccess('Completa tus datos');
 }
 
-// Configurar navegación
 function setupNavigation() {
   const navLinks = document.querySelectorAll('.nav-link');
-  
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      
       const section = link.dataset.section;
-      
-      // Ocultar todas las secciones
       document.getElementById('book')?.classList.add('hidden');
       document.getElementById('admin')?.classList.add('hidden');
-      
-      // Mostrar sección seleccionada
       document.getElementById(section)?.classList.remove('hidden');
-      
-      // Actualizar estados de navegación
       navLinks.forEach(l => l.classList.remove('active'));
       link.classList.add('active');
     });
   });
 }
 
-// Configurar manejo de formularios - MEJORADO CON ESTADO
 function setupFormHandling() {
   const form = document.getElementById('reserva-form');
-  
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -398,7 +335,6 @@ function setupFormHandling() {
     });
   }
   
-  // Validación en tiempo real con estado
   ['nombre', 'email', 'telefono'].forEach(fieldId => {
     const field = document.getElementById(fieldId);
     if (field) {
@@ -406,7 +342,6 @@ function setupFormHandling() {
         window.formValidator?.validateField(fieldId);
       });
       
-      // NUEVO: Auto-guardar en estado
       field.addEventListener('input', (e) => {
         if (window.stateManager) {
           window.stateManager.setFormData(fieldId, e.target.value);
@@ -416,26 +351,21 @@ function setupFormHandling() {
   });
 }
 
-// Manejar envío de formulario - MEJORADO CON ESTADO
 async function handleFormSubmit() {
-  // Validar formulario
   if (!window.formValidator?.validateAll()) {
-    showError('Completa correctamente todos los campos');
+    showError('Completa todos los campos');
     return;
   }
   
-  // Verificar pago
   const payState = document.getElementById('payState')?.textContent;
   if (payState === 'Pendiente') {
-    showError('Completa el pago antes de confirmar');
+    showError('Completa el pago');
     return;
   }
   
   try {
-    // NUEVO: Obtener datos completos del estado
     const completeData = window.stateManager?.getCompleteBookingData() || {};
     
-    // Crear reserva con datos del estado
     const bookingData = {
       dateIn: elements.dateIn?.value || completeData.searchCriteria?.dateIn,
       dateOut: elements.dateOut?.value || completeData.searchCriteria?.dateOut,
@@ -452,32 +382,26 @@ async function handleFormSubmit() {
       paymentInfo: currentBookingData?.paymentInfo || completeData.paymentInfo
     };
     
-    // Enviar al backend
     const booking = await window.apiClient.createBooking(bookingData);
     
-    // NUEVO: Guardar booking en estado
     if (window.stateManager) {
       window.stateManager.setBookingData(booking);
       window.stateManager.updateStep('complete');
     }
     
-    showSuccess('¡Reserva confirmada! Recibirás un email de confirmación.');
+    showSuccess('¡Reserva confirmada!');
     
-    // Reset después de 3 segundos
     setTimeout(() => {
-      if (window.stateManager) {
-        window.stateManager.reset();
-      }
+      if (window.stateManager) window.stateManager.reset();
       window.location.reload();
     }, 3000);
     
   } catch (error) {
-    console.error('Error creando reserva:', error);
+    console.error('Error:', error);
     showError(`Error: ${error.message}`);
   }
 }
 
-// Configurar botones de pago
 function setupPaymentButtons() {
   const buttons = [
     { id: 'payMP', method: 'mercadopago' },
@@ -497,11 +421,9 @@ function setupPaymentButtons() {
   });
 }
 
-// Manejar pagos - MEJORADO CON ESTADO
 async function handlePayment(method) {
   const total = calculateTotal();
   
-  // NUEVO: Obtener datos del estado si están disponibles
   const stateData = window.stateManager?.getCompleteBookingData() || {};
   
   const paymentData = {
@@ -539,24 +461,20 @@ async function handlePayment(method) {
         break;
     }
     
-    // NUEVO: Guardar info de pago en estado
     if (paymentResult) {
       currentBookingData = { paymentInfo: paymentResult };
-      
       if (window.stateManager) {
         window.stateManager.setPaymentInfo(paymentResult);
       }
-      
       updatePaymentStatus('Pagado');
     }
     
   } catch (error) {
-    console.error('Error procesando pago:', error);
-    showError(`Error en pago: ${error.message}`);
+    console.error('Error pago:', error);
+    showError(`Error: ${error.message}`);
   }
 }
 
-// Mostrar QR de Pix
 function showPixQR(qrCode, pixKey) {
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -565,13 +483,12 @@ function showPixQR(qrCode, pixKey) {
       <h3>Pago via Pix</h3>
       <div class="qr-code">${qrCode}</div>
       <p>Chave Pix: ${pixKey}</p>
-      <button onclick="this.closest('.modal').remove()">Fechar</button>
+      <button onclick="this.closest('.modal').remove()">Cerrar</button>
     </div>
   `;
   document.body.appendChild(modal);
 }
 
-// Configurar panel de administración
 function setupAdminPanel() {
   const buttons = [
     { id: 'btnHealth', action: 'health' },
@@ -589,12 +506,10 @@ function setupAdminPanel() {
   });
 }
 
-// Manejar acciones de admin
 async function handleAdminAction(action) {
   const token = document.getElementById('admToken')?.value;
-  
   if (!token) {
-    showError('Ingresa el token de admin');
+    showError('Token requerido');
     return;
   }
   
@@ -624,12 +539,11 @@ async function handleAdminAction(action) {
     }
     
   } catch (error) {
-    console.error('Error en admin:', error);
+    console.error('Error admin:', error);
     showError(`Error: ${error.message}`);
   }
 }
 
-// Funciones de utilidad - MEJORADAS CON ESTADO
 function updateCalculations() {
   const men = parseInt(elements.men?.value || 0);
   const women = parseInt(elements.women?.value || 0);
@@ -704,11 +618,8 @@ function formatBookings(bookings) {
   `).join('');
 }
 
-// Cleanup al salir - MEJORADO CON ESTADO
 window.addEventListener('beforeunload', () => {
   window.timerManager?.cleanup();
-  
-  // NUEVO: Guardar estado final
   if (window.stateManager) {
     window.stateManager.saveState();
   }

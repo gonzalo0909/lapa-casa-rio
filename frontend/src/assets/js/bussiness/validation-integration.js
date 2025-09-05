@@ -15,9 +15,6 @@ class ValidationIntegration {
     this.registerValidator('form', window.formValidator);
     this.registerValidator('date', window.dateValidator);
     this.registerValidator('booking', window.bookingValidator);
-    
-    console.log('Validation Integration initialized with validators:', 
-      Array.from(this.validators.keys()));
   }
   
   registerValidator(name, validator) {
@@ -28,7 +25,6 @@ class ValidationIntegration {
   }
   
   setupGlobalValidation() {
-    // Validación cuando se presiona el botón de verificar disponibilidad
     const checkAvailBtn = document.getElementById('checkAvail');
     if (checkAvailBtn) {
       checkAvailBtn.addEventListener('click', (e) => {
@@ -39,7 +35,6 @@ class ValidationIntegration {
       });
     }
     
-    // Validación cuando se continúa al formulario
     const continueBtn = document.getElementById('continueBtn');
     if (continueBtn) {
       continueBtn.addEventListener('click', (e) => {
@@ -50,7 +45,6 @@ class ValidationIntegration {
       });
     }
     
-    // Validación final antes de enviar reserva
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) {
       const form = document.getElementById('reserva-form');
@@ -66,7 +60,6 @@ class ValidationIntegration {
   }
   
   setupRealTimeValidation() {
-    // Validación en tiempo real de fechas
     ['dateIn', 'dateOut'].forEach(fieldId => {
       const field = document.getElementById(fieldId);
       if (field) {
@@ -76,35 +69,30 @@ class ValidationIntegration {
       }
     });
     
-    // Validación en tiempo real de huéspedes
     ['men', 'women'].forEach(fieldId => {
       const field = document.getElementById(fieldId);
       if (field) {
         field.addEventListener('input', () => {
           this.queueValidation('guests', () => this.validateGuests());
         });
-        
         field.addEventListener('change', () => {
           this.queueValidation('guests', () => this.validateGuests());
         });
       }
     });
     
-    // Validación en tiempo real de formulario
     ['nombre', 'email', 'telefono'].forEach(fieldId => {
       const field = document.getElementById(fieldId);
       if (field) {
         field.addEventListener('blur', () => {
           this.queueValidation('form', () => this.validateForm());
         });
-        
         field.addEventListener('input', () => {
           this.queueValidation('form', () => this.validateFormField(fieldId), 500);
         });
       }
     });
     
-    // Validación de selección de camas
     document.addEventListener('click', (e) => {
       if (e.target.closest('.bed')) {
         setTimeout(() => {
@@ -114,7 +102,6 @@ class ValidationIntegration {
     });
   }
   
-  // SISTEMA DE COLA PARA VALIDACIONES
   queueValidation(type, validationFn, delay = 150) {
     this.validationQueue = this.validationQueue.filter(item => item.type !== type);
     
@@ -166,7 +153,6 @@ class ValidationIntegration {
     this.processingQueue = false;
   }
   
-  // VALIDACIONES ESPECÍFICAS
   validateDates() {
     const dateValidator = this.validators.get('date');
     if (!dateValidator) return false;
@@ -197,9 +183,7 @@ class ValidationIntegration {
     const validation = bookingValidator.validateCapacity(men, women);
     
     this.updateValidationResult('guests', validation.valid, {
-      men,
-      women,
-      total: men + women,
+      men, women, total: men + women,
       maxCapacity: validation.maxCapacity,
       availableRooms: validation.availableRooms,
       errors: validation.errors,
@@ -249,42 +233,29 @@ class ValidationIntegration {
     return isValid;
   }
   
-  // VALIDACIONES DE FLUJO COMPLETO
   validateBeforeAvailabilityCheck() {
-    const results = [];
-    
-    const datesValid = this.validateDates();
-    results.push({ step: 'fechas', valid: datesValid });
-    
-    const guestsValid = this.validateGuests();
-    results.push({ step: 'huéspedes', valid: guestsValid });
+    const results = [
+      { step: 'fechas', valid: this.validateDates() },
+      { step: 'huéspedes', valid: this.validateGuests() }
+    ];
     
     const allValid = results.every(r => r.valid);
-    
     if (!allValid) {
       const invalidSteps = results.filter(r => !r.valid).map(r => r.step);
-      this.showValidationError(`Corrige los errores en: ${invalidSteps.join(', ')}`);
+      this.showValidationError(`Corrige: ${invalidSteps.join(', ')}`);
     }
     
     return allValid;
   }
   
   validateBeforeContinue() {
-    const results = [];
-    
-    const roomsDiv = document.getElementById('rooms');
-    const hasRooms = roomsDiv?.children.length > 0;
-    results.push({ step: 'disponibilidad', valid: hasRooms });
-    
-    const bedSelectionValid = this.validateBedSelection();
-    results.push({ step: 'selección de camas', valid: bedSelectionValid });
-    
-    const bookingValidator = this.validators.get('booking');
-    const canProceed = bookingValidator?.canProceedToBooking() || false;
-    results.push({ step: 'cantidad correcta', valid: canProceed });
+    const results = [
+      { step: 'disponibilidad', valid: document.getElementById('rooms')?.children.length > 0 },
+      { step: 'selección de camas', valid: this.validateBedSelection() },
+      { step: 'cantidad correcta', valid: window.bookingValidator?.canProceedToBooking() || false }
+    ];
     
     const allValid = results.every(r => r.valid);
-    
     if (!allValid) {
       const invalidSteps = results.filter(r => !r.valid).map(r => r.step);
       this.showValidationError(`Antes de continuar: ${invalidSteps.join(', ')}`);
@@ -294,22 +265,16 @@ class ValidationIntegration {
   }
   
   validateCompleteBooking() {
-    const results = [];
-    
-    const formValid = this.validateForm();
-    results.push({ step: 'datos personales', valid: formValid });
-    
-    const paymentValid = this.validatePayment();
-    results.push({ step: 'pago', valid: paymentValid });
-    
-    const consistencyValid = this.validateBookingConsistency();
-    results.push({ step: 'consistencia', valid: consistencyValid });
+    const results = [
+      { step: 'datos personales', valid: this.validateForm() },
+      { step: 'pago', valid: this.validatePayment() },
+      { step: 'consistencia', valid: this.validateBookingConsistency() }
+    ];
     
     const allValid = results.every(r => r.valid);
-    
     if (!allValid) {
       const invalidSteps = results.filter(r => !r.valid).map(r => r.step);
-      this.showValidationError(`Completa antes de confirmar: ${invalidSteps.join(', ')}`);
+      this.showValidationError(`Completa: ${invalidSteps.join(', ')}`);
     }
     
     return allValid;
@@ -346,7 +311,6 @@ class ValidationIntegration {
     return datesValid && bookingValid;
   }
   
-  // MÉTODOS DE UTILIDAD
   updateValidationResult(type, valid, data) {
     this.validationResults.set(type, {
       valid,
@@ -399,10 +363,8 @@ class ValidationIntegration {
     }
   }
   
-  // API PÚBLICA
   getValidationStatus() {
     const status = {};
-    
     this.validationResults.forEach((result, type) => {
       status[type] = {
         valid: result.valid,
@@ -410,7 +372,6 @@ class ValidationIntegration {
         age: result.lastCheck ? Date.now() - result.lastCheck : null
       };
     });
-    
     return status;
   }
   
@@ -418,58 +379,26 @@ class ValidationIntegration {
     const status = this.getValidationStatus();
     
     switch (step) {
-      case 'availability':
-        return status.dates?.valid && status.guests?.valid;
-      
-      case 'beds':
-        return status.dates?.valid && status.guests?.valid;
-      
-      case 'form':
-        return status.bedSelection?.valid;
-      
-      case 'payment':
-        return status.form?.valid;
-      
-      case 'booking':
-        return status.form?.valid && this.validatePayment();
-      
-      default:
-        return false;
+      case 'availability': return status.dates?.valid && status.guests?.valid;
+      case 'beds': return status.dates?.valid && status.guests?.valid;
+      case 'form': return status.bedSelection?.valid;
+      case 'payment': return status.form?.valid;
+      case 'booking': return status.form?.valid && this.validatePayment();
+      default: return false;
     }
   }
   
   forceValidateAll() {
-    console.log('Forcing complete validation...');
-    
     return Promise.all([
       this.validateDates(),
       this.validateGuests(),
       this.validateForm(),
       this.validateBedSelection()
-    ]).then(results => {
-      const allValid = results.every(r => r);
-      console.log('Force validation results:', { results, allValid });
-      return allValid;
-    });
+    ]).then(results => results.every(r => r));
   }
   
-  // DEBUGGING
   debugValidation() {
-    console.log('=== VALIDATION DEBUG ===');
-    console.log('Available validators:', Array.from(this.validators.keys()));
-    console.log('Validation results:', this.getValidationStatus());
-    console.log('Queue status:', {
-      queueLength: this.validationQueue.length,
-      processing: this.processingQueue,
-      queue: this.validationQueue
-    });
-    
-    console.log('\n=== CURRENT STATE ===');
-    console.log('Ready for availability:', this.isReadyForStep('availability'));
-    console.log('Ready for beds:', this.isReadyForStep('beds'));
-    console.log('Ready for form:', this.isReadyForStep('form'));
-    console.log('Ready for payment:', this.isReadyForStep('payment'));
-    console.log('Ready for booking:', this.isReadyForStep('booking'));
+    console.log('=== VALIDATION DEBUG ===', this.getValidationStatus());
   }
   
   destroy() {
@@ -477,8 +406,6 @@ class ValidationIntegration {
     this.processingQueue = false;
     this.validators.clear();
     this.validationResults.clear();
-    
-    console.log('ValidationIntegration destroyed');
   }
 }
 
@@ -488,7 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     if (window.validationIntegration) {
       window.validationIntegration.initializeValidators();
-      console.log('Validation integration ready');
     }
   }, 500);
 });

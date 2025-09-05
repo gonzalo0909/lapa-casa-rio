@@ -342,3 +342,293 @@ function setupFormHandling() {
         window.formValidator?.validateField(fieldId);
       });
       
+      field.addEventListener('input', (e) => {
+        if (window.stateManager) {
+          window.stateManager.setFormData(fieldId, e.target.value);
+        }
+      });
+    }
+  });
+}
+
+async function handleFormSubmit() {
+  if (!window.formValidator?.validateAll()) {
+    showError('Completa correctamente todos los campos');
+    return;
+  }
+  
+  const payState = document.getElementById('payState')?.textContent;
+  if (payState === 'Pendiente') {
+    showError('Completa el pago antes de confirmar');
+    return;
+  }
+  
+  try {
+    const completeData = window.stateManager?.getCompleteBookingData() || {};
+    
+    const bookingData = {
+      dateIn: elements.dateIn?.value || completeData.searchCriteria?.dateIn,
+      dateOut: elements.dateOut?.value || completeData.searchCriteria?.dateOut,
+      guests: {
+        men: parseInt(elements.men?.value || 0),
+        women: parseInt(elements.women?.value || 0)
+      },
+      beds: selectedBeds.length > 0 ? selectedBeds : completeData.selectedBeds,
+      guest: {
+        nombre: document.getElementById('nombre')?.value,
+        email: document.getElementById('email')?.value,
+        telefono: document.getElementById('telefono')?.value
+      },
+      paymentInfo: currentBookingData?.paymentInfo || completeData.paymentInfo
+    };
+    
+    const booking = await window.apiClient.createBooking(bookingData);
+    
+    if (window.stateManager) {
+      window.stateManager.setBookingData(booking);
+      window.stateManager.updateStep('complete');
+    }
+    
+    showSuccess('¡Reserva confirmada! Recibirás un email de confirmación.');
+    
+    setTimeout(() => {
+      if (window.stateManager) {
+        window.stateManager.reset();
+      }
+      window.location.reload();
+    }, 3000);
+    
+  } catch (error) {
+    console.error('Error creando reserva:', error);
+    showError(`Error: ${error.message}`);
+  }
+}
+
+function setupPaymentButtons() {
+  const buttons = [
+    { id: 'payMP', method: 'mercadopago' },
+    { id: 'payStripe', method: 'stripe' },
+    { id: 'payPix', method: 'pix' }
+  ];
+  
+  buttons.forEach(({ id, method }) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        await window.loadingManager?.withLoading(btn, async () => {
+          await handlePayment(method);
+        }, `Procesando ${method}...`) || handlePayment(method);
+      });
+    }
+  });
+}
+
+async function handlePayment(method) {
+  const total = calculateTotal();
+  
+  const stateData = window.stateManager?.getCompleteBookingData() || {};
+  
+  const paymentData = {
+    amount: total,
+    currency: 'BRL',
+    beds: selectedBeds.length > 0 ? selectedBeds : stateData.selectedBeds,
+    guest: {
+      nombre: document.getElementById('nombre')?.value,
+      email: document.getElementById('email')?.value,
+      telefono: document.getElementById('telefono')?.value
+    },
+    dates: {
+      checkIn: elements.dateIn?.value || stateData.searchCriteria?.dateIn,
+      checkOut: elements.dateOut?.value || stateData.searchCriteria?.dateOut
+    }
+  };
+  
+  try {
+    let paymentResult;
+    
+    switch (method) {
+      case 'mercadopago':
+        paymentResult = await window.apiClient.createMercadoPagoPayment(paymentData);
+        window.location.href = paymentResult.redirectUrl;
+        break;
+        
+      case 'stripe':
+        paymentResult = await window.apiClient.createStripePayment(paymentData);
+        window.location.href = paymentResult.redirectUrl;
+        break;
+        
+      case 'pix':
+        paymentResult = await window.apiClient.createPixPayment(paymentData);
+        showPixQR(paymentResult.qrCode, paymentResult.pixKey);
+        break;
+    }
+    
+    if (paymentResult) {
+      currentBookingData = { paymentInfo: paymentResult };
+      
+      if (window.stateManager) {
+        window.stateManager.setPaymentInfo(paymentResult);
+      }
+      
+      updatePaymentStatus('Pagado');
+    }
+    
+  } catch (error) {
+    console.error('Error procesando pago:', error);
+    showError(`Error en pago: ${error.message}`);
+  }
+}
+
+function showPixQR(qrCode, pixKey) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h3>Pago via Pix</h3>
+      <div class="qr-code">${qrCode}</div>
+      <p>Chave Pix: ${pixKey}</p>
+      <button onclick="this.closest('.modal').remove()">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function setupAdminPanel() {
+  const buttons = [
+    { id: 'btnHealth', action: 'health' },
+    { id: 'btnHolds', action: 'holds' },
+    { id: 'btnBookings', action: 'bookings' }
+  ];
+  
+  buttons.forEach(({ id, action }) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        await handleAdminAction(action);
+      });
+    }
+  });
+}
+
+async function handleAdminAction(action) {
+  const token = document.getElementById('admToken')?.value;
+  
+  if (!token) {
+    showError('Ingresa el token de admin');
+    return;
+  }
+  
+  try {
+    let result;
+    
+    switch (action) {
+      case 'health':
+        result = await window.apiClient.adminHealth(token);
+        document.getElementById('healthOut').textContent = JSON.stringify(result, null, 2);
+        break;
+        
+      case 'holds':
+        result = await window.apiClient.adminHolds(token);
+        document.getElementById('holdsOut').innerHTML = formatHolds(result);
+        break;
+        
+      case 'bookings':
+        const filters = {
+          from: document.getElementById('bkFrom')?.value,
+          to: document.getElementById('bkTo')?.value,
+          query: document.getElementById('bkQ')?.value
+        };
+        result = await window.apiClient.adminBookings(token, filters);
+        document.getElementById('bookingsOut').innerHTML = formatBookings(result);
+        break;
+    }
+    
+  } catch (error) {
+    console.error('Error en admin:', error);
+    showError(`Error: ${error.message}`);
+  }
+}
+
+function updateCalculations() {
+  const men = parseInt(elements.men?.value || 0);
+  const women = parseInt(elements.women?.value || 0);
+  const total = men + women;
+  
+  if (elements.needed) elements.needed.textContent = total;
+  
+  const dateIn = elements.dateIn?.value;
+  const dateOut = elements.dateOut?.value;
+  
+  if (dateIn && dateOut) {
+    const nights = Math.max(1, Math.ceil((new Date(dateOut) - new Date(dateIn)) / (1000 * 60 * 60 * 24)));
+    const totalPrice = total * nights * (window.HOSTEL_CONFIG?.PRICE_PER_NIGHT || 55);
+    
+    if (elements.totalPrice) elements.totalPrice.textContent = totalPrice;
+    if (elements.nightsCount) elements.nightsCount.textContent = nights;
+  }
+  
+  window.progressManager?.update();
+}
+
+function calculateTotal() {
+  const men = parseInt(elements.men?.value || 0);
+  const women = parseInt(elements.women?.value || 0);
+  const dateIn = elements.dateIn?.value;
+  const dateOut = elements.dateOut?.value;
+  
+  if (!dateIn || !dateOut) return 0;
+  
+  const nights = Math.max(1, Math.ceil((new Date(dateOut) - new Date(dateIn)) / (1000 * 60 * 60 * 24)));
+  return (men + women) * nights * (window.HOSTEL_CONFIG?.PRICE_PER_NIGHT || 55);
+}
+
+function updatePaymentStatus(status) {
+  const payState = document.getElementById('payState');
+  const submitBtn = document.getElementById('submitBtn');
+  
+  if (payState) {
+    payState.textContent = status;
+    payState.className = status === 'Pagado' ? 'status-paid' : 'status-pending';
+  }
+  
+  if (submitBtn) {
+    submitBtn.disabled = status !== 'Pagado';
+  }
+}
+
+function showError(message) {
+  window.toastManager?.showError(message) || alert(`Error: ${message}`);
+}
+
+function showSuccess(message) {
+  window.toastManager?.showSuccess(message) || console.log(`Success: ${message}`);
+}
+
+function formatHolds(holds) {
+  return holds.map(hold => `
+    <div class="hold-item">
+      <strong>${hold.id}</strong> - ${hold.beds.length} camas
+      <br>Expira: ${new Date(hold.expires).toLocaleString()}
+    </div>
+  `).join('');
+}
+
+function formatBookings(bookings) {
+  return bookings.map(booking => `
+    <div class="booking-item">
+      <strong>${booking.id}</strong> - ${booking.guest.nombre}
+      <br>${booking.guest.email} - ${booking.beds.length} camas
+      <br>Fechas: ${booking.checkIn} a ${booking.checkOut}
+    </div>
+  `).join('');
+}
+
+window.addEventListener('beforeunload', () => {
+  window.timerManager?.cleanup();
+  
+  if (window.stateManager) {
+    window.stateManager.saveState();
+  }
+});
+
+console.log("✅ Main.js cargado");

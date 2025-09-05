@@ -243,28 +243,28 @@
       HOLD_TIMEOUT_MINUTES: 3
     };
 
-    // Carga de módulos (orden correcto de dependencias)
-    import '/assets/js/core/hostel-config.js';
-    import '/assets/js/core/error-handler.js';
-    import '/assets/js/core/api-client.js';
-    import '/assets/js/security/rate-limiter.js';
+    // Carga de módulos (rutas relativas a src/)
+    import './assets/js/core/hostel-config.js';
+    import './assets/js/core/error-handler.js';
+    import './assets/js/core/api-client.js';
+    import './assets/js/security/rate-limiter.js';
 
-    import '/assets/js/business/form-validator.js';
-    import '/assets/js/business/date-validator.js';
-    import '/assets/js/business/booking-validator.js';
-    import '/assets/js/business/validation-integration.js';
-    import '/assets/js/business/room-manager.js';
-    import '/assets/js/business/state-manager.js';
+    import './assets/js/business/form-validator.js';
+    import './assets/js/business/date-validator.js';
+    import './assets/js/business/booking-validator.js';
+    import './assets/js/business/validation-integration.js';
+    import './assets/js/business/room-manager.js';
+    import './assets/js/business/state-manager.js';
 
-    import '/assets/js/ui/toast-manager.js';
-    import '/assets/js/ui/loading-manager.js';
-    import '/assets/js/ui/timer-manager.js';
-    import '/assets/js/ui/progress-manager.js';
-    import '/assets/js/ui/visual-feedback-manager.js';
-    import '/assets/js/ui/bed-selection-manager.js';
+    import './assets/js/ui/toast-manager.js';
+    import './assets/js/ui/loading-manager.js';
+    import './assets/js/ui/timer-manager.js';
+    import './assets/js/ui/progress-manager.js';
+    import './assets/js/ui/visual-feedback-manager.js';
+    import './assets/js/ui/bed-selection-manager.js';
 
     // Main (último, depende de todos)
-    import '/assets/js/main.js';
+    import './assets/js/main.js';
   </script>
 
   <!-- Service Worker -->

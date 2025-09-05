@@ -13,15 +13,12 @@ class TimerManager {
     const totalSeconds = minutes * 60;
     let remainingSeconds = totalSeconds;
     
-    // Clear existing timers
     this.clearAll();
     
-    // Show timer
     if (this.elements.timer) {
       this.elements.timer.classList.remove('hidden');
     }
     
-    // Start countdown
     const interval = setInterval(() => {
       remainingSeconds--;
       this.updateDisplay(remainingSeconds);
@@ -41,7 +38,6 @@ class TimerManager {
       remainingSeconds
     });
     
-    // Initial display
     this.updateDisplay(remainingSeconds);
     
     return timerId;
@@ -55,41 +51,34 @@ class TimerManager {
     
     this.elements.display.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     
-    // Color coding
     if (remainingSeconds <= 30) {
-      this.elements.display.style.color = '#dc2626'; // red
+      this.elements.display.style.color = '#dc2626';
     } else if (remainingSeconds <= 60) {
-      this.elements.display.style.color = '#ea580c'; // orange
+      this.elements.display.style.color = '#ea580c';
     } else {
-      this.elements.display.style.color = '#059669'; // green
+      this.elements.display.style.color = '#059669';
     }
   }
   
   onExpire(timerId) {
-    // Hide timer
     if (this.elements.timer) {
       this.elements.timer.classList.add('hidden');
     }
     
-    // Clear selected beds
     document.querySelectorAll('.bed.selected').forEach(bed => {
       bed.classList.remove('selected');
     });
     
-    // Update counters
     const selCount = document.getElementById('selCount');
     if (selCount) selCount.textContent = '0';
     
-    // Disable continue button
     const continueBtn = document.getElementById('continueBtn');
     if (continueBtn) continueBtn.disabled = true;
     
-    // Show message
     if (window.toastManager) {
       window.toastManager.showError('Hold expirado. Selecciona nuevamente tus camas.', 6000);
     }
     
-    // Cleanup
     this.activeTimers.delete(timerId);
   }
   
@@ -112,16 +101,13 @@ class TimerManager {
   }
   
   clearAll() {
-    // Clear all intervals
     this.intervals.forEach(interval => {
       clearInterval(interval);
     });
     this.intervals.clear();
     
-    // Clear timer records
     this.activeTimers.clear();
     
-    // Hide UI
     if (this.elements.timer) {
       this.elements.timer.classList.add('hidden');
     }
@@ -142,7 +128,6 @@ class TimerManager {
 
 window.timerManager = new TimerManager();
 
-// Auto-cleanup on page unload
 window.addEventListener('beforeunload', () => {
   window.timerManager?.cleanup();
 });

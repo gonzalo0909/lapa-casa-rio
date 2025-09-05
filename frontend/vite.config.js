@@ -1,15 +1,15 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: '.',              // ✅ Directorio actual (frontend/)
-  publicDir: 'assets',    // ✅ Ajusta según dónde tengas los assets
+  root: 'src',              // ✅ Usa src/ como raíz
+  publicDir: '../assets',   // ✅ Sube un nivel para encontrar assets/
   build: {
-    outDir: 'dist',       // ✅ Generar en frontend/dist
+    outDir: '../dist',      // ✅ Genera dist/ en frontend/dist
     assetsDir: '',
     minify: 'terser',
     rollupOptions: {
       input: {
-        main: 'index.html'  // ✅ Buscar en frontend/index.html
+        main: 'index.html'  // ✅ Relativo a src/
       },
       output: {
         entryFileNames: 'assets/js/[name].min.js',

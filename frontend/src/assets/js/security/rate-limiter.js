@@ -1,10 +1,10 @@
 class RateLimiter {
   constructor() {
     this.limits = {
-      availability: { max: 10, window: 60000 }, // 10 per minute
-      booking: { max: 3, window: 300000 }, // 3 per 5 minutes
-      admin: { max: 20, window: 60000 }, // 20 per minute
-      default: { max: 15, window: 60000 } // 15 per minute
+      availability: { max: 10, window: 60000 },
+      booking: { max: 3, window: 300000 },
+      admin: { max: 20, window: 60000 },
+      default: { max: 15, window: 60000 }
     };
     
     this.requests = new Map();
@@ -15,7 +15,6 @@ class RateLimiter {
     const limit = this.limits[endpoint] || this.limits.default;
     const now = Date.now();
     
-    // Check penalties
     const penalty = this.penalties.get(endpoint);
     if (penalty && now < penalty.until) {
       return {
@@ -25,14 +24,12 @@ class RateLimiter {
       };
     }
     
-    // Check rate limit
     const requests = this.requests.get(endpoint) || [];
     const recentRequests = requests.filter(time => now - time < limit.window);
     
     if (recentRequests.length >= limit.max) {
       const waitTime = limit.window - (now - Math.min(...recentRequests));
       
-      // Apply penalty for repeated violations
       if (recentRequests.length > limit.max * 1.5) {
         this.penalties.set(endpoint, {
           until: now + (limit.window * 2),
@@ -49,7 +46,6 @@ class RateLimiter {
       };
     }
     
-    // Record request
     recentRequests.push(now);
     this.requests.set(endpoint, recentRequests);
     

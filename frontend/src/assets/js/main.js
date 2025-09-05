@@ -14,9 +14,6 @@ import { visualFeedbackManager } from './ui/visual-feedback-manager.js';
 
 console.log("🏠 Lapa Casa Hostel - Sistema de Reservas v2.0");
 
-let currentBookingData = null;
-let selectedBeds = [];
-
 const elements = {
   roomsCard: document.getElementById("roomsCard"),
   formCard: document.getElementById("formCard"),
@@ -41,23 +38,12 @@ document.addEventListener("DOMContentLoaded", function() {
   setupPaymentButtons();
   setupAdminPanel();
   
-  setupStateIntegration();
+  if (stateManager) {
+    restoreApplicationState();
+  }
   
   console.log("✅ Sistema inicializado");
 });
-
-function setupStateIntegration() {
-  const waitForIntegration = () => {
-    if (stateManager && validationIntegration) {
-      setTimeout(() => {
-        restoreApplicationState();
-      }, 500);
-    } else {
-      setTimeout(waitForIntegration, 100);
-    }
-  };
-  waitForIntegration();
-}
 
 function restoreApplicationState() {
   const currentStep = stateManager.getCurrentStep();
@@ -153,9 +139,11 @@ function setupAvailabilityCheck() {
   const checkBtn = document.getElementById("checkAvail");
   if (checkBtn) {
     checkBtn.addEventListener('click', async () => {
-      await loadingManager?.withLoading(checkBtn, async () => {
+      if (loadingManager) {
+        await loadingManager.withLoading(checkBtn, checkAvailability, 'Verificando disponibilidad...');
+      } else {
         await checkAvailability();
-      }, 'Verificando disponibilidad...') || checkAvailability();
+      }
     });
   }
 }
@@ -226,21 +214,12 @@ function displayRooms(availability) {
   stateManager.clearSelectedBeds();
   stateManager.clearHold();
   
-  selectedBeds = [];
-  
   const men = parseInt(elements.men?.value || 0);
   const women = parseInt(elements.women?.value || 0);
   
   roomManager.display(men, women, availability, roomsContainer);
   
   if (bedSelectionManager) {
-    bedSelectionManager.setupBedSelection(roomsContainer);
-  }
-}
-
-function setupBedSelectionWithState() {
-  if (bedSelectionManager) {
-    const roomsContainer = document.getElementById('rooms');
     bedSelectionManager.setupBedSelection(roomsContainer);
   }
 }
@@ -254,7 +233,7 @@ function handleContinueToForm() {
     return;
   }
   
-  selectedBeds = Array.from(selected).map(bed => ({
+  const selectedBeds = Array.from(selected).map(bed => ({
     room: bed.dataset.room,
     bed: bed.dataset.bed
   }));
@@ -330,13 +309,13 @@ async function handleFormSubmit() {
         men: parseInt(elements.men?.value || 0),
         women: parseInt(elements.women?.value || 0)
       },
-      beds: selectedBeds.length > 0 ? selectedBeds : completeData.selectedBeds,
+      beds: stateManager.getSelectedBeds() || completeData.selectedBeds,
       guest: {
         nombre: document.getElementById('nombre')?.value,
         email: document.getElementById('email')?.value,
         telefono: document.getElementById('telefono')?.value
       },
-      paymentInfo: currentBookingData?.paymentInfo || completeData.paymentInfo
+      paymentInfo: stateManager.getPaymentInfo() || completeData.paymentInfo
     };
     
     const booking = await apiClient.createBooking(bookingData);
@@ -368,9 +347,11 @@ function setupPaymentButtons() {
     const btn = document.getElementById(id);
     if (btn) {
       btn.addEventListener('click', async () => {
-        await loadingManager?.withLoading(btn, async () => {
+        if (loadingManager) {
+          await loadingManager.withLoading(btn, () => handlePayment(method), `Procesando ${method}...`);
+        } else {
           await handlePayment(method);
-        }, `Procesando ${method}...`) || handlePayment(method);
+        }
       });
     }
   });
@@ -384,7 +365,7 @@ async function handlePayment(method) {
   const paymentData = {
     amount: total,
     currency: 'BRL',
-    beds: selectedBeds.length > 0 ? selectedBeds : stateData.selectedBeds,
+    beds: stateManager.getSelectedBeds() || stateData.selectedBeds,
     guest: {
       nombre: document.getElementById('nombre')?.value,
       email: document.getElementById('email')?.value,
@@ -417,7 +398,6 @@ async function handlePayment(method) {
     }
     
     if (paymentResult) {
-      currentBookingData = { paymentInfo: paymentResult };
       stateManager.setPaymentInfo(paymentResult);
       updatePaymentStatus('Pagado');
     }
@@ -431,14 +411,26 @@ async function handlePayment(method) {
 function showPixQR(qrCode, pixKey) {
   const modal = document.createElement('div');
   modal.className = 'modal';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <h3>Pago via Pix</h3>
-      <div class="qr-code">${qrCode}</div>
-      <p>Chave Pix: ${pixKey}</p>
-      <button onclick="this.closest('.modal').remove()">Fechar</button>
-    </div>
-  `;
+  
+  const content = document.createElement('div');
+  content.className = 'modal-content';
+  
+  const title = document.createElement('h3');
+  title.textContent = 'Pago via Pix';
+  
+  const qrDiv = document.createElement('div');
+  qrDiv.className = 'qr-code';
+  qrDiv.textContent = qrCode;
+  
+  const pixP = document.createElement('p');
+  pixP.textContent = `Chave Pix: ${pixKey}`;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Fechar';
+  closeBtn.onclick = () => modal.remove();
+  
+  content.append(title, qrDiv, pixP, closeBtn);
+  modal.appendChild(content);
   document.body.appendChild(modal);
 }
 
@@ -578,3 +570,5 @@ window.addEventListener('beforeunload', () => {
     stateManager.saveState();
   }
 });
+
+export {};

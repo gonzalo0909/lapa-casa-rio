@@ -1,36 +1,25 @@
 {
-  "name": "lapa-casa-hostel-frontend",
-  "version": "2.0.0",
-  "description": "Frontend para Lapa Casa Hostel",
+  "name": "lapa-casa-channel-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Channel Manager para Lapa Casa Hostel",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "NODE_ENV=development node server.js",
-    "dev:frontend": "cd frontend && vite",
-    "build:frontend": "cd frontend && vite build",
-    "preview:frontend": "cd frontend && vite preview"
+    "dev:frontend": "cd frontend && npx vite",
+    "build:frontend": "cd frontend && npx vite build",
+    "start": "node server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/gonzalo0909/lapa-casa-backend.git"
-  },
-  "keywords": [
-    "hostel",
-    "booking",
-    "frontend",
-    "express"
-  ],
-  "author": "Lapa Casa Hostel",
-  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "compression": "^1.7.4"
-  },
-  "devDependencies": {
-    "vite": "^5.0.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.0.0",
+    "helmet": "^7.1.0",
+    "mercadopago": "^2.0.0",
+    "redis": "^4.6.14",
+    "stripe": "^16.6.0"
   },
   "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
+    "node": "18.x"
   }
 }

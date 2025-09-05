@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,29 +7,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro"/>
   
-  <!-- Security Headers -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://api.mercadopago.com;"/>
   
-  <!-- Styles -->
   <link rel="stylesheet" href="/assets/css/styles.css"/>
   <link rel="preconnect" href="https://js.stripe.com" crossorigin>
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   
-  <!-- PWA Meta -->
+  <link rel="preload" href="/assets/css/styles.css" as="style">
+  
   <meta name="theme-color" content="#f59e0b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
-  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="loading-overlay hidden">
     <div class="loading-spinner"></div>
     <p>Procesando...</p>
   </div>
 
-  <!-- Toast Notifications -->
   <div id="errorToast" class="toast error hidden">
     <span id="errorMessage"></span>
     <button id="closeError" class="toast-close">&times;</button>
@@ -48,7 +46,6 @@
 
   <main>
     <section id="book" class="card">
-      <!-- Fechas -->
       <div class="grid grid-2">
         <div>
           <label for="dateIn">Check-in</label>
@@ -62,7 +59,6 @@
         </div>
       </div>
 
-      <!-- Huéspedes -->
       <div class="grid grid-4">
         <div>
           <label for="men">Hombres</label>
@@ -82,15 +78,16 @@
         </div>
         <div class="info">
           <span>Capacidad: 38</span>
+          <div id="availIndicator" class="indicator"></div>
         </div>
         <div class="action">
           <button id="checkAvail" class="btn primary">
             <span class="btn-text">Ver disponibilidad</span>
+            <span class="btn-loading hidden">Verificando...</span>
           </button>
         </div>
       </div>
 
-      <!-- Selección de camas -->
       <section id="roomsCard" class="card hidden">
         <h2>Seleccionar Camas</h2>
         <div id="rooms" class="rooms-grid"></div>
@@ -99,14 +96,15 @@
             <p>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></p>
             <p>Total: R$ <span id="totalPrice">0</span> (<span id="nightsCount">0</span> noches)</p>
           </div>
-          <button id="continueBtn" class="btn primary" disabled>Continuar</button>
+          <button id="continueBtn" class="btn primary" disabled>
+            <span class="btn-text">Continuar</span>
+          </button>
         </div>
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
       </section>
 
-      <!-- Formulario -->
       <section id="formCard" class="card hidden">
         <h2>Datos de Contacto</h2>
         <form id="reserva-form">
@@ -126,52 +124,90 @@
             <div id="telefonoError" class="error-text hidden"></div>
           </div>
 
-          <!-- Pago -->
           <div class="payment-options">
             <div class="payment-method">
               <h3>Mercado Pago</h3>
-              <button type="button" id="payMP" class="btn secondary">Pagar con MP</button>
+              <p>Pix, tarjeta, boleto bancario</p>
+              <button type="button" id="payMP" class="btn secondary">
+                <span class="btn-text">Pagar con MP</span>
+                <span class="btn-loading hidden">Procesando...</span>
+              </button>
             </div>
             <div class="payment-method">
               <h3>Stripe</h3>
-              <button type="button" id="payStripe" class="btn secondary">Pagar con tarjeta</button>
+              <p>Tarjetas internacionales</p>
+              <button type="button" id="payStripe" class="btn secondary">
+                <span class="btn-text">Pagar con tarjeta</span>
+                <span class="btn-loading hidden">Procesando...</span>
+              </button>
             </div>
             <div class="payment-method">
-              <h3>Pix</h3>
-              <button type="button" id="payPix" class="btn ghost">Generar Pix</button>
+              <h3>Pix Directo</h3>
+              <p>Código QR instantáneo</p>
+              <button type="button" id="payPix" class="btn ghost">
+                <span class="btn-text">Generar Pix</span>
+                <span class="btn-loading hidden">Generando...</span>
+              </button>
             </div>
           </div>
 
           <div class="payment-status">
             <span>Estado: <span id="payState" class="status-pending">Pendiente</span></span>
             <div id="paymentTimer" class="timer hidden">
-              Hold expira: <span id="timerDisplay">3:00</span>
+              <span>Hold expira: <span id="timerDisplay">3:00</span></span>
             </div>
           </div>
 
-          <button type="submit" id="submitBtn" class="btn primary large" disabled>Confirmar Reserva</button>
+          <button type="submit" id="submitBtn" class="btn primary large" disabled>
+            <span class="btn-text">Confirmar Reserva</span>
+            <span class="btn-loading hidden">Confirmando...</span>
+          </button>
         </form>
       </section>
     </section>
 
-    <!-- Admin -->
     <section id="admin" class="card hidden">
       <h2>Panel de Administración</h2>
       <div class="form-group">
         <label for="admToken">Token de acceso</label>
-        <input id="admToken" type="password"/>
+        <input id="admToken" type="password" autocomplete="new-password"/>
+        <div id="tokenError" class="error-text hidden"></div>
       </div>
-      <button id="btnHealth" class="btn secondary">Health Check</button>
-      <button id="btnHolds" class="btn secondary">Listar Holds</button>
-      <button id="btnBookings" class="btn secondary">Buscar Reservas</button>
+      <div class="admin-section">
+        <button id="btnHealth" class="btn secondary">
+          <span class="btn-text">Health Check</span>
+          <span class="btn-loading hidden">Verificando...</span>
+        </button>
+        <pre id="healthOut" class="output"></pre>
+      </div>
+      <div class="admin-section">
+        <h3>Holds Activos</h3>
+        <button id="btnHolds" class="btn secondary">
+          <span class="btn-text">Listar Holds</span>
+          <span class="btn-loading hidden">Cargando...</span>
+        </button>
+        <div id="holdsOut" class="output"></div>
+      </div>
+      <div class="admin-section">
+        <h3>Buscar Reservas</h3>
+        <div class="grid grid-3">
+          <input id="bkFrom" type="date" placeholder="Desde"/>
+          <input id="bkTo" type="date" placeholder="Hasta"/>
+          <input id="bkQ" type="text" placeholder="Buscar..."/>
+        </div>
+        <button id="btnBookings" class="btn secondary">
+          <span class="btn-text">Buscar</span>
+          <span class="btn-loading hidden">Buscando...</span>
+        </button>
+        <div id="bookingsOut" class="output"></div>
+      </div>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2025 Lapa Casa Hostel</p>
+    <p>&copy; 2025 Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</p>
   </footer>
 
-  <!-- Scripts como módulos -->
   <script type="module">
     import '/assets/js/core/hostel-config.js';
     import '/assets/js/core/error-handler.js';
@@ -191,11 +227,15 @@
     import '/assets/js/main.js';
   </script>
 
-  <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.log('SW registration failed');
+        });
+      });
     }
   </script>
 </body>
 </html>
+EOL

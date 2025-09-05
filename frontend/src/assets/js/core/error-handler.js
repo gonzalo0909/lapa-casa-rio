@@ -39,7 +39,6 @@ class ErrorHandler {
     
     console.error(`[${type}]`, entry);
     
-    // Send to monitoring service in production
     if (window.HOSTEL_CONFIG && !window.HOSTEL_CONFIG.FEATURES.DEBUG_MODE) {
       this.reportError(entry);
     }
@@ -47,7 +46,6 @@ class ErrorHandler {
   
   async reportError(errorEntry) {
     try {
-      // Send to error reporting service
       if (window.apiClient) {
         await window.apiClient.makeRequest('/errors', {
           method: 'POST',

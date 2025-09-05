@@ -2,12 +2,12 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
-  root: 'src', // Indica que el punto de entrada es src/
-  publicDir: '../public', // Archivos estáticos como favicon
+  root: 'src', // Asume que tu index.html está en frontend/src/
+  publicDir: '../public', // Archivos estáticos (favicon, etc.)
   build: {
-    outDir: '../dist', // Carpeta de salida
-    assetsDir: 'assets', // Donde se guardan los .js, .css
-    minify: 'terser', // Minifica con Terser (mejor compresión)
+    outDir: '../dist', // La salida va fuera de src/
+    assetsDir: 'assets',
+    minify: 'terser',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'src/index.html'),
@@ -16,6 +16,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true, // Abre el navegador al iniciar
+    open: true,
   },
 });

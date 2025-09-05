@@ -90,7 +90,6 @@ class LoadingManager {
   }
   
   clearAll() {
-    // Stop all button loading
     document.querySelectorAll('button.loading').forEach(btn => {
       this.stopButtonLoading(btn);
     });

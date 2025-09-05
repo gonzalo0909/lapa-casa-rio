@@ -314,4 +314,8 @@ class RoomManager {
       return { possible: true, rooms: [1, 3, 5, 6] };
     }
     
-    return
+    return { possible: true, rooms: [1, 3, 5, 6] };
+  }
+}
+
+window.roomManager = new RoomManager();

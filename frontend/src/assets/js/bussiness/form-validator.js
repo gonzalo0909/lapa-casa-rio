@@ -10,7 +10,6 @@ class FormValidator {
         ],
         sanitizer: v => this.sanitizeName(v)
       },
-      
       email: {
         validators: [
           { fn: v => v?.trim().length > 0, msg: 'Email requerido' },
@@ -20,7 +19,6 @@ class FormValidator {
         ],
         sanitizer: v => this.sanitizeEmail(v)
       },
-      
       telefono: {
         validators: [
           { fn: v => v?.trim().length > 0, msg: 'Teléfono requerido' },
@@ -47,7 +45,6 @@ class FormValidator {
     ]);
   }
   
-  // VALIDADORES BRASILEÑOS
   isValidBrazilianPhone(phone) {
     if (!phone) return false;
     const numbers = phone.replace(/\D/g, '');
@@ -110,7 +107,6 @@ class FormValidator {
     return numbers.substring(0, 13);
   }
   
-  // VALIDADORES EMAIL
   isValidEmail(email) {
     if (!email) return false;
     
@@ -134,7 +130,6 @@ class FormValidator {
     return email?.trim().toLowerCase().substring(0, 254) || '';
   }
   
-  // VALIDADORES NOMBRE
   hasMinWords(name, minWords) {
     if (!name) return false;
     const words = name.trim().split(/\s+/).filter(word => word.length > 0);
@@ -165,7 +160,6 @@ class FormValidator {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
   }
   
-  // MÉTODOS PRINCIPALES
   validateField(fieldId) {
     const input = document.getElementById(fieldId);
     const errorDiv = document.getElementById(`${fieldId}Error`);

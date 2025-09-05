@@ -6,9 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js",
-    "dev:vite": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev:frontend": "cd frontend && vite",
+    "build:frontend": "cd frontend && vite build",
+    "preview:frontend": "cd frontend && vite preview"
   },
   "repository": {
     "type": "git",

@@ -1,20 +1,16 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'src', // Tu index.html está en src/
-  publicDir: '../assets', // Tus JS, CSS, etc. están en /assets
+  root: 'src', // Todo empieza aquí
   build: {
-    outDir: '../dist', // Carpeta de producción
-    assetsDir: '', // No crear subcarpetas dentro de dist
+    outDir: '../dist', // La salida va a la carpeta de arriba
+    assetsDir: 'assets', // Los recursos se guardan en dist/assets/
     minify: 'terser',
     rollupOptions: {
-      input: {
-        main: 'src/index.html'
-      },
       output: {
-        entryFileNames: 'assets/js/[name].min.js',
-        chunkFileNames: 'assets/js/[name].min.js',
-        assetFileNames: 'assets/[ext]/[name].[ext]'
+        entryFileNames: 'js/[name].min.js',
+        chunkFileNames: 'js/[name].min.js',
+        assetFileNames: '[ext]/[name].[ext]'
       }
     }
   },

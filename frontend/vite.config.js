@@ -1,15 +1,15 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'src',              // ✅ Usa src/ como raíz
-  publicDir: '../assets',   // ✅ Sube un nivel para encontrar assets/
+  root: 'src',
+  publicDir: '../public',
   build: {
-    outDir: '../dist',      // ✅ Genera dist/ en frontend/dist
-    assetsDir: '',
+    outDir: '../dist',
+    assetsDir: 'assets',
     minify: 'terser',
     rollupOptions: {
       input: {
-        main: 'index.html'  // ✅ Relativo a src/
+        main: 'index.html'
       },
       output: {
         entryFileNames: 'assets/js/[name].min.js',

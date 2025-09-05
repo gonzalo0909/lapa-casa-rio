@@ -15,7 +15,6 @@ class ToastManager {
   }
   
   setupStaticToasts() {
-    // Setup existing static toasts
     const errorToast = document.getElementById('errorToast');
     const successToast = document.getElementById('successToast');
     
@@ -55,29 +54,24 @@ class ToastManager {
   }
   
   show(type, message, duration) {
-    // Try static toasts first
     if (this.tryStaticToast(type, message, duration)) {
       return;
     }
     
-    // Create dynamic toast
     const toast = this.createToast(type, message);
     this.container.appendChild(toast);
     this.activeToasts.add(toast);
     
-    // Show animation
     requestAnimationFrame(() => {
       toast.classList.add('show');
     });
     
-    // Auto-remove
     if (duration > 0) {
       setTimeout(() => {
         this.remove(toast);
       }, duration);
     }
     
-    // Limit toasts
     this.limitToasts();
     
     return toast;
@@ -129,7 +123,6 @@ class ToastManager {
       <button class="toast-close">&times;</button>
     `;
     
-    // Close button
     const closeBtn = toast.querySelector('.toast-close');
     closeBtn.addEventListener('click', () => {
       this.remove(toast);
@@ -164,7 +157,6 @@ class ToastManager {
       this.remove(toast);
     });
     
-    // Clear static toasts
     const errorToast = document.getElementById('errorToast');
     const successToast = document.getElementById('successToast');
     

@@ -9,7 +9,7 @@ export default defineConfig({
     minify: 'terser',
     rollupOptions: {
       input: {
-        main: 'src/index.html'
+        main: 'index.html'  // ✅ Correcto - relativo a 'src'
       },
       output: {
         entryFileNames: 'assets/js/[name].min.js',

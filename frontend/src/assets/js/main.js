@@ -1,4 +1,16 @@
-"use strict";
+import { stateManager } from './business/state-manager.js';
+import { apiClient } from './core/api-client.js';
+import { formValidator } from './business/form-validator.js';
+import { dateValidator } from './business/date-validator.js';
+import { bookingValidator } from './business/booking-validator.js';
+import { validationIntegration } from './business/validation-integration.js';
+import { roomManager } from './business/room-manager.js';
+import { bedSelectionManager } from './ui/bed-selection-manager.js';
+import { progressManager } from './ui/progress-manager.js';
+import { loadingManager } from './ui/loading-manager.js';
+import { timerManager } from './ui/timer-manager.js';
+import { toastManager } from './ui/toast-manager.js';
+import { visualFeedbackManager } from './ui/visual-feedback-manager.js';
 
 console.log("🏠 Lapa Casa Hostel - Sistema de Reservas v2.0");
 
@@ -36,7 +48,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function setupStateIntegration() {
   const waitForIntegration = () => {
-    if (window.stateManager && window.stateIntegration) {
+    if (stateManager && validationIntegration) {
       setTimeout(() => {
         restoreApplicationState();
       }, 500);
@@ -48,7 +60,6 @@ function setupStateIntegration() {
 }
 
 function restoreApplicationState() {
-  const stateManager = window.stateManager;
   const currentStep = stateManager.getCurrentStep();
   
   switch (currentStep) {
@@ -126,7 +137,7 @@ function setupGuestControls() {
 }
 
 function saveSearchCriteria() {
-  if (!window.stateManager) return;
+  if (!stateManager) return;
   
   const dateIn = elements.dateIn?.value;
   const dateOut = elements.dateOut?.value;
@@ -134,7 +145,7 @@ function saveSearchCriteria() {
   const women = parseInt(elements.women?.value || 0);
   
   if (dateIn && dateOut && (men > 0 || women > 0)) {
-    window.stateManager.setSearchCriteria(dateIn, dateOut, men, women);
+    stateManager.setSearchCriteria(dateIn, dateOut, men, women);
   }
 }
 
@@ -142,7 +153,7 @@ function setupAvailabilityCheck() {
   const checkBtn = document.getElementById("checkAvail");
   if (checkBtn) {
     checkBtn.addEventListener('click', async () => {
-      await window.loadingManager?.withLoading(checkBtn, async () => {
+      await loadingManager?.withLoading(checkBtn, async () => {
         await checkAvailability();
       }, 'Verificando disponibilidad...') || checkAvailability();
     });
@@ -170,9 +181,9 @@ async function checkAvailability() {
     return;
   }
   
-  if (window.stateManager?.isAvailabilityDataValid()) {
-    const cachedData = window.stateManager.getAvailabilityData();
-    const savedCriteria = window.stateManager.getSearchCriteria();
+  if (stateManager?.isAvailabilityDataValid()) {
+    const cachedData = stateManager.getAvailabilityData();
+    const savedCriteria = stateManager.getSearchCriteria();
     
     if (savedCriteria && 
         savedCriteria.dateIn === dateIn && 
@@ -190,13 +201,11 @@ async function checkAvailability() {
   try {
     saveSearchCriteria();
     
-    const availability = await window.apiClient.checkAvailability({
+    const availability = await apiClient.checkAvailability({
       dateIn, dateOut, guests: { men, women }
     });
     
-    if (window.stateManager) {
-      window.stateManager.setAvailabilityData(availability);
-    }
+    stateManager.setAvailabilityData(availability);
     
     displayRooms(availability);
     elements.roomsCard?.classList.remove('hidden');
@@ -214,75 +223,25 @@ function displayRooms(availability) {
   
   roomsContainer.innerHTML = "";
   
-  if (window.stateManager) {
-    window.stateManager.clearSelectedBeds();
-    window.stateManager.clearHold();
-  }
+  stateManager.clearSelectedBeds();
+  stateManager.clearHold();
   
   selectedBeds = [];
   
   const men = parseInt(elements.men?.value || 0);
   const women = parseInt(elements.women?.value || 0);
   
-  if (window.roomManager) {
-    window.roomManager.display(men, women, availability, roomsContainer);
-  }
+  roomManager.display(men, women, availability, roomsContainer);
   
-  setupBedSelectionWithState();
+  if (bedSelectionManager) {
+    bedSelectionManager.setupBedSelection(roomsContainer);
+  }
 }
 
 function setupBedSelectionWithState() {
-  if (window.bedSelectionManager) {
+  if (bedSelectionManager) {
     const roomsContainer = document.getElementById('rooms');
-    window.bedSelectionManager.setupBedSelection(roomsContainer);
-  } else {
-    setupBedSelectionOriginal();
-  }
-}
-
-function setupBedSelectionOriginal() {
-  const roomsDiv = document.getElementById('rooms');
-  if (!roomsDiv) return;
-  
-  roomsDiv.addEventListener('click', (e) => {
-    const bed = e.target.closest('.bed');
-    if (!bed || bed.classList.contains('occupied')) return;
-    
-    bed.classList.toggle('selected');
-    
-    const selected = document.querySelectorAll('.bed.selected');
-    const men = parseInt(elements.men?.value || 0);
-    const women = parseInt(elements.women?.value || 0);
-    const needed = men + women;
-    
-    if (elements.selCount) elements.selCount.textContent = selected.length;
-    if (elements.needed) elements.needed.textContent = needed;
-    
-    const continueBtn = document.getElementById('continueBtn');
-    if (continueBtn) {
-      continueBtn.disabled = selected.length !== needed;
-      
-      if (selected.length === needed && needed > 0) {
-        if (window.stateManager && window.timerManager) {
-          const beds = Array.from(selected).map(bed => ({
-            room: bed.dataset.room,
-            bed: bed.dataset.bed
-          }));
-          
-          window.stateManager.setSelectedBeds(beds);
-          window.timerManager.startHold(3);
-        }
-        
-        showSuccess('Camas reservadas temporalmente por 3 minutos');
-      }
-    }
-    
-    window.progressManager?.update();
-  });
-  
-  const continueBtn = document.getElementById('continueBtn');
-  if (continueBtn) {
-    continueBtn.addEventListener('click', handleContinueToForm);
+    bedSelectionManager.setupBedSelection(roomsContainer);
   }
 }
 
@@ -300,10 +259,8 @@ function handleContinueToForm() {
     bed: bed.dataset.bed
   }));
   
-  if (window.stateManager) {
-    window.stateManager.setSelectedBeds(selectedBeds);
-    window.stateManager.updateStep('form');
-  }
+  stateManager.setSelectedBeds(selectedBeds);
+  stateManager.updateStep('form');
   
   elements.roomsCard?.classList.add('hidden');
   elements.formCard?.classList.remove('hidden');
@@ -339,12 +296,12 @@ function setupFormHandling() {
     const field = document.getElementById(fieldId);
     if (field) {
       field.addEventListener('blur', () => {
-        window.formValidator?.validateField(fieldId);
+        formValidator.validateField(fieldId);
       });
       
       field.addEventListener('input', (e) => {
-        if (window.stateManager) {
-          window.stateManager.setFormData(fieldId, e.target.value);
+        if (stateManager) {
+          stateManager.setFormData(fieldId, e.target.value);
         }
       });
     }
@@ -352,7 +309,7 @@ function setupFormHandling() {
 }
 
 async function handleFormSubmit() {
-  if (!window.formValidator?.validateAll()) {
+  if (!formValidator.validateAll()) {
     showError('Completa correctamente todos los campos');
     return;
   }
@@ -364,7 +321,7 @@ async function handleFormSubmit() {
   }
   
   try {
-    const completeData = window.stateManager?.getCompleteBookingData() || {};
+    const completeData = stateManager?.getCompleteBookingData() || {};
     
     const bookingData = {
       dateIn: elements.dateIn?.value || completeData.searchCriteria?.dateIn,
@@ -382,19 +339,15 @@ async function handleFormSubmit() {
       paymentInfo: currentBookingData?.paymentInfo || completeData.paymentInfo
     };
     
-    const booking = await window.apiClient.createBooking(bookingData);
+    const booking = await apiClient.createBooking(bookingData);
     
-    if (window.stateManager) {
-      window.stateManager.setBookingData(booking);
-      window.stateManager.updateStep('complete');
-    }
+    stateManager.setBookingData(booking);
+    stateManager.updateStep('complete');
     
     showSuccess('¡Reserva confirmada! Recibirás un email de confirmación.');
     
     setTimeout(() => {
-      if (window.stateManager) {
-        window.stateManager.reset();
-      }
+      stateManager.reset();
       window.location.reload();
     }, 3000);
     
@@ -415,7 +368,7 @@ function setupPaymentButtons() {
     const btn = document.getElementById(id);
     if (btn) {
       btn.addEventListener('click', async () => {
-        await window.loadingManager?.withLoading(btn, async () => {
+        await loadingManager?.withLoading(btn, async () => {
           await handlePayment(method);
         }, `Procesando ${method}...`) || handlePayment(method);
       });
@@ -426,7 +379,7 @@ function setupPaymentButtons() {
 async function handlePayment(method) {
   const total = calculateTotal();
   
-  const stateData = window.stateManager?.getCompleteBookingData() || {};
+  const stateData = stateManager?.getCompleteBookingData() || {};
   
   const paymentData = {
     amount: total,
@@ -448,28 +401,24 @@ async function handlePayment(method) {
     
     switch (method) {
       case 'mercadopago':
-        paymentResult = await window.apiClient.createMercadoPagoPayment(paymentData);
+        paymentResult = await apiClient.createMercadoPagoPayment(paymentData);
         window.location.href = paymentResult.redirectUrl;
         break;
         
       case 'stripe':
-        paymentResult = await window.apiClient.createStripePayment(paymentData);
+        paymentResult = await apiClient.createStripePayment(paymentData);
         window.location.href = paymentResult.redirectUrl;
         break;
         
       case 'pix':
-        paymentResult = await window.apiClient.createPixPayment(paymentData);
+        paymentResult = await apiClient.createPixPayment(paymentData);
         showPixQR(paymentResult.qrCode, paymentResult.pixKey);
         break;
     }
     
     if (paymentResult) {
       currentBookingData = { paymentInfo: paymentResult };
-      
-      if (window.stateManager) {
-        window.stateManager.setPaymentInfo(paymentResult);
-      }
-      
+      stateManager.setPaymentInfo(paymentResult);
       updatePaymentStatus('Pagado');
     }
     
@@ -523,12 +472,12 @@ async function handleAdminAction(action) {
     
     switch (action) {
       case 'health':
-        result = await window.apiClient.adminHealth(token);
+        result = await apiClient.adminHealth(token);
         document.getElementById('healthOut').textContent = JSON.stringify(result, null, 2);
         break;
         
       case 'holds':
-        result = await window.apiClient.adminHolds(token);
+        result = await apiClient.adminHolds(token);
         document.getElementById('holdsOut').innerHTML = formatHolds(result);
         break;
         
@@ -538,7 +487,7 @@ async function handleAdminAction(action) {
           to: document.getElementById('bkTo')?.value,
           query: document.getElementById('bkQ')?.value
         };
-        result = await window.apiClient.adminBookings(token, filters);
+        result = await apiClient.adminBookings(token, filters);
         document.getElementById('bookingsOut').innerHTML = formatBookings(result);
         break;
     }
@@ -567,7 +516,7 @@ function updateCalculations() {
     if (elements.nightsCount) elements.nightsCount.textContent = nights;
   }
   
-  window.progressManager?.update();
+  progressManager?.update();
 }
 
 function calculateTotal() {
@@ -597,11 +546,11 @@ function updatePaymentStatus(status) {
 }
 
 function showError(message) {
-  window.toastManager?.showError(message) || alert(`Error: ${message}`);
+  toastManager?.showError(message) || alert(`Error: ${message}`);
 }
 
 function showSuccess(message) {
-  window.toastManager?.showSuccess(message) || console.log(`Success: ${message}`);
+  toastManager?.showSuccess(message) || console.log(`Success: ${message}`);
 }
 
 function formatHolds(holds) {
@@ -624,11 +573,8 @@ function formatBookings(bookings) {
 }
 
 window.addEventListener('beforeunload', () => {
-  window.timerManager?.cleanup();
-  
-  if (window.stateManager) {
-    window.stateManager.saveState();
+  timerManager?.cleanup();
+  if (stateManager) {
+    stateManager.saveState();
   }
 });
-
-console.log("✅ Main.js cargado");

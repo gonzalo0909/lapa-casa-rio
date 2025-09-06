@@ -1,16 +1,20 @@
-import { stateManager } from './business/state-manager.js';
-import { apiClient } from './core/api-client.js';
-import { formValidator } from './business/form-validator.js';
-import { dateValidator } from './business/date-validator.js';
-import { bookingValidator } from './business/booking-validator.js';
-import { validationIntegration } from './business/validation-integration.js';
-import { roomManager } from './business/room-manager.js';
-import { bedSelectionManager } from './ui/bed-selection-manager.js';
-import { progressManager } from './ui/progress-manager.js';
-import { loadingManager } from './ui/loading-manager.js';
-import { timerManager } from './ui/timer-manager.js';
-import { toastManager } from './ui/toast-manager.js';
-import { visualFeedbackManager } from './ui/visual-feedback-manager.js';
+import './js/config.js';
+import './js/utils/error-handler.js';
+import './js/utils/rate-limiter.js';
+import './js/utils/dependency-manager.js';
+import './js/api/api-client.js';
+import './js/validators/form-validator.js';
+import './js/validators/date-validator.js';
+import './js/validators/booking-validator.js';
+import './js/integrations/validation-integration.js';
+import './js/managers/room-manager.js';
+import './js/managers/state-manager.js';
+import './js/managers/bed-selection-manager.js';
+import './js/business/progress-manager.js';
+import './js/managers/loading-manager.js';
+import './js/managers/timer-manager.js';
+import './js/components/toast-manager.js';
+import './js/components/visual-feedback-manager.js';
 
 console.log("🏠 Lapa Casa Hostel - Sistema de Reservas v2.0");
 
@@ -27,26 +31,35 @@ const elements = {
   needed: document.getElementById("needed")
 };
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   console.log("📡 Inicializando sistema...");
   
-  setupDateInputs();
-  setupGuestControls();
-  setupAvailabilityCheck();
-  setupNavigation();
-  setupFormHandling();
-  setupPaymentButtons();
-  setupAdminPanel();
-  
-  if (stateManager) {
-    restoreApplicationState();
+  try {
+    await window.dependencyManager.initializeSequentially();
+    
+    setupDateInputs();
+    setupGuestControls();
+    setupAvailabilityCheck();
+    setupNavigation();
+    setupFormHandling();
+    setupPaymentButtons();
+    setupAdminPanel();
+    
+    if (window.stateManager) {
+      restoreApplicationState();
+    }
+    
+    console.log("✅ Sistema inicializado");
+  } catch (error) {
+    console.error("❌ Error inicializando sistema:", error);
+    if (window.toastManager) {
+      window.toastManager.showError("Error iniciando aplicación");
+    }
   }
-  
-  console.log("✅ Sistema inicializado");
 });
 
 function restoreApplicationState() {
-  const currentStep = stateManager.getCurrentStep();
+  const currentStep = window.stateManager.getCurrentStep();
   
   switch (currentStep) {
     case 'rooms':
@@ -60,7 +73,7 @@ function restoreApplicationState() {
       break;
   }
   
-  const searchCriteria = stateManager.getSearchCriteria();
+  const searchCriteria = window.stateManager.getSearchCriteria();
   if (searchCriteria?.dateIn) {
     updateCalculations();
   }
@@ -123,7 +136,7 @@ function setupGuestControls() {
 }
 
 function saveSearchCriteria() {
-  if (!stateManager) return;
+  if (!window.stateManager) return;
   
   const dateIn = elements.dateIn?.value;
   const dateOut = elements.dateOut?.value;
@@ -131,7 +144,7 @@ function saveSearchCriteria() {
   const women = parseInt(elements.women?.value || 0);
   
   if (dateIn && dateOut && (men > 0 || women > 0)) {
-    stateManager.setSearchCriteria(dateIn, dateOut, men, women);
+    window.stateManager.setSearchCriteria(dateIn, dateOut, men, women);
   }
 }
 
@@ -139,8 +152,8 @@ function setupAvailabilityCheck() {
   const checkBtn = document.getElementById("checkAvail");
   if (checkBtn) {
     checkBtn.addEventListener('click', async () => {
-      if (loadingManager) {
-        await loadingManager.withLoading(checkBtn, checkAvailability, 'Verificando disponibilidad...');
+      if (window.loadingManager) {
+        await window.loadingManager.withLoading(checkBtn, checkAvailability, 'Verificando disponibilidad...');
       } else {
         await checkAvailability();
       }
@@ -169,9 +182,9 @@ async function checkAvailability() {
     return;
   }
   
-  if (stateManager?.isAvailabilityDataValid()) {
-    const cachedData = stateManager.getAvailabilityData();
-    const savedCriteria = stateManager.getSearchCriteria();
+  if (window.stateManager?.isAvailabilityDataValid()) {
+    const cachedData = window.stateManager.getAvailabilityData();
+    const savedCriteria = window.stateManager.getSearchCriteria();
     
     if (savedCriteria && 
         savedCriteria.dateIn === dateIn && 
@@ -189,11 +202,11 @@ async function checkAvailability() {
   try {
     saveSearchCriteria();
     
-    const availability = await apiClient.checkAvailability({
+    const availability = await window.apiClient.checkAvailability({
       dateIn, dateOut, guests: { men, women }
     });
     
-    stateManager.setAvailabilityData(availability);
+    window.stateManager.setAvailabilityData(availability);
     
     displayRooms(availability);
     elements.roomsCard?.classList.remove('hidden');
@@ -211,16 +224,16 @@ function displayRooms(availability) {
   
   roomsContainer.innerHTML = "";
   
-  stateManager.clearSelectedBeds();
-  stateManager.clearHold();
+  window.stateManager.clearSelectedBeds();
+  window.stateManager.clearHold();
   
   const men = parseInt(elements.men?.value || 0);
   const women = parseInt(elements.women?.value || 0);
   
-  roomManager.display(men, women, availability, roomsContainer);
+  window.roomManager.display(men, women, availability, roomsContainer);
   
-  if (bedSelectionManager) {
-    bedSelectionManager.setupBedSelection(roomsContainer);
+  if (window.bedSelectionManager) {
+    window.bedSelectionManager.setupBedSelection(roomsContainer);
   }
 }
 
@@ -238,8 +251,8 @@ function handleContinueToForm() {
     bed: bed.dataset.bed
   }));
   
-  stateManager.setSelectedBeds(selectedBeds);
-  stateManager.updateStep('form');
+  window.stateManager.setSelectedBeds(selectedBeds);
+  window.stateManager.updateStep('form');
   
   elements.roomsCard?.classList.add('hidden');
   elements.formCard?.classList.remove('hidden');
@@ -275,12 +288,12 @@ function setupFormHandling() {
     const field = document.getElementById(fieldId);
     if (field) {
       field.addEventListener('blur', () => {
-        formValidator.validateField(fieldId);
+        window.formValidator.validateField(fieldId);
       });
       
       field.addEventListener('input', (e) => {
-        if (stateManager) {
-          stateManager.setFormData(fieldId, e.target.value);
+        if (window.stateManager) {
+          window.stateManager.setFormData(fieldId, e.target.value);
         }
       });
     }
@@ -288,7 +301,7 @@ function setupFormHandling() {
 }
 
 async function handleFormSubmit() {
-  if (!formValidator.validateAll()) {
+  if (!window.formValidator.validateAll()) {
     showError('Completa correctamente todos los campos');
     return;
   }
@@ -300,7 +313,7 @@ async function handleFormSubmit() {
   }
   
   try {
-    const completeData = stateManager?.getCompleteBookingData() || {};
+    const completeData = window.stateManager?.getCompleteBookingData() || {};
     
     const bookingData = {
       dateIn: elements.dateIn?.value || completeData.searchCriteria?.dateIn,
@@ -309,24 +322,24 @@ async function handleFormSubmit() {
         men: parseInt(elements.men?.value || 0),
         women: parseInt(elements.women?.value || 0)
       },
-      beds: stateManager.getSelectedBeds() || completeData.selectedBeds,
+      beds: window.stateManager.getSelectedBeds() || completeData.selectedBeds,
       guest: {
         nombre: document.getElementById('nombre')?.value,
         email: document.getElementById('email')?.value,
         telefono: document.getElementById('telefono')?.value
       },
-      paymentInfo: stateManager.getPaymentInfo() || completeData.paymentInfo
+      paymentInfo: window.stateManager.getPaymentInfo() || completeData.paymentInfo
     };
     
-    const booking = await apiClient.createBooking(bookingData);
+    const booking = await window.apiClient.createBooking(bookingData);
     
-    stateManager.setBookingData(booking);
-    stateManager.updateStep('complete');
+    window.stateManager.setBookingData(booking);
+    window.stateManager.updateStep('complete');
     
     showSuccess('¡Reserva confirmada! Recibirás un email de confirmación.');
     
     setTimeout(() => {
-      stateManager.reset();
+      window.stateManager.reset();
       window.location.reload();
     }, 3000);
     
@@ -347,8 +360,8 @@ function setupPaymentButtons() {
     const btn = document.getElementById(id);
     if (btn) {
       btn.addEventListener('click', async () => {
-        if (loadingManager) {
-          await loadingManager.withLoading(btn, () => handlePayment(method), `Procesando ${method}...`);
+        if (window.loadingManager) {
+          await window.loadingManager.withLoading(btn, () => handlePayment(method), `Procesando ${method}...`);
         } else {
           await handlePayment(method);
         }
@@ -360,12 +373,12 @@ function setupPaymentButtons() {
 async function handlePayment(method) {
   const total = calculateTotal();
   
-  const stateData = stateManager?.getCompleteBookingData() || {};
+  const stateData = window.stateManager?.getCompleteBookingData() || {};
   
   const paymentData = {
     amount: total,
     currency: 'BRL',
-    beds: stateManager.getSelectedBeds() || stateData.selectedBeds,
+    beds: window.stateManager.getSelectedBeds() || stateData.selectedBeds,
     guest: {
       nombre: document.getElementById('nombre')?.value,
       email: document.getElementById('email')?.value,
@@ -382,23 +395,23 @@ async function handlePayment(method) {
     
     switch (method) {
       case 'mercadopago':
-        paymentResult = await apiClient.createMercadoPagoPayment(paymentData);
+        paymentResult = await window.apiClient.createMercadoPagoPayment(paymentData);
         window.location.href = paymentResult.redirectUrl;
         break;
         
       case 'stripe':
-        paymentResult = await apiClient.createStripePayment(paymentData);
+        paymentResult = await window.apiClient.createStripePayment(paymentData);
         window.location.href = paymentResult.redirectUrl;
         break;
         
       case 'pix':
-        paymentResult = await apiClient.createPixPayment(paymentData);
+        paymentResult = await window.apiClient.createPixPayment(paymentData);
         showPixQR(paymentResult.qrCode, paymentResult.pixKey);
         break;
     }
     
     if (paymentResult) {
-      stateManager.setPaymentInfo(paymentResult);
+      window.stateManager.setPaymentInfo(paymentResult);
       updatePaymentStatus('Pagado');
     }
     
@@ -464,12 +477,12 @@ async function handleAdminAction(action) {
     
     switch (action) {
       case 'health':
-        result = await apiClient.adminHealth(token);
+        result = await window.apiClient.adminHealth(token);
         document.getElementById('healthOut').textContent = JSON.stringify(result, null, 2);
         break;
         
       case 'holds':
-        result = await apiClient.adminHolds(token);
+        result = await window.apiClient.adminHolds(token);
         document.getElementById('holdsOut').innerHTML = formatHolds(result);
         break;
         
@@ -479,7 +492,7 @@ async function handleAdminAction(action) {
           to: document.getElementById('bkTo')?.value,
           query: document.getElementById('bkQ')?.value
         };
-        result = await apiClient.adminBookings(token, filters);
+        result = await window.apiClient.adminBookings(token, filters);
         document.getElementById('bookingsOut').innerHTML = formatBookings(result);
         break;
     }
@@ -508,7 +521,9 @@ function updateCalculations() {
     if (elements.nightsCount) elements.nightsCount.textContent = nights;
   }
   
-  progressManager?.update();
+  if (window.progressManager) {
+    window.progressManager.update();
+  }
 }
 
 function calculateTotal() {
@@ -538,11 +553,19 @@ function updatePaymentStatus(status) {
 }
 
 function showError(message) {
-  toastManager?.showError(message) || alert(`Error: ${message}`);
+  if (window.toastManager) {
+    window.toastManager.showError(message);
+  } else {
+    alert(`Error: ${message}`);
+  }
 }
 
 function showSuccess(message) {
-  toastManager?.showSuccess(message) || console.log(`Success: ${message}`);
+  if (window.toastManager) {
+    window.toastManager.showSuccess(message);
+  } else {
+    console.log(`Success: ${message}`);
+  }
 }
 
 function formatHolds(holds) {
@@ -564,10 +587,19 @@ function formatBookings(bookings) {
   `).join('');
 }
 
-window.addEventListener('beforeunload', () => {
-  timerManager?.cleanup();
-  if (stateManager) {
-    stateManager.saveState();
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    window.timerManager?.cleanup();
+    if (window.stateManager) {
+      window.stateManager.saveState();
+    }
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  window.timerManager?.cleanup();
+  if (window.stateManager) {
+    window.stateManager.saveState();
   }
 });
 

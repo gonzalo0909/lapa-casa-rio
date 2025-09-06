@@ -6,7 +6,7 @@
   
   window.HOSTEL_CONFIG = {
     API_BASE: isProduction 
-      ? 'https://lapacasahostel.com/api' 
+      ? 'https://lapacasahostel.com/api'
       : 'http://localhost:3001/api',
     
     PRICE_PER_NIGHT: 55,

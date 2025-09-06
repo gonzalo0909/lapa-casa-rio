@@ -2,27 +2,21 @@ class VisualFeedbackManager {
   constructor() {
     this.animations = new Map();
     this.interactions = new Set();
+    this.eventListeners = new Map();
+    this.observers = new Set();
     this.setupGlobalStyles();
     this.setupInteractionFeedback();
-    this.setupAccessibilityFeatures();
   }
   
   setupGlobalStyles() {
     const style = document.createElement('style');
     style.id = 'visual-feedback-styles';
     style.textContent = `
-      .loading-pulse {
-        animation: pulse 1.5s ease-in-out infinite;
-      }
+      .enhanced-hover { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+      .enhanced-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
       
-      .loading-skeleton {
-        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-        background-size: 200% 100%;
-        animation: skeleton-loading 1.5s infinite;
-      }
-      
-      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-      @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      .enhanced-focus { transition: all 0.2s ease; }
+      .enhanced-focus:focus { outline: none; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3); transform: scale(1.02); }
       
       .feedback-ripple { position: relative; overflow: hidden; }
       .ripple-effect {
@@ -44,35 +38,20 @@ class VisualFeedbackManager {
       @keyframes validation-success { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
       @keyframes validation-error { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
       
-      .enhanced-hover { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-      .enhanced-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
-      
-      .enhanced-focus { transition: all 0.2s ease; }
-      .enhanced-focus:focus { outline: none; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3); transform: scale(1.02); }
-      
-      .spinner-dots { display: inline-block; }
-      .spinner-dots::after { content: ''; display: inline-block; width: 1em; animation: spinner-dots 1.4s infinite; }
-      @keyframes spinner-dots { 0%, 80%, 100% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80% { content: '...'; } }
-      
-      .toast-extended { animation: toast-extend 0.3s ease; }
-      @keyframes toast-extend { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-      
-      .progress-complete { animation: progress-complete 0.5s ease; }
-      @keyframes progress-complete { 0% { transform: scaleX(1); } 50% { transform: scaleX(1.02); } 100% { transform: scaleX(1); } }
-      
       .bed-selecting { animation: bed-select 0.2s ease; }
       .bed-deselecting { animation: bed-deselect 0.2s ease; }
       @keyframes bed-select { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
       @keyframes bed-deselect { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
       
-      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+      @media (prefers-reduced-motion: reduce) { 
+        *, *::before, *::after { 
+          animation-duration: 0.01ms !important; 
+          transition-duration: 0.01ms !important; 
+        } 
+      }
       
       @media (max-width: 768px) {
         .enhanced-hover:hover { transform: none; }
-      }
-      
-      @media (prefers-contrast: high) {
-        .validation-success, .validation-error { border-width: 3px !important; }
       }
     `;
     
@@ -91,44 +70,46 @@ class VisualFeedbackManager {
   enhanceButtons() {
     const buttons = document.querySelectorAll('button, .btn');
     buttons.forEach(button => {
-      if (!button.classList.contains('enhanced-hover')) {
+      if (!button.classList.contains('enhanced-hover') && !button.dataset.enhanced) {
         button.classList.add('enhanced-hover', 'enhanced-focus', 'feedback-ripple');
+        button.dataset.enhanced = 'true';
+        
+        const clickHandler = (e) => this.createRipple(e, button);
+        button.addEventListener('click', clickHandler);
+        this.eventListeners.set(`button-${button.id || Math.random()}`, {
+          element: button,
+          event: 'click',
+          handler: clickHandler
+        });
       }
-      
-      button.addEventListener('click', (e) => {
-        this.createRipple(e, button);
-      });
-      
-      button.addEventListener('loading-start', () => {
-        this.setButtonLoading(button, true);
-      });
-      
-      button.addEventListener('loading-end', () => {
-        this.setButtonLoading(button, false);
-      });
     });
   }
   
   enhanceInputs() {
     const inputs = document.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
-      if (!input.classList.contains('enhanced-focus')) {
+      if (!input.classList.contains('enhanced-focus') && !input.dataset.enhanced) {
         input.classList.add('enhanced-focus');
-      }
-      
-      input.addEventListener('invalid', () => {
-        this.showValidationFeedback(input, false);
-      });
-      
-      input.addEventListener('valid', () => {
-        this.showValidationFeedback(input, true);
-      });
-      
-      ['validation-success', 'validation-error'].forEach(event => {
-        input.addEventListener(event, (e) => {
-          this.showValidationFeedback(input, e.type === 'validation-success');
+        input.dataset.enhanced = 'true';
+        
+        const validHandler = () => this.showValidationFeedback(input, true);
+        const invalidHandler = () => this.showValidationFeedback(input, false);
+        
+        input.addEventListener('valid', validHandler);
+        input.addEventListener('invalid', invalidHandler);
+        
+        this.eventListeners.set(`input-valid-${input.id || Math.random()}`, {
+          element: input,
+          event: 'valid',
+          handler: validHandler
         });
-      });
+        
+        this.eventListeners.set(`input-invalid-${input.id || Math.random()}`, {
+          element: input,
+          event: 'invalid',
+          handler: invalidHandler
+        });
+      }
     });
   }
   
@@ -136,11 +117,11 @@ class VisualFeedbackManager {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach(mutation => {
         mutation.addedNodes.forEach(node => {
-          if (node.nodeType === 1 && node.classList?.contains('bed')) {
-            this.enhanceBed(node);
-          }
-          
           if (node.nodeType === 1) {
+            if (node.classList?.contains('bed')) {
+              this.enhanceBed(node);
+            }
+            
             const beds = node.querySelectorAll?.('.bed');
             beds?.forEach(bed => this.enhanceBed(bed));
           }
@@ -149,6 +130,7 @@ class VisualFeedbackManager {
     });
     
     observer.observe(document.body, { childList: true, subtree: true });
+    this.observers.add(observer);
     
     document.querySelectorAll('.bed').forEach(bed => {
       this.enhanceBed(bed);
@@ -161,7 +143,7 @@ class VisualFeedbackManager {
     bed.classList.add('enhanced-hover', 'feedback-ripple');
     bed.dataset.enhanced = 'true';
     
-    bed.addEventListener('click', (e) => {
+    const clickHandler = (e) => {
       if (!bed.classList.contains('occupied')) {
         const wasSelected = bed.classList.contains('selected');
         bed.classList.add(wasSelected ? 'bed-deselecting' : 'bed-selecting');
@@ -171,14 +153,22 @@ class VisualFeedbackManager {
           bed.classList.remove('bed-selecting', 'bed-deselecting');
         }, 200);
       }
+    };
+    
+    bed.addEventListener('click', clickHandler);
+    this.eventListeners.set(`bed-${bed.dataset.room}-${bed.dataset.bed}`, {
+      element: bed,
+      event: 'click',
+      handler: clickHandler
     });
   }
   
   enhanceCards() {
     const cards = document.querySelectorAll('.card, .room, .payment-method');
     cards.forEach(card => {
-      if (!card.classList.contains('enhanced-hover')) {
+      if (!card.classList.contains('enhanced-hover') && !card.dataset.enhanced) {
         card.classList.add('enhanced-hover');
+        card.dataset.enhanced = 'true';
       }
     });
   }
@@ -209,10 +199,8 @@ class VisualFeedbackManager {
     
     if (isValid) {
       element.classList.add('validation-success');
-      element.dispatchEvent(new CustomEvent('feedback-validation-success'));
     } else {
       element.classList.add('validation-error');
-      element.dispatchEvent(new CustomEvent('feedback-validation-error'));
     }
     
     setTimeout(() => {
@@ -220,32 +208,51 @@ class VisualFeedbackManager {
     }, 500);
   }
   
-  setButtonLoading(button, isLoading) {
-    if (isLoading) {
-      button.classList.add('loading-pulse');
-      button.disabled = true;
-      
-      const textEl = button.querySelector('.btn-text');
-      if (textEl && !button.querySelector('.btn-loading')) {
-        const originalText = textEl.textContent;
-        textEl.dataset.originalText = originalText;
-        textEl.innerHTML = `${originalText} <span class="spinner-dots"></span>`;
-      }
-    } else {
-      button.classList.remove('loading-pulse');
-      button.disabled = false;
-      
-      const textEl = button.querySelector('.btn-text');
-      if (textEl && textEl.dataset.originalText) {
-        textEl.textContent = textEl.dataset.originalText;
-        delete textEl.dataset.originalText;
-      }
-    }
+  pulseElement(element, duration = 1000) {
+    if (!element) return;
+    
+    element.style.animation = `pulse ${duration}ms ease-in-out`;
+    
+    setTimeout(() => {
+      element.style.animation = '';
+    }, duration);
+  }
+  
+  highlightElement(element, color = '#f59e0b') {
+    if (!element) return;
+    
+    const originalBorder = element.style.border;
+    element.style.border = `2px solid ${color}`;
+    element.style.transition = 'border 0.3s ease';
+    
+    setTimeout(() => {
+      element.style.border = originalBorder;
+    }, 2000);
+  }
+  
+  shakeElement(element) {
+    if (!element) return;
+    
+    element.style.animation = 'validation-error 0.5s ease';
+    
+    setTimeout(() => {
+      element.style.animation = '';
+    }, 500);
   }
   
   destroy() {
     const styles = document.getElementById('visual-feedback-styles');
     if (styles) styles.remove();
+    
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners.clear();
+    
+    this.observers.forEach(observer => {
+      observer.disconnect();
+    });
+    this.observers.clear();
     
     this.animations.clear();
     this.interactions.clear();

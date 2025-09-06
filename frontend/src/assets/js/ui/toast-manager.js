@@ -3,6 +3,7 @@ class ToastManager {
     this.container = this.createContainer();
     this.maxToasts = 4;
     this.activeToasts = new Set();
+    this.eventListeners = new Map();
     this.setupStaticToasts();
   }
   
@@ -19,19 +20,27 @@ class ToastManager {
     const successToast = document.getElementById('successToast');
     
     if (errorToast) {
+      const closeHandler = () => errorToast.classList.add('hidden');
       const closeBtn = document.getElementById('closeError');
       if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          errorToast.classList.add('hidden');
+        closeBtn.addEventListener('click', closeHandler);
+        this.eventListeners.set('closeError', {
+          element: closeBtn,
+          event: 'click',
+          handler: closeHandler
         });
       }
     }
     
     if (successToast) {
+      const closeHandler = () => successToast.classList.add('hidden');
       const closeBtn = document.getElementById('closeSuccess');
       if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          successToast.classList.add('hidden');
+        closeBtn.addEventListener('click', closeHandler);
+        this.eventListeners.set('closeSuccess', {
+          element: closeBtn,
+          event: 'click',
+          handler: closeHandler
         });
       }
     }
@@ -124,8 +133,13 @@ class ToastManager {
     `;
     
     const closeBtn = toast.querySelector('.toast-close');
-    closeBtn.addEventListener('click', () => {
-      this.remove(toast);
+    const closeHandler = () => this.remove(toast);
+    closeBtn.addEventListener('click', closeHandler);
+    
+    this.eventListeners.set(`toast-${Date.now()}`, {
+      element: closeBtn,
+      event: 'click',
+      handler: closeHandler
     });
     
     return toast;
@@ -140,13 +154,35 @@ class ToastManager {
         if (toast.parentNode) {
           toast.parentNode.removeChild(toast);
           this.activeToasts.delete(toast);
+          
+          this.cleanupToastListeners(toast);
         }
       }, 300);
     }
   }
   
+  cleanupToastListeners(toast) {
+    const toastListeners = [];
+    this.eventListeners.forEach((listener, key) => {
+      if (key.startsWith('toast-')) {
+        const closeBtn = toast.querySelector('.toast-close');
+        if (listener.element === closeBtn) {
+          toastListeners.push(key);
+        }
+      }
+    });
+    
+    toastListeners.forEach(key => {
+      const listener = this.eventListeners.get(key);
+      if (listener) {
+        listener.element.removeEventListener(listener.event, listener.handler);
+        this.eventListeners.delete(key);
+      }
+    });
+  }
+  
   limitToasts() {
-    if (this.activeToasts.size > this.maxToasts) {
+    while (this.activeToasts.size > this.maxToasts) {
       const oldest = this.activeToasts.values().next().value;
       this.remove(oldest);
     }
@@ -162,6 +198,46 @@ class ToastManager {
     
     if (errorToast) errorToast.classList.add('hidden');
     if (successToast) successToast.classList.add('hidden');
+  }
+  
+  showTemporary(type, message, duration = 2000) {
+    const toast = this.show(type, message, 0);
+    
+    setTimeout(() => {
+      this.remove(toast);
+    }, duration);
+    
+    return toast;
+  }
+  
+  showPersistent(type, message) {
+    return this.show(type, message, 0);
+  }
+  
+  updateToast(toast, newMessage) {
+    if (!toast) return;
+    
+    const messageEl = toast.querySelector('.toast-message');
+    if (messageEl) {
+      messageEl.textContent = newMessage;
+    }
+  }
+  
+  getActiveCount() {
+    return this.activeToasts.size;
+  }
+  
+  destroy() {
+    this.clear();
+    
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners.clear();
+    
+    if (this.container && this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
   }
 }
 

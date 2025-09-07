@@ -556,11 +556,19 @@ class HostelBookingApp {
    * Cleanup al cerrar
    */
   cleanup() {
-    if (this.state?.getHoldId() && !this.state?.isPaid()) {
+    const bookingData = this.state.getBookingData();
+    const paymentInfo = this.state.getPaymentInfo();
+    
+    if (bookingData?.holdId && !paymentInfo?.paid) {
       // Enviar beacon para liberar HOLD
       navigator.sendBeacon('/api/holds/release', JSON.stringify({
-        holdId: this.state.getHoldId()
+        holdId: bookingData.holdId
       }));
+    }
+    
+    // Cleanup del state manager
+    if (this.state.destroy) {
+      this.state.destroy();
     }
   }
 

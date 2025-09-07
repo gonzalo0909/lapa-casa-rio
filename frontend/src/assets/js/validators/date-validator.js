@@ -1,324 +1,284 @@
-class DateValidator {
-  constructor() {
-    this.today = new Date();
-    this.today.setHours(0, 0, 0, 0);
-    
-    this.config = {
-      maxAdvanceBookingDays: 365,
-      minStayNights: 1,
-      maxStayNights: 30,
-      pricePerNight: window.HOSTEL_CONFIG?.PRICE_PER_NIGHT || 55
-    };
-    
-    this.cache = new Map();
-    this.cacheExpiry = new Map();
-    this.cacheTTL = 300000;
-    this.maxCacheSize = 50;
-    
-    this.startCacheCleanup();
-  }
-  
-  startCacheCleanup() {
-    setInterval(() => {
-      this.cleanExpiredCache();
-    }, 60000);
-  }
-  
-  cleanExpiredCache() {
-    const now = Date.now();
-    this.cacheExpiry.forEach((expiry, key) => {
-      if (now > expiry) {
-        this.cache.delete(key);
-        this.cacheExpiry.delete(key);
-      }
-    });
-  }
-  
-  validateField(fieldId) {
-    const input = document.getElementById(fieldId);
-    const errorDiv = document.getElementById(`${fieldId}Error`);
-    
-    if (!input || !errorDiv) return true;
-    
-    const cacheKey = `${fieldId}:${input.value}`;
-    const now = Date.now();
-    
-    if (this.cache.has(cacheKey) && this.cacheExpiry.get(cacheKey) > now) {
-      const cached = this.cache.get(cacheKey);
-      this.showValidationResult(cached, errorDiv, input);
-      return cached.valid;
+class FormValidator {
+    constructor() {
+        this.fields = {
+            nombre: {
+                validators: [
+                    { fn: v => v?.trim().length >= 2, msg: 'Mínimo 2 caracteres' },
+                    { fn: v => v?.trim().length <= 100, msg: 'Máximo 100 caracteres' },
+                    { fn: v => /^[a-zA-ZáéíóúÁÉÍÓÚñÑàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛãõÃÕçÇ\s]+/.test(v?.trim() || ''), msg: 'Solo letras y espacios' },
+                    { fn: v => this.hasMinWords(v?.trim() || '', 2), msg: 'Nombre y apellido requeridos' }
+                ],
+                sanitizer: v => this.sanitizeName(v)
+            },
+            email: {
+                validators: [
+                    { fn: v => v?.trim().length > 0, msg: 'Email requerido' },
+                    { fn: v => this.isValidEmail(v?.trim() || ''), msg: 'Email inválido' },
+                    { fn: v => v?.trim().length <= 254, msg: 'Email muy largo' },
+                    { fn: v => !this.isDisposableEmail(v?.trim() || ''), msg: 'Email desechable no permitido' }
+                ],
+                sanitizer: v => this.sanitizeEmail(v)
+            },
+            telefono: {
+                validators: [
+                    { fn: v => v?.trim().length > 0, msg: 'Teléfono requerido' },
+                    { fn: v => this.isValidBrazilianPhone(v?.trim() || ''), msg: 'Formato: (11) 99999-9999' },
+                    { fn: v => this.hasValidAreaCode(v?.trim() || ''), msg: 'Código de área inválido' }
+                ],
+                sanitizer: v => this.sanitizeBrazilianPhone(v)
+            }
+        };
+        this.cache = new Map();
+        this.cacheExpiry = new Map();
+        this.cacheTTL = 300000;
+        this.maxCacheSize = 50;
+        this.disposableEmailDomains = new Set([
+            '10minutemail.com', 'guerrillamail.com', 'mailinator.com',
+            'tempmail.org', 'throwaway.email', 'temp-mail.org'
+        ]);
+        this.brazilianAreaCodes = new Set([
+            '11', '12', '13', '14', '15', '16', '17', '18', '19',
+            '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38',
+            '41', '42', '43', '44', '45', '46', '47', '48', '49',
+            '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69',
+            '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89',
+            '91', '92', '93', '94', '95', '96', '97', '98', '99'
+        ]);
+        this.startCacheCleanup();
     }
-    
-    let validation;
-    
-    if (fieldId === 'dateIn') {
-      validation = this.validateCheckIn(input.value);
-    } else if (fieldId === 'dateOut') {
-      const dateInValue = document.getElementById('dateIn')?.value;
-      validation = this.validateCheckOut(input.value, dateInValue);
-    } else {
-      return true;
+
+    startCacheCleanup() {
+        setInterval(() => {
+            this.cleanExpiredCache();
+        }, 60000);
     }
-    
-    this.cache.set(cacheKey, validation);
-    this.cacheExpiry.set(cacheKey, now + this.cacheTTL);
-    
-    if (this.cache.size > this.maxCacheSize) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-      this.cacheExpiry.delete(firstKey);
+
+    cleanExpiredCache() {
+        const now = Date.now();
+        this.cacheExpiry.forEach((expiry, key) => {
+            if (now > expiry) {
+                this.cache.delete(key);
+                this.cacheExpiry.delete(key);
+            }
+        });
     }
-    
-    this.showValidationResult(validation, errorDiv, input);
-    return validation.valid;
-  }
-  
-  validateCheckIn(dateString) {
-    if (!dateString) {
-      return { valid: false, errors: ['Fecha de check-in requerida'] };
-    }
-    
-    const checkIn = new Date(dateString + 'T12:00:00');
-    const errors = [];
-    
-    if (isNaN(checkIn.getTime())) {
-      errors.push('Fecha inválida');
-    }
-    
-    const todayUTC = new Date(this.today);
-    todayUTC.setHours(12, 0, 0, 0);
-    
-    if (checkIn < todayUTC) {
-      errors.push('Check-in no puede ser en el pasado');
-    }
-    
-    const maxDate = new Date(todayUTC);
-    maxDate.setDate(maxDate.getDate() + this.config.maxAdvanceBookingDays);
-    
-    if (checkIn > maxDate) {
-      errors.push(`Máximo ${this.config.maxAdvanceBookingDays} días de anticipación`);
-    }
-    
-    return { 
-      valid: errors.length === 0, 
-      errors,
-      date: checkIn
-    };
-  }
-  
-  validateCheckOut(checkOutString, checkInString) {
-    const errors = [];
-    
-    if (!checkOutString) {
-      return { valid: false, errors: ['Fecha de check-out requerida'] };
-    }
-    
-    if (!checkInString) {
-      return { valid: false, errors: ['Primero selecciona check-in'] };
-    }
-    
-    const checkIn = new Date(checkInString + 'T12:00:00');
-    const checkOut = new Date(checkOutString + 'T11:00:00');
-    
-    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
-      errors.push('Fechas inválidas');
-    }
-    
-    if (checkOut <= checkIn) {
-      errors.push('Check-out debe ser después de check-in');
-    }
-    
-    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-    
-    if (nights < this.config.minStayNights) {
-      errors.push(`Mínimo ${this.config.minStayNights} noche(s)`);
-    }
-    
-    if (nights > this.config.maxStayNights) {
-      errors.push(`Máximo ${this.config.maxStayNights} noches`);
-    }
-    
-    return { 
-      valid: errors.length === 0, 
-      errors,
-      nights: Math.max(0, nights),
-      checkIn,
-      checkOut
-    };
-  }
-  
-  validateAll() {
-    const dateInValid = this.validateField('dateIn');
-    const dateOutValid = this.validateField('dateOut');
-    
-    return dateInValid && dateOutValid;
-  }
-  
-  showValidationResult(validation, errorDiv, input) {
-    if (validation.valid) {
-      errorDiv.classList.add('hidden');
-      input.classList.remove('invalid');
-    } else {
-      errorDiv.textContent = validation.errors[0];
-      errorDiv.classList.remove('hidden');
-      input.classList.add('invalid');
-    }
-  }
-  
-  setupAutoValidation() {
-    const dateIn = document.getElementById('dateIn');
-    const dateOut = document.getElementById('dateOut');
-    
-    if (dateIn) {
-      dateIn.min = this.today.toISOString().split('T')[0];
-      
-      dateIn.addEventListener('change', () => {
-        this.validateField('dateIn');
-        
-        if (dateIn.value && !dateOut.value) {
-          const nextDay = new Date(dateIn.value + 'T12:00:00');
-          nextDay.setDate(nextDay.getDate() + 1);
-          dateOut.value = nextDay.toISOString().split('T')[0];
-          this.validateField('dateOut');
+
+    isValidBrazilianPhone(phone) {
+        if (!phone) return false;
+        const numbers = phone.replace(/\D/g, '');
+        if (numbers.length === 13 && numbers.startsWith('55')) {
+            const areaCode = numbers.substring(2, 4);
+            const number = numbers.substring(4);
+            return this.brazilianAreaCodes.has(areaCode) && this.isValidMobileNumber(number);
         }
-        
-        if (dateOut.value) {
-          this.validateField('dateOut');
+        if (numbers.length === 11) {
+            const areaCode = numbers.substring(0, 2);
+            const number = numbers.substring(2);
+            return this.brazilianAreaCodes.has(areaCode) && this.isValidMobileNumber(number);
         }
-        
-        this.updateCalculations();
-      });
+        if (numbers.length === 10) {
+            const areaCode = numbers.substring(0, 2);
+            const number = numbers.substring(2);
+            return this.brazilianAreaCodes.has(areaCode) && this.isValidLandlineNumber(number);
+        }
+        return false;
     }
-    
-    if (dateOut) {
-      const tomorrow = new Date(this.today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      dateOut.min = tomorrow.toISOString().split('T')[0];
-      
-      dateOut.addEventListener('change', () => {
-        this.validateField('dateOut');
-        this.updateCalculations();
-      });
+
+    isValidMobileNumber(number) {
+        return number.length === 9 && number.startsWith('9');
     }
-  }
-  
-  updateCalculations() {
-    const dateIn = document.getElementById('dateIn')?.value;
-    const dateOut = document.getElementById('dateOut')?.value;
-    
-    if (!dateIn || !dateOut) return;
-    
-    const validation = this.validateCheckOut(dateOut, dateIn);
-    
-    if (validation.valid) {
-      const nights = validation.nights;
-      
-      const nightsEl = document.getElementById('nightsCount');
-      if (nightsEl) nightsEl.textContent = nights;
-      
-      this.updateTotalPrice(nights);
-      
-      if (typeof updateCalculations === 'function') {
-        updateCalculations();
-      }
+
+    isValidLandlineNumber(number) {
+        return number.length === 8 && /^[2-5]/.test(number);
     }
-  }
-  
-  updateTotalPrice(nights) {
-    const men = parseInt(document.getElementById('men')?.value || 0);
-    const women = parseInt(document.getElementById('women')?.value || 0);
-    const totalGuests = men + women;
-    
-    if (totalGuests > 0 && nights > 0) {
-      const totalPrice = totalGuests * nights * this.config.pricePerNight;
-      
-      const priceEl = document.getElementById('totalPrice');
-      if (priceEl) priceEl.textContent = totalPrice;
-      
-      return totalPrice;
+
+    hasValidAreaCode(phone) {
+        const numbers = phone.replace(/\D/g, '');
+        let areaCode;
+        if (numbers.length === 13 && numbers.startsWith('55')) {
+            areaCode = numbers.substring(2, 4);
+        } else if (numbers.length >= 10) {
+            areaCode = numbers.substring(0, 2);
+        }
+        return areaCode && this.brazilianAreaCodes.has(areaCode);
     }
-    
-    return 0;
-  }
-  
-  getNights() {
-    const dateIn = document.getElementById('dateIn')?.value;
-    const dateOut = document.getElementById('dateOut')?.value;
-    
-    if (!dateIn || !dateOut) return 0;
-    
-    const validation = this.validateCheckOut(dateOut, dateIn);
-    return validation.valid ? validation.nights : 0;
-  }
-  
-  getTotalPrice() {
-    const nights = this.getNights();
-    const men = parseInt(document.getElementById('men')?.value || 0);
-    const women = parseInt(document.getElementById('women')?.value || 0);
-    const totalGuests = men + women;
-    
-    return totalGuests * nights * this.config.pricePerNight;
-  }
-  
-  getDateRange() {
-    const dateIn = document.getElementById('dateIn')?.value;
-    const dateOut = document.getElementById('dateOut')?.value;
-    
-    if (!dateIn || !dateOut) return null;
-    
-    return {
-      checkIn: dateIn,
-      checkOut: dateOut,
-      nights: this.getNights(),
-      totalPrice: this.getTotalPrice()
-    };
-  }
-  
-  isHighSeason(date) {
-    const month = new Date(date).getMonth() + 1;
-    const highSeasonMonths = [12, 1, 2, 3, 7];
-    return highSeasonMonths.includes(month);
-  }
-  
-  areDatesAvailable(checkIn, checkOut) {
-    return true;
-  }
-  
-  clear() {
-    const fields = ['dateIn', 'dateOut'];
-    
-    fields.forEach(fieldId => {
-      const input = document.getElementById(fieldId);
-      const errorDiv = document.getElementById(`${fieldId}Error`);
-      
-      if (input) {
-        input.value = '';
-        input.classList.remove('invalid');
-      }
-      
-      if (errorDiv) {
-        errorDiv.classList.add('hidden');
-      }
-    });
-    
-    this.cache.clear();
-    this.cacheExpiry.clear();
-    
-    const nightsEl = document.getElementById('nightsCount');
-    const priceEl = document.getElementById('totalPrice');
-    
-    if (nightsEl) nightsEl.textContent = '0';
-    if (priceEl) priceEl.textContent = '0';
-  }
-  
-  destroy() {
-    this.cache.clear();
-    this.cacheExpiry.clear();
-  }
+
+    sanitizeBrazilianPhone(phone) {
+        if (!phone) return '';
+        let numbers = phone.replace(/\D/g, '');
+        if (numbers.length === 13 && numbers.startsWith('55')) {
+            return `+55 (${numbers.substring(2, 4)}) ${numbers.substring(4, 9)}-${numbers.substring(9)}`;
+        } else if (numbers.length === 11) {
+            return `(${numbers.substring(0, 2)}) ${numbers.substring(2, 7)}-${numbers.substring(7)}`;
+        } else if (numbers.length === 10) {
+            return `(${numbers.substring(0, 2)}) ${numbers.substring(2, 6)}-${numbers.substring(6)}`;
+        }
+        return numbers.substring(0, 13);
+    }
+
+    isValidEmail(email) {
+        if (!email) return false;
+        const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) return false;
+        const [localPart, domain] = email.split('@');
+        return localPart.length <= 64 && domain.length <= 253 && !email.includes('..');
+    }
+
+    isDisposableEmail(email) {
+        const domain = email.split('@')[1]?.toLowerCase();
+        return this.disposableEmailDomains.has(domain);
+    }
+
+    sanitizeEmail(email) {
+        return email?.trim().toLowerCase().substring(0, 254) || '';
+    }
+
+    hasMinWords(name, minWords) {
+        if (!name) return false;
+        const words = name.trim().split(/\s+/).filter(word => word.length > 0);
+        return words.length >= minWords;
+    }
+
+    sanitizeName(name) {
+        if (!name) return '';
+        return name
+            .trim()
+            .replace(/\s+/g, ' ')
+            .split(' ')
+            .map(word => this.capitalizeWord(word))
+            .join(' ')
+            .substring(0, 100);
+    }
+
+    capitalizeWord(word) {
+        if (!word) return '';
+        const prepositions = ['de', 'da', 'do', 'das', 'dos', 'e', 'y'];
+        if (prepositions.includes(word.toLowerCase())) {
+            return word.toLowerCase();
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+
+    validateField(fieldId) {
+        const input = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(`${fieldId}Error`);
+        const fieldConfig = this.fields[fieldId];
+        if (!input || !fieldConfig) return true;
+
+        const cacheKey = `${fieldId}:${input.value}`;
+        const now = Date.now();
+
+        if (this.cache.has(cacheKey) && this.cacheExpiry.get(cacheKey) > now) {
+            const cached = this.cache.get(cacheKey);
+            this.showValidationResult(cached, errorDiv, input);
+            return cached.valid;
+        }
+
+        let value = input.value;
+        if (fieldConfig.sanitizer) {
+            value = fieldConfig.sanitizer(value);
+            input.value = value;
+        }
+
+        let errors = [];
+        for (const validator of fieldConfig.validators) {
+            if (!validator.fn(value)) {
+                errors.push(validator.msg);
+                break;
+            }
+        }
+
+        const validation = {
+            valid: errors.length === 0,
+            errors: errors,
+            value: value
+        };
+
+        this.cache.set(cacheKey, validation);
+        this.cacheExpiry.set(cacheKey, now + this.cacheTTL);
+
+        if (this.cache.size > this.maxCacheSize) {
+            const firstKey = this.cache.keys().next().value;
+            this.cache.delete(firstKey);
+            this.cacheExpiry.delete(firstKey);
+        }
+
+        this.showValidationResult(validation, errorDiv, input);
+        return validation.valid;
+    }
+
+    showValidationResult(validation, errorDiv, input) {
+        if (validation.valid) {
+            errorDiv.classList.add('hidden');
+            input.classList.remove('invalid');
+        } else {
+            errorDiv.textContent = validation.errors[0];
+            errorDiv.classList.remove('hidden');
+            input.classList.add('invalid');
+        }
+    }
+
+    validateAll() {
+        let allValid = true;
+        for (const fieldId in this.fields) {
+            const isValid = this.validateField(fieldId);
+            if (!isValid) {
+                allValid = false;
+            }
+        }
+        return allValid;
+    }
+
+    getData() {
+        const data = {};
+        for (const fieldId in this.fields) {
+            const input = document.getElementById(fieldId);
+            if (input) {
+                data[fieldId] = input.value;
+            }
+        }
+        return data;
+    }
+
+    setupAutoValidation() {
+        for (const fieldId in this.fields) {
+            const input = document.getElementById(fieldId);
+            if (input) {
+                input.addEventListener('blur', () => {
+                    this.validateField(fieldId);
+                });
+                input.addEventListener('input', () => {
+                    const cacheKey = `${fieldId}:${input.value}`;
+                    this.cache.delete(cacheKey);
+                    this.cacheExpiry.delete(cacheKey);
+                });
+            }
+        }
+    }
+
+    clear() {
+        for (const fieldId in this.fields) {
+            const input = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(`${fieldId}Error`);
+            if (input) {
+                input.value = '';
+                input.classList.remove('invalid');
+            }
+            if (errorDiv) {
+                errorDiv.classList.add('hidden');
+            }
+        }
+        this.cache.clear();
+        this.cacheExpiry.clear();
+    }
+
+    destroy() {
+        this.cache.clear();
+        this.cacheExpiry.clear();
+    }
 }
 
-window.dateValidator = new DateValidator();
-
+window.formValidator = new FormValidator();
 document.addEventListener('DOMContentLoaded', () => {
-  window.dateValidator.setupAutoValidation();
+    window.formValidator.setupAutoValidation();
 });

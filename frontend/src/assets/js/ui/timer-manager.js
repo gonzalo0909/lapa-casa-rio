@@ -6,6 +6,20 @@ class TimerManager {
       timer: document.getElementById('paymentTimer'),
       display: document.getElementById('timerDisplay')
     };
+    this.setupCleanupListeners();
+  }
+  
+  setupCleanupListeners() {
+    const cleanup = () => this.cleanup();
+    
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('pagehide', cleanup);
+    
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        cleanup();
+      }
+    });
   }
   
   startHold(minutes = 3) {
@@ -118,6 +132,14 @@ class TimerManager {
     console.log('TimerManager cleanup completed');
   }
   
+  destroy() {
+    this.cleanup();
+    
+    window.removeEventListener('beforeunload', this.cleanup);
+    window.removeEventListener('pagehide', this.cleanup);
+    document.removeEventListener('visibilitychange', this.cleanup);
+  }
+  
   getStatus() {
     return {
       activeTimers: this.activeTimers.size,
@@ -127,7 +149,3 @@ class TimerManager {
 }
 
 window.timerManager = new TimerManager();
-
-window.addEventListener('beforeunload', () => {
-  window.timerManager?.cleanup();
-});

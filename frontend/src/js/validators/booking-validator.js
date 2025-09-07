@@ -15,10 +15,37 @@ class BookingValidator {
     };
     
     this.validationCache = new Map();
+    this.maxCacheSize = 50;
+    this.cacheExpiry = new Map();
+    this.cacheTTL = 300000;
+    this.startCacheCleanup();
+  }
+  
+  startCacheCleanup() {
+    setInterval(() => {
+      this.cleanExpiredCache();
+    }, 60000);
+  }
+  
+  cleanExpiredCache() {
+    const now = Date.now();
+    this.cacheExpiry.forEach((expiry, key) => {
+      if (now > expiry) {
+        this.validationCache.delete(key);
+        this.cacheExpiry.delete(key);
+      }
+    });
   }
   
   validateCapacity(men, women) {
     const total = men + women;
+    const cacheKey = `capacity:${men}:${women}`;
+    const now = Date.now();
+    
+    if (this.validationCache.has(cacheKey) && this.cacheExpiry.get(cacheKey) > now) {
+      return this.validationCache.get(cacheKey);
+    }
+    
     const errors = [];
     const warnings = [];
     
@@ -52,7 +79,7 @@ class BookingValidator {
       warnings.push('Grupo grande: verificar disponibilidad real');
     }
     
-    return {
+    const result = {
       valid: errors.length === 0,
       errors,
       warnings,
@@ -60,6 +87,17 @@ class BookingValidator {
       availableRooms: availability.availableRooms,
       recommendedRooms: availability.recommendedRooms
     };
+    
+    this.validationCache.set(cacheKey, result);
+    this.cacheExpiry.set(cacheKey, now + this.cacheTTL);
+    
+    if (this.validationCache.size > this.maxCacheSize) {
+      const firstKey = this.validationCache.keys().next().value;
+      this.validationCache.delete(firstKey);
+      this.cacheExpiry.delete(firstKey);
+    }
+    
+    return result;
   }
   
   checkGroupAvailability(men, women) {
@@ -237,7 +275,9 @@ class BookingValidator {
     }
     
     if (validation.warnings.length > 0 && window.toastManager) {
-      window.toastManager.showWarning(validation.warnings[0]);
+      validation.warnings.forEach(warning => {
+        window.toastManager.showWarning(warning);
+      });
     }
   }
   
@@ -312,10 +352,12 @@ class BookingValidator {
     }
     
     this.validationCache.clear();
+    this.cacheExpiry.clear();
   }
   
   destroy() {
     this.validationCache.clear();
+    this.cacheExpiry.clear();
   }
 }
 

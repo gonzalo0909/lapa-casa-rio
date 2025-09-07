@@ -7,7 +7,6 @@
   <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro. Mejor ubicación, precios justos, ambiente internacional."/>
   <meta name="keywords" content="hostel, rio de janeiro, santa teresa, reservas, backpackers, lapa"/>
   
-  <!-- Security Headers -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
   <meta http-equiv="Content-Security-Policy" 
@@ -16,110 +15,92 @@
                  style-src 'self' 'unsafe-inline'; 
                  img-src 'self' data: https:;
                  connect-src 'self' https://api.stripe.com https://api.mercadopago.com;
-                 frame-src https://js.stripe.com https://www.mercadopago.com;
-                 upgrade-insecure-requests;"/>
+                 frame-src https://js.stripe.com https://www.mercadopago.com;"/>
   <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains"/>
   <meta name="referrer" content="strict-origin-when-cross-origin"/>
   
-  <!-- Resources & Performance -->
-  <link rel="stylesheet" href="/assets/css/styles.min.css"/>
+  <link rel="stylesheet" href="/assets/css/styles.css"/>
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  <link rel="preload" href="/assets/css/styles.min.css" as="style">
-  <link rel="preload" href="/js/core/hostel-config.js" as="script">
-  <link rel="dns-prefetch" href="https://js.stripe.com">
-  <link rel="dns-prefetch" href="https://sdk.mercadopago.com">
-  <link rel="preconnect" href="https://js.stripe.com" crossorigin>
 </head>
 <body>
-  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="loading-overlay hidden">
     <div class="loading-spinner"></div>
     <p>Procesando reserva...</p>
   </div>
 
-  <!-- Toast Notifications -->
   <div id="errorToast" class="toast error hidden">
     <span id="errorMessage"></span>
-    <button id="closeError" class="toast-close" aria-label="Cerrar error">&times;</button>
+    <button id="closeError" class="toast-close">&times;</button>
   </div>
   <div id="successToast" class="toast success hidden">
     <span id="successMessage"></span>
-    <button id="closeSuccess" class="toast-close" aria-label="Cerrar mensaje">&times;</button>
+    <button id="closeSuccess" class="toast-close">&times;</button>
   </div>
 
   <header>
     <div class="container">
       <h1>Lapa Casa Hostel – Reservas</h1>
       <p class="subtitle">Santa Teresa, Rio de Janeiro</p>
-      <nav class="main-nav">
-        <a href="#/book" class="nav-link active" data-section="book">Reservas</a>
-        <a href="#/admin" class="nav-link" data-section="admin">Admin</a>
-      </nav>
     </div>
   </header>
 
   <main class="container">
-    <!-- SECCIÓN RESERVAS -->
     <section id="book" class="section-card">
       <h2>1. Fechas y huéspedes</h2>
       
-      <!-- Fechas -->
       <div class="form-grid grid-2">
         <div class="form-group">
           <label for="dateIn">Check-in</label>
-          <input id="dateIn" type="date" required aria-describedby="dateInError"/>
-          <div id="dateInError" class="error-text hidden" role="alert"></div>
+          <input id="dateIn" type="date" required/>
+          <div id="dateInError" class="error-text hidden"></div>
         </div>
         <div class="form-group">
           <label for="dateOut">Check-out</label>
-          <input id="dateOut" type="date" required aria-describedby="dateOutError"/>
-          <div id="dateOutError" class="error-text hidden" role="alert"></div>
+          <input id="dateOut" type="date" required/>
+          <div id="dateOutError" class="error-text hidden"></div>
         </div>
       </div>
 
-      <!-- Huéspedes -->
-      <div class="form-grid grid-4">
+      <div class="form-grid grid-2">
         <div class="form-group">
           <label for="men">Hombres</label>
-          <div class="counter-control">
-            <button type="button" id="menMinus" class="counter-btn" aria-label="Disminuir hombres">−</button>
-            <input id="men" type="number" min="0" max="38" value="0" aria-describedby="menError"/>
-            <button type="button" id="menPlus" class="counter-btn" aria-label="Aumentar hombres">+</button>
+          <div class="counter">
+            <button type="button" id="menMinus" class="counter-btn">−</button>
+            <input id="men" type="number" min="0" max="38" value="0" readonly/>
+            <button type="button" id="menPlus" class="counter-btn">+</button>
           </div>
-          <div id="menError" class="error-text hidden" role="alert"></div>
+          <div id="menError" class="error-text hidden"></div>
         </div>
         
         <div class="form-group">
           <label for="women">Mujeres</label>
-          <div class="counter-control">
-            <button type="button" id="womenMinus" class="counter-btn" aria-label="Disminuir mujeres">−</button>
-            <input id="women" type="number" min="0" max="38" value="0" aria-describedby="womenError"/>
-            <button type="button" id="womenPlus" class="counter-btn" aria-label="Aumentar mujeres">+</button>
+          <div class="counter">
+            <button type="button" id="womenMinus" class="counter-btn">−</button>
+            <input id="women" type="number" min="0" max="38" value="0" readonly/>
+            <button type="button" id="womenPlus" class="counter-btn">+</button>
           </div>
-          <div id="womenError" class="error-text hidden" role="alert"></div>
+          <div id="womenError" class="error-text hidden"></div>
+        </div>
+      </div>
+
+      <div class="summary-info">
+        <div class="capacity-display">
+          <span class="guest-total">Total: <span id="guestTotal">0</span> huéspedes</span>
+          <span class="capacity-limit">Máximo: 38</span>
         </div>
         
-        <div class="capacity-info">
-          <span class="info-text">Capacidad total: 38</span>
-          <div id="availIndicator" class="availability-indicator"></div>
-        </div>
-        
-        <div class="action-area">
-          <button id="checkAvail" class="btn btn-primary" type="button">
-            <span class="btn-text">Ver disponibilidad</span>
-            <span class="btn-loading hidden">Verificando...</span>
-          </button>
-        </div>
+        <button id="checkAvail" class="btn btn-primary" type="button" disabled>
+          <span class="btn-text">Ver disponibilidad</span>
+          <span class="btn-loading hidden">Verificando...</span>
+        </button>
       </div>
     </section>
 
-    <!-- SECCIÓN SELECCIÓN DE CAMAS -->
     <section id="roomsCard" class="section-card hidden">
       <h2>2. Seleccionar camas</h2>
       <div id="roomsInfo" class="info-bar"></div>
-      <div id="priceModifiers" class="price-modifiers"></div>
       
-      <div id="rooms" class="rooms-grid" role="group" aria-label="Selección de camas por habitación"></div>
+      <div id="rooms" class="rooms-grid"></div>
       
       <div class="selection-summary">
         <div class="summary-details">
@@ -136,50 +117,35 @@
           <span class="btn-loading hidden">Procesando...</span>
         </button>
       </div>
-      
-      <!-- Progress Bar -->
-      <div class="progress-container">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div id="progressText" class="progress-text"></div>
-      </div>
-      
-      <div id="selectionWarning" class="warning-message hidden"></div>
     </section>
 
-    <!-- SECCIÓN DATOS Y PAGO -->
     <section id="formCard" class="section-card hidden">
       <h2>3. Datos y pago</h2>
       
       <form id="reserva-form" novalidate>
-        <!-- Datos personales -->
         <div class="form-section">
           <h3>Datos de contacto</h3>
           <div class="form-grid grid-2">
             <div class="form-group">
               <label for="nombre">Nombre completo</label>
-              <input type="text" id="nombre" name="nombre" required 
-                     minlength="2" maxlength="100" aria-describedby="nombreError"/>
-              <div id="nombreError" class="error-text hidden" role="alert"></div>
+              <input type="text" id="nombre" name="nombre" required/>
+              <div id="nombreError" class="error-text hidden"></div>
             </div>
             
             <div class="form-group">
               <label for="email">Email</label>
-              <input type="email" id="email" name="email" required aria-describedby="emailError"/>
-              <div id="emailError" class="error-text hidden" role="alert"></div>
+              <input type="email" id="email" name="email" required/>
+              <div id="emailError" class="error-text hidden"></div>
             </div>
           </div>
           
           <div class="form-group">
             <label for="telefono">Teléfono</label>
-            <input type="tel" id="telefono" name="telefono" required 
-                   pattern="[0-9+\-\s\(\)]{10,}" aria-describedby="telefonoError"/>
-            <div id="telefonoError" class="error-text hidden" role="alert"></div>
+            <input type="tel" id="telefono" name="telefono" required/>
+            <div id="telefonoError" class="error-text hidden"></div>
           </div>
         </div>
 
-        <!-- Métodos de pago -->
         <div class="form-section">
           <h3>Método de pago</h3>
           <div class="payment-methods">
@@ -212,7 +178,7 @@
                 <h4>Stripe</h4>
                 <span class="payment-badge international">Internacional</span>
               </div>
-              <p class="payment-description">Tarjetas internacionales, PayPal</p>
+              <p class="payment-description">Tarjetas internacionales</p>
               <button type="button" id="payStripe" class="btn btn-secondary">
                 <span class="btn-text">Pagar con tarjeta</span>
                 <span class="btn-loading hidden">Redirigiendo...</span>
@@ -221,7 +187,6 @@
           </div>
         </div>
 
-        <!-- Estado del pago y timer -->
         <div class="payment-status">
           <div class="status-info">
             <span class="status-label">Estado:</span>
@@ -233,7 +198,6 @@
           </div>
         </div>
 
-        <!-- Botón final -->
         <div class="form-actions">
           <button type="submit" id="submitBtn" class="btn btn-primary btn-large" disabled>
             <span class="btn-text">Confirmar Reserva</span>
@@ -242,118 +206,57 @@
         </div>
       </form>
     </section>
-
-    <!-- SECCIÓN ADMIN -->
-    <section id="admin" class="section-card hidden">
-      <h2>Panel de Administración</h2>
-      
-      <div class="admin-auth">
-        <div class="form-group">
-          <label for="admToken">Token de acceso</label>
-          <input id="admToken" type="password" autocomplete="new-password" 
-                 aria-describedby="tokenError"/>
-          <div id="tokenError" class="error-text hidden" role="alert"></div>
-        </div>
-      </div>
-      
-      <!-- Health Check -->
-      <div class="admin-section">
-        <h3>Sistema</h3>
-        <button id="btnHealth" class="btn btn-secondary">
-          <span class="btn-text">Health Check</span>
-          <span class="btn-loading hidden">Verificando...</span>
-        </button>
-        <pre id="healthOut" class="admin-output"></pre>
-      </div>
-
-      <!-- Holds activos -->
-      <div class="admin-section">
-        <h3>Holds Temporales</h3>
-        <button id="btnHolds" class="btn btn-secondary">
-          <span class="btn-text">Listar Holds Activos</span>
-          <span class="btn-loading hidden">Cargando...</span>
-        </button>
-        <div id="holdsOut" class="admin-output"></div>
-      </div>
-
-      <!-- Búsqueda de reservas -->
-      <div class="admin-section">
-        <h3>Reservas Confirmadas</h3>
-        <div class="form-grid grid-3">
-          <div class="form-group">
-            <label for="bkFrom">Desde</label>
-            <input id="bkFrom" type="date"/>
-          </div>
-          <div class="form-group">
-            <label for="bkTo">Hasta</label>
-            <input id="bkTo" type="date"/>
-          </div>
-          <div class="form-group">
-            <label for="bkQ">Buscar</label>
-            <input id="bkQ" type="text" placeholder="Nombre, email, ID..."/>
-          </div>
-        </div>
-        <button id="btnBookings" class="btn btn-secondary">
-          <span class="btn-text">Buscar Reservas</span>
-          <span class="btn-loading hidden">Buscando...</span>
-        </button>
-        <div id="bookingsOut" class="admin-output"></div>
-      </div>
-    </section>
   </main>
 
   <footer>
     <div class="container">
       <p>&copy; 2025 Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</p>
-      <p class="footer-note">Sistema de reservas profesional</p>
     </div>
   </footer>
 
-  <!-- Scripts optimizados para producción -->
   <script src="https://js.stripe.com/v3/" defer></script>
   <script src="https://sdk.mercadopago.com/js/v2" defer></script>
   
-  <!-- Main app bundle minificado -->
-  <script src="/assets/js/main.min.js"></script>
-  
-  <!-- Main app initialization -->
   <script>
-    // Configuración global
     window.HOSTEL_CONFIG = {
       API_BASE: 'https://api.lapacasahostel.com',
-      STRIPE_KEY: 'pk_live_XXXXXXXXXXXXXXXXXXXXXX',
-      MERCADO_PAGO_KEY: 'APP_USR-XXXXXXXXXXXXXXXXXXXXXX',
-      CAPACITY: {
-        TOTAL: 38,
-        ROOMS: {
-          1: { name: "Cuarto 1 (Mixto)", beds: 12, basePrice: 55, femaleOnly: false },
-          3: { name: "Cuarto 3 (Mixto)", beds: 12, basePrice: 55, femaleOnly: false },
-          5: { name: "Cuarto 5 (Mixto)", beds: 7, basePrice: 55, femaleOnly: false },
-          6: { name: "Cuarto 6 (Feminino)", beds: 7, basePrice: 60, femaleOnly: true }
-        }
-      },
+      STRIPE_PUBLISHABLE_KEY: 'pk_live_XXXXXXXXXXXXXXXXXXXXXX',
+      MERCADO_PAGO_PUBLIC_KEY: 'APP_USR-XXXXXXXXXXXXXXXXXXXXXX',
+      PRICE_PER_NIGHT: 55,
+      TOTAL_CAPACITY: 38,
+      ROOMS: { 1: 12, 3: 12, 5: 7, 6: 7 },
       HOLD_TIMEOUT_MINUTES: 3,
-      PRICING: {
-        WEEKEND_MULTIPLIER: 1.10,
-        HIGH_SEASON_MULTIPLIER: 1.20,
-        EVENT_MULTIPLIER: 1.15
+      FEATURES: {
+        OFFLINE_MODE: false,
+        DEBUG_MODE: false,
+        ADMIN_PANEL: false,
+        PAYMENT_TESTING: false
+      },
+      SECURITY: {
+        MAX_REQUESTS_PER_MINUTE: 10,
+        ADMIN_TOKEN_MIN_LENGTH: 16,
+        FORM_TIMEOUT_MINUTES: 15,
+        ENFORCE_HTTPS: true
       }
     };
-
-    // Initialize app when DOM is ready
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.DependencyManager) {
-        window.DependencyManager.initialize();
-      }
-    });
-
-    // Service Worker para PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .catch(err => console.log('SW registration failed:', err));
-      });
-    }
   </script>
+  
+  <script src="js/core/hostel-config.js"></script>
+  <script src="js/core/error-handler.js"></script>
+  <script src="js/utils/rate-limiter.js"></script>
+  <script src="js/core/api-client.js"></script>
+  <script src="js/managers/state-manager.js"></script>
+  <script src="js/managers/room-manager.js"></script>
+  <script src="js/validators/date-validator.js"></script>
+  <script src="js/validators/form-validator.js"></script>
+  <script src="js/validators/booking-validator.js"></script>
+  <script src="js/ui/loading-manager.js"></script>
+  <script src="js/ui/toast-manager.js"></script>
+  <script src="js/ui/timer-manager.js"></script>
+  <script src="js/ui/bed-selection-manager.js"></script>
+  <script src="js/ui/visual-feedback-manager.js"></script>
+  <script src="js/integrations/validation-integration.js"></script>
+  <script src="js/integrations/payment-integration.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

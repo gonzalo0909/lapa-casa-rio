@@ -19,6 +19,9 @@ class StateManager {
   updateStep(step) {
     this.state.currentStep = step;
     this.saveState();
+    document.dispatchEvent(new CustomEvent('stateChange', { 
+      detail: { step, state: this.state } 
+    }));
   }
   
   setSearchCriteria(dateIn, dateOut, men, women) {

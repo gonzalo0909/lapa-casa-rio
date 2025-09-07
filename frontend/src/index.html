@@ -2,145 +2,358 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Lapa Casa Hostel – Reservas Online</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro"/>
+  <meta name="description" content="Reserva tu cama en Lapa Casa Hostel, Santa Teresa, Rio de Janeiro. Mejor ubicación, precios justos, ambiente internacional."/>
+  <meta name="keywords" content="hostel, rio de janeiro, santa teresa, reservas, backpackers, lapa"/>
+  
   <!-- Security Headers -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
   <meta http-equiv="X-Frame-Options" content="DENY"/>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-abc123' https://js.stripe.com; style-src 'self' 'nonce-abc123'; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://api.mercadopago.com;">
-  <!-- Styles -->
-  <link rel="stylesheet" href="assets/css/styles.css"/>
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' https://js.stripe.com https://sdk.mercadopago.com; 
+                 style-src 'self' 'unsafe-inline'; 
+                 img-src 'self' data: https:;
+                 connect-src 'self' https://api.stripe.com https://api.mercadopago.com;
+                 frame-src https://js.stripe.com https://www.mercadopago.com;
+                 upgrade-insecure-requests;"/>
+  <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains"/>
+  <meta name="referrer" content="strict-origin-when-cross-origin"/>
+  
+  <!-- Resources & Performance -->
+  <link rel="stylesheet" href="/assets/css/styles.min.css"/>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="preload" href="/assets/css/styles.min.css" as="style">
+  <link rel="preload" href="/js/core/hostel-config.js" as="script">
+  <link rel="dns-prefetch" href="https://js.stripe.com">
+  <link rel="dns-prefetch" href="https://sdk.mercadopago.com">
   <link rel="preconnect" href="https://js.stripe.com" crossorigin>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <!-- PWA Meta -->
-  <meta name="theme-color" content="#f59e0b">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
   <!-- Loading Overlay -->
   <div id="loadingOverlay" class="loading-overlay hidden">
     <div class="loading-spinner"></div>
-    <p>Procesando...</p>
+    <p>Procesando reserva...</p>
   </div>
+
   <!-- Toast Notifications -->
   <div id="errorToast" class="toast error hidden">
     <span id="errorMessage"></span>
-    <button id="closeError" class="toast-close">&times;</button>
+    <button id="closeError" class="toast-close" aria-label="Cerrar error">&times;</button>
   </div>
   <div id="successToast" class="toast success hidden">
     <span id="successMessage"></span>
-    <button id="closeSuccess" class="toast-close">&times;</button>
+    <button id="closeSuccess" class="toast-close" aria-label="Cerrar mensaje">&times;</button>
   </div>
+
   <header>
-    <h1>Lapa Casa Hostel – Reservas</h1>
-    <nav>
-      <a href="#/book" class="nav-link active" data-section="book">Reservas</a>
-      <a href="#/admin" class="nav-link" data-section="admin">Admin</a>
-    </nav>
+    <div class="container">
+      <h1>Lapa Casa Hostel – Reservas</h1>
+      <p class="subtitle">Santa Teresa, Rio de Janeiro</p>
+      <nav class="main-nav">
+        <a href="#/book" class="nav-link active" data-section="book">Reservas</a>
+        <a href="#/admin" class="nav-link" data-section="admin">Admin</a>
+      </nav>
+    </div>
   </header>
-  <main>
+
+  <main class="container">
     <!-- SECCIÓN RESERVAS -->
-    <section id="book" class="card">
+    <section id="book" class="section-card">
+      <h2>1. Fechas y huéspedes</h2>
+      
       <!-- Fechas -->
-      <div class="grid grid-2">
-        <div>
+      <div class="form-grid grid-2">
+        <div class="form-group">
           <label for="dateIn">Check-in</label>
-          <input id="dateIn" type="date" required/>
-          <div id="dateInError" class="error-text hidden"></div>
+          <input id="dateIn" type="date" required aria-describedby="dateInError"/>
+          <div id="dateInError" class="error-text hidden" role="alert"></div>
         </div>
-        <div>
+        <div class="form-group">
           <label for="dateOut">Check-out</label>
-          <input id="dateOut" type="date" required/>
-          <div id="dateOutError" class="error-text hidden"></div>
+          <input id="dateOut" type="date" required aria-describedby="dateOutError"/>
+          <div id="dateOutError" class="error-text hidden" role="alert"></div>
         </div>
       </div>
+
       <!-- Huéspedes -->
-      <div class="grid grid-4">
-        <div>
+      <div class="form-grid grid-4">
+        <div class="form-group">
           <label for="men">Hombres</label>
-          <div class="counter">
-            <button type="button" id="menMinus">−</button>
-            <input id="men" type="number" min="0" max="38" value="0"/>
-            <button type="button" id="menPlus">+</button>
+          <div class="counter-control">
+            <button type="button" id="menMinus" class="counter-btn" aria-label="Disminuir hombres">−</button>
+            <input id="men" type="number" min="0" max="38" value="0" aria-describedby="menError"/>
+            <button type="button" id="menPlus" class="counter-btn" aria-label="Aumentar hombres">+</button>
           </div>
+          <div id="menError" class="error-text hidden" role="alert"></div>
         </div>
-        <div>
+        
+        <div class="form-group">
           <label for="women">Mujeres</label>
-          <div class="counter">
-            <button type="button" id="womenMinus">−</button>
-            <input id="women" type="number" min="0" max="38" value="0"/>
-            <button type="button" id="womenPlus">+</button>
+          <div class="counter-control">
+            <button type="button" id="womenMinus" class="counter-btn" aria-label="Disminuir mujeres">−</button>
+            <input id="women" type="number" min="0" max="38" value="0" aria-describedby="womenError"/>
+            <button type="button" id="womenPlus" class="counter-btn" aria-label="Aumentar mujeres">+</button>
           </div>
+          <div id="womenError" class="error-text hidden" role="alert"></div>
         </div>
-        <div class="info">
-          <span>Capacidad: 38</span>
-          <div id="availIndicator" class="indicator"></div>
+        
+        <div class="capacity-info">
+          <span class="info-text">Capacidad total: 38</span>
+          <div id="availIndicator" class="availability-indicator"></div>
         </div>
-        <div class="action">
-          <button id="checkAvail" class="btn primary">
+        
+        <div class="action-area">
+          <button id="checkAvail" class="btn btn-primary" type="button">
             <span class="btn-text">Ver disponibilidad</span>
             <span class="btn-loading hidden">Verificando...</span>
           </button>
         </div>
       </div>
-      <!-- Selección de Habitaciones -->
-      <section id="roomsCard" class="card hidden">
-        <h2>Seleccionar Camas</h2>
-        <div id="rooms" class="rooms-grid"></div>
-        <div class="selection-summary">
-          <div class="details">
-            <p>Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span></p>
-            <p>Total: R$ <span id="totalPrice">0</span> (<span id="nightsCount">0</span> noches)</p>
+    </section>
+
+    <!-- SECCIÓN SELECCIÓN DE CAMAS -->
+    <section id="roomsCard" class="section-card hidden">
+      <h2>2. Seleccionar camas</h2>
+      <div id="roomsInfo" class="info-bar"></div>
+      <div id="priceModifiers" class="price-modifiers"></div>
+      
+      <div id="rooms" class="rooms-grid" role="group" aria-label="Selección de camas por habitación"></div>
+      
+      <div class="selection-summary">
+        <div class="summary-details">
+          <div class="selection-count">
+            Seleccionadas: <span id="selCount">0</span> de <span id="needed">0</span>
           </div>
-          <button id="continueBtn" class="btn primary" disabled onclick="handleContinueToForm()">
-            <span class="btn-text">Continuar</span>
-          </button>
+          <div class="total-price">
+            Total: R$ <span id="totalPrice">0</span> 
+            <span class="nights-info">(<span id="nightsCount">0</span> noches)</span>
+          </div>
         </div>
+        <button id="continueBtn" class="btn btn-primary" disabled type="button">
+          <span class="btn-text">Continuar</span>
+          <span class="btn-loading hidden">Procesando...</span>
+        </button>
+      </div>
+      
+      <!-- Progress Bar -->
+      <div class="progress-container">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
-      </section>
-      <!-- Formulario de Datos -->
-      <section id="formCard" class="card hidden">
-        <h2>Datos de Contacto</h2>
-        <form id="reserva-form">
-          <div class="form-group">
-            <label for="nombre">Nombre completo</label>
-            <input type="text" id="nombre" required minlength="2" maxlength="100"/>
-            <div id="nombreError" class="error-text hidden"></div>
+        <div id="progressText" class="progress-text"></div>
+      </div>
+      
+      <div id="selectionWarning" class="warning-message hidden"></div>
+    </section>
+
+    <!-- SECCIÓN DATOS Y PAGO -->
+    <section id="formCard" class="section-card hidden">
+      <h2>3. Datos y pago</h2>
+      
+      <form id="reserva-form" novalidate>
+        <!-- Datos personales -->
+        <div class="form-section">
+          <h3>Datos de contacto</h3>
+          <div class="form-grid grid-2">
+            <div class="form-group">
+              <label for="nombre">Nombre completo</label>
+              <input type="text" id="nombre" name="nombre" required 
+                     minlength="2" maxlength="100" aria-describedby="nombreError"/>
+              <div id="nombreError" class="error-text hidden" role="alert"></div>
+            </div>
+            
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" required aria-describedby="emailError"/>
+              <div id="emailError" class="error-text hidden" role="alert"></div>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" required/>
-            <div id="emailError" class="error-text hidden"></div>
-          </div>
+          
           <div class="form-group">
             <label for="telefono">Teléfono</label>
-            <input type="tel" id="telefono" required/>
-            <div id="telefonoError" class="error-text hidden"></div>
+            <input type="tel" id="telefono" name="telefono" required 
+                   pattern="[0-9+\-\s\(\)]{10,}" aria-describedby="telefonoError"/>
+            <div id="telefonoError" class="error-text hidden" role="alert"></div>
           </div>
-          <!-- Opciones de Pago -->
-          <div class="payment-options">
-            <div class="payment-method">
-              <h3>Mercado Pago</h3>
-              <p>Pix, tarjeta, boleto bancario</p>
-              <button type="button" id="payMP" class="btn secondary">
+        </div>
+
+        <!-- Métodos de pago -->
+        <div class="form-section">
+          <h3>Método de pago</h3>
+          <div class="payment-methods">
+            <div class="payment-option">
+              <div class="payment-header">
+                <h4>Mercado Pago</h4>
+                <span class="payment-badge recommended">Recomendado</span>
+              </div>
+              <p class="payment-description">Pix instantáneo, tarjeta, boleto bancário</p>
+              <button type="button" id="payMP" class="btn btn-secondary">
                 <span class="btn-text">Pagar con MP</span>
-                <span class="btn-loading hidden">Procesando...</span>
+                <span class="btn-loading hidden">Redirigiendo...</span>
               </button>
             </div>
-            <div class="payment-method">
-              <h3>Stripe</h3>
-              <p>Tarjetas internacionales</p>
-              <button type="button" id="payStripe" class="btn secondary">
+            
+            <div class="payment-option">
+              <div class="payment-header">
+                <h4>Pix Directo</h4>
+                <span class="payment-badge instant">Instantáneo</span>
+              </div>
+              <p class="payment-description">Código QR para pagar ahora</p>
+              <button type="button" id="payPix" class="btn btn-outline">
+                <span class="btn-text">Generar Pix QR</span>
+                <span class="btn-loading hidden">Generando...</span>
+              </button>
+            </div>
+            
+            <div class="payment-option">
+              <div class="payment-header">
+                <h4>Stripe</h4>
+                <span class="payment-badge international">Internacional</span>
+              </div>
+              <p class="payment-description">Tarjetas internacionales, PayPal</p>
+              <button type="button" id="payStripe" class="btn btn-secondary">
                 <span class="btn-text">Pagar con tarjeta</span>
-                <span class="btn-loading hidden">Procesando...</span>
+                <span class="btn-loading hidden">Redirigiendo...</span>
               </button>
             </div>
-            <div class="payment-method">
-              <h3>Pix Directo</h3>
-              <p>Código QR instantáneo</p>
-              <button type="button" id="payPix" class="btn ghost">
-                <span class="btn-text
+          </div>
+        </div>
+
+        <!-- Estado del pago y timer -->
+        <div class="payment-status">
+          <div class="status-info">
+            <span class="status-label">Estado:</span>
+            <span id="payState" class="status-value pending">Pendiente</span>
+          </div>
+          <div id="paymentTimer" class="timer-container hidden">
+            <span class="timer-label">Hold expira en:</span>
+            <span id="timerDisplay" class="timer-value">3:00</span>
+          </div>
+        </div>
+
+        <!-- Botón final -->
+        <div class="form-actions">
+          <button type="submit" id="submitBtn" class="btn btn-primary btn-large" disabled>
+            <span class="btn-text">Confirmar Reserva</span>
+            <span class="btn-loading hidden">Confirmando...</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- SECCIÓN ADMIN -->
+    <section id="admin" class="section-card hidden">
+      <h2>Panel de Administración</h2>
+      
+      <div class="admin-auth">
+        <div class="form-group">
+          <label for="admToken">Token de acceso</label>
+          <input id="admToken" type="password" autocomplete="new-password" 
+                 aria-describedby="tokenError"/>
+          <div id="tokenError" class="error-text hidden" role="alert"></div>
+        </div>
+      </div>
+      
+      <!-- Health Check -->
+      <div class="admin-section">
+        <h3>Sistema</h3>
+        <button id="btnHealth" class="btn btn-secondary">
+          <span class="btn-text">Health Check</span>
+          <span class="btn-loading hidden">Verificando...</span>
+        </button>
+        <pre id="healthOut" class="admin-output"></pre>
+      </div>
+
+      <!-- Holds activos -->
+      <div class="admin-section">
+        <h3>Holds Temporales</h3>
+        <button id="btnHolds" class="btn btn-secondary">
+          <span class="btn-text">Listar Holds Activos</span>
+          <span class="btn-loading hidden">Cargando...</span>
+        </button>
+        <div id="holdsOut" class="admin-output"></div>
+      </div>
+
+      <!-- Búsqueda de reservas -->
+      <div class="admin-section">
+        <h3>Reservas Confirmadas</h3>
+        <div class="form-grid grid-3">
+          <div class="form-group">
+            <label for="bkFrom">Desde</label>
+            <input id="bkFrom" type="date"/>
+          </div>
+          <div class="form-group">
+            <label for="bkTo">Hasta</label>
+            <input id="bkTo" type="date"/>
+          </div>
+          <div class="form-group">
+            <label for="bkQ">Buscar</label>
+            <input id="bkQ" type="text" placeholder="Nombre, email, ID..."/>
+          </div>
+        </div>
+        <button id="btnBookings" class="btn btn-secondary">
+          <span class="btn-text">Buscar Reservas</span>
+          <span class="btn-loading hidden">Buscando...</span>
+        </button>
+        <div id="bookingsOut" class="admin-output"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</p>
+      <p class="footer-note">Sistema de reservas profesional</p>
+    </div>
+  </footer>
+
+  <!-- Scripts optimizados para producción -->
+  <script src="https://js.stripe.com/v3/" defer></script>
+  <script src="https://sdk.mercadopago.com/js/v2" defer></script>
+  
+  <!-- Main app bundle minificado -->
+  <script src="/assets/js/main.min.js"></script>
+  
+  <!-- Main app initialization -->
+  <script>
+    // Configuración global
+    window.HOSTEL_CONFIG = {
+      API_BASE: 'https://api.lapacasahostel.com',
+      STRIPE_KEY: 'pk_live_XXXXXXXXXXXXXXXXXXXXXX',
+      MERCADO_PAGO_KEY: 'APP_USR-XXXXXXXXXXXXXXXXXXXXXX',
+      CAPACITY: {
+        TOTAL: 38,
+        ROOMS: {
+          1: { name: "Cuarto 1 (Mixto)", beds: 12, basePrice: 55, femaleOnly: false },
+          3: { name: "Cuarto 3 (Mixto)", beds: 12, basePrice: 55, femaleOnly: false },
+          5: { name: "Cuarto 5 (Mixto)", beds: 7, basePrice: 55, femaleOnly: false },
+          6: { name: "Cuarto 6 (Feminino)", beds: 7, basePrice: 60, femaleOnly: true }
+        }
+      },
+      HOLD_TIMEOUT_MINUTES: 3,
+      PRICING: {
+        WEEKEND_MULTIPLIER: 1.10,
+        HIGH_SEASON_MULTIPLIER: 1.20,
+        EVENT_MULTIPLIER: 1.15
+      }
+    };
+
+    // Initialize app when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.DependencyManager) {
+        window.DependencyManager.initialize();
+      }
+    });
+
+    // Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .catch(err => console.log('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

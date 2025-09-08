@@ -1,25 +1,13 @@
-# Build outputs
-dist/
-build/
-*.min.js
-*.min.css
-*.min.html
-
-# Temporary build files
-dist/temp/
-.cache/
-
-# Compression artifacts
-*.gz
-*.br
-*.gzip
-*.brotli
-
-# Node modules
+# Dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
 
 # Environment files
 .env
@@ -28,37 +16,39 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output/
+
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS files
 .DS_Store
 .DS_Store?
 ._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Logs
-logs
-*.log
+# Database files
+*.sqlite
+*.sqlite3
 
-# Coverage reports
-coverage/
-.nyc_output/
+# Prisma
+prisma/.env
 
-# Bundle analysis
-bundle-report.html
-bundlesize-report.json
-
-# Backup files
-*.bak
-*.backup
-
-# Development certificates
-*.pem
+# Temporary files
+tmp/
+temp/

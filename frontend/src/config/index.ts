@@ -17,15 +17,30 @@ export const config = {
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    publicKey: process.env.STRIPE_PUBLIC_KEY || '',
   },
   mercadoPago: {
     accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || '',
+    publicKey: process.env.MERCADOPAGO_PUBLIC_KEY || '',
+  },
+  pix: {
+    key: process.env.PIX_KEY || 'lapacasahostel@gmail.com',
+    merchantName: process.env.PIX_MERCHANT_NAME || 'LAPA CASA HOSTEL',
+    merchantCity: process.env.PIX_MERCHANT_CITY || 'RIO DE JANEIRO',
   },
 
   // Email
   email: {
     sendgridApiKey: process.env.SENDGRID_API_KEY || '',
     fromAddress: process.env.EMAIL_FROM || 'noreply@lapacasahostel.com',
+    fromName: process.env.EMAIL_FROM_NAME || 'Lapa Casa Hostel',
+  },
+
+  // WhatsApp/SMS
+  whatsapp: {
+    twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
+    twilioWhatsAppNumber: process.env.TWILIO_WHATSAPP_NUMBER || '',
   },
 
   // External APIs
@@ -40,7 +55,7 @@ export const config = {
 
   // Business Logic
   business: {
-    holdTimeoutMinutes: 10,
+    holdTimeoutMinutes: parseInt(process.env.HOLD_TIMEOUT_MINUTES || '10'),
     maxAdvanceBookingDays: 365,
     minStayNights: 1,
     maxStayNights: 30,
@@ -54,6 +69,14 @@ export const config = {
 
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
+
+  // Features
+  features: {
+    emailEnabled: process.env.ENABLE_EMAIL === 'true',
+    whatsappEnabled: process.env.ENABLE_WHATSAPP === 'true',
+    sheetsEnabled: process.env.ENABLE_SHEETS === 'true',
+    paymentsEnabled: process.env.ENABLE_PAYMENTS !== 'false', // default true
+  },
 } as const;
 
 // Validaciones
@@ -62,10 +85,13 @@ if (!config.databaseUrl) {
 }
 
 if (config.nodeEnv === 'production') {
-  if (!config.stripe.secretKey) {
-    console.warn('STRIPE_SECRET_KEY not configured');
-  }
-  if (!config.mercadoPago.accessToken) {
-    console.warn('MERCADOPAGO_ACCESS_TOKEN not configured');
+  const requiredConfigs = [];
+  
+  if (!config.stripe.secretKey) requiredConfigs.push('STRIPE_SECRET_KEY');
+  if (!config.mercadoPago.accessToken) requiredConfigs.push('MERCADOPAGO_ACCESS_TOKEN');
+  if (config.features.emailEnabled && !config.email.sendgridApiKey) requiredConfigs.push('SENDGRID_API_KEY');
+  
+  if (requiredConfigs.length > 0) {
+    console.warn(`Missing production configs: ${requiredConfigs.join(', ')}`);
   }
 }

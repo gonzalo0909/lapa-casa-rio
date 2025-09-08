@@ -30,12 +30,100 @@ model Booking {
   mujeres     Int           @default(0)
   totalPrice  Decimal       @db.Decimal(10, 2)
   status      BookingStatus @default(PENDING)
+  payStatus   PaymentStatus @default(PENDING)
+  source      String        @default("web")
+  notes       String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  guest Guest @relation(fields: [guestId], references: [id])
+  guest    Guest           @relation(fields: [guestId], references: [id])
+  beds     BookingBed[]
+  payments Payment[]
+  holds    Hold[]
 
   @@map("bookings")
+}
+
+model Room {
+  id          Int     @id
+  name        String
+  totalBeds   Int
+  femaleOnly  Boolean @default(false)
+  basePrice   Decimal @db.Decimal(8, 2)
+  description String?
+
+  beds BookingBed[]
+
+  @@map("rooms")
+}
+
+model BookingBed {
+  id        String @id @default(cuid())
+  bookingId String
+  roomId    Int
+  bedNumber Int
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  room    Room    @relation(fields: [roomId], references: [id])
+
+  @@unique([bookingId, roomId, bedNumber])
+  @@map("booking_beds")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("BRL")
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  externalId      String?       // Stripe/MP payment ID
+  externalStatus  String?       // Status from external provider
+  transactionId   String?       // PIX transaction ID
+  gateway         String?       // "stripe", "mercadopago", "pix"
+  gatewayFee      Decimal?      @db.Decimal(8, 2)
+  netAmount       Decimal?      @db.Decimal(10, 2)
+  refundedAmount  Decimal?      @db.Decimal(10, 2)
+  metadata        Json?         // Additional payment data
+  processedAt     DateTime?
+  failureReason   String?
+  webhookReceived Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("payments")
+}
+
+model Hold {
+  id        String   @id @default(cuid())
+  holdId    String   @unique
+  bookingId String?
+  roomId    Int
+  bedNumber Int
+  expiresAt DateTime
+  status    String   @default("active")
+  metadata  Json?    // Hold details (dates, guests, etc.)
+  createdAt DateTime @default(now())
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@map("holds")
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  bookingId String?
+  to        String
+  subject   String
+  template  String
+  status    String   @default("pending") // "sent", "failed", "pending"
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("email_logs")
 }
 
 enum BookingStatus {
@@ -44,4 +132,21 @@ enum BookingStatus {
   CHECKED_IN
   CHECKED_OUT
   CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  STRIPE
+  MERCADOPAGO
+  PIX
+  CASH
+  TRANSFER
+  BANK_DEPOSIT
 }

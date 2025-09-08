@@ -1,102 +1,177 @@
-// File: /routes/holds.js
-"use strict";
+import { Router } from 'express';
+import { HoldsService } from '../../services/holds';
+import { validateBody } from '../../middleware/validation';
+import { holdRequestSchema } from '../../utils/validation/schemas';
+import { logger } from '../../utils/logger';
+
+const router = Router();
+const holdsService = new HoldsService();
 
 /**
- * Maneja reservas temporales (HOLD): crear, listar, confirmar y liberar
+ * POST /api/holds
+ * Crear hold temporal
  */
-
-const express = require("express");
-const router = express.Router();
-
-const {
-  listHolds,
-  startHold,
-  confirmHold,
-  releaseHold,
-  getHoldsMap
-} = require("../services/holdsStore");
-
-/* ===== POST /api/holds/start ===== */
-router.post("/start", async (req, res) => {
+router.post('/', validateBody(holdRequestSchema), async (req, res, next) => {
   try {
-    const body = req.body || {};
-    const result = await startHold({
-      holdId: body.holdId,
-      entrada: body.entrada,
-      salida: body.salida,
-      hombres: body.hombres,
-      mujeres: body.mujeres,
-      camas: body.camas,
-      total: body.total
-    });
+    const { beds, expiresInMinutes, dates, guests } = req.body;
 
-    if (!result?.ok) {
-      return res.status(400).json({ ok: false, error: "invalid_hold_data" });
+    if (!dates || !guests) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Faltan datos requeridos: dates, guests',
+      });
     }
 
-    return res.json({
-      ok: true,
-      holdId: result.holdId,
-      expiresAt: result.expiresAt
+    const result = await holdsService.createHold({
+      dates,
+      guests,
+      beds,
+      expiresInMinutes,
     });
-  } catch (err) {
-    console.error("[HOLDS] Error al crear hold:", err.message);
-    return res.status(400).json({ ok: false, error: "bad_request" });
+
+    logger.info('Hold created', result);
+
+    res.status(201).json({
+      ok: true,
+      ...result,
+    });
+
+  } catch (error) {
+    next(error);
   }
 });
 
-/* ===== GET /api/holds/list ===== */
-async function list(req, res) {
+/**
+ * GET /api/holds/:holdId
+ * Obtener información de hold
+ */
+router.get('/:holdId', async (req, res, next) => {
   try {
-    const holds = await listHolds();
-    return res.json({ ok: true, holds });
-  } catch (err) {
-    console.error("[HOLDS] Error al listar holds:", err.message);
-    return res.status(500).json({ ok: false, error: "internal_error" });
-  }
-}
-router.get("/list", list);
+    const { holdId } = req.params;
+    
+    const hold = await holdsService.getHold(holdId);
+    
+    if (!hold) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Hold not found',
+      });
+    }
 
-/* ===== POST /api/holds/confirm ===== */
-async function confirm(req, res) {
+    res.json({
+      ok: true,
+      hold,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/holds/:holdId/confirm
+ * Confirmar hold (preparar para booking)
+ */
+router.post('/:holdId/confirm', async (req, res, next) => {
   try {
-    const { holdId, status = "paid" } = req.body || {};
-    if (!holdId) {
-      return res.status(400).json({ ok: false, error: "hold_id_required" });
+    const { holdId } = req.params;
+    
+    const confirmed = await holdsService.confirmHold(holdId);
+    
+    if (!confirmed) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Hold not found or already expired',
+      });
     }
 
-    const result = await confirmHold(holdId, status);
-    if (!result?.ok) {
-      return res.status(404).json({ ok: false, error: "hold_not_found" });
-    }
+    res.json({
+      ok: true,
+      holdId,
+      status: 'confirmed',
+    });
 
-    return res.json({ ok: true, holdId, status });
-  } catch (err) {
-    console.error("[HOLDS] Error al confirmar hold:", err.message);
-    return res.status(500).json({ ok: false, error: "internal_error" });
+  } catch (error) {
+    next(error);
   }
-}
-router.post("/confirm", confirm);
+});
 
-/* ===== POST /api/holds/release ===== */
-async function release(req, res) {
+/**
+ * DELETE /api/holds/:holdId
+ * Liberar hold
+ */
+router.delete('/:holdId', async (req, res, next) => {
   try {
-    const { holdId } = req.body || {};
-    if (!holdId) {
-      return res.status(400).json({ ok: false, error: "hold_id_required" });
+    const { holdId } = req.params;
+    
+    const released = await holdsService.releaseHold(holdId);
+    
+    if (!released) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Hold not found',
+      });
     }
 
-    const result = await releaseHold(holdId);
-    if (!result?.ok) {
-      return res.status(404).json({ ok: false, error: "hold_not_found" });
-    }
+    res.json({
+      ok: true,
+      holdId,
+      status: 'released',
+    });
 
-    return res.json({ ok: true, holdId, released: true });
-  } catch (err) {
-    console.error("[HOLDS] Error al liberar hold:", err.message);
-    return res.status(500).json({ ok: false, error: "internal_error" });
+  } catch (error) {
+    next(error);
   }
-}
-router.post("/release", release);
+});
 
-module.exports = { router, list, confirm, release, getHoldsMap };
+/**
+ * POST /api/holds/:holdId/extend
+ * Extender tiempo de hold
+ */
+router.post('/:holdId/extend', async (req, res, next) => {
+  try {
+    const { holdId } = req.params;
+    const { additionalMinutes = 5 } = req.body;
+
+    const extended = await holdsService.extendHold(holdId, additionalMinutes);
+    
+    if (!extended) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Hold not found or cannot be extended',
+      });
+    }
+
+    res.json({
+      ok: true,
+      holdId,
+      extended: true,
+      additionalMinutes,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/holds
+ * Listar holds activos (admin)
+ */
+router.get('/', async (req, res, next) => {
+  try {
+    const holds = await holdsService.listActiveHolds();
+    const stats = await holdsService.getHoldStats();
+
+    res.json({
+      ok: true,
+      holds,
+      stats,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default router;

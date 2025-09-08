@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guest {
+  id        String   @id @default(cuid())
+  nombre    String
+  email     String   @unique
+  telefono  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@map("guests")
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  bookingId   String        @unique
+  guestId     String
+  entrada     DateTime
+  salida      DateTime
+  hombres     Int           @default(0)
+  mujeres     Int           @default(0)
+  totalPrice  Decimal       @db.Decimal(10, 2)
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  guest Guest @relation(fields: [guestId], references: [id])
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}

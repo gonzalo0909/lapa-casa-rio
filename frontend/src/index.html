@@ -14,7 +14,7 @@
                  script-src 'self' 'unsafe-inline' https://js.stripe.com https://sdk.mercadopago.com; 
                  style-src 'self' 'unsafe-inline'; 
                  img-src 'self' data: https:;
-                 connect-src 'self' https://api.stripe.com https://api.mercadopago.com;
+                 connect-src 'self' http://localhost:3001 https://api.stripe.com https://api.mercadopago.com;
                  frame-src https://js.stripe.com https://www.mercadopago.com;"/>
   <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains"/>
   <meta name="referrer" content="strict-origin-when-cross-origin"/>
@@ -216,30 +216,6 @@
 
   <script src="https://js.stripe.com/v3/" defer></script>
   <script src="https://sdk.mercadopago.com/js/v2" defer></script>
-  
-  <script>
-    window.HOSTEL_CONFIG = {
-      API_BASE: 'https://api.lapacasahostel.com',
-      STRIPE_PUBLISHABLE_KEY: 'pk_live_XXXXXXXXXXXXXXXXXXXXXX',
-      MERCADO_PAGO_PUBLIC_KEY: 'APP_USR-XXXXXXXXXXXXXXXXXXXXXX',
-      PRICE_PER_NIGHT: 55,
-      TOTAL_CAPACITY: 38,
-      ROOMS: { 1: 12, 3: 12, 5: 7, 6: 7 },
-      HOLD_TIMEOUT_MINUTES: 3,
-      FEATURES: {
-        OFFLINE_MODE: false,
-        DEBUG_MODE: false,
-        ADMIN_PANEL: false,
-        PAYMENT_TESTING: false
-      },
-      SECURITY: {
-        MAX_REQUESTS_PER_MINUTE: 10,
-        ADMIN_TOKEN_MIN_LENGTH: 16,
-        FORM_TIMEOUT_MINUTES: 15,
-        ENFORCE_HTTPS: true
-      }
-    };
-  </script>
   
   <script src="js/core/hostel-config.js"></script>
   <script src="js/core/error-handler.js"></script>

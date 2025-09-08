@@ -2,44 +2,94 @@ class ValidationIntegration {
   constructor() {
     this.validators = new Map();
     this.validationResults = new Map();
-    this.realTimeEnabled = true;
-    this.validationQueue = [];
-    this.processingQueue = false;
-    this.maxQueueSize = 10;
     this.eventListeners = new Map();
+    this.initialized = false;
     
-    this.initializeValidators();
-    this.setupGlobalValidation();
-    this.setupRealTimeValidation();
-  }
-  
-  initializeValidators() {
-    this.registerValidator('form', window.formValidator);
-    this.registerValidator('date', window.dateValidator);
-    this.registerValidator('booking', window.bookingValidator);
-  }
-  
-  registerValidator(name, validator) {
-    if (validator) {
-      this.validators.set(name, validator);
-      this.validationResults.set(name, { valid: false, lastCheck: null });
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.init());
+    } else {
+      this.init();
     }
   }
   
-  setupGlobalValidation() {
-    this.addEventListenerWithCleanup('checkAvail', 'click', (e) => {
-      if (!this.validateBeforeAvailabilityCheck()) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
+  async init() {
+    await this.waitForValidators();
+    this.registerValidators();
+    this.setupGlobalValidation();
+    this.setupRealTimeValidation();
+    this.initialized = true;
+  }
+  
+  async waitForValidators() {
+    const required = ['formValidator', 'dateValidator', 'bookingValidator'];
     
-    this.addEventListenerWithCleanup('continueBtn', 'click', (e) => {
-      if (!this.validateBeforeContinue()) {
-        e.preventDefault();
-        e.stopPropagation();
+    for (const validator of required) {
+      let attempts = 0;
+      while (!window[validator] && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
       }
-    });
+      
+      if (!window[validator]) {
+        window[validator] = this.createFallbackValidator(validator);
+      }
+    }
+  }
+  
+  createFallbackValidator(type) {
+    const fallback = {
+      validateField: () => true,
+      validateAll: () => true,
+      getData: () => ({}),
+      clear: () => {},
+      destroy: () => {}
+    };
+    
+    if (type === 'dateValidator') {
+      fallback.getNights = () => 0;
+      fallback.getTotalPrice = () => 0;
+      fallback.getDateRange = () => null;
+    }
+    
+    if (type === 'bookingValidator') {
+      fallback.validateCapacity = () => ({ valid: true, errors: [], warnings: [] });
+      fallback.validateCurrentBedSelection = () => true;
+      fallback.canProceedToBooking = () => false;
+    }
+    
+    return fallback;
+  }
+  
+  registerValidators() {
+    this.validators.set('form', window.formValidator);
+    this.validators.set('date', window.dateValidator);
+    this.validators.set('booking', window.bookingValidator);
+  }
+  
+  setupGlobalValidation() {
+    const checkAvailBtn = document.getElementById('checkAvail');
+    if (checkAvailBtn) {
+      const clickHandler = (e) => {
+        if (!this.validateBeforeAvailabilityCheck()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+      checkAvailBtn.addEventListener('click', clickHandler);
+      this.eventListeners.set('checkAvail-click', { element: checkAvailBtn, event: 'click', handler: clickHandler });
+    }
+    
+    const continueBtn = document.getElementById('continueBtn');
+    if (continueBtn) {
+      const clickHandler = (e) => {
+        if (!this.validateBeforeContinue()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+      continueBtn.addEventListener('click', clickHandler);
+      this.eventListeners.set('continueBtn-click', { element: continueBtn, event: 'click', handler: clickHandler });
+    }
     
     const form = document.getElementById('reserva-form');
     if (form) {
@@ -50,104 +100,51 @@ class ValidationIntegration {
         }
       };
       form.addEventListener('submit', submitHandler);
-      this.eventListeners.set('reserva-form-submit', { element: form, event: 'submit', handler: submitHandler });
-    }
-  }
-  
-  addEventListenerWithCleanup(elementId, event, handler) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.addEventListener(event, handler);
-      this.eventListeners.set(`${elementId}-${event}`, { element, event, handler });
+      this.eventListeners.set('form-submit', { element: form, event: 'submit', handler: submitHandler });
     }
   }
   
   setupRealTimeValidation() {
     ['dateIn', 'dateOut'].forEach(fieldId => {
-      const changeHandler = () => this.queueValidation('dates', () => this.validateDates());
-      this.addEventListenerWithCleanup(fieldId, 'change', changeHandler);
+      const field = document.getElementById(fieldId);
+      if (field) {
+        const changeHandler = () => {
+          this.validateDates();
+          this.updateCalculationsDisplay();
+        };
+        field.addEventListener('change', changeHandler);
+        this.eventListeners.set(`${fieldId}-change`, { element: field, event: 'change', handler: changeHandler });
+      }
     });
     
     ['men', 'women'].forEach(fieldId => {
-      const inputHandler = () => this.queueValidation('guests', () => this.validateGuests());
-      const changeHandler = () => this.queueValidation('guests', () => this.validateGuests());
-      
-      this.addEventListenerWithCleanup(fieldId, 'input', inputHandler);
-      this.addEventListenerWithCleanup(fieldId, 'change', changeHandler);
+      const field = document.getElementById(fieldId);
+      if (field) {
+        const changeHandler = () => {
+          this.validateGuests();
+          this.updateCalculationsDisplay();
+        };
+        field.addEventListener('change', changeHandler);
+        this.eventListeners.set(`${fieldId}-change`, { element: field, event: 'change', handler: changeHandler });
+      }
     });
     
     ['nombre', 'email', 'telefono'].forEach(fieldId => {
-      const blurHandler = () => this.queueValidation('form', () => this.validateForm());
-      const inputHandler = () => this.queueValidation('form', () => this.validateFormField(fieldId), 500);
-      
-      this.addEventListenerWithCleanup(fieldId, 'blur', blurHandler);
-      this.addEventListenerWithCleanup(fieldId, 'input', inputHandler);
+      const field = document.getElementById(fieldId);
+      if (field) {
+        const blurHandler = () => this.validateForm();
+        field.addEventListener('blur', blurHandler);
+        this.eventListeners.set(`${fieldId}-blur`, { element: field, event: 'blur', handler: blurHandler });
+      }
     });
     
-    const bedClickHandler = (e) => {
+    const bedsHandler = (e) => {
       if (e.target.closest('.bed')) {
-        setTimeout(() => {
-          this.queueValidation('beds', () => this.validateBedSelection());
-        }, 100);
+        setTimeout(() => this.validateBedSelection(), 100);
       }
     };
-    document.addEventListener('click', bedClickHandler);
-    this.eventListeners.set('document-bed-click', { element: document, event: 'click', handler: bedClickHandler });
-  }
-  
-  queueValidation(type, validationFn, delay = 150) {
-    if (this.validationQueue.length >= this.maxQueueSize) {
-      this.validationQueue.shift();
-    }
-    
-    this.validationQueue = this.validationQueue.filter(item => item.type !== type);
-    
-    this.validationQueue.push({
-      type,
-      fn: validationFn,
-      timestamp: Date.now() + delay
-    });
-    
-    if (!this.processingQueue) {
-      this.processValidationQueue();
-    }
-  }
-  
-  async processValidationQueue() {
-    this.processingQueue = true;
-    
-    while (this.validationQueue.length > 0) {
-      const now = Date.now();
-      const readyItems = this.validationQueue.filter(item => item.timestamp <= now);
-      
-      if (readyItems.length > 0) {
-        const byType = new Map();
-        readyItems.forEach(item => {
-          if (!byType.has(item.type) || item.timestamp > byType.get(item.type).timestamp) {
-            byType.set(item.type, item);
-          }
-        });
-        
-        for (const item of byType.values()) {
-          try {
-            await item.fn();
-          } catch (error) {
-            console.error(`Error en validación ${item.type}:`, error);
-          }
-          
-          this.validationQueue = this.validationQueue.filter(q => q !== item);
-        }
-      } else {
-        const nextTimestamp = Math.min(...this.validationQueue.map(item => item.timestamp));
-        const waitTime = Math.max(0, Math.min(nextTimestamp - now, 1000));
-        
-        if (waitTime > 0) {
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
-      }
-    }
-    
-    this.processingQueue = false;
+    document.addEventListener('click', bedsHandler);
+    this.eventListeners.set('beds-click', { element: document, event: 'click', handler: bedsHandler });
   }
   
   validateDates() {
@@ -164,8 +161,6 @@ class ValidationIntegration {
       nights: dateValidator.getNights(),
       totalPrice: dateValidator.getTotalPrice()
     });
-    
-    this.updateCalculationsDisplay();
     
     return result;
   }
@@ -204,13 +199,6 @@ class ValidationIntegration {
     return result;
   }
   
-  validateFormField(fieldId) {
-    const formValidator = this.validators.get('form');
-    if (!formValidator) return false;
-    
-    return formValidator.validateField(fieldId);
-  }
-  
   validateBedSelection() {
     const bookingValidator = this.validators.get('booking');
     if (!bookingValidator) return false;
@@ -231,57 +219,62 @@ class ValidationIntegration {
   }
   
   validateBeforeAvailabilityCheck() {
-    const results = [
-      { step: 'fechas', valid: this.validateDates() },
-      { step: 'huéspedes', valid: this.validateGuests() }
-    ];
+    const datesValid = this.validateDates();
+    const guestsValid = this.validateGuests();
     
-    const allValid = results.every(r => r.valid);
-    if (!allValid) {
-      const invalidSteps = results.filter(r => !r.valid).map(r => r.step);
-      this.showValidationError(`Corrige: ${invalidSteps.join(', ')}`);
+    if (!datesValid || !guestsValid) {
+      const issues = [];
+      if (!datesValid) issues.push('fechas');
+      if (!guestsValid) issues.push('huéspedes');
+      
+      this.showValidationError(`Corrige: ${issues.join(', ')}`);
+      return false;
     }
     
-    return allValid;
+    return true;
   }
   
   validateBeforeContinue() {
-    const results = [
-      { step: 'disponibilidad', valid: document.getElementById('rooms')?.children.length > 0 },
-      { step: 'selección de camas', valid: this.validateBedSelection() },
-      { step: 'cantidad correcta', valid: window.bookingValidator?.canProceedToBooking() || false }
-    ];
+    const hasRooms = document.getElementById('rooms')?.children.length > 0;
+    const bedSelectionValid = this.validateBedSelection();
+    const canProceed = this.validators.get('booking')?.canProceedToBooking() || false;
     
-    const allValid = results.every(r => r.valid);
-    if (!allValid) {
-      const invalidSteps = results.filter(r => !r.valid).map(r => r.step);
-      this.showValidationError(`Antes de continuar: ${invalidSteps.join(', ')}`);
+    if (!hasRooms || !bedSelectionValid || !canProceed) {
+      const issues = [];
+      if (!hasRooms) issues.push('disponibilidad');
+      if (!bedSelectionValid) issues.push('selección de camas');
+      if (!canProceed) issues.push('cantidad correcta');
+      
+      this.showValidationError(`Antes de continuar: ${issues.join(', ')}`);
+      return false;
     }
     
-    return allValid;
+    return true;
   }
   
   validateCompleteBooking() {
-    const results = [
-      { step: 'datos personales', valid: this.validateForm() },
-      { step: 'pago', valid: this.validatePayment() },
-      { step: 'consistencia', valid: this.validateBookingConsistency() }
-    ];
+    const formValid = this.validateForm();
+    const paymentValid = this.validatePayment();
+    const consistencyValid = this.validateBookingConsistency();
     
-    const allValid = results.every(r => r.valid);
-    if (!allValid) {
-      const invalidSteps = results.filter(r => !r.valid).map(r => r.step);
-      this.showValidationError(`Completa: ${invalidSteps.join(', ')}`);
+    if (!formValid || !paymentValid || !consistencyValid) {
+      const issues = [];
+      if (!formValid) issues.push('datos personales');
+      if (!paymentValid) issues.push('pago');
+      if (!consistencyValid) issues.push('consistencia');
+      
+      this.showValidationError(`Completa: ${issues.join(', ')}`);
+      return false;
     }
     
-    return allValid;
+    return true;
   }
   
   validatePayment() {
     const payState = document.getElementById('payState')?.textContent;
     const stateManagerPayment = window.stateManager?.getPaymentInfo();
     
-    return (payState && payState !== 'Pendiente') || 
+    return (payState && payState.toLowerCase() !== 'pendiente') || 
            (stateManagerPayment?.status === 'completed');
   }
   
@@ -300,24 +293,11 @@ class ValidationIntegration {
       const stateGuests = (stateData.searchCriteria?.men || 0) + (stateData.searchCriteria?.women || 0);
       
       if (currentGuests !== stateGuests) {
-        console.warn('Inconsistencia en número de huéspedes');
         return false;
       }
     }
     
     return datesValid && bookingValid;
-  }
-  
-  updateValidationResult(type, valid, data) {
-    this.validationResults.set(type, {
-      valid,
-      lastCheck: Date.now(),
-      data
-    });
-    
-    document.dispatchEvent(new CustomEvent('validationUpdate', {
-      detail: { type, valid, data }
-    }));
   }
   
   updateCalculationsDisplay() {
@@ -336,6 +316,18 @@ class ValidationIntegration {
     if (nightsEl) nightsEl.textContent = nights;
     if (priceEl) priceEl.textContent = totalPrice;
     if (neededEl) neededEl.textContent = men + women;
+  }
+  
+  updateValidationResult(type, valid, data) {
+    this.validationResults.set(type, {
+      valid,
+      lastCheck: Date.now(),
+      data
+    });
+    
+    document.dispatchEvent(new CustomEvent('validationUpdate', {
+      detail: { type, valid, data }
+    }));
   }
   
   getCompletedFormFields() {
@@ -372,51 +364,14 @@ class ValidationIntegration {
     return status;
   }
   
-  isReadyForStep(step) {
-    const status = this.getValidationStatus();
-    
-    switch (step) {
-      case 'availability': return status.dates?.valid && status.guests?.valid;
-      case 'beds': return status.dates?.valid && status.guests?.valid;
-      case 'form': return status.bedSelection?.valid;
-      case 'payment': return status.form?.valid;
-      case 'booking': return status.form?.valid && this.validatePayment();
-      default: return false;
-    }
-  }
-  
-  forceValidateAll() {
-    return Promise.all([
-      this.validateDates(),
-      this.validateGuests(),
-      this.validateForm(),
-      this.validateBedSelection()
-    ]).then(results => results.every(r => r));
-  }
-  
-  debugValidation() {
-    console.log('=== VALIDATION DEBUG ===', this.getValidationStatus());
-  }
-  
   destroy() {
-    this.validationQueue = [];
-    this.processingQueue = false;
-    this.validators.clear();
-    this.validationResults.clear();
-    
     this.eventListeners.forEach(({ element, event, handler }) => {
       element.removeEventListener(event, handler);
     });
     this.eventListeners.clear();
+    this.validators.clear();
+    this.validationResults.clear();
   }
 }
 
 window.validationIntegration = new ValidationIntegration();
-
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    if (window.validationIntegration) {
-      window.validationIntegration.initializeValidators();
-    }
-  }, 500);
-});

@@ -1,7 +1,8 @@
-"compilerOptions": {
-    "target": "ES2022",
+{
+  "compilerOptions": {
+    "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2022"],
+    "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -12,10 +13,22 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "removeComments": false,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "types": ["node", "jest"]
+    "emitDecoratorMetadata": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

@@ -1,6 +1,7 @@
 import app from './app';
 import { config } from './config';
 import { logger } from './utils/logger';
+import { StartupService } from './utils/startup';
 
 // Manejo de errores no capturados
 process.on('uncaughtException', (error) => {
@@ -13,29 +14,39 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Iniciar servidor
-const server = app.listen(config.port, () => {
-  logger.info(`Server running on port ${config.port}`, {
-    environment: config.nodeEnv,
-    baseUrl: config.apiBaseUrl,
-  });
-});
+// Función principal de inicio
+async function startServer(): Promise<void> {
+  try {
+    // Inicializar servicios
+    await StartupService.initialize();
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
-  });
-});
+    // Iniciar servidor HTTP
+    const server = app.listen(config.port, () => {
+      logger.info(`Server running on port ${config.port}`, {
+        environment: config.nodeEnv,
+        baseUrl: config.apiBaseUrl,
+        frontend: config.frontendUrl,
+      });
+    });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
-  });
-});
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      logger.info(`${signal} received, shutting down gracefully`);
+      
+      server.close(async () => {
+        await StartupService.shutdown();
+        process.exit(0);
+      });
+    };
 
-export default server;
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Iniciar aplicación
+startServer();

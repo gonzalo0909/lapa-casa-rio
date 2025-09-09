@@ -3,7 +3,6 @@
 /**
  * production-server.js
  * Entry optimizado para producción en Render/Hostinger
- * Incluye /api/ical
  */
 
 const express = require("express");
@@ -14,20 +13,18 @@ const path = require("path");
 
 const { registerMetrics, metricsMiddleware } = require("./api/services/metrics");
 const { requestLogger } = require("./api/services/logger");
-const payments = require("./api/routes/payments");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(helmet());
 app.use(cors({
-  origin: ["https://lapacasahostel.com","https://www.lapacasahostel.com"]
+  origin: [
+    "https://lapacasahostel.com",
+    "https://www.lapacasahostel.com"
+  ]
 }));
 app.use(compression());
-
-// Webhooks (Stripe raw)
-app.post("/api/payments/stripe/webhook", express.raw({ type: "application/json" }), payments.stripeWebhook);
-// Resto JSON
 app.use(express.json({ limit: "2mb" }));
 app.use(requestLogger);
 
@@ -35,19 +32,22 @@ app.use(requestLogger);
 app.use("/api/availability", require("./api/routes/availability"));
 app.use("/api/bookings", require("./api/routes/bookings"));
 app.use("/api/holds", require("./api/routes/holds").router);
-app.use("/api/payments", payments.router);
-app.use("/api/ical", require("./api/routes/ical"));
+app.use("/api/payments", require("./api/routes/payments").router);
 
-// Métricas / Health
-app.get("/api/metrics", metricsMiddleware, async (_req, res) => {
+// Métricas y health
+app.get("/api/metrics", metricsMiddleware, async (req, res) => {
   res.set("Content-Type", registerMetrics.contentType);
   res.end(await registerMetrics.metrics());
 });
-app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // Frontend estático
 const frontendSrcPath = path.join(__dirname, "frontend", "src");
 app.use(express.static(frontendSrcPath));
-app.get("*", (_req, res) => res.sendFile(path.join(frontendSrcPath, "index.html")));
+
+// Catch-all
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendSrcPath, "index.html"));
+});
 
 app.listen(PORT, () => console.log(`🚀 Prod server on port ${PORT}`));

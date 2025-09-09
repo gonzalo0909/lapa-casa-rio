@@ -1,0 +1,29 @@
+name: Deploy to Render
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run predeploy
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          BOOKINGS_WEBAPP_URL: ${{ secrets.BOOKINGS_WEBAPP_URL }}
+          CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          MP_ACCESS_TOKEN: ${{ secrets.MP_ACCESS_TOKEN }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+      - name: Deploy Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}

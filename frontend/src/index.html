@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lapa Casa Hostel — Reserva</title>
+  <meta name="description" content="Reserva camas y habitaciones en Lapa Casa Hostel, Santa Teresa - Río de Janeiro." />
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+  <script>
+    window.__CONFIG__ = {
+      BACKEND_BASE: "/api",
+      FRONTEND_URL: location.origin + "/book"
+    };
+  </script>
+</head>
+<body>
+  <main class="container">
+    <h1>Lapa Casa Hostel — Reservas</h1>
+
+    <section class="search">
+      <label>Entrada <input id="entrada" type="date" /></label>
+      <label>Salida <input id="salida" type="date" /></label>
+      <button id="btnCheck">Ver disponibilidad</button>
+    </section>
+
+    <section id="availability" class="card" hidden>
+      <h2>Disponibilidad</h2>
+      <pre id="availabilityJson"></pre>
+      <button id="btnHold" disabled>Iniciar Hold</button>
+    </section>
+
+    <section id="payment" class="card" hidden>
+      <h2>Pago</h2>
+      <button id="btnStripe">Pagar con Stripe</button>
+      <button id="btnMP">Pagar con Mercado Pago</button>
+      <p id="payHint"></p>
+    </section>
+
+    <section id="result" class="card" hidden>
+      <h2>Resultado</h2>
+      <pre id="resultJson"></pre>
+    </section>
+  </main>
+
+  <script src="./js/core/api-client.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>

@@ -15,11 +15,19 @@ class CacheService {
     if (this.redis && this.isConnected) return;
     
     try {
-      this.redis = createClient({ 
+      // Configuración específica para Upstash Redis
+      const redisConfig = {
         url: process.env.REDIS_URL,
-        retry_delay: 5000,
-        max_attempts: 3
-      });
+        socket: {
+          tls: true,
+          rejectUnauthorized: false
+        },
+        retry_delay: 2000,
+        connect_timeout: 10000,
+        command_timeout: 5000
+      };
+      
+      this.redis = createClient(redisConfig);
       
       this.redis.on('error', (err) => {
         logger.error('Redis error:', err);
@@ -27,8 +35,18 @@ class CacheService {
       });
       
       this.redis.on('connect', () => {
-        logger.info('Redis connected');
+        logger.info('Redis connected to Upstash');
         this.isConnected = true;
+      });
+      
+      this.redis.on('ready', () => {
+        logger.info('Redis ready');
+        this.isConnected = true;
+      });
+      
+      this.redis.on('end', () => {
+        logger.warn('Redis connection ended');
+        this.isConnected = false;
       });
       
       await this.redis.connect();

@@ -1,43 +1,11 @@
-import { Router } from 'express';
-import availabilityRoutes from './routes/availability';
-import bookingsRoutes from './routes/bookings';
-import holdsRoutes from './routes/holds';
-import adminRoutes from './routes/admin';
+"use strict";
+const express = require("express");
+const app = express();
 
-const router = Router();
+app.use("/availability", require("./routes/availability"));
+app.use("/bookings", require("./routes/bookings"));
+app.use("/holds", require("./routes/holds").router);
+app.use("/payments", require("./routes/payments").router);
+app.use("/ical", require("./routes/ical"));
 
-// Rutas públicas
-router.use('/availability', availabilityRoutes);
-router.use('/bookings', bookingsRoutes);
-router.use('/holds', holdsRoutes);
-
-// Rutas administrativas (requieren autenticación)
-router.use('/admin', adminRoutes);
-
-// Ruta raíz de la API
-router.get('/', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'Lapa Casa Hostel API v1.0',
-    version: '1.0.0',
-    endpoints: {
-      public: [
-        'GET /api/availability',
-        'POST /api/availability/check-group',
-        'POST /api/bookings',
-        'GET /api/bookings/:id',
-        'POST /api/holds',
-        'GET /api/holds/:id',
-      ],
-      admin: [
-        'GET /api/admin/health',
-        'GET /api/admin/dashboard',
-        'GET /api/admin/bookings',
-        'GET /api/admin/holds',
-        'GET /api/admin/occupancy',
-      ],
-    },
-  });
-});
-
-export default router;
+module.exports = app;

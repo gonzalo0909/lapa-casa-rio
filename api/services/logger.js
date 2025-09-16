@@ -2,11 +2,35 @@
 
 /**
  * services/logger.js
- * Logging centralizado con Winston
+ * Logging centralizado con Winston, seguro en entornos sin FS persistente
  */
 
 const { createLogger, format, transports } = require("winston");
 const path = require("path");
+const fs = require("fs");
+
+const logDir = path.join(__dirname, "../../logs");
+
+// Verificar/crear carpeta logs
+try {
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+} catch (err) {
+  console.error("⚠️ Error creando carpeta de logs:", err.message);
+}
+
+// Winston base
+const loggerTransports = [new transports.Console()];
+
+try {
+  loggerTransports.push(
+    new transports.File({ filename: path.join(logDir, "error.log"), level: "error" }),
+    new transports.File({ filename: path.join(logDir, "combined.log") })
+  );
+} catch (err) {
+  console.error("⚠️ Winston file logging deshabilitado:", err.message);
+}
 
 const logger = createLogger({
   level: process.env.LOG_LEVEL || "info",
@@ -16,11 +40,7 @@ const logger = createLogger({
       return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
     })
   ),
-  transports: [
-    new transports.Console(),
-    new transports.File({ filename: path.join("logs", "error.log"), level: "error" }),
-    new transports.File({ filename: path.join("logs", "combined.log") })
-  ]
+  transports: loggerTransports
 });
 
 // Middleware de Express

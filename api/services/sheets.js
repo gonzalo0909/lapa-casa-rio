@@ -66,6 +66,7 @@ async function upsertBooking(data) {
  */
 async function updatePayment(bookingId, pay_status) {
   if (!BASE || !TOKEN) return { ok: false, error: "sheets_not_configured" };
+  if (!bookingId || !pay_status) return { ok: false, error: "invalid_arguments" };
   try {
     const res = await fetch(BASE, {
       method: "POST",
@@ -119,4 +120,10 @@ async function getPaymentStatus(bookingId) {
   return b ? String(b.pay_status || "").toLowerCase() : null;
 }
 
-module.exports = { fetchRowsFromSheet, upsertBooking, updatePayment, calcOccupiedBeds, getPaymentStatus };
+module.exports = {
+  fetchRowsFromSheet,
+  upsertBooking,
+  updatePayment,
+  calcOccupiedBeds,
+  getPaymentStatus
+};

@@ -57,12 +57,9 @@ app.get("/api/metrics", metricsMiddleware, async (_req, res) => {
 });
 app.get("/api/health", (_req, res) => res.json({ status: "ok", ts: new Date().toISOString() }));
 
-// Admin protegido
-app.get("/api/admin/*", (req, res) => {
-  const token = req.headers["x-admin-token"];
-  if (!token || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: "unauthorized" });
-  res.json({ ok: true });
-});
+// Admin protegido con middleware
+const { adminGuard } = require("./api/middleware/admin-guard");
+app.use("/api/admin", adminGuard, require("./api/routes/admin"));
 
 // Frontend estático
 const frontendSrcPath = path.join(__dirname, "frontend", "src");

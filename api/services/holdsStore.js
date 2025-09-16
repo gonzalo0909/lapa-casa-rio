@@ -22,7 +22,9 @@ async function getClient() {
   return client;
 }
 
-function keyHold(id) { return `hold:${id}`; }
+function keyHold(id) {
+  return `hold:${id}`;
+}
 
 async function getHold(holdId) {
   const c = await getClient();
@@ -56,7 +58,6 @@ async function renewHold(holdId, minutes = 5) {
   const extra = Math.max(60, Number(minutes) * 60);
   const ttl = await c.ttl(k);
   const item = JSON.parse(raw);
-  // Solo renueva si sigue en hold/paid
   if (!["hold", "paid"].includes(item.status)) return { ok: false, error: "invalid_status" };
   const newTtl = Math.max(60, (ttl > 0 ? ttl : 0) + extra);
   await c.setEx(k, newTtl, raw);
@@ -69,19 +70,19 @@ async function confirmHold(holdId, status = "paid") {
   const raw = await c.get(k);
   if (!raw) return { ok: false, error: "hold_not_found" };
   const obj = JSON.parse(raw);
-  // Estados permitidos: hold -> paid -> confirmed
+
   const next = String(status).toLowerCase();
   const allowed = new Set(["hold", "paid", "confirmed"]);
   if (!allowed.has(next)) return { ok: false, error: "invalid_status" };
-  // No retroceder
+
   const order = { hold: 1, paid: 2, confirmed: 3 };
   if (order[next] < order[obj.status || "hold"]) return { ok: false, error: "status_regression" };
 
   obj.status = next;
-  // Mantener al menos 10 min de TTL tras confirmación/pago
-  const minTtl = next === "confirmed" ? 15 * 60 : 10 * 60;
-  const ttl = await c.ttl(k);
-  const newTtl = Math.max(ttl > 0 ? ttl : 0, minTtl);
+
+  const minTtl = next === "confirmed" ? 15 * 60 : 3 * 60;
+  const newTtl = minTtl;
+
   await c.setEx(k, newTtl, JSON.stringify(obj));
   return { ok: true };
 }
@@ -93,7 +94,6 @@ async function releaseHold(holdId) {
   if (!raw) return { ok: false, error: "hold_not_found" };
   const obj = JSON.parse(raw);
   obj.status = "released";
-  // Mantener registro corto para auditoría
   await c.setEx(k, 60 * 5, JSON.stringify(obj));
   return { ok: true };
 }

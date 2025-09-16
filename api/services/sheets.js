@@ -1,129 +1,105 @@
-"use strict";
-
 /**
- * services/sheets.js
- * Conecta con Google Apps Script (code.gs) vía REST
- * Opera reservas: fetch, disponibilidad, upsert, estado de pago
+ * sheets.js — Servicio de integración con Google Sheets (Apps Script)
+ * Funciones: lectura/escritura de reservas, cálculo de ocupación,
+ * actualización de estados (hold, paid, cancel, etc.)
  */
 
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const fetch = require("node-fetch");
 
-const BASE = process.env.BOOKINGS_WEBAPP_URL;
-const TOKEN = process.env.CRON_TOKEN || "";
-
-/**
- * GET filas (reservas) filtradas por rango.
- */
-async function fetchRowsFromSheet(from, to) {
-  if (!BASE) return [];
-  try {
-    const url = `${BASE}?mode=rows`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) return [];
-    const data = await res.json().catch(() => ({}));
-    const rows = Array.isArray(data.rows) ? data.rows : [];
-
-    if (!from && !to) return rows;
-    const f = from ? new Date(from + "T00:00:00") : null;
-    const t = to ? new Date(to + "T00:00:00") : null;
-
-    return rows.filter((r) => {
-      const inDate = r.entrada ? new Date(r.entrada + "T00:00:00") : null;
-      const outDate = r.salida ? new Date(r.salida + "T00:00:00") : null;
-      if (outDate && f && outDate <= f) return false;
-      if (inDate && t && inDate >= t) return false;
-      return true;
-    });
-  } catch (err) {
-    console.error("[Sheets:fetchRows]", err.message);
-    return [];
-  }
+const BOOKINGS_WEBAPP_URL = process.env.BOOKINGS_WEBAPP_URL;
+if (!BOOKINGS_WEBAPP_URL) {
+  throw new Error("BOOKINGS_WEBAPP_URL not defined in env");
 }
 
 /**
- * Upsert reserva en GAS (action=upsert_booking).
+ * Insertar o actualizar reserva en Sheets.
+ * @param {Object} booking
+ * @returns {Promise<Object>}
  */
-async function upsertBooking(data) {
-  if (!BASE || !TOKEN) return { ok: false, error: "sheets_not_configured" };
-  try {
-    const res = await fetch(BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${TOKEN}`
-      },
-      body: JSON.stringify({ action: "upsert_booking", ...data })
-    });
-    return await res.json();
-  } catch (err) {
-    console.error("[Sheets:upsertBooking]", err.message);
-    return { ok: false, error: "request_failed" };
+async function upsertBooking(booking) {
+  const res = await fetch(`${BOOKINGS_WEBAPP_URL}?action=upsertBooking`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(booking),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Sheets upsert failed: ${res.status} ${res.statusText}`);
   }
+  return res.json();
 }
 
 /**
- * Actualizar estado de pago (action=payment_update).
+ * Actualizar estado de pago en Sheets.
+ * @param {string} reservationCode
+ * @param {string} payStatus
+ * @returns {Promise<Object>}
  */
-async function updatePayment(bookingId, pay_status) {
-  if (!BASE || !TOKEN) return { ok: false, error: "sheets_not_configured" };
-  if (!bookingId || !pay_status) return { ok: false, error: "invalid_arguments" };
-  try {
-    const res = await fetch(BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${TOKEN}`
-      },
-      body: JSON.stringify({ action: "payment_update", booking_id: bookingId, pay_status })
-    });
-    return await res.json();
-  } catch (err) {
-    console.error("[Sheets:updatePayment]", err.message);
-    return { ok: false, error: "request_failed" };
+async function updatePayment(reservationCode, payStatus) {
+  const res = await fetch(`${BOOKINGS_WEBAPP_URL}?action=updatePayment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reservation_code: reservationCode, pay_status: payStatus }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Sheets updatePayment failed: ${res.status} ${res.statusText}`);
   }
+  return res.json();
 }
 
 /**
- * Calcular camas ocupadas (bookings + holds).
+ * Obtener reservas desde Sheets (para disponibilidad).
  */
-function calcOccupiedBeds(rows, holdsMap) {
-  const occ = { 1: new Set(), 3: new Set(), 5: new Set(), 6: new Set() };
-  for (const r of rows) {
-    const status = String(r.pay_status || "").toLowerCase();
-    if (!["approved", "paid", "confirmed", "succeeded"].includes(status)) continue;
-    let camas = {};
-    try {
-      camas = r.camas_json ? JSON.parse(r.camas_json) : r.camas || {};
-    } catch {
-      camas = r.camas || {};
-    }
-    for (const [roomId, beds] of Object.entries(camas)) {
-      (beds || []).forEach((b) => occ[Number(roomId)]?.add(Number(b)));
+async function getBookings() {
+  const res = await fetch(`${BOOKINGS_WEBAPP_URL}?action=getBookings`);
+  if (!res.ok) {
+    throw new Error(`Sheets getBookings failed: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Calcular ocupación de camas a partir de registros.
+ * Considera múltiples estados como válidos (no solo "paid").
+ * @param {Array<Object>} bookings
+ * @param {string} targetDate (ISO yyyy-mm-dd)
+ * @returns {number}
+ */
+function calcOccupiedBeds(bookings, targetDate) {
+  if (!Array.isArray(bookings)) return 0;
+
+  // Estados aceptados como "reserva activa"
+  const VALID_STATES = new Set([
+    "hold",
+    "pending",
+    "paid",
+    "paid_out",
+    "confirmed",
+    "processing"
+  ]);
+
+  const day = new Date(targetDate);
+  let occupied = 0;
+
+  for (const b of bookings) {
+    if (!b.checkin_date || !b.checkout_date) continue;
+    if (!VALID_STATES.has((b.pay_status || "").toLowerCase())) continue;
+
+    const checkin = new Date(b.checkin_date);
+    const checkout = new Date(b.checkout_date);
+
+    if (day >= checkin && day < checkout) {
+      occupied += Number(b.beds || 1);
     }
   }
-  if (holdsMap) {
-    for (const [roomId, beds] of Object.entries(holdsMap)) {
-      (beds || []).forEach((b) => occ[Number(roomId)]?.add(Number(b)));
-    }
-  }
-  const res = {};
-  for (const id of [1, 3, 5, 6]) res[id] = Array.from(occ[id] || []).sort((a, b) => a - b);
-  return res;
-}
 
-/**
- * Consultar estado de pago de una reserva.
- */
-async function getPaymentStatus(bookingId) {
-  const rows = await fetchRowsFromSheet();
-  const b = rows.find((r) => String(r.booking_id) === String(bookingId));
-  return b ? String(b.pay_status || "").toLowerCase() : null;
+  return occupied;
 }
 
 module.exports = {
-  fetchRowsFromSheet,
   upsertBooking,
   updatePayment,
+  getBookings,
   calcOccupiedBeds,
-  getPaymentStatus
 };

@@ -22,7 +22,8 @@ async function cacheGet(key) {
     const c = await getClient();
     const val = await c.get(`cache:${key}`);
     return val ? JSON.parse(val) : null;
-  } catch {
+  } catch (err) {
+    console.error("Cache GET error:", err.message);
     return null;
   }
 }
@@ -31,7 +32,9 @@ async function cacheSet(key, value, ttlSec) {
   try {
     const c = await getClient();
     await c.setEx(`cache:${key}`, ttlSec, JSON.stringify(value));
-  } catch {}
+  } catch (err) {
+    console.error("Cache SET error:", err.message);
+  }
 }
 
 async function cacheInvalidate() {
@@ -39,7 +42,9 @@ async function cacheInvalidate() {
     const c = await getClient();
     const keys = await c.keys("cache:*");
     if (keys.length) await c.del(keys);
-  } catch {}
+  } catch (err) {
+    console.error("Cache Invalidate error:", err.message);
+  }
 }
 
 module.exports = { cacheGet, cacheSet, cacheInvalidate };

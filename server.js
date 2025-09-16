@@ -1,21 +1,23 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+
+// Servicios/utilidades
 const metrics = require("./api/services/metrics");
 const logger = require("./api/services/logger");
 
+// Rutas
+const apiRouter = require("./api");
+const icalRouter = require("./api/routes/ical");
+
 const app = express();
 
-// ✅ Configuración CORS actualizada para Stripe
+// CORS (config estándar; no depende de Stripe)
 app.use(
   cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Stripe-Signature" // agregado para compatibilidad con Stripe
-    ],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -24,9 +26,10 @@ app.use(bodyParser.json());
 app.use(metrics.middleware);
 
 // Rutas principales
-app.use("/api", require("./api"));
+app.use("/api/ical", icalRouter);   // ✅ siempre expone /api/ical
+app.use("/api", apiRouter);
 
-// Fallback
+// 404
 app.use((req, res) => {
   res.status(404).json({ error: "Not Found" });
 });

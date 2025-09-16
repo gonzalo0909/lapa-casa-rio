@@ -1,59 +1,60 @@
-import { StripeService } from '../../src/services/payments/stripe';
-import { MercadoPagoService } from '../../src/services/payments/mercadopago';
-import { PixService } from '../../src/services/payments/pix';
+"use strict";
 
-describe('StripeService', () => {
-  let stripeService: StripeService;
+/**
+ * api/routes/payments.js
+ * Handlers para Stripe, Mercado Pago y Pix con reconciliación a Google Sheets
+ */
 
-  beforeEach(() => {
-    // Mock Stripe para testing
-    process.env.STRIPE_SECRET_KEY = 'sk_test_fake_key';
-    stripeService = new StripeService();
-  });
+const express = require("express");
+const router = express.Router();
+const { updatePayment } = require("../services/sheets");
 
-  it('should create checkout session with valid data', async () => {
-    const sessionData = {
-      bookingId: 'BKG-TEST-001',
-      amount: 220,
-      currency: 'BRL',
-      guestEmail: 'test@example.com',
-      description: 'Test booking',
-    };
+router.post("/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  let event;
+  try {
+    event = JSON.parse(req.body);
+  } catch (err) {
+    console.error("❌ Stripe webhook parse error:", err.message);
+    return res.status(400).send("Invalid payload");
+  }
 
-    // En un test real, mockearías Stripe
-    // const result = await stripeService.createCheckoutSession(sessionData);
-    // expect(result).toHaveProperty('sessionId');
-    // expect(result).toHaveProperty('url');
-  });
+  const type = event.type;
+  const bookingId = event.data?.object?.metadata?.bookingId;
+
+  if (!bookingId) {
+    console.warn("⚠️ Missing bookingId in Stripe metadata");
+    return res.sendStatus(200);
+  }
+
+  if (type === "checkout.session.completed") {
+    await updatePayment(bookingId, "paid");
+    console.log(`✅ Stripe payment confirmed for ${bookingId}`);
+  }
+
+  res.sendStatus(200);
 });
 
-describe('PixService', () => {
-  let pixService: PixService;
+router.post("/mp/webhook", express.json({ limit: "2mb" }), async (req, res) => {
+  const body = req.body;
+  const type = body.type;
+  const data = body.data || {};
+  const bookingId = data.bookingId || data.metadata?.bookingId;
 
-  beforeEach(() => {
-    pixService = new PixService();
-  });
+  if (!bookingId) {
+    console.warn("⚠️ Missing bookingId in MercadoPago webhook");
+    return res.sendStatus(200);
+  }
 
-  it('should generate PIX code with valid data', () => {
-    const pixData = {
-      bookingId: 'BKG-TEST-001',
-      amount: 220,
-      description: 'Test booking',
-      guestName: 'Test User',
-    };
+  if (type === "payment" || body.action === "payment.created") {
+    await updatePayment(bookingId, "approved");
+    console.log(`✅ MercadoPago payment approved for ${bookingId}`);
+  }
 
-    const result = pixService.generatePixCode(pixData);
-
-    expect(result).toHaveProperty('qrCode');
-    expect(result).toHaveProperty('copyPasteCode');
-    expect(result).toHaveProperty('expiresAt');
-    expect(result.copyPasteCode).toMatch(/^000201/); // PIX EMV format
-  });
-
-  it('should calculate CRC16 correctly', () => {
-    // Test específico del CRC16 para PIX
-    const payload = '0002010102011234567890';
-    const crc = pixService['calculateCRC16'](payload + '6304');
-    expect(crc).toMatch(/^[0-9A-F]{4}$/);
-  });
+  res.sendStatus(200);
 });
+
+module.exports = {
+  router,
+  stripeWebhook: router.stack.find(r => r.route?.path === "/stripe/webhook").route.stack[0].handle,
+  mpWebhook: router.stack.find(r => r.route?.path === "/mp/webhook").route.stack[0].handle
+};

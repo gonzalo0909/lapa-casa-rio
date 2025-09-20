@@ -1,8 +1,10 @@
+// lapa-casa-hostel-frontend/.prettierrc
+
 {
-  "semi": true,
+  "semi": false,
   "trailingComma": "es5",
   "singleQuote": true,
-  "printWidth": 80,
+  "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,
   "quoteProps": "as-needed",
@@ -10,42 +12,34 @@
   "bracketSpacing": true,
   "bracketSameLine": false,
   "arrowParens": "avoid",
-  "requirePragma": false,
-  "insertPragma": false,
-  "proseWrap": "preserve",
-  "htmlWhitespaceSensitivity": "css",
-  "vueIndentScriptAndStyle": false,
   "endOfLine": "lf",
   "embeddedLanguageFormatting": "auto",
-  "singleAttributePerLine": false,
+  "htmlWhitespaceSensitivity": "css",
+  "insertPragma": false,
+  "jsxBracketSameLine": false,
+  "proseWrap": "preserve",
+  "requirePragma": false,
+  "vueIndentScriptAndStyle": false,
   "plugins": ["prettier-plugin-tailwindcss"],
   "tailwindConfig": "./tailwind.config.js",
-  "tailwindFunctions": ["clsx", "cn", "cva"],
   "overrides": [
     {
       "files": "*.json",
       "options": {
-        "tabWidth": 2
+        "printWidth": 80
       }
     },
     {
       "files": "*.md",
       "options": {
-        "proseWrap": "always",
-        "printWidth": 100
+        "printWidth": 80,
+        "proseWrap": "always"
       }
     },
     {
-      "files": "*.yml",
+      "files": "*.{css,scss}",
       "options": {
-        "tabWidth": 2,
-        "singleQuote": false
-      }
-    },
-    {
-      "files": "*.yaml",
-      "options": {
-        "tabWidth": 2,
+        "printWidth": 120,
         "singleQuote": false
       }
     }

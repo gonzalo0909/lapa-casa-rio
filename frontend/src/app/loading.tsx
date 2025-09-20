@@ -198,4 +198,18 @@ export function PaymentLoading() {
       <div className="flex items-center space-x-3">
         <LoadingSpinner size="sm" />
         <span className="text-sm text-muted-foreground">
-          Processando pag
+          Processando pagamento...
+        </span>
+      </div>
+      
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-full" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </div>
+  );
+}

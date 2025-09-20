@@ -1,60 +1,49 @@
-/** @type {import('next').NextConfig} */
+// lapa-casa-hostel-frontend/next.config.js
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
-});
+})
 
 const nextConfig = {
-  // App Router experimental features
+  // Configuración experimental
   experimental: {
+    // Optimizaciones para el App Router
     appDir: true,
-    serverComponentsExternalPackages: ['@prisma/client'],
-    optimizePackageImports: ['lucide-react', 'date-fns'],
+    serverComponentsExternalPackages: ['sharp'],
+    optimizePackageImports: ['lucide-react', 'date-fns', 'lodash'],
   },
 
-  // TypeScript configuration
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-
-  // ESLint configuration
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
-
-  // Image optimization
+  // Configuración de imágenes
   images: {
+    domains: [
+      'localhost',
+      'lapacasahostel.com',
+      'images.unsplash.com',
+      'via.placeholder.com',
+      'picsum.photos'
+    ],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    domains: [
-      'lapacasahostel.com',
-      'images.unsplash.com', // Para fotos de exemplo
-      'res.cloudinary.com', // CDN para imagens
-      'storage.googleapis.com', // Google Cloud Storage
-    ],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.lapacasahostel.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-    ],
-    dangerouslyAllowSVG: false,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    minimumCacheTTL: 86400, // 24 horas
   },
 
-  // Internationalization
+  // Configuración PWA
+  pwa: {
+    dest: 'public',
+    register: true,
+    skipWaiting: true,
+    disable: process.env.NODE_ENV === 'development',
+  },
+
+  // Configuración de i18n
   i18n: {
     locales: ['pt', 'en', 'es'],
     defaultLocale: 'pt',
     localeDetection: true,
   },
 
-  // Security headers
+  // Headers de seguridad
   async headers() {
     return [
       {
@@ -70,15 +59,7 @@ const nextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload',
+            value: 'origin-when-cross-origin',
           },
           {
             key: 'Permissions-Policy',
@@ -86,147 +67,122 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ]
   },
 
-  // Redirects for SEO
+  // Configuración de rewrites para API
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
+      },
+    ]
+  },
+
+  // Configuración de redirects
   async redirects() {
     return [
       {
         source: '/book',
-        destination: '/pt/booking',
+        destination: '/booking',
         permanent: true,
       },
       {
         source: '/reserva',
-        destination: '/pt/booking',
+        destination: '/booking',
         permanent: true,
       },
       {
         source: '/quartos',
-        destination: '/pt/rooms',
+        destination: '/rooms',
         permanent: true,
       },
-      {
-        source: '/habitaciones',
-        destination: '/es/rooms',
-        permanent: true,
-      },
-    ];
+    ]
   },
 
-  // Environment variables
-  env: {
-    NEXT_PUBLIC_APP_NAME: 'Lapa Casa Hostel',
-    NEXT_PUBLIC_APP_DESCRIPTION: 'Channel Manager & Booking Engine',
-    NEXT_PUBLIC_APP_URL: process.env.NODE_ENV === 'production' 
-      ? 'https://lapacasahostel.com' 
-      : 'http://localhost:3000',
-    NEXT_PUBLIC_API_URL: process.env.NODE_ENV === 'production'
-      ? 'https://api.lapacasahostel.com'
-      : 'http://localhost:8000',
+  // Configuración de compilación
+  compiler: {
+    // Eliminar console.log en producción
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
 
-  // Performance optimizations
-  poweredByHeader: false,
+  // Configuración de optimización
+  swcMinify: true,
   compress: true,
+  poweredByHeader: false,
   generateEtags: true,
 
-  // Output configuration for production
-  output: 'standalone',
-  
-  // Webpack configuration
-  webpack: (config, { dev, isServer }) => {
-    // Bundle analyzer
-    if (!dev && !isServer) {
-      config.resolve.alias['@'] = __dirname;
-    }
+  // Variables de entorno públicas
+  env: {
+    SITE_NAME: process.env.NEXT_PUBLIC_SITE_NAME,
+    SITE_DESCRIPTION: process.env.NEXT_PUBLIC_SITE_DESCRIPTION,
+  },
 
-    // Optimize lodash imports
+  // Configuración de webpack
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Optimizaciones para bundle size
     config.resolve.alias = {
       ...config.resolve.alias,
-      'lodash': 'lodash-es',
-    };
-
-    // Improve build performance
-    if (!dev) {
-      config.optimization.splitChunks = {
-        ...config.optimization.splitChunks,
-        cacheGroups: {
-          ...config.optimization.splitChunks.cacheGroups,
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            priority: 10,
-            chunks: 'all',
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            priority: 5,
-            chunks: 'all',
-            enforce: true,
-          },
-        },
-      };
+      '@': require('path').resolve(__dirname, 'src'),
     }
 
-    return config;
+    // Configuración para análisis de bundles
+    if (process.env.ANALYZE === 'true') {
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          'process.env.ANALYZE': JSON.stringify(true),
+        })
+      )
+    }
+
+    // Optimizar importaciones de librerías
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    }
+
+    return config
   },
 
-  // Runtime configuration
-  serverRuntimeConfig: {
-    // Will only be available on the server side
-    mySecret: 'secret',
+  // Configuración de output
+  output: 'standalone',
+  
+  // Configuración de TypeScript
+  typescript: {
+    ignoreBuildErrors: false,
   },
+
+  // Configuración de ESLint
+  eslint: {
+    ignoreDuringBuilds: false,
+    dirs: ['src', 'pages', 'components', 'lib', 'hooks'],
+  },
+
+  // Configuración de dominio
+  assetPrefix: process.env.NODE_ENV === 'production' 
+    ? process.env.NEXT_PUBLIC_CDN_URL 
+    : undefined,
+
+  // Configuración de trailing slash
+  trailingSlash: false,
+
+  // Configuración de cache
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+
+  // Configuración específica para hostel
   publicRuntimeConfig: {
-    // Will be available on both server and client
-    staticFolder: '/static',
+    maxBedsPerBooking: process.env.NEXT_PUBLIC_MAX_BEDS_PER_BOOKING || '38',
+    basePrice: process.env.NEXT_PUBLIC_BASE_PRICE || '60',
+    whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
   },
+}
 
-  // Experimental features for better performance
-  swcMinify: true,
-  modularizeImports: {
-    'lucide-react': {
-      transform: 'lucide-react/dist/esm/icons/{{member}}',
-    },
-    'date-fns': {
-      transform: 'date-fns/{{member}}',
-    },
-  },
-
-  // PWA Configuration (using next-pwa)
-  ...(process.env.NODE_ENV === 'production' && {
-    pwa: {
-      dest: 'public',
-      register: true,
-      skipWaiting: true,
-      runtimeCaching: [
-        {
-          urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'google-fonts',
-            expiration: {
-              maxEntries: 4,
-              maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
-            },
-          },
-        },
-        {
-          urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'google-fonts-static',
-            expiration: {
-              maxEntries: 4,
-              maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
-            },
-          },
-        },
-      ],
-    },
-  }),
-};
-
-module.exports = withBundleAnalyzer(nextConfig);
+module.exports = withBundleAnalyzer(nextConfig)

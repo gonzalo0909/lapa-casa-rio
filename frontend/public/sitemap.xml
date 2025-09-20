@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+=============================================================================
+LAPA CASA HOSTEL - XML SITEMAP
+Santa Teresa, Rio de Janeiro - Brasil
+Channel Manager & Booking Engine
+=============================================================================
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+
+  <!-- Homepage - Multiple Languages -->
+  <url>
+    <loc>https://lapacasahostel.com/</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/" />
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/hostel-exterior.jpg</image:loc>
+      <image:title>Lapa Casa Hostel - Santa Teresa, Rio de Janeiro</image:title>
+      <image:caption>Hostel especializado em grupos em Santa Teresa</image:caption>
+    </image:image>
+  </url>
+
+  <!-- Portuguese Pages -->
+  <url>
+    <loc>https://lapacasahostel.com/pt/</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/" />
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/booking</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/booking" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/booking" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/booking" />
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/rooms</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/rooms" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/rooms" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/rooms" />
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/mixto-12a.jpg</image:loc>
+      <image:title>Quarto Mixto 12A - 12 camas</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/mixto-12b.jpg</image:loc>
+      <image:title>Quarto Mixto 12B - 12 camas</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/mixto-7.jpg</image:loc>
+      <image:title>Quarto Mixto 7 - 7 camas</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/flexible-7.jpg</image:loc>
+      <image:title>Quarto Flexível 7 - 7 camas</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/rooms/mixto-12a</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/mixto-12a-gallery-1.jpg</image:loc>
+      <image:title>Mixto 12A - Vista do quarto</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/rooms/mixto-12b</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/mixto-12b-gallery-1.jpg</image:loc>
+      <image:title>Mixto 12B - Vista do quarto</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/rooms/mixto-7</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/mixto-7-gallery-1.jpg</image:loc>
+      <image:title>Mixto 7 - Vista do quarto</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/rooms/flexible-7</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/rooms/flexible-7-gallery-1.jpg</image:loc>
+      <image:title>Flexível 7 - Vista do quarto</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/about</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/about" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/about" />
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/contact</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/contact" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/contact" />
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/groups</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/groups" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/groups" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/groups" />
+  </url>
+
+  <!-- English Pages -->
+  <url>
+    <loc>https://lapacasahostel.com/en/</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/" />
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/en/booking</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/en/rooms</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/en/about</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/en/contact</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/en/groups</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Spanish Pages -->
+  <url>
+    <loc>https://lapacasahostel.com/es/</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://lapacasahostel.com/pt/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://lapacasahostel.com/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://lapacasahostel.com/es/" />
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/es/booking</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/es/rooms</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/es/about</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/es/contact</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/es/groups</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Location & Amenities Pages -->
+  <url>
+    <loc>https://lapacasahostel.com/pt/location</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://lapacasahostel.com/images/location/santa-teresa.jpg</image:loc>
+      <image:title>Santa Teresa - Rio de Janeiro</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/amenities</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Policy Pages -->
+  <url>
+    <loc>https://lapacasahostel.com/pt/privacy-policy</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/terms-of-service</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://lapacasahostel.com/pt/cancellation-policy</loc>
+    <lastmod>2024-09-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+</urlset>

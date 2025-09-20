@@ -1,0 +1,98 @@
+{
+  "compilerOptions": {
+    // Target and Module
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    
+    // Emit
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "removeComments": false,
+    "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".next/cache/tsbuildinfo.json",
+    
+    // Type Checking
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    
+    // Modules
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    
+    // JSX
+    "jsx": "preserve",
+    "jsxImportSource": "react",
+    
+    // Advanced
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": false,
+    
+    // Path Mapping
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/utils/*": ["./src/lib/utils/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/stores/*": ["./src/stores/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/styles/*": ["./src/styles/*"],
+      "@/public/*": ["./public/*"]
+    },
+    
+    // Plugin and Next.js specific
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/**/*",
+    "tailwind.config.js",
+    "next.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "jest.config.js",
+    "jest.setup.js"
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
+}

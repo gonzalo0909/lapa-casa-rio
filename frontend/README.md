@@ -1,374 +1,232 @@
-# 🏨 Lapa Casa Hostel - Channel Manager & Booking Engine
+# Lapa Casa Hostel - Frontend
 
-<div align="center">
+Sistema de reservas online para Lapa Casa Hostel, ubicado en Santa Teresa, Rio de Janeiro. Especializado en grupos grandes con capacidad para 38 huéspedes en 4 habitaciones.
 
-![Lapa Casa Hostel](https://via.placeholder.com/600x200/0ea5e9/ffffff?text=LAPA+CASA+HOSTEL)
+## 🏨 Características del Hostel
 
-**Sistema completo de gestão de reservas e canal de vendas para hostel**  
-*Santa Teresa, Rio de Janeiro - Brasil*
+- **Ubicación**: Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro
+- **Capacidad**: 38 camas en 4 habitaciones
+- **Especialidad**: Grupos de 7+ personas
+- **Habitaciones**:
+  - Mixto 12A (12 camas)
+  - Mixto 12B (12 camas) 
+  - Mixto 7 (7 camas)
+  - Flexible 7 (7 camas - femenino/mixto)
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![Stripe](https://img.shields.io/badge/Stripe-Payment-635bff?style=for-the-badge&logo=stripe)](https://stripe.com/)
-[![Mercado Pago](https://img.shields.io/badge/Mercado%20Pago-PIX-00b1ea?style=for-the-badge)](https://www.mercadopago.com.br/)
+## 🚀 Tecnologías
 
-</div>
+- **Framework**: Next.js 14 con App Router
+- **Lenguaje**: TypeScript
+- **Estilos**: Tailwind CSS
+- **UI**: Radix UI + componentes personalizados
+- **Estado**: Zustand
+- **Formularios**: React Hook Form + Zod
+- **Pagos**: Stripe + Mercado Pago
+- **Fechas**: date-fns + React Day Picker
+- **Internacionalización**: next-intl (PT/EN/ES)
 
----
+## 📋 Funcionalidades
 
-## 🎯 **Sobre o Projeto**
+### Sistema de Reservas
+- ✅ Booking engine optimizado para grupos
+- ✅ Calendario de disponibilidad en tiempo real
+- ✅ Lógica anti-overbooking
+- ✅ Precios dinámicos por temporada
+- ✅ Descuentos automáticos por grupo:
+  - 10% para 7-15 personas
+  - 15% para 16-25 personas  
+  - 20% para 26+ personas
 
-Sistema de reservas e gestão de canal desenvolvido especificamente para o **Lapa Casa Hostel**, localizado no coração de Santa Teresa, Rio de Janeiro. Especializado em grupos corporativos e eventos com **45 camas distribuídas em 4 quartos** únicos.
+### Gestión de Pagos
+- ✅ Depósito inicial (30-50%)
+- ✅ Pago automático del saldo (7 días antes)
+- ✅ Stripe para tarjetas internacionales
+- ✅ Mercado Pago + PIX para Brasil
+- ✅ Manejo de webhooks
 
-### 🏠 **Configuração do Hostel**
-- **📍 Endereço:** Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro
-- **🛏️ Capacidade:** 45 camas total
-- **🏠 Quartos:** 4 quartos (2x Mixto 12, 1x Mixto 7, 1x Flexível 7)
-- **🎯 Especialização:** Grupos 7+ pessoas com descontos automáticos
-- **💰 Preço base:** R$ 60,00 por cama/noite
+### Experiencia de Usuario
+- ✅ Diseño mobile-first
+- ✅ PWA con funcionalidad offline
+- ✅ Multiidioma (Portugués, Inglés, Español)
+- ✅ Integración WhatsApp Business
+- ✅ SEO optimizado
+- ✅ Analytics y conversión
 
----
+## 🛠 Instalación
 
-## ⚡ **Características Principais**
-
-### 🔥 **Booking Engine Avançado**
-- ✅ **Anti-overbooking** com sistema de bloqueio inteligente
-- ✅ **Pricing dinâmico** com descontos automáticos para grupos
-- ✅ **Quarto flexível** (feminino → mixto em 48h)
-- ✅ **Temporadas** com multiplicadores sazonais
-- ✅ **Multi-moeda** (BRL, USD, EUR)
-
-### 💳 **Pagamentos Otimizados**
-- ✅ **Stripe** - Cartões internacionais
-- ✅ **Mercado Pago** - PIX, cartões BR, parcelamento 12x
-- ✅ **Sistema de depósitos** (30% entrada, 70% na chegada)
-- ✅ **Cobrança automática** 7 dias antes do check-in
-- ✅ **Webhooks** para confirmações instantâneas
-
-### 📊 **Gestão Inteligente**
-- ✅ **Dashboard** com métricas em tempo real
-- ✅ **Sincronização Google Sheets** automática
-- ✅ **WhatsApp** para confirmações e lembretes
-- ✅ **Email marketing** com templates personalizados
-- ✅ **Analytics** e conversion tracking
-
----
-
-## 🏗️ **Arquitetura Técnica**
-
-### 🎨 **Frontend Stack**
-```typescript
-// Core Framework
-Next.js 14.1          // App Router + Server Components
-React 18.2            // Latest features + Concurrent mode
-TypeScript 5.3        // Type safety + Developer experience
-
-// Styling & UI
-Tailwind CSS 3.4      // Utility-first + Custom design system
-Framer Motion         // Smooth animations + Micro-interactions
-Lucide React          // Consistent iconography
-
-// State Management
-Zustand               // Lightweight + TypeScript-first
-React Hook Form       // Performance + Validation
-Zod                   // Schema validation + Type inference
-
-// Payments
-Stripe Elements       // International cards + Apple/Google Pay
-Mercado Pago SDK      // PIX + Brazilian market optimization
-```
-
-### ⚙️ **Backend Stack**
-```typescript
-// Runtime & Framework
-Node.js 20+           // Latest LTS + Performance improvements
-Express.js            // Robust + Middleware ecosystem
-TypeScript            // End-to-end type safety
-
-// Database & Cache
-PostgreSQL            // ACID compliance + Complex queries
-Redis                 // Session storage + Rate limiting
-Prisma ORM            // Type-safe + Migration management
-
-// External Integrations
-Google Sheets API     // Booking sync + Reporting
-WhatsApp Business     // Guest communication
-SMTP (Gmail)          // Transactional emails
-```
-
----
-
-## 🚀 **Quick Start**
-
-### 📋 **Pré-requisitos**
 ```bash
-Node.js >= 18.17.0
-npm >= 9.0.0
-PostgreSQL >= 14
-Redis >= 6.0
-```
+# Clonar repositorio
+git clone https://github.com/lapacasahostel/frontend.git
+cd lapa-casa-hostel-frontend
 
-### 🔧 **Instalação**
-
-1. **Clone o repositório**
-```bash
-git clone https://github.com/lapacasahostel/booking-system.git
-cd booking-system/frontend
-```
-
-2. **Instalar dependências**
-```bash
+# Instalar dependencias
 npm install
-```
 
-3. **Configurar ambiente**
-```bash
+# Configurar variables de entorno
 cp .env.example .env.local
-# Editar .env.local com suas configurações
-```
+# Editar .env.local con tus valores
 
-4. **Executar em desenvolvimento**
-```bash
+# Ejecutar en desarrollo
 npm run dev
 ```
 
-5. **Acessar aplicação**
+## 📁 Estructura del Proyecto
+
 ```
-Frontend: http://localhost:3000
-API Docs: http://localhost:8000/docs
-```
-
----
-
-## 💰 **Sistema de Preços**
-
-### 🎯 **Descontos Automáticos por Grupo**
-```javascript
-const groupDiscounts = {
-  '7-15 camas':  '10% desconto',
-  '16-25 camas': '15% desconto', 
-  '26+ camas':   '20% desconto'
-};
-```
-
-### 📅 **Multiplicadores Sazonais**
-```javascript
-const seasonRates = {
-  'Alta (Dez-Mar)':    '+50%',
-  'Média (Abr-Mai)':   'Base',
-  'Baixa (Jun-Set)':   '-20%',
-  'Carnaval (Fev)':    '+100% (mín. 5 noites)'
-};
+src/
+├── app/                    # App Router de Next.js
+│   ├── [locale]/          # Rutas internacionalizadas
+│   ├── layout.tsx         # Layout principal
+│   └── page.tsx           # Página de inicio
+├── components/
+│   ├── ui/                # Componentes base reutilizables
+│   ├── booking/           # Componentes del motor de reservas
+│   ├── payment/           # Componentes de pago
+│   ├── rooms/             # Componentes de habitaciones
+│   └── forms/             # Formularios especializados
+├── lib/                   # Utilidades y configuraciones
+├── hooks/                 # Custom hooks
+├── stores/                # Estado global (Zustand)
+├── types/                 # Definiciones TypeScript
+└── constants/             # Constantes de la aplicación
 ```
 
-### 💳 **Estrutura de Depósitos**
-```javascript
-const deposits = {
-  'Grupos padrão':     '30% entrada + 70% chegada',
-  'Grupos 15+ pessoas': '50% entrada + 50% chegada',
-  'Cobrança automática': '7 dias antes check-in'
-};
-```
+## 🏗 Arquitectura
 
----
+### Componentes del Booking Engine
+- **DateSelector**: Selección de fechas con validaciones
+- **RoomSelector**: Selección de habitaciones con disponibilidad
+- **PricingCalculator**: Cálculo dinámico de precios
+- **GuestInformation**: Formulario de huéspedes
+- **PaymentProcessor**: Procesamiento de pagos
 
-## 🏠 **Configuração dos Quartos**
+### Lógica Anti-Overbooking
+- Verificación atómica de disponibilidad
+- Locks temporales durante reserva
+- Validación en tiempo real
+- Manejo de habitación flexible
 
-### 🛏️ **Room Setup**
-```typescript
-interface Room {
-  id: string;
-  name: string;
-  capacity: number;
-  type: 'mixed' | 'female';
-  basePrice: number;
-  isFlexible: boolean;
-}
+### Sistema de Precios
+- Precio base: R$ 60 por cama/noche
+- Multiplicadores estacionales:
+  - Carnaval: 2.0x (mínimo 5 noches)
+  - Alta: 1.5x (Dic-Mar)
+  - Media: 1.0x (Abr-May, Oct-Nov)
+  - Baja: 0.8x (Jun-Sep)
 
-const rooms: Room[] = [
-  {
-    id: 'mixto_12a',
-    name: 'Mixto 12A',
-    capacity: 12,
-    type: 'mixed',
-    basePrice: 60.00,
-    isFlexible: false
-  },
-  {
-    id: 'mixto_12b', 
-    name: 'Mixto 12B',
-    capacity: 12,
-    type: 'mixed',
-    basePrice: 60.00,
-    isFlexible: false
-  },
-  {
-    id: 'mixto_7',
-    name: 'Mixto 7',
-    capacity: 7,
-    type: 'mixed',
-    basePrice: 60.00,
-    isFlexible: false
-  },
-  {
-    id: 'flexible_7',
-    name: 'Flexível 7',
-    capacity: 7,
-    type: 'female', // Default feminino
-    basePrice: 60.00,
-    isFlexible: true // Converte para mixto em 48h
-  }
-];
-```
-
----
-
-## 🔧 **Scripts Disponíveis**
+## 🔧 Scripts Disponibles
 
 ```bash
-# Desenvolvimento
-npm run dev              # Servidor desenvolvimento
-npm run type-check       # Verificação TypeScript
-npm run lint            # ESLint + correções
-npm run format          # Prettier formatting
-
-# Build & Deploy
-npm run build           # Build produção
-npm run start           # Servidor produção
-npm run analyze         # Bundle analyzer
-
-# Testes
-npm run test            # Jest test suite
-npm run test:watch      # Watch mode
-npm run test:coverage   # Coverage report
-
-# SEO & Performance
-npm run sitemap         # Gerar sitemap.xml
+npm run dev          # Desarrollo
+npm run build        # Producción
+npm run start        # Servidor producción
+npm run lint         # Linting
+npm run type-check   # Verificación TypeScript
+npm run test         # Tests
+npm run analyze      # Análisis de bundle
 ```
 
----
+## 🌍 Variables de Entorno
 
-## 📊 **Monitoramento & Analytics**
+```bash
+# APIs
+NEXT_PUBLIC_API_URL=            # URL del backend
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=  # Clave pública Stripe
+NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=  # Clave pública MP
 
-### 📈 **Métricas Principais**
-- **Conversion Rate:** Objetivo >8%
-- **Page Load Time:** <2 segundos
-- **Mobile Performance:** Score >90
-- **SEO Score:** >95
-- **Accessibility:** WCAG 2.1 AA
+# Configuración
+NEXT_PUBLIC_WHATSAPP_NUMBER=    # WhatsApp del hostel
+NEXT_PUBLIC_MAX_BEDS_PER_BOOKING=38  # Máximo camas
+NEXT_PUBLIC_BASE_PRICE=60       # Precio base
 
-### 🔍 **Ferramentas de Análise**
-- **Google Analytics 4** - Comportamento usuários
-- **Google Tag Manager** - Event tracking
-- **Hotjar** - Heatmaps + Session recordings
-- **Sentry** - Error monitoring
-- **DataDog** - Performance monitoring
-
----
-
-## 🌐 **Internacionalização**
-
-### 🗣️ **Idiomas Suportados**
-- 🇧🇷 **Português** (padrão)
-- 🇺🇸 **English**
-- 🇪🇸 **Español**
-
-### 🌍 **Detecção Automática**
-- Accept-Language header
-- Geolocation (opcional)
-- User preference storage
-- URL prefix (/pt, /en, /es)
-
----
-
-## 🔐 **Segurança**
-
-### 🛡️ **Medidas Implementadas**
-- ✅ **HTTPS** obrigatório
-- ✅ **CSP Headers** configurados
-- ✅ **Rate Limiting** por IP
-- ✅ **Input Validation** com Zod
-- ✅ **SQL Injection** prevention
-- ✅ **XSS Protection** 
-- ✅ **GDPR Compliance** para dados pessoais
-
-### 🔑 **Autenticação**
-- JWT tokens com refresh
-- Bcrypt password hashing
-- Session management
-- OAuth providers (Google, Facebook)
-
----
-
-## 🚀 **Deploy & DevOps**
-
-### ☁️ **Infraestrutura**
-- **Frontend:** Vercel / Netlify
-- **Backend:** Railway / DigitalOcean
-- **Database:** PostgreSQL Cloud
-- **Cache:** Redis Cloud
-- **CDN:** Cloudflare
-- **Monitoring:** DataDog
-
-### 🔄 **CI/CD Pipeline**
-```yaml
-# GitHub Actions
-- Lint & Type Check
-- Unit & Integration Tests  
-- Build & Bundle Analysis
-- Deploy Staging
-- E2E Tests
-- Deploy Production
-- Performance Monitoring
+# Features
+NEXT_PUBLIC_ENABLE_PWA=true     # Habilitar PWA
+NEXT_PUBLIC_ENABLE_ANALYTICS=   # Google Analytics
 ```
 
----
+## 📱 Responsive Design
 
-## 🤝 **Contribuição**
+- **Mobile First**: Optimizado para móviles (70% del tráfico)
+- **Breakpoints**: xs(475px), sm(640px), md(768px), lg(1024px), xl(1280px)
+- **Touch Friendly**: Botones y áreas de toque optimizadas
+- **Performance**: < 2s tiempo de carga garantizado
 
-### 🔀 **Workflow**
-1. Fork o repositório
-2. Criar branch: `git checkout -b feature/nova-funcionalidade`
-3. Commit: `git commit -m 'feat: adicionar nova funcionalidade'`
-4. Push: `git push origin feature/nova-funcionalidade`
+## 🔒 Seguridad
+
+- CSP (Content Security Policy)
+- Headers de seguridad
+- Validación client-side y server-side
+- Sanitización de inputs
+- Rate limiting
+- HTTPS obligatorio en producción
+
+## 📈 SEO y Performance
+
+- **Core Web Vitals**: Optimizado
+- **Lighthouse Score**: 90+ en todas las métricas
+- **Schema.org**: Markup para hoteles
+- **Sitemap**: Generación automática
+- **Meta tags**: Dinámicos por página
+- **Open Graph**: Compartir en redes sociales
+
+## 🚀 Deployment
+
+### Vercel (Recomendado)
+```bash
+# Conectar repositorio en vercel.com
+# Las variables de entorno se configuran en el dashboard
+# Deploy automático en push a main
+```
+
+### Docker
+```bash
+# Build imagen
+docker build -t lapa-casa-frontend .
+
+# Ejecutar contenedor
+docker run -p 3000:3000 lapa-casa-frontend
+```
+
+## 🧪 Testing
+
+```bash
+# Tests unitarios
+npm run test
+
+# Tests con coverage
+npm run test:coverage
+
+# Tests E2E
+npm run test:e2e
+```
+
+## 📊 Monitoreo
+
+- **Analytics**: Google Analytics 4
+- **Errors**: Sentry
+- **Performance**: Web Vitals
+- **Conversión**: Funnel de reservas
+- **User Experience**: Hotjar
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crear feature branch (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push al branch (`git push origin feature/nueva-funcionalidad`)
 5. Abrir Pull Request
 
-### 📝 **Convenções**
-- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/)
-- **Branches:** `feature/`, `bugfix/`, `hotfix/`
-- **Code Style:** Prettier + ESLint
-- **Testing:** Jest + Testing Library
+## 📞 Soporte
+
+- **Email**: tech@lapacasahostel.com
+- **WhatsApp**: +55 21 99999-9999
+- **Documentación**: [docs.lapacasahostel.com](https://docs.lapacasahostel.com)
+
+## 📄 Licencia
+
+Propietario - Lapa Casa Hostel. Todos los derechos reservados.
 
 ---
 
-## 📞 **Suporte & Contato**
-
-### 🏨 **Lapa Casa Hostel**
-- **📧 Email:** contato@lapacasahostel.com
-- **📱 WhatsApp:** +55 21 99999-9999
-- **🌐 Website:** [lapacasahostel.com](https://lapacasahostel.com)
-- **📍 Endereço:** Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro
-
-### 💻 **Suporte Técnico**
-- **📧 Dev Team:** dev@lapacasahostel.com
-- **🐛 Issues:** [GitHub Issues](https://github.com/lapacasahostel/booking-system/issues)
-- **📚 Docs:** [Documentação Técnica](https://docs.lapacasahostel.com)
-
----
-
-## 📄 **Licença**
-
-Copyright © 2024 Lapa Casa Hostel. Todos os direitos reservados.
-
-Este projeto é propriedade privada do Lapa Casa Hostel e não pode ser reproduzido, distribuído ou usado comercialmente sem autorização expressa.
-
----
-
-<div align="center">
-
-**Desenvolvido com ❤️ para o melhor hostel de Santa Teresa**
-
-*Sistema de reservas profissional para hospitalidade moderna*
-
-</div>
+**Desarrollado con ❤️ para Lapa Casa Hostel**  
+*Santa Teresa, Rio de Janeiro - Brasil*

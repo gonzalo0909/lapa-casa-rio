@@ -1,0 +1,116 @@
+# =============================================================================
+# LAPA CASA HOSTEL - ROBOTS.TXT
+# Santa Teresa, Rio de Janeiro - Brasil
+# =============================================================================
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Specific rules for major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot  
+Allow: /
+Crawl-delay: 2
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 2
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# Disallow private and admin areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
+Disallow: /temp/
+Disallow: /cache/
+
+# Disallow sensitive booking data
+Disallow: /booking/confirmation/
+Disallow: /booking/payment/
+Disallow: /guest-data/
+Disallow: /payment-data/
+
+# Disallow development and testing
+Disallow: /dev/
+Disallow: /test/
+Disallow: /staging/
+Disallow: /.env
+Disallow: /config/
+
+# Disallow duplicate content
+Disallow: /*?*
+Disallow: /search?
+Disallow: /filter?
+
+# Allow important pages for SEO
+Allow: /pt/
+Allow: /en/
+Allow: /es/
+Allow: /pt/rooms
+Allow: /en/rooms
+Allow: /es/rooms
+Allow: /pt/booking
+Allow: /en/booking
+Allow: /es/booking
+Allow: /pt/about
+Allow: /en/about
+Allow: /es/about
+Allow: /pt/contact
+Allow: /en/contact
+Allow: /es/contact
+
+# Allow social media and rich snippets
+Allow: /images/
+Allow: /icons/
+Allow: /screenshots/
+Allow: /og-images/
+
+# Disallow session and tracking parameters
+Disallow: /*?session=*
+Disallow: /*?utm_*
+Disallow: /*?fbclid=*
+Disallow: /*?gclid=*
+
+# Sitemap locations
+Sitemap: https://lapacasahostel.com/sitemap.xml
+Sitemap: https://lapacasahostel.com/sitemap-0.xml
+Sitemap: https://lapacasahostel.com/pt/sitemap.xml
+Sitemap: https://lapacasahostel.com/en/sitemap.xml
+Sitemap: https://lapacasahostel.com/es/sitemap.xml
+
+# Image sitemap
+Sitemap: https://lapacasahostel.com/image-sitemap.xml
+
+# =============================================================================
+# SPECIFIC CRAWLER INSTRUCTIONS
+# =============================================================================
+
+# Google Image Bot
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /icons/
+Allow: /screenshots/
+Allow: /rooms/
+Disallow: /private-images/
+Disallow: /guest-photos/
+
+# Google Mobile Bot
+User-agent: Googlebot-Mobile
+Allow: /
+Crawl-delay: 1
+
+# Bing Image Bot
+User-agent: Bingbot
+Allow: /images/
+Allow: /icons/
+Crawl-delay: 2

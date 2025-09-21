@@ -370,3 +370,175 @@ export function BookingSummary({
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">
+              Subtotal ({bookingData.beds} camas × {nights} noites)
+            </span>
+            <span className="text-gray-900">
+              {formatCurrency(subtotal)}
+            </span>
+          </div>
+
+          {groupDiscount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-emerald-600">
+                Desconto grupo ({(groupDiscount * 100).toFixed(0)}%)
+              </span>
+              <span className="text-emerald-600">
+                -{formatCurrency(discountAmount)}
+              </span>
+            </div>
+          )}
+
+          {seasonMultiplier !== 1 && (
+            <div className="flex justify-between text-sm">
+              <span className={seasonMultiplier > 1 ? 'text-orange-600' : 'text-blue-600'}>
+                Ajuste temporada ({seasonMultiplier > 1 ? '+' : ''}{((seasonMultiplier - 1) * 100).toFixed(0)}%)
+              </span>
+              <span className={seasonMultiplier > 1 ? 'text-orange-600' : 'text-blue-600'}>
+                {seasonAdjustment > 0 ? '+' : ''}{formatCurrency(seasonAdjustment)}
+              </span>
+            </div>
+          )}
+
+          <div className="border-t border-gray-200 pt-3">
+            <div className="flex justify-between font-semibold text-lg">
+              <span className="text-gray-900">Total</span>
+              <span className="text-gray-900">
+                {formatCurrency(finalPrice)}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Depósito (30%)</span>
+              <span className="font-medium text-gray-900">
+                {formatCurrency(depositAmount)}
+              </span>
+            </div>
+            
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">
+                Saldo restante (cobrança automática 7 dias antes)
+              </span>
+              <span className="font-medium text-gray-900">
+                {formatCurrency(remainingAmount)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Status de Pagamento */}
+      {isConfirmed && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Status de Pagamento
+          </h3>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600 mr-3" />
+                <div>
+                  <div className="font-medium text-emerald-900">
+                    Depósito Pago
+                  </div>
+                  <div className="text-sm text-emerald-700">
+                    Processado com sucesso
+                  </div>
+                </div>
+              </div>
+              <div className="font-semibold text-emerald-900">
+                {formatCurrency(depositAmount)}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center">
+                <Clock className="w-5 h-5 text-blue-600 mr-3" />
+                <div>
+                  <div className="font-medium text-blue-900">
+                    Saldo Pendente
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    Cobrança automática em 7 dias antes do check-in
+                  </div>
+                </div>
+              </div>
+              <div className="font-semibold text-blue-900">
+                {formatCurrency(remainingAmount)}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Informações Importantes */}
+      <Alert className="bg-yellow-50 border-yellow-200">
+        <AlertCircle className="w-4 h-4" />
+        <div>
+          <h4 className="font-semibold text-yellow-900 mb-1">
+            Informações Importantes
+          </h4>
+          <ul className="text-sm text-yellow-800 space-y-1">
+            <li>• Documento oficial obrigatório no check-in</li>
+            <li>• Check-in: 15h00 | Check-out: 11h00</li>
+            <li>• Café da manhã incluso (7h30 - 10h30)</li>
+            <li>• Cancelamento gratuito até 48h antes</li>
+            <li>• WiFi gratuito em todas as áreas</li>
+          </ul>
+        </div>
+      </Alert>
+
+      {/* Próximos Passos */}
+      {isConfirmed && (
+        <Card className="p-6 bg-emerald-50 border-emerald-200">
+          <h3 className="text-lg font-semibold text-emerald-900 mb-4">
+            Próximos Passos
+          </h3>
+          
+          <div className="space-y-3 text-sm text-emerald-800">
+            <div className="flex items-start">
+              <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 mt-0.5 flex-shrink-0" />
+              <span>Email de confirmação enviado para {bookingData.guestInfo?.email}</span>
+            </div>
+            
+            <div className="flex items-start">
+              <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 mt-0.5 flex-shrink-0" />
+              <span>SMS/WhatsApp de confirmação enviado</span>
+            </div>
+            
+            <div className="flex items-start">
+              <Clock className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+              <span>Cobrança automática do saldo 7 dias antes do check-in</span>
+            </div>
+            
+            <div className="flex items-start">
+              <Clock className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+              <span>Lembrete com detalhes do check-in 24h antes</span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-emerald-200">
+            <div className="text-sm text-emerald-800">
+              <strong>Contato:</strong> +55 21 2507-0100 | reservas@lapacasahostel.com
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Botões de Ação */}
+      {showActions && !isConfirmed && (
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={() => onEdit?.('dates')}>
+            Editar Reserva
+          </Button>
+          
+          <Button className="bg-emerald-600 hover:bg-emerald-700">
+            Continuar para Pagamento
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

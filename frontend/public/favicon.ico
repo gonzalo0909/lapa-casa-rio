@@ -1,1 +1,48 @@
+# Favicon.ico para Lapa Casa Hostel
 
+**Ruta:** `lapa-casa-hostel-frontend/public/favicon.ico`
+
+## Especificaciones del Favicon
+
+- **Tamaño:** 32x32 píxeles (ICO multi-tamaño: 16x16, 32x32)
+- **Formato:** .ico
+- **Colores:** Paleta de colores de Lapa Casa Hostel
+- **Diseño:** Icono simplificado que represente:
+  - Casa/edificio estilizado
+  - Elementos de Santa Teresa/Rio
+  - Colores cálidos (naranja, amarillo, verde)
+
+## Instrucciones para crear el favicon
+
+1. Crear un diseño de 32x32 píxeles con:
+   - Icono de casa/hostel simplificado
+   - Colores primarios: #F97316 (orange-500), #EAB308 (yellow-500)
+   - Fondo transparente o blanco
+
+2. Generar archivo .ico usando herramientas como:
+   - favicon.io
+   - RealFaviconGenerator.net
+   - Photoshop/GIMP
+
+3. Incluir múltiples tamaños en el .ico:
+   - 16x16 para pestañas del navegador
+   - 32x32 para accesos directos
+   - 48x48 para iconos de Windows
+
+## Código HTML automático en Next.js
+
+Next.js detectará automáticamente el favicon.ico en /public/ y lo servirá en /favicon.ico
+
+```html
+<!-- Se genera automáticamente -->
+<link rel="icon" href="/favicon.ico" />
+```
+
+## Archivos adicionales recomendados
+
+Para soporte completo, considerar agregar también:
+- `apple-touch-icon.png` (180x180)
+- `icon-192.png` (192x192) 
+- `icon-512.png` (512x512)
+
+Estos archivos se colocarían en `public/` y se referenciarían en el manifest.json

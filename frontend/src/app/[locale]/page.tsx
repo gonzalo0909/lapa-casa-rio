@@ -180,4 +180,150 @@ export default function HomePage({ params: { locale } }: HomePageProps) {
                     <div className="flex items-center space-x-1 text-sm">
                       <Users className="w-4 h-4" />
                       <span>{room.capacity} camas</span>
-                    </div
+                    </div>
+                    
+                    <Badge variant={room.available ? 'default' : 'secondary'}>
+                      {room.available ? 'Disponível' : 'Indisponível'}
+                    </Badge>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-8">
+            <Link href={`/${locale}/rooms`}>
+              <Button variant="outline" size="lg">
+                Ver Todos os Quartos
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-muted/50 section-padding">
+        <div className="container-lapa">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Comodidades
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Tudo o que você precisa para uma estadia confortável e memorável
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {amenities.map((amenity, index) => (
+              <Card key={index} className="p-6 text-center">
+                <amenity.icon className="w-8 h-8 mx-auto mb-3 text-primary" />
+                <h3 className="font-semibold">{amenity.label}</h3>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-padding">
+        <div className="container-lapa">
+          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 lg:p-12 text-white text-center">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Desconto Especial para Grupos
+            </h2>
+            <p className="text-xl opacity-90 mb-6 max-w-2xl mx-auto">
+              Quanto maior o grupo, maior o desconto! Economize até 20% em reservas para grupos
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white/10 rounded-lg p-4">
+                <div className="text-2xl font-bold">7-15 pessoas</div>
+                <div className="text-lg">10% desconto</div>
+              </div>
+              <div className="bg-white/10 rounded-lg p-4">
+                <div className="text-2xl font-bold">16-25 pessoas</div>
+                <div className="text-lg">15% desconto</div>
+              </div>
+              <div className="bg-white/10 rounded-lg p-4">
+                <div className="text-2xl font-bold">26+ pessoas</div>
+                <div className="text-lg">20% desconto</div>
+              </div>
+            </div>
+
+            <Link href={`/${locale}/booking`}>
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                <Users className="w-5 h-5 mr-2" />
+                Reservar para Grupo
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-muted/50 section-padding">
+        <div className="container-lapa">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-6">
+                Localização Privilegiada
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Situada no coração de Santa Teresa, oferecemos fácil acesso às principais atrações do Rio de Janeiro, com transporte público próximo e ambiente seguro.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <span>Rua Silvio Romero 22, Santa Teresa</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Car className="w-5 h-5 text-primary" />
+                  <span>Transporte público próximo</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative aspect-video rounded-lg overflow-hidden">
+              <Image
+                src="/images/location/santa-teresa.jpg"
+                alt="Santa Teresa, Rio de Janeiro"
+                fill
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-padding">
+        <div className="container-lapa">
+          <Card className="p-8 lg:p-12 text-center bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Reserve Sua Estadia
+            </h2>
+            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Experiência única em Santa Teresa com desconto especial para grupos. Reserve agora e garante sua cama!
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href={`/${locale}/booking`}>
+                <Button size="lg" className="w-full sm:w-auto">
+                  <Calendar className="w-5 h-5 mr-2" />
+                  Reservar Agora
+                </Button>
+              </Link>
+              
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => window.open('https://wa.me/5521999999999', '_blank')}
+              >
+                <CreditCard className="w-5 h-5 mr-2" />
+                Falar no WhatsApp
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </section>
+    </div>
+  );
+}

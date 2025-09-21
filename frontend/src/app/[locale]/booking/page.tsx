@@ -1,3 +1,4 @@
+// lapa-casa-hostel-frontend/src/app/[locale]/booking/page.tsx
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Metadata } from 'next';
@@ -16,16 +17,15 @@ interface BookingPageProps {
   };
 }
 
-// Generar metadata dinámicamente
 export async function generateMetadata({ 
   params: { locale } 
 }: BookingPageProps): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'BookingPage' });
   
   return {
-    title: t('meta.title'),
-    description: t('meta.description'),
-    keywords: t('meta.keywords'),
+    title: 'Reservas - Lapa Casa Hostel',
+    description: 'Faça sua reserva no Lapa Casa Hostel. Desconto especial para grupos de 7+ pessoas.',
+    keywords: 'reserva hostel rio, booking santa teresa, hospedagem grupos rio',
   };
 }
 
@@ -35,7 +35,6 @@ export default function BookingPage({
 }: BookingPageProps) {
   const t = useTranslations('BookingPage');
 
-  // Procesar parámetros de búsqueda para valores iniciales
   const initialValues = {
     checkIn: searchParams.checkIn ? new Date(searchParams.checkIn) : null,
     checkOut: searchParams.checkOut ? new Date(searchParams.checkOut) : null,
@@ -45,44 +44,39 @@ export default function BookingPage({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Section */}
       <section className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
         <div className="container-lapa">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-              {t('title')}
+              Faça Sua Reserva
             </h1>
             <p className="text-lg text-muted-foreground">
-              {t('subtitle')}
+              Reserve sua estadia no Lapa Casa Hostel e aproveite descontos especiais para grupos
             </p>
           </div>
         </div>
       </section>
 
-      {/* Booking Engine Section */}
       <section className="section-padding">
         <div className="container-lapa">
           <Suspense fallback={<BookingEngineLoading />}>
-            {/* El BookingEngine será implementado en la siguiente fase */}
             <div className="bg-card rounded-lg border p-8 text-center">
               <h2 className="text-2xl font-semibold mb-4">
-                {t('engine.title')}
+                Motor de Reservas
               </h2>
               <p className="text-muted-foreground mb-6">
-                {t('engine.description')}
+                Selecione suas datas, quartos e complete sua reserva em minutos
               </p>
               
-              {/* Placeholder para el motor de reservas */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Date Selection */}
                 <div className="booking-step">
                   <h3 className="font-semibold mb-4">
-                    {t('steps.dates.title')}
+                    Selecionar Datas
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="form-group">
                       <label className="form-label">
-                        {t('steps.dates.checkIn')}
+                        Check-in
                       </label>
                       <input 
                         type="date" 
@@ -92,7 +86,7 @@ export default function BookingPage({
                     </div>
                     <div className="form-group">
                       <label className="form-label">
-                        {t('steps.dates.checkOut')}
+                        Check-out
                       </label>
                       <input 
                         type="date" 
@@ -103,51 +97,46 @@ export default function BookingPage({
                   </div>
                 </div>
 
-                {/* Room Selection */}
                 <div className="booking-step">
                   <h3 className="font-semibold mb-4">
-                    {t('steps.rooms.title')}
+                    Selecionar Quartos
                   </h3>
                   <div className="space-y-3">
-                    {/* Mixto 12A */}
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <div className="font-medium">{t('rooms.mixto12a')}</div>
+                        <div className="font-medium">Mixto 12A</div>
                         <div className="text-sm text-muted-foreground">
-                          12 {t('rooms.beds')}
+                          12 camas
                         </div>
                       </div>
                       <input type="number" min="0" max="12" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
                     </div>
                     
-                    {/* Mixto 12B */}
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <div className="font-medium">{t('rooms.mixto12b')}</div>
+                        <div className="font-medium">Mixto 12B</div>
                         <div className="text-sm text-muted-foreground">
-                          12 {t('rooms.beds')}
+                          12 camas
                         </div>
                       </div>
                       <input type="number" min="0" max="12" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
                     </div>
                     
-                    {/* Mixto 7 */}
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <div className="font-medium">{t('rooms.mixto7')}</div>
+                        <div className="font-medium">Mixto 7</div>
                         <div className="text-sm text-muted-foreground">
-                          7 {t('rooms.beds')}
+                          7 camas
                         </div>
                       </div>
                       <input type="number" min="0" max="7" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
                     </div>
                     
-                    {/* Flexible 7 */}
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <div className="font-medium">{t('rooms.flexible7')}</div>
+                        <div className="font-medium">Flexible 7</div>
                         <div className="text-sm text-muted-foreground">
-                          7 {t('rooms.beds')} • {t('rooms.flexible')}
+                          7 camas • Flexível
                         </div>
                       </div>
                       <input type="number" min="0" max="7" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
@@ -155,34 +144,33 @@ export default function BookingPage({
                   </div>
                 </div>
 
-                {/* Price Summary */}
                 <div className="booking-step">
                   <h3 className="font-semibold mb-4">
-                    {t('steps.summary.title')}
+                    Resumo do Preço
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span>{t('steps.summary.basePrice')}</span>
+                      <span>Preço base</span>
                       <span>R$ 0,00</span>
                     </div>
                     <div className="flex justify-between text-sm text-green-600">
-                      <span>{t('steps.summary.groupDiscount')}</span>
+                      <span>Desconto grupo</span>
                       <span>- R$ 0,00</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>{t('steps.summary.seasonMultiplier')}</span>
+                      <span>Multiplicador temporada</span>
                       <span>R$ 0,00</span>
                     </div>
                     <hr />
                     <div className="flex justify-between font-semibold">
-                      <span>{t('steps.summary.total')}</span>
+                      <span>Total</span>
                       <span className="price-display">R$ 0,00</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {t('steps.summary.deposit')}: R$ 0,00 (30%)
+                      Depósito: R$ 0,00 (30%)
                     </div>
                     <button className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium">
-                      {t('steps.summary.continue')}
+                      Continuar
                     </button>
                   </div>
                 </div>
@@ -192,107 +180,101 @@ export default function BookingPage({
         </div>
       </section>
 
-      {/* Information Section */}
       <section className="bg-muted/50 section-padding">
         <div className="container-lapa">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Group Discounts */}
             <div className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">👥</span>
               </div>
               <h3 className="font-semibold mb-2">
-                {t('info.groupDiscounts.title')}
+                Desconto para Grupos
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t('info.groupDiscounts.description')}
+                Economia de 10-20% para grupos de 7+ pessoas
               </p>
             </div>
 
-            {/* Easy Payment */}
             <div className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💳</span>
               </div>
               <h3 className="font-semibold mb-2">
-                {t('info.easyPayment.title')}
+                Pagamento Fácil
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t('info.easyPayment.description')}
+                Pix, cartão ou parcelamento em até 12x
               </p>
             </div>
 
-            {/* Flexible Cancellation */}
             <div className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🔄</span>
               </div>
               <h3 className="font-semibold mb-2">
-                {t('info.flexibleCancellation.title')}
+                Cancelamento Flexível
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t('info.flexibleCancellation.description')}
+                Cancele até 48h antes sem taxa
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
       <section className="section-padding">
         <div className="container-lapa max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-12">
-            {t('faq.title')}
+            Perguntas Frequentes
           </h2>
           
           <div className="space-y-6">
             <details className="bg-card border rounded-lg p-6">
               <summary className="font-semibold cursor-pointer">
-                {t('faq.questions.groupDiscount.question')}
+                Como funciona o desconto para grupos?
               </summary>
               <p className="mt-3 text-muted-foreground">
-                {t('faq.questions.groupDiscount.answer')}
+                Oferecemos desconto automático: 10% para 7-15 pessoas, 15% para 16-25 pessoas e 20% para 26+ pessoas.
               </p>
             </details>
             
             <details className="bg-card border rounded-lg p-6">
               <summary className="font-semibold cursor-pointer">
-                {t('faq.questions.payment.question')}
+                Quais formas de pagamento vocês aceitam?
               </summary>
               <p className="mt-3 text-muted-foreground">
-                {t('faq.questions.payment.answer')}
+                Aceitamos Pix, cartão de crédito/débito e parcelamento em até 12x sem juros.
               </p>
             </details>
             
             <details className="bg-card border rounded-lg p-6">
               <summary className="font-semibold cursor-pointer">
-                {t('faq.questions.cancellation.question')}
+                Qual é a política de cancelamento?
               </summary>
               <p className="mt-3 text-muted-foreground">
-                {t('faq.questions.cancellation.answer')}
+                Cancelamento gratuito até 48h antes do check-in. Para cancelamentos após esse prazo, consulte nossa política.
               </p>
             </details>
             
             <details className="bg-card border rounded-lg p-6">
               <summary className="font-semibold cursor-pointer">
-                {t('faq.questions.checkin.question')}
+                Quais são os horários de check-in e check-out?
               </summary>
               <p className="mt-3 text-muted-foreground">
-                {t('faq.questions.checkin.answer')}
+                Check-in: 14h às 22h | Check-out: até 11h. Para horários especiais, entre em contato conosco.
               </p>
             </details>
           </div>
         </div>
       </section>
 
-      {/* Contact Support */}
       <section className="bg-primary text-primary-foreground section-padding">
         <div className="container-lapa text-center">
           <h2 className="text-3xl font-bold mb-4">
-            {t('support.title')}
+            Precisa de Ajuda?
           </h2>
           <p className="text-xl opacity-90 mb-6">
-            {t('support.description')}
+            Nossa equipe está pronta para ajudar com sua reserva
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 

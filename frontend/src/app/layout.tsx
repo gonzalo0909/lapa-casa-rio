@@ -1,152 +1,235 @@
-import type { Metadata } from 'next';
-import { Inter, Poppins } from 'next/font/google';
-import './globals.css';
-import { cn } from '@/lib/utils';
+// lapa-casa-hostel-frontend/src/app/[locale]/layout.tsx
+import { notFound } from 'next/navigation';
+import { getRequestConfig } from 'next-intl/server';
+import { NextIntlClientProvider } from 'next-intl';
+import { Metadata } from 'next';
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap'
-});
+const locales = ['pt', 'en', 'es'];
 
-const poppins = Poppins({ 
-  subsets: ['latin'],
-  variable: '--font-poppins',
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap'
-});
-
-export const metadata: Metadata = {
-  title: {
-    default: 'Lapa Casa Hostel - Hospedagem em Santa Teresa, Rio de Janeiro',
-    template: '%s | Lapa Casa Hostel'
-  },
-  description: 'Hostel especializado em grupos no coração de Santa Teresa, Rio de Janeiro. 45 camas em 4 quartos, ambiente acolhedor e localização privilegiada.',
-  keywords: ['hostel rio de janeiro', 'santa teresa', 'hospedagem grupos', 'lapa casa hostel', 'rio hostel'],
-  authors: [{ name: 'Lapa Casa Hostel' }],
-  creator: 'Lapa Casa Hostel',
-  publisher: 'Lapa Casa Hostel',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL('https://lapacasahostel.com'),
-  alternates: {
-    canonical: '/',
-    languages: {
-      'pt-BR': '/pt',
-      'en-US': '/en',
-      'es-ES': '/es',
+const metadataByLocale: Record<string, Metadata> = {
+  pt: {
+    title: {
+      default: 'Lapa Casa Hostel - Hospedagem em Santa Teresa, Rio de Janeiro',
+      template: '%s | Lapa Casa Hostel'
     },
+    description: 'Hostel especializado em grupos no coração de Santa Teresa, Rio de Janeiro. 45 camas em 4 quartos, ambiente acolhedor e localização privilegiada.',
+    keywords: ['hostel rio de janeiro', 'santa teresa', 'hospedagem grupos', 'lapa casa hostel', 'rio hostel'],
   },
-  openGraph: {
-    type: 'website',
-    locale: 'pt_BR',
-    url: 'https://lapacasahostel.com',
-    title: 'Lapa Casa Hostel - Hospedagem em Santa Teresa, Rio de Janeiro',
-    description: 'Hostel especializado em grupos no coração de Santa Teresa, Rio de Janeiro. 45 camas em 4 quartos.',
-    siteName: 'Lapa Casa Hostel',
-    images: [
-      {
-        url: '/images/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Lapa Casa Hostel - Santa Teresa',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Lapa Casa Hostel - Hospedagem em Santa Teresa',
-    description: 'Hostel especializado em grupos no coração de Santa Teresa, Rio de Janeiro.',
-    images: ['/images/twitter-image.jpg'],
-    creator: '@lapacasahostel',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+  en: {
+    title: {
+      default: 'Lapa Casa Hostel - Accommodation in Santa Teresa, Rio de Janeiro',
+      template: '%s | Lapa Casa Hostel'
     },
+    description: 'Hostel specialized in groups in the heart of Santa Teresa, Rio de Janeiro. 45 beds in 4 rooms, cozy atmosphere and privileged location.',
+    keywords: ['hostel rio de janeiro', 'santa teresa', 'group accommodation', 'lapa casa hostel', 'rio hostel'],
   },
-  verification: {
-    google: 'google-site-verification-code',
-    yandex: 'yandex-verification-code',
-    yahoo: 'yahoo-site-verification-code',
-  },
+  es: {
+    title: {
+      default: 'Lapa Casa Hostel - Alojamiento en Santa Teresa, Río de Janeiro',
+      template: '%s | Lapa Casa Hostel'
+    },
+    description: 'Hostel especializado en grupos en el corazón de Santa Teresa, Río de Janeiro. 45 camas en 4 habitaciones, ambiente acogedor y ubicación privilegiada.',
+    keywords: ['hostel rio de janeiro', 'santa teresa', 'alojamiento grupos', 'lapa casa hostel', 'rio hostel'],
+  }
 };
 
-export default function RootLayout({
-  children,
-}: {
+function isValidLocale(locale: string): locale is 'pt' | 'en' | 'es' {
+  return locales.includes(locale);
+}
+
+export const getRequestConfigForLocale = getRequestConfig(async ({ locale }) => {
+  if (!isValidLocale(locale)) {
+    notFound();
+  }
+
+  return {
+    messages: (await import(`../../messages/${locale}.json`)).default
+  };
+});
+
+interface LocaleLayoutProps {
   children: React.ReactNode;
-}) {
+  params: {
+    locale: string;
+  };
+}
+
+export async function generateMetadata({ 
+  params: { locale } 
+}: LocaleLayoutProps): Promise<Metadata> {
+  if (!isValidLocale(locale)) {
+    notFound();
+  }
+
+  const baseMetadata = metadataByLocale[locale];
+  
+  return {
+    ...baseMetadata,
+    alternates: {
+      canonical: `/${locale}`,
+      languages: {
+        'pt-BR': '/pt',
+        'en-US': '/en',
+        'es-ES': '/es',
+      },
+    },
+    openGraph: {
+      ...baseMetadata.openGraph,
+      locale: locale === 'pt' ? 'pt_BR' : locale === 'en' ? 'en_US' : 'es_ES',
+      url: `https://lapacasahostel.com/${locale}`,
+    },
+  };
+}
+
+export function generateStaticParams() {
+  return locales.map((locale) => ({
+    locale,
+  }));
+}
+
+export default async function LocaleLayout({
+  children,
+  params: { locale }
+}: LocaleLayoutProps) {
+  if (!isValidLocale(locale)) {
+    notFound();
+  }
+
+  let messages;
+  try {
+    messages = (await import(`../../messages/${locale}.json`)).default;
+  } catch (error) {
+    notFound();
+  }
+
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#1e40af" />
-        <meta name="msapplication-TileColor" content="#1e40af" />
-        
-        {/* Preconnect to external domains */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://api.stripe.com" />
-        <link rel="preconnect" href="https://js.stripe.com" />
-        <link rel="preconnect" href="https://www.mercadopago.com" />
-        
-        {/* DNS prefetch for performance */}
-        <link rel="dns-prefetch" href="//www.google-analytics.com" />
-        <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-      </head>
-      <body 
-        className={cn(
-          'min-h-screen bg-background font-sans antialiased',
-          inter.variable,
-          poppins.variable
-        )}
-        suppressHydrationWarning
-      >
-        <div className="relative flex min-h-screen flex-col">
-          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            {/* Header será implementado en componentes específicos */}
-          </header>
-          
-          <main className="flex-1">
-            {children}
-          </main>
-          
-          <footer className="border-t bg-background">
-            {/* Footer será implementado en componentes específicos */}
-          </footer>
-        </div>
-        
-        {/* Scripts externos */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Configuração inicial do tema
-              try {
-                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark')
-                } else {
-                  document.documentElement.classList.remove('dark')
-                }
-              } catch (_) {}
-            `,
-          }}
-        />
+    <html lang={locale} dir="ltr">
+      <body>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <div className="min-h-screen flex flex-col">
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="container-lapa flex h-16 items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="text-xl font-bold text-primary">
+                    Lapa Casa
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    Hostel
+                  </span>
+                </div>
+
+                <nav className="hidden md:flex items-center space-x-6">
+                  <a 
+                    href={`/${locale}`}
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {locale === 'pt' ? 'Início' : locale === 'en' ? 'Home' : 'Inicio'}
+                  </a>
+                  <a 
+                    href={`/${locale}/rooms`}
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {locale === 'pt' ? 'Quartos' : locale === 'en' ? 'Rooms' : 'Habitaciones'}
+                  </a>
+                  <a 
+                    href={`/${locale}/booking`}
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {locale === 'pt' ? 'Reservar' : locale === 'en' ? 'Book Now' : 'Reservar'}
+                  </a>
+                </nav>
+
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 text-xs">
+                    <a 
+                      href="/pt"
+                      className={`px-2 py-1 rounded ${locale === 'pt' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      PT
+                    </a>
+                    <a 
+                      href="/en"
+                      className={`px-2 py-1 rounded ${locale === 'en' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      EN
+                    </a>
+                    <a 
+                      href="/es"
+                      className={`px-2 py-1 rounded ${locale === 'es' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      ES
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <main className="flex-1">
+              {children}
+            </main>
+
+            <footer className="border-t bg-background">
+              <div className="container-lapa py-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div>
+                    <h3 className="font-semibold mb-4">
+                      {locale === 'pt' ? 'Contato' : locale === 'en' ? 'Contact' : 'Contacto'}
+                    </h3>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>Rua Silvio Romero 22</p>
+                      <p>Santa Teresa, Rio de Janeiro</p>
+                      <p>+55 21 9999-9999</p>
+                      <p>reservas@lapacasahostel.com</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-4">
+                      {locale === 'pt' ? 'Links Rápidos' : locale === 'en' ? 'Quick Links' : 'Enlaces Rápidos'}
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <a href={`/${locale}/rooms`} className="block text-muted-foreground hover:text-foreground">
+                        {locale === 'pt' ? 'Quartos' : locale === 'en' ? 'Rooms' : 'Habitaciones'}
+                      </a>
+                      <a href={`/${locale}/booking`} className="block text-muted-foreground hover:text-foreground">
+                        {locale === 'pt' ? 'Reservar' : locale === 'en' ? 'Book Now' : 'Reservar'}
+                      </a>
+                      <a href={`/${locale}/about`} className="block text-muted-foreground hover:text-foreground">
+                        {locale === 'pt' ? 'Sobre Nós' : locale === 'en' ? 'About Us' : 'Acerca de'}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-4">
+                      {locale === 'pt' ? 'Redes Sociais' : locale === 'en' ? 'Social Media' : 'Redes Sociales'}
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <a href="#" className="block text-muted-foreground hover:text-foreground">
+                        Instagram
+                      </a>
+                      <a href="#" className="block text-muted-foreground hover:text-foreground">
+                        Facebook
+                      </a>
+                      <a href="https://wa.me/5521999999999" className="block text-muted-foreground hover:text-foreground">
+                        WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
+                  <p>
+                    © 2024 Lapa Casa Hostel. 
+                    {locale === 'pt' ? ' Todos os direitos reservados.' : 
+                     locale === 'en' ? ' All rights reserved.' : 
+                     ' Todos los derechos reservados.'}
+                  </p>
+                </div>
+              </div>
+            </footer>
+          </div>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

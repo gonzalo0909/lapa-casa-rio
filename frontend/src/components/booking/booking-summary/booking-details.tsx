@@ -248,4 +248,279 @@ export function BookingDetails({
                     <Clock className="w-5 h-5 text-yellow-600 mr-3" />
                   )}
                   <div>
-                    <div className
+                    <div className={`font-medium ${
+                      depositPaid ? 'text-emerald-900' : 'text-yellow-900'
+                    }`}>
+                      Depósito (30%)
+                    </div>
+                    <div className={`text-sm ${
+                      depositPaid ? 'text-emerald-700' : 'text-yellow-700'
+                    }`}>
+                      {depositPaid ? 'Pago' : 'Pendente'}
+                    </div>
+                  </div>
+                </div>
+                <div className={`font-semibold ${
+                  depositPaid ? 'text-emerald-900' : 'text-yellow-900'
+                }`}>
+                  R$ {(totalPrice * 0.30).toLocaleString('pt-BR')}
+                </div>
+              </div>
+
+              <div className={`flex items-center justify-between p-3 rounded-lg ${
+                remainingPaid ? 'bg-emerald-50 border border-emerald-200' : 'bg-blue-50 border border-blue-200'
+              }`}>
+                <div className="flex items-center">
+                  {remainingPaid ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-600 mr-3" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-blue-600 mr-3" />
+                  )}
+                  <div>
+                    <div className={`font-medium ${
+                      remainingPaid ? 'text-emerald-900' : 'text-blue-900'
+                    }`}>
+                      Saldo (70%)
+                    </div>
+                    <div className={`text-sm ${
+                      remainingPaid ? 'text-emerald-700' : 'text-blue-700'
+                    }`}>
+                      {remainingPaid ? 'Pago' : 'Cobrança automática 7 dias antes'}
+                    </div>
+                  </div>
+                </div>
+                <div className={`font-semibold ${
+                  remainingPaid ? 'text-emerald-900' : 'text-blue-900'
+                }`}>
+                  R$ {(totalPrice * 0.70).toLocaleString('pt-BR')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Serviços Adicionais */}
+          {additionalServices.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Serviços Adicionais
+              </h3>
+              
+              <div className="space-y-2">
+                {additionalServices.map((service, index) => (
+                  <div key={index} className="flex items-center p-2 bg-gray-50 rounded-lg">
+                    <CheckCircle className="w-4 h-4 text-emerald-600 mr-2" />
+                    <span className="text-sm text-gray-900">{service}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pedidos Especiais */}
+          {specialRequests && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Pedidos Especiais
+              </h3>
+              
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  {specialRequests}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Informações do Hostel */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+            <MapPin className="w-5 h-5 mr-2 text-emerald-600" />
+            Lapa Casa Hostel
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Localização e Contato */}
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <MapPin className="w-4 h-4 text-gray-600 mt-1" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Endereço
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Rua Silvio Romero 22<br />
+                    Santa Teresa, Rio de Janeiro
+                  </div>
+                  <Button variant="ghost" size="sm" className="mt-1 p-0 h-auto text-blue-600">
+                    <Navigation className="w-3 h-3 mr-1" />
+                    Ver no mapa
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Phone className="w-4 h-4 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Telefone
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    +55 21 2507-0100
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Mail className="w-4 h-4 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Email
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    reservas@lapacasahostel.com
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Comodidades e Horários */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <Clock className="w-4 h-4 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Recepção
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    24 horas
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Coffee className="w-4 h-4 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Café da manhã
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    7h30 - 10h30 (incluso)
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Wifi className="w-4 h-4 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    WiFi
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Gratuito em todas as áreas
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Car className="w-4 h-4 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Estacionamento
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Disponível mediante consulta
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Políticas e Regras */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleSection('policies')}
+            className="w-full justify-between"
+          >
+            <span className="flex items-center">
+              <Shield className="w-4 h-4 mr-2" />
+              Políticas e Regras da Casa
+            </span>
+            {expandedSection === 'policies' ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+
+          {expandedSection === 'policies' && (
+            <div className="mt-3 space-y-3 text-sm text-gray-600">
+              <div>
+                <div className="font-medium text-gray-900 mb-1">Check-in/Check-out</div>
+                <ul className="space-y-1 ml-4">
+                  <li>• Check-in: a partir das 15h00</li>
+                  <li>• Check-out: até as 11h00</li>
+                  <li>• Documento oficial obrigatório</li>
+                  <li>• Check-in antecipado: R$ 30 (sujeito à disponibilidade)</li>
+                </ul>
+              </div>
+
+              <div>
+                <div className="font-medium text-gray-900 mb-1">Cancelamento</div>
+                <ul className="space-y-1 ml-4">
+                  <li>• Cancelamento gratuito até 48h antes</li>
+                  <li>• Cancelamento após 48h: perda do depósito</li>
+                  <li>• No-show: cobrança integral</li>
+                </ul>
+              </div>
+
+              <div>
+                <div className="font-medium text-gray-900 mb-1">Regras da Casa</div>
+                <ul className="space-y-1 ml-4">
+                  <li>• Silêncio após 22h00</li>
+                  <li>• Proibido fumar nas áreas internas</li>
+                  <li>• Visitantes até 22h00</li>
+                  <li>• Uso das áreas comuns até 23h00</li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Avaliações */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Star className="w-5 h-5 text-yellow-500 fill-current" />
+              <span className="font-semibold text-gray-900">4.7</span>
+              <span className="text-sm text-gray-600">(324 avaliações)</span>
+            </div>
+            
+            <Button variant="ghost" size="sm">
+              <ExternalLink className="w-4 h-4 mr-1" />
+              Ver avaliações
+            </Button>
+          </div>
+        </div>
+
+        {/* Informações de Emergência */}
+        <Alert className="mt-6 bg-red-50 border-red-200">
+          <Info className="w-4 h-4" />
+          <div>
+            <h4 className="font-semibold text-red-900 mb-1">
+              Em caso de emergência
+            </h4>
+            <p className="text-sm text-red-800">
+              Entre em contato imediatamente com a recepção: +55 21 2507-0100
+              <br />
+              Ou ligue para o Corpo de Bombeiros: 193 | SAMU: 192 | Polícia: 190
+            </p>
+          </div>
+        </Alert>
+      </div>
+    </Card>
+  );
+}

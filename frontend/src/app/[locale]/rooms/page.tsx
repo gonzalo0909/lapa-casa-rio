@@ -1,3 +1,4 @@
+// lapa-casa-hostel-frontend/src/app/[locale]/rooms/page.tsx
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Metadata } from 'next';
@@ -24,28 +25,22 @@ interface RoomsPageProps {
   };
 }
 
-// Generar metadata dinámicamente
 export async function generateMetadata({ 
   params: { locale } 
 }: RoomsPageProps): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: 'RoomsPage' });
-  
   return {
-    title: t('meta.title'),
-    description: t('meta.description'),
-    keywords: t('meta.keywords'),
+    title: 'Quartos - Lapa Casa Hostel',
+    description: 'Conheça nossos 4 quartos com 45 camas total. Dormitórios mistos e quarto flexível, todos com ar condicionado e Wi-Fi.',
+    keywords: 'quartos hostel rio, dormitórios santa teresa, acomodação grupos rio',
   };
 }
 
 export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
-  const t = useTranslations('RoomsPage');
-
-  // Configuración de habitaciones con detalles completos
   const rooms = [
     {
       id: 'mixto_12a',
-      name: t('rooms.mixto12a.name'),
-      type: t('rooms.mixto12a.type'),
+      name: 'Mixto 12A',
+      type: 'Dormitório Misto',
       capacity: 12,
       basePrice: 60,
       images: [
@@ -54,24 +49,24 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
         '/images/rooms/mixto-12a-3.jpg'
       ],
       amenities: [
-        t('amenities.aircon'),
-        t('amenities.lockers'),
-        t('amenities.wifi'),
-        t('amenities.reading_lights')
+        'Ar condicionado',
+        'Armários individuais',
+        'Wi-Fi gratuito',
+        'Luzes de leitura'
       ],
-      description: t('rooms.mixto12a.description'),
+      description: 'Nosso maior dormitório misto com 12 camas em beliches, perfeito para grupos grandes. Ambiente aconchegante e bem ventilado.',
       features: [
-        t('rooms.mixto12a.features.bunk_beds'),
-        t('rooms.mixto12a.features.shared_bathroom'),
-        t('rooms.mixto12a.features.common_area')
+        'Beliches de madeira resistente',
+        'Banheiro compartilhado',
+        'Área comum integrada'
       ],
       available: true,
       isFlexible: false
     },
     {
       id: 'mixto_12b',
-      name: t('rooms.mixto12b.name'),
-      type: t('rooms.mixto12b.type'),
+      name: 'Mixto 12B',
+      type: 'Dormitório Misto',
       capacity: 12,
       basePrice: 60,
       images: [
@@ -80,24 +75,24 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
         '/images/rooms/mixto-12b-3.jpg'
       ],
       amenities: [
-        t('amenities.aircon'),
-        t('amenities.lockers'),
-        t('amenities.wifi'),
-        t('amenities.reading_lights')
+        'Ar condicionado',
+        'Armários individuais',
+        'Wi-Fi gratuito',
+        'Luzes de leitura'
       ],
-      description: t('rooms.mixto12b.description'),
+      description: 'Segundo dormitório misto com 12 camas, oferece a mesma qualidade e conforto do 12A com vista diferenciada.',
       features: [
-        t('rooms.mixto12b.features.bunk_beds'),
-        t('rooms.mixto12b.features.shared_bathroom'),
-        t('rooms.mixto12b.features.balcony')
+        'Beliches de madeira resistente',
+        'Banheiro compartilhado',
+        'Varanda com vista'
       ],
       available: true,
       isFlexible: false
     },
     {
       id: 'mixto_7',
-      name: t('rooms.mixto7.name'),
-      type: t('rooms.mixto7.type'),
+      name: 'Mixto 7',
+      type: 'Dormitório Misto',
       capacity: 7,
       basePrice: 60,
       images: [
@@ -106,24 +101,24 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
         '/images/rooms/mixto-7-3.jpg'
       ],
       amenities: [
-        t('amenities.aircon'),
-        t('amenities.lockers'),
-        t('amenities.wifi'),
-        t('amenities.reading_lights')
+        'Ar condicionado',
+        'Armários individuais',
+        'Wi-Fi gratuito',
+        'Luzes de leitura'
       ],
-      description: t('rooms.mixto7.description'),
+      description: 'Dormitório mais compacto e aconchegante, ideal para grupos menores que buscam maior privacidade.',
       features: [
-        t('rooms.mixto7.features.compact_design'),
-        t('rooms.mixto7.features.shared_bathroom'),
-        t('rooms.mixto7.features.quiet_area')
+        'Design compacto otimizado',
+        'Banheiro compartilhado',
+        'Área mais silenciosa'
       ],
       available: true,
       isFlexible: false
     },
     {
       id: 'flexible_7',
-      name: t('rooms.flexible7.name'),
-      type: t('rooms.flexible7.type'),
+      name: 'Flexible 7',
+      type: 'Dormitório Flexível',
       capacity: 7,
       basePrice: 60,
       images: [
@@ -132,68 +127,64 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
         '/images/rooms/flexible-7-3.jpg'
       ],
       amenities: [
-        t('amenities.aircon'),
-        t('amenities.lockers'),
-        t('amenities.wifi'),
-        t('amenities.reading_lights')
+        'Ar condicionado',
+        'Armários individuais',
+        'Wi-Fi gratuito',
+        'Luzes de leitura'
       ],
-      description: t('rooms.flexible7.description'),
+      description: 'Nosso quarto mais versátil, que se adapta às necessidades dos hóspedes. Configuração feminina por padrão.',
       features: [
-        t('rooms.flexible7.features.adaptive_configuration'),
-        t('rooms.flexible7.features.priority_female'),
-        t('rooms.flexible7.features.auto_conversion')
+        'Configuração adaptativa',
+        'Prioridade para mulheres',
+        'Conversão automática se necessário'
       ],
       available: true,
       isFlexible: true
     }
   ];
 
-  // Iconos para amenidades
   const amenityIcons = {
-    [t('amenities.aircon')]: AirVent,
-    [t('amenities.lockers')]: Lock,
-    [t('amenities.wifi')]: Wifi,
-    [t('amenities.reading_lights')]: Lightbulb
+    'Ar condicionado': AirVent,
+    'Armários individuais': Lock,
+    'Wi-Fi gratuito': Wifi,
+    'Luzes de leitura': Lightbulb
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Section */}
       <section className="bg-gradient-to-r from-primary/10 to-secondary/10 py-16">
         <div className="container-lapa">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-              {t('title')}
+              Nossos Quartos
             </h1>
             <p className="text-lg text-muted-foreground mb-6">
-              {t('subtitle')}
+              45 camas distribuídas em 4 quartos confortáveis, todos equipados com ar condicionado e Wi-Fi
             </p>
             <div className="flex items-center justify-center space-x-6 text-sm">
               <div className="flex items-center space-x-2">
                 <Bed className="w-4 h-4 text-primary" />
-                <span>45 {t('stats.totalBeds')}</span>
+                <span>45 camas totais</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4 text-primary" />
-                <span>4 {t('stats.rooms')}</span>
+                <span>4 quartos</span>
               </div>
               <div className="flex items-center space-x-2">
                 <DollarSign className="w-4 h-4 text-primary" />
-                <span>R$ 60/{t('stats.perNight')}</span>
+                <span>R$ 60/noite</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Rooms Grid */}
       <section className="section-padding">
         <div className="container-lapa">
           <div className="space-y-12">
             {rooms.map((room, index) => (
               <Card key={room.id} className="overflow-hidden">
                 <div className={`grid grid-cols-1 lg:grid-cols-2 gap-0 ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
-                  {/* Images */}
                   <div className={`relative ${index % 2 === 1 ? 'lg:order-2' : ''}`}>
                     <div className="aspect-video lg:aspect-square relative">
                       <Image
@@ -204,21 +195,19 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
                       />
                       {room.isFlexible && (
                         <Badge className="absolute top-4 right-4 bg-secondary">
-                          {t('flexible')}
+                          Flexível
                         </Badge>
                       )}
                       <div className="absolute bottom-4 left-4">
                         <Badge variant="secondary" className="bg-black/50 text-white">
-                          {room.capacity} {t('beds')}
+                          {room.capacity} camas
                         </Badge>
                       </div>
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className={`p-8 ${index % 2 === 1 ? 'lg:order-1' : ''}`}>
                     <div className="space-y-6">
-                      {/* Header */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h2 className="text-2xl font-bold">{room.name}</h2>
@@ -227,7 +216,7 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
                               R$ {room.basePrice}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {t('perBed')}/{t('perNight')}
+                              por cama/noite
                             </div>
                           </div>
                         </div>
@@ -236,14 +225,12 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
                         </p>
                       </div>
 
-                      {/* Description */}
                       <p className="text-foreground">
                         {room.description}
                       </p>
 
-                      {/* Features */}
                       <div>
-                        <h3 className="font-semibold mb-3">{t('features')}</h3>
+                        <h3 className="font-semibold mb-3">Características</h3>
                         <ul className="space-y-2">
                           {room.features.map((feature, featureIndex) => (
                             <li key={featureIndex} className="flex items-center space-x-2 text-sm">
@@ -254,9 +241,8 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
                         </ul>
                       </div>
 
-                      {/* Amenities */}
                       <div>
-                        <h3 className="font-semibold mb-3">{t('amenities.title')}</h3>
+                        <h3 className="font-semibold mb-3">Comodidades</h3>
                         <div className="grid grid-cols-2 gap-3">
                           {room.amenities.map((amenity, amenityIndex) => {
                             const IconComponent = amenityIcons[amenity] || Info;
@@ -270,33 +256,31 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
                         </div>
                       </div>
 
-                      {/* Special Notice for Flexible Room */}
                       {room.isFlexible && (
                         <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                           <div className="flex items-start space-x-3">
                             <Info className="w-5 h-5 text-blue-600 mt-0.5" />
                             <div className="text-sm">
                               <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                                {t('flexibleRoom.title')}
+                                Quarto Flexível
                               </p>
                               <p className="text-blue-800 dark:text-blue-200">
-                                {t('flexibleRoom.description')}
+                                Configurado como feminino por padrão. Converte automaticamente para misto 48h antes se não houver reservas femininas.
                               </p>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Actions */}
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Link href={`/${locale}/booking?room=${room.id}`} className="flex-1">
                           <Button className="w-full">
                             <Calendar className="w-4 h-4 mr-2" />
-                            {t('bookThisRoom')}
+                            Reservar Este Quarto
                           </Button>
                         </Link>
                         <Button variant="outline" className="sm:w-auto">
-                          {t('viewGallery')}
+                          Ver Galeria
                         </Button>
                       </div>
                     </div>
@@ -308,18 +292,17 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
         </div>
       </section>
 
-      {/* Comparison Table */}
       <section className="bg-muted/50 section-padding">
         <div className="container-lapa">
           <h2 className="text-3xl font-bold text-center mb-12">
-            {t('comparison.title')}
+            Comparação de Quartos
           </h2>
           
           <div className="overflow-x-auto">
             <table className="w-full bg-card rounded-lg border">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4 font-semibold">{t('comparison.feature')}</th>
+                  <th className="text-left p-4 font-semibold">Característica</th>
                   {rooms.map((room) => (
                     <th key={room.id} className="text-center p-4 font-semibold">
                       {room.name}
@@ -329,28 +312,28 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
               </thead>
               <tbody>
                 <tr className="border-b">
-                  <td className="p-4">{t('comparison.capacity')}</td>
+                  <td className="p-4">Capacidade</td>
                   {rooms.map((room) => (
                     <td key={room.id} className="text-center p-4">
-                      {room.capacity} {t('beds')}
+                      {room.capacity} camas
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">{t('comparison.type')}</td>
+                  <td className="p-4">Tipo</td>
                   {rooms.map((room) => (
                     <td key={room.id} className="text-center p-4">
                       {room.type}
                       {room.isFlexible && (
                         <Badge className="ml-2 text-xs" variant="secondary">
-                          {t('flexible')}
+                          Flexível
                         </Badge>
                       )}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">{t('comparison.pricePerBed')}</td>
+                  <td className="p-4">Preço por cama</td>
                   {rooms.map((room) => (
                     <td key={room.id} className="text-center p-4 font-semibold text-primary">
                       R$ {room.basePrice}
@@ -358,11 +341,11 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
                   ))}
                 </tr>
                 <tr>
-                  <td className="p-4">{t('comparison.availability')}</td>
+                  <td className="p-4">Disponibilidade</td>
                   {rooms.map((room) => (
                     <td key={room.id} className="text-center p-4">
                       <Badge variant={room.available ? 'default' : 'secondary'}>
-                        {room.available ? t('available') : t('unavailable')}
+                        {room.available ? 'Disponível' : 'Indisponível'}
                       </Badge>
                     </td>
                   ))}
@@ -373,60 +356,58 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
         </div>
       </section>
 
-      {/* Group Pricing */}
       <section className="section-padding">
         <div className="container-lapa">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">
-              {t('groupPricing.title')}
+              Preços para Grupos
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              {t('groupPricing.description')}
+              Quanto maior o grupo, maior o desconto! Economize até 20% em reservas para grupos
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-6 text-center">
               <div className="text-3xl font-bold text-primary mb-2">10%</div>
-              <h3 className="font-semibold mb-2">{t('groupPricing.small.title')}</h3>
+              <h3 className="font-semibold mb-2">Grupos Pequenos</h3>
               <p className="text-sm text-muted-foreground">
-                {t('groupPricing.small.description')}
+                7-15 pessoas
               </p>
             </Card>
             
             <Card className="p-6 text-center border-primary">
               <div className="text-3xl font-bold text-primary mb-2">15%</div>
-              <h3 className="font-semibold mb-2">{t('groupPricing.medium.title')}</h3>
+              <h3 className="font-semibold mb-2">Grupos Médios</h3>
               <p className="text-sm text-muted-foreground">
-                {t('groupPricing.medium.description')}
+                16-25 pessoas
               </p>
             </Card>
             
             <Card className="p-6 text-center">
               <div className="text-3xl font-bold text-primary mb-2">20%</div>
-              <h3 className="font-semibold mb-2">{t('groupPricing.large.title')}</h3>
+              <h3 className="font-semibold mb-2">Grupos Grandes</h3>
               <p className="text-sm text-muted-foreground">
-                {t('groupPricing.large.description')}
+                26+ pessoas
               </p>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="bg-primary text-primary-foreground section-padding">
         <div className="container-lapa text-center">
           <h2 className="text-3xl font-bold mb-4">
-            {t('cta.title')}
+            Pronto para Reservar?
           </h2>
           <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-            {t('cta.description')}
+            Escolha seu quarto ideal e garante sua vaga no coração de Santa Teresa
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href={`/${locale}/booking`}>
               <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                 <Calendar className="w-5 h-5 mr-2" />
-                {t('cta.bookNow')}
+                Fazer Reserva
               </Button>
             </Link>
             <Button 
@@ -435,7 +416,7 @@ export default function RoomsPage({ params: { locale } }: RoomsPageProps) {
               className="border-white text-white hover:bg-white hover:text-primary"
               onClick={() => window.open('https://wa.me/5521999999999', '_blank')}
             >
-              {t('cta.contact')}
+              Falar no WhatsApp
             </Button>
           </div>
         </div>

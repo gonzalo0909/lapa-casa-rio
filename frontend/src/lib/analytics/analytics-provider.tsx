@@ -325,11 +325,374 @@ export function AnalyticsProvider({
         });
       }
 
+      if (config.enableConversionTracking) {
+        conversionTracker.trackFunnelStep('payment_process', data);
+      }
+
+      if (config.debug) {
+        console.log('Payment process tracked:', data);
+      }
+    } catch (error) {
+      console.error('Error tracking payment process:', error);
+    }
+  };
+
+  const trackConversion = (goalId: string, value?: number, properties?: any) => {
+    try {
+      if (config.enableConversionTracking) {
+        conversionTracker.trackConversion(goalId, value, properties);
+      }
+
+      if (config.debug) {
+        console.log('Conversion tracked:', { goalId, value, properties });
+      }
+    } catch (error) {
+      console.error('Error tracking conversion:', error);
+    }
+  };
+
+  const startFunnelTracking = (sessionId: string) => {
+    try {
+      if (config.enableConversionTracking) {
+        conversionTracker.startFunnelTracking(sessionId);
+      }
+
+      if (config.debug) {
+        console.log('Funnel tracking started:', sessionId);
+      }
+    } catch (error) {
+      console.error('Error starting funnel tracking:', error);
+    }
+  };
+
+  const trackFunnelStep = (stepId: string, data?: any) => {
+    try {
+      if (config.enableConversionTracking) {
+        conversionTracker.trackFunnelStep(stepId, data);
+      }
+
+      if (config.debug) {
+        console.log('Funnel step tracked:', stepId, data);
+      }
+    } catch (error) {
+      console.error('Error tracking funnel step:', error);
+    }
+  };
+
+  const measureOperation = <T>(name: string, operation: () => T): T => {
+    try {
+      if (config.enablePerformanceMonitoring) {
+        return performanceMonitor.measureOperation(name, operation);
+      }
+      return operation();
+    } catch (error) {
+      console.error('Error measuring operation:', error);
+      return operation();
+    }
+  };
+
+  const measureAsyncOperation = async <T>(name: string, operation: () => Promise<T>): Promise<T> => {
+    try {
+      if (config.enablePerformanceMonitoring) {
+        return await performanceMonitor.measureAsyncOperation(name, operation);
+      }
+      return await operation();
+    } catch (error) {
+      console.error('Error measuring async operation:', error);
+      return await operation();
+    }
+  };
+
+  const setUserId = (userId: string) => {
+    try {
+      if (config.enableGoogleAnalytics) {
+        googleAnalytics.setUserId(userId);
+      }
+
       if (config.enableEventTracking) {
-        eventTracker.trackPaymentProcess({
-          step: data.step,
-          paymentMethod: data.paymentMethod as any,
-          paymentType: data.paymentType,
-          amount: data.amount,
-          errorCode: data.errorCode
-        });
+        eventTracker.setUserId(userId);
+      }
+
+      if (config.debug) {
+        console.log('User ID set:', userId);
+      }
+    } catch (error) {
+      console.error('Error setting user ID:', error);
+    }
+  };
+
+  const getSessionMetrics = () => {
+    try {
+      if (config.enableEventTracking) {
+        return eventTracker.getSessionMetrics();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting session metrics:', error);
+      return null;
+    }
+  };
+
+  const isAnalyticsReady = (): boolean => {
+    try {
+      return (
+        (!config.enableGoogleAnalytics || googleAnalytics.isReady()) &&
+        (!config.enablePerformanceMonitoring || performanceMonitor.isMonitoringActive())
+      );
+    } catch (error) {
+      console.error('Error checking analytics readiness:', error);
+      return false;
+    }
+  };
+
+  const contextValue: AnalyticsContextType = {
+    trackPageView,
+    trackEvent,
+    trackAvailabilitySearch,
+    trackRoomSelection,
+    trackBookingConversion,
+    trackPaymentProcess,
+    trackConversion,
+    startFunnelTracking,
+    trackFunnelStep,
+    measureOperation,
+    measureAsyncOperation,
+    setUserId,
+    getSessionMetrics,
+    isAnalyticsReady
+  };
+
+  return (
+    <AnalyticsContext.Provider value={contextValue}>
+      {children}
+    </AnalyticsContext.Provider>
+  );
+}
+
+// Hook para usar el contexto de analytics
+export function useAnalytics(): AnalyticsContextType {
+  const context = useContext(AnalyticsContext);
+  
+  if (!context) {
+    throw new Error('useAnalytics debe usarse dentro de AnalyticsProvider');
+  }
+  
+  return context;
+}
+
+// Hook específico para tracking de booking
+export function useBookingAnalytics() {
+  const analytics = useAnalytics();
+
+  const trackBookingStep = (step: string, data?: any) => {
+    analytics.trackFunnelStep(step, data);
+    analytics.trackEvent('booking_step', 'booking', step);
+  };
+
+  const trackRoomInteraction = (roomId: string, action: string) => {
+    analytics.trackEvent(action, 'room_interaction', roomId);
+  };
+
+  const trackPriceCalculation = (data: {
+    roomType: string;
+    beds: number;
+    basePrice: number;
+    finalPrice: number;
+    discounts: string[];
+  }) => {
+    analytics.trackEvent('price_calculation', 'pricing', data.roomType, data.finalPrice);
+  };
+
+  const trackFormInteraction = (formName: string, action: string, fieldName?: string) => {
+    analytics.trackEvent(action, 'form_interaction', `${formName}_${fieldName || 'unknown'}`);
+  };
+
+  return {
+    trackBookingStep,
+    trackRoomInteraction,
+    trackPriceCalculation,
+    trackFormInteraction,
+    ...analytics
+  };
+}
+
+// Hook para tracking de performance
+export function usePerformanceAnalytics() {
+  const analytics = useAnalytics();
+
+  const trackPageLoadTime = (pageName: string, loadTime: number) => {
+    analytics.trackEvent('page_load_time', 'performance', pageName, loadTime);
+  };
+
+  const trackApiResponse = (endpoint: string, responseTime: number, success: boolean) => {
+    analytics.trackEvent('api_response', 'performance', endpoint, responseTime);
+    
+    if (!success) {
+      analytics.trackEvent('api_error', 'error', endpoint);
+    }
+  };
+
+  const trackUserInteraction = (element: string, action: string) => {
+    analytics.trackEvent(action, 'user_interaction', element);
+  };
+
+  const measurePagePerformance = () => {
+    return analytics.measureOperation('page_render', () => {
+      // Lógica de medición específica
+      return performance.now();
+    });
+  };
+
+  return {
+    trackPageLoadTime,
+    trackApiResponse,
+    trackUserInteraction,
+    measurePagePerformance,
+    measureOperation: analytics.measureOperation,
+    measureAsyncOperation: analytics.measureAsyncOperation
+  };
+}
+
+// HOC para componentes con tracking automático
+export function withAnalytics<P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  options: {
+    trackMount?: boolean;
+    trackUnmount?: boolean;
+    componentName?: string;
+    customEvents?: Array<{
+      trigger: string;
+      eventName: string;
+      category: string;
+    }>;
+  } = {}
+) {
+  return function AnalyticsWrappedComponent(props: P) {
+    const analytics = useAnalytics();
+    const mountTime = useRef<number>(0);
+
+    useEffect(() => {
+      const componentName = options.componentName || WrappedComponent.displayName || WrappedComponent.name;
+      
+      if (options.trackMount) {
+        mountTime.current = performance.now();
+        analytics.trackEvent('component_mount', 'component', componentName);
+      }
+
+      return () => {
+        if (options.trackUnmount) {
+          const timeOnComponent = performance.now() - mountTime.current;
+          analytics.trackEvent('component_unmount', 'component', componentName, timeOnComponent);
+        }
+      };
+    }, [analytics]);
+
+    return <WrappedComponent {...props} />;
+  };
+}
+
+// Componente para tracking de errores
+export function AnalyticsErrorBoundary({ 
+  children, 
+  fallback 
+}: { 
+  children: ReactNode; 
+  fallback?: ReactNode;
+}) {
+  const analytics = useAnalytics();
+
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      analytics.trackEvent('javascript_error', 'error', event.error?.message || 'Unknown error');
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      analytics.trackEvent('unhandled_rejection', 'error', event.reason?.toString() || 'Unknown rejection');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [analytics]);
+
+  return <>{children}</>;
+}
+
+// Componente para debugging de analytics
+export function AnalyticsDebugger() {
+  const analytics = useAnalytics();
+  const [metrics, setMetrics] = useState<any>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const interval = setInterval(() => {
+        setMetrics(analytics.getSessionMetrics());
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [analytics]);
+
+  if (process.env.NODE_ENV !== 'development') {
+    return null;
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setIsVisible(!isVisible)}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 9999,
+          background: '#007bff',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50%',
+          width: '60px',
+          height: '60px',
+          fontSize: '12px',
+          cursor: 'pointer'
+        }}
+      >
+        📊
+      </button>
+
+      {isVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '100px',
+            right: '20px',
+            zIndex: 9999,
+            background: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            padding: '16px',
+            maxWidth: '300px',
+            fontSize: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}
+        >
+          <h4>Analytics Debug</h4>
+          <p><strong>Ready:</strong> {analytics.isAnalyticsReady() ? 'Yes' : 'No'}</p>
+          {metrics && (
+            <>
+              <p><strong>Session Duration:</strong> {Math.round(metrics.duration / 1000)}s</p>
+              <p><strong>Page Views:</strong> {metrics.pageViews}</p>
+              <p><strong>Events:</strong> {metrics.eventsCount}</p>
+              <p><strong>Funnel Progress:</strong> {metrics.funnelProgress}</p>
+              <p><strong>Engagement Score:</strong> {metrics.engagementScore}</p>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}

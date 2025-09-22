@@ -268,3 +268,86 @@ const RemainingPayment: React.FC<RemainingPaymentProps> = ({
                 <Badge 
                   variant="outline" 
                   className={
+                    paymentStatus === 'processing' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                    paymentStatus === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
+                    'bg-blue-50 text-blue-700 border-blue-200'
+                  }
+                >
+                  {paymentStatus === 'processing' ? 'Procesando' :
+                   paymentStatus === 'failed' ? 'Fallido' : 'Programado'}
+                </Badge>
+              </div>
+            )}
+
+            {/* Check-in date */}
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${
+                paymentStatus === 'completed' ? 'bg-green-500' : 'bg-gray-400'
+              }`}></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">
+                  {checkInDate.toLocaleDateString('pt-BR', { 
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
+                <p className="text-xs text-gray-600">Check-in en Lapa Casa Hostel</p>
+              </div>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                {daysUntilCheckIn} días
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Method Information */}
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-sm text-blue-800 dark:text-blue-300 mb-2">
+            Método de Pago Automático
+          </h4>
+          <div className="text-sm text-blue-700 dark:text-blue-200 space-y-1">
+            <p>• Se utilizará el mismo método de pago del depósito</p>
+            <p>• Recibirás notificación 3 días antes del cobro</p>
+            <p>• Puedes cambiar el método contactando soporte</p>
+            <p>• En caso de fallo, reintentaremos por 3 días</p>
+          </div>
+        </div>
+
+        {/* Important Notes */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm">Notas Importantes</h4>
+          <div className="text-xs text-gray-600 space-y-1">
+            <div className="flex items-start gap-2">
+              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
+              <span>El cobro se realiza exactamente 7 días antes del check-in</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
+              <span>Si el pago falla, tienes hasta 24h antes del check-in para resolver</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
+              <span>Puedes pagar manualmente en cualquier momento antes del cobro automático</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
+              <span>Reservas sin pago completo pueden ser canceladas automáticamente</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Support */}
+        <div className="text-center p-3 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-xs text-gray-600 mb-1">
+            ¿Problemas con tu pago automático?
+          </p>
+          <Button variant="link" className="h-auto p-0 text-xs">
+            Contactar Soporte: reservas@lapacasahostel.com
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default RemainingPayment;

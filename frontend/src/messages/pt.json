@@ -1,0 +1,704 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Salvar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "reset": "Resetar",
+    "submit": "Enviar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "close": "Fechar",
+    "open": "Abrir",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "more": "Mais",
+    "less": "Menos",
+    "all": "Todos",
+    "none": "Nenhum",
+    "yes": "Sim",
+    "no": "Não",
+    "ok": "OK",
+    "currency": "R$",
+    "date": "Data",
+    "time": "Hora",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "discount": "Desconto",
+    "tax": "Taxa",
+    "free": "Grátis",
+    "included": "Incluído",
+    "optional": "Opcional",
+    "required": "Obrigatório",
+    "available": "Disponível",
+    "unavailable": "Indisponível",
+    "sold_out": "Esgotado",
+    "coming_soon": "Em Breve"
+  },
+
+  "navigation": {
+    "home": "Início",
+    "rooms": "Quartos",
+    "booking": "Reservar",
+    "about": "Sobre",
+    "contact": "Contato",
+    "gallery": "Galeria",
+    "amenities": "Comodidades",
+    "location": "Localização",
+    "reviews": "Avaliações",
+    "policies": "Políticas",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "language": "Idioma",
+    "menu": "Menu",
+    "my_bookings": "Minhas Reservas",
+    "account": "Conta",
+    "login": "Entrar",
+    "logout": "Sair",
+    "register": "Cadastrar"
+  },
+
+  "hero": {
+    "title": "Lapa Casa Hostel",
+    "subtitle": "Seu lar no coração de Santa Teresa",
+    "description": "Experimente a autêntica cultura carioca no bairro mais charmoso do Rio de Janeiro. Perfeito para grupos e viajantes que buscam uma experiência única.",
+    "cta_primary": "Reservar Agora",
+    "cta_secondary": "Ver Quartos",
+    "features": {
+      "groups": "Especialistas em Grupos",
+      "location": "Localização Privilegiada",
+      "authentic": "Experiência Autêntica",
+      "safe": "Ambiente Seguro"
+    }
+  },
+
+  "rooms": {
+    "title": "Nossos Quartos",
+    "subtitle": "Acomodações confortáveis para todos os tipos de viajantes",
+    "mixto_12a": {
+      "name": "Mixto 12A",
+      "description": "Dormitório misto com 12 camas, ideal para grupos grandes ou viajantes individuais",
+      "capacity": "12 camas",
+      "type": "Misto",
+      "features": ["Ar condicionado", "Armários individuais", "Tomadas 110V/220V", "WiFi gratuito"]
+    },
+    "mixto_12b": {
+      "name": "Mixto 12B", 
+      "description": "Segundo dormitório misto com 12 camas, perfeito para acomodar grupos grandes",
+      "capacity": "12 camas",
+      "type": "Misto",
+      "features": ["Ar condicionado", "Armários individuais", "Tomadas 110V/220V", "WiFi gratuito"]
+    },
+    "mixto_7": {
+      "name": "Mixto 7",
+      "description": "Dormitório misto mais íntimo com 7 camas, ideal para grupos menores",
+      "capacity": "7 camas",
+      "type": "Misto", 
+      "features": ["Ar condicionado", "Armários individuais", "Tomadas 110V/220V", "WiFi gratuito"]
+    },
+    "flexible_7": {
+      "name": "Flexível 7",
+      "description": "Dormitório flexível que pode ser feminino ou misto conforme disponibilidade",
+      "capacity": "7 camas",
+      "type": "Feminino/Flexível",
+      "features": ["Ar condicionado", "Armários individuais", "Tomadas 110V/220V", "WiFi gratuito"],
+      "flexible_notice": "Este quarto é prioritariamente feminino, mas pode se tornar misto 48h antes do check-in se não houver reservas femininas"
+    },
+    "amenities": {
+      "title": "Comodidades dos Quartos",
+      "air_conditioning": "Ar condicionado",
+      "lockers": "Armários individuais com cadeado",
+      "outlets": "Tomadas 110V e 220V",
+      "wifi": "WiFi gratuito de alta velocidade",
+      "linens": "Roupa de cama incluída",
+      "towels": "Toalhas disponíveis",
+      "reading_lights": "Luzes de leitura individuais",
+      "privacy_curtains": "Cortinas de privacidade"
+    },
+    "capacity_info": "Capacidade total: 45 camas",
+    "view_details": "Ver Detalhes",
+    "book_now": "Reservar Agora",
+    "select_room": "Selecionar Quarto"
+  },
+
+  "booking": {
+    "title": "Fazer Reserva",
+    "subtitle": "Reserve sua estadia no Lapa Casa Hostel",
+    
+    "search": {
+      "title": "Buscar Disponibilidade",
+      "check_in": "Check-in",
+      "check_out": "Check-out", 
+      "guests": "Hóspedes",
+      "beds": "Camas",
+      "search_button": "Buscar Quartos",
+      "modify_search": "Modificar Busca"
+    },
+
+    "date_selection": {
+      "title": "Selecionar Datas",
+      "check_in_label": "Data de Check-in",
+      "check_out_label": "Data de Check-out",
+      "nights": "noites",
+      "night": "noite",
+      "minimum_stay": "Estadia mínima de {nights} noites",
+      "maximum_stay": "Estadia máxima de {nights} noites",
+      "invalid_dates": "Datas inválidas",
+      "past_dates": "Não é possível selecionar datas passadas",
+      "same_dates": "Data de check-out deve ser posterior ao check-in"
+    },
+
+    "room_selection": {
+      "title": "Selecionar Quartos",
+      "available": "Disponível",
+      "unavailable": "Indisponível", 
+      "beds_available": "{count} camas disponíveis",
+      "price_per_bed": "por cama/noite",
+      "total_price": "Preço total",
+      "select": "Selecionar",
+      "selected": "Selecionado",
+      "room_details": "Detalhes do Quarto",
+      "amenities": "Comodidades",
+      "capacity": "Capacidade",
+      "type": "Tipo"
+    },
+
+    "pricing": {
+      "title": "Resumo de Preços",
+      "base_price": "Preço base",
+      "per_bed_night": "por cama/noite",
+      "nights": "{count} noites",
+      "beds": "{count} camas",
+      "subtotal": "Subtotal",
+      "group_discount": "Desconto de grupo ({percentage}%)",
+      "group_discount_info": "Grupos de 7+ pessoas recebem {percentage}% de desconto",
+      "season_adjustment": "Ajuste de temporada",
+      "high_season": "Alta temporada (+{percentage}%)",
+      "low_season": "Baixa temporada ({percentage}%)",
+      "carnival_season": "Temporada de Carnaval (+{percentage}%)",
+      "total": "Total",
+      "deposit": "Depósito (30%)",
+      "remaining": "Saldo restante (70%)",
+      "payment_schedule": "O saldo restante será cobrado automaticamente 7 dias antes do check-in",
+      "all_taxes_included": "Todos os impostos incluídos",
+      "savings": "Você economiza R$ {amount}!"
+    },
+
+    "guest_info": {
+      "title": "Informações do Hóspede",
+      "primary_guest": "Hóspede Principal",
+      "first_name": "Nome",
+      "last_name": "Sobrenome",
+      "email": "Email",
+      "phone": "Telefone",
+      "country": "País",
+      "document_type": "Tipo de Documento",
+      "document_number": "Número do Documento",
+      "birth_date": "Data de Nascimento",
+      "gender": "Gênero",
+      "special_requests": "Solicitações Especiais",
+      "special_requests_placeholder": "Alguma solicitação especial? Aniversário, restrições alimentares, etc.",
+      "group_info": "Informações do Grupo",
+      "group_name": "Nome do Grupo/Evento",
+      "group_size": "Tamanho do Grupo",
+      "arrival_info": "Informações de Chegada",
+      "arrival_time": "Horário estimado de chegada",
+      "flight_number": "Número do voo (opcional)",
+      "emergency_contact": "Contato de Emergência",
+      "emergency_name": "Nome",
+      "emergency_phone": "Telefone",
+      "emergency_relationship": "Parentesco",
+      "newsletter": "Receber ofertas e novidades por email"
+    },
+
+    "payment": {
+      "title": "Pagamento",
+      "method": "Método de Pagamento",
+      "stripe": "Cartão de Crédito (Stripe)",
+      "mercadopago": "Mercado Pago",
+      "pix": "PIX",
+      "credit_card": "Cartão de Crédito",
+      "debit_card": "Cartão de Débito",
+      "installments": "Parcelamento",
+      "installments_info": "Até 12x sem juros",
+      "payment_security": "Pagamento 100% seguro",
+      "ssl_protected": "Protegido por SSL",
+      "pci_compliant": "Certificado PCI DSS",
+      "deposit_now": "Depósito agora",
+      "remaining_later": "Saldo restante será cobrado automaticamente 7 dias antes do check-in",
+      "total_amount": "Valor total da reserva",
+      "processing": "Processando pagamento...",
+      "success": "Pagamento realizado com sucesso!",
+      "error": "Erro no pagamento. Tente novamente.",
+      "retry": "Tentar Novamente",
+      "card_number": "Número do Cartão",
+      "expiry_date": "Data de Vencimento", 
+      "cvv": "CVV",
+      "cardholder_name": "Nome no Cartão"
+    },
+
+    "confirmation": {
+      "title": "Reserva Confirmada!",
+      "subtitle": "Obrigado pela sua reserva",
+      "booking_id": "ID da Reserva",
+      "confirmation_email": "Enviamos um email de confirmação para {email}",
+      "booking_details": "Detalhes da Reserva",
+      "guest_name": "Hóspede",
+      "check_in_date": "Check-in", 
+      "check_out_date": "Check-out",
+      "room_type": "Tipo de Quarto",
+      "beds_count": "Número de Camas",
+      "total_paid": "Total Pago",
+      "remaining_amount": "Saldo Restante",
+      "payment_date": "Data do Próximo Pagamento",
+      "important_info": "Informações Importantes",
+      "check_in_time": "Check-in: 14:00 - 22:00",
+      "check_out_time": "Check-out: até 12:00",
+      "address": "Endereço: Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro",
+      "contact": "Contato: +55 21 XXXX-XXXX",
+      "directions": "Como Chegar",
+      "house_rules": "Regras da Casa",
+      "what_to_bring": "O que Trazer",
+      "print_confirmation": "Imprimir Confirmação",
+      "add_to_calendar": "Adicionar ao Calendário",
+      "share_booking": "Compartilhar Reserva",
+      "modify_booking": "Modificar Reserva",
+      "cancel_booking": "Cancelar Reserva"
+    },
+
+    "steps": {
+      "search": "Buscar",
+      "rooms": "Quartos", 
+      "guest_info": "Informações",
+      "payment": "Pagamento",
+      "confirmation": "Confirmação"
+    },
+
+    "validation": {
+      "required_field": "Este campo é obrigatório",
+      "invalid_email": "Email inválido",
+      "invalid_phone": "Telefone inválido",
+      "invalid_date": "Data inválida",
+      "past_date": "Data não pode ser no passado",
+      "checkout_before_checkin": "Check-out deve ser após check-in",
+      "minimum_stay": "Estadia mínima de {nights} noites",
+      "maximum_stay": "Estadia máxima de {nights} noites",
+      "invalid_card": "Cartão inválido",
+      "expired_card": "Cartão expirado",
+      "invalid_cvv": "CVV inválido",
+      "payment_failed": "Falha no pagamento",
+      "no_availability": "Não há disponibilidade para as datas selecionadas"
+    }
+  },
+
+  "amenities": {
+    "title": "Comodidades",
+    "subtitle": "Tudo que você precisa para uma estadia confortável",
+    
+    "categories": {
+      "accommodation": "Acomodação",
+      "common_areas": "Áreas Comuns",
+      "services": "Serviços",
+      "location": "Localização"
+    },
+
+    "list": {
+      "wifi": "WiFi gratuito",
+      "ac": "Ar condicionado",
+      "kitchen": "Cozinha compartilhada",
+      "laundry": "Lavanderia",
+      "terrace": "Terraço",
+      "garden": "Jardim",
+      "common_room": "Sala comum",
+      "security": "Segurança 24h",
+      "lockers": "Armários individuais",
+      "linens": "Roupa de cama incluída",
+      "towels": "Toalhas disponíveis",
+      "hot_shower": "Chuveiro quente",
+      "luggage_storage": "Guarda-volumes",
+      "tour_desk": "Central de turismo",
+      "bicycle_rental": "Aluguel de bicicletas",
+      "airport_transfer": "Transfer do aeroporto",
+      "housekeeping": "Limpeza diária",
+      "reception": "Recepção",
+      "parking": "Estacionamento próximo",
+      "public_transport": "Transporte público próximo",
+      "restaurants": "Restaurantes próximos",
+      "supermarket": "Supermercado próximo",
+      "atm": "Caixa eletrônico próximo",
+      "pharmacy": "Farmácia próxima"
+    }
+  },
+
+  "location": {
+    "title": "Localização",
+    "subtitle": "No coração de Santa Teresa",
+    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro, RJ",
+    "neighborhood": "Santa Teresa é um dos bairros mais charmosos e autênticos do Rio de Janeiro, conhecido por sua arquitetura colonial, ateliês de artistas e vida cultural vibrante.",
+    
+    "nearby": {
+      "title": "Pontos de Interesse Próximos",
+      "selarón_steps": "Escadaria Selarón - 5 min a pé",
+      "lapa_arches": "Arcos da Lapa - 10 min a pé",
+      "cristo_redentor": "Cristo Redentor - 20 min de carro",
+      "sugarloaf": "Pão de Açúcar - 25 min de carro",
+      "copacabana": "Copacabana - 30 min de transporte",
+      "ipanema": "Ipanema - 35 min de transporte",
+      "centro": "Centro - 15 min de transporte",
+      "maracanã": "Maracanã - 20 min de transporte"
+    },
+
+    "transport": {
+      "title": "Transporte",
+      "metro": "Estação de metrô mais próxima: Cinelândia (Linha 1 e 2)",
+      "bus": "Várias linhas de ônibus na região",
+      "taxi": "Táxi e Uber disponíveis",
+      "tram": "Bondinho de Santa Teresa (quando em funcionamento)",
+      "walk": "Muitas atrações acessíveis a pé"
+    },
+
+    "directions": {
+      "title": "Como Chegar",
+      "from_airport": "Do Aeroporto Internacional Galeão: 45 min de carro/taxi",
+      "from_santos_dumont": "Do Aeroporto Santos Dumont: 20 min de carro/taxi",
+      "from_bus_station": "Rodoviária Novo Rio: 30 min de carro/taxi",
+      "from_metro": "Da estação Cinelândia: 10 min de táxi ou ônibus",
+      "walking": "Santa Teresa é um bairro montanhoso, prepare-se para subidas"
+    }
+  },
+
+  "about": {
+    "title": "Sobre o Lapa Casa Hostel",
+    "subtitle": "Sua casa no Rio de Janeiro",
+    
+    "story": {
+      "title": "Nossa História",
+      "content": "O Lapa Casa Hostel nasceu da paixão pelo Rio de Janeiro e pelo desejo de compartilhar a autêntica experiência carioca com viajantes do mundo todo. Localizado no charmoso bairro de Santa Teresa, oferecemos muito mais que acomodação - proporcionamos uma verdadeira imersão na cultura local."
+    },
+
+    "mission": {
+      "title": "Nossa Missão",
+      "content": "Conectar pessoas através de experiências autênticas, oferecendo acomodações confortáveis e seguras no coração cultural do Rio de Janeiro, com foco especial em grupos que buscam aventuras inesquecíveis."
+    },
+
+    "values": {
+      "title": "Nossos Valores",
+      "community": "Comunidade - Criamos um ambiente acolhedor onde todos se sentem em casa",
+      "authenticity": "Autenticidade - Promovemos a verdadeira cultura carioca",
+      "safety": "Segurança - Garantimos um ambiente seguro para todos",
+      "sustainability": "Sustentabilidade - Cuidamos do meio ambiente e da comunidade local"
+    },
+
+    "team": {
+      "title": "Nossa Equipe",
+      "description": "Nossa equipe é formada por cariocas apaixonados pela cidade e por pessoas que escolheram o Rio como lar. Estamos sempre prontos para compartilhar dicas locais e ajudar a tornar sua estadia inesquecível."
+    },
+
+    "specialization": {
+      "title": "Especialistas em Grupos",
+      "description": "Somos especializados em receber grupos de 7 ou mais pessoas, oferecendo descontos especiais e experiências personalizadas para corporativo, friends trips, despedidas, aniversários e eventos especiais."
+    }
+  },
+
+  "contact": {
+    "title": "Contato",
+    "subtitle": "Entre em contato conosco",
+    "address": "Endereço",
+    "address_full": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro, RJ, 20241-190",
+    "phone": "Telefone",
+    "phone_number": "+55 21 XXXX-XXXX",
+    "email": "Email",
+    "email_address": "contato@lapacasahostel.com",
+    "whatsapp": "WhatsApp",
+    "whatsapp_number": "+55 21 XXXX-XXXX",
+    
+    "form": {
+      "title": "Envie uma Mensagem",
+      "name": "Nome",
+      "email": "Email",
+      "subject": "Assunto",
+      "message": "Mensagem",
+      "send": "Enviar Mensagem",
+      "success": "Mensagem enviada com sucesso!",
+      "error": "Erro ao enviar mensagem. Tente novamente."
+    },
+
+    "office_hours": {
+      "title": "Horário de Atendimento",
+      "reception": "Recepção: 24 horas",
+      "phone_support": "Suporte telefônico: 8h às 22h",
+      "email_response": "Resposta por email: até 24h"
+    },
+
+    "social_media": {
+      "title": "Redes Sociais",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "tripadvisor": "TripAdvisor",
+      "booking": "Booking.com",
+      "hostelworld": "Hostelworld"
+    }
+  },
+
+  "policies": {
+    "title": "Políticas",
+    "subtitle": "Termos e condições de hospedagem",
+
+    "check_in_out": {
+      "title": "Check-in e Check-out",
+      "check_in_time": "Check-in: 14:00 às 22:00",
+      "early_checkin": "Check-in antecipado: sujeito à disponibilidade",
+      "late_checkin": "Check-in tardio: coordenar previamente",
+      "check_out_time": "Check-out: até 12:00",
+      "late_checkout": "Check-out tardio: sujeito à disponibilidade e taxa adicional",
+      "documents": "Documento oficial com foto obrigatório"
+    },
+
+    "cancellation": {
+      "title": "Política de Cancelamento",
+      "free_cancellation": "Cancelamento gratuito até 48h antes do check-in",
+      "partial_refund": "Cancelamento entre 24-48h: reembolso de 50%",
+      "no_refund": "Cancelamento em menos de 24h: sem reembolso",
+      "no_show": "No-show: sem reembolso",
+      "group_policy": "Grupos: política especial aplicável"
+    },
+
+    "payment": {
+      "title": "Política de Pagamento", 
+      "deposit": "Depósito de 30% no momento da reserva",
+      "remaining": "Saldo restante cobrado 7 dias antes do check-in",
+      "payment_methods": "Aceitamos cartão de crédito, débito e PIX",
+      "currency": "Preços em Reais (BRL)",
+      "no_cash": "Não aceitamos dinheiro em espécie"
+    },
+
+    "house_rules": {
+      "title": "Regras da Casa",
+      "quiet_hours": "Horário de silêncio: 22h às 8h",
+      "no_smoking": "Proibido fumar nas dependências internas",
+      "no_drugs": "Proibido uso de drogas",
+      "no_alcohol_common": "Bebidas alcoólicas apenas nos quartos",
+      "respect": "Respeite outros hóspedes e funcionários",
+      "clean": "Mantenha as áreas comuns limpas",
+      "security": "Guarde seus pertences nos armários",
+      "visitors": "Visitantes permitidos até 22h"
+    },
+
+    "age_restrictions": {
+      "title": "Restrições de Idade",
+      "minimum_age": "Idade mínima: 18 anos",
+      "under_18": "Menores de 18: apenas acompanhados dos responsáveis",
+      "id_required": "Documento de identidade obrigatório"
+    },
+
+    "liability": {
+      "title": "Responsabilidade",
+      "personal_belongings": "Não nos responsabilizamos por pertences pessoais",
+      "use_lockers": "Use os armários para guardar valores",
+      "damage": "Danos às instalações serão cobrados",
+      "behavior": "Comportamento inadequado pode resultar em expulsão"
+    }
+  },
+
+  "faq": {
+    "title": "Perguntas Frequentes",
+    "subtitle": "Respostas para as dúvidas mais comuns",
+
+    "booking": {
+      "title": "Reservas",
+      "how_to_book": {
+        "question": "Como faço uma reserva?",
+        "answer": "Você pode reservar diretamente pelo nosso site, escolhendo as datas, quartos e fornecendo as informações necessárias. O pagamento é feito online de forma segura."
+      },
+      "group_discount": {
+        "question": "Há desconto para grupos?",
+        "answer": "Sim! Grupos de 7 a 15 pessoas recebem 10% de desconto, grupos de 16 a 25 pessoas recebem 15% de desconto, e grupos de 26+ pessoas recebem 20% de desconto."
+      },
+      "payment_schedule": {
+        "question": "Como funciona o pagamento?",
+        "answer": "Você paga 30% no momento da reserva e o restante é cobrado automaticamente 7 dias antes do check-in."
+      },
+      "modify_booking": {
+        "question": "Posso modificar minha reserva?",
+        "answer": "Modificações estão sujeitas à disponibilidade e podem incorrer em taxas adicionais. Entre em contato conosco para verificar as opções."
+      }
+    },
+
+    "accommodation": {
+      "title": "Acomodação",
+      "room_types": {
+        "question": "Que tipos de quartos vocês têm?",
+        "answer": "Temos dormitórios mistos de 12 camas (2 quartos), um dormitório misto de 7 camas e um dormitório flexível de 7 camas que pode ser feminino ou misto."
+      },
+      "private_rooms": {
+        "question": "Vocês têm quartos privativos?",
+        "answer": "Atualmente oferecemos apenas dormitórios compartilhados, mas nosso foco em grupos permite experiências mais privativas para grupos grandes."
+      },
+      "amenities_included": {
+        "question": "O que está incluído?",
+        "answer": "Roupa de cama, WiFi gratuito, ar condicionado, armários individuais, acesso à cozinha compartilhada e áreas comuns."
+      },
+      "towels": {
+        "question": "Preciso trazer toalha?",
+        "answer": "Toalhas estão disponíveis mediante solicitação. Recomendamos trazer a sua própria para maior comodidade."
+      }
+    },
+
+    "location": {
+      "title": "Localização",
+      "getting_there": {
+        "question": "Como chegar ao hostel?",
+        "answer": "Estamos em Santa Teresa. Do aeroporto, você pode pegar táxi/Uber (45 min) ou usar transporte público até o centro e depois táxi para Santa Teresa."
+      },
+      "nearby_attractions": {
+        "question": "Quais atrações estão próximas?",
+        "answer": "A Escadaria Selarón fica a 5 minutos a pé, os Arcos da Lapa a 10 minutos, e temos fácil acesso ao centro da cidade e principais pontos turísticos."
+      },
+      "safety": {
+        "question": "A região é segura?",
+        "answer": "Santa Teresa é um bairro turístico com boa movimentação. Como em qualquer lugar no Rio, recomendamos cuidados básicos, especialmente à noite."
+      }
+    },
+
+    "services": {
+      "title": "Serviços",
+      "luggage_storage": {
+        "question": "Posso guardar bagagem?",
+        "answer": "Sim, oferecemos guarda-volumes para hóspedes antes do check-in e após check-out."
+      },
+      "laundry": {
+        "question": "Há serviço de lavanderia?",
+        "answer": "Temos máquina de lavar disponível para uso dos hóspedes. Há lavanderias próximas para serviços mais completos."
+      },
+      "tour_assistance": {
+        "question": "Vocês ajudam com passeios?",
+        "answer": "Nossa equipe tem muito conhecimento local e pode recomendar passeios, restaurantes e atividades. Também temos parcerias com operadoras locais."
+      },
+      "airport_transfer": {
+        "question": "Fazem transfer do aeroporto?",
+        "answer": "Podemos ajudar a organizar transfer, mas não operamos o serviço diretamente. Entre em contato para mais informações."
+      }
+    }
+  },
+
+  "reviews": {
+    "title": "Avaliações",
+    "subtitle": "O que nossos hóspedes dizem",
+    "overall_rating": "Avaliação Geral",
+    "based_on_reviews": "Baseado em {count} avaliações",
+    "write_review": "Escrever Avaliação",
+    
+    "categories": {
+      "location": "Localização",
+      "cleanliness": "Limpeza", 
+      "staff": "Atendimento",
+      "atmosphere": "Ambiente",
+      "facilities": "Instalações",
+      "value": "Custo-benefício"
+    },
+
+    "sample_reviews": {
+      "review1": {
+        "author": "Maria Silva",
+        "rating": 5,
+        "date": "Dezembro 2024",
+        "comment": "Lugar incrível! A localização em Santa Teresa é perfeita, perto de tudo. O pessoal do hostel é super atencioso e as instalações são limpas e confortáveis. Voltarei com certeza!"
+      },
+      "review2": {
+        "author": "John Smith", 
+        "rating": 4,
+        "date": "Novembro 2024",
+        "comment": "Great place to stay in Rio! The staff helped us plan our activities and the neighborhood has an authentic feel. The rooms are clean and the common areas are perfect for meeting other travelers."
+      },
+      "review3": {
+        "author": "Carlos Rodriguez",
+        "rating": 5,
+        "date": "Outubro 2024", 
+        "comment": "Excelente para grupos! Ficamos em 10 pessoas e tivemos um desconto ótimo. A cozinha compartilhada é muito boa e a vista do terraço é linda. Recomendo muito!"
+      }
+    }
+  },
+
+  "footer": {
+    "tagline": "Seu lar no coração de Santa Teresa",
+    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro, RJ",
+    "phone": "+55 21 XXXX-XXXX",
+    "email": "contato@lapacasahostel.com",
+    
+    "quick_links": {
+      "title": "Links Rápidos",
+      "home": "Início",
+      "rooms": "Quartos", 
+      "booking": "Reservar",
+      "about": "Sobre",
+      "contact": "Contato",
+      "policies": "Políticas",
+      "faq": "FAQ"
+    },
+
+    "follow_us": {
+      "title": "Siga-nos",
+      "instagram": "Instagram",
+      "facebook": "Facebook", 
+      "tripadvisor": "TripAdvisor"
+    },
+
+    "legal": {
+      "title": "Legal",
+      "privacy_policy": "Política de Privacidade",
+      "terms_of_service": "Termos de Serviço",
+      "cookies": "Política de Cookies"
+    },
+
+    "copyright": "© 2024 Lapa Casa Hostel. Todos os direitos reservados.",
+    "developed_by": "Desenvolvido por"
+  },
+
+  "errors": {
+    "page_not_found": "Página não encontrada",
+    "server_error": "Erro do servidor",
+    "network_error": "Erro de conexão",
+    "booking_error": "Erro na reserva",
+    "payment_error": "Erro no pagamento",
+    "form_error": "Erro no formulário",
+    "try_again": "Tente novamente",
+    "contact_support": "Entre em contato com o suporte",
+    "go_home": "Voltar ao início"
+  },
+
+  "notifications": {
+    "booking_confirmed": "Reserva confirmada com sucesso!",
+    "payment_processed": "Pagamento processado com sucesso!",
+    "email_sent": "Email enviado com sucesso!",
+    "form_submitted": "Formulário enviado com sucesso!",
+    "saved": "Salvo com sucesso!",
+    "updated": "Atualizado com sucesso!",
+    "deleted": "Excluído com sucesso!",
+    "error_occurred": "Ocorreu um erro",
+    "please_try_again": "Por favor, tente novamente",
+    "connection_lost": "Conexão perdida",
+    "reconnecting": "Reconectando...",
+    "offline_mode": "Modo offline ativado"
+  },
+
+  "accessibility": {
+    "skip_to_content": "Pular para o conteúdo",
+    "menu_toggle": "Alternar menu",
+    "close_menu": "Fechar menu",
+    "previous_image": "Imagem anterior",
+    "next_image": "Próxima imagem",
+    "play_video": "Reproduzir vídeo",
+    "pause_video": "Pausar vídeo",
+    "increase_text": "Aumentar texto",
+    "decrease_text": "Diminuir texto",
+    "high_contrast": "Alto contraste"
+  }
+}

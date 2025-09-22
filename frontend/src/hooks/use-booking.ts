@@ -1,371 +1,387 @@
-// lapa-casa-hostel-frontend/src/hooks/use-booking.ts
+// src/hooks/use-booking-form.ts
+'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useBookingStore } from '@/stores/booking-store';
-import { usePaymentStore } from '@/stores/payment-store';
-import { api } from '@/lib/api';
-import { toast } from 'react-hot-toast';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { BookingFormData } from '@/components/forms/booking-form/booking-form';
+import { validateBookingStep } from '@/components/forms/booking-form/form-validation';
+import { calculateGroupDiscount, calculateSeasonMultiplier } from '@/lib/pricing';
 
-interface UseBookingProps {
-  initialData?: Partial<BookingData>;
+// Estado inicial del formulario
+const initialFormData: BookingFormData = {
+  // Fechas
+  checkInDate: null,
+  checkOutDate: null,
+  nights: 0,
+  
+  // Habitaciones
+  selectedRooms: [],
+  totalBeds: 0,
+  
+  // Precios
+  basePrice: 60.00,
+  totalPrice: 0,
+  groupDiscount: 0,
+  seasonMultiplier: 1,
+  finalPrice: 0,
+  depositAmount: 0,
+  remainingAmount: 0,
+  
+  // Información del huésped
+  guestName: '',
+  guestEmail: '',
+  guestPhone: '',
+  guestCountry: 'BR',
+  specialRequests: '',
+  
+  // Pago
+  paymentMethod: 'mercado_pago',
+  paymentType: 'pix',
+  agreedToTerms: false,
+  newsletterOptIn: false
+};
+
+export interface UseBookingFormOptions {
+  autoCalculatePricing?: boolean;
+  validateOnChange?: boolean;
+  persistData?: boolean;
+  onStepComplete?: (step: number, data: BookingFormData) => void;
+  onFormComplete?: (data: BookingFormData) => void;
+  onDataChange?: (data: BookingFormData) => void;
 }
 
-interface BookingData {
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  guestCountry: string;
-  checkInDate: Date;
-  checkOutDate: Date;
-  roomId: string;
-  bedsCount: number;
-  totalPrice: number;
-  depositAmount: number;
-  remainingAmount: number;
-  paymentMethod: 'stripe' | 'mercadopago';
-  specialRequests?: string;
-}
-
-interface BookingState {
-  isLoading: boolean;
-  isSubmitting: boolean;
+export interface UseBookingFormReturn {
+  formData: BookingFormData;
+  updateFormData: (updates: Partial<BookingFormData>) => void;
+  setFormData: (data: BookingFormData) => void;
+  resetForm: () => void;
+  
+  // Validación
+  isValid: boolean;
+  stepValidation: Record<number, boolean>;
   errors: Record<string, string>;
+  
+  // Estado
+  isDirty: boolean;
+  isCalculating: boolean;
+  
+  // Funciones de utilidad
+  calculatePricing: () => void;
+  validateStep: (step: number) => Promise<boolean>;
+  goToStep: (step: number) => void;
+  
+  // Estado de pasos
   currentStep: number;
-  maxSteps: number;
+  completedSteps: number[];
+  canProceed: boolean;
 }
 
-export const useBooking = ({ initialData }: UseBookingProps = {}) => {
-  // Store hooks
+export function useBookingForm(
+  initialData?: Partial<BookingFormData>,
+  options: UseBookingFormOptions = {}
+): UseBookingFormReturn {
   const {
-    bookingData,
-    updateBookingData,
-    clearBookingData,
-    validateBookingData
-  } = useBookingStore();
+    autoCalculatePricing = true,
+    validateOnChange = true,
+    persistData = true,
+    onStepComplete,
+    onFormComplete,
+    onDataChange
+  } = options;
 
-  const {
-    paymentStatus,
-    processPayment,
-    clearPaymentData
-  } = usePaymentStore();
-
-  // Local state
-  const [state, setState] = useState<BookingState>({
-    isLoading: false,
-    isSubmitting: false,
-    errors: {},
-    currentStep: 1,
-    maxSteps: 4
+  // Estado del formulario
+  const [formData, setFormDataState] = useState<BookingFormData>({
+    ...initialFormData,
+    ...initialData
   });
 
-  // Initialize booking data
-  useEffect(() => {
-    if (initialData) {
-      updateBookingData(initialData);
-    }
-  }, [initialData, updateBookingData]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Update booking field
-  const updateField = useCallback((field: keyof BookingData, value: any) => {
-    updateBookingData({ [field]: value });
+  // Referencias para evitar loops infinitos
+  const previousDataRef = useRef<BookingFormData>(formData);
+  const calculatingRef = useRef(false);
+
+  // Función para actualizar datos del formulario
+  const updateFormData = useCallback((updates: Partial<BookingFormData>) => {
+    setFormDataState(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // Marcar como modificado
+      setIsDirty(true);
+      
+      // Ejecutar callback de cambio
+      onDataChange?.(newData);
+      
+      return newData;
+    });
+  }, [onDataChange]);
+
+  // Función para establecer datos completos
+  const setFormData = useCallback((data: BookingFormData) => {
+    setFormDataState(data);
+    setIsDirty(true);
+    onDataChange?.(data);
+  }, [onDataChange]);
+
+  // Función para resetear formulario
+  const resetForm = useCallback(() => {
+    setFormDataState(initialFormData);
+    setCurrentStep(1);
+    setCompletedSteps([]);
+    setErrors({});
+    setIsDirty(false);
+    setIsCalculating(false);
+  }, []);
+
+  // Función para calcular precios automáticamente
+  const calculatePricing = useCallback(() => {
+    if (calculatingRef.current) return;
     
-    // Clear field-specific error
-    if (state.errors[field]) {
-      setState(prev => ({
-        ...prev,
-        errors: { ...prev.errors, [field]: '' }
-      }));
-    }
-  }, [updateBookingData, state.errors]);
-
-  // Validate current step
-  const validateCurrentStep = useCallback((): boolean => {
-    const { currentStep } = state;
-    const errors: Record<string, string> = {};
-
-    switch (currentStep) {
-      case 1: // Fechas y habitación
-        if (!bookingData.checkInDate) {
-          errors.checkInDate = 'Selecciona fecha de entrada';
-        }
-        if (!bookingData.checkOutDate) {
-          errors.checkOutDate = 'Selecciona fecha de salida';
-        }
-        if (!bookingData.roomId) {
-          errors.roomId = 'Selecciona una habitación';
-        }
-        if (!bookingData.bedsCount || bookingData.bedsCount < 1) {
-          errors.bedsCount = 'Selecciona número de camas';
-        }
-        break;
-
-      case 2: // Información del huésped
-        if (!bookingData.guestName?.trim()) {
-          errors.guestName = 'Nombre es obligatorio';
-        }
-        if (!bookingData.guestEmail?.trim()) {
-          errors.guestEmail = 'Email es obligatorio';
-        } else if (!/\S+@\S+\.\S+/.test(bookingData.guestEmail)) {
-          errors.guestEmail = 'Email no válido';
-        }
-        if (!bookingData.guestPhone?.trim()) {
-          errors.guestPhone = 'Teléfono es obligatorio';
-        }
-        break;
-
-      case 3: // Método de pago
-        if (!bookingData.paymentMethod) {
-          errors.paymentMethod = 'Selecciona método de pago';
-        }
-        break;
-
-      case 4: // Confirmación
-        // Validation handled by previous steps
-        break;
-    }
-
-    setState(prev => ({ ...prev, errors }));
-    return Object.keys(errors).length === 0;
-  }, [state.currentStep, bookingData]);
-
-  // Navigate to next step
-  const nextStep = useCallback(async () => {
-    if (!validateCurrentStep()) {
-      toast.error('Por favor corrige los errores antes de continuar');
-      return false;
-    }
-
-    setState(prev => ({
-      ...prev,
-      currentStep: Math.min(prev.currentStep + 1, prev.maxSteps)
-    }));
-
-    return true;
-  }, [validateCurrentStep]);
-
-  // Navigate to previous step
-  const prevStep = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      currentStep: Math.max(prev.currentStep - 1, 1),
-      errors: {}
-    }));
-  }, []);
-
-  // Jump to specific step
-  const goToStep = useCallback((step: number) => {
-    setState(prev => ({
-      ...prev,
-      currentStep: Math.max(1, Math.min(step, prev.maxSteps)),
-      errors: {}
-    }));
-  }, []);
-
-  // Check availability
-  const checkAvailability = useCallback(async () => {
-    if (!bookingData.checkInDate || !bookingData.checkOutDate) {
-      return false;
-    }
-
-    setState(prev => ({ ...prev, isLoading: true }));
+    calculatingRef.current = true;
+    setIsCalculating(true);
 
     try {
-      const response = await api.post('/availability/check', {
-        checkInDate: bookingData.checkInDate.toISOString(),
-        checkOutDate: bookingData.checkOutDate.toISOString(),
-        bedsCount: bookingData.bedsCount
-      });
+      const { checkInDate, checkOutDate, totalBeds, nights } = formData;
 
-      if (!response.data.available) {
-        toast.error('No hay disponibilidad para estas fechas');
+      if (!checkInDate || !checkOutDate || !totalBeds || !nights) {
+        setIsCalculating(false);
+        calculatingRef.current = false;
+        return;
+      }
+
+      // Calcular precio base
+      const baseTotal = formData.basePrice * totalBeds * nights;
+
+      // Calcular descuento de grupo
+      const groupDiscount = calculateGroupDiscount(totalBeds);
+
+      // Calcular multiplicador de temporada
+      const seasonMultiplier = calculateSeasonMultiplier(checkInDate);
+
+      // Aplicar descuentos y multiplicadores
+      const discountedPrice = baseTotal * (1 - groupDiscount);
+      const finalPrice = discountedPrice * seasonMultiplier;
+
+      // Calcular depósito (30% para grupos estándar, 50% para grupos grandes)
+      const depositPercentage = totalBeds >= 15 ? 0.50 : 0.30;
+      const depositAmount = Math.max(finalPrice * depositPercentage, 50); // Mínimo R$ 50
+      const remainingAmount = finalPrice - depositAmount;
+
+      // Actualizar solo si los precios han cambiado
+      const pricingUpdates = {
+        totalPrice: baseTotal,
+        groupDiscount,
+        seasonMultiplier,
+        finalPrice: Math.round(finalPrice * 100) / 100,
+        depositAmount: Math.round(depositAmount * 100) / 100,
+        remainingAmount: Math.round(remainingAmount * 100) / 100
+      };
+
+      updateFormData(pricingUpdates);
+
+    } catch (error) {
+      console.error('Error calculando precios:', error);
+    } finally {
+      setIsCalculating(false);
+      calculatingRef.current = false;
+    }
+  }, [formData, updateFormData]);
+
+  // Efecto para calcular precios automáticamente
+  useMemo(() => {
+    if (autoCalculatePricing && !isCalculating) {
+      const { checkInDate, checkOutDate, totalBeds, nights } = formData;
+      
+      // Solo calcular si tenemos los datos necesarios
+      if (checkInDate && checkOutDate && totalBeds > 0 && nights > 0) {
+        // Verificar si los datos relevantes han cambiado
+        const prev = previousDataRef.current;
+        const hasRelevantChanges = (
+          prev.checkInDate !== checkInDate ||
+          prev.checkOutDate !== checkOutDate ||
+          prev.totalBeds !== totalBeds ||
+          prev.nights !== nights ||
+          prev.basePrice !== formData.basePrice
+        );
+
+        if (hasRelevantChanges) {
+          calculatePricing();
+        }
+      }
+    }
+
+    previousDataRef.current = formData;
+  }, [formData, autoCalculatePricing, isCalculating, calculatePricing]);
+
+  // Función para validar un paso específico
+  const validateStep = useCallback(async (step: number): Promise<boolean> => {
+    try {
+      const validation = validateBookingStep(step, formData);
+      
+      if (!validation.isValid) {
+        setErrors(validation.errors);
         return false;
       }
 
+      setErrors({});
       return true;
     } catch (error) {
-      console.error('Error checking availability:', error);
-      toast.error('Error verificando disponibilidad');
-      return false;
-    } finally {
-      setState(prev => ({ ...prev, isLoading: false }));
-    }
-  }, [bookingData.checkInDate, bookingData.checkOutDate, bookingData.bedsCount]);
-
-  // Submit booking
-  const submitBooking = useCallback(async () => {
-    if (!validateBookingData(bookingData)) {
-      toast.error('Datos de reserva incompletos');
+      console.error('Error validando paso:', error);
+      setErrors({ validation: 'Error de validación' });
       return false;
     }
+  }, [formData]);
 
-    setState(prev => ({ ...prev, isSubmitting: true }));
+  // Función para navegar a un paso
+  const goToStep = useCallback(async (step: number) => {
+    if (step < 1 || step > 5) return;
 
-    try {
-      // First create booking
-      const bookingResponse = await api.post('/bookings/create', {
-        guestName: bookingData.guestName,
-        guestEmail: bookingData.guestEmail,
-        guestPhone: bookingData.guestPhone,
-        guestCountry: bookingData.guestCountry,
-        checkInDate: bookingData.checkInDate?.toISOString(),
-        checkOutDate: bookingData.checkOutDate?.toISOString(),
-        roomId: bookingData.roomId,
-        bedsCount: bookingData.bedsCount,
-        totalPrice: bookingData.totalPrice,
-        depositAmount: bookingData.depositAmount,
-        remainingAmount: bookingData.remainingAmount,
-        specialRequests: bookingData.specialRequests
-      });
+    // Si vamos hacia adelante, validar paso actual
+    if (step > currentStep) {
+      const isCurrentStepValid = await validateStep(currentStep);
+      if (!isCurrentStepValid) return;
 
-      const booking = bookingResponse.data;
-
-      // Process deposit payment
-      const paymentResult = await processPayment({
-        bookingId: booking.id,
-        amount: bookingData.depositAmount,
-        currency: 'BRL',
-        paymentMethod: bookingData.paymentMethod,
-        description: `Depósito reserva Lapa Casa Hostel - ${booking.id}`
-      });
-
-      if (paymentResult.success) {
-        toast.success('Reserva confirmada exitosamente');
-        
-        // Clear booking data after successful submission
-        setTimeout(() => {
-          clearBookingData();
-          clearPaymentData();
-        }, 2000);
-
-        return { success: true, booking, paymentId: paymentResult.paymentId };
-      } else {
-        toast.error('Error procesando el pago: ' + paymentResult.error);
-        return { success: false, error: paymentResult.error };
-      }
-    } catch (error: any) {
-      console.error('Error submitting booking:', error);
-      const errorMessage = error.response?.data?.message || 'Error procesando la reserva';
-      toast.error(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setState(prev => ({ ...prev, isSubmitting: false }));
-    }
-  }, [bookingData, validateBookingData, processPayment, clearBookingData, clearPaymentData]);
-
-  // Calculate pricing
-  const calculatePricing = useCallback(() => {
-    const { checkInDate, checkOutDate, bedsCount } = bookingData;
-
-    if (!checkInDate || !checkOutDate || !bedsCount) {
-      return {
-        basePrice: 0,
-        totalNights: 0,
-        subtotal: 0,
-        groupDiscount: 0,
-        seasonMultiplier: 1,
-        totalPrice: 0,
-        depositAmount: 0,
-        remainingAmount: 0
-      };
+      // Marcar paso actual como completado
+      setCompletedSteps(prev => [...new Set([...prev, currentStep])]);
+      onStepComplete?.(currentStep, formData);
     }
 
-    const totalNights = Math.ceil(
-      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const basePrice = 60; // BRL per bed per night
-    const subtotal = basePrice * bedsCount * totalNights;
+    setCurrentStep(step);
+  }, [currentStep, validateStep, formData, onStepComplete]);
 
-    // Calculate group discount
-    let groupDiscount = 0;
-    if (bedsCount >= 26) groupDiscount = 0.20;
-    else if (bedsCount >= 16) groupDiscount = 0.15;
-    else if (bedsCount >= 7) groupDiscount = 0.10;
+  // Calcular validación de pasos
+  const stepValidation = useMemo(() => {
+    const validation: Record<number, boolean> = {};
+    
+    for (let step = 1; step <= 5; step++) {
+      const result = validateBookingStep(step, formData);
+      validation[step] = result.isValid;
+    }
+    
+    return validation;
+  }, [formData]);
 
-    // Calculate season multiplier
-    const month = checkInDate.getMonth() + 1;
-    let seasonMultiplier = 1.0;
-    if (month >= 12 || month <= 3) seasonMultiplier = 1.5; // High season
-    else if (month >= 6 && month <= 9) seasonMultiplier = 0.8; // Low season
+  // Calcular si el formulario completo es válido
+  const isValid = useMemo(() => {
+    return Object.values(stepValidation).every(Boolean);
+  }, [stepValidation]);
 
-    // Special carnival pricing (February)
-    if (month === 2) seasonMultiplier = 2.0;
-
-    const discountAmount = subtotal * groupDiscount;
-    const seasonAdjusted = (subtotal - discountAmount) * seasonMultiplier;
-    const totalPrice = seasonAdjusted;
-
-    // Calculate deposits
-    const isLargeGroup = bedsCount >= 15;
-    const depositPercentage = isLargeGroup ? 0.50 : 0.30;
-    const depositAmount = totalPrice * depositPercentage;
-    const remainingAmount = totalPrice - depositAmount;
-
-    return {
-      basePrice,
-      totalNights,
-      subtotal,
-      groupDiscount,
-      seasonMultiplier,
-      totalPrice: Math.round(totalPrice * 100) / 100,
-      depositAmount: Math.round(depositAmount * 100) / 100,
-      remainingAmount: Math.round(remainingAmount * 100) / 100
-    };
-  }, [bookingData]);
-
-  // Auto-calculate pricing when relevant data changes
-  useEffect(() => {
-    const pricing = calculatePricing();
-    updateBookingData({
-      totalPrice: pricing.totalPrice,
-      depositAmount: pricing.depositAmount,
-      remainingAmount: pricing.remainingAmount
-    });
-  }, [
-    bookingData.checkInDate,
-    bookingData.checkOutDate,
-    bookingData.bedsCount,
-    calculatePricing,
-    updateBookingData
-  ]);
-
-  // Reset booking data
-  const resetBooking = useCallback(() => {
-    clearBookingData();
-    clearPaymentData();
-    setState({
-      isLoading: false,
-      isSubmitting: false,
-      errors: {},
-      currentStep: 1,
-      maxSteps: 4
-    });
-  }, [clearBookingData, clearPaymentData]);
+  // Calcular si se puede proceder
+  const canProceed = useMemo(() => {
+    return stepValidation[currentStep] || false;
+  }, [stepValidation, currentStep]);
 
   return {
-    // Booking data
-    bookingData,
-    updateField,
+    // Datos
+    formData,
+    updateFormData,
+    setFormData,
+    resetForm,
     
-    // State
-    ...state,
+    // Validación
+    isValid,
+    stepValidation,
+    errors,
     
-    // Pricing
-    pricing: calculatePricing(),
+    // Estado
+    isDirty,
+    isCalculating,
     
-    // Navigation
-    nextStep,
-    prevStep,
+    // Funciones
+    calculatePricing,
+    validateStep,
     goToStep,
     
-    // Actions
-    checkAvailability,
-    submitBooking,
-    resetBooking,
-    
-    // Validation
-    validateCurrentStep,
-    
-    // Payment status
-    paymentStatus
+    // Estado de pasos
+    currentStep,
+    completedSteps,
+    canProceed
   };
-};
+}
+
+// Hook especializado para gestión de fechas
+export function useDateSelection(
+  checkInDate: Date | null,
+  checkOutDate: Date | null,
+  onDatesChange: (checkIn: Date | null, checkOut: Date | null, nights: number) => void
+) {
+  const setCheckInDate = useCallback((date: Date | null) => {
+    let newCheckOut = checkOutDate;
+    let nights = 0;
+
+    if (date && checkOutDate && date >= checkOutDate) {
+      // Si check-in es después o igual a check-out, ajustar check-out
+      newCheckOut = new Date(date);
+      newCheckOut.setDate(newCheckOut.getDate() + 1);
+    }
+
+    if (date && newCheckOut) {
+      nights = Math.ceil((newCheckOut.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    onDatesChange(date, newCheckOut, nights);
+  }, [checkOutDate, onDatesChange]);
+
+  const setCheckOutDate = useCallback((date: Date | null) => {
+    let nights = 0;
+
+    if (checkInDate && date) {
+      nights = Math.ceil((date.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    onDatesChange(checkInDate, date, nights);
+  }, [checkInDate, onDatesChange]);
+
+  const setDateRange = useCallback((startDate: Date | null, endDate: Date | null) => {
+    let nights = 0;
+
+    if (startDate && endDate) {
+      nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    onDatesChange(startDate, endDate, nights);
+  }, [onDatesChange]);
+
+  return {
+    setCheckInDate,
+    setCheckOutDate,
+    setDateRange
+  };
+}
+
+// Hook para gestión de habitaciones
+export function useRoomSelection(
+  selectedRooms: BookingFormData['selectedRooms'],
+  onRoomsChange: (rooms: BookingFormData['selectedRooms']) => void
+) {
+  const addRoom = useCallback((roomId: string, beds: number, type: 'mixed' | 'female') => {
+    const newRooms = [...selectedRooms, { roomId, beds, type }];
+    onRoomsChange(newRooms);
+  }, [selectedRooms, onRoomsChange]);
+
+  const removeRoom = useCallback((index: number) => {
+    const newRooms = selectedRooms.filter((_, i) => i !== index);
+    onRoomsChange(newRooms);
+  }, [selectedRooms, onRoomsChange]);
+
+  const updateRoom = useCallback((index: number, updates: Partial<BookingFormData['selectedRooms'][0]>) => {
+    const newRooms = selectedRooms.map((room, i) => 
+      i === index ? { ...room, ...updates } : room
+    );
+    onRoomsChange(newRooms);
+  }, [selectedRooms, onRoomsChange]);
+
+  const getTotalBeds = useCallback(() => {
+    return selectedRooms.reduce((total, room) => total + room.beds, 0);
+  }, [selectedRooms]);
+
+  return {
+    addRoom,
+    removeRoom,
+    updateRoom,
+    getTotalBeds
+  };
+}

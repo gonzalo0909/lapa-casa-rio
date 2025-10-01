@@ -1,0 +1,184 @@
+# lapa-casa-hostel/backend/.gitignore
+
+# ===========================================
+# DEPENDENCIES
+# ===========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===========================================
+# ENVIRONMENT VARIABLES
+# ===========================================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env*.local
+
+# ===========================================
+# BUILD OUTPUT
+# ===========================================
+dist/
+build/
+out/
+*.tsbuildinfo
+.tsbuildinfo
+
+# ===========================================
+# TYPESCRIPT
+# ===========================================
+*.tsbuildinfo
+.tsbuildinfo
+
+# ===========================================
+# LOGS
+# ===========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+combined.log
+error.log
+application-*.log
+
+# ===========================================
+# TESTING
+# ===========================================
+coverage/
+.nyc_output/
+*.lcov
+.jest-cache/
+junit.xml
+test-results/
+
+# ===========================================
+# DATABASE
+# ===========================================
+*.db
+*.sqlite
+*.sqlite3
+prisma/migrations/
+!prisma/migrations/.gitkeep
+prisma/*.db
+prisma/*.db-journal
+
+# ===========================================
+# CACHE
+# ===========================================
+.cache/
+.eslintcache
+.stylelintcache
+*.cache
+
+# ===========================================
+# TEMP FILES
+# ===========================================
+tmp/
+temp/
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# ===========================================
+# IDE / EDITOR
+# ===========================================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.history/
+
+# ===========================================
+# DOCKER
+# ===========================================
+docker-compose.override.yml
+.dockerignore
+
+# ===========================================
+# BACKUP
+# ===========================================
+backups/
+*.backup
+*.bak
+*.sql.gz
+
+# ===========================================
+# UPLOADS
+# ===========================================
+uploads/
+public/uploads/
+
+# ===========================================
+# CERTIFICATES
+# ===========================================
+*.pem
+*.key
+*.cert
+*.crt
+ssl/
+certs/
+
+# ===========================================
+# SECRETS
+# ===========================================
+secrets/
+*.secrets
+service-account*.json
+google-credentials*.json
+
+# ===========================================
+# MONITORING
+# ===========================================
+prometheus/data/
+grafana/data/
+
+# ===========================================
+# CI/CD
+# ===========================================
+.github/workflows/secrets.yml
+
+# ===========================================
+# SYSTEM FILES
+# ===========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===========================================
+# MISC
+# ===========================================
+*.pid
+*.seed
+*.pid.lock
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity

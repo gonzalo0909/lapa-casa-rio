@@ -177,4 +177,125 @@ export function detectConflicts(
     bedsCount: number;
     status: string;
   }>,
-  new
+  newBooking: {
+    roomId: string;
+    checkIn: string;
+    checkOut: string;
+    bedsCount: number;
+    excludeBookingId?: string;
+  }
+): ConflictResult {
+  const conflicts = existingBookings.filter((booking) => {
+    if (booking.status === 'CANCELLED') return false;
+    
+    if (newBooking.excludeBookingId && booking.id === newBooking.excludeBookingId) {
+      return false;
+    }
+
+    if (booking.roomId !== newBooking.roomId) return false;
+
+    return datesOverlap(
+      booking.checkIn,
+      booking.checkOut,
+      newBooking.checkIn,
+      newBooking.checkOut
+    );
+  });
+
+  const hasConflict = conflicts.length > 0;
+
+  return {
+    hasConflict,
+    conflicts: conflicts.map((c) => ({
+      bookingId: c.id,
+      roomId: c.roomId,
+      checkIn: c.checkIn,
+      checkOut: c.checkOut,
+      bedsCount: c.bedsCount
+    })),
+    message: hasConflict
+      ? `Found ${conflicts.length} conflicting booking(s)`
+      : 'No conflicts detected'
+  };
+}
+
+/**
+ * Validate booking capacity doesn't exceed room capacity
+ * 
+ * @param roomCapacity - Room's total capacity
+ * @param existingOccupancy - Already occupied beds
+ * @param requestedBeds - Beds being requested
+ * @returns True if capacity is valid
+ */
+export function validateCapacity(
+  roomCapacity: number,
+  existingOccupancy: number,
+  requestedBeds: number
+): boolean {
+  return existingOccupancy + requestedBeds <= roomCapacity;
+}
+
+/**
+ * Create booking with anti-overbooking checks
+ * 
+ * @param bookingData - Booking data
+ * @param existingBookings - Existing bookings
+ * @param roomCapacity - Room capacity
+ * @returns Validation result with lock ID
+ */
+export async function createBookingWithLock(
+  bookingData: {
+    roomId: string;
+    checkIn: string;
+    checkOut: string;
+    bedsCount: number;
+  },
+  existingBookings: any[],
+  roomCapacity: number
+): Promise<{
+  success: boolean;
+  lockId?: string;
+  error?: string;
+}> {
+  const lockId = acquireLock(
+    bookingData.roomId,
+    bookingData.checkIn,
+    bookingData.checkOut
+  );
+
+  if (!lockId) {
+    return {
+      success: false,
+      error: 'Room is currently being booked by another user. Please try again.'
+    };
+  }
+
+  const conflicts = detectConflicts(existingBookings, bookingData);
+
+  if (conflicts.hasConflict) {
+    releaseLock(lockId);
+    return {
+      success: false,
+      error: 'Booking conflict detected. Room not available for selected dates.'
+    };
+  }
+
+  const totalOccupancy = existingBookings
+    .filter((b) => b.roomId === bookingData.roomId && b.status !== 'CANCELLED')
+    .reduce((sum, b) => sum + b.bedsCount, 0);
+
+  if (!validateCapacity(roomCapacity, totalOccupancy, bookingData.bedsCount)) {
+    releaseLock(lockId);
+    return {
+      success: false,
+      error: 'Insufficient capacity in selected room.'
+    };
+  }
+
+  return {
+    success: true,
+    lockId
+  };
+}
+
+setInterval(cleanupExpiredLocks, 60000);

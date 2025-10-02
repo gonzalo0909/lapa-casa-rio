@@ -1,0 +1,148 @@
+# lapa-casa-hostel/infrastructure/Dockerfile.prod
+
+# Production multi-stage Dockerfile for Lapa Casa Hostel Channel Manager
+# Supports frontend (Next.js 14) and backend (Node.js 20+) services
+# Optimized for security, size, and performance
+
+###############################################################################
+# STAGE 1: Base Dependencies
+###############################################################################
+FROM node:20-alpine AS base
+
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    curl \
+    tzdata
+
+ENV TZ=America/Sao_Paulo
+WORKDIR /app
+
+###############################################################################
+# STAGE 2: Frontend Dependencies
+###############################################################################
+FROM base AS frontend-deps
+
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci --only=production --ignore-scripts && \
+    npm cache clean --force
+
+###############################################################################
+# STAGE 3: Frontend Builder
+###############################################################################
+FROM base AS frontend-builder
+
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_STRIPE_PUBLIC_KEY
+ARG NEXT_PUBLIC_MP_PUBLIC_KEY
+ARG NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+ARG NODE_ENV=production
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_STRIPE_PUBLIC_KEY=$NEXT_PUBLIC_STRIPE_PUBLIC_KEY
+ENV NEXT_PUBLIC_MP_PUBLIC_KEY=$NEXT_PUBLIC_MP_PUBLIC_KEY
+ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=$NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+ENV NODE_ENV=$NODE_ENV
+
+WORKDIR /app/frontend
+COPY --from=frontend-deps /app/frontend/node_modules ./node_modules
+COPY frontend/ ./
+
+RUN npm run build && \
+    rm -rf .next/cache
+
+###############################################################################
+# STAGE 4: Backend Dependencies
+###############################################################################
+FROM base AS backend-deps
+
+WORKDIR /app/backend
+COPY backend/package*.json ./
+RUN npm ci --only=production --ignore-scripts && \
+    npm cache clean --force
+
+###############################################################################
+# STAGE 5: Backend Builder
+###############################################################################
+FROM base AS backend-builder
+
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+WORKDIR /app/backend
+COPY --from=backend-deps /app/backend/node_modules ./node_modules
+COPY backend/ ./
+
+RUN npx prisma generate && \
+    npm run build
+
+###############################################################################
+# STAGE 6: Frontend Production Runner
+###############################################################################
+FROM node:20-alpine AS frontend-production
+
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    dumb-init && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+WORKDIR /app
+
+ENV TZ=America/Sao_Paulo \
+    NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
+
+COPY --from=frontend-builder --chown=nextjs:nodejs /app/frontend/.next/standalone ./
+COPY --from=frontend-builder --chown=nextjs:nodejs /app/frontend/.next/static ./.next/static
+COPY --from=frontend-builder --chown=nextjs:nodejs /app/frontend/public ./public
+
+USER nextjs
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "server.js"]
+
+###############################################################################
+# STAGE 7: Backend Production Runner
+###############################################################################
+FROM node:20-alpine AS backend-production
+
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    curl \
+    dumb-init \
+    postgresql-client && \
+    addgroup -g 1001 -S backend && \
+    adduser -S backenduser -u 1001
+
+WORKDIR /app
+
+ENV TZ=America/Sao_Paulo \
+    NODE_ENV=production \
+    PORT=4000 \
+    LOG_LEVEL=info
+
+COPY --from=backend-builder --chown=backenduser:backend /app/backend/dist ./dist
+COPY --from=backend-builder --chown=backenduser:backend /app/backend/node_modules ./node_modules
+COPY --from=backend-builder --chown=backenduser:backend /app/backend/package*.json ./
+COPY --from=backend-builder --chown=backenduser:backend /app/backend/prisma ./prisma
+
+RUN mkdir -p /app/logs && \
+    chown -R backenduser:backend /app/logs
+
+USER backenduser
+EXPOSE 4000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:4000/api/health || exit 1
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

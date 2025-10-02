@@ -1,0 +1,277 @@
+# lapa-casa-hostel/infrastructure/.github/workflows/deploy.yml
+
+name: Deploy Lapa Casa Hostel
+
+on:
+  push:
+    branches:
+      - main
+      - production
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: gcr.io
+  IMAGE_NAME: lapa-casa-hostel/app
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm test
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: npm test
+
+      - name: Run frontend linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run backend linting
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Type check frontend
+        working-directory: ./frontend
+        run: npm run type-check
+
+      - name: Type check backend
+        working-directory: ./backend
+        run: npm run type-check
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: _json_key
+          password: ${{ secrets.GCR_JSON_KEY }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./infrastructure/Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            NODE_VERSION=${{ env.NODE_VERSION }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.lapacasahostel.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+          kubectl config view
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/lapa-app lapa-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }} -n lapa-casa-hostel
+          kubectl rollout status deployment/lapa-app -n lapa-casa-hostel --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n lapa-casa-hostel
+          kubectl get services -n lapa-casa-hostel
+
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f https://staging.lapacasahostel.com/health || exit 1
+          curl -f https://api-staging.lapacasahostel.com/health || exit 1
+
+      - name: Notify staging success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: '✅ Staging deployment successful'
+          fields: repo,message,commit,author
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/production'
+    environment:
+      name: production
+      url: https://lapacasahostel.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+          kubectl config view
+
+      - name: Backup database
+        run: |
+          kubectl exec -n lapa-casa-hostel statefulset/postgres -- pg_dump -U lapacasa lapa_channel_manager > backup-pre-deploy-${{ github.sha }}.sql
+          
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/lapa-app lapa-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:production-${{ github.sha }} -n lapa-casa-hostel
+          kubectl rollout status deployment/lapa-app -n lapa-casa-hostel --timeout=10m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n lapa-casa-hostel
+          kubectl get services -n lapa-casa-hostel
+          kubectl describe deployment/lapa-app -n lapa-casa-hostel
+
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f https://lapacasahostel.com/health || exit 1
+          curl -f https://api.lapacasahostel.com/health || exit 1
+          curl -f https://lapacasahostel.com/api/rooms || exit 1
+
+      - name: Notify production success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "✅ Production deployment successful - Lapa Casa Hostel",
+              attachments: [{
+                color: 'good',
+                fields: [
+                  {
+                    title: 'Environment',
+                    value: 'Production',
+                    short: true
+                  },
+                  {
+                    title: 'Commit',
+                    value: '${{ github.sha }}',
+                    short: true
+                  },
+                  {
+                    title: 'Author',
+                    value: '${{ github.actor }}',
+                    short: true
+                  },
+                  {
+                    title: 'URL',
+                    value: 'https://lapacasahostel.com',
+                    short: true
+                  }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify production failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "❌ Production deployment failed - Lapa Casa Hostel",
+              attachments: [{
+                color: 'danger',
+                fields: [
+                  {
+                    title: 'Environment',
+                    value: 'Production',
+                    short: true
+                  },
+                  {
+                    title: 'Commit',
+                    value: '${{ github.sha }}',
+                    short: true
+                  },
+                  {
+                    title: 'Author',
+                    value: '${{ github.actor }}',
+                    short: true
+                  }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          kubectl rollout undo deployment/lapa-app -n lapa-casa-hostel
+          kubectl rollout status deployment/lapa-app -n lapa-casa-hostel
+
+✅ Archivo 175/180 completado

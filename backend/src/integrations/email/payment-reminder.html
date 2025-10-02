@@ -1,0 +1,352 @@
+<!-- lapa-casa-hostel/backend/src/integrations/email/payment-reminder.html -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Lembrete de Pagamento - Lapa Casa Hostel</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #333333;
+      line-height: 1.6;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .header .icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 18px;
+      color: #333333;
+      margin-bottom: 20px;
+    }
+    .message {
+      font-size: 16px;
+      color: #555555;
+      margin-bottom: 30px;
+    }
+    .info-box {
+      background-color: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 30px 0;
+      border-radius: 4px;
+    }
+    .info-box h2 {
+      margin: 0 0 15px 0;
+      font-size: 18px;
+      color: #333333;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #666666;
+    }
+    .info-value {
+      color: #333333;
+      text-align: right;
+    }
+    .amount-highlight {
+      background-color: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 30px 0;
+    }
+    .amount-highlight .label {
+      font-size: 14px;
+      color: #856404;
+      margin-bottom: 5px;
+    }
+    .amount-highlight .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #856404;
+    }
+    .urgency-box {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .urgency-box.urgent {
+      background-color: #f8d7da;
+      border-left-color: #dc3545;
+    }
+    .urgency-box p {
+      margin: 0;
+      font-size: 14px;
+    }
+    .urgency-box.urgent p {
+      color: #721c24;
+      font-weight: 600;
+    }
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 16px 40px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      text-align: center;
+      margin: 20px 0;
+      transition: transform 0.2s;
+    }
+    .cta-button:hover {
+      transform: translateY(-2px);
+    }
+    .button-container {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .payment-methods {
+      margin: 30px 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+    }
+    .payment-methods h3 {
+      margin: 0 0 15px 0;
+      font-size: 16px;
+      color: #333333;
+    }
+    .payment-methods ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .payment-methods li {
+      padding: 8px 0;
+      color: #555555;
+    }
+    .payment-methods li:before {
+      content: "✓ ";
+      color: #28a745;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e9ecef;
+    }
+    .footer-info {
+      font-size: 14px;
+      color: #666666;
+      margin: 5px 0;
+    }
+    .footer-info a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    .social-links {
+      margin: 20px 0;
+    }
+    .social-links a {
+      display: inline-block;
+      margin: 0 10px;
+      color: #667eea;
+      text-decoration: none;
+      font-size: 24px;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e9ecef;
+      margin: 30px 0;
+    }
+    .note {
+      background-color: #e7f3ff;
+      border-left: 4px solid #2196f3;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #0c5460;
+    }
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        margin: 0;
+        border-radius: 0;
+      }
+      .header {
+        padding: 30px 20px;
+      }
+      .content {
+        padding: 30px 20px;
+      }
+      .header h1 {
+        font-size: 24px;
+      }
+      .amount-highlight .value {
+        font-size: 28px;
+      }
+      .info-row {
+        flex-direction: column;
+      }
+      .info-value {
+        text-align: left;
+        margin-top: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="icon">💳</div>
+      <h1>Lembrete de Pagamento</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <p class="greeting">Olá {{guestName}},</p>
+
+      <p class="message">
+        Este é um lembrete sobre o pagamento pendente da sua reserva no <strong>Lapa Casa Hostel</strong>.
+      </p>
+
+      <!-- Urgency Alert -->
+      {{#if urgencyClass}}
+      <div class="urgency-box {{urgencyClass}}">
+        <p>⚠️ <strong>Atenção:</strong> O vencimento está próximo. Por favor, efetue o pagamento para garantir sua reserva.</p>
+      </div>
+      {{/if}}
+
+      <!-- Amount Highlight -->
+      <div class="amount-highlight">
+        <div class="label">Valor a Pagar</div>
+        <div class="value">{{amount}}</div>
+      </div>
+
+      <!-- Booking Info -->
+      <div class="info-box">
+        <h2>📋 Detalhes da Reserva</h2>
+        <div class="info-row">
+          <span class="info-label">ID da Reserva:</span>
+          <span class="info-value">{{bookingId}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Valor Pendente:</span>
+          <span class="info-value"><strong>{{amount}}</strong></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Data de Vencimento:</span>
+          <span class="info-value">{{dueDate}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dias Restantes:</span>
+          <span class="info-value">{{daysUntilDue}} dias</span>
+        </div>
+      </div>
+
+      <!-- Payment Button -->
+      {{#if hasPaymentLink}}
+      <div class="button-container">
+        <a href="{{paymentLink}}" class="cta-button">Pagar Agora</a>
+      </div>
+      {{/if}}
+
+      <!-- Payment Methods -->
+      <div class="payment-methods">
+        <h3>💳 Métodos de Pagamento Aceitos</h3>
+        <ul>
+          <li>Cartão de Crédito (Visa, Mastercard, Amex)</li>
+          <li>PIX (Pagamento instantâneo)</li>
+          <li>Boleto Bancário</li>
+          <li>Mercado Pago</li>
+        </ul>
+      </div>
+
+      <!-- Important Note -->
+      <div class="note">
+        <strong>📌 Importante:</strong> Para evitar o cancelamento automático da sua reserva, 
+        por favor efetue o pagamento até a data de vencimento. Caso já tenha realizado o pagamento, 
+        desconsidere este e-mail.
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="message">
+        Caso tenha alguma dúvida ou precise de assistência, não hesite em entrar em contato conosco. 
+        Estamos aqui para ajudar!
+      </p>
+
+      <p class="message">
+        Obrigado por escolher o Lapa Casa Hostel! 🙏
+      </p>
+
+      <p class="message">
+        Atenciosamente,<br>
+        <strong>Equipe Lapa Casa Hostel</strong>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p class="footer-info">
+        <strong>Lapa Casa Hostel</strong><br>
+        Rua Silvio Romero 22, Santa Teresa<br>
+        Rio de Janeiro, RJ - Brasil
+      </p>
+
+      <p class="footer-info">
+        📞 Telefone: +55 21 XXXX-XXXX<br>
+        ✉️ Email: <a href="mailto:reservas@lapacasahostel.com">reservas@lapacasahostel.com</a><br>
+        🌐 Website: <a href="https://lapacasahostel.com">lapacasahostel.com</a>
+      </p>
+
+      <div class="social-links">
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="Facebook">📘</a>
+        <a href="#" title="WhatsApp">💬</a>
+      </div>
+
+      <p class="footer-info" style="font-size: 12px; color: #999999; margin-top: 20px;">
+        © {{currentYear}} Lapa Casa Hostel. Todos os direitos reservados.<br>
+        Você está recebendo este e-mail porque possui uma reserva conosco.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

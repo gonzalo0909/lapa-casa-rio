@@ -1,291 +1,329 @@
 // lapa-casa-hostel/backend/src/integrations/google-sheets/booking-sync.ts
 
-import { sheetsClient } from './sheets-client';
-import { logger } from '../../utils/logger';
+import { PrismaClient } from '@prisma/client';
+import { SheetsClient, type BookingRowData, SheetsConfig } from './sheets-client';
 
-interface SyncBookingData {
-  id: string;
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  checkInDate: Date;
-  checkOutDate: Date;
-  roomId: string;
-  bedsCount: number;
-  totalPrice: number;
-  depositPaid: boolean;
-  remainingPaid: boolean;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-  createdAt: Date;
-  notes?: string;
+/**
+ * @module BookingSync
+ * @description Synchronizes bookings between database and Google Sheets
+ */
+
+const prisma = new PrismaClient();
+
+/**
+ * @interface SyncResult
+ * @description Result of a sync operation
+ */
+export interface SyncResult {
+  success: boolean;
+  bookingsAdded: number;
+  bookingsUpdated: number;
+  bookingsDeleted: number;
+  errors: string[];
 }
 
+/**
+ * @interface SyncOptions
+ * @description Options for sync operations
+ */
+export interface SyncOptions {
+  fullSync?: boolean;
+  dateFrom?: Date;
+  dateTo?: Date;
+  roomId?: string;
+}
+
+/**
+ * @class BookingSync
+ * @description Manages synchronization between database and Google Sheets
+ */
 export class BookingSync {
-  private readonly ROOM_NAMES: Record<string, string> = {
-    'room_mixto_12a': 'Mixto 12A',
-    'room_mixto_12b': 'Mixto 12B',
-    'room_mixto_7': 'Mixto 7',
-    'room_flexible_7': 'Flexible 7'
-  };
+  private sheetsClient: SheetsClient;
 
-  async initialize(): Promise<void> {
-    try {
-      await sheetsClient.initialize();
-      logger.info('BookingSync initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize BookingSync', { error });
-      throw error;
-    }
+  constructor(config: SheetsConfig) {
+    this.sheetsClient = new SheetsClient(config);
   }
 
-  async syncBookingToSheet(booking: SyncBookingData): Promise<void> {
+  /**
+   * @method syncToSheets
+   * @description Syncs bookings from database to Google Sheets
+   * @param {SyncOptions} [options] - Sync options
+   * @returns {Promise<SyncResult>} Sync result
+   */
+  async syncToSheets(options: SyncOptions = {}): Promise<SyncResult> {
+    const errors: string[] = [];
+    let bookingsAdded = 0;
+    let bookingsUpdated = 0;
+
     try {
-      const rowData = this.transformBookingToRow(booking);
-      await sheetsClient.appendRow(rowData);
-      
-      logger.info('Booking synced to sheet', { bookingId: booking.id });
-    } catch (error) {
-      logger.error('Failed to sync booking to sheet', { 
-        error, 
-        bookingId: booking.id 
-      });
-      throw error;
-    }
-  }
+      // Initialize sheet if needed
+      await this.sheetsClient.initializeSheet();
 
-  async updateBookingInSheet(
-    bookingId: string, 
-    updates: Partial<SyncBookingData>
-  ): Promise<void> {
-    try {
-      const rowUpdates = this.transformBookingToRow(updates as SyncBookingData);
-      await sheetsClient.updateRow(bookingId, rowUpdates);
-      
-      logger.info('Booking updated in sheet', { bookingId });
-    } catch (error) {
-      logger.error('Failed to update booking in sheet', { 
-        error, 
-        bookingId 
-      });
-      throw error;
-    }
-  }
+      // Build query
+      const where: any = {
+        status: { in: ['confirmed', 'pending'] },
+      };
 
-  async deleteBookingFromSheet(bookingId: string): Promise<void> {
-    try {
-      await sheetsClient.deleteRow(bookingId);
-      logger.info('Booking deleted from sheet', { bookingId });
-    } catch (error) {
-      logger.error('Failed to delete booking from sheet', { 
-        error, 
-        bookingId 
-      });
-      throw error;
-    }
-  }
-
-  async markDepositPaid(bookingId: string): Promise<void> {
-    try {
-      await sheetsClient.updateRow(bookingId, {
-        bookingId,
-        depositPaid: true,
-        guestName: '',
-        guestEmail: '',
-        guestPhone: '',
-        checkInDate: '',
-        checkOutDate: '',
-        roomAssigned: '',
-        bedsCount: 0,
-        totalPrice: 0,
-        remainingPaid: false,
-        status: 'CONFIRMED',
-        createdDate: ''
-      });
-      
-      logger.info('Deposit marked as paid in sheet', { bookingId });
-    } catch (error) {
-      logger.error('Failed to mark deposit as paid', { error, bookingId });
-      throw error;
-    }
-  }
-
-  async markRemainingPaid(bookingId: string): Promise<void> {
-    try {
-      await sheetsClient.updateRow(bookingId, {
-        bookingId,
-        remainingPaid: true,
-        guestName: '',
-        guestEmail: '',
-        guestPhone: '',
-        checkInDate: '',
-        checkOutDate: '',
-        roomAssigned: '',
-        bedsCount: 0,
-        totalPrice: 0,
-        depositPaid: false,
-        status: 'CONFIRMED',
-        createdDate: ''
-      });
-      
-      logger.info('Remaining payment marked as paid in sheet', { bookingId });
-    } catch (error) {
-      logger.error('Failed to mark remaining as paid', { error, bookingId });
-      throw error;
-    }
-  }
-
-  async updateBookingStatus(
-    bookingId: string, 
-    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'
-  ): Promise<void> {
-    try {
-      await sheetsClient.updateRow(bookingId, {
-        bookingId,
-        status,
-        guestName: '',
-        guestEmail: '',
-        guestPhone: '',
-        checkInDate: '',
-        checkOutDate: '',
-        roomAssigned: '',
-        bedsCount: 0,
-        totalPrice: 0,
-        depositPaid: false,
-        remainingPaid: false,
-        createdDate: ''
-      });
-      
-      logger.info('Booking status updated in sheet', { bookingId, status });
-    } catch (error) {
-      logger.error('Failed to update booking status', { 
-        error, 
-        bookingId, 
-        status 
-      });
-      throw error;
-    }
-  }
-
-  async addNoteToBooking(bookingId: string, note: string): Promise<void> {
-    try {
-      await sheetsClient.updateRow(bookingId, {
-        bookingId,
-        notes: note,
-        guestName: '',
-        guestEmail: '',
-        guestPhone: '',
-        checkInDate: '',
-        checkOutDate: '',
-        roomAssigned: '',
-        bedsCount: 0,
-        totalPrice: 0,
-        depositPaid: false,
-        remainingPaid: false,
-        status: 'PENDING',
-        createdDate: ''
-      });
-      
-      logger.info('Note added to booking in sheet', { bookingId });
-    } catch (error) {
-      logger.error('Failed to add note to booking', { error, bookingId });
-      throw error;
-    }
-  }
-
-  async getAllBookingsFromSheet() {
-    try {
-      const bookings = await sheetsClient.getAllBookings();
-      logger.info('Retrieved all bookings from sheet', { 
-        count: bookings.length 
-      });
-      return bookings;
-    } catch (error) {
-      logger.error('Failed to get all bookings from sheet', { error });
-      throw error;
-    }
-  }
-
-  async syncBulkBookings(bookings: SyncBookingData[]): Promise<void> {
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as Array<{ bookingId: string; error: any }>
-    };
-
-    for (const booking of bookings) {
-      try {
-        await this.syncBookingToSheet(booking);
-        results.success++;
-      } catch (error) {
-        results.failed++;
-        results.errors.push({ bookingId: booking.id, error });
+      if (options.dateFrom) {
+        where.checkIn = { ...where.checkIn, gte: options.dateFrom };
       }
-    }
 
-    logger.info('Bulk booking sync completed', results);
+      if (options.dateTo) {
+        where.checkOut = { ...where.checkOut, lte: options.dateTo };
+      }
 
-    if (results.failed > 0) {
-      logger.warn('Some bookings failed to sync', { 
-        failed: results.failed,
-        errors: results.errors 
+      if (options.roomId) {
+        where.roomId = options.roomId;
+      }
+
+      // Fetch bookings from database
+      const bookings = await prisma.booking.findMany({
+        where,
+        include: {
+          room: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          checkIn: 'asc',
+        },
       });
-    }
-  }
 
-  private transformBookingToRow(booking: SyncBookingData | Partial<SyncBookingData>) {
-    if (!booking.id) {
-      throw new Error('Booking ID is required');
-    }
+      // Sync each booking
+      for (const booking of bookings) {
+        try {
+          const rowData = this.convertToRowData(booking);
 
-    return {
-      bookingId: booking.id,
-      guestName: booking.guestName || '',
-      guestEmail: booking.guestEmail || '',
-      guestPhone: booking.guestPhone || '',
-      checkInDate: booking.checkInDate 
-        ? this.formatDate(booking.checkInDate) 
-        : '',
-      checkOutDate: booking.checkOutDate 
-        ? this.formatDate(booking.checkOutDate) 
-        : '',
-      roomAssigned: booking.roomId 
-        ? this.ROOM_NAMES[booking.roomId] || booking.roomId 
-        : '',
-      bedsCount: booking.bedsCount || 0,
-      totalPrice: booking.totalPrice || 0,
-      depositPaid: booking.depositPaid || false,
-      remainingPaid: booking.remainingPaid || false,
-      status: booking.status || 'PENDING',
-      createdDate: booking.createdAt 
-        ? this.formatDate(booking.createdAt) 
-        : '',
-      notes: booking.notes || ''
-    };
-  }
+          // Check if booking already exists in sheet
+          const existingRow = await this.sheetsClient.findRowByBookingId(booking.id);
 
-  private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
+          if (existingRow) {
+            // Update existing row
+            await this.sheetsClient.updateRow(existingRow, rowData);
+            bookingsUpdated++;
+          } else {
+            // Add new row
+            await this.sheetsClient.appendRow(rowData);
+            bookingsAdded++;
+          }
+        } catch (error) {
+          const errorMsg = `Failed to sync booking ${booking.id}: ${this.getErrorMessage(error)}`;
+          errors.push(errorMsg);
+          console.error(errorMsg);
+        }
+      }
 
-  async verifyBookingExists(bookingId: string): Promise<boolean> {
-    try {
-      const row = await sheetsClient.findRowByBookingId(bookingId);
-      return row !== null;
+      return {
+        success: errors.length === 0,
+        bookingsAdded,
+        bookingsUpdated,
+        bookingsDeleted: 0,
+        errors,
+      };
     } catch (error) {
-      logger.error('Error verifying booking exists', { error, bookingId });
+      const errorMsg = `Sync failed: ${this.getErrorMessage(error)}`;
+      errors.push(errorMsg);
+      console.error(errorMsg);
+
+      return {
+        success: false,
+        bookingsAdded,
+        bookingsUpdated,
+        bookingsDeleted: 0,
+        errors,
+      };
+    }
+  }
+
+  /**
+   * @method syncFromSheets
+   * @description Syncs bookings from Google Sheets to database
+   * @returns {Promise<SyncResult>} Sync result
+   */
+  async syncFromSheets(): Promise<SyncResult> {
+    const errors: string[] = [];
+    let bookingsAdded = 0;
+    let bookingsUpdated = 0;
+
+    try {
+      // Get all rows from sheet
+      const rows = await this.sheetsClient.getAllRows();
+
+      for (const row of rows) {
+        try {
+          // Check if booking exists in database
+          const existing = await prisma.booking.findUnique({
+            where: { id: row.bookingId },
+          });
+
+          if (existing) {
+            // Update existing booking
+            await prisma.booking.update({
+              where: { id: row.bookingId },
+              data: {
+                guestName: row.guestName,
+                status: row.status as any,
+                notes: row.notes,
+              },
+            });
+            bookingsUpdated++;
+          } else {
+            // Note: Adding new bookings from sheets is typically not recommended
+            // as it requires additional validation and room lookup
+            errors.push(`Booking ${row.bookingId} not found in database - skipping`);
+          }
+        } catch (error) {
+          const errorMsg = `Failed to sync booking ${row.bookingId}: ${this.getErrorMessage(error)}`;
+          errors.push(errorMsg);
+          console.error(errorMsg);
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        bookingsAdded,
+        bookingsUpdated,
+        bookingsDeleted: 0,
+        errors,
+      };
+    } catch (error) {
+      const errorMsg = `Sync from sheets failed: ${this.getErrorMessage(error)}`;
+      errors.push(errorMsg);
+      console.error(errorMsg);
+
+      return {
+        success: false,
+        bookingsAdded,
+        bookingsUpdated,
+        bookingsDeleted: 0,
+        errors,
+      };
+    }
+  }
+
+  /**
+   * @method getBookingFromSheet
+   * @description Retrieves a specific booking from Google Sheets
+   * @param {string} bookingId - Booking ID
+   * @returns {Promise<BookingRowData | null>} Booking data or null
+   */
+  async getBookingFromSheet(bookingId: string): Promise<BookingRowData | null> {
+    try {
+      const rowIndex = await this.sheetsClient.findRowByBookingId(bookingId);
+      if (!rowIndex) {
+        return null;
+      }
+
+      const allRows = await this.sheetsClient.getAllRows();
+      return allRows.find((row) => row.bookingId === bookingId) || null;
+    } catch (error) {
+      console.error('Error getting booking from sheet:', error);
+      return null;
+    }
+  }
+
+  /**
+   * @method deleteBookingFromSheet
+   * @description Deletes a booking from Google Sheets
+   * @param {string} bookingId - Booking ID
+   * @returns {Promise<boolean>} True if deleted successfully
+   */
+  async deleteBookingFromSheet(bookingId: string): Promise<boolean> {
+    try {
+      const rowIndex = await this.sheetsClient.findRowByBookingId(bookingId);
+      if (!rowIndex) {
+        return false;
+      }
+
+      await this.sheetsClient.deleteRow(rowIndex);
+      return true;
+    } catch (error) {
+      console.error('Error deleting booking from sheet:', error);
       return false;
     }
   }
 
-  async getBookingFromSheet(bookingId: string) {
+  /**
+   * @method fullSync
+   * @description Performs a full sync - clears sheet and syncs all bookings
+   * @returns {Promise<SyncResult>} Sync result
+   */
+  async fullSync(): Promise<SyncResult> {
     try {
-      const allBookings = await sheetsClient.getAllBookings();
-      return allBookings.find(b => b.bookingId === bookingId);
+      // Clear existing data
+      await this.sheetsClient.clearSheet();
+
+      // Re-initialize with headers
+      await this.sheetsClient.initializeSheet();
+
+      // Sync all bookings
+      return await this.syncToSheets({ fullSync: true });
     } catch (error) {
-      logger.error('Error getting booking from sheet', { error, bookingId });
-      throw error;
+      console.error('Full sync failed:', error);
+      return {
+        success: false,
+        bookingsAdded: 0,
+        bookingsUpdated: 0,
+        bookingsDeleted: 0,
+        errors: [this.getErrorMessage(error)],
+      };
     }
+  }
+
+  /**
+   * @method convertToRowData
+   * @description Converts database booking to sheet row data
+   * @param {any} booking - Booking from database
+   * @returns {BookingRowData} Row data for sheet
+   */
+  private convertToRowData(booking: any): BookingRowData {
+    const nights = Math.ceil(
+      (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+
+    return {
+      bookingId: booking.id,
+      guestName: booking.guestName,
+      guestEmail: booking.guestEmail || '',
+      roomName: booking.room.name,
+      checkIn: new Date(booking.checkIn).toISOString().split('T')[0],
+      checkOut: new Date(booking.checkOut).toISOString().split('T')[0],
+      nights,
+      adults: booking.adults,
+      children: booking.children,
+      totalPrice: booking.totalPrice,
+      status: booking.status,
+      platform: booking.platform,
+      createdAt: new Date(booking.createdAt).toISOString(),
+      notes: booking.notes,
+    };
+  }
+
+  /**
+   * @method getErrorMessage
+   * @description Safely extracts error message
+   * @param {unknown} error - Error object
+   * @returns {string} Error message
+   */
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 }
 
-export const bookingSync = new BookingSync();
+/**
+ * @function createBookingSync
+ * @description Factory function to create a new BookingSync instance
+ * @param {SheetsConfig} config - Sheets configuration
+ * @returns {BookingSync} New BookingSync instance
+ */
+export function createBookingSync(config: SheetsConfig): BookingSync {
+  return new BookingSync(config);
+}
+
+// ✅ Archivo 2/2 - booking-sync.ts completado

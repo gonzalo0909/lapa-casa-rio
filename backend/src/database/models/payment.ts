@@ -262,4 +262,8 @@ export class PaymentModel {
       failedPayments: failed,
       totalRevenue: Number(revenue._sum.amount || 0),
       pendingAmount: Number(pending._sum.amount || 0)
+    };
+  }
 }
+
+// ✅ Archivo payment.ts corregido - faltaba } al final de getPaymentStats y } al final de la clase

@@ -72,6 +72,7 @@ model Booking {
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   iCalFeed   ICalFeed? @relation(fields: [iCalFeedId], references: [id], onDelete: SetNull)
   iCalFeedId String?
+  payments   Payment[]
 
   @@index([roomId])
   @@index([userId])
@@ -165,4 +166,73 @@ model CalendarToken {
   @@index([resourceId])
   @@index([expiresAt])
   @@map("calendar_tokens")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum PaymentType {
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  BANK_TRANSFER
+  CASH
+  BOLETO
+}
+
+enum PaymentProvider {
+  STRIPE
+  MERCADOPAGO
+  MANUAL
+  OTHER
+}
+
+model Payment {
+  id                     String          @id @default(uuid())
+  paymentNumber          String          @unique
+  bookingId              String
+  amount                 Decimal         @db.Decimal(10, 2)
+  currency               String          @default("BRL")
+  status                 PaymentStatus   @default(PENDING)
+  paymentType            PaymentType
+  provider               PaymentProvider
+  paymentMethod          String
+  cardBrand              String?
+  cardLast4              String?
+  installments           Int?
+  installmentAmount      Decimal?        @db.Decimal(10, 2)
+  stripePaymentIntentId  String?         @unique
+  stripeChargeId         String?
+  mpPaymentId            String?         @unique
+  mpPreferenceId         String?
+  pixQrCode              String?
+  pixQrCodeBase64        String?
+  pixExpiresAt           DateTime?
+  paidAt                 DateTime?
+  failedAt               DateTime?
+  refundedAt             DateTime?
+  refundAmount           Decimal?        @db.Decimal(10, 2)
+  refundReason           String?
+  failureReason          String?
+  failureCode            String?
+  retryAttempts          Int             @default(0)
+  nextRetryAt            DateTime?
+  metadata               Json?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([paymentNumber])
+  @@index([createdAt])
+  @@map("payments")
 }

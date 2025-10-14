@@ -1,0 +1,168 @@
+// lapa-casa-hostel/backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings     Booking[]
+  reviews      Review[]
+  tokenVersion Int       @default(0)
+
+  @@index([email])
+  @@map("users")
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  name        String
+  type        String
+  description String?
+  capacity    Int
+  price       Float
+  isActive    Boolean  @default(true)
+  amenities   Json?
+  images      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bookings  Booking[]
+  reviews   Review[]
+  icalFeeds ICalFeed[]
+
+  @@index([type])
+  @@index([isActive])
+  @@map("rooms")
+}
+
+model Booking {
+  id         String   @id @default(uuid())
+  roomId     String
+  userId     String?
+  guestName  String
+  guestEmail String?
+  checkIn    DateTime
+  checkOut   DateTime
+  adults     Int      @default(1)
+  children   Int      @default(0)
+  totalPrice Float
+  status     String   @default("pending")
+  platform   String   @default("direct")
+  source     String   @default("manual")
+  externalId String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  iCalFeed   ICalFeed? @relation(fields: [iCalFeedId], references: [id], onDelete: SetNull)
+  iCalFeedId String?
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([checkIn])
+  @@index([checkOut])
+  @@index([status])
+  @@index([externalId])
+  @@map("bookings")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  rating    Int
+  comment   String?
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+model ICalFeed {
+  id             String    @id @default(uuid())
+  name           String
+  url            String
+  roomId         String
+  platform       String
+  isActive       Boolean   @default(true)
+  lastSyncAt     DateTime?
+  lastSyncStatus String?
+  lastSyncError  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  room     Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([roomId])
+  @@index([isActive])
+  @@map("ical_feeds")
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@map("settings")
+}
+
+model SyncHistory {
+  id               String   @id @default(uuid())
+  type             String
+  status           String
+  feedsSynced      Int      @default(0)
+  feedsFailed      Int      @default(0)
+  bookingsImported Int      @default(0)
+  bookingsUpdated  Int      @default(0)
+  durationMs       Int
+  errors           String[]
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sync_history")
+}
+
+model CalendarToken {
+  id         String    @id @default(uuid())
+  token      String    @unique
+  resourceId String
+  expiresAt  DateTime
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([token])
+  @@index([resourceId])
+  @@index([expiresAt])
+  @@map("calendar_tokens")
+}

@@ -1,111 +1,71 @@
 # lapa-casa-hostel/render.yaml
+
 services:
-  # PostgreSQL Database
-  - type: pgsql
-    name: lapa-casa-hostel-db
-    databaseName: lapa_casa_hostel_prod
-    user: lapa_admin
-    region: oregon
-    plan: starter
-    ipAllowList: []
-
-  # Redis Cache
-  - type: redis
-    name: lapa-casa-hostel-redis
-    region: oregon
-    plan: starter
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
-
   # Backend API Service
   - type: web
-    name: lapa-casa-hostel-backend
-    runtime: node
+    name: lapa-casa-hostel-api
+    env: node
     region: oregon
     plan: starter
-    buildCommand: cd backend && npm ci && npx prisma generate && npm run build
-    startCommand: cd backend && npx prisma migrate deploy && npm run start
-    healthCheckPath: /health
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      
-      - key: PORT
-        value: 10000
-      
       - key: DATABASE_URL
         fromDatabase:
           name: lapa-casa-hostel-db
           property: connectionString
-      
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: lapa-casa-hostel-redis
-          property: connectionString
-      
       - key: JWT_SECRET
         generateValue: true
-      
       - key: JWT_EXPIRES_IN
         value: 7d
-      
-      - key: FRONTEND_URL
-        value: https://lapacasahostel.com
-      
-      - key: BACKEND_URL
-        value: https://lapa-casa-hostel-backend.onrender.com
-      
-      # Stripe - AÑADIR MANUALMENTE DESPUÉS
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      
-      - key: STRIPE_PUBLISHABLE_KEY
-        sync: false
-      
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      
-      # Mercado Pago - AÑADIR MANUALMENTE DESPUÉS
-      - key: MERCADO_PAGO_ACCESS_TOKEN
-        sync: false
-      
-      - key: MERCADO_PAGO_PUBLIC_KEY
-        sync: false
-      
-      # Email Resend - AÑADIR MANUALMENTE DESPUÉS
-      - key: RESEND_API_KEY
-        sync: false
-      
-      - key: EMAIL_FROM
-        value: reservas@lapacasahostel.com
-      
-      # Google Sheets - AÑADIR MANUALMENTE DESPUÉS
-      - key: GOOGLE_SHEETS_ID
-        sync: false
-      
-      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
-        sync: false
-      
-      - key: GOOGLE_PRIVATE_KEY
-        sync: false
-      
-      # WhatsApp (Opcional)
-      - key: WHATSAPP_API_KEY
-        sync: false
-      
-      - key: WHATSAPP_PHONE_ID
-        sync: false
-      
-      # Application Settings
+      - key: PORT
+        value: 10000
       - key: CORS_ORIGIN
-        value: https://lapacasahostel.com,https://www.lapacasahostel.com
-      
-      - key: RATE_LIMIT_WINDOW_MS
-        value: 900000
-      
-      - key: RATE_LIMIT_MAX_REQUESTS
-        value: 100
-      
-      - key: LOG_LEVEL
-        value: info
+        value: https://lapa-casa-hostel-frontend.onrender.com
+      - key: TIMEZONE
+        value: America/Sao_Paulo
+    autoDeploy: true
+
+  # Frontend Service
+  - type: web
+    name: lapa-casa-hostel-frontend
+    env: static
+    region: oregon
+    plan: starter
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://lapa-casa-hostel-api.onrender.com
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
+
+# Database
+databases:
+  - name: lapa-casa-hostel-db
+    databaseName: lapacasa
+    user: lapacasa_user
+    plan: starter
+    region: oregon
+
+# ✅ Archivo render.yaml completado

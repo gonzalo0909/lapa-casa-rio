@@ -2,417 +2,421 @@
 
 import { google, sheets_v4 } from 'googleapis';
 import { JWT } from 'google-auth-library';
-import { logger } from '../../utils/logger';
 
-interface BookingRowData {
+/**
+ * @module SheetsClient
+ * @description Google Sheets API client for syncing booking data
+ */
+
+/**
+ * @interface BookingRowData
+ * @description Data structure for a booking row in Google Sheets
+ */
+export interface BookingRowData {
   bookingId: string;
   guestName: string;
   guestEmail: string;
-  guestPhone: string;
-  checkInDate: string;
-  checkOutDate: string;
-  roomAssigned: string;
-  bedsCount: number;
+  roomName: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  adults: number;
+  children: number;
   totalPrice: number;
-  depositPaid: boolean;
-  remainingPaid: boolean;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-  createdDate: string;
+  status: string;
+  platform: string;
+  createdAt: string;
   notes?: string;
 }
 
+/**
+ * @interface SheetsConfig
+ * @description Configuration for Google Sheets integration
+ */
+export interface SheetsConfig {
+  spreadsheetId: string;
+  sheetName: string;
+  credentials: {
+    clientEmail: string;
+    privateKey: string;
+  };
+}
+
+/**
+ * @interface SheetRange
+ * @description Represents a range in Google Sheets
+ */
+export interface SheetRange {
+  sheetName: string;
+  startRow: number;
+  endRow?: number;
+  startColumn?: string;
+  endColumn?: string;
+}
+
+/**
+ * @class SheetsClient
+ * @description Client for interacting with Google Sheets API
+ */
 export class SheetsClient {
-  private sheets: sheets_v4.Sheets | null = null;
-  private auth: JWT | null = null;
+  private auth: JWT;
+  private sheets: sheets_v4.Sheets;
   private spreadsheetId: string;
-  private sheetName: string = 'Bookings';
+  private sheetName: string;
 
-  private readonly COLUMNS = {
-    BOOKING_ID: 'A',
-    GUEST_NAME: 'B',
-    GUEST_EMAIL: 'C',
-    GUEST_PHONE: 'D',
-    CHECK_IN: 'E',
-    CHECK_OUT: 'F',
-    ROOM_ASSIGNED: 'G',
-    BEDS_COUNT: 'H',
-    TOTAL_PRICE: 'I',
-    DEPOSIT_PAID: 'J',
-    REMAINING_PAID: 'K',
-    STATUS: 'L',
-    CREATED_DATE: 'M',
-    NOTES: 'N'
-  } as const;
+  constructor(config: SheetsConfig) {
+    this.spreadsheetId = config.spreadsheetId;
+    this.sheetName = config.sheetName;
 
-  private readonly HEADER_ROW = [
-    'Booking ID',
-    'Guest Name',
-    'Guest Email',
-    'Guest Phone',
-    'Check-In Date',
-    'Check-Out Date',
-    'Room Assigned',
-    'Beds Count',
-    'Total Price (BRL)',
-    'Deposit Paid',
-    'Remaining Paid',
-    'Status',
-    'Created Date',
-    'Notes'
-  ];
-
-  constructor() {
-    this.spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '';
-    if (!this.spreadsheetId) {
-      throw new Error('GOOGLE_SHEETS_SPREADSHEET_ID not configured');
-    }
-  }
-
-  async initialize(): Promise<void> {
-    try {
-      const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY || '{}');
-
-      this.auth = new JWT({
-        email: credentials.client_email,
-        key: credentials.private_key,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
-      });
-
-      this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      await this.ensureSheetExists();
-      
-      logger.info('Google Sheets client initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize Google Sheets client', { error });
-      throw new Error('Google Sheets initialization failed');
-    }
-  }
-
-  private async ensureSheetExists(): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    try {
-      const response = await this.sheets.spreadsheets.get({
-        spreadsheetId: this.spreadsheetId
-      });
-
-      const sheetExists = response.data.sheets?.some(
-        sheet => sheet.properties?.title === this.sheetName
-      );
-
-      if (!sheetExists) {
-        await this.createSheet();
-      } else {
-        await this.validateHeaders();
-      }
-    } catch (error) {
-      logger.error('Error ensuring sheet exists', { error });
-      throw error;
-    }
-  }
-
-  private async createSheet(): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    try {
-      await this.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: this.spreadsheetId,
-        requestBody: {
-          requests: [{
-            addSheet: {
-              properties: {
-                title: this.sheetName,
-                gridProperties: {
-                  rowCount: 1000,
-                  columnCount: 14,
-                  frozenRowCount: 1
-                }
-              }
-            }
-          }]
-        }
-      });
-
-      await this.sheets.spreadsheets.values.update({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A1:N1`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [this.HEADER_ROW] }
-      });
-
-      await this.formatHeaders();
-      logger.info('Created new bookings sheet with headers');
-    } catch (error) {
-      logger.error('Error creating sheet', { error });
-      throw error;
-    }
-  }
-
-  private async validateHeaders(): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    try {
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A1:N1`
-      });
-
-      const headers = response.data.values?.[0] || [];
-      
-      if (JSON.stringify(headers) !== JSON.stringify(this.HEADER_ROW)) {
-        logger.warn('Sheet headers do not match expected format, updating...');
-        await this.updateHeaders();
-      }
-    } catch (error) {
-      logger.error('Error validating headers', { error });
-      throw error;
-    }
-  }
-
-  private async updateHeaders(): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    await this.sheets.spreadsheets.values.update({
-      spreadsheetId: this.spreadsheetId,
-      range: `${this.sheetName}!A1:N1`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [this.HEADER_ROW] }
-    });
-  }
-
-  private async formatHeaders(): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    const sheetId = await this.getSheetId();
-
-    await this.sheets.spreadsheets.batchUpdate({
-      spreadsheetId: this.spreadsheetId,
-      requestBody: {
-        requests: [{
-          repeatCell: {
-            range: {
-              sheetId,
-              startRowIndex: 0,
-              endRowIndex: 1,
-              startColumnIndex: 0,
-              endColumnIndex: 14
-            },
-            cell: {
-              userEnteredFormat: {
-                backgroundColor: { red: 0.2, green: 0.2, blue: 0.2 },
-                textFormat: {
-                  foregroundColor: { red: 1, green: 1, blue: 1 },
-                  bold: true
-                }
-              }
-            },
-            fields: 'userEnteredFormat(backgroundColor,textFormat)'
-          }
-        }]
-      }
-    });
-  }
-
-  private async getSheetId(): Promise<number> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    const response = await this.sheets.spreadsheets.get({
-      spreadsheetId: this.spreadsheetId
+    // Initialize authentication
+    this.auth = new JWT({
+      email: config.credentials.clientEmail,
+      key: config.credentials.privateKey.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    const sheet = response.data.sheets?.find(
-      s => s.properties?.title === this.sheetName
-    );
-
-    return sheet?.properties?.sheetId || 0;
+    // Initialize Sheets API
+    this.sheets = google.sheets({ version: 'v4', auth: this.auth });
   }
 
+  /**
+   * @method appendRow
+   * @description Appends a new row to the sheet
+   * @param {BookingRowData} data - Booking data to append
+   * @returns {Promise<void>}
+   */
   async appendRow(data: BookingRowData): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
     try {
-      const row = this.formatBookingRow(data);
+      const values = [
+        [
+          data.bookingId,
+          data.guestName,
+          data.guestEmail,
+          data.roomName,
+          data.checkIn,
+          data.checkOut,
+          data.nights,
+          data.adults,
+          data.children,
+          data.totalPrice,
+          data.status,
+          data.platform,
+          data.createdAt,
+          data.notes || '',
+        ],
+      ];
 
       await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: `${this.sheetName}!A:N`,
         valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [row] }
+        requestBody: {
+          values,
+        },
       });
-
-      logger.info('Booking appended to sheet', { bookingId: data.bookingId });
     } catch (error) {
-      logger.error('Error appending row to sheet', { error, data });
-      throw error;
+      console.error('Error appending row to Google Sheets:', error);
+      throw new Error(`Failed to append row: ${this.getErrorMessage(error)}`);
     }
   }
 
-  async updateRow(bookingId: string, updates: Partial<BookingRowData>): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
+  /**
+   * @method updateRow
+   * @description Updates an existing row in the sheet
+   * @param {number} rowIndex - Row index (1-based)
+   * @param {BookingRowData} data - Updated booking data
+   * @returns {Promise<void>}
+   */
+  async updateRow(rowIndex: number, data: BookingRowData): Promise<void> {
     try {
-      const rowIndex = await this.findRowByBookingId(bookingId);
-      
-      if (!rowIndex) {
-        throw new Error(`Booking ${bookingId} not found in sheet`);
-      }
-
-      const currentData = await this.getRowData(rowIndex);
-      const updatedData = { ...currentData, ...updates };
-      const row = this.formatBookingRow(updatedData);
+      const values = [
+        [
+          data.bookingId,
+          data.guestName,
+          data.guestEmail,
+          data.roomName,
+          data.checkIn,
+          data.checkOut,
+          data.nights,
+          data.adults,
+          data.children,
+          data.totalPrice,
+          data.status,
+          data.platform,
+          data.createdAt,
+          data.notes || '',
+        ],
+      ];
 
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: `${this.sheetName}!A${rowIndex}:N${rowIndex}`,
         valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [row] }
-      });
-
-      logger.info('Booking updated in sheet', { bookingId, rowIndex });
-    } catch (error) {
-      logger.error('Error updating row in sheet', { error, bookingId });
-      throw error;
-    }
-  }
-
-  async deleteRow(bookingId: string): Promise<void> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    try {
-      const rowIndex = await this.findRowByBookingId(bookingId);
-      
-      if (!rowIndex) {
-        throw new Error(`Booking ${bookingId} not found in sheet`);
-      }
-
-      const sheetId = await this.getSheetId();
-
-      await this.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: this.spreadsheetId,
         requestBody: {
-          requests: [{
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: 'ROWS',
-                startIndex: rowIndex - 1,
-                endIndex: rowIndex
-              }
-            }
-          }]
-        }
+          values,
+        },
       });
-
-      logger.info('Booking deleted from sheet', { bookingId, rowIndex });
     } catch (error) {
-      logger.error('Error deleting row from sheet', { error, bookingId });
-      throw error;
+      console.error('Error updating row in Google Sheets:', error);
+      throw new Error(`Failed to update row: ${this.getErrorMessage(error)}`);
     }
   }
 
+  /**
+   * @method findRowByBookingId
+   * @description Finds a row by booking ID
+   * @param {string} bookingId - Booking ID to search for
+   * @returns {Promise<number | null>} Row index (1-based) or null if not found
+   */
   async findRowByBookingId(bookingId: string): Promise<number | null> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A:A`
+        range: `${this.sheetName}!A:A`,
       });
 
-      const values = response.data.values || [];
-      
-      for (let i = 1; i < values.length; i++) {
-        if (values[i][0] === bookingId) {
-          return i + 1;
+      const rows = response.data.values;
+      if (!rows || rows.length === 0) {
+        return null;
+      }
+
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i][0] === bookingId) {
+          return i + 1; // Return 1-based index
         }
       }
 
       return null;
     } catch (error) {
-      logger.error('Error finding booking row', { error, bookingId });
-      throw error;
+      console.error('Error finding row in Google Sheets:', error);
+      throw new Error(`Failed to find row: ${this.getErrorMessage(error)}`);
     }
   }
 
-  private async getRowData(rowIndex: number): Promise<BookingRowData> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
-    const response = await this.sheets.spreadsheets.values.get({
-      spreadsheetId: this.spreadsheetId,
-      range: `${this.sheetName}!A${rowIndex}:N${rowIndex}`
-    });
-
-    const row = response.data.values?.[0] || [];
-    
-    return {
-      bookingId: row[0] || '',
-      guestName: row[1] || '',
-      guestEmail: row[2] || '',
-      guestPhone: row[3] || '',
-      checkInDate: row[4] || '',
-      checkOutDate: row[5] || '',
-      roomAssigned: row[6] || '',
-      bedsCount: parseInt(row[7]) || 0,
-      totalPrice: parseFloat(row[8]) || 0,
-      depositPaid: row[9] === 'TRUE',
-      remainingPaid: row[10] === 'TRUE',
-      status: row[11] as any || 'PENDING',
-      createdDate: row[12] || '',
-      notes: row[13] || ''
-    };
-  }
-
-  private formatBookingRow(data: BookingRowData): any[] {
-    return [
-      data.bookingId,
-      data.guestName,
-      data.guestEmail,
-      data.guestPhone,
-      data.checkInDate,
-      data.checkOutDate,
-      data.roomAssigned,
-      data.bedsCount,
-      data.totalPrice,
-      data.depositPaid ? 'TRUE' : 'FALSE',
-      data.remainingPaid ? 'TRUE' : 'FALSE',
-      data.status,
-      data.createdDate,
-      data.notes || ''
-    ];
-  }
-
-  async getAllBookings(): Promise<BookingRowData[]> {
-    if (!this.sheets) throw new Error('Sheets client not initialized');
-
+  /**
+   * @method getAllRows
+   * @description Retrieves all rows from the sheet
+   * @returns {Promise<BookingRowData[]>} Array of booking data
+   */
+  async getAllRows(): Promise<BookingRowData[]> {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A2:N`
+        range: `${this.sheetName}!A2:N`, // Skip header row
       });
 
-      const rows = response.data.values || [];
-      
-      return rows.map(row => ({
-        bookingId: row[0] || '',
-        guestName: row[1] || '',
-        guestEmail: row[2] || '',
-        guestPhone: row[3] || '',
-        checkInDate: row[4] || '',
-        checkOutDate: row[5] || '',
-        roomAssigned: row[6] || '',
-        bedsCount: parseInt(row[7]) || 0,
-        totalPrice: parseFloat(row[8]) || 0,
-        depositPaid: row[9] === 'TRUE',
-        remainingPaid: row[10] === 'TRUE',
-        status: row[11] as any || 'PENDING',
-        createdDate: row[12] || '',
-        notes: row[13] || ''
-      }));
+      const rows = response.data.values;
+      if (!rows || rows.length === 0) {
+        return [];
+      }
+
+      return rows.map((row) => this.parseRowData(row));
     } catch (error) {
-      logger.error('Error getting all bookings', { error });
+      console.error('Error getting all rows from Google Sheets:', error);
+      throw new Error(`Failed to get rows: ${this.getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * @method deleteRow
+   * @description Deletes a row from the sheet
+   * @param {number} rowIndex - Row index (1-based)
+   * @returns {Promise<void>}
+   */
+  async deleteRow(rowIndex: number): Promise<void> {
+    try {
+      // Get sheet ID first
+      const sheetId = await this.getSheetId();
+
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: this.spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId,
+                  dimension: 'ROWS',
+                  startIndex: rowIndex - 1, // 0-based for API
+                  endIndex: rowIndex,
+                },
+              },
+            },
+          ],
+        },
+      });
+    } catch (error) {
+      console.error('Error deleting row from Google Sheets:', error);
+      throw new Error(`Failed to delete row: ${this.getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * @method clearSheet
+   * @description Clears all data from the sheet (except header)
+   * @returns {Promise<void>}
+   */
+  async clearSheet(): Promise<void> {
+    try {
+      await this.sheets.spreadsheets.values.clear({
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.sheetName}!A2:N`,
+      });
+    } catch (error) {
+      console.error('Error clearing Google Sheets:', error);
+      throw new Error(`Failed to clear sheet: ${this.getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * @method initializeSheet
+   * @description Initializes the sheet with headers if empty
+   * @returns {Promise<void>}
+   */
+  async initializeSheet(): Promise<void> {
+    try {
+      const headers = [
+        [
+          'Booking ID',
+          'Guest Name',
+          'Guest Email',
+          'Room',
+          'Check In',
+          'Check Out',
+          'Nights',
+          'Adults',
+          'Children',
+          'Total Price',
+          'Status',
+          'Platform',
+          'Created At',
+          'Notes',
+        ],
+      ];
+
+      // Check if headers already exist
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.sheetName}!A1:N1`,
+      });
+
+      if (!response.data.values || response.data.values.length === 0) {
+        // Add headers
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.spreadsheetId,
+          range: `${this.sheetName}!A1:N1`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: headers,
+          },
+        });
+
+        // Format headers (bold)
+        const sheetId = await this.getSheetId();
+        await this.sheets.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: {
+            requests: [
+              {
+                repeatCell: {
+                  range: {
+                    sheetId,
+                    startRowIndex: 0,
+                    endRowIndex: 1,
+                  },
+                  cell: {
+                    userEnteredFormat: {
+                      textFormat: {
+                        bold: true,
+                      },
+                    },
+                  },
+                  fields: 'userEnteredFormat.textFormat.bold',
+                },
+              },
+            ],
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error initializing Google Sheets:', error);
+      throw new Error(`Failed to initialize sheet: ${this.getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * @method getSheetId
+   * @description Gets the sheet ID by name
+   * @returns {Promise<number>} Sheet ID
+   */
+  private async getSheetId(): Promise<number> {
+    try {
+      const response = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.spreadsheetId,
+      });
+
+      const sheet = response.data.sheets?.find(
+        (s) => s.properties?.title === this.sheetName
+      );
+
+      if (!sheet || sheet.properties?.sheetId === undefined) {
+        throw new Error(`Sheet "${this.sheetName}" not found`);
+      }
+
+      return sheet.properties.sheetId;
+    } catch (error) {
+      console.error('Error getting sheet ID:', error);
       throw error;
     }
   }
+
+  /**
+   * @method parseRowData
+   * @description Parses raw row data into BookingRowData
+   * @param {any[]} row - Raw row data
+   * @returns {BookingRowData} Parsed booking data
+   */
+  private parseRowData(row: any[]): BookingRowData {
+    return {
+      bookingId: String(row[0] || ''),
+      guestName: String(row[1] || ''),
+      guestEmail: String(row[2] || ''),
+      roomName: String(row[3] || ''),
+      checkIn: String(row[4] || ''),
+      checkOut: String(row[5] || ''),
+      nights: Number(row[6] || 0),
+      adults: Number(row[7] || 0),
+      children: Number(row[8] || 0),
+      totalPrice: Number(row[9] || 0),
+      status: String(row[10] || ''),
+      platform: String(row[11] || ''),
+      createdAt: String(row[12] || ''),
+      notes: row[13] ? String(row[13]) : undefined,
+    };
+  }
+
+  /**
+   * @method getErrorMessage
+   * @description Safely extracts error message
+   * @param {unknown} error - Error object
+   * @returns {string} Error message
+   */
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
+  }
 }
 
-export const sheetsClient = new SheetsClient();
+/**
+ * @function createSheetsClient
+ * @description Factory function to create a new SheetsClient instance
+ * @param {SheetsConfig} config - Sheets configuration
+ * @returns {SheetsClient} New SheetsClient instance
+ */
+export function createSheetsClient(config: SheetsConfig): SheetsClient {
+  return new SheetsClient(config);
+}
+
+// ✅ Archivo 1/2 - sheets-client.ts completado

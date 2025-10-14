@@ -262,3 +262,4 @@ export class PaymentModel {
       failedPayments: failed,
       totalRevenue: Number(revenue._sum.amount || 0),
       pendingAmount: Number(pending._sum.amount || 0)
+}

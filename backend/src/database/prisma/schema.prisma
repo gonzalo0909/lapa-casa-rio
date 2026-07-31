@@ -1,0 +1,389 @@
+// lapa-casa-hostel/backend/src/database/prisma/schema.prisma
+// Prisma Schema Definition - Lapa Casa Hostel Channel Manager
+// Production-ready database schema with anti-overbooking support
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Room Model - 4 habitaciones específicas
+model Room {
+  id          String   @id @default(cuid())
+  roomCode    String   @unique @db.VarChar(50) // room_mixto_12a, room_mixto_12b, etc.
+  name        String   @db.VarChar(100)
+  capacity    Int      @db.SmallInt
+  type        RoomType @default(MIXED)
+  isFlexible  Boolean  @default(false)
+  basePrice   Decimal  @db.Decimal(10, 2) // BRL per bed/night
+  description String?  @db.Text
+  amenities   Json?    // Array of amenities
+  images      Json?    // Array of image URLs
+  status      RoomStatus @default(ACTIVE)
+  metadata    Json?    // Additional room data
+  
+  // Auto-conversion settings for flexible room
+  autoConvertHours Int? @db.SmallInt // 48 hours default
+  
+  // Relations
+  bookings    Booking[]
+  availability RoomAvailability[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([roomCode])
+  @@index([type])
+  @@index([status])
+  @@map("rooms")
+}
+
+// Booking Model - Core booking entity
+model Booking {
+  id              String        @id @default(cuid())
+  bookingNumber   String        @unique @db.VarChar(20) // LCH-2025-0001
+  
+  // Guest information
+  guestId         String
+  guest           Guest         @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  
+  // Room allocation
+  roomId          String
+  room            Room          @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  bedsCount       Int           @db.SmallInt // Beds booked in this room
+  
+  // Dates
+  checkInDate     DateTime      @db.Date
+  checkOutDate    DateTime      @db.Date
+  nightsCount     Int           @db.SmallInt
+  
+  // Pricing
+  basePrice       Decimal       @db.Decimal(10, 2) // Per bed/night
+  groupDiscount   Decimal       @db.Decimal(5, 4) // 0.0000 to 0.2000 (0-20%)
+  seasonMultiplier Decimal      @db.Decimal(5, 4) // 0.8000 to 2.0000
+  totalPrice      Decimal       @db.Decimal(10, 2) // Final price BRL
+  
+  // Deposit structure
+  depositAmount   Decimal       @db.Decimal(10, 2)
+  depositPercent  Decimal       @db.Decimal(5, 4) // 0.30 or 0.50
+  remainingAmount Decimal       @db.Decimal(10, 2)
+  
+  // Payment tracking
+  depositPaid     Boolean       @default(false)
+  depositPaidAt   DateTime?
+  remainingPaid   Boolean       @default(false)
+  remainingPaidAt DateTime?
+  
+  // Status management
+  status          BookingStatus @default(PENDING)
+  
+  // Special requests
+  specialRequests String?       @db.Text
+  internalNotes   String?       @db.Text
+  
+  // Cancellation
+  cancelledAt     DateTime?
+  cancellationReason String?    @db.Text
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+  
+  // Relations
+  payments        Payment[]
+  
+  // Google Sheets sync
+  sheetsSynced    Boolean       @default(false)
+  sheetsSyncedAt  DateTime?
+  sheetsRowNumber Int?          @db.Integer
+  
+  // Metadata
+  source          String?       @db.VarChar(50) // web, api, admin
+  userAgent       String?       @db.Text
+  ipAddress       String?       @db.VarChar(45)
+  metadata        Json?
+  
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([bookingNumber])
+  @@index([guestId])
+  @@index([roomId])
+  @@index([status])
+  @@index([checkInDate])
+  @@index([checkOutDate])
+  @@index([checkInDate, checkOutDate])
+  @@index([createdAt])
+  @@map("bookings")
+}
+
+// Guest Model - Customer information
+model Guest {
+  id          String   @id @default(cuid())
+  
+  // Personal information
+  firstName   String   @db.VarChar(100)
+  lastName    String   @db.VarChar(100)
+  email       String   @unique @db.VarChar(255)
+  phone       String   @db.VarChar(20)
+  
+  // Additional contact
+  alternativePhone String? @db.VarChar(20)
+  whatsappNumber   String? @db.VarChar(20)
+  
+  // Demographics
+  nationality String?  @db.VarChar(50)
+  language    String?  @db.VarChar(10) // pt, en, es
+  dateOfBirth DateTime? @db.Date
+  
+  // Document
+  documentType String? @db.VarChar(20) // passport, cpf, dni
+  documentNumber String? @db.VarChar(50)
+  
+  // Address
+  addressLine1 String? @db.VarChar(200)
+  addressLine2 String? @db.VarChar(200)
+  city         String? @db.VarChar(100)
+  state        String? @db.VarChar(100)
+  country      String? @db.VarChar(100)
+  postalCode   String? @db.VarChar(20)
+  
+  // Marketing
+  newsletterOptIn Boolean @default(false)
+  smsOptIn        Boolean @default(false)
+  
+  // Relations
+  bookings    Booking[]
+  
+  // Stats
+  totalBookings Int @default(0) @db.Integer
+  totalSpent    Decimal @default(0) @db.Decimal(10, 2)
+  lastBookingAt DateTime?
+  
+  // Metadata
+  notes       String? @db.Text
+  metadata    Json?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([email])
+  @@index([phone])
+  @@index([lastName, firstName])
+  @@map("guests")
+}
+
+// Payment Model - Transaction tracking
+model Payment {
+  id              String        @id @default(cuid())
+  paymentNumber   String        @unique @db.VarChar(30) // PAY-2025-0001
+  
+  // Booking reference
+  bookingId       String
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  // Payment details
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("BRL") @db.VarChar(3)
+  paymentType     PaymentType   // DEPOSIT, REMAINING, FULL
+  
+  // Payment method
+  provider        PaymentProvider // STRIPE, MERCADO_PAGO
+  paymentMethod   String        @db.VarChar(50) // card, pix, boleto
+  
+  // Card details (if applicable)
+  cardBrand       String?       @db.VarChar(20)
+  cardLast4       String?       @db.VarChar(4)
+  
+  // Installments (Mercado Pago)
+  installments    Int?          @db.SmallInt
+  installmentAmount Decimal?    @db.Decimal(10, 2)
+  
+  // Transaction IDs
+  stripePaymentIntentId String? @unique @db.VarChar(255)
+  stripeChargeId        String? @db.VarChar(255)
+  mpPaymentId           String? @unique @db.VarChar(255)
+  mpPreferenceId        String? @db.VarChar(255)
+  
+  // PIX (Mercado Pago)
+  pixQrCode       String?       @db.Text
+  pixQrCodeBase64 String?       @db.Text
+  pixExpiresAt    DateTime?
+  
+  // Status tracking
+  status          PaymentStatus @default(PENDING)
+  
+  // Timestamps
+  paidAt          DateTime?
+  failedAt        DateTime?
+  refundedAt      DateTime?
+  
+  // Error handling
+  failureReason   String?       @db.Text
+  failureCode     String?       @db.VarChar(50)
+  
+  // Refund
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+  refundReason    String?       @db.Text
+  
+  // Retry mechanism
+  retryAttempts   Int           @default(0) @db.SmallInt
+  nextRetryAt     DateTime?
+  
+  // Metadata
+  metadata        Json?
+  webhookData     Json?
+  
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([bookingId])
+  @@index([status])
+  @@index([provider])
+  @@index([paymentType])
+  @@index([createdAt])
+  @@index([stripePaymentIntentId])
+  @@index([mpPaymentId])
+  @@map("payments")
+}
+
+// Room Availability - Anti-overbooking control
+model RoomAvailability {
+  id          String   @id @default(cuid())
+  
+  // Room reference
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  // Date
+  date        DateTime @db.Date
+  
+  // Availability tracking
+  totalCapacity    Int @db.SmallInt // 12, 12, 7, 7
+  availableBeds    Int @db.SmallInt
+  occupiedBeds     Int @db.SmallInt @default(0)
+  blockedBeds      Int @db.SmallInt @default(0) // Manual blocks
+  
+  // Pricing for this date
+  basePrice        Decimal @db.Decimal(10, 2)
+  seasonMultiplier Decimal @db.Decimal(5, 4)
+  finalPrice       Decimal @db.Decimal(10, 2)
+  
+  // Status
+  isAvailable Boolean @default(true)
+  isClosed    Boolean @default(false) // Manually closed
+  
+  // Minimum stay requirements
+  minStay     Int? @db.SmallInt
+  
+  // Notes
+  notes       String? @db.Text
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([roomId, date])
+  @@index([date])
+  @@index([roomId, date])
+  @@index([isAvailable])
+  @@map("room_availability")
+}
+
+// Audit Log - Track all changes
+model AuditLog {
+  id          String   @id @default(cuid())
+  
+  // Entity information
+  entityType  String   @db.VarChar(50) // booking, payment, room
+  entityId    String   @db.VarChar(50)
+  
+  // Action
+  action      String   @db.VarChar(50) // create, update, delete, cancel
+  
+  // User (if authenticated)
+  userId      String?  @db.VarChar(50)
+  userEmail   String?  @db.VarChar(255)
+  
+  // Changes
+  oldValues   Json?
+  newValues   Json?
+  
+  // Context
+  ipAddress   String?  @db.VarChar(45)
+  userAgent   String?  @db.Text
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// System Configuration
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique @db.VarChar(100)
+  value       Json
+  description String?  @db.Text
+  isPublic    Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+  @@map("system_config")
+}
+
+// Enums
+enum RoomType {
+  MIXED
+  FEMALE
+  MALE
+  PRIVATE
+}
+
+enum RoomStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum BookingStatus {
+  PENDING          // Awaiting payment
+  CONFIRMED        // Deposit paid
+  CHECKED_IN       // Guest arrived
+  CHECKED_OUT      // Guest departed
+  CANCELLED        // Booking cancelled
+  NO_SHOW          // Guest didn't arrive
+}
+
+enum PaymentType {
+  DEPOSIT
+  REMAINING
+  FULL
+  REFUND
+}
+
+enum PaymentProvider {
+  STRIPE
+  MERCADO_PAGO
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}

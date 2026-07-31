@@ -1,0 +1,509 @@
+# lapa-casa-hostel/docs/api/openapi.yaml
+
+openapi: 3.0.3
+info:
+  title: Lapa Casa Hostel - Channel Manager API
+  description: |
+    Complete API documentation for Lapa Casa Hostel Channel Manager system.
+    
+    ## Features
+    - Room availability checking with anti-overbooking logic
+    - Group booking with automatic discounts (10%, 15%, 20%)
+    - Seasonal pricing with multipliers
+    - Multi-currency payment processing (Stripe + Mercado Pago)
+    - PIX instant payments
+    - Flexible room auto-conversion
+    - Google Sheets synchronization
+    - WhatsApp notifications
+    
+    ## Authentication
+    Most endpoints require JWT authentication via Bearer token.
+    
+    ## Rate Limiting
+    - 100 requests per minute per IP
+    - 1000 requests per hour per user
+    
+  version: 1.0.0
+  contact:
+    name: Lapa Casa Hostel Tech Team
+    email: tech@lapacasahostel.com
+    url: https://lapacasahostel.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.lapacasahostel.com
+    description: Production server
+  - url: https://api-staging.lapacasahostel.com
+    description: Staging server
+  - url: http://localhost:4000
+    description: Local development
+
+tags:
+  - name: Rooms
+    description: Room management and information
+  - name: Availability
+    description: Room availability checking
+  - name: Bookings
+    description: Booking creation and management
+  - name: Payments
+    description: Payment processing
+  - name: Webhooks
+    description: Webhook endpoints for payment providers
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+  schemas:
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          example: room_mixto_12a
+        name:
+          type: string
+          example: Mixto 12A
+        capacity:
+          type: integer
+          example: 12
+        type:
+          type: string
+          enum: [mixed, female, male]
+          example: mixed
+        basePrice:
+          type: number
+          format: float
+          example: 60.00
+        isFlexible:
+          type: boolean
+          example: false
+        amenities:
+          type: array
+          items:
+            type: string
+          example: [wifi, air_conditioning, lockers]
+            
+    AvailabilityRequest:
+      type: object
+      required:
+        - checkIn
+        - checkOut
+        - beds
+      properties:
+        checkIn:
+          type: string
+          format: date
+          example: "2025-12-15"
+        checkOut:
+          type: string
+          format: date
+          example: "2025-12-20"
+        beds:
+          type: integer
+          minimum: 1
+          maximum: 38
+          example: 10
+        roomType:
+          type: string
+          enum: [mixed, female, male]
+          example: mixed
+          
+    AvailabilityResponse:
+      type: object
+      properties:
+        available:
+          type: boolean
+          example: true
+        rooms:
+          type: array
+          items:
+            type: object
+            properties:
+              roomId:
+                type: string
+                example: room_mixto_12a
+              roomName:
+                type: string
+                example: Mixto 12A
+              availableBeds:
+                type: integer
+                example: 12
+              basePrice:
+                type: number
+                example: 60.00
+        pricing:
+          type: object
+          properties:
+            subtotal:
+              type: number
+              example: 3000.00
+            groupDiscount:
+              type: number
+              example: 300.00
+            seasonMultiplier:
+              type: number
+              example: 1.00
+            total:
+              type: number
+              example: 2700.00
+            currency:
+              type: string
+              example: BRL
+              
+    BookingRequest:
+      type: object
+      required:
+        - checkIn
+        - checkOut
+        - rooms
+        - guest
+      properties:
+        checkIn:
+          type: string
+          format: date
+          example: "2025-12-15"
+        checkOut:
+          type: string
+          format: date
+          example: "2025-12-20"
+        rooms:
+          type: array
+          items:
+            type: object
+            properties:
+              roomId:
+                type: string
+                example: room_mixto_12a
+              beds:
+                type: integer
+                example: 10
+        guest:
+          type: object
+          required:
+            - name
+            - email
+            - phone
+          properties:
+            name:
+              type: string
+              example: João Silva
+            email:
+              type: string
+              format: email
+              example: joao@example.com
+            phone:
+              type: string
+              example: +5521999999999
+            document:
+              type: string
+              example: "123.456.789-00"
+            country:
+              type: string
+              example: BR
+        specialRequests:
+          type: string
+          example: Early check-in requested
+          
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          example: bkg_abc123xyz
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED]
+          example: CONFIRMED
+        checkIn:
+          type: string
+          format: date
+          example: "2025-12-15"
+        checkOut:
+          type: string
+          format: date
+          example: "2025-12-20"
+        rooms:
+          type: array
+          items:
+            type: object
+        guest:
+          type: object
+        pricing:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 2700.00
+            deposit:
+              type: number
+              example: 810.00
+            remaining:
+              type: number
+              example: 1890.00
+            currency:
+              type: string
+              example: BRL
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          
+    PaymentIntent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: pi_abc123xyz
+        bookingId:
+          type: string
+          example: bkg_abc123xyz
+        amount:
+          type: number
+          example: 810.00
+        currency:
+          type: string
+          example: BRL
+        provider:
+          type: string
+          enum: [stripe, mercadopago]
+          example: stripe
+        clientSecret:
+          type: string
+          example: pi_abc123xyz_secret_def456
+        status:
+          type: string
+          enum: [pending, succeeded, failed]
+          example: pending
+          
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid request
+        message:
+          type: string
+          example: Check-in date must be in the future
+        code:
+          type: string
+          example: INVALID_DATE
+
+paths:
+  /api/rooms:
+    get:
+      tags:
+        - Rooms
+      summary: List all rooms
+      description: Get information about all available rooms at Lapa Casa Hostel
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+                  
+  /api/rooms/{roomId}:
+    get:
+      tags:
+        - Rooms
+      summary: Get room details
+      description: Get detailed information about a specific room
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: room_mixto_12a
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /api/availability/check:
+    post:
+      tags:
+        - Availability
+      summary: Check room availability
+      description: |
+        Check if rooms are available for specified dates and number of beds.
+        Includes anti-overbooking logic and pricing calculation with group discounts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityRequest'
+      responses:
+        '200':
+          description: Availability checked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /api/bookings:
+    post:
+      tags:
+        - Bookings
+      summary: Create new booking
+      description: |
+        Create a new booking reservation.
+        Automatically applies group discounts and seasonal pricing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Room not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /api/bookings/{bookingId}:
+    get:
+      tags:
+        - Bookings
+      summary: Get booking details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: Booking not found
+          
+    delete:
+      tags:
+        - Bookings
+      summary: Cancel booking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Booking cancelled successfully
+        '404':
+          description: Booking not found
+          
+  /api/payments/create-intent:
+    post:
+      tags:
+        - Payments
+      summary: Create payment intent
+      description: Create a payment intent for Stripe or Mercado Pago
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bookingId:
+                  type: string
+                  example: bkg_abc123xyz
+                provider:
+                  type: string
+                  enum: [stripe, mercadopago]
+                  example: stripe
+                paymentType:
+                  type: string
+                  enum: [deposit, full, remaining]
+                  example: deposit
+      responses:
+        '200':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+                
+  /api/webhooks/stripe:
+    post:
+      tags:
+        - Webhooks
+      summary: Stripe webhook handler
+      description: Handles Stripe payment webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+          
+  /api/webhooks/mercadopago:
+    post:
+      tags:
+        - Webhooks
+      summary: Mercado Pago webhook handler
+      description: Handles Mercado Pago payment webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+✅ Archivo 181/184 completado

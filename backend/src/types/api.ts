@@ -75,7 +75,7 @@ export interface CreateBookingRequest {
  * Room selection for booking
  */
 export interface RoomSelection {
-  roomId: string; // room_mixto_12a, room_mixto_12b, room_mixto_7, room_flexible_7
+  roomId: string; // room_mixto_12a, room_mixto_12b, room_mixto_7, room_mixto_7b, room_flexible_7
   bedsCount: number;
   guestNames?: string[];
 }

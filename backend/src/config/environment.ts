@@ -312,6 +312,14 @@ export const roomsConfig = {
     basePrice: env.BASE_PRICE_BRL,
     isFlexible: false
   },
+  mixto7b: {
+    id: 'room_mixto_7b',
+    name: 'Mixto 7B',
+    capacity: 7,
+    type: 'mixed',
+    basePrice: env.BASE_PRICE_BRL,
+    isFlexible: false
+  },
   flexible7: {
     id: 'room_flexible_7',
     name: 'Flexible 7',

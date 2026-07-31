@@ -47,6 +47,7 @@ const ROOM_CONFIGS: RoomConfig[] = [
   { id: 'room_mixto_12a', name: 'Mixto 12A', capacity: 12, type: 'mixed', isFlexible: false },
   { id: 'room_mixto_12b', name: 'Mixto 12B', capacity: 12, type: 'mixed', isFlexible: false },
   { id: 'room_mixto_7', name: 'Mixto 7', capacity: 7, type: 'mixed', isFlexible: false },
+  { id: 'room_mixto_7b', name: 'Mixto 7B', capacity: 7, type: 'mixed', isFlexible: false },
   { id: 'room_flexible_7', name: 'Flexible 7', capacity: 7, type: 'female', isFlexible: true, autoConvertHours: 48 }
 ];
 
@@ -87,7 +88,7 @@ export class AvailabilityChecker {
       };
     }
 
-    if (requestedBeds < 1 || requestedBeds > 38) {
+    if (requestedBeds < 1 || requestedBeds > 45) {
       return {
         isAvailable: false,
         availableRooms: [],
@@ -95,7 +96,7 @@ export class AvailabilityChecker {
         requestedBeds,
         checkInDate: checkIn,
         checkOutDate: checkOut,
-        conflicts: ['Requested beds must be between 1 and 38']
+        conflicts: ['Requested beds must be between 1 and 45']
       };
     }
 

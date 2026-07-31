@@ -25,16 +25,17 @@ This document describes the complete pricing system for Lapa Casa Hostel, includ
 
 ### Room Inventory
 
-Lapa Casa Hostel has **4 rooms** with **38 total beds**:
+Lapa Casa Hostel has **5 rooms** with **45 total beds**:
 
 | Room ID | Room Name | Capacity | Type | Flexible | Base Price (BRL) |
 |---------|-----------|----------|------|----------|------------------|
 | `room_mixto_12a` | Mixto 12A | 12 beds | Mixed | No | R$ 60.00 |
 | `room_mixto_12b` | Mixto 12B | 12 beds | Mixed | No | R$ 60.00 |
 | `room_mixto_7` | Mixto 7 | 7 beds | Mixed | No | R$ 60.00 |
+| `room_mixto_7b` | Mixto 7B | 7 beds | Mixed | No | R$ 60.00 |
 | `room_flexible_7` | Flexible 7 | 7 beds | Female* | Yes | R$ 60.00 |
 
-**Total Capacity**: 38 beds
+**Total Capacity**: 45 beds
 
 ### Flexible Room Logic
 

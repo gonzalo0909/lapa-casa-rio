@@ -120,7 +120,17 @@ export class RoomAllocator {
       };
     }
 
+    // Consolidation policy: fill a room that already has guests in it
+    // before opening a second, completely empty room of the same type.
+    // Two half-empty dorms is worse for the business than one full one
+    // and one untouched -- this is a deliberate override of pure
+    // best-fit-by-waste, which would happily open a fresh room if it
+    // wasted fewer beds for this one request.
     eligibleRooms.sort((a, b) => {
+      const aOccupied = a.capacity - a.available;
+      const bOccupied = b.capacity - b.available;
+      if (aOccupied !== bOccupied) return bOccupied - aOccupied;
+
       const aWaste = a.capacity - requestedBeds;
       const bWaste = b.capacity - requestedBeds;
       if (aWaste !== bWaste) return aWaste - bWaste;

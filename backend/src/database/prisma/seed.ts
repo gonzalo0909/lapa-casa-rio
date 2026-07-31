@@ -1,6 +1,6 @@
 // lapa-casa-hostel/backend/src/database/prisma/seed.ts
 
-import { PrismaClient, RoomType, RoomStatus } from '@prisma/client';
+import { PrismaClient, RoomType, RoomStatus, BedStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -10,8 +10,10 @@ async function main() {
   if (process.env.NODE_ENV === 'development') {
     console.log('🧹 Cleaning existing data...');
     await prisma.payment.deleteMany();
+    await prisma.bedAssignment.deleteMany();
     await prisma.booking.deleteMany();
     await prisma.roomAvailability.deleteMany();
+    await prisma.bed.deleteMany();
     await prisma.guest.deleteMany();
     await prisma.room.deleteMany();
     await prisma.auditLog.deleteMany();
@@ -20,6 +22,9 @@ async function main() {
 
   console.log('🏠 Seeding rooms...');
   await seedRooms();
+
+  console.log('🛏️ Seeding individual beds...');
+  await seedBeds();
 
   console.log('⚙️ Seeding system configuration...');
   await seedSystemConfig();
@@ -80,6 +85,19 @@ async function seedRooms() {
       metadata: { floor: 2, bathroomType: 'shared', hasWindow: true, squareMeters: 25 }
     },
     {
+      roomCode: 'room_mixto_7b',
+      name: 'Mixto 7B',
+      capacity: 7,
+      type: RoomType.MIXED,
+      isFlexible: false,
+      basePrice: 60.00,
+      description: 'Dormitório misto com 7 camas em beliches, ar-condicionado, armários individuais e banheiro compartilhado.',
+      amenities: ['Ar-condicionado', 'Armários com cadeado', 'Tomadas individuais', 'Luz de leitura', 'Banheiro compartilhado', 'Wi-Fi gratuito'],
+      images: ['/images/rooms/mixto-7b-1.jpg', '/images/rooms/mixto-7b-2.jpg'],
+      status: RoomStatus.ACTIVE,
+      metadata: { floor: 2, bathroomType: 'shared', hasWindow: true, squareMeters: 25 }
+    },
+    {
       roomCode: 'room_flexible_7',
       name: 'Flexible 7',
       capacity: 7,
@@ -98,6 +116,23 @@ async function seedRooms() {
   for (const room of rooms) {
     await prisma.room.create({ data: room });
     console.log(`  ✓ Created room: ${room.name} (${room.capacity} beds)`);
+  }
+}
+
+async function seedBeds() {
+  const rooms = await prisma.room.findMany();
+
+  for (const room of rooms) {
+    for (let bedNumber = 1; bedNumber <= room.capacity; bedNumber++) {
+      await prisma.bed.create({
+        data: {
+          roomId: room.id,
+          bedNumber,
+          status: BedStatus.ACTIVE
+        }
+      });
+    }
+    console.log(`  ✓ Created ${room.capacity} beds for room: ${room.name}`);
   }
 }
 

@@ -1,0 +1,104 @@
+<!-- lapa-casa-hostel/frontend/public/favicon.ico -->
+<!--
+/**
+ * Favicon Configuration - Lapa Casa Hostel
+ * 
+ * IMPORTANT: This is a placeholder HTML comment.
+ * 
+ * To generate the actual favicon.ico file:
+ * 
+ * 1. CREATE LOGO DESIGN:
+ *    - Design a 512x512px icon representing Lapa Casa Hostel
+ *    - Use brand colors: Primary blue (#0ea5e9), Secondary purple (#a855f7)
+ *    - Incorporate hostel elements: bed icon, Rio landmark, or "LCH" monogram
+ *    - Ensure readability at 16x16px (smallest size)
+ * 
+ * 2. GENERATE FAVICON FILES:
+ *    Option A - Online Tool (Recommended):
+ *    - Visit https://realfavicongenerator.net/
+ *    - Upload your 512x512px PNG logo
+ *    - Configure settings:
+ *      * iOS: Use solid background color
+ *      * Android: Use transparent background
+ *      * Windows: Use brand color background
+ *      * macOS Safari: Use transparent background
+ *    - Download generated favicon package
+ *    
+ *    Option B - Command Line:
+ *    npm install -g sharp-cli
+ *    sharp -i logo.png -o favicon.ico resize 256 256
+ * 
+ * 3. GENERATED FILES TO PLACE IN /public/:
+ *    - favicon.ico (16x16, 32x32, 48x48 multi-resolution)
+ *    - favicon-16x16.png
+ *    - favicon-32x32.png
+ *    - apple-touch-icon.png (180x180)
+ *    - android-chrome-192x192.png
+ *    - android-chrome-512x512.png
+ *    - site.webmanifest (already configured in manifest.json)
+ * 
+ * 4. ADD TO layout.tsx HEAD:
+ *    <link rel="icon" href="/favicon.ico" sizes="any" />
+ *    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+ *    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+ * 
+ * 5. ALTERNATIVE: SVG FAVICON (Modern browsers):
+ *    Create /public/favicon.svg with:
+ *    - Scalable vector logo
+ *    - Light/dark mode variants using CSS media queries
+ *    - Smaller file size than ICO
+ * 
+ * EXAMPLE SVG FAVICON TEMPLATE:
+ * 
+ * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+ *   <style>
+ *     @media (prefers-color-scheme: dark) {
+ *       .logo { fill: #0ea5e9; }
+ *     }
+ *     @media (prefers-color-scheme: light) {
+ *       .logo { fill: #0369a1; }
+ *     }
+ *   </style>
+ *   <rect class="logo" width="100" height="100" rx="15"/>
+ *   <text x="50" y="70" font-family="Arial" font-size="50" 
+ *         font-weight="bold" text-anchor="middle" fill="white">LC</text>
+ * </svg>
+ * 
+ * BRAND GUIDELINES:
+ * - Primary: #0ea5e9 (Sky blue)
+ * - Secondary: #a855f7 (Purple)
+ * - Accent: #10b981 (Success green)
+ * - Typography: Poppins Bold for letters
+ * 
+ * OPTIMIZATION:
+ * - Compress ICO files: use TinyPNG or ImageOptim
+ * - Target size: < 15KB for favicon.ico
+ * - Test rendering at 16x16, 32x32, 48x48 sizes
+ * - Ensure contrast ratio meets WCAG 2.1 AA standards
+ * 
+ * TESTING:
+ * - Browser tabs (Chrome, Firefox, Safari, Edge)
+ * - Bookmarks bar
+ * - iOS home screen
+ * - Android home screen
+ * - Windows taskbar
+ * - macOS dock
+ */
+-->
+
+<!-- TEMPORARY PLACEHOLDER BASE64 ICO -->
+<!-- Replace this entire file with actual favicon.ico binary -->
+<!-- This is a simple "LC" text-based favicon placeholder -->
+
+<!--
+Generate actual favicon.ico using:
+1. Visit https://favicon.io/favicon-generator/
+2. Settings:
+   - Text: LC
+   - Background: #0ea5e9
+   - Font: Poppins
+   - Font Size: 80
+   - Shape: Rounded
+   - Color: #ffffff
+3. Download and replace this file
+-->

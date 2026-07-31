@@ -1,0 +1,367 @@
+// lapa-casa-hostel/tests/shared/mock-bookings.json
+
+{
+  "mockBookings": [
+    {
+      "id": "booking_test_001",
+      "status": "CONFIRMED",
+      "checkIn": "2025-07-01",
+      "checkOut": "2025-07-05",
+      "nights": 4,
+      "totalBeds": 8,
+      "totalAmount": 1382.40,
+      "basePrice": 1920.00,
+      "depositAmount": 414.72,
+      "depositPercentage": 0.30,
+      "remainingAmount": 967.68,
+      "groupDiscount": 0.10,
+      "seasonMultiplier": 0.80,
+      "season": "low",
+      "rooms": [
+        {
+          "roomId": "room_mixto_12a",
+          "roomName": "Mixto 12A",
+          "beds": 8,
+          "basePrice": 60.00,
+          "type": "mixed"
+        }
+      ],
+      "guest": {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "+5521999999999",
+        "country": "BR"
+      },
+      "specialRequests": "Late check-in requested",
+      "paymentStatus": "DEPOSIT_PAID",
+      "createdAt": "2025-06-15T10:30:00.000Z",
+      "updatedAt": "2025-06-15T10:35:00.000Z"
+    },
+    {
+      "id": "booking_test_002",
+      "status": "PENDING",
+      "checkIn": "2025-08-10",
+      "checkOut": "2025-08-15",
+      "nights": 5,
+      "totalBeds": 3,
+      "totalAmount": 720.00,
+      "basePrice": 900.00,
+      "depositAmount": 216.00,
+      "depositPercentage": 0.30,
+      "remainingAmount": 504.00,
+      "groupDiscount": 0,
+      "seasonMultiplier": 0.80,
+      "season": "low",
+      "rooms": [
+        {
+          "roomId": "room_mixto_7",
+          "roomName": "Mixto 7",
+          "beds": 3,
+          "basePrice": 60.00,
+          "type": "mixed"
+        }
+      ],
+      "guest": {
+        "name": "Maria Silva",
+        "email": "maria.silva@example.com",
+        "phone": "+5521988888888",
+        "country": "BR"
+      },
+      "specialRequests": "",
+      "paymentStatus": "PENDING",
+      "createdAt": "2025-06-20T14:20:00.000Z",
+      "updatedAt": "2025-06-20T14:20:00.000Z"
+    },
+    {
+      "id": "booking_test_003",
+      "status": "CONFIRMED",
+      "checkIn": "2025-12-20",
+      "checkOut": "2025-12-25",
+      "nights": 5,
+      "totalBeds": 20,
+      "totalAmount": 7650.00,
+      "basePrice": 6000.00,
+      "depositAmount": 3825.00,
+      "depositPercentage": 0.50,
+      "remainingAmount": 3825.00,
+      "groupDiscount": 0.15,
+      "seasonMultiplier": 1.50,
+      "season": "high",
+      "rooms": [
+        {
+          "roomId": "room_mixto_12a",
+          "roomName": "Mixto 12A",
+          "beds": 12,
+          "basePrice": 60.00,
+          "type": "mixed"
+        },
+        {
+          "roomId": "room_mixto_12b",
+          "roomName": "Mixto 12B",
+          "beds": 8,
+          "basePrice": 60.00,
+          "type": "mixed"
+        }
+      ],
+      "guest": {
+        "name": "Carlos Rodrigues",
+        "email": "carlos.rodrigues@company.com",
+        "phone": "+5521977777777",
+        "country": "BR"
+      },
+      "specialRequests": "Corporate group booking - need invoice",
+      "paymentStatus": "DEPOSIT_PAID",
+      "createdAt": "2025-06-25T09:00:00.000Z",
+      "updatedAt": "2025-06-25T09:15:00.000Z"
+    },
+    {
+      "id": "booking_test_004",
+      "status": "CANCELLED",
+      "checkIn": "2025-07-15",
+      "checkOut": "2025-07-20",
+      "nights": 5,
+      "totalBeds": 5,
+      "totalAmount": 1200.00,
+      "basePrice": 1500.00,
+      "depositAmount": 360.00,
+      "depositPercentage": 0.30,
+      "remainingAmount": 840.00,
+      "refundAmount": 360.00,
+      "refundPercentage": 1.00,
+      "groupDiscount": 0,
+      "seasonMultiplier": 0.80,
+      "season": "low",
+      "rooms": [
+        {
+          "roomId": "room_flexible_7",
+          "roomName": "Flexible 7",
+          "beds": 5,
+          "basePrice": 60.00,
+          "type": "female"
+        }
+      ],
+      "guest": {
+        "name": "Ana Costa",
+        "email": "ana.costa@example.com",
+        "phone": "+5521966666666",
+        "country": "BR"
+      },
+      "specialRequests": "",
+      "paymentStatus": "REFUNDED",
+      "cancelledAt": "2025-06-28T16:45:00.000Z",
+      "createdAt": "2025-06-22T11:30:00.000Z",
+      "updatedAt": "2025-06-28T16:45:00.000Z"
+    },
+    {
+      "id": "booking_test_005",
+      "status": "CONFIRMED",
+      "checkIn": "2026-02-14",
+      "checkOut": "2026-02-19",
+      "nights": 5,
+      "totalBeds": 31,
+      "totalAmount": 14880.00,
+      "basePrice": 9300.00,
+      "depositAmount": 7440.00,
+      "depositPercentage": 0.50,
+      "remainingAmount": 7440.00,
+      "groupDiscount": 0.20,
+      "seasonMultiplier": 2.00,
+      "season": "carnival",
+      "rooms": [
+        {
+          "roomId": "room_mixto_12a",
+          "roomName": "Mixto 12A",
+          "beds": 12,
+          "basePrice": 60.00,
+          "type": "mixed"
+        },
+        {
+          "roomId": "room_mixto_12b",
+          "roomName": "Mixto 12B",
+          "beds": 12,
+          "basePrice": 60.00,
+          "type": "mixed"
+        },
+        {
+          "roomId": "room_mixto_7",
+          "roomName": "Mixto 7",
+          "beds": 7,
+          "basePrice": 60.00,
+          "type": "mixed"
+        }
+      ],
+      "guest": {
+        "name": "International Group Leader",
+        "email": "group@international.com",
+        "phone": "+1234567890",
+        "country": "US"
+      },
+      "specialRequests": "Carnival celebration - need early check-in",
+      "paymentStatus": "DEPOSIT_PAID",
+      "createdAt": "2025-09-01T08:00:00.000Z",
+      "updatedAt": "2025-09-01T08:30:00.000Z"
+    },
+    {
+      "id": "booking_test_006",
+      "status": "CONFIRMED",
+      "checkIn": "2025-06-01",
+      "checkOut": "2025-06-02",
+      "nights": 1,
+      "totalBeds": 2,
+      "totalAmount": 96.00,
+      "basePrice": 120.00,
+      "depositAmount": 28.80,
+      "depositPercentage": 0.30,
+      "remainingAmount": 67.20,
+      "groupDiscount": 0,
+      "seasonMultiplier": 0.80,
+      "season": "low",
+      "rooms": [
+        {
+          "roomId": "room_mixto_12a",
+          "roomName": "Mixto 12A",
+          "beds": 2,
+          "basePrice": 60.00,
+          "type": "mixed"
+        }
+      ],
+      "guest": {
+        "name": "Quick Stay Guest",
+        "email": "quick@example.com",
+        "phone": "+5521955555555",
+        "country": "BR"
+      },
+      "specialRequests": "One night only",
+      "paymentStatus": "DEPOSIT_PAID",
+      "createdAt": "2025-05-30T20:00:00.000Z",
+      "updatedAt": "2025-05-30T20:10:00.000Z"
+    },
+    {
+      "id": "booking_test_007",
+      "status": "CONFIRMED",
+      "checkIn": "2025-11-15",
+      "checkOut": "2025-11-20",
+      "nights": 5,
+      "totalBeds": 10,
+      "totalAmount": 2700.00,
+      "basePrice": 3000.00,
+      "depositAmount": 810.00,
+      "depositPercentage": 0.30,
+      "remainingAmount": 1890.00,
+      "groupDiscount": 0.10,
+      "seasonMultiplier": 1.00,
+      "season": "medium",
+      "rooms": [
+        {
+          "roomId": "room_mixto_12a",
+          "roomName": "Mixto 12A",
+          "beds": 10,
+          "basePrice": 60.00,
+          "type": "mixed"
+        }
+      ],
+      "guest": {
+        "name": "Medium Season Guest",
+        "email": "medium@example.com",
+        "phone": "+5521944444444",
+        "country": "BR"
+      },
+      "specialRequests": "Need parking space",
+      "paymentStatus": "DEPOSIT_PAID",
+      "createdAt": "2025-10-01T12:00:00.000Z",
+      "updatedAt": "2025-10-01T12:15:00.000Z"
+    },
+    {
+      "id": "booking_test_008",
+      "status": "PENDING",
+      "checkIn": "2025-09-01",
+      "checkOut": "2025-09-03",
+      "nights": 2,
+      "totalBeds": 1,
+      "totalAmount": 96.00,
+      "basePrice": 120.00,
+      "depositAmount": 28.80,
+      "depositPercentage": 0.30,
+      "remainingAmount": 67.20,
+      "groupDiscount": 0,
+      "seasonMultiplier": 0.80,
+      "season": "low",
+      "rooms": [
+        {
+          "roomId": "room_flexible_7",
+          "roomName": "Flexible 7",
+          "beds": 1,
+          "basePrice": 60.00,
+          "type": "female"
+        }
+      ],
+      "guest": {
+        "name": "Solo Traveler",
+        "email": "solo@example.com",
+        "phone": "+5521933333333",
+        "country": "AR"
+      },
+      "specialRequests": "Female dorm please",
+      "paymentStatus": "PENDING",
+      "createdAt": "2025-08-25T18:30:00.000Z",
+      "updatedAt": "2025-08-25T18:30:00.000Z"
+    }
+  ],
+  "availabilityScenarios": [
+    {
+      "scenario": "fully_available",
+      "checkIn": "2025-10-01",
+      "checkOut": "2025-10-05",
+      "available": true,
+      "rooms": [
+        {
+          "id": "room_mixto_12a",
+          "available": 12
+        },
+        {
+          "id": "room_mixto_12b",
+          "available": 12
+        },
+        {
+          "id": "room_mixto_7",
+          "available": 7
+        },
+        {
+          "id": "room_flexible_7",
+          "available": 7
+        }
+      ]
+    },
+    {
+      "scenario": "partially_available",
+      "checkIn": "2025-07-01",
+      "checkOut": "2025-07-05",
+      "available": true,
+      "rooms": [
+        {
+          "id": "room_mixto_12a",
+          "available": 4
+        },
+        {
+          "id": "room_mixto_12b",
+          "available": 12
+        },
+        {
+          "id": "room_mixto_7",
+          "available": 7
+        },
+        {
+          "id": "room_flexible_7",
+          "available": 7
+        }
+      ]
+    },
+    {
+      "scenario": "fully_booked",
+      "checkIn": "2025-12-25",
+      "checkOut": "2025-12-30",
+      "available": false,
+      "rooms": []
+    }
+  ]
+}

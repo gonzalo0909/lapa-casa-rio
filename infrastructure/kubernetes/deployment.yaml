@@ -1,0 +1,287 @@
+# lapa-casa-hostel/infrastructure/kubernetes/deployment.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lapa-casa-hostel
+  labels:
+    environment: production
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lapa-config
+  namespace: lapa-casa-hostel
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  BACKEND_PORT: "4000"
+  EMAIL_FROM: "reservas@lapacasahostel.com"
+  NEXT_PUBLIC_SITE_URL: "https://lapacasahostel.com"
+  NEXT_PUBLIC_API_URL: "https://api.lapacasahostel.com"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lapa-secrets
+  namespace: lapa-casa-hostel
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual secrets
+  # Example: echo -n "your-secret" | base64
+  DATABASE_URL: ""
+  REDIS_URL: ""
+  JWT_SECRET: ""
+  ENCRYPTION_KEY: ""
+  STRIPE_SECRET_KEY: ""
+  STRIPE_WEBHOOK_SECRET: ""
+  MP_ACCESS_TOKEN: ""
+  MP_WEBHOOK_SECRET: ""
+  RESEND_API_KEY: ""
+  WHATSAPP_API_KEY: ""
+  GOOGLE_SERVICE_ACCOUNT_KEY: ""
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lapa-app
+  namespace: lapa-casa-hostel
+  labels:
+    app: lapa-app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: lapa-app
+  template:
+    metadata:
+      labels:
+        app: lapa-app
+    spec:
+      containers:
+      - name: lapa-app
+        image: gcr.io/lapa-casa-hostel/app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: frontend
+          protocol: TCP
+        - containerPort: 4000
+          name: backend
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: lapa-config
+        - secretRef:
+            name: lapa-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: app-logs
+          mountPath: /app/logs
+      volumes:
+      - name: app-logs
+        emptyDir: {}
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: lapa-app-hpa
+  namespace: lapa-casa-hostel
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lapa-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: lapa-casa-hostel
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          value: "lapacasa"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: lapa-secrets
+              key: DB_PASSWORD
+        - name: POSTGRES_DB
+          value: "lapa_channel_manager"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - lapacasa
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - lapacasa
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 20Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: lapa-casa-hostel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "512mb"
+        - --maxmemory-policy
+        - allkeys-lru
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-storage
+        emptyDir: {}
+
+✅ Archivo 173/180 completado

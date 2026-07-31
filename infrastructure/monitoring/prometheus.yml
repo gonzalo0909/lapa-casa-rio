@@ -1,0 +1,162 @@
+# lapa-casa-hostel/infrastructure/monitoring/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'lapa-casa-hostel'
+    environment: 'production'
+    region: 'rio-de-janeiro'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+      timeout: 10s
+
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+scrape_configs:
+  # Application backend metrics
+  - job_name: 'lapa-backend'
+    static_configs:
+      - targets: ['app:4000']
+        labels:
+          service: 'backend'
+          app: 'lapa-casa-hostel'
+          tier: 'application'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Application frontend metrics
+  - job_name: 'lapa-frontend'
+    static_configs:
+      - targets: ['app:3000']
+        labels:
+          service: 'frontend'
+          app: 'lapa-casa-hostel'
+          tier: 'application'
+    metrics_path: '/_next/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL database metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'database'
+          app: 'lapa-casa-hostel'
+          tier: 'data'
+    scrape_interval: 15s
+
+  # Redis cache metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'cache'
+          app: 'lapa-casa-hostel'
+          tier: 'data'
+    scrape_interval: 15s
+
+  # Nginx reverse proxy metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+        labels:
+          service: 'proxy'
+          app: 'lapa-casa-hostel'
+          tier: 'infrastructure'
+    scrape_interval: 10s
+
+  # Node exporter for system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'system'
+          app: 'lapa-casa-hostel'
+          tier: 'infrastructure'
+    scrape_interval: 15s
+
+  # Docker container metrics (cAdvisor)
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'containers'
+          app: 'lapa-casa-hostel'
+          tier: 'infrastructure'
+    scrape_interval: 20s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'monitoring'
+          app: 'prometheus'
+    scrape_interval: 30s
+
+  # Booking engine specific metrics
+  - job_name: 'booking-engine'
+    static_configs:
+      - targets: ['app:4000']
+        labels:
+          service: 'booking-engine'
+          app: 'lapa-casa-hostel'
+          component: 'business-logic'
+    metrics_path: '/metrics/booking'
+    scrape_interval: 10s
+
+  # Payment processor metrics
+  - job_name: 'payment-processor'
+    static_configs:
+      - targets: ['app:4000']
+        labels:
+          service: 'payment-processor'
+          app: 'lapa-casa-hostel'
+          component: 'business-logic'
+    metrics_path: '/metrics/payments'
+    scrape_interval: 10s
+
+# Recording rules for aggregations
+# These pre-compute frequently needed queries
+recording_rules:
+  - name: lapa_casa_hostel_aggregations
+    interval: 30s
+    rules:
+      # Request rate per service
+      - record: lapa:http_requests:rate5m
+        expr: rate(http_requests_total[5m])
+      
+      # Error rate per service
+      - record: lapa:http_errors:rate5m
+        expr: rate(http_requests_total{status=~"5.."}[5m])
+      
+      # Request duration 95th percentile
+      - record: lapa:http_request_duration:p95
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+      
+      # Database connection pool usage
+      - record: lapa:db_connections:usage_ratio
+        expr: pg_stat_database_numbackends / pg_settings_max_connections
+      
+      # Redis memory usage ratio
+      - record: lapa:redis_memory:usage_ratio
+        expr: redis_memory_used_bytes / redis_memory_max_bytes
+      
+      # Booking success rate
+      - record: lapa:bookings:success_rate5m
+        expr: rate(bookings_total{status="confirmed"}[5m]) / rate(bookings_total[5m])
+      
+      # Payment success rate
+      - record: lapa:payments:success_rate5m
+        expr: rate(payments_total{status="succeeded"}[5m]) / rate(payments_total[5m])
+
+✅ Archivo 178/180 completado

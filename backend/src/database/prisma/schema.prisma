@@ -12,7 +12,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Room Model - 4 habitaciones específicas
+// Room Model - 5 habitaciones específicas (2x Mixto 12, 2x Mixto 7, 1x Flexible 7)
 model Room {
   id          String   @id @default(cuid())
   roomCode    String   @unique @db.VarChar(50) // room_mixto_12a, room_mixto_12b, etc.
@@ -33,15 +33,59 @@ model Room {
   // Relations
   bookings    Booking[]
   availability RoomAvailability[]
-  
+  beds        Bed[]
+
   // Timestamps
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([roomCode])
   @@index([type])
   @@index([status])
   @@map("rooms")
+}
+
+// Bed Model - individual physical beds within a room.
+// This is what makes the anti-overbooking guarantee real: bookings claim
+// specific beds (via BedAssignment), not just an aggregate count, so a
+// database-level EXCLUDE constraint can guarantee zero double-booking.
+model Bed {
+  id          String    @id @default(cuid())
+  roomId      String
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bedNumber   Int       @db.SmallInt // 1..room.capacity
+  status      BedStatus @default(ACTIVE)
+
+  assignments BedAssignment[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([roomId, bedNumber])
+  @@index([roomId])
+  @@map("beds")
+}
+
+// Bed Assignment - which bed a booking occupies, for which date range.
+// The EXCLUDE constraint added in the migration SQL (see
+// migrations/0001_init) guarantees at the database level that two
+// assignments can never overlap on the same bed, regardless of what the
+// application code does.
+model BedAssignment {
+  id            String   @id @default(cuid())
+  bedId         String
+  bed           Bed      @relation(fields: [bedId], references: [id], onDelete: Restrict)
+  bookingId     String
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  checkInDate   DateTime @db.Date
+  checkOutDate  DateTime @db.Date
+
+  createdAt     DateTime @default(now())
+
+  @@index([bedId])
+  @@index([bookingId])
+  @@index([checkInDate, checkOutDate])
+  @@map("bed_assignments")
 }
 
 // Booking Model - Core booking entity
@@ -94,7 +138,8 @@ model Booking {
   
   // Relations
   payments        Payment[]
-  
+  bedAssignments  BedAssignment[]
+
   // Google Sheets sync
   sheetsSynced    Boolean       @default(false)
   sheetsSyncedAt  DateTime?
@@ -265,7 +310,7 @@ model RoomAvailability {
   date        DateTime @db.Date
   
   // Availability tracking
-  totalCapacity    Int @db.SmallInt // 12, 12, 7, 7
+  totalCapacity    Int @db.SmallInt // 12, 12, 7, 7, 7
   availableBeds    Int @db.SmallInt
   occupiedBeds     Int @db.SmallInt @default(0)
   blockedBeds      Int @db.SmallInt @default(0) // Manual blocks
@@ -355,6 +400,11 @@ enum RoomStatus {
   ACTIVE
   MAINTENANCE
   INACTIVE
+}
+
+enum BedStatus {
+  ACTIVE
+  MAINTENANCE
 }
 
 enum BookingStatus {

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API for Lapa Casa Hostel",
   "main": "dist/server.js",
+  "prisma": {
+    "schema": "src/database/prisma/schema.prisma"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc && tsc-alias",

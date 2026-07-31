@@ -517,6 +517,13 @@ export const ROOM_CONFIGS = {
     capacity: 7,
     isFlexible: false
   },
+  MIXTO_7B: {
+    id: 'room_mixto_7b',
+    name: 'Mixto 7B',
+    type: RoomTypeEnum.MIXED,
+    capacity: 7,
+    isFlexible: false
+  },
   FLEXIBLE_7: {
     id: 'room_flexible_7',
     name: 'Flexible 7',

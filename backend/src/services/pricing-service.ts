@@ -1,8 +1,7 @@
 // lapa-casa-hostel/backend/src/services/pricing-service.ts
 
-import { parseISO, differenceInDays, getMonth } from 'date-fns';
 import { logger } from '../utils/logger';
-import { AppError } from '../utils/responses';
+import { query } from '../config/database';
 
 interface PricingRequest {
   checkInDate: string;
@@ -78,12 +77,12 @@ export class PricingService {
 
   async calculateTotalPrice(request: PricingRequest): Promise<PricingResponse> {
     try {
-      const checkIn = parseISO(request.checkInDate);
-      const checkOut = parseISO(request.checkOutDate);
-      const nights = differenceInDays(checkOut, checkIn);
+      const checkIn = new Date(request.checkInDate);
+      const checkOut = new Date(request.checkOutDate);
+      const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
       if (nights < 1) {
-        throw new AppError('La reserva debe ser de al menos 1 noche', 400);
+        throw new Error('La reserva debe ser de al menos 1 noche');
       }
 
       const basePrice = this.BASE_PRICE_PER_BED * request.totalBeds * nights;
@@ -94,7 +93,7 @@ export class PricingService {
       const seasonData = this.determineSeason(request.checkInDate, request.checkOutDate);
 
       if (seasonData.type === 'carnival' && nights < (seasonData.minNights || 5)) {
-        throw new AppError(`Durante Carnaval se requiere mínimo ${seasonData.minNights} noches`, 400);
+        throw new Error(`Durante Carnaval se requiere mínimo ${seasonData.minNights} noches`);
       }
 
       const priceAfterSeason = priceAfterDiscount * seasonData.multiplier;
@@ -135,6 +134,58 @@ export class PricingService {
     }
   }
 
+  async getRateForDates(roomTypeId: string, checkInDate: string, checkOutDate: string): Promise<number> {
+    try {
+      const result = await query(
+        'SELECT base_price FROM room_types WHERE id = $1',
+        [roomTypeId]
+      );
+      const basePrice = result.rows[0]?.base_price ?? this.BASE_PRICE_PER_BED;
+      const season = this.determineSeason(checkInDate, checkOutDate);
+      return Math.round(basePrice * season.multiplier * 100) / 100;
+    } catch {
+      return this.BASE_PRICE_PER_BED;
+    }
+  }
+
+  getMinNights(checkInDate: string, checkOutDate: string): number {
+    const season = this.determineSeason(checkInDate, checkOutDate);
+    return season.type === 'carnival' ? (season.minNights || 5) : 1;
+  }
+
+  async calculateFinalPrice(
+    checkInDate: string,
+    checkOutDate: string,
+    totalBeds: number,
+    roomTypeId?: string
+  ): Promise<{ totalPrice: number; depositAmount: number; remainingAmount: number; nights: number }> {
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+
+    let basePricePerBed = this.BASE_PRICE_PER_BED;
+    if (roomTypeId) {
+      try {
+        const result = await query('SELECT base_price FROM room_types WHERE id = $1', [roomTypeId]);
+        if (result.rows[0]) basePricePerBed = result.rows[0].base_price;
+      } catch { /* use default */ }
+    }
+
+    const basePrice = basePricePerBed * totalBeds * nights;
+    const { discount } = this.calculateGroupDiscount(totalBeds);
+    const priceAfterDiscount = basePrice * (1 - discount);
+    const season = this.determineSeason(checkInDate, checkOutDate);
+    const totalPrice = Math.round(priceAfterDiscount * season.multiplier * 100) / 100;
+    const depositData = this.calculateDeposit(totalPrice, totalBeds);
+
+    return {
+      totalPrice,
+      depositAmount: depositData.amount,
+      remainingAmount: depositData.remaining,
+      nights
+    };
+  }
+
   calculateBasePrice(totalBeds: number, nights: number): number {
     return this.BASE_PRICE_PER_BED * totalBeds * nights;
   }
@@ -153,14 +204,14 @@ export class PricingService {
   }
 
   determineSeason(checkInDate: string, checkOutDate: string): SeasonConfig {
-    const checkIn = parseISO(checkInDate);
-    const checkOut = parseISO(checkOutDate);
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
 
     for (const config of this.SEASON_CONFIG) {
       if (config.type === 'carnival' && config.specificDates) {
         for (const period of config.specificDates) {
-          const periodStart = parseISO(period.start);
-          const periodEnd = parseISO(period.end);
+          const periodStart = new Date(period.start);
+          const periodEnd = new Date(period.end);
           if (
             (checkIn >= periodStart && checkIn <= periodEnd) ||
             (checkOut >= periodStart && checkOut <= periodEnd) ||
@@ -172,7 +223,7 @@ export class PricingService {
       }
     }
 
-    const checkInMonth = getMonth(checkIn);
+    const checkInMonth = checkIn.getMonth();
     for (const config of this.SEASON_CONFIG) {
       if (config.months && config.months.includes(checkInMonth)) {
         return config;
@@ -206,9 +257,9 @@ export class PricingService {
     checkOutDate: string,
     totalBeds: number
   ): Promise<{ minPrice: number; maxPrice: number; averagePrice: number; seasonType: string }> {
-    const checkIn = parseISO(checkInDate);
-    const checkOut = parseISO(checkOutDate);
-    const nights = differenceInDays(checkOut, checkIn);
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
     const basePrice = this.calculateBasePrice(totalBeds, nights);
     const groupDiscount = this.calculateGroupDiscount(totalBeds);
@@ -224,3 +275,5 @@ export class PricingService {
     };
   }
 }
+
+export const pricingService = new PricingService();

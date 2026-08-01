@@ -1,249 +1,135 @@
 // lapa-casa-hostel/backend/src/database/repositories/room-repository.ts
 
-import { PrismaClient, Room, RoomType, RoomStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { query } from '../../config/database';
+import type { RoomType, Bed } from '../../types/database';
 
 export class RoomRepository {
-  async findAll(): Promise<Room[]> {
-    return await prisma.room.findMany({
-      where: { status: RoomStatus.ACTIVE },
-      orderBy: { capacity: 'desc' }
-    });
+  async findAllRoomTypes(): Promise<RoomType[]> {
+    const result = await query<RoomType>(
+      `SELECT * FROM room_types ORDER BY capacity DESC`
+    );
+    return result.rows;
   }
 
-  async findById(id: string): Promise<Room | null> {
-    return await prisma.room.findUnique({
-      where: { id }
-    });
+  async findRoomTypeById(id: string): Promise<RoomType | null> {
+    const result = await query<RoomType>(
+      `SELECT * FROM room_types WHERE id = $1`,
+      [id]
+    );
+    return result.rows[0] ?? null;
   }
 
-  async findByCode(roomCode: string): Promise<Room | null> {
-    return await prisma.room.findUnique({
-      where: { roomCode }
-    });
+  async findRoomTypeByCode(code: string): Promise<RoomType | null> {
+    const result = await query<RoomType>(
+      `SELECT * FROM room_types WHERE code = $1`,
+      [code]
+    );
+    return result.rows[0] ?? null;
   }
 
-  async findByType(type: RoomType): Promise<Room[]> {
-    return await prisma.room.findMany({
-      where: {
-        type,
-        status: RoomStatus.ACTIVE
-      },
-      orderBy: { capacity: 'desc' }
-    });
+  async findFlexibleRoom(): Promise<RoomType | null> {
+    const result = await query<RoomType>(
+      `SELECT * FROM room_types WHERE is_flexible = true LIMIT 1`
+    );
+    return result.rows[0] ?? null;
   }
 
-  async findFlexibleRoom(): Promise<Room | null> {
-    return await prisma.room.findFirst({
-      where: {
-        isFlexible: true,
-        status: RoomStatus.ACTIVE
-      }
-    });
+  async findBedsByRoomType(roomTypeId: string): Promise<Bed[]> {
+    const result = await query<Bed>(
+      `SELECT * FROM beds WHERE room_type_id = $1 AND is_active = true ORDER BY bed_code`,
+      [roomTypeId]
+    );
+    return result.rows;
   }
 
-  async findWithAvailability(checkInDate: Date, checkOutDate: Date, minimumBeds: number): Promise<Room[]> {
-    const rooms = await prisma.room.findMany({
-      where: { status: RoomStatus.ACTIVE },
-      include: {
-        availability: {
-          where: {
-            date: { gte: checkInDate, lt: checkOutDate },
-            isAvailable: true
-          }
-        }
-      }
-    });
+  async getOccupancyStats(
+    roomTypeId: string,
+    checkIn: string,
+    checkOut: string
+  ): Promise<{ totalBeds: number; availableBeds: number; occupiedBeds: number }> {
+    const totalResult = await query<{ total: string }>(
+      `SELECT COUNT(*)::int AS total FROM beds WHERE room_type_id = $1 AND is_active = true`,
+      [roomTypeId]
+    );
+    const total = parseInt(totalResult.rows[0].total, 10);
 
-    return rooms.filter(room => {
-      if (room.availability.length === 0) return false;
-      const minAvailable = Math.min(...room.availability.map(a => a.availableBeds));
-      return minAvailable >= minimumBeds;
-    });
-  }
-
-  async create(data: {
-    roomCode: string;
-    name: string;
-    capacity: number;
-    type: RoomType;
-    isFlexible?: boolean;
-    basePrice: number;
-    description?: string;
-    amenities?: any;
-    images?: any;
-    autoConvertHours?: number;
-    metadata?: any;
-  }): Promise<Room> {
-    return await prisma.room.create({
-      data: {
-        ...data,
-        status: RoomStatus.ACTIVE
-      }
-    });
-  }
-
-  async update(id: string, data: Partial<Room>): Promise<Room> {
-    return await prisma.room.update({
-      where: { id },
-      data
-    });
-  }
-
-  async updateStatus(id: string, status: RoomStatus): Promise<Room> {
-    return await prisma.room.update({
-      where: { id },
-      data: { status }
-    });
-  }
-
-  async updateType(id: string, type: RoomType): Promise<Room> {
-    return await prisma.room.update({
-      where: { id },
-      data: { type }
-    });
-  }
-
-  async updatePrice(id: string, basePrice: number): Promise<Room> {
-    return await prisma.room.update({
-      where: { id },
-      data: { basePrice }
-    });
-  }
-
-  async delete(id: string): Promise<Room> {
-    return await prisma.room.update({
-      where: { id },
-      data: { status: RoomStatus.INACTIVE }
-    });
-  }
-
-  async getAvailabilityForDateRange(id: string, checkInDate: Date, checkOutDate: Date): Promise<any[]> {
-    return await prisma.roomAvailability.findMany({
-      where: {
-        roomId: id,
-        date: { gte: checkInDate, lt: checkOutDate }
-      },
-      orderBy: { date: 'asc' }
-    });
-  }
-
-  async checkCapacity(
-    id: string,
-    checkInDate: Date,
-    checkOutDate: Date,
-    requestedBeds: number
-  ): Promise<{ available: boolean; availableBeds: number; message?: string }> {
-    const availability = await this.getAvailabilityForDateRange(id, checkInDate, checkOutDate);
-
-    if (availability.length === 0) {
-      return { available: false, availableBeds: 0, message: 'No availability data' };
-    }
-
-    const minAvailable = Math.min(...availability.map(a => a.availableBeds));
-
-    if (minAvailable < requestedBeds) {
-      return {
-        available: false,
-        availableBeds: minAvailable,
-        message: `Only ${minAvailable} beds available`
-      };
-    }
-
-    return { available: true, availableBeds: minAvailable };
-  }
-
-  async getOccupiedBeds(id: string, checkInDate: Date, checkOutDate: Date): Promise<number> {
-    const bookings = await prisma.booking.findMany({
-      where: {
-        roomId: id,
-        status: { in: ['CONFIRMED', 'CHECKED_IN'] },
-        OR: [
-          { AND: [{ checkInDate: { lte: checkInDate } }, { checkOutDate: { gt: checkInDate } }] },
-          { AND: [{ checkInDate: { lt: checkOutDate } }, { checkOutDate: { gte: checkOutDate } }] },
-          { AND: [{ checkInDate: { gte: checkInDate } }, { checkOutDate: { lte: checkOutDate } }] }
-        ]
-      },
-      select: { bedsCount: true }
-    });
-
-    return bookings.reduce((total, b) => total + b.bedsCount, 0);
-  }
-
-  async getBookingsForDateRange(id: string, checkInDate: Date, checkOutDate: Date): Promise<any[]> {
-    return await prisma.booking.findMany({
-      where: {
-        roomId: id,
-        status: { in: ['CONFIRMED', 'CHECKED_IN'] },
-        OR: [
-          { AND: [{ checkInDate: { lte: checkInDate } }, { checkOutDate: { gt: checkInDate } }] },
-          { AND: [{ checkInDate: { lt: checkOutDate } }, { checkOutDate: { gte: checkOutDate } }] },
-          { AND: [{ checkInDate: { gte: checkInDate } }, { checkOutDate: { lte: checkOutDate } }] }
-        ]
-      },
-      include: { guest: true },
-      orderBy: { checkInDate: 'asc' }
-    });
-  }
-
-  async getStatistics(id: string): Promise<{
-    totalBookings: number;
-    totalRevenue: number;
-    averageOccupancy: number;
-    upcomingBookings: number;
-  }> {
-    const [totalBookings, revenue, upcomingBookings] = await Promise.all([
-      prisma.booking.count({
-        where: { roomId: id, status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT'] } }
-      }),
-      prisma.booking.aggregate({
-        where: { roomId: id, status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT'] } },
-        _sum: { totalPrice: true }
-      }),
-      prisma.booking.count({
-        where: { roomId: id, status: 'CONFIRMED', checkInDate: { gte: new Date() } }
-      })
-    ]);
-
-    const room = await this.findById(id);
-    const capacity = room?.capacity || 1;
-
-    const bookings = await prisma.booking.findMany({
-      where: { roomId: id, status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT'] } },
-      select: { bedsCount: true, nightsCount: true }
-    });
-
-    const totalBedNights = bookings.reduce((sum, b) => sum + (b.bedsCount * b.nightsCount), 0);
-    const totalNights = bookings.reduce((sum, b) => sum + b.nightsCount, 0);
-    const averageOccupancy = totalNights > 0 ? (totalBedNights / (totalNights * capacity)) * 100 : 0;
+    const occupiedResult = await query<{ occupied: string }>(
+      `SELECT COUNT(DISTINCT rb.bed_id)::int AS occupied
+       FROM reservation_beds rb
+       JOIN reservations r ON rb.reservation_id = r.id
+       JOIN beds b ON rb.bed_id = b.id
+       WHERE b.room_type_id = $1
+         AND r.status IN ('confirmed','pending_payment','pending_ota_confirmation')
+         AND r.check_in_date < $3::date
+         AND r.check_out_date > $2::date`,
+      [roomTypeId, checkIn, checkOut]
+    );
+    const occupied = parseInt(occupiedResult.rows[0].occupied, 10);
 
     return {
-      totalBookings,
-      totalRevenue: Number(revenue._sum.totalPrice || 0),
-      averageOccupancy: Math.round(averageOccupancy * 100) / 100,
-      upcomingBookings
+      totalBeds: total,
+      availableBeds: Math.max(0, total - occupied),
+      occupiedBeds: occupied,
     };
   }
 
-  async bulkUpdateAvailability(updates: Array<{
-    roomId: string;
-    date: Date;
-    availableBeds: number;
-    isAvailable: boolean;
-  }>): Promise<void> {
-    for (const update of updates) {
-      await prisma.roomAvailability.updateMany({
-        where: {
-          roomId: update.roomId,
-          date: update.date
-        },
-        data: {
-          availableBeds: update.availableBeds,
-          isAvailable: update.isAvailable
-        }
-      });
-    }
+  async getAvailableBeds(
+    roomTypeId: string,
+    checkIn: string,
+    checkOut: string
+  ): Promise<Bed[]> {
+    const result = await query<Bed>(
+      `SELECT b.* FROM beds b
+       WHERE b.room_type_id = $1
+         AND b.is_active = true
+         AND b.id NOT IN (
+           SELECT rb.bed_id FROM reservation_beds rb
+           JOIN reservations r ON rb.reservation_id = r.id
+           WHERE r.status IN ('confirmed','pending_payment','pending_ota_confirmation')
+             AND r.check_in_date < $3::date
+             AND r.check_out_date > $2::date
+         )
+       ORDER BY b.bed_code`,
+      [roomTypeId, checkIn, checkOut]
+    );
+    return result.rows;
+  }
+
+  async updateRoomTypePrice(id: string, basePrice: number): Promise<RoomType> {
+    const result = await query<RoomType>(
+      `UPDATE room_types SET base_price = $2, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, basePrice]
+    );
+    return result.rows[0];
+  }
+
+  async updateFlexibleRoomGender(id: string, gender: 'mixed' | 'female' | 'male'): Promise<RoomType> {
+    const result = await query<RoomType>(
+      `UPDATE room_types SET default_gender = $2::bed_gender, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, gender]
+    );
+    return result.rows[0];
+  }
+
+  async getStatistics(): Promise<{
+    totalRooms: number;
+    totalBeds: number;
+    activeBeds: number;
+  }> {
+    const result = await query<{ rooms: string; total_beds: string; active_beds: string }>(
+      `SELECT
+         COUNT(DISTINCT rt.id)::int AS rooms,
+         COUNT(b.id)::int AS total_beds,
+         COUNT(b.id) FILTER (WHERE b.is_active = true)::int AS active_beds
+       FROM room_types rt
+       LEFT JOIN beds b ON b.room_type_id = rt.id`
+    );
+    const row = result.rows[0];
+    return {
+      totalRooms: parseInt(row.rooms, 10),
+      totalBeds: parseInt(row.total_beds, 10),
+      activeBeds: parseInt(row.active_beds, 10),
+    };
   }
 }
 

@@ -1,65 +1,30 @@
-/**
- * File: lapa-casa-hostel/backend/src/routes/bookings/update-booking.ts
- * Update Booking Handler
- * Lapa Casa Hostel Channel Manager
- * 
- * Handles booking modifications with availability revalidation
- * Supports date changes, room changes, and guest information updates
- * 
- * @module routes/bookings/update
- * @requires express
- */
+// lapa-casa-hostel/backend/src/routes/bookings/update-booking.ts
 
 import { Request, Response, NextFunction } from 'express';
 import { BookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
-import { EmailService } from '../../services/email-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
 const bookingService = new BookingService();
 const availabilityService = new AvailabilityService();
 const pricingService = new PricingService();
-const emailService = new EmailService();
 
-/**
- * Update Booking Request Interface
- */
 interface UpdateBookingRequest {
   checkIn?: string;
   checkOut?: string;
-  rooms?: Array<{
-    roomId: string;
-    bedsCount: number;
-  }>;
+  rooms?: Array<{ roomId: string; bedsCount: number }>;
   guest?: {
     firstName?: string;
     lastName?: string;
     email?: string;
     phone?: string;
     country?: string;
-    document?: string;
   };
   specialRequests?: string;
 }
 
-/**
- * Update Booking Handler
- * 
- * Update flow:
- * 1. Validate booking exists and is modifiable
- * 2. Check if dates/rooms changed (requires availability check)
- * 3. Recalculate pricing if applicable
- * 4. Update booking record
- * 5. Send modification email
- * 6. Return updated booking
- * 
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next function
- * @returns {Promise<void>}
- */
 export const updateBookingHandler = async (
   req: Request<{ id: string }, {}, UpdateBookingRequest>,
   res: Response,
@@ -69,214 +34,171 @@ export const updateBookingHandler = async (
     const { id } = req.params;
     const updates = req.body;
 
-    logger.info('Updating booking', { bookingId: id, updates });
+    logger.info('Updating booking', { bookingId: id });
 
-    // Step 1: Fetch existing booking
     const existingBooking = await bookingService.getBookingById(id);
 
     if (!existingBooking) {
-      res.status(404).json(
-        ApiResponse.error('Booking not found', { bookingId: id })
-      );
+      res.status(404).json(ApiResponse.error('Booking not found', { bookingId: id }));
       return;
     }
 
-    // Step 2: Validate booking is modifiable
-    if (existingBooking.status === 'CANCELLED') {
-      res.status(400).json(
-        ApiResponse.error('Cannot modify cancelled booking')
-      );
+    if (existingBooking.status === 'cancelled') {
+      res.status(400).json(ApiResponse.error('Cannot modify cancelled booking'));
       return;
     }
 
-    if (existingBooking.status === 'COMPLETED') {
-      res.status(400).json(
-        ApiResponse.error('Cannot modify completed booking')
-      );
+    if (existingBooking.status === 'completed') {
+      res.status(400).json(ApiResponse.error('Cannot modify completed booking'));
       return;
     }
 
-    const checkInDate = new Date(existingBooking.checkIn);
+    const checkInDate = new Date(existingBooking.check_in_date);
     const now = new Date();
     const daysUntilCheckIn = Math.ceil(
       (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Cannot modify within 48 hours of check-in
     if (daysUntilCheckIn < 2 && (updates.checkIn || updates.checkOut || updates.rooms)) {
       res.status(400).json(
-        ApiResponse.error(
-          'Cannot modify dates or rooms within 48 hours of check-in'
-        )
+        ApiResponse.error('Cannot modify dates or rooms within 48 hours of check-in')
       );
       return;
     }
 
-    // Step 3: Check if dates changed
-    const datesChanged = updates.checkIn || updates.checkOut;
-    const roomsChanged = updates.rooms;
+    const datesChanged = !!(updates.checkIn || updates.checkOut);
+    const roomsChanged = !!updates.rooms;
 
-    let newPricing = existingBooking.pricing;
+    let newTotalPrice = Number(existingBooking.total_price);
+    let newDepositAmount = Number(existingBooking.deposit_amount ?? 0);
 
     if (datesChanged || roomsChanged) {
-      const newCheckIn = updates.checkIn || existingBooking.checkIn;
-      const newCheckOut = updates.checkOut || existingBooking.checkOut;
-      const newRooms = updates.rooms || existingBooking.rooms;
+      const newCheckIn = updates.checkIn || existingBooking.check_in_date;
+      const newCheckOut = updates.checkOut || existingBooking.check_out_date;
+      const totalBeds = existingBooking.total_beds || 1;
 
-      // Validate new dates
       const checkIn = new Date(newCheckIn);
       const checkOut = new Date(newCheckOut);
 
       if (checkIn < now) {
-        res.status(400).json(
-          ApiResponse.error('Check-in date cannot be in the past')
-        );
+        res.status(400).json(ApiResponse.error('Check-in date cannot be in the past'));
         return;
       }
 
       if (checkOut <= checkIn) {
-        res.status(400).json(
-          ApiResponse.error('Check-out date must be after check-in date')
-        );
+        res.status(400).json(ApiResponse.error('Check-out date must be after check-in date'));
         return;
       }
 
-      // Calculate new nights
-      const newNights = Math.ceil(
+      const newNights = Math.round(
         (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Check availability for new dates/rooms
-      const totalBedsRequested = newRooms.reduce(
-        (sum, room) => sum + room.bedsCount,
-        0
       );
 
       const availability = await availabilityService.checkAvailability({
         checkIn: newCheckIn,
         checkOut: newCheckOut,
-        bedsNeeded: totalBedsRequested,
-        excludeBookingId: id // Exclude current booking from availability check
+        bedsNeeded: totalBeds,
+        excludeBookingId: id
       });
 
       if (!availability.available) {
-        logger.warn('Insufficient availability for update', {
-          bookingId: id,
-          requested: totalBedsRequested,
-          available: availability.availableBeds
-        });
-
         res.status(409).json(
           ApiResponse.error('Insufficient availability for requested changes', {
             availableBeds: availability.availableBeds,
-            requestedBeds: totalBedsRequested
+            requestedBeds: totalBeds
           })
         );
         return;
       }
 
-      // Recalculate pricing
-      newPricing = await pricingService.calculateBookingPrice({
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-        rooms: newRooms,
-        totalBeds: totalBedsRequested
+      const newPricing = await pricingService.calculateTotalPrice({
+        checkInDate: newCheckIn,
+        checkOutDate: newCheckOut,
+        rooms: updates.rooms || [],
+        totalBeds
       });
 
-      // Update booking with new dates/rooms/pricing
+      newTotalPrice = newPricing.totalPrice;
+      newDepositAmount = newPricing.depositAmount;
+
       await bookingService.updateBooking(id, {
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-        nights: newNights,
-        rooms: newRooms,
-        pricing: newPricing
+        check_in_date: newCheckIn,
+        check_out_date: newCheckOut,
+        total_price: newTotalPrice,
+        deposit_amount: newDepositAmount,
+        remaining_amount: newPricing.remainingAmount,
+        group_discount_pct: newPricing.groupDiscount,
+        season_type: newPricing.seasonType,
+        season_multiplier: newPricing.seasonMultiplier
       });
 
-      logger.info('Booking dates/rooms updated', {
-        bookingId: id,
-        oldCheckIn: existingBooking.checkIn,
-        newCheckIn,
-        oldTotal: existingBooking.pricing.total,
-        newTotal: newPricing.total
-      });
+      logger.info('Booking dates updated', { bookingId: id, newCheckIn, newCheckOut });
     }
 
-    // Step 4: Update guest information
+    // Update guest info
     if (updates.guest) {
-      await bookingService.updateBooking(id, {
-        guest: {
-          ...existingBooking.guest,
-          ...updates.guest
-        }
-      });
+      const guestUpdate: any = {};
+      if (updates.guest.firstName || updates.guest.lastName) {
+        const firstName = updates.guest.firstName || '';
+        const lastName = updates.guest.lastName || '';
+        guestUpdate.full_name = `${firstName} ${lastName}`.trim();
+      }
+      if (updates.guest.email) guestUpdate.email = updates.guest.email;
+      if (updates.guest.phone) guestUpdate.phone = updates.guest.phone;
+      if (updates.guest.country) guestUpdate.country = updates.guest.country;
 
-      logger.info('Guest information updated', { bookingId: id });
+      if (Object.keys(guestUpdate).length > 0) {
+        await bookingService.updateGuest(existingBooking.guest_id, guestUpdate);
+      }
     }
 
-    // Step 5: Update special requests
+    // Update special requests
     if (updates.specialRequests !== undefined) {
-      await bookingService.updateBooking(id, {
-        specialRequests: updates.specialRequests
-      });
+      await bookingService.updateBooking(id, { special_requests: updates.specialRequests });
     }
 
-    // Step 6: Fetch updated booking
     const updatedBooking = await bookingService.getBookingById(id);
 
     if (!updatedBooking) {
       throw new Error('Failed to retrieve updated booking');
     }
 
-    // Step 7: Send modification email
-    if (datesChanged || roomsChanged) {
-      emailService.sendBookingModification(updatedBooking, {
-        oldCheckIn: existingBooking.checkIn,
-        oldCheckOut: existingBooking.checkOut,
-        oldTotal: existingBooking.pricing.total,
-        priceDifference: newPricing.total - existingBooking.pricing.total
-      }).catch(error => {
-        logger.error('Failed to send modification email', {
-          bookingId: id,
-          error: error.message
-        });
-      });
-    }
+    const updatedCheckIn = new Date(updatedBooking.check_in_date);
+    const updatedCheckOut = new Date(updatedBooking.check_out_date);
+    const nights = Math.round(
+      (updatedCheckOut.getTime() - updatedCheckIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-    // Step 8: Return updated booking
+    const oldTotal = Number(existingBooking.total_price);
+    const priceDifference = datesChanged || roomsChanged ? newTotalPrice - oldTotal : 0;
+
     res.status(200).json(
       ApiResponse.success({
         booking: {
           id: updatedBooking.id,
           confirmationNumber: `LCH-${updatedBooking.id.substring(0, 8).toUpperCase()}`,
           status: updatedBooking.status,
-          checkIn: updatedBooking.checkIn,
-          checkOut: updatedBooking.checkOut,
-          nights: updatedBooking.nights,
-          rooms: updatedBooking.rooms,
+          checkIn: updatedBooking.check_in_date,
+          checkOut: updatedBooking.check_out_date,
+          nights,
           guest: updatedBooking.guest,
           pricing: {
-            subtotal: updatedBooking.pricing.subtotal,
-            groupDiscount: updatedBooking.pricing.groupDiscount,
-            seasonalAdjustment: updatedBooking.pricing.seasonalAdjustment,
-            total: updatedBooking.pricing.total,
-            deposit: updatedBooking.pricing.deposit,
-            remaining: updatedBooking.pricing.remaining,
+            total: Number(updatedBooking.total_price),
+            deposit: Number(updatedBooking.deposit_amount ?? 0),
+            remaining: Number(updatedBooking.remaining_amount ?? 0),
             currency: 'BRL'
           },
-          specialRequests: updatedBooking.specialRequests,
-          updatedAt: updatedBooking.updatedAt
+          specialRequests: updatedBooking.special_requests,
+          updatedAt: updatedBooking.updated_at
         },
         changes: {
           datesChanged,
           roomsChanged,
           guestUpdated: !!updates.guest,
-          priceDifference: datesChanged || roomsChanged
-            ? newPricing.total - existingBooking.pricing.total
-            : 0
+          priceDifference
         }
       }, 'Booking updated successfully')
     );
-
   } catch (error) {
     logger.error('Error updating booking', {
       error: error instanceof Error ? error.message : 'Unknown error',

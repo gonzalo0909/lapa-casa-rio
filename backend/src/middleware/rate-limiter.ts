@@ -70,7 +70,7 @@ const skipRateLimit = (req: Request): boolean => {
  */
 export const generalRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:general:'
   }),
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -92,7 +92,7 @@ export const generalRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const bookingRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:booking:'
   }),
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -119,7 +119,7 @@ export const bookingRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const paymentRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:payment:'
   }),
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -141,7 +141,7 @@ export const paymentRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const authRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:auth:'
   }),
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -163,7 +163,7 @@ export const authRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const availabilityRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:availability:'
   }),
   windowMs: 60 * 1000, // 1 minute
@@ -186,7 +186,7 @@ export const availabilityRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const webhookRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:webhook:'
   }),
   windowMs: 60 * 1000, // 1 minute
@@ -213,7 +213,7 @@ export const webhookRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const adminRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:admin:'
   }),
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -239,7 +239,7 @@ export const adminRateLimiter: RateLimitRequestHandler = rateLimit({
  */
 export const emailRateLimiter: RateLimitRequestHandler = rateLimit({
   store: new RedisStore({
-    client: redisClient,
+    sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
     prefix: 'rl:email:'
   }),
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -277,7 +277,7 @@ export const createRateLimiter = (options: {
 }): RateLimitRequestHandler => {
   return rateLimit({
     store: new RedisStore({
-      client: redisClient,
+      sendCommand: (...args: string[]) => redisClient.call(...args) as Promise<any>,
       prefix: `rl:${options.prefix}:`
     }),
     windowMs: options.windowMs,

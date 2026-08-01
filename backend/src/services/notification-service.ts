@@ -1,9 +1,6 @@
 // lapa-casa-hostel/backend/src/services/notification-service.ts
 
-import { WhatsAppClient } from '../integrations/whatsapp/whatsapp-client';
-import { MessageTemplates } from '../integrations/whatsapp/message-templates';
 import { logger } from '../utils/logger';
-import { AppError } from '../utils/responses';
 
 interface BookingNotificationData {
   phone: string;
@@ -35,14 +32,18 @@ interface AdminAlertData {
 }
 
 export class NotificationService {
-  private whatsappClient: WhatsAppClient;
-  private messageTemplates: MessageTemplates;
   private readonly ADMIN_PHONES = ['+5521999999999'];
   private readonly WHATSAPP_ENABLED = process.env.WHATSAPP_ENABLED === 'true';
 
-  constructor() {
-    this.whatsappClient = new WhatsAppClient();
-    this.messageTemplates = new MessageTemplates();
+  private getWhatsAppClient() {
+    if (!this.WHATSAPP_ENABLED) return null;
+    try {
+      const { WhatsAppClient } = require('../integrations/whatsapp/whatsapp-client');
+      return new WhatsAppClient();
+    } catch {
+      logger.warn('WhatsApp client not available');
+      return null;
+    }
   }
 
   async sendBookingNotification(data: BookingNotificationData): Promise<any> {
@@ -54,16 +55,14 @@ export class NotificationService {
 
       logger.info('Enviando notificación de booking por WhatsApp', { phone: data.phone, bookingId: data.bookingId });
 
-      const message = this.messageTemplates.getBookingConfirmation({
-        bookingId: data.bookingId,
-        checkIn: this.formatDate(data.checkIn, data.language),
-        language: data.language
-      });
+      const message = this.buildBookingMessage(data);
+      const client = this.getWhatsAppClient();
+      if (!client) return { success: false, reason: 'WhatsApp not configured' };
 
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(data.phone), message);
+      const messageId = await client.sendTextMessage(this.formatPhoneNumber(data.phone), message);
 
-      logger.info('Notificación de booking enviada', { phone: data.phone, messageId: result.messageId });
-      return result;
+      logger.info('Notificación de booking enviada', { phone: data.phone, messageId });
+      return { success: true, messageId };
     } catch (error) {
       logger.error('Error enviando notificación de booking', error);
       return { success: false, error };
@@ -78,17 +77,14 @@ export class NotificationService {
 
       logger.info('Enviando recordatorio de pago por WhatsApp', { phone: data.phone, bookingId: data.bookingId });
 
-      const message = this.messageTemplates.getPaymentReminder({
-        bookingId: data.bookingId,
-        amount: this.formatCurrency(data.amount, data.language),
-        dueDate: this.formatDate(data.dueDate, data.language),
-        language: data.language
-      });
+      const message = this.buildPaymentReminderMessage(data);
+      const client = this.getWhatsAppClient();
+      if (!client) return { success: false, reason: 'WhatsApp not configured' };
 
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(data.phone), message);
+      const messageId = await client.sendTextMessage(this.formatPhoneNumber(data.phone), message);
 
-      logger.info('Recordatorio de pago enviado', { phone: data.phone, messageId: result.messageId });
-      return result;
+      logger.info('Recordatorio de pago enviado', { phone: data.phone, messageId });
+      return { success: true, messageId };
     } catch (error) {
       logger.error('Error enviando recordatorio de pago', error);
       return { success: false, error };
@@ -101,19 +97,16 @@ export class NotificationService {
         return { success: false, reason: 'WhatsApp disabled' };
       }
 
-      logger.info('Enviando recordatorio de check-in por WhatsApp', { phone: data.phone, guestName: data.guestName });
+      logger.info('Enviando recordatorio de check-in por WhatsApp', { phone: data.phone });
 
-      const message = this.messageTemplates.getCheckInReminder({
-        guestName: data.guestName,
-        checkInDate: this.formatDate(data.checkInDate, data.language),
-        checkInTime: data.checkInTime,
-        language: data.language
-      });
+      const message = this.buildCheckInMessage(data);
+      const client = this.getWhatsAppClient();
+      if (!client) return { success: false, reason: 'WhatsApp not configured' };
 
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(data.phone), message);
+      const messageId = await client.sendTextMessage(this.formatPhoneNumber(data.phone), message);
 
-      logger.info('Recordatorio de check-in enviado', { phone: data.phone, messageId: result.messageId });
-      return result;
+      logger.info('Recordatorio de check-in enviado', { phone: data.phone, messageId });
+      return { success: true, messageId };
     } catch (error) {
       logger.error('Error enviando recordatorio de check-in', error);
       return { success: false, error };
@@ -133,16 +126,20 @@ export class NotificationService {
 
       logger.info('Enviando confirmación de pago por WhatsApp', { phone, bookingId });
 
-      const message = this.messageTemplates.getPaymentConfirmation({
-        bookingId,
-        amount: this.formatCurrency(amount, language),
-        language
-      });
+      const amountStr = this.formatCurrency(amount, language);
+      const messages = {
+        pt: `✅ *Pagamento Confirmado - Lapa Casa Hostel*\n\nReserva: ${bookingId}\nValor recebido: ${amountStr}\n\nObrigado! 🙏`,
+        en: `✅ *Payment Confirmed - Lapa Casa Hostel*\n\nBooking: ${bookingId}\nAmount received: ${amountStr}\n\nThank you! 🙏`,
+        es: `✅ *Pago Confirmado - Lapa Casa Hostel*\n\nReserva: ${bookingId}\nMonto recibido: ${amountStr}\n\n¡Gracias! 🙏`
+      };
 
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(phone), message);
+      const client = this.getWhatsAppClient();
+      if (!client) return { success: false, reason: 'WhatsApp not configured' };
 
-      logger.info('Confirmación de pago enviada', { phone, messageId: result.messageId });
-      return result;
+      const messageId = await client.sendTextMessage(this.formatPhoneNumber(phone), messages[language]);
+
+      logger.info('Confirmación de pago enviada', { phone, messageId });
+      return { success: true, messageId };
     } catch (error) {
       logger.error('Error enviando confirmación de pago', error);
       return { success: false, error };
@@ -153,20 +150,25 @@ export class NotificationService {
     try {
       logger.info('Enviando alerta al administrador', { type: data.type, bookingId: data.bookingId });
 
+      const client = this.getWhatsAppClient();
+      if (!client) {
+        logger.warn('Admin alert not sent — WhatsApp not configured', data);
+        return { success: false, reason: 'WhatsApp not configured' };
+      }
+
       const message = this.formatAdminAlert(data);
       const results = [];
 
       for (const adminPhone of this.ADMIN_PHONES) {
         try {
-          const result = await this.whatsappClient.sendMessage(adminPhone, message);
-          results.push({ phone: adminPhone, success: true, messageId: result.messageId });
+          const messageId = await client.sendTextMessage(adminPhone, message);
+          results.push({ phone: adminPhone, success: true, messageId });
         } catch (error) {
           logger.error('Error enviando alerta a admin', { adminPhone, error });
           results.push({ phone: adminPhone, success: false, error });
         }
       }
 
-      logger.info('Alertas de admin enviadas', { total: results.length, successful: results.filter(r => r.success).length });
       return results;
     } catch (error) {
       logger.error('Error enviando alertas de admin', error);
@@ -175,35 +177,16 @@ export class NotificationService {
   }
 
   async sendCustomMessage(phone: string, message: string): Promise<any> {
-    try {
-      if (!this.WHATSAPP_ENABLED) {
-        throw new AppError('WhatsApp está deshabilitado', 503);
-      }
-
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(phone), message);
-
-      logger.info('Mensaje personalizado enviado', { phone, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando mensaje personalizado', error);
-      throw error;
+    if (!this.WHATSAPP_ENABLED) {
+      throw new Error('WhatsApp está deshabilitado');
     }
-  }
 
-  async sendFileMessage(phone: string, fileUrl: string, caption?: string): Promise<any> {
-    try {
-      if (!this.WHATSAPP_ENABLED) {
-        throw new AppError('WhatsApp está deshabilitado', 503);
-      }
+    const client = this.getWhatsAppClient();
+    if (!client) throw new Error('WhatsApp not configured');
 
-      const result = await this.whatsappClient.sendFile(this.formatPhoneNumber(phone), fileUrl, caption);
-
-      logger.info('Archivo enviado por WhatsApp', { phone, fileUrl, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando archivo', error);
-      throw error;
-    }
+    const messageId = await client.sendTextMessage(this.formatPhoneNumber(phone), message);
+    logger.info('Mensaje personalizado enviado', { phone, messageId });
+    return { success: true, messageId };
   }
 
   async sendBulkNotifications(phones: string[], message: string): Promise<any[]> {
@@ -221,37 +204,42 @@ export class NotificationService {
       await this.delay(1000);
     }
 
-    logger.info('Notificaciones masivas enviadas', { total: results.length, successful: results.filter(r => r.success).length });
+    logger.info('Notificaciones masivas enviadas', {
+      total: results.length,
+      successful: results.filter(r => r.success).length
+    });
     return results;
   }
 
-  private formatPhoneNumber(phone: string): string {
-    let cleaned = phone.replace(/\D/g, '');
-
-    if (!cleaned.startsWith('55')) {
-      cleaned = '55' + cleaned;
-    }
-
-    return '+' + cleaned;
+  private buildBookingMessage(data: BookingNotificationData): string {
+    const checkInStr = this.formatDate(data.checkIn);
+    const msgs = {
+      pt: `🎉 *Reserva Confirmada - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nCheck-in: ${checkInStr}\n\nObrigado pela sua reserva! 🏠`,
+      en: `🎉 *Booking Confirmed - Lapa Casa Hostel*\n\nBooking: ${data.bookingId}\nCheck-in: ${checkInStr}\n\nThank you for your booking! 🏠`,
+      es: `🎉 *Reserva Confirmada - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nCheck-in: ${checkInStr}\n\n¡Gracias por tu reserva! 🏠`
+    };
+    return msgs[data.language];
   }
 
-  private formatDate(dateStr: string, language: 'pt' | 'en' | 'es'): string {
-    const date = new Date(dateStr);
-    const formatters = {
-      pt: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-      en: new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'long', year: 'numeric' }),
-      es: new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+  private buildPaymentReminderMessage(data: PaymentNotificationData): string {
+    const amountStr = this.formatCurrency(data.amount, data.language);
+    const dueDateStr = this.formatDate(data.dueDate);
+    const msgs = {
+      pt: `💳 *Lembrete de Pagamento - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nValor: ${amountStr}\nVencimento: ${dueDateStr}\n\nEfetue o pagamento para garantir sua reserva.`,
+      en: `💳 *Payment Reminder - Lapa Casa Hostel*\n\nBooking: ${data.bookingId}\nAmount: ${amountStr}\nDue date: ${dueDateStr}\n\nPlease pay to secure your booking.`,
+      es: `💳 *Recordatorio de Pago - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nMonto: ${amountStr}\nVencimiento: ${dueDateStr}\n\nPor favor paga para asegurar tu reserva.`
     };
-    return formatters[language].format(date);
+    return msgs[data.language];
   }
 
-  private formatCurrency(amount: number, language: 'pt' | 'en' | 'es'): string {
-    const formatters = {
-      pt: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
-      en: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }),
-      es: new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'BRL' })
+  private buildCheckInMessage(data: CheckInNotificationData): string {
+    const dateStr = this.formatDate(data.checkInDate);
+    const msgs = {
+      pt: `🏠 *Check-in Amanhã - Lapa Casa Hostel*\n\nOlá ${data.guestName}!\n\nCheck-in: ${dateStr} às ${data.checkInTime}\nEndereço: Rua Silvio Romero 22, Santa Teresa\n\nAté amanhã! 👋`,
+      en: `🏠 *Check-in Tomorrow - Lapa Casa Hostel*\n\nHello ${data.guestName}!\n\nCheck-in: ${dateStr} at ${data.checkInTime}\nAddress: Rua Silvio Romero 22, Santa Teresa\n\nSee you tomorrow! 👋`,
+      es: `🏠 *Check-in Mañana - Lapa Casa Hostel*\n\nHola ${data.guestName}!\n\nCheck-in: ${dateStr} a las ${data.checkInTime}\nDirección: Rua Silvio Romero 22, Santa Teresa\n\n¡Hasta mañana! 👋`
     };
-    return formatters[language].format(amount);
+    return msgs[data.language];
   }
 
   private formatAdminAlert(data: AdminAlertData): string {
@@ -261,18 +249,37 @@ export class NotificationService {
       CANCELLATION: '❌',
       PAYMENT_FAILED: '⚠️'
     };
-
     const titles = {
       NEW_BOOKING: 'Nueva Reserva',
       PAYMENT_RECEIVED: 'Pago Recibido',
       CANCELLATION: 'Cancelación',
       PAYMENT_FAILED: 'Pago Fallido'
     };
-
     return `${emojis[data.type]} *${titles[data.type]}*\n\n*Reserva:* ${data.bookingId}\n\n${data.details}`;
+  }
+
+  private formatPhoneNumber(phone: string): string {
+    let cleaned = phone.replace(/\D/g, '');
+    if (!cleaned.startsWith('55')) cleaned = '55' + cleaned;
+    return '+' + cleaned;
+  }
+
+  private formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+
+  private formatCurrency(amount: number, language: 'pt' | 'en' | 'es'): string {
+    const locales = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
+    return new Intl.NumberFormat(locales[language], { style: 'currency', currency: 'BRL' }).format(amount);
   }
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
+
+export const notificationService = new NotificationService();

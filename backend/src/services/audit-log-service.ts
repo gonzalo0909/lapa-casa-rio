@@ -1,16 +1,6 @@
 // lapa-casa-hostel/backend/src/services/audit-log-service.ts
 
-import { PrismaClient } from '@prisma/client';
-
-/**
- * AuditLogService - Writes to the audit_logs table.
- *
- * The table already existed in the schema with no writer. Any caller
- * that changes something worth tracing (price overrides, room type
- * conversions, cancellations, manual admin edits) should call `log()`
- * with the before/after values -- this is intentionally a thin,
- * fire-and-forget-safe wrapper, not a business-logic layer.
- */
+import { query } from '../config/database';
 
 export interface AuditLogEntry {
   entityType: string;
@@ -25,57 +15,62 @@ export interface AuditLogEntry {
 }
 
 export class AuditLogService {
-  constructor(private prisma: PrismaClient) {}
-
-  /**
-   * Records a single audit event. Never throws: a failure to write an
-   * audit trail should not block the operation being audited.
-   */
   async log(entry: AuditLogEntry): Promise<void> {
     try {
-      await this.prisma.auditLog.create({
-        data: {
-          entityType: entry.entityType,
-          entityId: entry.entityId,
-          action: entry.action,
-          userId: entry.userId,
-          userEmail: entry.userEmail,
-          oldValues: entry.oldValues ?? undefined,
-          newValues: entry.newValues ?? undefined,
-          ipAddress: entry.ipAddress,
-          userAgent: entry.userAgent
-        }
-      });
+      await query(
+        `INSERT INTO audit_logs
+           (entity_type, entity_id, action, user_id, user_email,
+            old_values, new_values, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          entry.entityType,
+          entry.entityId,
+          entry.action,
+          entry.userId ?? null,
+          entry.userEmail ?? null,
+          entry.oldValues ? JSON.stringify(entry.oldValues) : null,
+          entry.newValues ? JSON.stringify(entry.newValues) : null,
+          entry.ipAddress ?? null,
+          entry.userAgent ?? null
+        ]
+      );
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to write audit log entry', { entry, error });
     }
   }
 
-  /**
-   * Retrieves the audit history for a single entity, most recent first.
-   */
-  async getHistory(entityType: string, entityId: string): Promise<
-    Array<{
-      id: string;
-      action: string;
-      userEmail: string | null;
-      oldValues: unknown;
-      newValues: unknown;
-      createdAt: Date;
-    }>
-  > {
-    return this.prisma.auditLog.findMany({
-      where: { entityType, entityId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        action: true,
-        userEmail: true,
-        oldValues: true,
-        newValues: true,
-        createdAt: true
-      }
-    });
+  async getHistory(
+    entityType: string,
+    entityId: string
+  ): Promise<Array<{
+    id: string;
+    action: string;
+    userEmail: string | null;
+    oldValues: unknown;
+    newValues: unknown;
+    createdAt: Date;
+  }>> {
+    try {
+      const result = await query(
+        `SELECT id, action, user_email, old_values, new_values, created_at
+         FROM audit_logs
+         WHERE entity_type = $1 AND entity_id = $2
+         ORDER BY created_at DESC`,
+        [entityType, entityId]
+      );
+      return result.rows.map(r => ({
+        id: r.id,
+        action: r.action,
+        userEmail: r.user_email,
+        oldValues: r.old_values,
+        newValues: r.new_values,
+        createdAt: r.created_at
+      }));
+    } catch (error) {
+      console.error('Failed to read audit log', { entityType, entityId, error });
+      return [];
+    }
   }
 }
+
+export const auditLogService = new AuditLogService();

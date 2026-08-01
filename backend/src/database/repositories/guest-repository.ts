@@ -1,384 +1,236 @@
 // lapa-casa-hostel/backend/src/database/repositories/guest-repository.ts
 
-import { PrismaClient, Guest } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { query } from '../../config/database';
+import type { Guest } from '../../types/database';
 
 export class GuestRepository {
   async create(data: {
-    firstName: string;
-    lastName: string;
+    full_name: string;
     email: string;
-    phone: string;
-    alternativePhone?: string;
-    whatsappNumber?: string;
-    nationality?: string;
-    language?: string;
-    dateOfBirth?: Date;
-    documentType?: string;
-    documentNumber?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postalCode?: string;
-    newsletterOptIn?: boolean;
-    smsOptIn?: boolean;
-    notes?: string;
-    metadata?: any;
+    phone?: string | null;
+    country?: string | null;
+    language?: string | null;
   }): Promise<Guest> {
-    return await prisma.guest.create({ data });
+    const result = await query<Guest>(
+      `INSERT INTO guests (full_name, email, phone, country, language)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [data.full_name, data.email, data.phone ?? null,
+       data.country ?? null, data.language ?? null]
+    );
+    return result.rows[0];
+  }
+
+  async upsert(data: {
+    full_name: string;
+    email: string;
+    phone?: string | null;
+    country?: string | null;
+    language?: string | null;
+  }): Promise<Guest> {
+    const result = await query<Guest>(
+      `INSERT INTO guests (full_name, email, phone, country, language)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (email) DO UPDATE SET
+         full_name  = EXCLUDED.full_name,
+         phone      = COALESCE(EXCLUDED.phone, guests.phone),
+         country    = COALESCE(EXCLUDED.country, guests.country),
+         language   = COALESCE(EXCLUDED.language, guests.language),
+         updated_at = NOW()
+       RETURNING *`,
+      [data.full_name, data.email, data.phone ?? null,
+       data.country ?? null, data.language ?? null]
+    );
+    return result.rows[0];
   }
 
   async findById(id: string): Promise<Guest | null> {
-    return await prisma.guest.findUnique({
-      where: { id },
-      include: {
-        bookings: {
-          include: { room: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    });
+    const result = await query<Guest>(
+      `SELECT * FROM guests WHERE id = $1`,
+      [id]
+    );
+    return result.rows[0] ?? null;
   }
 
   async findByEmail(email: string): Promise<Guest | null> {
-    return await prisma.guest.findUnique({
-      where: { email },
-      include: {
-        bookings: {
-          include: { room: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    });
+    const result = await query<Guest>(
+      `SELECT * FROM guests WHERE email = $1`,
+      [email]
+    );
+    return result.rows[0] ?? null;
   }
 
   async findByPhone(phone: string): Promise<Guest | null> {
-    return await prisma.guest.findFirst({
-      where: { phone },
-      include: {
-        bookings: {
-          include: { room: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    });
+    const result = await query<Guest>(
+      `SELECT * FROM guests WHERE phone = $1 LIMIT 1`,
+      [phone]
+    );
+    return result.rows[0] ?? null;
   }
 
-  async findOrCreate(data: {
-    firstName: string;
-    lastName: string;
-    email: string;
+  async update(id: string, data: Partial<{
+    full_name: string;
     phone: string;
-    alternativePhone?: string;
-    whatsappNumber?: string;
-    nationality?: string;
-    language?: string;
-    dateOfBirth?: Date;
-    documentType?: string;
-    documentNumber?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postalCode?: string;
-    newsletterOptIn?: boolean;
-    smsOptIn?: boolean;
-  }): Promise<Guest> {
-    const existing = await this.findByEmail(data.email);
-
-    if (existing) {
-      return await this.update(existing.id, data);
+    country: string;
+    language: string;
+  }>): Promise<Guest> {
+    const fields = Object.keys(data);
+    if (fields.length === 0) {
+      const g = await this.findById(id);
+      if (!g) throw new Error('Guest not found');
+      return g;
     }
-
-    return await this.create(data);
+    const sets = fields.map((f, i) => `${f} = $${i + 2}`).join(', ');
+    const values = fields.map((f) => (data as any)[f]);
+    const result = await query<Guest>(
+      `UPDATE guests SET ${sets}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, ...values]
+    );
+    return result.rows[0];
   }
 
-  async update(id: string, data: any): Promise<Guest> {
-    return await prisma.guest.update({
-      where: { id },
-      data
-    });
+  async updateStats(_id: string): Promise<void> {
+    // no-op: guests table has no stats columns
   }
 
-  async updateStats(id: string): Promise<Guest> {
-    const bookings = await prisma.booking.findMany({
-      where: {
-        guestId: id,
-        status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT'] }
-      },
-      select: {
-        totalPrice: true,
-        createdAt: true
-      }
-    });
-
-    const totalBookings = bookings.length;
-    const totalSpent = bookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
-    const lastBooking = bookings.length > 0 
-      ? bookings.reduce((latest, b) => b.createdAt > latest ? b.createdAt : latest, bookings[0].createdAt)
-      : null;
-
-    return await prisma.guest.update({
-      where: { id },
-      data: {
-        totalBookings,
-        totalSpent,
-        lastBookingAt: lastBooking
-      }
-    });
-  }
-
-  async search(query: {
+  async search(filters: {
     name?: string;
     email?: string;
     phone?: string;
     nationality?: string;
   }): Promise<Guest[]> {
-    const where: any = {};
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let idx = 1;
 
-    if (query.name) {
-      where.OR = [
-        { firstName: { contains: query.name, mode: 'insensitive' } },
-        { lastName: { contains: query.name, mode: 'insensitive' } }
-      ];
+    if (filters.name) {
+      conditions.push(`full_name ILIKE $${idx}`);
+      params.push(`%${filters.name}%`);
+      idx++;
+    }
+    if (filters.email) {
+      conditions.push(`email ILIKE $${idx}`);
+      params.push(`%${filters.email}%`);
+      idx++;
+    }
+    if (filters.phone) {
+      conditions.push(`phone LIKE $${idx}`);
+      params.push(`%${filters.phone}%`);
+      idx++;
+    }
+    if (filters.nationality) {
+      conditions.push(`country ILIKE $${idx}`);
+      params.push(`%${filters.nationality}%`);
+      idx++;
     }
 
-    if (query.email) {
-      where.email = { contains: query.email, mode: 'insensitive' };
-    }
-
-    if (query.phone) {
-      where.phone = { contains: query.phone };
-    }
-
-    if (query.nationality) {
-      where.nationality = { contains: query.nationality, mode: 'insensitive' };
-    }
-
-    return await prisma.guest.findMany({
-      where,
-      include: {
-        bookings: {
-          select: {
-            id: true,
-            bookingNumber: true,
-            status: true,
-            checkInDate: true,
-            totalPrice: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 5
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50
-    });
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await query<Guest>(
+      `SELECT * FROM guests ${where} ORDER BY created_at DESC LIMIT 50`,
+      params
+    );
+    return result.rows;
   }
 
-  async findRecent(limit: number = 20): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      include: {
-        bookings: {
-          select: {
-            bookingNumber: true,
-            status: true,
-            checkInDate: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
-    });
+  async findAll(limit: number = 50): Promise<Guest[]> {
+    const result = await query<Guest>(
+      `SELECT * FROM guests ORDER BY created_at DESC LIMIT $1`,
+      [limit]
+    );
+    return result.rows;
   }
 
   async findTop(limit: number = 10): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: {
-        totalBookings: { gt: 0 }
-      },
-      orderBy: [
-        { totalSpent: 'desc' },
-        { totalBookings: 'desc' }
-      ],
-      take: limit,
-      include: {
-        bookings: {
-          select: {
-            bookingNumber: true,
-            checkInDate: true,
-            totalPrice: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 3
-        }
-      }
-    });
+    const result = await query<Guest>(
+      `SELECT g.* FROM guests g
+       WHERE EXISTS (
+         SELECT 1 FROM reservations WHERE guest_id = g.id
+           AND status IN ('confirmed','completed')
+       )
+       ORDER BY (
+         SELECT COUNT(*) FROM reservations WHERE guest_id = g.id
+       ) DESC
+       LIMIT $1`,
+      [limit]
+    );
+    return result.rows;
   }
 
-  async findByNationality(nationality: string): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { nationality },
-      orderBy: { createdAt: 'desc' }
-    });
+  async findRecent(limit: number = 20): Promise<Guest[]> {
+    const result = await query<Guest>(
+      `SELECT * FROM guests ORDER BY created_at DESC LIMIT $1`,
+      [limit]
+    );
+    return result.rows;
   }
 
-  async findNewsletterSubscribers(): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { newsletterOptIn: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        language: true
-      }
-    });
+  async findInactive(months: number = 12): Promise<Guest[]> {
+    const result = await query<Guest>(
+      `SELECT g.* FROM guests g
+       WHERE NOT EXISTS (
+         SELECT 1 FROM reservations
+         WHERE guest_id = g.id
+           AND created_at >= NOW() - ($1 || ' months')::interval
+       )
+       ORDER BY g.created_at ASC`,
+      [months]
+    );
+    return result.rows;
   }
 
-  async findSMSSubscribers(): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { smsOptIn: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        whatsappNumber: true,
-        language: true
-      }
-    });
-  }
-
-  async updateNewsletterPreference(id: string, optIn: boolean): Promise<Guest> {
-    return await prisma.guest.update({
-      where: { id },
-      data: { newsletterOptIn: optIn }
-    });
-  }
-
-  async updateSMSPreference(id: string, optIn: boolean): Promise<Guest> {
-    return await prisma.guest.update({
-      where: { id },
-      data: { smsOptIn: optIn }
-    });
+  async countByNationality(): Promise<Array<{ nationality: string; count: number }>> {
+    const result = await query<{ nationality: string; count: string }>(
+      `SELECT country AS nationality, COUNT(*)::int AS count
+       FROM guests
+       WHERE country IS NOT NULL
+       GROUP BY country
+       ORDER BY count DESC`
+    );
+    return result.rows.map(r => ({ nationality: r.nationality, count: parseInt(r.count, 10) }));
   }
 
   async getStatistics(): Promise<{
     totalGuests: number;
     returningGuests: number;
-    newsletterSubscribers: number;
     topNationalities: Array<{ nationality: string; count: number }>;
   }> {
-    const [total, returning, newsletter, nationalities] = await Promise.all([
-      prisma.guest.count(),
-      prisma.guest.count({ where: { totalBookings: { gt: 1 } } }),
-      prisma.guest.count({ where: { newsletterOptIn: true } }),
-      prisma.guest.groupBy({
-        by: ['nationality'],
-        _count: { nationality: true },
-        where: { nationality: { not: null } },
-        orderBy: { _count: { nationality: 'desc' } },
-        take: 5
-      })
+    const [totals, nats] = await Promise.all([
+      query<{ total: string; returning: string }>(
+        `SELECT COUNT(*)::int AS total,
+                COUNT(*) FILTER (
+                  WHERE (SELECT COUNT(*) FROM reservations WHERE guest_id = g.id) > 1
+                )::int AS returning
+         FROM guests g`
+      ),
+      this.countByNationality(),
     ]);
-
-    const topNationalities = nationalities.map(n => ({
-      nationality: n.nationality || 'Unknown',
-      count: n._count.nationality
-    }));
-
     return {
-      totalGuests: total,
-      returningGuests: returning,
-      newsletterSubscribers: newsletter,
-      topNationalities
+      totalGuests: parseInt(totals.rows[0].total, 10),
+      returningGuests: parseInt(totals.rows[0].returning, 10),
+      topNationalities: nats.slice(0, 5),
     };
   }
 
-  async delete(id: string): Promise<Guest> {
-    const hasBookings = await prisma.booking.count({
-      where: { guestId: id }
-    });
-
-    if (hasBookings > 0) {
-      throw new Error('Cannot delete guest with existing bookings');
+  async delete(id: string): Promise<void> {
+    const reservations = await query(
+      `SELECT id FROM reservations WHERE guest_id = $1 LIMIT 1`,
+      [id]
+    );
+    if (reservations.rows.length > 0) {
+      throw new Error('Cannot delete guest with existing reservations');
     }
-
-    return await prisma.guest.delete({
-      where: { id }
-    });
+    await query(`DELETE FROM guests WHERE id = $1`, [id]);
   }
 
-  async merge(primaryGuestId: string, duplicateGuestId: string): Promise<Guest> {
-    await prisma.booking.updateMany({
-      where: { guestId: duplicateGuestId },
-      data: { guestId: primaryGuestId }
-    });
-
-    await prisma.guest.delete({
-      where: { id: duplicateGuestId }
-    });
-
-    return await this.updateStats(primaryGuestId);
-  }
-
-  async findAll(limit?: number): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      include: {
-        bookings: {
-          select: {
-            id: true,
-            bookingNumber: true,
-            status: true,
-            checkInDate: true,
-            totalPrice: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 3
-        }
-      }
-    });
-  }
-
-  async countByNationality(): Promise<Array<{ nationality: string; count: number }>> {
-    const result = await prisma.guest.groupBy({
-      by: ['nationality'],
-      _count: { nationality: true },
-      where: { nationality: { not: null } },
-      orderBy: { _count: { nationality: 'desc' } }
-    });
-
-    return result.map(r => ({
-      nationality: r.nationality || 'Unknown',
-      count: r._count.nationality
-    }));
-  }
-
-  async findWithoutBookings(): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { totalBookings: 0 },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
-
-  async findInactive(months: number = 12): Promise<Guest[]> {
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - months);
-
-    return await prisma.guest.findMany({
-      where: {
-        lastBookingAt: { lt: cutoffDate }
-      },
-      orderBy: { lastBookingAt: 'asc' }
-    });
+  async merge(primaryId: string, duplicateId: string): Promise<Guest> {
+    await query(
+      `UPDATE reservations SET guest_id = $1 WHERE guest_id = $2`,
+      [primaryId, duplicateId]
+    );
+    await query(`DELETE FROM guests WHERE id = $1`, [duplicateId]);
+    const g = await this.findById(primaryId);
+    if (!g) throw new Error('Guest not found after merge');
+    return g;
   }
 }
 

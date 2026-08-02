@@ -98,9 +98,12 @@ export class BookingRepository {
   }
 
   async confirmReservation(id: string): Promise<Reservation> {
+    // `deposit_paid`/`deposit_paid_at` no existen en la tabla real
+    // (0002_tables.sql) -- el estado de pago vive en `payments`
+    // (payment_type, status, paid_at), no en `reservations`.
     const result = await query<Reservation>(
       `UPDATE reservations
-       SET status = 'confirmed', deposit_paid = true, deposit_paid_at = NOW(), updated_at = NOW()
+       SET status = 'confirmed', updated_at = NOW()
        WHERE id = $1 RETURNING *`,
       [id]
     );

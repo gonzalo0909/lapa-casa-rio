@@ -16,7 +16,7 @@ import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
 import { adminRouter } from './admin/admin.routes';
-import { authMiddleware } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 import { rateLimiter } from '../middleware/rate-limiter';
 import { logger } from '../utils/logger';
 
@@ -77,7 +77,7 @@ router.use('/payments', rateLimiter({ max: 30, windowMs: 60000 }), paymentsRoute
 /**
  * Admin Routes (Authentication Required)
  */
-router.use('/admin', authMiddleware, rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
+router.use('/admin', authenticateToken, rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
 
 /**
  * Catch-all 404 Handler

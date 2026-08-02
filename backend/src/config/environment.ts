@@ -23,6 +23,7 @@ const env = {
   WHATSAPP_PHONE_ID: process.env.WHATSAPP_PHONE_ID || '',
 
   CORS_ORIGINS: process.env.CORS_ORIGINS || '*',
+  CORS_CREDENTIALS: process.env.CORS_CREDENTIALS !== 'false',
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
 };

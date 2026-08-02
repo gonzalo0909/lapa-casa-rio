@@ -1,80 +1,201 @@
 // lapa-casa-hostel/backend/src/services/booking-service.ts
+//
+// REQUISITO CRITICO #1 (prompt Maestro v1.5): acquire_bed_locks() +
+// check_availability() + el INSERT de reservation_beds deben correr
+// dentro de la MISMA transaccion (pg_advisory_xact_lock solo protege
+// dentro de la misma conexion fisica). La version anterior de este
+// archivo creaba la fila en `reservations` pero NUNCA insertaba en
+// `reservation_beds` -- ninguna cama quedaba realmente bloqueada y el
+// constraint EXCLUDE (autoridad final anti-overbooking) nunca llegaba a
+// intervenir. Corregido acá.
 
-import { query } from '../config/database';
+import { PoolClient } from 'pg';
+import { query, withTransaction } from '../config/database';
 import { GuestRepository } from '../database/repositories/guest-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
+import { pricingService } from './pricing-service';
 import { logger } from '../utils/logger';
 import type { Reservation, BookingStatus } from '../types/database';
 
 const guestRepo = new GuestRepository();
 const bookingRepo = new BookingRepository();
 
-const DIRECT_CHANNEL_ID = '96a01f24-147b-4cd5-8cb3-7a1fc96a8f46';
+export class InsufficientAvailabilityError extends Error {
+  constructor(public readonly details: unknown) {
+    super('No hay camas suficientes disponibles para las fechas solicitadas');
+    this.name = 'InsufficientAvailabilityError';
+  }
+}
 
-export class BookingService {
-  async createBooking(data: {
+const isOverbookingError = (error: unknown): boolean => {
+  const code = (error as { code?: string })?.code;
+  // 23505 = unique_violation (trigger trg_prevent_overbooking), 23P01 = exclusion_violation (constraint EXCLUDE)
+  return code === '23505' || code === '23P01';
+};
+
+const generateReservationNumber = (): string =>
+  `LCH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+interface CreateBookingInput {
+  checkIn: string;
+  checkOut: string;
+  rooms: Array<{ roomId: string; bedsCount: number }>;
+  guest: {
     full_name: string;
     email: string;
     phone?: string;
     country?: string;
-    language?: 'pt' | 'en' | 'es';
-    check_in_date: string;
-    check_out_date: string;
-    beds_count: number;
-    special_requests?: string;
-    source?: string;
-  }): Promise<Reservation> {
-    const guest = await guestRepo.upsert({
-      full_name: data.full_name,
-      email: data.email,
-      phone: data.phone ?? null,
-      country: data.country ?? null,
-      language: data.language ?? null,
+    document?: string;
+    language?: string;
+  };
+  nights: number;
+  totalBeds: number;
+  pricing: {
+    basePrice: number;
+    seasonMultiplier: number;
+    groupDiscount: number;
+    totalPrice: number;
+    depositAmount: number;
+    depositPercent: number;
+    remainingAmount: number;
+  };
+  specialRequests?: string;
+  source?: string;
+  language?: 'pt' | 'en' | 'es';
+  status?: BookingStatus;
+}
+
+/** Selecciona `count` camas libres y elegibles por genero dentro de UNA habitacion, bajo la transaccion activa. */
+const pickAvailableBedsInRoom = async (
+  client: PoolClient,
+  roomTypeId: string,
+  checkIn: string,
+  checkOut: string,
+  count: number,
+  gender: 'mixed' | 'female' | 'male'
+): Promise<string[]> => {
+  const { rows } = await client.query(
+    `SELECT bed_id FROM check_availability($1::date, $2::date, $3::bed_gender)
+     WHERE room_type_id = $4::uuid AND is_gender_eligible = true AND is_available = true
+     LIMIT $5`,
+    [checkIn, checkOut, gender, roomTypeId, count]
+  );
+  return rows.map((r: any) => r.bed_id);
+};
+
+export class BookingService {
+  async createBooking(data: CreateBookingInput): Promise<Reservation & { bedIds: string[] }> {
+    return withTransaction(async (client) => {
+      const guest = await guestRepo.upsert({
+        full_name: data.guest.full_name,
+        email: data.guest.email,
+        phone: data.guest.phone ?? null,
+        country: data.guest.country ?? null,
+        language: data.guest.language ?? null
+      });
+
+      const { rows: channelRows } = await client.query(`SELECT id FROM channels WHERE code = 'direct'`);
+      if (channelRows.length === 0) throw new Error('Canal "direct" no encontrado en la tabla channels');
+      const channelId = channelRows[0].id;
+
+      // 1) Elegir camas candidatas por habitacion (sin lock todavia)
+      const candidateBedIds: string[] = [];
+      for (const room of data.rooms) {
+        const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, 'mixed');
+        if (beds.length < room.bedsCount) {
+          throw new InsufficientAvailabilityError({ roomId: room.roomId, requested: room.bedsCount, found: beds.length });
+        }
+        candidateBedIds.push(...beds);
+      }
+
+      // 2) Adquirir advisory locks de esas camas especificas, DENTRO de esta transaccion
+      await client.query('SELECT acquire_bed_locks($1::uuid[])', [candidateBedIds]);
+
+      // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos
+      const { rows: stillOccupied } = await client.query(
+        `SELECT bed_id FROM reservation_beds
+         WHERE bed_id = ANY($1::uuid[])
+           AND daterange(check_in, check_out, '[)') && daterange($2::date, $3::date, '[)')`,
+        [candidateBedIds, data.checkIn, data.checkOut]
+      );
+      if (stillOccupied.length > 0) {
+        throw new InsufficientAvailabilityError({ conflictingBeds: stillOccupied.map((r: any) => r.bed_id) });
+      }
+
+      // 4) early_bird_discount real, via SQL (el resto del precio ya vino de pricingService)
+      const bookingDate = new Date().toISOString().slice(0, 10);
+      const { rows: earlyBirdRows } = await client.query(
+        `SELECT calculate_early_bird_discount($1::date, $2::date) AS d`,
+        [bookingDate, data.checkIn]
+      );
+      const earlyBirdDiscount = parseFloat(earlyBirdRows[0].d);
+
+      const reservationNumber = generateReservationNumber();
+      const initialStatus = data.status ?? 'pending_payment';
+
+      const { rows: reservationRows } = await client.query(
+        `INSERT INTO reservations (
+           reservation_number, guest_id, channel_id,
+           check_in_date, check_out_date, nights_count, beds_count,
+           base_price, season_multiplier, group_discount, early_bird_discount, final_price,
+           deposit_percent, deposit_amount, remaining_amount,
+           status, pending_expires_at, special_requests, source
+         ) VALUES (
+           $1, $2, $3,
+           $4::date, $5::date, $6, $7,
+           $8, $9, $10, $11, $12,
+           $13, $14, $15,
+           $16::booking_status, $17, $18, $19
+         ) RETURNING *`,
+        [
+          reservationNumber,
+          guest.id,
+          channelId,
+          data.checkIn,
+          data.checkOut,
+          data.nights,
+          data.totalBeds,
+          data.pricing.basePrice,
+          data.pricing.seasonMultiplier,
+          data.pricing.groupDiscount,
+          earlyBirdDiscount,
+          data.pricing.totalPrice,
+          data.pricing.depositPercent / 100,
+          data.pricing.depositAmount,
+          data.pricing.remainingAmount,
+          initialStatus,
+          initialStatus === 'pending_payment' ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null,
+          data.specialRequests ?? null,
+          data.source ?? 'direct'
+        ]
+      );
+      const reservation = reservationRows[0];
+
+      try {
+        for (const bedId of candidateBedIds) {
+          await client.query(
+            `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
+             VALUES ($1, $2, $3::date, $4::date)`,
+            [reservation.id, bedId, data.checkIn, data.checkOut]
+          );
+        }
+      } catch (error) {
+        if (isOverbookingError(error)) {
+          throw new InsufficientAvailabilityError({ reason: 'overbooking_detected_at_insert' });
+        }
+        throw error;
+      }
+
+      logger.info('Booking created', { reservationId: reservation.id, reservationNumber, beds: candidateBedIds.length });
+      return { ...reservation, bedIds: candidateBedIds };
     });
-
-    const nights = Math.ceil(
-      (new Date(data.check_out_date).getTime() - new Date(data.check_in_date).getTime())
-      / (1000 * 60 * 60 * 24)
-    );
-
-    const priceResult = await query<{ base_price: number }>(
-      `SELECT base_price FROM room_types ORDER BY capacity DESC LIMIT 1`
-    );
-    const basePrice = Number(priceResult.rows[0]?.base_price ?? 0);
-    const finalPrice = basePrice * nights * data.beds_count;
-    const depositAmount = Math.ceil(finalPrice * 0.3 * 100) / 100;
-    const remainingAmount = Math.ceil((finalPrice - depositAmount) * 100) / 100;
-
-    const result = await query<Reservation>(
-      `INSERT INTO reservations (
-         guest_id, channel_id, check_in_date, check_out_date,
-         beds_count, base_price, final_price,
-         deposit_amount, remaining_amount, special_requests, status
-       )
-       VALUES ($1, $2, $3::date, $4::date, $5, $6, $7, $8, $9, $10, 'pending_payment')
-       RETURNING *`,
-      [
-        guest.id,
-        DIRECT_CHANNEL_ID,
-        data.check_in_date,
-        data.check_out_date,
-        data.beds_count,
-        basePrice,
-        finalPrice,
-        depositAmount,
-        remainingAmount,
-        data.special_requests ?? null,
-      ]
-    );
-
-    logger.info('Booking created', { reservationId: result.rows[0].id });
-    return result.rows[0];
   }
 
   async getBooking(id: string): Promise<Reservation | null> {
     return bookingRepo.findById(id);
   }
 
+  /** No reimplementa liberacion de camas -- trg_release_beds_on_status_change lo hace solo al cambiar status. */
   async cancelBooking(id: string, reason?: string): Promise<Reservation> {
     return bookingRepo.cancelReservation(id, reason);
   }
@@ -101,8 +222,7 @@ export class BookingService {
     totalRevenue: number;
   }> {
     const result = await query<{
-      total: string; confirmed: string; pending: string;
-      cancelled: string; revenue: string;
+      total: string; confirmed: string; pending: string; cancelled: string; revenue: string;
     }>(
       `SELECT
          COUNT(*)::int AS total,
@@ -120,8 +240,19 @@ export class BookingService {
       confirmedBookings: parseInt(row.confirmed, 10),
       pendingBookings: parseInt(row.pending, 10),
       cancelledBookings: parseInt(row.cancelled, 10),
-      totalRevenue: parseFloat(row.revenue),
+      totalRevenue: parseFloat(row.revenue)
     };
+  }
+
+  /** Libera reservas pending_payment vencidas (>15 min). sp_cleanup_expired_pending() cubre lo mismo desde BullMQ (Ventana 4). */
+  async expirePendingBookings(): Promise<number> {
+    const { rows } = await query(
+      `UPDATE reservations
+       SET status = 'cancelled', cancelled_at = now(), cancellation_reason = 'pending_payment_expired', updated_at = now()
+       WHERE status = 'pending_payment' AND pending_expires_at < now()
+       RETURNING id`
+    );
+    return rows.length;
   }
 }
 

@@ -56,5 +56,8 @@ console.info(
   })
 );
 
+export const isProduction = (): boolean => env.NODE_ENV === 'production';
+
+export { env };
 export { env as environment };
 export default env;

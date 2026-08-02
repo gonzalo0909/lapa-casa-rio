@@ -40,10 +40,10 @@ app.use('/api/', generalRateLimiter);
 
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    const { healthCheck } = await import('@/config/database');
-    const dbStatus = await healthCheck();
+    const { testConnection } = await import('@/config/database');
+    const ok = await testConnection();
 
-    if (dbStatus.status === 'unhealthy') {
+    if (!ok) {
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
@@ -72,10 +72,10 @@ app.get('/health', async (req: Request, res: Response) => {
 
 app.get('/ready', async (req: Request, res: Response) => {
   try {
-    const { healthCheck } = await import('@/config/database');
-    const dbStatus = await healthCheck();
+    const { testConnection } = await import('@/config/database');
+    const ok = await testConnection();
 
-    if (dbStatus.status === 'unhealthy') {
+    if (!ok) {
       res.status(503).json({ status: 'not ready', timestamp: new Date().toISOString() });
       return;
     }
@@ -86,7 +86,6 @@ app.get('/ready', async (req: Request, res: Response) => {
       checks: {
         database: {
           status: 'ok',
-          latency: `${dbStatus.latency}ms`,
         },
       },
     });

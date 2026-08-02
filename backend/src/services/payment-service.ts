@@ -1,281 +1,160 @@
 // lapa-casa-hostel/backend/src/services/payment-service.ts
 
+import Stripe from 'stripe';
 import { PaymentRepository } from '../database/repositories/payment-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
-import { stripeHandler } from '../lib/payments/stripe-handler';
-import { mercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
+import { StripeHandler } from '../lib/payments/stripe-handler';
+import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
 import { logger } from '../utils/logger';
-import { query } from '../config/database';
+import { AppError } from '../middleware/error-handler';
+import { PaymentProvider } from '../types/database';
 
-interface CreatePaymentDTO {
-  reservationId: string;
-  guestId?: string;
+interface CreatePaymentIntentDTO {
+  reservation_id: string;
+  guest_id: string;
   amount: number;
   currency?: string;
-  paymentMethod?: 'card' | 'pix';
-  paymentType?: 'deposit' | 'remaining';
-  guestEmail?: string;
-  guestName?: string;
-  guestDocument?: string;
-  description?: string;
+  guest_email: string;
+  payment_type: 'deposit' | 'remaining';
+  provider?: PaymentProvider;
+  payment_method?: 'card' | 'pix';
   installments?: number;
 }
 
 interface PaymentIntentResponse {
-  paymentId: string;
-  clientSecret?: string;
-  url?: string;
-  qrCode?: string;
-  qrCodeBase64?: string;
-  ticketUrl?: string;
+  payment_id: string;
+  client_secret?: string;
+  provider_payment_id?: string;
   amount: number;
   currency: string;
-  status: string;
-  expiresAt?: Date;
+  url?: string;
+  qr_code?: string;
+  qr_code_base64?: string;
+  expires_at?: Date;
 }
 
 interface RefundDTO {
-  reservationId: string;
+  reservation_id: string;
   amount: number;
-  reason?: string;
+  reason: string;
 }
 
 export class PaymentService {
   private paymentRepo: PaymentRepository;
   private bookingRepo: BookingRepository;
+  private stripeHandler: StripeHandler;
+  private mpHandler: MercadoPagoHandler;
 
   constructor() {
     this.paymentRepo = new PaymentRepository();
     this.bookingRepo = new BookingRepository();
+    this.stripeHandler = new StripeHandler();
+    this.mpHandler = new MercadoPagoHandler();
   }
 
-  async createPixPayment(data: CreatePaymentDTO): Promise<PaymentIntentResponse> {
-    try {
-      const result = await mercadoPagoHandler.createPixPayment({
-        bookingId: data.reservationId,
-        amount: data.amount,
-        customerEmail: data.guestEmail || '',
-        customerName: data.guestName || 'Guest',
-        customerDocument: data.guestDocument || '',
-        description: data.description || `Reserva ${data.reservationId}`,
-        expirationMinutes: 30
+  async createPaymentIntent(data: CreatePaymentIntentDTO): Promise<PaymentIntentResponse> {
+    const reservation = await this.bookingRepo.findById(data.reservation_id);
+    if (!reservation) throw new AppError('Reserva no encontrada', 404);
+
+    const currency = data.currency || 'BRL';
+    const provider: PaymentProvider = data.provider || (this.isInternationalEmail(data.guest_email) ? 'stripe' : 'mercadopago');
+    const preferredMethod = data.payment_method || (provider === 'mercadopago' ? 'pix' : 'card');
+
+    let providerResult: any;
+    let pixDetails: { qr_code?: string; qr_code_base64?: string; expires_at?: Date } = {};
+    let stripeDetails: { client_secret?: string } = {};
+
+    if (provider === 'mercadopago') {
+      providerResult = await this.mpHandler.createPaymentIntent({
+        amount: data.amount, currency,
+        description: `${data.payment_type === 'deposit' ? 'Depósito' : 'Saldo'} - Reserva ${reservation.reservation_number}`,
+        payerEmail: data.guest_email, paymentMethod: preferredMethod,
+        installments: data.installments,
+        metadata: { reservation_id: data.reservation_id, payment_type: data.payment_type }
       });
-
-      if (!result.success) throw new Error(result.error || 'Error al crear pago PIX');
-
-      await this.paymentRepo.create({
-        reservation_id: data.reservationId,
-        guest_id: data.guestId,
-        amount: data.amount,
-        currency: data.currency || 'BRL',
-        payment_method: 'pix',
-        payment_type: data.paymentType || 'deposit',
-        status: 'pending',
-        mp_payment_id: result.paymentId
+      pixDetails = { qr_code: providerResult.qrCode, qr_code_base64: providerResult.qrCodeBase64, expires_at: providerResult.expiresAt };
+    } else {
+      providerResult = await this.stripeHandler.createPaymentIntent({
+        amount: data.amount, currency, customerEmail: data.guest_email,
+        description: `${data.payment_type === 'deposit' ? 'Deposit' : 'Remaining'} - Booking ${reservation.reservation_number}`,
+        metadata: { reservation_id: data.reservation_id, payment_type: data.payment_type }
       });
-
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
-
-      return {
-        paymentId: result.paymentId,
-        qrCode: result.qrCode,
-        qrCodeBase64: result.qrCodeBase64,
-        ticketUrl: result.ticketUrl,
-        amount: data.amount,
-        currency: data.currency || 'BRL',
-        status: result.status,
-        expiresAt
-      };
-    } catch (error) {
-      logger.error('Error creando pago PIX', error);
-      throw error;
+      stripeDetails = { client_secret: providerResult.clientSecret };
     }
+
+    const payment = await this.paymentRepo.create({
+      reservation_id: data.reservation_id, guest_id: data.guest_id, provider,
+      payment_type: data.payment_type, amount: data.amount, currency,
+      provider_payment_id: providerResult.paymentIntentId || providerResult.id?.toString(),
+      pix_qr_code: pixDetails.qr_code, pix_qr_code_base64: pixDetails.qr_code_base64,
+      pix_expires_at: pixDetails.expires_at, stripe_client_secret: stripeDetails.client_secret,
+      metadata: { installments: data.installments }
+    });
+
+    return {
+      payment_id: payment.id, provider_payment_id: payment.provider_payment_id || undefined,
+      client_secret: payment.stripe_client_secret || undefined,
+      amount: payment.amount, currency: payment.currency,
+      url: providerResult.url, qr_code: pixDetails.qr_code,
+      qr_code_base64: pixDetails.qr_code_base64, expires_at: pixDetails.expires_at
+    };
   }
 
-  async createStripePayment(data: CreatePaymentDTO): Promise<PaymentIntentResponse> {
-    try {
-      const result = await stripeHandler.createPaymentIntent({
-        bookingId: data.reservationId,
-        amount: data.amount,
-        currency: data.currency || 'BRL',
-        customerEmail: data.guestEmail || '',
-        customerName: data.guestName || 'Guest',
-        description: data.description || `Reserva ${data.reservationId}`,
-        metadata: {
-          paymentType: data.paymentType || 'deposit',
-          reservationId: data.reservationId
-        }
-      });
+  async confirmPayment(providerPaymentId: string): Promise<any> {
+    const payment = await this.paymentRepo.findByProviderPaymentId(providerPaymentId);
+    if (!payment) throw new AppError('Pago no encontrado', 404);
+    if (payment.status === 'succeeded') throw new AppError('El pago ya fue confirmado', 400);
 
-      if (!result.success) throw new Error(result.error || 'Error al crear pago Stripe');
+    let verified = false;
+    if (payment.provider === 'stripe') verified = await this.stripeHandler.verifyPayment(providerPaymentId);
+    else if (payment.provider === 'mercadopago') verified = await this.mpHandler.verifyPayment(providerPaymentId);
+    if (!verified) throw new AppError('No se pudo verificar el pago', 400);
 
-      await this.paymentRepo.create({
-        reservation_id: data.reservationId,
-        guest_id: data.guestId,
-        amount: data.amount,
-        currency: data.currency || 'BRL',
-        payment_method: 'card',
-        payment_type: data.paymentType || 'deposit',
-        status: 'pending',
-        stripe_payment_intent_id: result.paymentIntentId
-      });
-
-      return {
-        paymentId: result.paymentIntentId,
-        clientSecret: result.clientSecret,
-        amount: data.amount,
-        currency: result.currency,
-        status: result.status
-      };
-    } catch (error) {
-      logger.error('Error creando pago Stripe', error);
-      throw error;
-    }
+    const confirmedPayment = await this.paymentRepo.markSucceeded(payment.id);
+    if (payment.payment_type === 'deposit') await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
+    return confirmedPayment;
   }
 
-  async createPayment(data: CreatePaymentDTO): Promise<PaymentIntentResponse> {
-    const usePixOrBRL = data.paymentMethod === 'pix' || (data.currency || 'BRL') === 'BRL';
-    if (usePixOrBRL && data.paymentMethod !== 'card') {
-      return this.createPixPayment(data);
+  async processRefund(data: RefundDTO): Promise<any> {
+    const payments = await this.paymentRepo.findByReservation(data.reservation_id);
+    const successfulPayment = payments.find(p => p.status === 'succeeded');
+    if (!successfulPayment) throw new AppError('No hay pago completado para reembolsar', 400);
+
+    if (successfulPayment.provider === 'stripe' && successfulPayment.provider_payment_id) {
+      await this.stripeHandler.createRefund({ paymentIntentId: successfulPayment.provider_payment_id, amount: data.amount, reason: data.reason });
+    } else if (successfulPayment.provider === 'mercadopago' && successfulPayment.provider_payment_id) {
+      await this.mpHandler.createRefund({ paymentId: successfulPayment.provider_payment_id, amount: data.amount });
     }
-    return this.createStripePayment(data);
+    return this.paymentRepo.processRefund(successfulPayment.id, data.amount);
   }
 
-  async confirmPayment(providerPaymentId: string, provider: 'stripe' | 'mercadopago'): Promise<void> {
-    try {
-      let payment;
-      if (provider === 'stripe') {
-        payment = await this.paymentRepo.findByStripeIntent(providerPaymentId);
-      } else {
-        payment = await this.paymentRepo.findByMPId(providerPaymentId);
+  async handleStripeWebhook(event: Stripe.Event): Promise<void> {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        await this.confirmPayment((event.data.object as Stripe.PaymentIntent).id); break;
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const payment = await this.paymentRepo.findByProviderPaymentId(pi.id);
+        if (payment) await this.paymentRepo.markFailed(payment.id, pi.last_payment_error?.message);
+        break;
       }
-
-      if (!payment) throw new Error('Pago no encontrado');
-      if (payment.status === 'completed') return;
-
-      await this.paymentRepo.markCompleted(payment.id);
-
-      await query(
-        `UPDATE reservations SET
-           status = CASE WHEN payment_type = 'deposit' THEN 'confirmed' ELSE status END,
-           updated_at = NOW()
-         WHERE id = $1`,
-        [payment.reservation_id]
-      );
-
-      logger.info('Pago confirmado', { paymentId: payment.id, reservationId: payment.reservation_id });
-    } catch (error) {
-      logger.error('Error confirmando pago', error);
-      throw error;
     }
   }
 
-  async processRefund(data: RefundDTO): Promise<void> {
-    try {
-      const payments = await this.paymentRepo.findByReservation(data.reservationId);
-      const completed = payments.find(p => p.status === 'completed');
-
-      if (!completed) throw new Error('No hay pago completado para reembolsar');
-
-      if (completed.provider === 'stripe' && completed.provider_payment_id) {
-        await stripeHandler.refundPayment(completed.provider_payment_id, data.amount, data.reason);
-      } else if (completed.provider === 'mercadopago' && completed.provider_payment_id) {
-        await mercadoPagoHandler.refundPayment(completed.provider_payment_id, data.amount);
-      }
-
-      await this.paymentRepo.processRefund(completed.id, data.amount);
-
-      logger.info('Reembolso procesado', { reservationId: data.reservationId, amount: data.amount });
-    } catch (error) {
-      logger.error('Error procesando reembolso', error);
-      throw error;
+  async handleMercadoPagoWebhook(data: any): Promise<void> {
+    if (data.type === 'payment') {
+      const mpPayment = await this.mpHandler.getPayment(data.data.id);
+      if (mpPayment.status === 'approved') await this.confirmPayment(mpPayment.id.toString());
     }
   }
 
-  async handleStripeWebhook(payload: string | Buffer, signature: string): Promise<void> {
-    try {
-      const event = await stripeHandler.handleWebhook(payload, signature);
-      if (!event) return;
-
-      if (event.type === 'payment_intent.succeeded') {
-        const pi = event.data.object as any;
-        await this.confirmPayment(pi.id, 'stripe');
-      } else if (event.type === 'payment_intent.payment_failed') {
-        const pi = event.data.object as any;
-        const payment = await this.paymentRepo.findByStripeIntent(pi.id);
-        if (payment) {
-          await this.paymentRepo.markFailed(payment.id, pi.last_payment_error?.message);
-        }
-      }
-    } catch (error) {
-      logger.error('Error procesando webhook Stripe', error);
-      throw error;
-    }
-  }
-
-  async handleMercadoPagoWebhook(notification: { id: string; action: string; type: string; data: { id: string } }): Promise<void> {
-    try {
-      await mercadoPagoHandler.handleWebhook(notification);
-
-      if (notification.type === 'payment') {
-        const status = await mercadoPagoHandler.getPaymentStatus(notification.data.id);
-        if (status.status === 'approved') {
-          await this.confirmPayment(notification.data.id, 'mercadopago');
-        } else if (status.status === 'rejected' || status.status === 'cancelled') {
-          const payment = await this.paymentRepo.findByMPId(notification.data.id);
-          if (payment) {
-            await this.paymentRepo.markFailed(payment.id, status.statusDetail);
-          }
-        }
-      }
-    } catch (error) {
-      logger.error('Error procesando webhook MercadoPago', error);
-      throw error;
-    }
-  }
-
-  async getPaymentsByReservation(reservationId: string) {
+  async getPaymentsByReservation(reservationId: string): Promise<any[]> {
     return this.paymentRepo.findByReservation(reservationId);
   }
 
-  async getPaymentStats(from: Date, to: Date) {
-    const payments = await this.paymentRepo.findByDateRange(from, to);
+  async getStatistics(): Promise<any> { return this.paymentRepo.getStatistics(); }
 
-    const stats = {
-      totalRevenue: 0,
-      totalRefunds: 0,
-      successfulPayments: 0,
-      failedPayments: 0,
-      pendingPayments: 0,
-      averagePaymentValue: 0,
-      paymentMethodBreakdown: { card: 0, pix: 0 },
-      processorBreakdown: { stripe: 0, mercadoPago: 0 }
-    };
-
-    for (const p of payments) {
-      if (p.status === 'completed') {
-        stats.totalRevenue += p.amount;
-        stats.successfulPayments++;
-      } else if (p.status === 'failed') {
-        stats.failedPayments++;
-      } else if (p.status === 'pending') {
-        stats.pendingPayments++;
-      } else if (p.status === 'refunded') {
-        stats.totalRefunds += p.refund_amount ?? p.amount;
-      }
-
-      if (p.provider === 'stripe') stats.processorBreakdown.stripe++;
-      else stats.processorBreakdown.mercadoPago++;
-    }
-
-    stats.averagePaymentValue = stats.totalRevenue / (stats.successfulPayments || 1);
-    return stats;
-  }
-
-  async getPendingPayments() {
-    return this.paymentRepo.findPending();
+  private isInternationalEmail(email: string): boolean {
+    return !['br', 'uol.com', 'bol.com.br', 'terra.com.br'].some(d => email.includes(d));
   }
 }
-
-export const paymentService = new PaymentService();

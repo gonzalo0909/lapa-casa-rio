@@ -1,6 +1,16 @@
 // lapa-casa-hostel/backend/src/services/pricing-service.ts
+//
+// REQUISITO CRITICO #6 (prompt Maestro v1.5): las funciones SQL de
+// Ventana 1 (0004_pricing_functions.sql) son la UNICA implementacion de
+// las reglas de precio. Este servicio es un wrapper delgado -- nunca
+// reimplementa temporada/descuentos/deposito en JS. La version anterior
+// de este archivo lo hacia (constantes hardcodeadas, fechas de Carnaval
+// duplicadas a mano) y quedaba desincronizada de system_config/rate_plans
+// apenas alguien cambiara esas tablas sin tocar el codigo.
+//
+// Nota de tipado (migracion 0008): calculate_group_discount,
+// calculate_final_price y calculate_deposit piden INTEGER, no SMALLINT.
 
-import { logger } from '../utils/logger';
 import { query } from '../config/database';
 
 interface PricingRequest {
@@ -16,7 +26,7 @@ interface PricingResponse {
   groupDiscountPercent: number;
   discountAmount: number;
   seasonMultiplier: number;
-  seasonType: 'low' | 'medium' | 'high' | 'carnival';
+  seasonType: string;
   priceAfterDiscount: number;
   priceAfterSeason: number;
   totalPrice: number;
@@ -36,121 +46,101 @@ interface PricingResponse {
   };
 }
 
-interface SeasonConfig {
-  type: 'low' | 'medium' | 'high' | 'carnival';
-  multiplier: number;
-  months?: number[];
-  specificDates?: Array<{ start: string; end: string }>;
-  minNights?: number;
-}
+const nightsBetween = (checkIn: string, checkOut: string): number =>
+  Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
+
+const todayDate = (): string => new Date().toISOString().slice(0, 10);
 
 export class PricingService {
-  private readonly BASE_PRICE_PER_BED = 60.00;
-
-  private readonly GROUP_DISCOUNTS = [
-    { minBeds: 26, discount: 0.20, name: '20% - Grupos 26+' },
-    { minBeds: 16, discount: 0.15, name: '15% - Grupos 16-25' },
-    { minBeds: 7, discount: 0.10, name: '10% - Grupos 7-15' }
-  ];
-
-  private readonly SEASON_CONFIG: SeasonConfig[] = [
-    {
-      type: 'carnival',
-      multiplier: 2.00,
-      specificDates: [
-        { start: '2025-02-28', end: '2025-03-05' },
-        { start: '2026-02-13', end: '2026-02-18' },
-        { start: '2027-02-05', end: '2027-02-10' }
-      ],
-      minNights: 5
-    },
-    { type: 'high', multiplier: 1.50, months: [11, 0, 1, 2] },
-    { type: 'low', multiplier: 0.80, months: [5, 6, 7, 8] },
-    { type: 'medium', multiplier: 1.00, months: [3, 4, 9, 10] }
-  ];
-
-  private readonly DEPOSIT_RULES = {
-    standard: 0.30,
-    largeGroup: 0.50,
-    threshold: 15
-  };
-
+  /** Precio final via calculate_final_price() -- suma por habitacion si cada una tiene base_price distinto. */
   async calculateTotalPrice(request: PricingRequest): Promise<PricingResponse> {
-    try {
-      const checkIn = new Date(request.checkInDate);
-      const checkOut = new Date(request.checkOutDate);
-      const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = nightsBetween(request.checkInDate, request.checkOutDate);
+    if (nights < 1) {
+      throw new Error('La reserva debe ser de al menos 1 noche');
+    }
 
-      if (nights < 1) {
-        throw new Error('La reserva debe ser de al menos 1 noche');
-      }
+    const bookingDate = todayDate();
 
-      const basePrice = this.BASE_PRICE_PER_BED * request.totalBeds * nights;
-      const groupDiscountData = this.calculateGroupDiscount(request.totalBeds);
-      const discountAmount = basePrice * groupDiscountData.discount;
-      const priceAfterDiscount = basePrice - discountAmount;
+    // Precio base ponderado: consulta room_types real por cada roomId solicitado.
+    let basePrice = 0;
+    let finalPrice = 0;
+    for (const room of request.rooms) {
+      const { rows } = await query<{ base_price: string }>(
+        `SELECT base_price FROM room_types WHERE id = $1`,
+        [room.roomId]
+      );
+      const roomBasePrice = rows[0] ? parseFloat(rows[0].base_price) : 60;
+      basePrice += roomBasePrice * nights * room.bedsCount;
 
-      const seasonData = this.determineSeason(request.checkInDate, request.checkOutDate);
+      const { rows: priceRows } = await query<{ p: string }>(
+        `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
+        [roomBasePrice, nights, room.bedsCount, request.checkInDate, bookingDate]
+      );
+      finalPrice += parseFloat(priceRows[0].p);
+    }
+    finalPrice = Math.round(finalPrice * 100) / 100;
 
-      if (seasonData.type === 'carnival' && nights < (seasonData.minNights || 5)) {
-        throw new Error(`Durante Carnaval se requiere mínimo ${seasonData.minNights} noches`);
-      }
+    const groupDiscount = await this.getGroupDiscountRate(request.totalBeds);
+    const seasonMultiplier = await this.getSeasonMultiplier(request.checkInDate);
+    const seasonType = await this.getSeasonType(request.checkInDate);
+    const minNights = await this.getMinNightsFromDb(request.checkInDate);
+    if (seasonType === 'carnaval' && nights < minNights) {
+      throw new Error(`Durante Carnaval se requiere minimo ${minNights} noches`);
+    }
 
-      const priceAfterSeason = priceAfterDiscount * seasonData.multiplier;
-      const totalPrice = Math.round(priceAfterSeason * 100) / 100;
+    const discountAmount = Math.round(basePrice * groupDiscount * 100) / 100;
+    const priceAfterDiscount = basePrice - discountAmount;
+    const priceAfterSeason = Math.round(priceAfterDiscount * seasonMultiplier * 100) / 100;
 
-      const depositData = this.calculateDeposit(totalPrice, request.totalBeds);
+    const deposit = await this.calculateDeposit(finalPrice, request.totalBeds);
 
-      const breakdown = {
-        bedBasePrice: this.BASE_PRICE_PER_BED,
-        nightlyRate: this.BASE_PRICE_PER_BED * request.totalBeds,
+    return {
+      basePrice,
+      groupDiscount,
+      groupDiscountPercent: groupDiscount * 100,
+      discountAmount,
+      seasonMultiplier,
+      seasonType,
+      priceAfterDiscount,
+      priceAfterSeason,
+      totalPrice: finalPrice,
+      depositAmount: deposit.amount,
+      depositPercent: deposit.percent * 100,
+      remainingAmount: deposit.remaining,
+      nights,
+      pricePerNight: finalPrice / nights,
+      pricePerBed: finalPrice / (request.totalBeds * nights),
+      breakdown: {
+        bedBasePrice: basePrice / (request.totalBeds * nights || 1),
+        nightlyRate: basePrice / (nights || 1),
         subtotal: basePrice,
         discountApplied: discountAmount,
         seasonAdjustment: priceAfterSeason - priceAfterDiscount,
-        finalTotal: totalPrice
-      };
-
-      return {
-        basePrice,
-        groupDiscount: groupDiscountData.discount,
-        groupDiscountPercent: groupDiscountData.discount * 100,
-        discountAmount,
-        seasonMultiplier: seasonData.multiplier,
-        seasonType: seasonData.type,
-        priceAfterDiscount,
-        priceAfterSeason,
-        totalPrice,
-        depositAmount: depositData.amount,
-        depositPercent: depositData.percent * 100,
-        remainingAmount: depositData.remaining,
-        nights,
-        pricePerNight: totalPrice / nights,
-        pricePerBed: totalPrice / (request.totalBeds * nights),
-        breakdown
-      };
-    } catch (error) {
-      logger.error('Error calculando pricing', error);
-      throw error;
-    }
+        finalTotal: finalPrice
+      }
+    };
   }
 
   async getRateForDates(roomTypeId: string, checkInDate: string, checkOutDate: string): Promise<number> {
-    try {
-      const result = await query(
-        'SELECT base_price FROM room_types WHERE id = $1',
-        [roomTypeId]
-      );
-      const basePrice = result.rows[0]?.base_price ?? this.BASE_PRICE_PER_BED;
-      const season = this.determineSeason(checkInDate, checkOutDate);
-      return Math.round(basePrice * season.multiplier * 100) / 100;
-    } catch {
-      return this.BASE_PRICE_PER_BED;
-    }
+    const { rows } = await query<{ base_price: string }>(
+      `SELECT base_price FROM room_types WHERE id = $1`,
+      [roomTypeId]
+    );
+    const basePrice = rows[0] ? parseFloat(rows[0].base_price) : 60;
+    const multiplier = await this.getSeasonMultiplier(checkInDate);
+    return Math.round(basePrice * multiplier * 100) / 100;
   }
 
-  getMinNights(checkInDate: string, checkOutDate: string): number {
-    const season = this.determineSeason(checkInDate, checkOutDate);
-    return season.type === 'carnival' ? (season.minNights || 5) : 1;
+  async getMinNights(checkInDate: string, _checkOutDate: string): Promise<number> {
+    return this.getMinNightsFromDb(checkInDate);
+  }
+
+  private async getMinNightsFromDb(checkIn: string): Promise<number> {
+    const { rows } = await query<{ get_min_nights: number }>(
+      `SELECT get_min_nights($1::date) AS get_min_nights`,
+      [checkIn]
+    );
+    return rows[0]?.get_min_nights ?? 1;
   }
 
   async calculateFinalPrice(
@@ -159,97 +149,89 @@ export class PricingService {
     totalBeds: number,
     roomTypeId?: string
   ): Promise<{ totalPrice: number; depositAmount: number; remainingAmount: number; nights: number }> {
-    const checkIn = new Date(checkInDate);
-    const checkOut = new Date(checkOutDate);
-    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-
-    let basePricePerBed = this.BASE_PRICE_PER_BED;
+    const nights = nightsBetween(checkInDate, checkOutDate);
+    let basePrice = 60;
     if (roomTypeId) {
-      try {
-        const result = await query('SELECT base_price FROM room_types WHERE id = $1', [roomTypeId]);
-        if (result.rows[0]) basePricePerBed = result.rows[0].base_price;
-      } catch { /* use default */ }
+      const { rows } = await query<{ base_price: string }>(
+        `SELECT base_price FROM room_types WHERE id = $1`,
+        [roomTypeId]
+      );
+      if (rows[0]) basePrice = parseFloat(rows[0].base_price);
     }
-
-    const basePrice = basePricePerBed * totalBeds * nights;
-    const { discount } = this.calculateGroupDiscount(totalBeds);
-    const priceAfterDiscount = basePrice * (1 - discount);
-    const season = this.determineSeason(checkInDate, checkOutDate);
-    const totalPrice = Math.round(priceAfterDiscount * season.multiplier * 100) / 100;
-    const depositData = this.calculateDeposit(totalPrice, totalBeds);
-
-    return {
-      totalPrice,
-      depositAmount: depositData.amount,
-      remainingAmount: depositData.remaining,
-      nights
-    };
+    const bookingDate = todayDate();
+    const { rows: priceRows } = await query<{ p: string }>(
+      `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
+      [basePrice, nights, totalBeds, checkInDate, bookingDate]
+    );
+    const totalPrice = parseFloat(priceRows[0].p);
+    const deposit = await this.calculateDeposit(totalPrice, totalBeds);
+    return { totalPrice, depositAmount: deposit.amount, remainingAmount: deposit.remaining, nights };
   }
 
   calculateBasePrice(totalBeds: number, nights: number): number {
-    return this.BASE_PRICE_PER_BED * totalBeds * nights;
+    return 60 * totalBeds * nights;
   }
 
-  calculateGroupDiscount(totalBeds: number): { discount: number; name: string; appliedTier?: string } {
-    for (const tier of this.GROUP_DISCOUNTS) {
-      if (totalBeds >= tier.minBeds) {
-        return {
-          discount: tier.discount,
-          name: tier.name,
-          appliedTier: `${tier.minBeds}+ beds`
-        };
-      }
-    }
-    return { discount: 0, name: 'Sin descuento', appliedTier: 'Individual booking' };
+  /** calculate_group_discount() -- nunca hardcodear los tramos en JS. */
+  async calculateGroupDiscount(totalBeds: number): Promise<{ discount: number; name: string }> {
+    const discount = await this.getGroupDiscountRate(totalBeds);
+    return { discount, name: discount > 0 ? `${discount * 100}% de descuento por grupo` : 'Sin descuento' };
   }
 
-  determineSeason(checkInDate: string, checkOutDate: string): SeasonConfig {
-    const checkIn = new Date(checkInDate);
-    const checkOut = new Date(checkOutDate);
-
-    for (const config of this.SEASON_CONFIG) {
-      if (config.type === 'carnival' && config.specificDates) {
-        for (const period of config.specificDates) {
-          const periodStart = new Date(period.start);
-          const periodEnd = new Date(period.end);
-          if (
-            (checkIn >= periodStart && checkIn <= periodEnd) ||
-            (checkOut >= periodStart && checkOut <= periodEnd) ||
-            (checkIn <= periodStart && checkOut >= periodEnd)
-          ) {
-            return config;
-          }
-        }
-      }
-    }
-
-    const checkInMonth = checkIn.getMonth();
-    for (const config of this.SEASON_CONFIG) {
-      if (config.months && config.months.includes(checkInMonth)) {
-        return config;
-      }
-    }
-
-    return { type: 'medium', multiplier: 1.00 };
+  private async getGroupDiscountRate(totalBeds: number): Promise<number> {
+    const { rows } = await query<{ calculate_group_discount: string }>(
+      `SELECT calculate_group_discount($1) AS calculate_group_discount`,
+      [totalBeds]
+    );
+    return parseFloat(rows[0].calculate_group_discount);
   }
 
-  calculateDeposit(totalPrice: number, totalBeds: number): { amount: number; percent: number; remaining: number } {
-    const percent = totalBeds >= this.DEPOSIT_RULES.threshold
-      ? this.DEPOSIT_RULES.largeGroup
-      : this.DEPOSIT_RULES.standard;
-
-    const amount = Math.round(totalPrice * percent * 100) / 100;
-    const remaining = Math.round((totalPrice - amount) * 100) / 100;
-
-    return { amount, percent, remaining };
+  private async getSeasonMultiplier(checkIn: string): Promise<number> {
+    const { rows } = await query<{ calculate_season_multiplier: string }>(
+      `SELECT calculate_season_multiplier($1::date) AS calculate_season_multiplier`,
+      [checkIn]
+    );
+    return parseFloat(rows[0].calculate_season_multiplier);
   }
 
-  getSeasonInfo(): SeasonConfig[] {
-    return this.SEASON_CONFIG;
+  private async getSeasonType(checkIn: string): Promise<string> {
+    const { rows } = await query<{ get_season_type: string }>(
+      `SELECT get_season_type($1::date) AS get_season_type`,
+      [checkIn]
+    );
+    return rows[0].get_season_type;
   }
 
-  getGroupDiscountTiers(): typeof this.GROUP_DISCOUNTS {
-    return this.GROUP_DISCOUNTS;
+  /** determineSeason: usado por rutas para mostrar info de temporada -- via SQL, no tabla hardcodeada. */
+  async determineSeason(checkIn: string, _checkOut: string): Promise<{ type: string; multiplier: number; minNights: number }> {
+    const [type, multiplier, minNights] = await Promise.all([
+      this.getSeasonType(checkIn),
+      this.getSeasonMultiplier(checkIn),
+      this.getMinNightsFromDb(checkIn)
+    ]);
+    return { type, multiplier, minNights };
+  }
+
+  /** calculate_deposit() -- 30% estandar / 50% para 15+ camas, definido en SQL. */
+  async calculateDeposit(totalPrice: number, totalBeds: number): Promise<{ amount: number; percent: number; remaining: number }> {
+    const { rows } = await query<{ deposit_percent: string; deposit_amount: string; remaining_amount: string }>(
+      `SELECT * FROM calculate_deposit($1::numeric, $2)`,
+      [totalPrice, totalBeds]
+    );
+    return {
+      amount: parseFloat(rows[0].deposit_amount),
+      percent: parseFloat(rows[0].deposit_percent),
+      remaining: parseFloat(rows[0].remaining_amount)
+    };
+  }
+
+  /** Solo para reportes internos -- nunca se suma al precio del huesped (Requisito Critico #3). */
+  async calculateChannelNetRevenue(guestPrice: number, channelId: string): Promise<number> {
+    const { rows } = await query<{ calculate_channel_net_revenue: string }>(
+      `SELECT calculate_channel_net_revenue($1::numeric, $2::uuid) AS calculate_channel_net_revenue`,
+      [guestPrice, channelId]
+    );
+    return parseFloat(rows[0].calculate_channel_net_revenue);
   }
 
   async estimatePriceRange(
@@ -257,21 +239,19 @@ export class PricingService {
     checkOutDate: string,
     totalBeds: number
   ): Promise<{ minPrice: number; maxPrice: number; averagePrice: number; seasonType: string }> {
-    const checkIn = new Date(checkInDate);
-    const checkOut = new Date(checkOutDate);
-    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-
+    const nights = nightsBetween(checkInDate, checkOutDate);
     const basePrice = this.calculateBasePrice(totalBeds, nights);
-    const groupDiscount = this.calculateGroupDiscount(totalBeds);
-    const priceAfterDiscount = basePrice * (1 - groupDiscount.discount);
-    const season = this.determineSeason(checkInDate, checkOutDate);
-    const seasonPrice = priceAfterDiscount * season.multiplier;
+    const { discount } = await this.calculateGroupDiscount(totalBeds);
+    const priceAfterDiscount = basePrice * (1 - discount);
+    const seasonType = await this.getSeasonType(checkInDate);
+    const seasonMultiplier = await this.getSeasonMultiplier(checkInDate);
+    const seasonPrice = priceAfterDiscount * seasonMultiplier;
 
     return {
-      minPrice: Math.round(priceAfterDiscount * 0.80 * 100) / 100,
-      maxPrice: Math.round(priceAfterDiscount * 2.00 * 100) / 100,
+      minPrice: Math.round(priceAfterDiscount * 0.8 * 100) / 100,
+      maxPrice: Math.round(priceAfterDiscount * 2.0 * 100) / 100,
       averagePrice: Math.round(seasonPrice * 100) / 100,
-      seasonType: season.type
+      seasonType
     };
   }
 }

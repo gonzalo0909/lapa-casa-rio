@@ -1,6 +1,12 @@
 // lapa-casa-hostel/backend/src/routes/availability/check-availability.ts
+//
+// Antes usaba un ROOMS_CONFIG hardcodeado con roomId ficticios
+// ("room_mixto_12a") que no existen en la base (room_types.id es UUID) y
+// le faltaba Mixto 7C -- ninguna asignacion real podia funcionar con esos
+// IDs. Ahora lee las 5 habitaciones reales de room_types.
 
 import { Request, Response, NextFunction } from 'express';
+import { query } from '../../config/database';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
 import { logger } from '../../utils/logger';
@@ -8,13 +14,6 @@ import { ApiResponse } from '../../utils/responses';
 
 const availabilityService = new AvailabilityService();
 const pricingService = new PricingService();
-
-const ROOMS_CONFIG = {
-  room_mixto_12a: { capacity: 12, type: 'mixed', isFlexible: false, name: 'Mixto 12A' },
-  room_mixto_12b: { capacity: 12, type: 'mixed', isFlexible: false, name: 'Mixto 12B' },
-  room_mixto_7:   { capacity: 7,  type: 'mixed', isFlexible: false, name: 'Mixto 7' },
-  room_flexible_7: { capacity: 7, type: 'female', isFlexible: true,  name: 'Flexible 7' }
-};
 
 export const checkAvailabilityHandler = async (
   req: Request<{}, {}, {}, { checkIn: string; checkOut: string; beds: string }>,
@@ -39,8 +38,8 @@ export const checkAvailabilityHandler = async (
       res.status(400).json(ApiResponse.error('Check-out date must be after check-in date'));
       return;
     }
-    if (isNaN(bedsNeeded) || bedsNeeded < 1 || bedsNeeded > 38) {
-      res.status(400).json(ApiResponse.error('Beds requested must be between 1 and 38'));
+    if (isNaN(bedsNeeded) || bedsNeeded < 1 || bedsNeeded > 45) {
+      res.status(400).json(ApiResponse.error('Beds requested must be between 1 and 45'));
       return;
     }
 
@@ -48,17 +47,22 @@ export const checkAvailabilityHandler = async (
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
+    const { rows: roomTypes } = await query<{
+      id: string; code: string; name: string; capacity: number;
+      default_gender: string; is_flexible: boolean;
+    }>(`SELECT id, code, name, capacity, default_gender, is_flexible FROM room_types ORDER BY capacity, code`);
+
     const roomsAvailability = await Promise.all(
-      Object.entries(ROOMS_CONFIG).map(async ([roomId, config]) => {
-        const avail = await availabilityService.checkRoomAvailability(roomId, checkIn, checkOut);
+      roomTypes.map(async (rt) => {
+        const avail = await availabilityService.checkRoomAvailability(rt.id, checkIn, checkOut);
         return {
-          roomId,
-          name: config.name,
-          type: config.type,
-          capacity: config.capacity,
-          isFlexible: config.isFlexible,
+          roomId: rt.id,
+          name: rt.name,
+          type: rt.default_gender,
+          capacity: rt.capacity,
+          isFlexible: rt.is_flexible,
           availableBeds: avail.availableBeds,
-          occupiedBeds: avail.occupiedBeds ?? (config.capacity - avail.availableBeds)
+          occupiedBeds: avail.occupiedBeds
         };
       })
     );
@@ -69,7 +73,7 @@ export const checkAvailabilityHandler = async (
       (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60)
     );
 
-    const flexibleRoom = roomsAvailability.find(r => r.roomId === 'room_flexible_7');
+    const flexibleRoom = roomsAvailability.find((r) => r.isFlexible);
     if (flexibleRoom && flexibleRoom.occupiedBeds === 0 && hoursUntilCheckIn <= 48) {
       flexibleRoom.type = 'mixed';
       logger.info('Flexible room auto-converted to mixed', { hoursUntilCheckIn });
@@ -126,7 +130,7 @@ export const checkAvailabilityHandler = async (
           capacity: room.capacity,
           availableBeds: room.availableBeds,
           isFlexible: room.isFlexible,
-          autoConverted: room.roomId === 'room_flexible_7' && room.type === 'mixed' && hoursUntilCheckIn <= 48
+          autoConverted: room.isFlexible && room.type === 'mixed' && hoursUntilCheckIn <= 48
         })),
         allocationOptions: pricedOptions,
         alternativeDates: alternativeDates.slice(0, 5),

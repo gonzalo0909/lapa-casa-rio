@@ -3,96 +3,18 @@
  * List Rooms Handler
  * Lapa Casa Hostel Channel Manager
  *
- * Devuelve las 5 habitaciones reales desde room_types (id UUID real,
- * capacidad, precio base, genero). Antes tenia 4 habitaciones
- * hardcodeadas (faltaba Mixto 7C) con IDs ficticios tipo
- * "room_mixto_12a" que no existen en la base -- ninguna ruta que
- * dependiera de esos IDs (ej. crear una reserva con ese roomId) podia
- * funcionar. El contenido descriptivo (amenities, textos) no vive en la
- * base, asi que se mergea por `code` con la config real.
+ * Delegado a room-service.ts (Ventana 2, entregable 5) -- esta ruta
+ * solo arma el envelope de respuesta con contenido estatico (amenities
+ * compartidos, politicas) que no vive en la base.
  *
  * @module routes/rooms/list
  * @requires express
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
-
-const ROOM_CONTENT: Record<string, {
-  description: { en: string; pt: string; es: string };
-  amenities: string[];
-  floor: number;
-  features: { windowView: boolean; ensuiteBathroom: boolean; balcony: boolean };
-  flexibleRoomPolicy?: {
-    defaultType: string;
-    autoConvertType: string;
-    autoConvertHours: number;
-    description: { en: string; pt: string; es: string };
-  };
-}> = {
-  mixto_12a: {
-    description: {
-      en: 'Mixed dormitory with 12 beds, air conditioning and lockers',
-      pt: 'Dormitório misto com 12 camas, ar condicionado e armários',
-      es: 'Dormitorio mixto con 12 camas, aire acondicionado y casilleros'
-    },
-    amenities: ['Air conditioning', 'Individual lockers', 'Reading lights', 'Power outlets', 'Free Wi-Fi', 'Shared bathroom'],
-    floor: 1,
-    features: { windowView: true, ensuiteBathroom: false, balcony: false }
-  },
-  mixto_12b: {
-    description: {
-      en: 'Mixed dormitory with 12 beds, air conditioning and lockers',
-      pt: 'Dormitório misto com 12 camas, ar condicionado e armários',
-      es: 'Dormitorio mixto con 12 camas, aire acondicionado y casilleros'
-    },
-    amenities: ['Air conditioning', 'Individual lockers', 'Reading lights', 'Power outlets', 'Free Wi-Fi', 'Shared bathroom'],
-    floor: 1,
-    features: { windowView: true, ensuiteBathroom: false, balcony: false }
-  },
-  mixto_7: {
-    description: {
-      en: 'Mixed dormitory with 7 beds, air conditioning and lockers',
-      pt: 'Dormitório misto com 7 camas, ar condicionado e armários',
-      es: 'Dormitorio mixto con 7 camas, aire acondicionado y casilleros'
-    },
-    amenities: ['Air conditioning', 'Individual lockers', 'Reading lights', 'Power outlets', 'Free Wi-Fi', 'Shared bathroom'],
-    floor: 2,
-    features: { windowView: true, ensuiteBathroom: false, balcony: false }
-  },
-  mixto_7c: {
-    description: {
-      en: 'Mixed dormitory with 7 beds, air conditioning and lockers',
-      pt: 'Dormitório misto com 7 camas, ar condicionado e armários',
-      es: 'Dormitorio mixto con 7 camas, aire acondicionado y casilleros'
-    },
-    amenities: ['Air conditioning', 'Individual lockers', 'Reading lights', 'Power outlets', 'Free Wi-Fi', 'Shared bathroom'],
-    floor: 2,
-    features: { windowView: true, ensuiteBathroom: false, balcony: false }
-  },
-  flexible_7: {
-    description: {
-      en: 'Female dormitory with 7 beds (converts to mixed 48h before if no female bookings)',
-      pt: 'Dormitório feminino com 7 camas (converte para misto 48h antes se sem reservas femininas)',
-      es: 'Dormitorio femenino con 7 camas (convierte a mixto 48h antes si sin reservas femeninas)'
-    },
-    amenities: ['Air conditioning', 'Individual lockers', 'Reading lights', 'Power outlets', 'Free Wi-Fi', 'Shared bathroom'],
-    floor: 2,
-    features: { windowView: true, ensuiteBathroom: false, balcony: true },
-    flexibleRoomPolicy: {
-      defaultType: 'female',
-      autoConvertType: 'mixed',
-      autoConvertHours: 48,
-      description: {
-        en: 'Automatically converts to mixed dormitory 48 hours before check-in if no female bookings',
-        pt: 'Converte automaticamente para dormitório misto 48 horas antes do check-in se sem reservas femininas',
-        es: 'Convierte automáticamente a dormitorio mixto 48 horas antes del check-in si sin reservas femeninas'
-      }
-    }
-  }
-};
+import { roomService } from '../../services/room-service';
 
 export const listRoomsHandler = async (
   req: Request,
@@ -102,25 +24,7 @@ export const listRoomsHandler = async (
   try {
     logger.info('Listing all rooms');
 
-    const { rows } = await query<{
-      id: string; code: string; name: string; capacity: number;
-      default_gender: string; is_flexible: boolean; base_price: string;
-    }>(`SELECT id, code, name, capacity, default_gender, is_flexible, base_price FROM room_types ORDER BY capacity, code`);
-
-    const ROOMS = rows.map((r) => {
-      const content = ROOM_CONTENT[r.code] ?? { description: { en: '', pt: '', es: '' }, amenities: [], floor: 1, features: { windowView: true, ensuiteBathroom: false, balcony: false } };
-      return {
-        id: r.id,
-        code: r.code,
-        name: r.name,
-        type: r.default_gender,
-        capacity: r.capacity,
-        isFlexible: r.is_flexible,
-        basePrice: parseFloat(r.base_price),
-        currency: 'BRL',
-        ...content
-      };
-    });
+    const ROOMS = await roomService.getRooms();
 
     const totalCapacity = ROOMS.reduce((sum, room) => sum + room.capacity, 0);
     const totalRooms = ROOMS.length;

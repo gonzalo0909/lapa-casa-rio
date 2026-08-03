@@ -10,6 +10,7 @@ const env = {
   API_VERSION: process.env.API_VERSION || 'v1',
 
   DATABASE_URL: process.env.DATABASE_URL || '',
+  REDIS_URL: process.env.REDIS_URL || '',
 
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-in-production',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',

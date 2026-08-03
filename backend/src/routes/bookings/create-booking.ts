@@ -5,6 +5,7 @@ import { BookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
 import { EmailService } from '../../services/email-service';
+import { InsufficientAvailabilityError } from '../../services/booking-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -201,6 +202,17 @@ export const createBookingHandler = async (
       }, 'Booking created successfully')
     );
   } catch (error) {
+    // El pre-chequeo de arriba puede pasar y aun asi bookingService.createBooking()
+    // lanzar esto -- otra transaccion tomo las camas entre el pre-chequeo y el
+    // INSERT bajo lock. Sin este catch especifico caia al error-handler generico
+    // y devolvia 500 en vez de 409 (InsufficientAvailabilityError no tiene
+    // `statusCode`, asi que error-handler.ts la trataba como error inesperado).
+    if (error instanceof InsufficientAvailabilityError) {
+      logger.warn('Insufficient availability detected during createBooking', { details: error.details });
+      res.status(409).json(ApiResponse.error(error.message, error.details));
+      return;
+    }
+
     logger.error('Error creating booking', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined

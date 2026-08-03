@@ -1,202 +1,105 @@
-/**
- * File: lapa-casa-hostel/backend/src/routes/payments/payments.routes.ts
- * Payments Routes Module
- * Lapa Casa Hostel Channel Manager
- * 
- * Handles payment processing endpoints for Stripe and Mercado Pago
- * Implements deposit system, webhooks, and payment confirmations
- * 
- * @module routes/payments
- * @requires express
- */
+// lapa-casa-hostel/backend/src/routes/payments/payments.routes.ts
+// ventana3
 
 import { Router } from 'express';
+import express from 'express';
 import { createPaymentIntentHandler } from './create-payment-intent';
 import { confirmPaymentHandler } from './confirm-payment';
 import { processDepositHandler } from './process-deposit';
 import { handleWebhookHandler } from './handle-webhook';
-import { validationMiddleware } from '../../middleware/validation';
+import { paymentService } from '../../services/payment-service';
+import { bookingService } from '../../services/booking-service';
 import { logger } from '../../utils/logger';
-import express from 'express';
+import { ApiResponse } from '../../utils/responses';
 
 const router = Router();
 
-/**
- * Create Payment Intent (Stripe/MP)
- * @route POST /payments/intent
- * @group Payments - Payment processing operations
- * @param {object} payment.body.required - Payment intent details
- * @returns {object} 201 - Payment intent created
- * @returns {Error} 400 - Invalid payment data
- * @returns {Error} 500 - Payment processing error
- */
-router.post(
-  '/intent',
-  validationMiddleware('createPaymentIntent'),
-  createPaymentIntentHandler
-);
+// POST /payments/intent
+router.post('/intent', createPaymentIntentHandler);
 
-/**
- * Confirm Payment
- * @route POST /payments/confirm
- * @group Payments - Payment processing operations
- * @param {object} confirmation.body.required - Payment confirmation details
- * @returns {object} 200 - Payment confirmed
- * @returns {Error} 400 - Invalid confirmation data
- * @returns {Error} 404 - Payment not found
- * @returns {Error} 500 - Server error
- */
-router.post(
-  '/confirm',
-  validationMiddleware('confirmPayment'),
-  confirmPaymentHandler
-);
+// POST /payments/confirm
+router.post('/confirm', confirmPaymentHandler);
 
-/**
- * Process Deposit Payment
- * @route POST /payments/deposit
- * @group Payments - Payment processing operations
- * @param {object} deposit.body.required - Deposit payment details
- * @returns {object} 200 - Deposit processed
- * @returns {Error} 400 - Invalid deposit data
- * @returns {Error} 409 - Deposit already paid
- * @returns {Error} 500 - Server error
- */
-router.post(
-  '/deposit',
-  validationMiddleware('processDeposit'),
-  processDepositHandler
-);
+// POST /payments/deposit
+router.post('/deposit', processDepositHandler);
 
-/**
- * Stripe Webhook Handler
- * @route POST /payments/webhook/stripe
- * @group Payments - Payment webhook operations
- * @returns {object} 200 - Webhook processed
- * @returns {Error} 400 - Invalid webhook signature
- * @returns {Error} 500 - Server error
- */
+// POST /payments/webhook/stripe  — requiere raw body
 router.post(
   '/webhook/stripe',
   express.raw({ type: 'application/json' }),
   handleWebhookHandler
 );
 
-/**
- * Mercado Pago Webhook Handler
- * @route POST /payments/webhook/mercadopago
- * @group Payments - Payment webhook operations
- * @returns {object} 200 - Webhook processed
- * @returns {Error} 400 - Invalid webhook data
- * @returns {Error} 500 - Server error
- */
+// POST /payments/webhook/mercadopago
 router.post(
   '/webhook/mercadopago',
   express.json(),
   async (req, res, next) => {
     try {
-      logger.info('Mercado Pago webhook received', { body: req.body });
-      
-      // Process Mercado Pago webhook
+      logger.info('Webhook MercadoPago recibido', { body: req.body });
+      await paymentService.handleMercadoPagoWebhook(req.body);
       res.status(200).json({ received: true });
     } catch (error) {
-      next(error);
-    }
-  }
-);
-
-/**
- * Get Payment Status
- * @route GET /payments/:id/status
- * @group Payments - Payment processing operations
- * @param {string} id.path.required - Payment ID
- * @returns {object} 200 - Payment status
- * @returns {Error} 404 - Payment not found
- * @returns {Error} 500 - Server error
- */
-router.get(
-  '/:id/status',
-  validationMiddleware('getPaymentStatus'),
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      
-      logger.info('Get payment status', { paymentId: id });
-
-      res.status(200).json({
-        id,
-        status: 'PENDING',
-        amount: 0,
-        currency: 'BRL',
-        method: 'card',
-        createdAt: new Date().toISOString()
+      logger.error('Error en webhook MercadoPago', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-    } catch (error) {
-      next(error);
+      res.status(200).json({ received: true, error: 'Processing failed' });
     }
   }
 );
 
-/**
- * Get Payment History for Booking
- * @route GET /payments/booking/:bookingId
- * @group Payments - Payment processing operations
- * @param {string} bookingId.path.required - Booking ID
- * @returns {Array} 200 - Payment history
- * @returns {Error} 404 - Booking not found
- * @returns {Error} 500 - Server error
- */
-router.get(
-  '/booking/:bookingId',
-  validationMiddleware('getPaymentHistory'),
-  async (req, res, next) => {
-    try {
-      const { bookingId } = req.params;
-      
-      logger.info('Get payment history', { bookingId });
-
-      res.status(200).json({
-        bookingId,
-        payments: [],
-        totalPaid: 0,
-        totalPending: 0,
-        currency: 'BRL'
-      });
-    } catch (error) {
-      next(error);
+// GET /payments/:id/status
+router.get('/:id/status', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const payment = await paymentService.getPaymentById(id);
+    if (!payment) {
+      res.status(404).json(ApiResponse.error('Pago no encontrado', { paymentId: id }));
+      return;
     }
+    res.status(200).json(ApiResponse.success({
+      id: payment.id,
+      status: payment.status,
+      amount: Number(payment.amount),
+      currency: payment.currency,
+      provider: payment.provider,
+      paymentType: payment.payment_type,
+      providerPaymentId: payment.provider_payment_id,
+      paidAt: payment.paid_at,
+      createdAt: payment.created_at,
+    }, 'Estado del pago'));
+  } catch (error) {
+    next(error);
   }
-);
+});
 
-/**
- * Retry Failed Payment
- * @route POST /payments/:id/retry
- * @group Payments - Payment processing operations
- * @param {string} id.path.required - Payment ID
- * @returns {object} 200 - Payment retry initiated
- * @returns {Error} 400 - Payment cannot be retried
- * @returns {Error} 404 - Payment not found
- * @returns {Error} 500 - Server error
- */
-router.post(
-  '/:id/retry',
-  validationMiddleware('retryPayment'),
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      
-      logger.info('Retry payment', { paymentId: id });
-
-      res.status(200).json({
-        id,
-        status: 'PENDING',
-        retryAttempt: 1,
-        message: 'Payment retry initiated'
-      });
-    } catch (error) {
-      next(error);
+// GET /payments/reservation/:reservationId
+router.get('/reservation/:reservationId', async (req, res, next) => {
+  try {
+    const { reservationId } = req.params;
+    const booking = await bookingService.getBooking(reservationId);
+    if (!booking) {
+      res.status(404).json(ApiResponse.error('Reserva no encontrada', { reservationId }));
+      return;
     }
+    const payments = await paymentService.getPaymentsByReservation(reservationId);
+    const totalPaid = payments
+      .filter(p => p.status === 'succeeded')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    const totalPending = payments
+      .filter(p => p.status === 'pending')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    res.status(200).json(ApiResponse.success({
+      reservationId,
+      payments,
+      totalPaid,
+      totalPending,
+      remainingBalance: Number(booking.final_price) - totalPaid,
+      currency: 'BRL',
+    }, 'Historial de pagos'));
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 export const paymentsRouter = router;

@@ -1,6 +1,6 @@
 // lapa-casa-hostel/backend/src/config/database.ts
 
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { logger } from '../utils/logger';
 
 if (!process.env.DATABASE_URL) {
@@ -19,7 +19,7 @@ pool.on('error', (err) => {
   logger.error('Unexpected error on idle client', err);
 });
 
-export const query = <T = any>(text: string, params?: any[]): Promise<QueryResult<T>> =>
+export const query = <T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>> =>
   pool.query<T>(text, params);
 
 export const getClient = (): Promise<PoolClient> => pool.connect();

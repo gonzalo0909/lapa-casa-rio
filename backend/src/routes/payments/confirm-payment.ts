@@ -1,262 +1,115 @@
-/**
- * File: lapa-casa-hostel/backend/src/routes/payments/confirm-payment.ts
- * Confirm Payment Handler
- * Lapa Casa Hostel Channel Manager
- * 
- * Confirms successful payment and updates booking status
- * Sends confirmation emails and updates Google Sheets
- * 
- * @module routes/payments/confirm
- * @requires express
- */
+// lapa-casa-hostel/backend/src/routes/payments/confirm-payment.ts
+// ventana3
 
 import { Request, Response, NextFunction } from 'express';
-import { PaymentService } from '../../services/payment-service';
-import { BookingService } from '../../services/booking-service';
-import { EmailService } from '../../services/email-service';
+import { paymentService } from '../../services/payment-service';
+import { bookingService } from '../../services/booking-service';
+import { emailService } from '../../services/email-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
-const paymentService = new PaymentService();
-const bookingService = new BookingService();
-const emailService = new EmailService();
-
-/**
- * File: lapa-casa-hostel/backend/src/routes/payments/confirm-payment.ts
- * Confirm Payment Handler
- * Lapa Casa Hostel Channel Manager
- * 
- * Confirms successful payment and updates booking status
- * Sends confirmation emails and updates Google Sheets
- * 
- * @module routes/payments/confirm
- * @requires express
- */
-
-import { Request, Response, NextFunction } from 'express';
-import { PaymentService } from '../../services/payment-service';
-import { BookingService } from '../../services/booking-service';
-import { EmailService } from '../../services/email-service';
-import { logger } from '../../utils/logger';
-import { ApiResponse } from '../../utils/responses';
-
-const paymentService = new PaymentService();
-const bookingService = new BookingService();
-const emailService = new EmailService();
-
-/**
- * Confirm Payment Request Interface
- */
 interface ConfirmPaymentRequest {
   paymentId: string;
-  providerPaymentId?: string;
-  transactionId?: string;
 }
 
-/**
- * Confirm Payment Handler
- * 
- * Payment confirmation flow:
- * 1. Validate payment exists and is confirmable
- * 2. Verify payment with provider (Stripe/MP)
- * 3. Update payment status to COMPLETED
- * 4. Update booking status if fully paid
- * 5. Send payment confirmation email
- * 6. Sync with Google Sheets
- * 7. Return confirmation details
- * 
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next function
- * @returns {Promise<void>}
- */
 export const confirmPaymentHandler = async (
   req: Request<{}, {}, ConfirmPaymentRequest>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { paymentId, providerPaymentId, transactionId } = req.body;
+    const { paymentId } = req.body;
 
-    logger.info('Confirming payment', { paymentId, providerPaymentId });
+    logger.info('Confirmando pago', { paymentId });
 
-    // Step 1: Get payment record
     const payment = await paymentService.getPaymentById(paymentId);
 
     if (!payment) {
-      res.status(404).json(
-        ApiResponse.error('Payment not found', { paymentId })
-      );
+      res.status(404).json(ApiResponse.error('Pago no encontrado', { paymentId }));
       return;
     }
 
-    // Step 2: Validate payment can be confirmed
-    if (payment.status === 'COMPLETED') {
-      res.status(400).json(
-        ApiResponse.error('Payment has already been confirmed')
-      );
+    if (payment.status === 'succeeded') {
+      res.status(400).json(ApiResponse.error('El pago ya fue confirmado'));
       return;
     }
 
-    if (payment.status === 'FAILED' || payment.status === 'CANCELLED') {
-      res.status(400).json(
-        ApiResponse.error('Cannot confirm a failed or cancelled payment')
-      );
+    if (payment.status === 'failed') {
+      res.status(400).json(ApiResponse.error('No se puede confirmar un pago fallido'));
       return;
     }
 
-    // Step 3: Verify payment with provider
-    let providerVerification;
-    try {
-      providerVerification = await paymentService.verifyPaymentWithProvider(
-        payment.provider,
-        providerPaymentId || payment.providerIntentId
-      );
-    } catch (error) {
-      logger.error('Provider verification failed', {
-        paymentId,
-        provider: payment.provider,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    const confirmedPayment = await paymentService.confirmPaymentById(paymentId);
 
-      res.status(500).json(
-        ApiResponse.error('Failed to verify payment with provider')
-      );
-      return;
-    }
+    const booking = await bookingService.getBooking(payment.reservation_id);
+    if (!booking) throw new Error('Reserva no encontrada para el pago confirmado');
 
-    if (!providerVerification.success) {
-      logger.warn('Payment verification failed', {
-        paymentId,
-        reason: providerVerification.reason
-      });
-
-      await paymentService.updatePayment(paymentId, {
-        status: 'FAILED',
-        failureReason: providerVerification.reason
-      });
-
-      res.status(400).json(
-        ApiResponse.error('Payment verification failed', {
-          reason: providerVerification.reason
-        })
-      );
-      return;
-    }
-
-    // Step 4: Update payment status
-    const updatedPayment = await paymentService.updatePayment(paymentId, {
-      status: 'COMPLETED',
-      paidAt: new Date().toISOString(),
-      transactionId: transactionId || providerVerification.transactionId,
-      providerResponse: providerVerification.data
-    });
-
-    logger.info('Payment confirmed successfully', {
-      paymentId,
-      transactionId: updatedPayment.transactionId
-    });
-
-    // Step 5: Get booking and check if fully paid
-    const booking = await bookingService.getBookingById(payment.bookingId);
-
-    if (!booking) {
-      throw new Error('Booking not found for confirmed payment');
-    }
-
-    // Calculate total paid amount
-    const allPayments = await paymentService.getPaymentsByBookingId(payment.bookingId);
+    const allPayments = await paymentService.getPaymentsByReservation(payment.reservation_id);
     const totalPaid = allPayments
-      .filter(p => p.status === 'COMPLETED')
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter(p => p.status === 'succeeded')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    const isFullyPaid = totalPaid >= booking.pricing.total;
-    const isDepositPaid = totalPaid >= booking.pricing.deposit;
+    const finalPrice = Number(booking.final_price);
+    const depositAmount = Number(booking.deposit_amount);
+    const isDepositPaid = totalPaid >= depositAmount;
+    const isFullyPaid = totalPaid >= finalPrice;
 
-    // Step 6: Update booking status
-    let newBookingStatus = booking.status;
-    if (isFullyPaid && booking.status === 'PENDING') {
-      newBookingStatus = 'CONFIRMED';
-      await bookingService.updateBooking(booking.id, {
-        status: 'CONFIRMED'
-      });
-      logger.info('Booking fully paid and confirmed', { bookingId: booking.id });
-    } else if (isDepositPaid && booking.status === 'PENDING') {
-      newBookingStatus = 'CONFIRMED';
-      await bookingService.updateBooking(booking.id, {
-        status: 'CONFIRMED'
-      });
-      logger.info('Booking deposit paid and confirmed', { bookingId: booking.id });
-    }
-
-    // Step 7: Send confirmation email
-    emailService.sendPaymentConfirmation(booking, {
-      paymentId: updatedPayment.id,
-      amount: updatedPayment.amount,
-      type: updatedPayment.type,
-      transactionId: updatedPayment.transactionId,
-      totalPaid,
-      remainingBalance: booking.pricing.total - totalPaid,
-      isFullyPaid
-    }).catch(error => {
-      logger.error('Failed to send payment confirmation email', {
-        paymentId,
-        error: error.message
-      });
-    });
-
-    // Step 8: Sync with Google Sheets (async)
-    if (newBookingStatus === 'CONFIRMED') {
-      bookingService.syncToGoogleSheets(booking).catch(error => {
-        logger.error('Failed to sync booking to Google Sheets', {
-          bookingId: booking.id,
-          error: error.message
-        });
+    if (!isFullyPaid) {
+      const daysUntilCheckIn = Math.ceil(
+        (new Date(booking.check_in_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+      emailService.sendPaymentReminder({
+        to: booking.guest?.email ?? '',
+        bookingId: booking.id,
+        guestName: booking.guest?.full_name ?? '',
+        remainingAmount: finalPrice - totalPaid,
+        daysUntilCheckIn,
+        paymentUrl: '',
+        language: 'pt',
+      }).catch((err: Error) => {
+        logger.error('Error al enviar email de recordatorio de pago', { paymentId, error: err.message });
       });
     }
 
-    // Step 9: Return confirmation
     res.status(200).json(
       ApiResponse.success({
         payment: {
-          id: updatedPayment.id,
-          status: 'COMPLETED',
-          amount: updatedPayment.amount,
-          currency: updatedPayment.currency,
-          type: updatedPayment.type,
-          transactionId: updatedPayment.transactionId,
-          paidAt: updatedPayment.paidAt
+          id: confirmedPayment.id,
+          status: 'completed',
+          amount: Number(confirmedPayment.amount),
+          currency: confirmedPayment.currency,
+          type: confirmedPayment.payment_type,
+          paidAt: confirmedPayment.paid_at,
         },
         booking: {
           id: booking.id,
           confirmationNumber: `LCH-${booking.id.substring(0, 8).toUpperCase()}`,
-          status: newBookingStatus,
+          status: booking.status,
           totalPaid,
-          remainingBalance: booking.pricing.total - totalPaid,
+          remainingBalance: finalPrice - totalPaid,
           isDepositPaid,
-          isFullyPaid
+          isFullyPaid,
         },
-        nextSteps: isFullyPaid 
+        nextSteps: isFullyPaid
           ? {
-              message: 'Your booking is fully paid and confirmed!',
-              checkInDate: booking.checkIn,
+              message: 'Tu reserva está completamente pagada y confirmada.',
+              checkInDate: booking.check_in_date,
               checkInTime: '14:00',
-              address: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro'
+              address: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro',
             }
           : {
-              message: 'Deposit paid successfully. Remaining balance due 7 days before check-in.',
-              remainingAmount: booking.pricing.total - totalPaid,
+              message: 'Depósito pagado. El saldo restante vence 7 días antes del check-in.',
+              remainingAmount: finalPrice - totalPaid,
               dueDate: new Date(
-                new Date(booking.checkIn).getTime() - 7 * 24 * 60 * 60 * 1000
-              ).toISOString()
-            }
-      }, 'Payment confirmed successfully')
+                new Date(booking.check_in_date).getTime() - 7 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+            },
+      }, 'Pago confirmado exitosamente')
     );
-
   } catch (error) {
-    logger.error('Error confirming payment', {
+    logger.error('Error al confirmar pago', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     next(error);
   }

@@ -1,13 +1,13 @@
 // lapa-casa-hostel/backend/src/routes/bookings/update-booking.ts
+// ventana3
 
 import { Request, Response, NextFunction } from 'express';
-import { BookingService } from '../../services/booking-service';
+import { bookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
-const bookingService = new BookingService();
 const availabilityService = new AvailabilityService();
 const pricingService = new PricingService();
 
@@ -34,34 +34,33 @@ export const updateBookingHandler = async (
     const { id } = req.params;
     const updates = req.body;
 
-    logger.info('Updating booking', { bookingId: id });
+    logger.info('Actualizando reserva', { bookingId: id });
 
-    const existingBooking = await bookingService.getBookingById(id);
+    const existingBooking = await bookingService.getBooking(id);
 
     if (!existingBooking) {
-      res.status(404).json(ApiResponse.error('Booking not found', { bookingId: id }));
+      res.status(404).json(ApiResponse.error('Reserva no encontrada', { bookingId: id }));
       return;
     }
 
     if (existingBooking.status === 'cancelled') {
-      res.status(400).json(ApiResponse.error('Cannot modify cancelled booking'));
+      res.status(400).json(ApiResponse.error('No se puede modificar una reserva cancelada'));
       return;
     }
 
     if (existingBooking.status === 'completed') {
-      res.status(400).json(ApiResponse.error('Cannot modify completed booking'));
+      res.status(400).json(ApiResponse.error('No se puede modificar una reserva completada'));
       return;
     }
 
     const checkInDate = new Date(existingBooking.check_in_date);
     const now = new Date();
-    const daysUntilCheckIn = Math.ceil(
-      (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const hoursUntilCheckIn =
+      (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    if (daysUntilCheckIn < 2 && (updates.checkIn || updates.checkOut || updates.rooms)) {
+    if (hoursUntilCheckIn < 48 && (updates.checkIn || updates.checkOut || updates.rooms)) {
       res.status(400).json(
-        ApiResponse.error('Cannot modify dates or rooms within 48 hours of check-in')
+        ApiResponse.error('No se pueden modificar fechas o camas dentro de 48h del check-in')
       );
       return;
     }
@@ -69,81 +68,78 @@ export const updateBookingHandler = async (
     const datesChanged = !!(updates.checkIn || updates.checkOut);
     const roomsChanged = !!updates.rooms;
 
-    let newTotalPrice = Number(existingBooking.total_price);
-    let newDepositAmount = Number(existingBooking.deposit_amount ?? 0);
+    let newFinalPrice = Number(existingBooking.final_price);
+    let newDepositAmount = Number(existingBooking.deposit_amount);
+    let newRemainingAmount = Number(existingBooking.remaining_amount);
 
     if (datesChanged || roomsChanged) {
-      const newCheckIn = updates.checkIn || existingBooking.check_in_date;
-      const newCheckOut = updates.checkOut || existingBooking.check_out_date;
-      const totalBeds = existingBooking.total_beds || 1;
+      const newCheckIn = updates.checkIn || String(existingBooking.check_in_date).slice(0, 10);
+      const newCheckOut = updates.checkOut || String(existingBooking.check_out_date).slice(0, 10);
+      const totalBeds = existingBooking.beds_count || 1;
 
       const checkIn = new Date(newCheckIn);
       const checkOut = new Date(newCheckOut);
 
       if (checkIn < now) {
-        res.status(400).json(ApiResponse.error('Check-in date cannot be in the past'));
+        res.status(400).json(ApiResponse.error('La fecha de check-in no puede ser en el pasado'));
         return;
       }
-
       if (checkOut <= checkIn) {
-        res.status(400).json(ApiResponse.error('Check-out date must be after check-in date'));
+        res.status(400).json(ApiResponse.error('La fecha de check-out debe ser posterior al check-in'));
         return;
       }
-
-      const newNights = Math.round(
-        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
-      );
 
       const availability = await availabilityService.checkAvailability({
         checkIn: newCheckIn,
         checkOut: newCheckOut,
         bedsNeeded: totalBeds,
-        excludeBookingId: id
       });
 
       if (!availability.available) {
         res.status(409).json(
-          ApiResponse.error('Insufficient availability for requested changes', {
+          ApiResponse.error('No hay disponibilidad para las fechas solicitadas', {
             availableBeds: availability.availableBeds,
-            requestedBeds: totalBeds
+            requestedBeds: totalBeds,
           })
         );
         return;
       }
 
+      const nights = Math.round(
+        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+      );
       const newPricing = await pricingService.calculateTotalPrice({
         checkInDate: newCheckIn,
         checkOutDate: newCheckOut,
         rooms: updates.rooms || [],
-        totalBeds
+        totalBeds,
       });
 
-      newTotalPrice = newPricing.totalPrice;
+      newFinalPrice = newPricing.totalPrice;
       newDepositAmount = newPricing.depositAmount;
+      newRemainingAmount = newPricing.remainingAmount;
 
       await bookingService.updateBooking(id, {
         check_in_date: newCheckIn,
         check_out_date: newCheckOut,
-        total_price: newTotalPrice,
+        nights_count: nights,
+        final_price: newFinalPrice,
         deposit_amount: newDepositAmount,
-        remaining_amount: newPricing.remainingAmount,
-        group_discount_pct: newPricing.groupDiscount,
-        season_type: newPricing.seasonType,
-        season_multiplier: newPricing.seasonMultiplier
+        remaining_amount: newRemainingAmount,
+        group_discount: newPricing.groupDiscount ?? existingBooking.group_discount,
+        season_multiplier: newPricing.seasonMultiplier ?? existingBooking.season_multiplier,
       });
 
-      logger.info('Booking dates updated', { bookingId: id, newCheckIn, newCheckOut });
+      logger.info('Fechas de reserva actualizadas', { bookingId: id, newCheckIn, newCheckOut });
     }
 
-    // Update guest info
     if (updates.guest) {
       const guestUpdate: any = {};
       if (updates.guest.firstName || updates.guest.lastName) {
-        const firstName = updates.guest.firstName || '';
-        const lastName = updates.guest.lastName || '';
-        guestUpdate.full_name = `${firstName} ${lastName}`.trim();
+        const first = updates.guest.firstName || '';
+        const last = updates.guest.lastName || '';
+        guestUpdate.full_name = `${first} ${last}`.trim();
       }
-      if (updates.guest.email) guestUpdate.email = updates.guest.email;
       if (updates.guest.phone) guestUpdate.phone = updates.guest.phone;
       if (updates.guest.country) guestUpdate.country = updates.guest.country;
 
@@ -152,25 +148,15 @@ export const updateBookingHandler = async (
       }
     }
 
-    // Update special requests
     if (updates.specialRequests !== undefined) {
       await bookingService.updateBooking(id, { special_requests: updates.specialRequests });
     }
 
-    const updatedBooking = await bookingService.getBookingById(id);
+    const updatedBooking = await bookingService.getBooking(id);
+    if (!updatedBooking) throw new Error('No se pudo obtener la reserva actualizada');
 
-    if (!updatedBooking) {
-      throw new Error('Failed to retrieve updated booking');
-    }
-
-    const updatedCheckIn = new Date(updatedBooking.check_in_date);
-    const updatedCheckOut = new Date(updatedBooking.check_out_date);
-    const nights = Math.round(
-      (updatedCheckOut.getTime() - updatedCheckIn.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    const oldTotal = Number(existingBooking.total_price);
-    const priceDifference = datesChanged || roomsChanged ? newTotalPrice - oldTotal : 0;
+    const oldTotal = Number(existingBooking.final_price);
+    const priceDifference = datesChanged || roomsChanged ? newFinalPrice - oldTotal : 0;
 
     res.status(200).json(
       ApiResponse.success({
@@ -180,29 +166,30 @@ export const updateBookingHandler = async (
           status: updatedBooking.status,
           checkIn: updatedBooking.check_in_date,
           checkOut: updatedBooking.check_out_date,
-          nights,
+          nights: updatedBooking.nights_count,
+          bedsCount: updatedBooking.beds_count,
           guest: updatedBooking.guest,
           pricing: {
-            total: Number(updatedBooking.total_price),
-            deposit: Number(updatedBooking.deposit_amount ?? 0),
-            remaining: Number(updatedBooking.remaining_amount ?? 0),
-            currency: 'BRL'
+            total: Number(updatedBooking.final_price),
+            deposit: Number(updatedBooking.deposit_amount),
+            remaining: Number(updatedBooking.remaining_amount),
+            currency: 'BRL',
           },
           specialRequests: updatedBooking.special_requests,
-          updatedAt: updatedBooking.updated_at
+          updatedAt: updatedBooking.updated_at,
         },
         changes: {
           datesChanged,
           roomsChanged,
           guestUpdated: !!updates.guest,
-          priceDifference
-        }
-      }, 'Booking updated successfully')
+          priceDifference,
+        },
+      }, 'Reserva actualizada exitosamente')
     );
   } catch (error) {
-    logger.error('Error updating booking', {
+    logger.error('Error al actualizar reserva', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     next(error);
   }

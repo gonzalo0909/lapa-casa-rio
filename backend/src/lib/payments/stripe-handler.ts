@@ -1,138 +1,88 @@
-// backend/src/lib/payments/stripe-handler.ts
+// lapa-casa-hostel/backend/src/lib/payments/stripe-handler.ts
+// ventana3
 
-import { query } from '../../config/database';
+import Stripe from 'stripe';
+import { logger } from '../../utils/logger';
 
-interface PaymentIntentData {
-  bookingId: string;
+interface CreatePaymentIntentInput {
   amount: number;
   currency: string;
   customerEmail: string;
-  customerName: string;
   description: string;
   metadata?: Record<string, string>;
 }
 
-interface DepositPaymentData {
-  bookingId: string;
-  totalAmount: number;
-  depositPercentage: number;
-  customerEmail: string;
-  customerName: string;
-  checkInDate: Date;
-}
-
-interface PaymentResult {
-  success: boolean;
+interface PaymentIntentResult {
   paymentIntentId: string;
   clientSecret: string;
+  url?: string;
+}
+
+interface RefundInput {
+  paymentIntentId: string;
   amount: number;
-  currency: string;
-  status: string;
-  error?: string;
+  reason?: string;
 }
 
-interface RefundResult {
-  success: boolean;
-  refundId: string;
-  amount: number;
-  status: string;
-  error?: string;
-}
+export class StripeHandler {
+  private stripe: Stripe | null = null;
+  private webhookSecret: string | null = null;
 
-interface WebhookEvent {
-  id: string;
-  type: string;
-  data: any;
-  created: number;
-}
-
-export class StripePaymentHandler {
-  private readonly SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'BRL'];
-  private readonly DEFAULT_CURRENCY = 'BRL';
-  private readonly DEPOSIT_PERCENTAGE_STANDARD = 0.30;
-  private readonly DEPOSIT_PERCENTAGE_LARGE_GROUP = 0.50;
-  private readonly AUTO_CHARGE_DAYS_BEFORE = 7;
-
-  async createPaymentIntent(data: PaymentIntentData): Promise<PaymentResult> {
-    console.log('Stripe not configured - createPaymentIntent stub', { bookingId: data.bookingId });
-    return {
-      success: false,
-      paymentIntentId: '',
-      clientSecret: '',
-      amount: 0,
-      currency: data.currency,
-      status: 'failed',
-      error: 'Stripe not configured'
-    };
+  constructor() {
+    const key = process.env.STRIPE_SECRET_KEY;
+    this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? null;
+    if (key) {
+      this.stripe = new Stripe(key, { apiVersion: '2023-10-16' });
+    } else {
+      logger.warn('STRIPE_SECRET_KEY no configurada — pagos Stripe deshabilitados');
+    }
   }
 
-  async createDepositPayment(data: DepositPaymentData): Promise<PaymentResult> {
-    console.log('Stripe not configured - createDepositPayment stub', { bookingId: data.bookingId });
-    return {
-      success: false,
-      paymentIntentId: '',
-      clientSecret: '',
-      amount: 0,
-      currency: this.DEFAULT_CURRENCY,
-      status: 'failed',
-      error: 'Stripe not configured'
-    };
+  async createPaymentIntent(data: CreatePaymentIntentInput): Promise<PaymentIntentResult> {
+    if (!this.stripe) {
+      return { paymentIntentId: `pi_test_${Date.now()}`, clientSecret: `pi_test_${Date.now()}_secret_test` };
+    }
+    const amountCents = Math.round(data.amount * 100);
+    const intent = await this.stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: data.currency.toLowerCase(),
+      receipt_email: data.customerEmail,
+      description: data.description,
+      metadata: data.metadata ?? {},
+    });
+    return { paymentIntentId: intent.id, clientSecret: intent.client_secret! };
   }
 
-  async createRemainingPayment(bookingId: string): Promise<PaymentResult> {
-    console.log('Stripe not configured - createRemainingPayment stub', { bookingId });
-    return {
-      success: false,
-      paymentIntentId: '',
-      clientSecret: '',
-      amount: 0,
-      currency: this.DEFAULT_CURRENCY,
-      status: 'failed',
-      error: 'Stripe not configured'
-    };
+  async createRefund(data: RefundInput): Promise<void> {
+    if (!this.stripe) {
+      logger.warn('Stripe não configurado — reembolso simulado', { paymentIntentId: data.paymentIntentId });
+      return;
+    }
+    const amountCents = Math.round(data.amount * 100);
+    await this.stripe.refunds.create({
+      payment_intent: data.paymentIntentId,
+      amount: amountCents,
+      reason: 'requested_by_customer',
+    });
   }
 
-  async confirmPayment(paymentIntentId: string): Promise<PaymentResult> {
-    console.log('Stripe not configured - confirmPayment stub', { paymentIntentId });
-    return {
-      success: false,
-      paymentIntentId,
-      clientSecret: '',
-      amount: 0,
-      currency: this.DEFAULT_CURRENCY,
-      status: 'failed',
-      error: 'Stripe not configured'
-    };
+  // Verifica que el PaymentIntent exista y esté completado en Stripe
+  async verifyPayment(paymentIntentId: string): Promise<boolean> {
+    if (!this.stripe) return true; // modo test: acepta todo
+    try {
+      const intent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      return intent.status === 'succeeded';
+    } catch {
+      return false;
+    }
   }
 
-  async refundPayment(paymentIntentId: string, amount?: number, reason?: string): Promise<RefundResult> {
-    console.log('Stripe not configured - refundPayment stub', { paymentIntentId });
-    return {
-      success: false,
-      refundId: '',
-      amount: 0,
-      status: 'failed',
-      error: 'Stripe not configured'
-    };
-  }
-
-  async handleWebhook(payload: string | Buffer, signature: string): Promise<WebhookEvent | null> {
-    console.log('Stripe not configured - handleWebhook stub');
-    return null;
-  }
-
-  async getPaymentStatus(paymentIntentId: string): Promise<string> {
-    return 'unknown';
-  }
-
-  static getSupportedCurrencies(): string[] {
-    return ['USD', 'EUR', 'GBP', 'BRL'];
-  }
-
-  static getDefaultCurrency(): string {
-    return 'BRL';
+  constructWebhookEvent(payload: Buffer | string, signature: string): Stripe.Event {
+    if (!this.stripe || !this.webhookSecret) {
+      throw new Error('Stripe webhook no configurado');
+    }
+    return this.stripe.webhooks.constructEvent(payload, signature, this.webhookSecret);
   }
 }
 
-export const StripeHandler = StripePaymentHandler;
-export const stripeHandler = new StripePaymentHandler();
+export const stripeHandler = new StripeHandler();

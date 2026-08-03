@@ -1,7 +1,15 @@
 // lapa-casa-hostel/backend/src/middleware/error-handler.ts
+// ventana3
 
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '@/utils/logger';
+
+export class AppError extends Error {
+  constructor(message: string, public readonly statusCode: number = 500) {
+    super(message);
+    this.name = 'AppError';
+  }
+}
 
 export const errorHandler = (
   error: Error,

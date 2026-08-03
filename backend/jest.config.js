@@ -10,5 +10,8 @@ module.exports = {
   // un solo worker evita que dos suites pisen las mismas filas de
   // beds/reservations al mismo tiempo.
   maxWorkers: 1,
-  setupFiles: ['dotenv/config']
+  setupFiles: ['dotenv/config'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1'
+  }
 };

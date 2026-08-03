@@ -1,13 +1,12 @@
 // lapa-casa-hostel/backend/src/routes/bookings/get-booking.ts
+// ventana3
 
 import { Request, Response, NextFunction } from 'express';
-import { BookingService } from '../../services/booking-service';
-import { PaymentService } from '../../services/payment-service';
+import { bookingService } from '../../services/booking-service';
+import { paymentService } from '../../services/payment-service';
+import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
-
-const bookingService = new BookingService();
-const paymentService = new PaymentService();
 
 export const getBookingHandler = async (
   req: Request<{ id: string }>,
@@ -17,20 +16,19 @@ export const getBookingHandler = async (
   try {
     const { id } = req.params;
 
-    logger.info('Fetching booking', { bookingId: id });
+    logger.info('Obteniendo reserva', { bookingId: id });
 
-    const booking = await bookingService.getBookingById(id);
+    const booking = await bookingService.getBooking(id);
 
     if (!booking) {
-      logger.warn('Booking not found', { bookingId: id });
-      res.status(404).json(ApiResponse.error('Booking not found', { bookingId: id }));
+      res.status(404).json(ApiResponse.error('Reserva no encontrada', { bookingId: id }));
       return;
     }
 
     const payments = await paymentService.getPaymentsByReservation(id);
 
     const paidAmount = payments
-      .filter(p => p.status === 'completed')
+      .filter(p => p.status === 'succeeded')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
     const pendingAmount = payments
@@ -42,67 +40,73 @@ export const getBookingHandler = async (
       .reduce((sum, p) => sum + Number(p.refund_amount ?? p.amount), 0);
 
     const checkInDate = new Date(booking.check_in_date);
-    const checkOut = new Date(booking.check_out_date);
+    const checkOutDate = new Date(booking.check_out_date);
     const now = new Date();
+    const nights = Math.round(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const daysUntilCheckIn = Math.ceil(
       (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
     );
-    const nights = Math.round(
-      (checkOut.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
 
-    const totalPrice = Number(booking.total_price);
-    const depositAmount = Number(booking.deposit_amount ?? 0);
+    const finalPrice = Number(booking.final_price);
+    const depositAmount = Number(booking.deposit_amount);
 
-    const cancellationPolicy = getCancellationPolicy(
-      booking.status,
-      daysUntilCheckIn,
-      paidAmount
-    );
+    // Política de cancelación desde SQL
+    let refundAmount = 0;
+    let refundPercentage = 0;
+    let canCancel = booking.status !== 'cancelled' && booking.status !== 'completed' && checkInDate >= now;
+    if (canCancel && paidAmount > 0) {
+      const refundResult = await query<{ refund_amount: string }>(
+        `SELECT calculate_cancellation_refund($1, $2::date, NOW()) AS refund_amount`,
+        [finalPrice, booking.check_in_date]
+      );
+      refundAmount = Math.min(parseFloat(refundResult.rows[0]?.refund_amount ?? '0'), paidAmount);
+      refundPercentage = finalPrice > 0 ? Math.round((refundAmount / finalPrice) * 100) : 0;
+    }
 
-    // Split full_name into first/last for API response
     const nameParts = (booking.guest?.full_name || '').split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
 
-    const response = {
+    res.status(200).json(ApiResponse.success({
       booking: {
         id: booking.id,
         confirmationNumber: `LCH-${booking.id.substring(0, 8).toUpperCase()}`,
         status: booking.status,
         createdAt: booking.created_at,
-        updatedAt: booking.updated_at
+        updatedAt: booking.updated_at,
       },
       dates: {
         checkIn: booking.check_in_date,
         checkOut: booking.check_out_date,
         nights,
-        daysUntilCheckIn
+        daysUntilCheckIn,
       },
       guest: {
-        firstName,
-        lastName,
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
         fullName: booking.guest?.full_name,
         email: booking.guest?.email,
         phone: booking.guest?.phone,
-        country: booking.guest?.country
+        country: booking.guest?.country,
       },
       pricing: {
-        total: totalPrice,
+        total: finalPrice,
         deposit: depositAmount,
-        remaining: totalPrice - depositAmount,
-        groupDiscountPct: Number(booking.group_discount_pct ?? 0),
-        seasonType: booking.season_type,
-        seasonMultiplier: Number(booking.season_multiplier ?? 1),
-        currency: 'BRL'
+        remaining: Number(booking.remaining_amount),
+        groupDiscount: Number(booking.group_discount),
+        seasonMultiplier: Number(booking.season_multiplier),
+        earlyBirdDiscount: Number(booking.early_bird_discount),
+        bedsCount: booking.beds_count,
+        nightsCount: booking.nights_count,
+        currency: 'BRL',
       },
       payment: {
         paidAmount,
         pendingAmount,
         refundedAmount,
-        remainingBalance: totalPrice - paidAmount,
+        remainingBalance: finalPrice - paidAmount,
         depositPaid: paidAmount >= depositAmount,
-        fullyPaid: paidAmount >= totalPrice,
+        fullyPaid: paidAmount >= finalPrice,
         paymentHistory: payments.map(p => ({
           id: p.id,
           amount: Number(p.amount),
@@ -111,10 +115,15 @@ export const getBookingHandler = async (
           paymentType: p.payment_type,
           providerPaymentId: p.provider_payment_id,
           createdAt: p.created_at,
-          paidAt: p.paid_at
-        }))
+          paidAt: p.paid_at,
+        })),
       },
-      cancellation: cancellationPolicy,
+      cancellation: {
+        canCancel,
+        refundPercentage,
+        refundAmount,
+        paidAmount,
+      },
       specialRequests: booking.special_requests,
       checkInInstructions: {
         address: 'Rua Silvio Romero 22, Santa Teresa',
@@ -122,64 +131,15 @@ export const getBookingHandler = async (
         state: 'RJ',
         zipCode: '20241-110',
         country: 'Brazil',
-        coordinates: { lat: -22.9219, lng: -43.1904 },
-        whatsapp: '+55 21 99999-9999'
-      }
-    };
+        whatsapp: '+55 21 99999-9999',
+      },
+    }, 'Reserva obtenida exitosamente'));
 
-    logger.info('Booking retrieved successfully', { bookingId: id, status: booking.status });
-
-    res.status(200).json(ApiResponse.success(response, 'Booking retrieved successfully'));
   } catch (error) {
-    logger.error('Error retrieving booking', {
+    logger.error('Error al obtener reserva', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     next(error);
   }
 };
-
-function getCancellationPolicy(
-  status: string,
-  daysUntilCheckIn: number,
-  paidAmount: number
-): {
-  canCancel: boolean;
-  refundPercentage: number;
-  refundAmount: number;
-  deadline: string | null;
-  reason?: string;
-} {
-  if (status === 'cancelled') {
-    return { canCancel: false, refundPercentage: 0, refundAmount: 0, deadline: null, reason: 'Booking already cancelled' };
-  }
-  if (status === 'completed') {
-    return { canCancel: false, refundPercentage: 0, refundAmount: 0, deadline: null, reason: 'Booking already completed' };
-  }
-  if (daysUntilCheckIn < 0) {
-    return { canCancel: false, refundPercentage: 0, refundAmount: 0, deadline: null, reason: 'Check-in date has passed' };
-  }
-  if (daysUntilCheckIn > 30) {
-    return {
-      canCancel: true,
-      refundPercentage: 100,
-      refundAmount: paidAmount,
-      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    };
-  }
-  if (daysUntilCheckIn > 15) {
-    return {
-      canCancel: true,
-      refundPercentage: 50,
-      refundAmount: paidAmount * 0.5,
-      deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-    };
-  }
-  return {
-    canCancel: true,
-    refundPercentage: 0,
-    refundAmount: 0,
-    deadline: null,
-    reason: 'No refund available within 15 days of check-in'
-  };
-}

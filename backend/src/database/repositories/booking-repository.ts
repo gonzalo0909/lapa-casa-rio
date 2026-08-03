@@ -1,4 +1,5 @@
 // lapa-casa-hostel/backend/src/database/repositories/booking-repository.ts
+// ventana3
 
 import { query } from '../../config/database';
 import type { Reservation, BookingStatus } from '../../types/database';
@@ -8,7 +9,10 @@ const TOTAL_BEDS = 45;
 export class BookingRepository {
   async findById(id: string): Promise<Reservation | null> {
     const result = await query<Reservation>(
-      `SELECT * FROM reservations WHERE id = $1`,
+      `SELECT r.*, to_json(g.*) AS guest
+       FROM reservations r
+       LEFT JOIN guests g ON r.guest_id = g.id
+       WHERE r.id = $1`,
       [id]
     );
     return result.rows[0] ?? null;
@@ -16,7 +20,10 @@ export class BookingRepository {
 
   async findByGuest(guestId: string): Promise<Reservation[]> {
     const result = await query<Reservation>(
-      `SELECT * FROM reservations WHERE guest_id = $1 ORDER BY created_at DESC`,
+      `SELECT r.*, to_json(g.*) AS guest
+       FROM reservations r
+       LEFT JOIN guests g ON r.guest_id = g.id
+       WHERE r.guest_id = $1 ORDER BY r.created_at DESC`,
       [guestId]
     );
     return result.rows;
@@ -24,9 +31,11 @@ export class BookingRepository {
 
   async findByDateRange(startDate: string, endDate: string): Promise<Reservation[]> {
     const result = await query<Reservation>(
-      `SELECT * FROM reservations
-       WHERE check_in_date < $2::date AND check_out_date > $1::date
-       ORDER BY check_in_date ASC`,
+      `SELECT r.*, to_json(g.*) AS guest
+       FROM reservations r
+       LEFT JOIN guests g ON r.guest_id = g.id
+       WHERE r.check_in_date < $2::date AND r.check_out_date > $1::date
+       ORDER BY r.check_in_date ASC`,
       [startDate, endDate]
     );
     return result.rows;
@@ -34,7 +43,10 @@ export class BookingRepository {
 
   async findByStatus(status: BookingStatus): Promise<Reservation[]> {
     const result = await query<Reservation>(
-      `SELECT * FROM reservations WHERE status = $1::booking_status ORDER BY created_at DESC`,
+      `SELECT r.*, to_json(g.*) AS guest
+       FROM reservations r
+       LEFT JOIN guests g ON r.guest_id = g.id
+       WHERE r.status = $1::booking_status ORDER BY r.created_at DESC`,
       [status]
     );
     return result.rows;
@@ -42,9 +54,11 @@ export class BookingRepository {
 
   async findUpcoming(limit: number = 10): Promise<Reservation[]> {
     const result = await query<Reservation>(
-      `SELECT * FROM reservations
-       WHERE status = 'confirmed' AND check_in_date >= CURRENT_DATE
-       ORDER BY check_in_date ASC LIMIT $1`,
+      `SELECT r.*, to_json(g.*) AS guest
+       FROM reservations r
+       LEFT JOIN guests g ON r.guest_id = g.id
+       WHERE r.status = 'confirmed' AND r.check_in_date >= CURRENT_DATE
+       ORDER BY r.check_in_date ASC LIMIT $1`,
       [limit]
     );
     return result.rows;
@@ -52,10 +66,12 @@ export class BookingRepository {
 
   async findPendingPayment(): Promise<Reservation[]> {
     const result = await query<Reservation>(
-      `SELECT * FROM reservations
-       WHERE status = 'pending_payment'
-         AND created_at >= NOW() - INTERVAL '24 hours'
-       ORDER BY created_at DESC`
+      `SELECT r.*, to_json(g.*) AS guest
+       FROM reservations r
+       LEFT JOIN guests g ON r.guest_id = g.id
+       WHERE r.status = 'pending_payment'
+         AND r.created_at >= NOW() - INTERVAL '24 hours'
+       ORDER BY r.created_at DESC`
     );
     return result.rows;
   }
@@ -63,13 +79,24 @@ export class BookingRepository {
   async update(id: string, data: Partial<{
     status: BookingStatus;
     special_requests: string;
-    notes: string;
     cancelled_at: Date;
     cancellation_reason: string;
-    deposit_paid: boolean;
-    deposit_paid_at: Date;
-    remaining_paid: boolean;
-    remaining_paid_at: Date;
+    checked_in_at: Date;
+    checked_out_at: Date;
+    refund_amount: number;
+    metadata: Record<string, any>;
+    check_in_date: string;
+    check_out_date: string;
+    nights_count: number;
+    beds_count: number;
+    final_price: number;
+    deposit_amount: number;
+    deposit_percent: number;
+    remaining_amount: number;
+    base_price: number;
+    season_multiplier: number;
+    group_discount: number;
+    early_bird_discount: number;
   }>): Promise<Reservation> {
     const fields = Object.keys(data);
     if (fields.length === 0) {
@@ -79,6 +106,7 @@ export class BookingRepository {
     }
     const sets = fields.map((f, i) => {
       if (f === 'status') return `${f} = $${i + 2}::booking_status`;
+      if (f === 'metadata') return `${f} = $${i + 2}::jsonb`;
       return `${f} = $${i + 2}`;
     }).join(', ');
     const values = fields.map(f => (data as any)[f]);
@@ -98,9 +126,6 @@ export class BookingRepository {
   }
 
   async confirmReservation(id: string): Promise<Reservation> {
-    // `deposit_paid`/`deposit_paid_at` no existen en la tabla real
-    // (0002_tables.sql) -- el estado de pago vive en `payments`
-    // (payment_type, status, paid_at), no en `reservations`.
     const result = await query<Reservation>(
       `UPDATE reservations
        SET status = 'confirmed', updated_at = NOW()
@@ -117,16 +142,6 @@ export class BookingRepository {
            cancellation_reason = $2, updated_at = NOW()
        WHERE id = $1 RETURNING *`,
       [id, reason ?? null]
-    );
-    return result.rows[0];
-  }
-
-  async markRemainingPaid(id: string): Promise<Reservation> {
-    const result = await query<Reservation>(
-      `UPDATE reservations
-       SET remaining_paid = true, remaining_paid_at = NOW(), updated_at = NOW()
-       WHERE id = $1 RETURNING *`,
-      [id]
     );
     return result.rows[0];
   }
@@ -175,7 +190,7 @@ export class BookingRepository {
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const result = await query<Reservation>(
-      `SELECT r.* FROM reservations r ${join} ${where} ORDER BY r.created_at DESC LIMIT 50`,
+      `SELECT r.*, to_json(g.*) AS guest FROM reservations r ${join} ${where} ORDER BY r.created_at DESC LIMIT 50`,
       params
     );
     return result.rows;

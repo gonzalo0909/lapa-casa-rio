@@ -1,11 +1,8 @@
 // lapa-casa-hostel/backend/src/database/repositories/payment-repository.ts
+// ventana3
 
 import { query } from '../../config/database';
 import type { Payment, PaymentStatus } from '../../types/database';
-
-// Backward-compat: callers use old field names; we map to real DB columns.
-// Real columns: provider (stripe|mercadopago), payment_type (deposit|remaining),
-// provider_payment_id, provider_metadata, paid_at, failed_at, refunded_at
 
 type LegacyPaymentMethod = 'card' | 'credit_card' | 'debit_card' | 'pix' | string;
 
@@ -23,17 +20,19 @@ export class PaymentRepository {
     currency?: string;
     payment_method?: LegacyPaymentMethod;
     payment_type?: string;
+    provider?: 'stripe' | 'mercadopago';
     status?: PaymentStatus;
     stripe_payment_intent_id?: string | null;
     mp_payment_id?: string | null;
-    mp_preference_id?: string | null;
-    pix_qr_code?: string | null;
-    pix_qr_code_base64?: string | null;
-    pix_expires_at?: Date | null;
+    provider_payment_id?: string | null;
     metadata?: any;
   }): Promise<Payment> {
-    const provider = resolveProvider(data.payment_method);
-    const providerPaymentId = data.stripe_payment_intent_id ?? data.mp_payment_id ?? null;
+    const provider = data.provider ?? resolveProvider(data.payment_method);
+    const providerPaymentId =
+      data.provider_payment_id ??
+      data.stripe_payment_intent_id ??
+      data.mp_payment_id ??
+      null;
     const providerMetadata = data.metadata ? JSON.stringify(data.metadata) : null;
     const paymentType = data.payment_type ?? 'deposit';
 
@@ -45,7 +44,7 @@ export class PaymentRepository {
        VALUES (
          $1,
          COALESCE($2, (SELECT guest_id FROM reservations WHERE id = $1)),
-         $3::provider,
+         $3::payment_provider,
          $4::payment_type,
          $5,
          $6,
@@ -73,6 +72,15 @@ export class PaymentRepository {
     const result = await query<Payment>(
       `SELECT *, provider_metadata AS metadata FROM payments WHERE id = $1`,
       [id]
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findByProviderPaymentId(providerPaymentId: string): Promise<Payment | null> {
+    const result = await query<Payment>(
+      `SELECT *, provider_metadata AS metadata FROM payments
+       WHERE provider_payment_id = $1 LIMIT 1`,
+      [providerPaymentId]
     );
     return result.rows[0] ?? null;
   }
@@ -127,28 +135,18 @@ export class PaymentRepository {
 
   async update(id: string, data: Partial<{
     status: PaymentStatus;
-    stripe_payment_intent_id: string;
-    mp_payment_id: string;
-    mp_preference_id: string;
-    pix_qr_code: string;
-    pix_qr_code_base64: string;
-    pix_expires_at: Date;
-    processed_at: Date;
-    refunded_at: Date;
-    refund_amount: number;
+    provider_payment_id: string;
+    provider_metadata: any;
     failure_reason: string;
-    metadata: any;
+    refund_amount: number;
+    paid_at: Date;
+    failed_at: Date;
+    refunded_at: Date;
   }>): Promise<Payment> {
     const mapped: Record<string, any> = {};
     for (const [k, v] of Object.entries(data)) {
-      if (k === 'stripe_payment_intent_id' || k === 'mp_payment_id') {
-        mapped['provider_payment_id'] = v;
-      } else if (k === 'processed_at') {
-        mapped['paid_at'] = v;
-      } else if (k === 'metadata') {
-        mapped['provider_metadata'] = typeof v === 'string' ? v : JSON.stringify(v);
-      } else if (k === 'mp_preference_id' || k === 'pix_qr_code' || k === 'pix_qr_code_base64' || k === 'pix_expires_at') {
-        // no matching column — skip
+      if (k === 'provider_metadata') {
+        mapped[k] = typeof v === 'string' ? v : JSON.stringify(v);
       } else {
         mapped[k] = v;
       }
@@ -176,11 +174,16 @@ export class PaymentRepository {
   async markCompleted(id: string): Promise<Payment> {
     const result = await query<Payment>(
       `UPDATE payments
-       SET status = 'completed', paid_at = NOW(), updated_at = NOW()
+       SET status = 'succeeded', paid_at = NOW(), updated_at = NOW()
        WHERE id = $1 RETURNING *, provider_metadata AS metadata`,
       [id]
     );
     return result.rows[0];
+  }
+
+  // Alias para compatibilidad con payment-service
+  async markSucceeded(id: string): Promise<Payment> {
+    return this.markCompleted(id);
   }
 
   async markFailed(id: string, failureReason?: string): Promise<Payment> {
@@ -221,9 +224,9 @@ export class PaymentRepository {
     }>(
       `SELECT
          COUNT(*)::int AS total,
-         COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+         COUNT(*) FILTER (WHERE status = 'succeeded')::int AS completed,
          COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
-         COALESCE(SUM(amount) FILTER (WHERE status = 'completed'), 0) AS revenue,
+         COALESCE(SUM(amount) FILTER (WHERE status = 'succeeded'), 0) AS revenue,
          COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0) AS pending_amount
        FROM payments`
     );

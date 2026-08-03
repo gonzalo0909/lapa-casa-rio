@@ -9,14 +9,17 @@ export type BookingStatus =
 
 export type PaymentStatus =
   | 'pending'
-  | 'completed'
+  | 'succeeded'
   | 'failed'
   | 'refunded'
-  | 'cancelled';
+  | 'partially_refunded';
 
 export type PaymentMethod = 'card' | 'pix' | 'bank_transfer' | 'cash';
 
 export type BedGender = 'mixed' | 'female' | 'male';
+
+// ventana3
+export type PaymentProvider = 'stripe' | 'mercadopago';
 
 export interface Guest {
   id: string;
@@ -85,6 +88,8 @@ export interface Reservation {
   metadata: Record<string, any> | null;
   created_at: Date;
   updated_at: Date;
+  // resultado de JOIN con guests — no es columna de la tabla
+  guest?: Guest;
 }
 
 export interface Payment {

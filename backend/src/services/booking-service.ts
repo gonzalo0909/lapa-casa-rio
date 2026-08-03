@@ -255,6 +255,21 @@ export class BookingService {
     );
     return rows.length;
   }
+
+  // ventana3
+  async updateBooking(id: string, data: Parameters<typeof bookingRepo.update>[1]): Promise<Reservation> {
+    return bookingRepo.update(id, data);
+  }
+
+  // ventana3
+  async updateGuest(guestId: string, data: Partial<{
+    full_name: string;
+    phone: string;
+    country: string;
+    language: string;
+  }>): Promise<void> {
+    await guestRepo.update(guestId, data);
+  }
 }
 
 export const bookingService = new BookingService();

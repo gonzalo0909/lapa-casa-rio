@@ -13,6 +13,7 @@ import { PoolClient } from 'pg';
 import { query, withTransaction } from '../config/database';
 import { GuestRepository } from '../database/repositories/guest-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
+import { acquireLock } from '../database/lock-middleware';
 import { pricingService } from './pricing-service';
 import { logger } from '../utils/logger';
 import type { Reservation, BookingStatus } from '../types/database';
@@ -109,7 +110,7 @@ export class BookingService {
       }
 
       // 2) Adquirir advisory locks de esas camas especificas, DENTRO de esta transaccion
-      await client.query('SELECT acquire_bed_locks($1::uuid[])', [candidateBedIds]);
+      await acquireLock(client, candidateBedIds);
 
       // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos
       const { rows: stillOccupied } = await client.query(

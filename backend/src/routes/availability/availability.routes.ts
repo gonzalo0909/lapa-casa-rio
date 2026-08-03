@@ -1,121 +1,101 @@
-/**
- * File: lapa-casa-hostel/backend/src/routes/availability/availability.routes.ts
- * Availability Routes Module
- * Lapa Casa Hostel Channel Manager
- * 
- * Handles availability checking and room allocation endpoints
- * Implements anti-overbooking logic and flexible room conversion
- * 
- * @module routes/availability
- * @requires express
- */
+// lapa-casa-hostel/backend/src/routes/availability/availability.routes.ts
+// ventana3
 
 import { Router } from 'express';
 import { checkAvailabilityHandler } from './check-availability';
 import { roomAvailabilityHandler } from './room-availability';
-import { validationMiddleware } from '../../middleware/validation';
 import { logger } from '../../utils/logger';
+import { ApiResponse } from '../../utils/responses';
+import { availabilityService } from '../../services/availability-service';
 
 const router = Router();
 
-/**
- * Check General Availability
- * @route GET /availability/check
- * @group Availability - Availability checking operations
- * @param {string} checkIn.query.required - Check-in date (YYYY-MM-DD)
- * @param {string} checkOut.query.required - Check-out date (YYYY-MM-DD)
- * @param {number} beds.query.required - Number of beds needed
- * @returns {object} 200 - Availability details with room options
- * @returns {Error} 400 - Invalid date format or parameters
- * @returns {Error} 500 - Server error
- */
-router.get(
-  '/check',
-  validationMiddleware('checkAvailability'),
-  checkAvailabilityHandler
-);
+router.get('/check', checkAvailabilityHandler);
 
-/**
- * Check Room-Specific Availability
- * @route GET /availability/room/:roomId
- * @group Availability - Availability checking operations
- * @param {string} roomId.path.required - Room ID
- * @param {string} checkIn.query.required - Check-in date (YYYY-MM-DD)
- * @param {string} checkOut.query.required - Check-out date (YYYY-MM-DD)
- * @returns {object} 200 - Room availability details
- * @returns {Error} 400 - Invalid parameters
- * @returns {Error} 404 - Room not found
- * @returns {Error} 500 - Server error
- */
-router.get(
-  '/room/:roomId',
-  validationMiddleware('checkRoomAvailability'),
-  roomAvailabilityHandler
-);
+router.get('/room/:roomId', roomAvailabilityHandler);
 
-/**
- * Get Calendar View
- * @route GET /availability/calendar
- * @group Availability - Availability checking operations
- * @param {string} month.query.required - Month (YYYY-MM)
- * @param {string} roomId.query - Filter by specific room
- * @returns {object} 200 - Calendar with availability data
- * @returns {Error} 400 - Invalid parameters
- * @returns {Error} 500 - Server error
- */
-router.get(
-  '/calendar',
-  validationMiddleware('getCalendar'),
-  async (req, res, next) => {
-    try {
-      const { month, roomId } = req.query;
-      
-      logger.info('Calendar availability request', { month, roomId });
+router.get('/calendar', async (req, res, next) => {
+  try {
+    const { month, roomId } = req.query as { month?: string; roomId?: string };
 
-      // This would call AvailabilityService.getCalendarAvailability()
-      res.status(200).json({
-        month,
-        roomId: roomId || 'all',
-        days: []
-      });
-    } catch (error) {
-      next(error);
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      res.status(400).json(ApiResponse.error('month parameter required in YYYY-MM format'));
+      return;
     }
+
+    const [year, mon] = month.split('-').map(Number);
+    const from = `${month}-01`;
+    const lastDay = new Date(year, mon, 0).getDate();
+    const to = `${month}-${String(lastDay).padStart(2, '0')}`;
+
+    logger.info('Calendar availability request', { month, from, to, roomId });
+
+    const days = await availabilityService.getDailyOccupancy(from, to);
+
+    res.status(200).json(ApiResponse.success({
+      month,
+      roomId: roomId ?? 'all',
+      from,
+      to,
+      days: days.map(d => ({
+        date: d.date,
+        availableBeds: d.available,
+        occupiedBeds: d.occupied,
+        totalBeds: d.total,
+        occupancyRate: d.total > 0 ? Math.round((d.occupied / d.total) * 100) : 0
+      }))
+    }, 'Calendar availability retrieved'));
+  } catch (error) {
+    logger.error('Error getting calendar availability', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
   }
-);
+});
 
-/**
- * Get Availability Summary
- * @route GET /availability/summary
- * @group Availability - Availability checking operations
- * @param {string} from.query.required - Start date (YYYY-MM-DD)
- * @param {string} to.query.required - End date (YYYY-MM-DD)
- * @returns {object} 200 - Availability summary by date
- * @returns {Error} 400 - Invalid parameters
- * @returns {Error} 500 - Server error
- */
-router.get(
-  '/summary',
-  validationMiddleware('getAvailabilitySummary'),
-  async (req, res, next) => {
-    try {
-      const { from, to } = req.query;
-      
-      logger.info('Availability summary request', { from, to });
+router.get('/summary', async (req, res, next) => {
+  try {
+    const { from, to } = req.query as { from?: string; to?: string };
 
-      res.status(200).json({
-        period: { from, to },
-        summary: {
-          totalBeds: 38,
-          averageOccupancy: 0,
-          highDemandDates: [],
-          lowDemandDates: []
-        }
-      });
-    } catch (error) {
-      next(error);
+    if (!from || !to) {
+      res.status(400).json(ApiResponse.error('from and to query parameters are required (YYYY-MM-DD)'));
+      return;
     }
+
+    logger.info('Availability summary request', { from, to });
+
+    const days = await availabilityService.getDailyOccupancy(from, to);
+    const totalBeds = days[0]?.total ?? 0;
+    const avgOccupied = days.length > 0
+      ? Math.round(days.reduce((s, d) => s + d.occupied, 0) / days.length)
+      : 0;
+    const averageOccupancy = totalBeds > 0
+      ? Math.round((avgOccupied / totalBeds) * 100)
+      : 0;
+
+    const highDemandDates = days
+      .filter(d => d.total > 0 && d.occupied / d.total >= 0.8)
+      .map(d => d.date);
+
+    const lowDemandDates = days
+      .filter(d => d.total > 0 && d.occupied / d.total <= 0.3)
+      .map(d => d.date);
+
+    res.status(200).json(ApiResponse.success({
+      period: { from, to },
+      summary: {
+        totalBeds,
+        averageOccupancy,
+        highDemandDates,
+        lowDemandDates
+      }
+    }, 'Availability summary retrieved'));
+  } catch (error) {
+    logger.error('Error getting availability summary', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
   }
-);
+});
 
 export const availabilityRouter = router;

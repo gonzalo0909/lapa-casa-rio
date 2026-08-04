@@ -1,7 +1,7 @@
 // lapa-casa-hostel/backend/src/database/repositories/payment-repository.ts
-// ventana3
+// ventana 3 — migrado a Prisma 5.22.0
 
-import { query } from '../../config/database';
+import { prisma } from '../../config/prisma';
 import type { Payment, PaymentStatus } from '../../types/database';
 
 type LegacyPaymentMethod = 'card' | 'credit_card' | 'debit_card' | 'pix' | string;
@@ -10,6 +10,10 @@ function resolveProvider(paymentMethod?: LegacyPaymentMethod): 'stripe' | 'merca
   if (!paymentMethod) return 'stripe';
   if (paymentMethod === 'pix') return 'mercadopago';
   return 'stripe';
+}
+
+function toPayment(row: any): Payment {
+  return row as unknown as Payment;
 }
 
 export class PaymentRepository {
@@ -33,104 +37,86 @@ export class PaymentRepository {
       data.stripe_payment_intent_id ??
       data.mp_payment_id ??
       null;
-    const providerMetadata = data.metadata ? JSON.stringify(data.metadata) : null;
-    const paymentType = data.payment_type ?? 'deposit';
+    const paymentType = (data.payment_type ?? 'deposit') as 'deposit' | 'remaining';
 
-    const result = await query<Payment>(
-      `INSERT INTO payments (
-         reservation_id, guest_id, provider, payment_type, amount, currency, status,
-         provider_payment_id, provider_metadata
-       )
-       VALUES (
-         $1,
-         COALESCE($2, (SELECT guest_id FROM reservations WHERE id = $1)),
-         $3::payment_provider,
-         $4::payment_type,
-         $5,
-         $6,
-         $7::payment_status,
-         $8,
-         $9
-       )
-       RETURNING *, provider_metadata AS metadata`,
-      [
-        data.reservation_id,
-        data.guest_id ?? null,
-        provider,
-        paymentType,
-        data.amount,
-        data.currency ?? 'BRL',
-        data.status ?? 'pending',
-        providerPaymentId,
-        providerMetadata,
-      ]
-    );
-    return result.rows[0];
+    let guestId = data.guest_id ?? null;
+    if (!guestId) {
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: data.reservation_id },
+        select: { guest_id: true },
+      });
+      guestId = reservation?.guest_id ?? null;
+    }
+    if (!guestId) throw new Error('Guest ID not found for reservation');
+
+    const payment = await prisma.payments.create({
+      data: {
+        reservation_id: data.reservation_id,
+        guest_id: guestId,
+        provider: provider as any,
+        payment_type: paymentType as any,
+        amount: data.amount,
+        currency: data.currency ?? 'BRL',
+        status: (data.status ?? 'pending') as any,
+        provider_payment_id: providerPaymentId,
+        provider_metadata: data.metadata ?? undefined,
+      },
+    });
+    return toPayment(payment);
   }
 
   async findById(id: string): Promise<Payment | null> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] ?? null;
+    const payment = await prisma.payments.findUnique({ where: { id } });
+    return payment ? toPayment(payment) : null;
   }
 
   async findByProviderPaymentId(providerPaymentId: string): Promise<Payment | null> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments
-       WHERE provider_payment_id = $1 LIMIT 1`,
-      [providerPaymentId]
-    );
-    return result.rows[0] ?? null;
+    const payment = await prisma.payments.findFirst({
+      where: { provider_payment_id: providerPaymentId },
+    });
+    return payment ? toPayment(payment) : null;
   }
 
   async findByStripeIntent(stripePaymentIntentId: string): Promise<Payment | null> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments
-       WHERE provider = 'stripe' AND provider_payment_id = $1 LIMIT 1`,
-      [stripePaymentIntentId]
-    );
-    return result.rows[0] ?? null;
+    const payment = await prisma.payments.findFirst({
+      where: { provider: 'stripe', provider_payment_id: stripePaymentIntentId },
+    });
+    return payment ? toPayment(payment) : null;
   }
 
   async findByMPId(mpPaymentId: string): Promise<Payment | null> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments
-       WHERE provider = 'mercadopago' AND provider_payment_id = $1 LIMIT 1`,
-      [mpPaymentId]
-    );
-    return result.rows[0] ?? null;
+    const payment = await prisma.payments.findFirst({
+      where: { provider: 'mercadopago', provider_payment_id: mpPaymentId },
+    });
+    return payment ? toPayment(payment) : null;
   }
 
   async findByReservation(reservationId: string): Promise<Payment[]> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments
-       WHERE reservation_id = $1 ORDER BY created_at ASC`,
-      [reservationId]
-    );
-    return result.rows;
+    const rows = await prisma.payments.findMany({
+      where: { reservation_id: reservationId },
+      orderBy: { created_at: 'asc' },
+    });
+    return rows.map(toPayment);
   }
 
   async findPending(): Promise<Payment[]> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments
-       WHERE status = 'pending'
-         AND created_at >= NOW() - INTERVAL '7 days'
-       ORDER BY created_at DESC`
-    );
-    return result.rows;
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const rows = await prisma.payments.findMany({
+      where: { status: 'pending', created_at: { gte: cutoff } },
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(toPayment);
   }
 
   async findByDateRange(startDate: Date, endDate: Date): Promise<Payment[]> {
-    const result = await query<Payment>(
-      `SELECT *, provider_metadata AS metadata FROM payments
-       WHERE status = 'completed'
-         AND paid_at >= $1 AND paid_at <= $2
-       ORDER BY paid_at DESC`,
-      [startDate, endDate]
-    );
-    return result.rows;
+    const rows = await prisma.payments.findMany({
+      where: {
+        status: 'succeeded',
+        paid_at: { gte: startDate, lte: endDate },
+      },
+      orderBy: { paid_at: 'desc' },
+    });
+    return rows.map(toPayment);
   }
 
   async update(id: string, data: Partial<{
@@ -143,42 +129,24 @@ export class PaymentRepository {
     failed_at: Date;
     refunded_at: Date;
   }>): Promise<Payment> {
-    const mapped: Record<string, any> = {};
-    for (const [k, v] of Object.entries(data)) {
-      if (k === 'provider_metadata') {
-        mapped[k] = typeof v === 'string' ? v : JSON.stringify(v);
-      } else {
-        mapped[k] = v;
-      }
-    }
-
-    const fields = Object.keys(mapped);
-    if (fields.length === 0) {
+    if (Object.keys(data).length === 0) {
       const p = await this.findById(id);
       if (!p) throw new Error('Payment not found');
       return p;
     }
-    const sets = fields.map((f, i) => {
-      if (f === 'status') return `${f} = $${i + 2}::payment_status`;
-      return `${f} = $${i + 2}`;
-    }).join(', ');
-    const values = fields.map(f => mapped[f]);
-    const result = await query<Payment>(
-      `UPDATE payments SET ${sets}, updated_at = NOW() WHERE id = $1
-       RETURNING *, provider_metadata AS metadata`,
-      [id, ...values]
-    );
-    return result.rows[0];
+    const payment = await prisma.payments.update({
+      where: { id },
+      data: { ...data, updated_at: new Date() } as any,
+    });
+    return toPayment(payment);
   }
 
   async markCompleted(id: string): Promise<Payment> {
-    const result = await query<Payment>(
-      `UPDATE payments
-       SET status = 'succeeded', paid_at = NOW(), updated_at = NOW()
-       WHERE id = $1 RETURNING *, provider_metadata AS metadata`,
-      [id]
-    );
-    return result.rows[0];
+    const payment = await prisma.payments.update({
+      where: { id },
+      data: { status: 'succeeded', paid_at: new Date(), updated_at: new Date() },
+    });
+    return toPayment(payment);
   }
 
   async markSucceeded(id: string): Promise<Payment> {
@@ -186,25 +154,31 @@ export class PaymentRepository {
   }
 
   async markFailed(id: string, failureReason?: string): Promise<Payment> {
-    const result = await query<Payment>(
-      `UPDATE payments
-       SET status = 'failed', failed_at = NOW(), failure_reason = $2, updated_at = NOW()
-       WHERE id = $1 RETURNING *, provider_metadata AS metadata`,
-      [id, failureReason ?? null]
-    );
-    return result.rows[0];
+    const payment = await prisma.payments.update({
+      where: { id },
+      data: {
+        status: 'failed',
+        failed_at: new Date(),
+        failure_reason: failureReason ?? null,
+        updated_at: new Date(),
+      },
+    });
+    return toPayment(payment);
   }
 
   async processRefund(id: string, refundAmount: number): Promise<Payment> {
     const p = await this.findById(id);
     if (!p) throw new Error('Payment not found');
-    const result = await query<Payment>(
-      `UPDATE payments
-       SET status = 'refunded', refund_amount = $2, refunded_at = NOW(), updated_at = NOW()
-       WHERE id = $1 RETURNING *, provider_metadata AS metadata`,
-      [id, refundAmount]
-    );
-    return result.rows[0];
+    const payment = await prisma.payments.update({
+      where: { id },
+      data: {
+        status: 'refunded',
+        refund_amount: refundAmount,
+        refunded_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+    return toPayment(payment);
   }
 
   async getStatistics(): Promise<{
@@ -214,38 +188,37 @@ export class PaymentRepository {
     totalRevenue: number;
     pendingAmount: number;
   }> {
-    const result = await query<{
-      total: string;
-      completed: string;
-      failed: string;
-      revenue: string;
-      pending_amount: string;
-    }>(
-      `SELECT
-         COUNT(*)::int AS total,
-         COUNT(*) FILTER (WHERE status = 'succeeded')::int AS completed,
-         COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
-         COALESCE(SUM(amount) FILTER (WHERE status = 'succeeded'), 0) AS revenue,
-         COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0) AS pending_amount
-       FROM payments`
-    );
-    const row = result.rows[0];
+    const rows = await prisma.$queryRaw<[{
+      total: number;
+      completed: number;
+      failed: number;
+      revenue: number;
+      pending_amount: number;
+    }]>`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status = 'succeeded')::int AS completed,
+        COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
+        COALESCE(SUM(amount) FILTER (WHERE status = 'succeeded'), 0)::float8 AS revenue,
+        COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0)::float8 AS pending_amount
+      FROM payments
+    `;
+    const row = rows[0];
     return {
-      totalPayments: parseInt(row.total, 10),
-      completedPayments: parseInt(row.completed, 10),
-      failedPayments: parseInt(row.failed, 10),
-      totalRevenue: parseFloat(row.revenue),
-      pendingAmount: parseFloat(row.pending_amount),
+      totalPayments: Number(row.total),
+      completedPayments: Number(row.completed),
+      failedPayments: Number(row.failed),
+      totalRevenue: Number(row.revenue),
+      pendingAmount: Number(row.pending_amount),
     };
   }
 
   async getRevenueByDateRange(startDate: Date, endDate: Date): Promise<number> {
-    const result = await query<{ revenue: string }>(
-      `SELECT COALESCE(SUM(amount), 0) AS revenue FROM payments
-       WHERE status = 'completed' AND paid_at >= $1 AND paid_at <= $2`,
-      [startDate, endDate]
-    );
-    return parseFloat(result.rows[0].revenue);
+    const rows = await prisma.$queryRaw<[{ revenue: number }]>`
+      SELECT COALESCE(SUM(amount), 0)::float8 AS revenue FROM payments
+      WHERE status = 'succeeded' AND paid_at >= ${startDate} AND paid_at <= ${endDate}
+    `;
+    return Number(rows[0].revenue);
   }
 }
 

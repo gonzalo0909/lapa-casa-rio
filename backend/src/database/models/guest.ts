@@ -1,137 +1,72 @@
 // lapa-casa-hostel/backend/src/database/models/guest.ts
+// ventana 1 — migrado a Prisma 5.22.0
 
-import { PrismaClient, Guest, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../../config/prisma';
+import { Guest } from '../../types/database';
 
-const prisma = new PrismaClient();
+function toGuest(row: any): Guest {
+  return row as unknown as Guest;
+}
 
 export class GuestModel {
   static async createGuest(data: {
-    firstName: string;
-    lastName: string;
+    full_name: string;
     email: string;
-    phone: string;
-    alternativePhone?: string;
-    whatsappNumber?: string;
-    nationality?: string;
-    language?: string;
-    dateOfBirth?: Date;
-    documentType?: string;
-    documentNumber?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-    city?: string;
-    state?: string;
+    phone?: string;
     country?: string;
-    postalCode?: string;
-    newsletterOptIn?: boolean;
-    smsOptIn?: boolean;
-    notes?: string;
-    metadata?: any;
+    language?: string;
+    document_type?: string;
+    document_number?: string;
   }): Promise<Guest> {
-    return await prisma.guest.create({
-      data
+    const guest = await prisma.guests.create({
+      data: {
+        full_name: data.full_name,
+        email: data.email,
+        phone: data.phone ?? null,
+        country: data.country ?? null,
+        language: data.language ?? null,
+        document_type: data.document_type ?? null,
+        document_number: data.document_number ?? null,
+      },
     });
+    return toGuest(guest);
   }
 
-  static async getGuestById(guestId: string): Promise<Guest | null> {
-    return await prisma.guest.findUnique({
-      where: { id: guestId },
-      include: {
-        bookings: {
-          include: { room: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    });
+  static async getGuestById(id: string): Promise<Guest | null> {
+    const guest = await prisma.guests.findUnique({ where: { id } });
+    return guest ? toGuest(guest) : null;
   }
 
   static async getGuestByEmail(email: string): Promise<Guest | null> {
-    return await prisma.guest.findUnique({
-      where: { email },
-      include: {
-        bookings: {
-          include: { room: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    });
+    const guest = await prisma.guests.findUnique({ where: { email } });
+    return guest ? toGuest(guest) : null;
   }
 
   static async getGuestByPhone(phone: string): Promise<Guest | null> {
-    return await prisma.guest.findFirst({
-      where: { phone },
-      include: {
-        bookings: {
-          include: { room: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    });
+    const guest = await prisma.guests.findFirst({ where: { phone } });
+    return guest ? toGuest(guest) : null;
   }
 
   static async findOrCreateGuest(data: {
-    firstName: string;
-    lastName: string;
+    full_name: string;
     email: string;
-    phone: string;
-    alternativePhone?: string;
-    whatsappNumber?: string;
-    nationality?: string;
-    language?: string;
-    dateOfBirth?: Date;
-    documentType?: string;
-    documentNumber?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-    city?: string;
-    state?: string;
+    phone?: string;
     country?: string;
-    postalCode?: string;
-    newsletterOptIn?: boolean;
-    smsOptIn?: boolean;
+    language?: string;
   }): Promise<Guest> {
-    const existingGuest = await this.getGuestByEmail(data.email);
-
-    if (existingGuest) {
-      return await this.updateGuest(existingGuest.id, data);
-    }
-
-    return await this.createGuest(data);
+    const existing = await this.getGuestByEmail(data.email);
+    if (existing) return this.updateGuest(existing.id, data);
+    return this.createGuest(data);
   }
 
-  static async updateGuest(guestId: string, data: Partial<Prisma.GuestUpdateInput>): Promise<Guest> {
-    return await prisma.guest.update({
-      where: { id: guestId },
-      data
+  static async updateGuest(id: string, data: Partial<Guest>): Promise<Guest> {
+    const { id: _id, created_at, updated_at, ...rest } = data as any;
+    const guest = await prisma.guests.update({
+      where: { id },
+      data: { ...rest, updated_at: new Date() },
     });
-  }
-
-  static async updateGuestStats(guestId: string): Promise<Guest> {
-    const bookings = await prisma.booking.findMany({
-      where: {
-        guestId,
-        status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT'] }
-      },
-      select: {
-        totalPrice: true,
-        createdAt: true
-      }
-    });
-
-    const totalBookings = bookings.length;
-    const totalSpent = bookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
-    const lastBooking = bookings.length > 0 
-      ? bookings.reduce((latest, b) => b.createdAt > latest ? b.createdAt : latest, bookings[0].createdAt)
-      : null;
-
-    return await prisma.guest.update({
-      where: { id: guestId },
-      data: {
-        totalBookings,
-        totalSpent,
-        lastBookingAt: lastBooking
-      }
-    });
+    return toGuest(guest);
   }
 
   static async searchGuests(query: {
@@ -140,194 +75,58 @@ export class GuestModel {
     phone?: string;
     nationality?: string;
   }): Promise<Guest[]> {
-    const where: any = {};
+    const where: Prisma.guestsWhereInput = {};
+    if (query.name)        where.full_name = { contains: query.name, mode: 'insensitive' };
+    if (query.email)       where.email     = { contains: query.email, mode: 'insensitive' };
+    if (query.phone)       where.phone     = { contains: query.phone };
+    if (query.nationality) where.country   = { contains: query.nationality, mode: 'insensitive' };
 
-    if (query.name) {
-      where.OR = [
-        { firstName: { contains: query.name, mode: 'insensitive' } },
-        { lastName: { contains: query.name, mode: 'insensitive' } }
-      ];
-    }
-
-    if (query.email) {
-      where.email = { contains: query.email, mode: 'insensitive' };
-    }
-
-    if (query.phone) {
-      where.phone = { contains: query.phone };
-    }
-
-    if (query.nationality) {
-      where.nationality = { contains: query.nationality, mode: 'insensitive' };
-    }
-
-    return await prisma.guest.findMany({
+    const guests = await prisma.guests.findMany({
       where,
-      include: {
-        bookings: {
-          select: {
-            id: true,
-            bookingNumber: true,
-            status: true,
-            checkInDate: true,
-            totalPrice: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 5
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50
+      orderBy: { created_at: 'desc' },
+      take: 50,
     });
+    return guests.map(toGuest);
   }
 
-  static async getRecentGuests(limit: number = 20): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      orderBy: { createdAt: 'desc' },
+  static async getRecentGuests(limit = 20): Promise<Guest[]> {
+    const guests = await prisma.guests.findMany({
+      orderBy: { created_at: 'desc' },
       take: limit,
-      include: {
-        bookings: {
-          select: {
-            bookingNumber: true,
-            status: true,
-            checkInDate: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
     });
+    return guests.map(toGuest);
   }
 
-  static async getTopGuests(limit: number = 10): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: {
-        totalBookings: { gt: 0 }
-      },
-      orderBy: [
-        { totalSpent: 'desc' },
-        { totalBookings: 'desc' }
-      ],
-      take: limit,
-      include: {
-        bookings: {
-          select: {
-            bookingNumber: true,
-            checkInDate: true,
-            totalPrice: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 3
-        }
-      }
-    });
-  }
-
-  static async getGuestsByNationality(nationality: string): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { nationality },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
-
-  static async getNewsletterSubscribers(): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { newsletterOptIn: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        language: true
-      }
-    });
-  }
-
-  static async getSMSSubscribers(): Promise<Guest[]> {
-    return await prisma.guest.findMany({
-      where: { smsOptIn: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        whatsappNumber: true,
-        language: true
-      }
-    });
-  }
-
-  static async updateNewsletterPreference(guestId: string, optIn: boolean): Promise<Guest> {
-    return await prisma.guest.update({
-      where: { id: guestId },
-      data: { newsletterOptIn: optIn }
-    });
-  }
-
-  static async updateSMSPreference(guestId: string, optIn: boolean): Promise<Guest> {
-    return await prisma.guest.update({
-      where: { id: guestId },
-      data: { smsOptIn: optIn }
-    });
-  }
-
-  static async getGuestStats(): Promise<{
-    totalGuests: number;
-    returningGuests: number;
-    newsletterSubscribers: number;
-    topNationalities: Array<{ nationality: string; count: number }>;
-  }> {
-    const [total, returning, newsletter, nationalities] = await Promise.all([
-      prisma.guest.count(),
-      prisma.guest.count({ where: { totalBookings: { gt: 1 } } }),
-      prisma.guest.count({ where: { newsletterOptIn: true } }),
-      prisma.guest.groupBy({
-        by: ['nationality'],
-        _count: { nationality: true },
-        where: { nationality: { not: null } },
-        orderBy: { _count: { nationality: 'desc' } },
-        take: 5
-      })
-    ]);
-
-    const topNationalities = nationalities.map(n => ({
-      nationality: n.nationality || 'Unknown',
-      count: n._count.nationality
-    }));
-
+  static async getGuestStats(): Promise<{ totalGuests: number; returningGuests: number }> {
+    const rows = await prisma.$queryRaw<[{ total: number; returning: number }]>`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE id IN (
+          SELECT guest_id FROM reservations GROUP BY guest_id HAVING COUNT(*) > 1
+        ))::int AS returning
+      FROM guests
+    `;
     return {
-      totalGuests: total,
-      returningGuests: returning,
-      newsletterSubscribers: newsletter,
-      topNationalities
+      totalGuests: Number(rows[0].total),
+      returningGuests: Number(rows[0].returning),
     };
   }
 
-  static async deleteGuest(guestId: string): Promise<Guest> {
-    const hasBookings = await prisma.booking.count({
-      where: { guestId }
-    });
-
-    if (hasBookings > 0) {
-      throw new Error('Cannot delete guest with existing bookings');
-    }
-
-    return await prisma.guest.delete({
-      where: { id: guestId }
-    });
+  static async deleteGuest(id: string): Promise<void> {
+    const count = await prisma.reservations.count({ where: { guest_id: id } });
+    if (count > 0) throw new Error('Cannot delete guest with existing bookings');
+    await prisma.guests.delete({ where: { id } });
   }
 
-  static async mergeGuests(primaryGuestId: string, duplicateGuestId: string): Promise<Guest> {
-    await prisma.booking.updateMany({
-      where: { guestId: duplicateGuestId },
-      data: { guestId: primaryGuestId }
+  static async mergeGuests(primaryId: string, duplicateId: string): Promise<Guest> {
+    await prisma.$transaction(async (tx) => {
+      await tx.reservations.updateMany({
+        where: { guest_id: duplicateId },
+        data: { guest_id: primaryId },
+      });
+      await tx.guests.delete({ where: { id: duplicateId } });
     });
-
-    await prisma.guest.delete({
-      where: { id: duplicateGuestId }
-    });
-
-    return await this.updateGuestStats(primaryGuestId);
+    return (await this.getGuestById(primaryId))!;
   }
 }
 

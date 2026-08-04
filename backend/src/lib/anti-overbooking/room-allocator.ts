@@ -1,5 +1,4 @@
 // lapa-casa-hostel/backend/src/lib/anti-overbooking/room-allocator.ts
-// corrección — imports prisma y redisCache corregidos
 
 import { availabilityChecker } from './availability-checker';
 import { prisma } from '../../config/prisma';
@@ -53,8 +52,12 @@ export class RoomAllocator {
 
     if (!availability.isAvailable) {
       return {
-        success: false, allocations: [], totalBeds: 0,
-        requestedBeds, strategy: 'single', score: 0,
+        success: false,
+        allocations: [],
+        totalBeds: 0,
+        requestedBeds,
+        strategy: 'single',
+        score: 0,
         errors: availability.conflicts
       };
     }
@@ -75,8 +78,12 @@ export class RoomAllocator {
 
     if (strategies.length === 0) {
       return {
-        success: false, allocations: [], totalBeds: 0,
-        requestedBeds, strategy: 'single', score: 0,
+        success: false,
+        allocations: [],
+        totalBeds: 0,
+        requestedBeds,
+        strategy: 'single',
+        score: 0,
         errors: ['No suitable room allocation found']
       };
     }
@@ -97,18 +104,29 @@ export class RoomAllocator {
 
     if (preferences.roomTypePreference) {
       const preferredRooms = eligibleRooms.filter(r => r.type === preferences.roomTypePreference);
-      if (preferredRooms.length > 0) eligibleRooms = preferredRooms;
+      if (preferredRooms.length > 0) {
+        eligibleRooms = preferredRooms;
+      }
     }
 
     if (eligibleRooms.length === 0) {
-      return { success: false, allocations: [], totalBeds: 0, requestedBeds, strategy: 'single', score: 0 };
+      return {
+        success: false,
+        allocations: [],
+        totalBeds: 0,
+        requestedBeds,
+        strategy: 'single',
+        score: 0
+      };
     }
 
-    // Consolidation policy: fill a room that already has guests before opening an empty one
+    // Consolidation policy: fill a room that already has guests in it
+    // before opening a second, completely empty room of the same type.
     eligibleRooms.sort((a, b) => {
       const aOccupied = a.capacity - a.available;
       const bOccupied = b.capacity - b.available;
       if (aOccupied !== bOccupied) return bOccupied - aOccupied;
+
       const aWaste = a.capacity - requestedBeds;
       const bWaste = b.capacity - requestedBeds;
       if (aWaste !== bWaste) return aWaste - bWaste;
@@ -121,14 +139,16 @@ export class RoomAllocator {
 
     return {
       success: true,
-      allocations: [{
-        roomId: selectedRoom.roomId,
-        roomName: selectedRoom.roomName,
-        bedsCount: requestedBeds,
-        capacity: selectedRoom.capacity,
-        type: selectedRoom.type,
-        isFlexible: selectedRoom.isFlexible
-      }],
+      allocations: [
+        {
+          roomId: selectedRoom.roomId,
+          roomName: selectedRoom.roomName,
+          bedsCount: requestedBeds,
+          capacity: selectedRoom.capacity,
+          type: selectedRoom.type,
+          isFlexible: selectedRoom.isFlexible
+        }
+      ],
       totalBeds: requestedBeds,
       requestedBeds,
       strategy: 'single',
@@ -141,12 +161,20 @@ export class RoomAllocator {
     availableRooms: any[],
     preferences: AllocationPreferences
   ): AllocationResult {
-    const maxRooms   = preferences.maxRooms || 4;
+    const maxRooms = preferences.maxRooms || 4;
     const sortedRooms = [...availableRooms].sort((a, b) => b.available - a.available);
+
     const combinations = this.generateRoomCombinations(sortedRooms, requestedBeds, maxRooms);
 
     if (combinations.length === 0) {
-      return { success: false, allocations: [], totalBeds: 0, requestedBeds, strategy: 'multi', score: 0 };
+      return {
+        success: false,
+        allocations: [],
+        totalBeds: 0,
+        requestedBeds,
+        strategy: 'multi',
+        score: 0
+      };
     }
 
     const best = combinations[0];
@@ -170,7 +198,14 @@ export class RoomAllocator {
       remaining -= bedsToAllocate;
     }
 
-    return { success: true, allocations, totalBeds: requestedBeds, requestedBeds, strategy: 'multi', score };
+    return {
+      success: true,
+      allocations,
+      totalBeds: requestedBeds,
+      requestedBeds,
+      strategy: 'multi',
+      score
+    };
   }
 
   private generateRoomCombinations(rooms: any[], targetBeds: number, maxRooms: number): any[][] {
@@ -181,7 +216,9 @@ export class RoomAllocator {
         combinations.push([...current]);
         return;
       }
+
       if (current.length >= maxRooms) return;
+
       for (let i = start; i < rooms.length; i++) {
         const room = rooms[i];
         if (room.available > 0) {
@@ -215,7 +252,7 @@ export class RoomAllocator {
 
     try {
       for (const allocation of allocations) {
-        const lockKey  = this.getLockKey(allocation.roomId, checkInDate, checkOutDate);
+        const lockKey = this.getLockKey(allocation.roomId, checkInDate, checkOutDate);
         const lockData: AllocationLock = {
           bookingId,
           roomId: allocation.roomId,
@@ -223,6 +260,7 @@ export class RoomAllocator {
           expiresAt
         };
 
+        // Simulate NX (set if not exists) with exists check
         const alreadyLocked = await redis.exists(lockKey);
         if (alreadyLocked) {
           await this.releaseLocks(locks);
@@ -231,6 +269,7 @@ export class RoomAllocator {
         await redis.set(lockKey, lockData, this.LOCK_TTL);
         locks.push(lockData);
       }
+
       return true;
     } catch (error) {
       await this.releaseLocks(locks);
@@ -252,14 +291,25 @@ export class RoomAllocator {
     excludeBookingId?: string
   ): Promise<{ isValid: boolean; errors: string[] }> {
     const errors: string[] = [];
+
     for (const allocation of allocations) {
       const validation = await availabilityChecker.validateBooking(
-        allocation.roomId, allocation.bedsCount,
-        checkInDate, checkOutDate, excludeBookingId
+        allocation.roomId,
+        allocation.bedsCount,
+        checkInDate,
+        checkOutDate,
+        excludeBookingId
       );
-      if (!validation.isValid) errors.push(...validation.errors);
+
+      if (!validation.isValid) {
+        errors.push(...validation.errors);
+      }
     }
-    return { isValid: errors.length === 0, errors };
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 
   async reallocateBooking(
@@ -274,17 +324,23 @@ export class RoomAllocator {
 
     if (!currentBooking) {
       return {
-        success: false, allocations: [], totalBeds: 0,
-        requestedBeds: newBedsCount, strategy: 'single', score: 0,
+        success: false,
+        allocations: [],
+        totalBeds: 0,
+        requestedBeds: newBedsCount,
+        strategy: 'single',
+        score: 0,
         errors: ['Booking not found']
       };
     }
 
-    return this.findOptimalAllocation(newBedsCount, checkInDate, checkOutDate, { allowSplit: true });
+    return this.findOptimalAllocation(newBedsCount, checkInDate, checkOutDate, {
+      allowSplit: true
+    });
   }
 
   private getLockKey(roomId: string, checkInDate: Date, checkOutDate: Date): string {
-    const checkInStr  = checkInDate.toISOString().split('T')[0];
+    const checkInStr = checkInDate.toISOString().split('T')[0];
     const checkOutStr = checkOutDate.toISOString().split('T')[0];
     return `lock:room:${roomId}:${checkInStr}:${checkOutStr}`;
   }

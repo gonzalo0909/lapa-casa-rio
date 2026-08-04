@@ -1,310 +1,173 @@
 // lapa-casa-hostel/backend/src/services/availability-service.ts
+//
+// REQUISITO CRITICO #6: check_availability() y get_flexible_room_status()
+// (migracion 0005) son la unica fuente de verdad sobre que cama esta
+// libre -- este servicio agrega el resultado por habitacion, nunca
+// decide disponibilidad por su cuenta con una query propia distinta.
+// La version anterior de este archivo ignoraba check_availability() por
+// completo (reimplementaba el filtro de solapamiento a mano y nunca
+// filtraba por genero pese a recibir el parametro).
 
-import { PrismaClient } from '@prisma/client';
-import { parseISO, differenceInHours, addDays, eachDayOfInterval } from 'date-fns';
-import { RoomRepository } from '../database/repositories/room-repository';
-import { BookingRepository } from '../database/repositories/booking-repository';
-import { RedisClient } from '../cache/redis-client';
+import { query } from '../config/database';
 import { logger } from '../utils/logger';
-import { AppError } from '../utils/responses';
+import redisClient from '../cache/redis-client';
 
-interface RoomAvailability {
-  roomId: string;
+interface BedAvailabilityRow {
+  roomTypeId: string;
+  roomCode: string;
   roomName: string;
   capacity: number;
-  occupiedBeds: number;
-  availableBeds: number;
-  isFlexible: boolean;
-  currentType: 'mixed' | 'female';
-  willConvertToMixed: boolean;
-  conversionHoursRemaining?: number;
+  effectiveGender: string;
+  bedId: string;
+  bedCode: string;
+  isGenderEligible: boolean;
+  isOccupied: boolean;
+  isAvailable: boolean;
 }
 
-interface AvailabilityResponse {
-  available: boolean;
-  totalBedsAvailable: number;
-  roomsAvailable: RoomAvailability[];
-  recommendedAllocation?: Array<{ roomId: string; bedsToBook: number }>;
-  message?: string;
-}
-
-interface DailyOccupancy {
-  date: string;
-  rooms: {
-    [roomId: string]: {
-      occupied: number;
-      capacity: number;
-      bookings: string[];
-    };
-  };
-}
+const CACHE_TTL_SECONDS = 5 * 60;
 
 export class AvailabilityService {
-  private roomRepo: RoomRepository;
-  private bookingRepo: BookingRepository;
-  private redis: RedisClient;
+  /** check_availability() crudo, sin agregar -- usado por checkAvailability/checkRoomAvailability. */
+  private async rawCheckAvailability(
+    checkIn: string,
+    checkOut: string,
+    gender: 'mixed' | 'female' | 'male' = 'mixed'
+  ): Promise<BedAvailabilityRow[]> {
+    const cacheKey = `availability:${checkIn}:${checkOut}:${gender}`;
+    const cached = await redisClient.get<BedAvailabilityRow[]>(cacheKey).catch(() => null);
+    if (cached) return cached;
 
-  private readonly ROOMS_CONFIG = {
-    room_mixto_12a: { capacity: 12, type: 'mixed', flexible: false },
-    room_mixto_12b: { capacity: 12, type: 'mixed', flexible: false },
-    room_mixto_7: { capacity: 7, type: 'mixed', flexible: false },
-    room_flexible_7: { capacity: 7, type: 'female', flexible: true, autoConvertHours: 48 }
-  };
-
-  constructor(prisma: PrismaClient) {
-    this.roomRepo = new RoomRepository(prisma);
-    this.bookingRepo = new BookingRepository(prisma);
-    this.redis = new RedisClient();
-  }
-
-  async checkAvailability(
-    checkInDate: string,
-    checkOutDate: string,
-    bedsRequested: number,
-    excludeBookingId?: number
-  ): Promise<AvailabilityResponse> {
-    try {
-      const cacheKey = `availability:${checkInDate}:${checkOutDate}:${bedsRequested}`;
-      const cached = await this.redis.get(cacheKey);
-      
-      if (cached && !excludeBookingId) {
-        return JSON.parse(cached);
-      }
-
-      const bookings = await this.bookingRepo.findByDateRange(
-        parseISO(checkInDate),
-        parseISO(checkOutDate),
-        ['CONFIRMED', 'PENDING']
-      );
-
-      const activeBookings = excludeBookingId 
-        ? bookings.filter(b => b.id !== excludeBookingId)
-        : bookings;
-
-      const roomOccupancy = this.calculateRoomOccupancy(activeBookings);
-      const flexibleRoomStatus = await this.checkFlexibleRoomConversion(checkInDate, roomOccupancy.room_flexible_7);
-
-      const roomsAvailable: RoomAvailability[] = Object.entries(this.ROOMS_CONFIG).map(
-        ([roomId, config]) => {
-          const occupied = roomOccupancy[roomId] || 0;
-          const available = config.capacity - occupied;
-
-          let currentType = config.type as 'mixed' | 'female';
-          let willConvert = false;
-          let conversionHours = undefined;
-
-          if (config.flexible && roomId === 'room_flexible_7') {
-            currentType = flexibleRoomStatus.currentType;
-            willConvert = flexibleRoomStatus.willConvert;
-            conversionHours = flexibleRoomStatus.hoursRemaining;
-          }
-
-          return {
-            roomId,
-            roomName: this.getRoomName(roomId),
-            capacity: config.capacity,
-            occupiedBeds: occupied,
-            availableBeds: available,
-            isFlexible: config.flexible,
-            currentType,
-            willConvertToMixed: willConvert,
-            conversionHoursRemaining: conversionHours
-          };
-        }
-      );
-
-      const totalBedsAvailable = roomsAvailable.reduce((sum, room) => sum + room.availableBeds, 0);
-      const available = totalBedsAvailable >= bedsRequested;
-      const recommendedAllocation = available ? this.generateOptimalAllocation(bedsRequested, roomsAvailable) : undefined;
-
-      const response: AvailabilityResponse = {
-        available,
-        totalBedsAvailable,
-        roomsAvailable,
-        recommendedAllocation,
-        message: available
-          ? `${totalBedsAvailable} camas disponibles`
-          : `Solo ${totalBedsAvailable} camas disponibles, se requieren ${bedsRequested}`
-      };
-
-      if (!excludeBookingId) {
-        await this.redis.set(cacheKey, JSON.stringify(response), 300);
-      }
-
-      return response;
-    } catch (error) {
-      logger.error('Error verificando disponibilidad', error);
-      throw error;
-    }
-  }
-
-  async getDailyOccupancy(checkInDate: string, checkOutDate: string): Promise<DailyOccupancy[]> {
-    const days = eachDayOfInterval({
-      start: parseISO(checkInDate),
-      end: parseISO(checkOutDate)
-    });
-
-    const dailyOccupancy: DailyOccupancy[] = [];
-
-    for (const day of days) {
-      const dayStr = day.toISOString().split('T')[0];
-      const nextDay = addDays(day, 1).toISOString().split('T')[0];
-
-      const bookings = await this.bookingRepo.findByDateRange(
-        parseISO(dayStr),
-        parseISO(nextDay),
-        ['CONFIRMED', 'PENDING']
-      );
-
-      const roomData: DailyOccupancy['rooms'] = {};
-
-      Object.keys(this.ROOMS_CONFIG).forEach(roomId => {
-        const roomBookings = bookings.filter(b => b.rooms.some(r => r.roomId === roomId));
-        const occupied = roomBookings.reduce((sum, booking) => {
-          const room = booking.rooms.find(r => r.roomId === roomId);
-          return sum + (room?.bedsCount || 0);
-        }, 0);
-
-        roomData[roomId] = {
-          occupied,
-          capacity: this.ROOMS_CONFIG[roomId].capacity,
-          bookings: roomBookings.map(b => b.bookingId)
-        };
-      });
-
-      dailyOccupancy.push({ date: dayStr, rooms: roomData });
-    }
-
-    return dailyOccupancy;
-  }
-
-  async checkRoomAvailability(
-    roomId: string,
-    checkInDate: string,
-    checkOutDate: string,
-    bedsRequested: number
-  ): Promise<{ available: boolean; availableBeds: number }> {
-    const bookings = await this.bookingRepo.findByDateRange(
-      parseISO(checkInDate),
-      parseISO(checkOutDate),
-      ['CONFIRMED', 'PENDING']
+    const { rows } = await query(
+      `SELECT * FROM check_availability($1::date, $2::date, $3::bed_gender)`,
+      [checkIn, checkOut, gender]
     );
-
-    const roomBookings = bookings.filter(b => b.rooms.some(r => r.roomId === roomId));
-    const occupiedBeds = roomBookings.reduce((sum, booking) => {
-      const room = booking.rooms.find(r => r.roomId === roomId);
-      return sum + (room?.bedsCount || 0);
-    }, 0);
-
-    const roomConfig = this.ROOMS_CONFIG[roomId];
-    if (!roomConfig) {
-      throw new AppError(`Habitación ${roomId} no existe`, 404);
-    }
-
-    const availableBeds = roomConfig.capacity - occupiedBeds;
-    return { available: availableBeds >= bedsRequested, availableBeds };
+    const mapped: BedAvailabilityRow[] = rows.map((r: any) => ({
+      roomTypeId: r.room_type_id,
+      roomCode: r.room_code,
+      roomName: r.room_name,
+      capacity: r.capacity,
+      effectiveGender: r.effective_gender,
+      bedId: r.bed_id,
+      bedCode: r.bed_code,
+      isGenderEligible: r.is_gender_eligible,
+      isOccupied: r.is_occupied,
+      isAvailable: r.is_available
+    }));
+    await redisClient.set(cacheKey, mapped, CACHE_TTL_SECONDS).catch(() => undefined);
+    return mapped;
   }
 
-  async getMonthlyCalendar(year: number, month: number): Promise<any[]> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-    const calendar = await this.getDailyOccupancy(startDate.toISOString(), endDate.toISOString());
+  /** Disponibilidad global agregada -- usada por check-availability.ts. */
+  async checkAvailability(params: {
+    checkIn: string;
+    checkOut: string;
+    bedsNeeded: number;
+    gender?: 'mixed' | 'female' | 'male';
+  }): Promise<{ available: boolean; availableBeds: number; alternativeDates: any[] }> {
+    const rows = await this.rawCheckAvailability(params.checkIn, params.checkOut, params.gender ?? 'mixed');
+    const availableBeds = rows.filter((r) => r.isGenderEligible && r.isAvailable).length;
+    const available = availableBeds >= params.bedsNeeded;
+    const alternativeDates = available
+      ? []
+      : await this.findAlternativeDates(params.checkIn, params.checkOut, params.bedsNeeded);
+    return { available, availableBeds, alternativeDates };
+  }
 
-    return calendar.map(day => {
-      const totalCapacity = Object.values(this.ROOMS_CONFIG).reduce((sum, room) => sum + room.capacity, 0);
-      const totalOccupied = Object.values(day.rooms).reduce((sum, room) => sum + room.occupied, 0);
+  /** Disponibilidad de UNA habitacion (room_type_id real, UUID). */
+  async checkRoomAvailability(
+    roomTypeId: string,
+    checkIn: string,
+    checkOut: string
+  ): Promise<{ availableBeds: number; occupiedBeds: number }> {
+    const rows = await this.rawCheckAvailability(checkIn, checkOut, 'mixed');
+    const roomRows = rows.filter((r) => r.roomTypeId === roomTypeId);
+    return {
+      availableBeds: roomRows.filter((r) => r.isAvailable).length,
+      occupiedBeds: roomRows.filter((r) => r.isOccupied).length
+    };
+  }
 
-      return {
-        date: day.date,
-        totalCapacity,
-        totalOccupied,
-        totalAvailable: totalCapacity - totalOccupied,
-        occupancyRate: (totalOccupied / totalCapacity) * 100,
-        rooms: day.rooms
-      };
-    });
+  async findAlternativeDates(
+    checkIn: string,
+    checkOut: string,
+    bedsNeeded: number
+  ): Promise<Array<{ checkIn: string; checkOut: string; availableBeds: number }>> {
+    const nights = Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
+    const alternatives: Array<{ checkIn: string; checkOut: string; availableBeds: number }> = [];
+    const base = new Date(checkIn);
+
+    for (let offset = 1; offset <= 14 && alternatives.length < 5; offset++) {
+      const altIn = new Date(base);
+      altIn.setDate(altIn.getDate() + offset);
+      const altOut = new Date(altIn);
+      altOut.setDate(altOut.getDate() + nights);
+      const altInStr = altIn.toISOString().slice(0, 10);
+      const altOutStr = altOut.toISOString().slice(0, 10);
+
+      const rows = await this.rawCheckAvailability(altInStr, altOutStr, 'mixed');
+      const availableBeds = rows.filter((r) => r.isGenderEligible && r.isAvailable).length;
+      if (availableBeds >= bedsNeeded) {
+        alternatives.push({ checkIn: altInStr, checkOut: altOutStr, availableBeds });
+      }
+    }
+    return alternatives;
+  }
+
+  /** get_flexible_room_status() -- conversion Flexible 7 por fecha especifica (Requisito Critico #2). */
+  async getFlexibleRoomStatus(roomTypeId: string, targetDate: string): Promise<{
+    effectiveGender: string;
+    isConverted: boolean;
+    convertedAt: string | null;
+    hoursUntilCheckin: number;
+    willConvertPrediction: boolean | null;
+  }> {
+    const { rows } = await query(
+      `SELECT * FROM get_flexible_room_status($1::uuid, $2::date)`,
+      [roomTypeId, targetDate]
+    );
+    const r = rows[0];
+    return {
+      effectiveGender: r.effective_gender,
+      isConverted: r.is_converted,
+      convertedAt: r.converted_at,
+      hoursUntilCheckin: parseFloat(r.hours_until_checkin),
+      willConvertPrediction: r.will_convert_prediction
+    };
+  }
+
+  async getDailyOccupancy(from: string, to: string): Promise<Array<{
+    date: string; occupied: number; available: number; total: number;
+  }>> {
+    const { rows } = await query(
+      `WITH dates AS (
+         SELECT generate_series($1::date, $2::date - 1, '1 day')::date AS date
+       ),
+       daily AS (
+         SELECT d.date, COUNT(DISTINCT rb.bed_id)::int AS occupied
+         FROM dates d
+         LEFT JOIN reservation_beds rb
+           ON daterange(rb.check_in, rb.check_out, '[)') @> d.date
+         GROUP BY d.date
+       ),
+       total_beds AS (SELECT COUNT(*)::int AS total FROM beds WHERE is_active = true)
+       SELECT daily.date::text, daily.occupied, total_beds.total
+       FROM daily CROSS JOIN total_beds
+       ORDER BY daily.date`,
+      [from, to]
+    );
+    return rows.map((r: any) => ({
+      date: r.date,
+      occupied: parseInt(r.occupied, 10),
+      total: parseInt(r.total, 10),
+      available: parseInt(r.total, 10) - parseInt(r.occupied, 10)
+    }));
   }
 
   async clearCache(): Promise<void> {
-    await this.redis.delete('availability:*');
-    logger.info('Cache de disponibilidad limpiado');
-  }
-
-  private calculateRoomOccupancy(bookings: any[]): { [roomId: string]: number } {
-    const occupancy: { [roomId: string]: number } = {
-      room_mixto_12a: 0,
-      room_mixto_12b: 0,
-      room_mixto_7: 0,
-      room_flexible_7: 0
-    };
-
-    bookings.forEach(booking => {
-      booking.rooms.forEach(room => {
-        if (occupancy[room.roomId] !== undefined) {
-          occupancy[room.roomId] += room.bedsCount;
-        }
-      });
-    });
-
-    return occupancy;
-  }
-
-  private async checkFlexibleRoomConversion(
-    checkInDate: string,
-    currentOccupancy: number
-  ): Promise<{ currentType: 'mixed' | 'female'; willConvert: boolean; hoursRemaining?: number }> {
-    const hoursUntilCheckIn = differenceInHours(parseISO(checkInDate), new Date());
-
-    if (hoursUntilCheckIn <= 48 && currentOccupancy === 0) {
-      return { currentType: 'mixed', willConvert: false, hoursRemaining: 0 };
-    }
-
-    if (currentOccupancy > 0) {
-      return { currentType: 'female', willConvert: false };
-    }
-
-    if (hoursUntilCheckIn > 48) {
-      return { currentType: 'female', willConvert: true, hoursRemaining: hoursUntilCheckIn - 48 };
-    }
-
-    return { currentType: 'female', willConvert: false };
-  }
-
-  private generateOptimalAllocation(
-    bedsRequested: number,
-    roomsAvailable: RoomAvailability[]
-  ): Array<{ roomId: string; bedsToBook: number }> {
-    const allocation: Array<{ roomId: string; bedsToBook: number }> = [];
-    let remaining = bedsRequested;
-
-    const sortedRooms = [...roomsAvailable]
-      .filter(room => room.availableBeds > 0)
-      .sort((a, b) => {
-        if (b.availableBeds !== a.availableBeds) {
-          return b.availableBeds - a.availableBeds;
-        }
-        return a.currentType === 'mixed' ? -1 : 1;
-      });
-
-    for (const room of sortedRooms) {
-      if (remaining === 0) break;
-      const bedsToBook = Math.min(remaining, room.availableBeds);
-      if (bedsToBook > 0) {
-        allocation.push({ roomId: room.roomId, bedsToBook });
-        remaining -= bedsToBook;
-      }
-    }
-
-    return allocation;
-  }
-
-  private getRoomName(roomId: string): string {
-    const names: { [key: string]: string } = {
-      room_mixto_12a: 'Mixto 12A',
-      room_mixto_12b: 'Mixto 12B',
-      room_mixto_7: 'Mixto 7',
-      room_flexible_7: 'Flexible 7'
-    };
-    return names[roomId] || roomId;
+    await redisClient.delPattern('availability:*');
+    logger.info('Availability cache cleared');
   }
 }
+
+export const availabilityService = new AvailabilityService();

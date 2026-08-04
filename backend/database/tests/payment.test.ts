@@ -11,15 +11,18 @@ import { BookingRepository } from '../../src/database/repositories/booking-repos
 const paymentRepo = new PaymentRepository();
 const bookingRepo = new BookingRepository();
 
+// IDs de la reserva y huesped que crearemos para los tests
 let testReservationId: string;
 let testGuestId: string;
 let directChannelId: string;
 
 beforeAll(async () => {
+  // Obtener el canal 'direct'
   const { rows: channelRows } = await pool.query(`SELECT id FROM channels WHERE code = 'direct' LIMIT 1`);
   if (channelRows.length === 0) throw new Error('Canal direct no encontrado');
   directChannelId = channelRows[0].id;
 
+  // Crear huesped de prueba
   const { rows: guestRows } = await pool.query(
     `INSERT INTO guests (full_name, email, phone, country, language)
      VALUES ('Test Payment Guest', 'payment_test@lapa.test', '+5511999999999', 'BR', 'pt')
@@ -28,6 +31,7 @@ beforeAll(async () => {
   );
   testGuestId = guestRows[0].id;
 
+  // Crear reserva de prueba en el futuro (beds_count=2, para que deposito sea 30%)
   const { rows: resRows } = await pool.query(
     `INSERT INTO reservations (
        reservation_number, guest_id, channel_id,
@@ -46,6 +50,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Limpiar todo lo que creamos (FK: payments -> reservations -> guests)
   await pool.query(`DELETE FROM payments WHERE reservation_id = $1`, [testReservationId]);
   await pool.query(`DELETE FROM reservations WHERE id = $1`, [testReservationId]);
   await pool.query(`DELETE FROM guests WHERE id = $1`, [testGuestId]);
@@ -66,6 +71,7 @@ describe('PaymentRepository - CRUD basico', () => {
       provider_payment_id: `pi_test_${Date.now()}`,
     });
 
+    // Capture ID first so subsequent tests can use it even if assertions below fail
     createdPaymentId = payment.id;
 
     expect(payment.id).toBeDefined();
@@ -102,6 +108,7 @@ describe('PaymentRepository - CRUD basico', () => {
   });
 
   it('markFailed() cambia status a failed y registra failure_reason', async () => {
+    // Crear segundo pago para testear fallo
     const p2 = await paymentRepo.create({
       reservation_id: testReservationId,
       guest_id: testGuestId,
@@ -118,6 +125,7 @@ describe('PaymentRepository - CRUD basico', () => {
   });
 
   it('processRefund() cambia status a refunded y registra refund_amount', async () => {
+    // createdPaymentId was already markCompleted, so processRefund must find it
     const refunded = await paymentRepo.processRefund(createdPaymentId, 108.00);
     expect(refunded.status).toBe('refunded');
     expect(Number(refunded.refund_amount)).toBe(108);
@@ -198,6 +206,7 @@ describe('PaymentRepository - findByStripeIntent / findByMPId', () => {
 
 describe('PaymentService.createPaymentIntent - modo test (sin keys reales)', () => {
   it('crea un pago en DB y devuelve payment_id cuando no hay STRIPE_SECRET_KEY', async () => {
+    // En modo test, StripeHandler devuelve pi_test_... como ID falso
     const { paymentService } = await import('../../src/services/payment-service');
 
     const result = await paymentService.createPaymentIntent({
@@ -213,8 +222,10 @@ describe('PaymentService.createPaymentIntent - modo test (sin keys reales)', () 
     expect(result.payment_id).toBeDefined();
     expect(Number(result.amount)).toBe(108);
     expect(result.currency).toBe('BRL');
+    // En modo test el client_secret y provider_payment_id son strings fake
     expect(result.provider_payment_id).toBeDefined();
 
+    // Verificar que el pago quedó en la base
     const dbPayment = await paymentRepo.findById(result.payment_id);
     expect(dbPayment).not.toBeNull();
     expect(dbPayment!.status).toBe('pending');
@@ -272,6 +283,7 @@ describe('SQL: calculate_cancellation_refund()', () => {
   });
 
   it('reembolso 50% entre 48h y 168h', async () => {
+    // Cancela 72h antes: 2028-11-28T00:00:00Z
     const { rows } = await pool.query(
       `SELECT calculate_cancellation_refund($1::numeric, $2::date, $3::timestamptz) AS refund`,
       [360.00, '2028-12-01', '2028-11-28T00:00:00Z']
@@ -280,6 +292,7 @@ describe('SQL: calculate_cancellation_refund()', () => {
   });
 
   it('reembolso 0% cuando cancela con menos de 48h', async () => {
+    // Cancela 24h antes: 2028-11-30T00:00:00Z
     const { rows } = await pool.query(
       `SELECT calculate_cancellation_refund($1::numeric, $2::date, $3::timestamptz) AS refund`,
       [360.00, '2028-12-01', '2028-11-30T00:00:00Z']

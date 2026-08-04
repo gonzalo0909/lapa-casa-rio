@@ -1,5 +1,4 @@
 // lapa-casa-hostel/backend/src/database/models/room.ts
-// ventana 1 — migrado a Prisma 5.22.0
 
 import { prisma } from '../../config/prisma';
 import { RoomType as Room, BedGender } from '../../types/database';
@@ -32,7 +31,7 @@ export class RoomModel {
     checkOut: Date,
     requestedBeds: number
   ): Promise<{ available: boolean; availableBeds: number; message?: string }> {
-    const rows = await prisma.$queryRaw<[{ capacity: number; occupied: number }]>`
+    const rows = await prisma.$queryRaw<Array<{ capacity: number; occupied: number }>>`
       SELECT rt.capacity,
              COUNT(rb.id) FILTER (WHERE rb.id IS NOT NULL)::int AS occupied
       FROM room_types rt

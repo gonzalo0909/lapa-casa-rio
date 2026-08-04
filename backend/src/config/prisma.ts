@@ -1,5 +1,4 @@
 // lapa-casa-hostel/backend/src/config/prisma.ts
-// ventana 1 — singleton PrismaClient
 
 import { PrismaClient } from '@prisma/client';
 

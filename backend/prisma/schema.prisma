@@ -1,6 +1,3 @@
-// lapa-casa-hostel/backend/prisma/schema.prisma
-// ventana 1 — generado con prisma db pull desde la BD real
-
 generator client {
   provider = "prisma-client-js"
 }

@@ -1,26 +1,16 @@
 // lapa-casa-hostel/backend/src/routes/ical/ical.routes.ts
 
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { pool } from '../../config/database';
 import { z } from 'zod';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { OTASync } from '../../integrations/ical/ota-sync';
 import { ICalGenerator } from '../../integrations/ical/ical-generator';
 
-/**
- * @module ICalRoutes
- * @description API routes for iCal feed management
- */
-
 const router = Router();
-const prisma = new PrismaClient();
 const otaSync = new OTASync();
 const icalGenerator = new ICalGenerator();
 
-/**
- * @schema CreateFeedSchema
- * @description Validation schema for creating iCal feeds
- */
 const CreateFeedSchema = z.object({
   name: z.string().min(1).max(100),
   url: z.string().url(),
@@ -28,438 +18,176 @@ const CreateFeedSchema = z.object({
   platform: z.enum(['airbnb', 'booking', 'expedia', 'vrbo', 'hostelworld', 'custom']),
 });
 
-/**
- * @schema UpdateFeedSchema
- * @description Validation schema for updating iCal feeds
- */
 const UpdateFeedSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   url: z.string().url().optional(),
   isActive: z.boolean().optional(),
 });
 
-/**
- * @route GET /api/admin/ical/feeds
- * @description Get all iCal feeds with statistics
- * @access Admin only
- */
 router.get('/feeds', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const feeds = await prisma.iCalFeed.findMany({
-      include: {
-        room: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        _count: {
-          select: {
-            bookings: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const { rows: feeds } = await pool.query(
+      `SELECT f.id, f.name, f.url, f.room_id, rm.name AS room_name, f.platform,
+              f.is_active, f.last_sync_at, f.last_sync_status, f.last_sync_error,
+              COUNT(r.id) AS bookings_imported
+       FROM ical_feeds f
+       JOIN rooms rm ON rm.id = f.room_id
+       LEFT JOIN reservations r ON r.metadata->>'ical_feed_id' = f.id::text
+       GROUP BY f.id, rm.name
+       ORDER BY f.created_at DESC`
+    ).catch(() => ({ rows: [] }));
 
-    // Calculate statistics
     const stats = {
       totalFeeds: feeds.length,
-      activeFeeds: feeds.filter(f => f.isActive).length,
-      lastSyncTime: feeds
-        .filter(f => f.lastSyncAt)
-        .sort((a, b) => (b.lastSyncAt?.getTime() || 0) - (a.lastSyncAt?.getTime() || 0))[0]
-        ?.lastSyncAt,
-      bookingsImported: feeds.reduce((sum, f) => sum + f._count.bookings, 0),
-      errors: feeds.filter(f => f.lastSyncStatus === 'error').length,
+      activeFeeds: feeds.filter((f: any) => f.is_active).length,
+      lastSyncTime: feeds.filter((f: any) => f.last_sync_at).sort((a: any, b: any) => new Date(b.last_sync_at).getTime() - new Date(a.last_sync_at).getTime())[0]?.last_sync_at,
+      bookingsImported: feeds.reduce((s: number, f: any) => s + Number(f.bookings_imported), 0),
+      errors: feeds.filter((f: any) => f.last_sync_status === 'error').length,
     };
 
-    // Format feeds
-    const formattedFeeds = feeds.map(feed => ({
-      id: feed.id,
-      name: feed.name,
-      url: feed.url,
-      roomId: feed.roomId,
-      roomName: feed.room.name,
-      platform: feed.platform,
-      isActive: feed.isActive,
-      lastSync: feed.lastSyncAt,
-      syncStatus: feed.lastSyncStatus,
-      errorMessage: feed.lastSyncError,
-      bookingsImported: feed._count.bookings,
-    }));
-
-    res.json({
-      feeds: formattedFeeds,
-      stats,
-    });
+    res.json({ feeds, stats });
   } catch (error) {
-    console.error('Error fetching feeds:', error);
-    res.status(500).json({
-      message: 'Failed to fetch feeds',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ message: 'Failed to fetch feeds', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route POST /api/admin/ical/feeds
- * @description Create a new iCal feed
- * @access Admin only
- */
 router.post('/feeds', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const validatedData = CreateFeedSchema.parse(req.body);
+    const data = CreateFeedSchema.parse(req.body);
 
-    // Verify room exists
-    const room = await prisma.room.findUnique({
-      where: { id: validatedData.roomId },
-    });
+    const { rows: roomRows } = await pool.query(`SELECT id FROM rooms WHERE id = $1`, [data.roomId]);
+    if (roomRows.length === 0) return res.status(404).json({ message: 'Room not found' });
 
-    if (!room) {
-      return res.status(404).json({ message: 'Room not found' });
-    }
+    const { rows: existing } = await pool.query(
+      `SELECT id FROM ical_feeds WHERE url = $1 AND room_id = $2`,
+      [data.url, data.roomId]
+    ).catch(() => ({ rows: [] }));
+    if (existing.length > 0) return res.status(400).json({ message: 'A feed with this URL already exists for this room' });
 
-    // Check for duplicate URL
-    const existing = await prisma.iCalFeed.findFirst({
-      where: {
-        url: validatedData.url,
-        roomId: validatedData.roomId,
-      },
-    });
+    const { rows } = await pool.query(
+      `INSERT INTO ical_feeds (name, url, room_id, platform, is_active) VALUES ($1, $2, $3, $4, true) RETURNING *`,
+      [data.name, data.url, data.roomId, data.platform]
+    ).catch(() => ({ rows: [] }));
 
-    if (existing) {
-      return res.status(400).json({
-        message: 'A feed with this URL already exists for this room',
-      });
-    }
-
-    // Create feed
-    const feed = await prisma.iCalFeed.create({
-      data: {
-        name: validatedData.name,
-        url: validatedData.url,
-        roomId: validatedData.roomId,
-        platform: validatedData.platform,
-        isActive: true,
-      },
-      include: {
-        room: {
-          select: {
-            name: true,
-            type: true,
-          },
-        },
-      },
-    });
-
-    res.status(201).json({
-      message: 'Feed created successfully',
-      feed: {
-        id: feed.id,
-        name: feed.name,
-        url: feed.url,
-        roomId: feed.roomId,
-        roomName: feed.room.name,
-        platform: feed.platform,
-        isActive: feed.isActive,
-      },
-    });
+    res.status(201).json({ message: 'Feed created successfully', feed: rows[0] });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        message: 'Validation error',
-        errors: error.errors,
-      });
-    }
-
-    console.error('Error creating feed:', error);
-    res.status(500).json({
-      message: 'Failed to create feed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    if (error instanceof z.ZodError) return res.status(400).json({ message: 'Validation error', errors: error.errors });
+    res.status(500).json({ message: 'Failed to create feed', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route PATCH /api/admin/ical/feeds/:id
- * @description Update an iCal feed
- * @access Admin only
- */
 router.patch('/feeds/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const validatedData = UpdateFeedSchema.parse(req.body);
+    const data = UpdateFeedSchema.parse(req.body);
 
-    // Check if feed exists
-    const feed = await prisma.iCalFeed.findUnique({
-      where: { id },
-    });
+    const { rows: feedRows } = await pool.query(`SELECT id FROM ical_feeds WHERE id = $1`, [id]).catch(() => ({ rows: [] }));
+    if (feedRows.length === 0) return res.status(404).json({ message: 'Feed not found' });
 
-    if (!feed) {
-      return res.status(404).json({ message: 'Feed not found' });
-    }
+    const updates: string[] = [];
+    const params: any[] = [];
+    if (data.name !== undefined) { params.push(data.name); updates.push(`name = $${params.length}`); }
+    if (data.url !== undefined) { params.push(data.url); updates.push(`url = $${params.length}`); }
+    if (data.isActive !== undefined) { params.push(data.isActive); updates.push(`is_active = $${params.length}`); }
 
-    // Update feed
-    const updated = await prisma.iCalFeed.update({
-      where: { id },
-      data: validatedData,
-      include: {
-        room: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
+    params.push(id);
+    const { rows } = await pool.query(
+      `UPDATE ical_feeds SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING *`,
+      params
+    ).catch(() => ({ rows: [] }));
 
-    res.json({
-      message: 'Feed updated successfully',
-      feed: {
-        id: updated.id,
-        name: updated.name,
-        url: updated.url,
-        roomId: updated.roomId,
-        roomName: updated.room.name,
-        platform: updated.platform,
-        isActive: updated.isActive,
-      },
-    });
+    res.json({ message: 'Feed updated successfully', feed: rows[0] });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        message: 'Validation error',
-        errors: error.errors,
-      });
-    }
-
-    console.error('Error updating feed:', error);
-    res.status(500).json({
-      message: 'Failed to update feed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    if (error instanceof z.ZodError) return res.status(400).json({ message: 'Validation error', errors: error.errors });
+    res.status(500).json({ message: 'Failed to update feed', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route DELETE /api/admin/ical/feeds/:id
- * @description Delete an iCal feed
- * @access Admin only
- */
 router.delete('/feeds/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
+    const { rows: feedRows } = await pool.query(`SELECT id FROM ical_feeds WHERE id = $1`, [id]).catch(() => ({ rows: [] }));
+    if (feedRows.length === 0) return res.status(404).json({ message: 'Feed not found' });
 
-    // Check if feed exists
-    const feed = await prisma.iCalFeed.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            bookings: true,
-          },
-        },
-      },
-    });
+    const { rows: countRows } = await pool.query(
+      `SELECT COUNT(*) FROM reservations WHERE metadata->>'ical_feed_id' = $1`,
+      [id]
+    );
+    const bookingsCount = Number(countRows[0].count);
 
-    if (!feed) {
-      return res.status(404).json({ message: 'Feed not found' });
+    if (bookingsCount > 0) {
+      await pool.query(`UPDATE reservations SET status = 'cancelled' WHERE metadata->>'ical_feed_id' = $1`, [id]);
     }
 
-    // Optionally delete associated bookings
-    if (feed._count.bookings > 0) {
-      await prisma.booking.deleteMany({
-        where: {
-          iCalFeedId: id,
-          source: 'ical',
-        },
-      });
-    }
-
-    // Delete feed
-    await prisma.iCalFeed.delete({
-      where: { id },
-    });
-
-    res.json({
-      message: 'Feed deleted successfully',
-      bookingsDeleted: feed._count.bookings,
-    });
+    await pool.query(`DELETE FROM ical_feeds WHERE id = $1`, [id]).catch(() => {});
+    res.json({ message: 'Feed deleted successfully', bookingsDeleted: bookingsCount });
   } catch (error) {
-    console.error('Error deleting feed:', error);
-    res.status(500).json({
-      message: 'Failed to delete feed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ message: 'Failed to delete feed', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route POST /api/admin/ical/feeds/:id/sync
- * @description Manually sync a specific feed
- * @access Admin only
- */
 router.post('/feeds/:id/sync', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
+    const { rows } = await pool.query(`SELECT id, is_active FROM ical_feeds WHERE id = $1`, [id]).catch(() => ({ rows: [] }));
+    if (rows.length === 0) return res.status(404).json({ message: 'Feed not found' });
+    if (!rows[0].is_active) return res.status(400).json({ message: 'Feed is not active' });
 
-    // Verify feed exists
-    const feed = await prisma.iCalFeed.findUnique({
-      where: { id },
-    });
-
-    if (!feed) {
-      return res.status(404).json({ message: 'Feed not found' });
-    }
-
-    if (!feed.isActive) {
-      return res.status(400).json({ message: 'Feed is not active' });
-    }
-
-    // Sync feed
     const result = await otaSync.syncFeed(id);
+    if (!result.success) return res.status(500).json({ message: 'Sync failed', errors: result.errors });
 
-    if (!result.success) {
-      return res.status(500).json({
-        message: 'Sync failed',
-        errors: result.errors,
-      });
-    }
-
-    res.json({
-      message: 'Sync completed successfully',
-      result: {
-        bookingsImported: result.bookingsImported,
-        bookingsUpdated: result.bookingsUpdated,
-        blockedDatesCreated: result.blockedDatesCreated,
-        conflictsResolved: result.conflictsResolved,
-        syncedAt: result.syncedAt,
-      },
-    });
+    res.json({ message: 'Sync completed successfully', result: { bookingsImported: result.bookingsImported, bookingsUpdated: result.bookingsUpdated, blockedDatesCreated: result.blockedDatesCreated, conflictsResolved: result.conflictsResolved, syncedAt: result.syncedAt } });
   } catch (error) {
-    console.error('Error syncing feed:', error);
-    res.status(500).json({
-      message: 'Sync failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ message: 'Sync failed', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route POST /api/admin/ical/sync-all
- * @description Sync all active feeds
- * @access Admin only
- */
 router.post('/sync-all', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const result = await otaSync.syncAllActiveFeeds();
-
     res.json({
       message: 'Batch sync completed',
       totalImported: result.totalBookingsImported,
       totalUpdated: result.totalBookingsUpdated,
       feedsSynced: result.successfulFeeds,
       feedsFailed: result.failedFeeds,
-      results: result.results.map(r => ({
-        feedName: r.feedName,
-        success: r.success,
-        bookingsImported: r.bookingsImported,
-        bookingsUpdated: r.bookingsUpdated,
-        errors: r.errors,
-      })),
+      results: result.results.map(r => ({ feedName: r.feedName, success: r.success, bookingsImported: r.bookingsImported, bookingsUpdated: r.bookingsUpdated, errors: r.errors })),
     });
   } catch (error) {
-    console.error('Error syncing all feeds:', error);
-    res.status(500).json({
-      message: 'Batch sync failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ message: 'Batch sync failed', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route GET /api/admin/ical/settings
- * @description Get iCal sync settings
- * @access Admin only
- */
 router.get('/settings', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const settings = await prisma.settings.findFirst({
-      where: { key: 'ical_sync' },
-    });
-
-    const config = settings?.value as any || {
-      autoSync: true,
-      syncInterval: 60, // minutes
-    };
-
+    const { rows } = await pool.query(`SELECT value FROM system_config WHERE key = 'ical_sync'`);
+    const config = rows[0]?.value || { autoSync: true, syncInterval: 60 };
     res.json(config);
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    res.status(500).json({
-      message: 'Failed to fetch settings',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ message: 'Failed to fetch settings', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
-/**
- * @route PATCH /api/admin/ical/settings
- * @description Update iCal sync settings
- * @access Admin only
- */
 router.patch('/settings', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { autoSync, syncInterval } = req.body;
-
-    // Validate
-    if (typeof autoSync !== 'boolean' && autoSync !== undefined) {
-      return res.status(400).json({ message: 'autoSync must be a boolean' });
-    }
-
+    if (typeof autoSync !== 'boolean' && autoSync !== undefined) return res.status(400).json({ message: 'autoSync must be a boolean' });
     if (syncInterval !== undefined) {
       const interval = Number(syncInterval);
-      if (isNaN(interval) || interval < 15 || interval > 1440) {
-        return res.status(400).json({
-          message: 'syncInterval must be between 15 and 1440 minutes',
-        });
-      }
+      if (isNaN(interval) || interval < 15 || interval > 1440) return res.status(400).json({ message: 'syncInterval must be between 15 and 1440 minutes' });
     }
 
-    // Update or create settings
-    const settings = await prisma.settings.upsert({
-      where: { key: 'ical_sync' },
-      create: {
-        key: 'ical_sync',
-        value: {
-          autoSync: autoSync ?? true,
-          syncInterval: syncInterval ?? 60,
-        },
-      },
-      update: {
-        value: {
-          autoSync: autoSync ?? true,
-          syncInterval: syncInterval ?? 60,
-        },
-      },
-    });
+    const value = JSON.stringify({ autoSync: autoSync ?? true, syncInterval: syncInterval ?? 60 });
+    await pool.query(
+      `INSERT INTO system_config (key, value, description) VALUES ('ical_sync', $1::jsonb, 'iCal sync settings')
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [value]
+    );
 
-    res.json({
-      message: 'Settings updated successfully',
-      settings: settings.value,
-    });
+    res.json({ message: 'Settings updated successfully', settings: { autoSync: autoSync ?? true, syncInterval: syncInterval ?? 60 } });
   } catch (error) {
-    console.error('Error updating settings:', error);
-    res.status(500).json({
-      message: 'Failed to update settings',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ message: 'Failed to update settings', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
 export default router;
-
-// ✅ Archivo 5/10 completado

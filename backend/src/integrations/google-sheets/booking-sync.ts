@@ -1,19 +1,8 @@
 // lapa-casa-hostel/backend/src/integrations/google-sheets/booking-sync.ts
 
-import { PrismaClient } from '@prisma/client';
+import { pool } from '../../config/database';
 import { SheetsClient, type BookingRowData, SheetsConfig } from './sheets-client';
 
-/**
- * @module BookingSync
- * @description Synchronizes bookings between database and Google Sheets
- */
-
-const prisma = new PrismaClient();
-
-/**
- * @interface SyncResult
- * @description Result of a sync operation
- */
 export interface SyncResult {
   success: boolean;
   bookingsAdded: number;
@@ -22,10 +11,6 @@ export interface SyncResult {
   errors: string[];
 }
 
-/**
- * @interface SyncOptions
- * @description Options for sync operations
- */
 export interface SyncOptions {
   fullSync?: boolean;
   dateFrom?: Date;
@@ -33,10 +18,6 @@ export interface SyncOptions {
   roomId?: string;
 }
 
-/**
- * @class BookingSync
- * @description Manages synchronization between database and Google Sheets
- */
 export class BookingSync {
   private sheetsClient: SheetsClient;
 
@@ -44,286 +25,150 @@ export class BookingSync {
     this.sheetsClient = new SheetsClient(config);
   }
 
-  /**
-   * @method syncToSheets
-   * @description Syncs bookings from database to Google Sheets
-   * @param {SyncOptions} [options] - Sync options
-   * @returns {Promise<SyncResult>} Sync result
-   */
   async syncToSheets(options: SyncOptions = {}): Promise<SyncResult> {
     const errors: string[] = [];
-    let bookingsAdded = 0;
-    let bookingsUpdated = 0;
+    let bookingsAdded = 0, bookingsUpdated = 0;
 
     try {
-      // Initialize sheet if needed
       await this.sheetsClient.initializeSheet();
 
-      // Build query
-      const where: any = {
-        status: { in: ['confirmed', 'pending'] },
-      };
+      const params: any[] = [];
+      let sql = `
+        SELECT r.id, g.full_name AS guest_name, g.email AS guest_email,
+               rm.name AS room_name, rb.check_in, rb.check_out,
+               r.status, c.code AS platform, r.total_price, r.notes,
+               r.beds_count, r.nights_count, r.created_at
+        FROM reservations r
+        JOIN guests g ON g.id = r.guest_id
+        JOIN reservation_beds rb ON rb.reservation_id = r.id
+        JOIN beds b ON b.id = rb.bed_id
+        JOIN rooms rm ON rm.id = b.room_id
+        JOIN channels c ON c.id = r.channel_id
+        WHERE r.status IN ('confirmed','pending_payment')
+      `;
 
       if (options.dateFrom) {
-        where.checkIn = { ...where.checkIn, gte: options.dateFrom };
+        params.push(options.dateFrom);
+        sql += ` AND rb.check_in >= $${params.length}`;
       }
-
       if (options.dateTo) {
-        where.checkOut = { ...where.checkOut, lte: options.dateTo };
+        params.push(options.dateTo);
+        sql += ` AND rb.check_out <= $${params.length}`;
       }
-
       if (options.roomId) {
-        where.roomId = options.roomId;
+        params.push(options.roomId);
+        sql += ` AND b.room_id = $${params.length}`;
       }
+      sql += ` ORDER BY rb.check_in`;
 
-      // Fetch bookings from database
-      const bookings = await prisma.booking.findMany({
-        where,
-        include: {
-          room: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        orderBy: {
-          checkIn: 'asc',
-        },
-      });
+      const { rows: bookings } = await pool.query(sql, params);
 
-      // Sync each booking
       for (const booking of bookings) {
         try {
           const rowData = this.convertToRowData(booking);
-
-          // Check if booking already exists in sheet
           const existingRow = await this.sheetsClient.findRowByBookingId(booking.id);
-
           if (existingRow) {
-            // Update existing row
             await this.sheetsClient.updateRow(existingRow, rowData);
             bookingsUpdated++;
           } else {
-            // Add new row
             await this.sheetsClient.appendRow(rowData);
             bookingsAdded++;
           }
         } catch (error) {
-          const errorMsg = `Failed to sync booking ${booking.id}: ${this.getErrorMessage(error)}`;
-          errors.push(errorMsg);
-          console.error(errorMsg);
+          errors.push(`Failed to sync booking ${booking.id}: ${this.getErrorMessage(error)}`);
         }
       }
 
-      return {
-        success: errors.length === 0,
-        bookingsAdded,
-        bookingsUpdated,
-        bookingsDeleted: 0,
-        errors,
-      };
+      return { success: errors.length === 0, bookingsAdded, bookingsUpdated, bookingsDeleted: 0, errors };
     } catch (error) {
-      const errorMsg = `Sync failed: ${this.getErrorMessage(error)}`;
-      errors.push(errorMsg);
-      console.error(errorMsg);
-
-      return {
-        success: false,
-        bookingsAdded,
-        bookingsUpdated,
-        bookingsDeleted: 0,
-        errors,
-      };
+      errors.push(`Sync failed: ${this.getErrorMessage(error)}`);
+      return { success: false, bookingsAdded, bookingsUpdated, bookingsDeleted: 0, errors };
     }
   }
 
-  /**
-   * @method syncFromSheets
-   * @description Syncs bookings from Google Sheets to database
-   * @returns {Promise<SyncResult>} Sync result
-   */
   async syncFromSheets(): Promise<SyncResult> {
     const errors: string[] = [];
-    let bookingsAdded = 0;
     let bookingsUpdated = 0;
 
     try {
-      // Get all rows from sheet
       const rows = await this.sheetsClient.getAllRows();
 
       for (const row of rows) {
         try {
-          // Check if booking exists in database
-          const existing = await prisma.booking.findUnique({
-            where: { id: row.bookingId },
-          });
-
-          if (existing) {
-            // Update existing booking
-            await prisma.booking.update({
-              where: { id: row.bookingId },
-              data: {
-                guestName: row.guestName,
-                status: row.status as any,
-                notes: row.notes,
-              },
-            });
+          const { rows: existing } = await pool.query(`SELECT id FROM reservations WHERE id = $1`, [row.bookingId]);
+          if (existing.length > 0) {
+            await pool.query(
+              `UPDATE reservations SET notes = $1, updated_at = NOW() WHERE id = $2`,
+              [row.notes, row.bookingId]
+            );
             bookingsUpdated++;
           } else {
-            // Note: Adding new bookings from sheets is typically not recommended
-            // as it requires additional validation and room lookup
             errors.push(`Booking ${row.bookingId} not found in database - skipping`);
           }
         } catch (error) {
-          const errorMsg = `Failed to sync booking ${row.bookingId}: ${this.getErrorMessage(error)}`;
-          errors.push(errorMsg);
-          console.error(errorMsg);
+          errors.push(`Failed to sync booking ${row.bookingId}: ${this.getErrorMessage(error)}`);
         }
       }
 
-      return {
-        success: errors.length === 0,
-        bookingsAdded,
-        bookingsUpdated,
-        bookingsDeleted: 0,
-        errors,
-      };
+      return { success: errors.length === 0, bookingsAdded: 0, bookingsUpdated, bookingsDeleted: 0, errors };
     } catch (error) {
-      const errorMsg = `Sync from sheets failed: ${this.getErrorMessage(error)}`;
-      errors.push(errorMsg);
-      console.error(errorMsg);
-
-      return {
-        success: false,
-        bookingsAdded,
-        bookingsUpdated,
-        bookingsDeleted: 0,
-        errors,
-      };
+      return { success: false, bookingsAdded: 0, bookingsUpdated: 0, bookingsDeleted: 0, errors: [this.getErrorMessage(error)] };
     }
   }
 
-  /**
-   * @method getBookingFromSheet
-   * @description Retrieves a specific booking from Google Sheets
-   * @param {string} bookingId - Booking ID
-   * @returns {Promise<BookingRowData | null>} Booking data or null
-   */
   async getBookingFromSheet(bookingId: string): Promise<BookingRowData | null> {
     try {
       const rowIndex = await this.sheetsClient.findRowByBookingId(bookingId);
-      if (!rowIndex) {
-        return null;
-      }
-
+      if (!rowIndex) return null;
       const allRows = await this.sheetsClient.getAllRows();
-      return allRows.find((row) => row.bookingId === bookingId) || null;
-    } catch (error) {
-      console.error('Error getting booking from sheet:', error);
-      return null;
-    }
+      return allRows.find(r => r.bookingId === bookingId) || null;
+    } catch { return null; }
   }
 
-  /**
-   * @method deleteBookingFromSheet
-   * @description Deletes a booking from Google Sheets
-   * @param {string} bookingId - Booking ID
-   * @returns {Promise<boolean>} True if deleted successfully
-   */
   async deleteBookingFromSheet(bookingId: string): Promise<boolean> {
     try {
       const rowIndex = await this.sheetsClient.findRowByBookingId(bookingId);
-      if (!rowIndex) {
-        return false;
-      }
-
+      if (!rowIndex) return false;
       await this.sheetsClient.deleteRow(rowIndex);
       return true;
-    } catch (error) {
-      console.error('Error deleting booking from sheet:', error);
-      return false;
-    }
+    } catch { return false; }
   }
 
-  /**
-   * @method fullSync
-   * @description Performs a full sync - clears sheet and syncs all bookings
-   * @returns {Promise<SyncResult>} Sync result
-   */
   async fullSync(): Promise<SyncResult> {
     try {
-      // Clear existing data
       await this.sheetsClient.clearSheet();
-
-      // Re-initialize with headers
       await this.sheetsClient.initializeSheet();
-
-      // Sync all bookings
       return await this.syncToSheets({ fullSync: true });
     } catch (error) {
-      console.error('Full sync failed:', error);
-      return {
-        success: false,
-        bookingsAdded: 0,
-        bookingsUpdated: 0,
-        bookingsDeleted: 0,
-        errors: [this.getErrorMessage(error)],
-      };
+      return { success: false, bookingsAdded: 0, bookingsUpdated: 0, bookingsDeleted: 0, errors: [this.getErrorMessage(error)] };
     }
   }
 
-  /**
-   * @method convertToRowData
-   * @description Converts database booking to sheet row data
-   * @param {any} booking - Booking from database
-   * @returns {BookingRowData} Row data for sheet
-   */
   private convertToRowData(booking: any): BookingRowData {
-    const nights = Math.ceil(
-      (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
-
+    const nights = Math.ceil((new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) / 86400000);
     return {
       bookingId: booking.id,
-      guestName: booking.guestName,
-      guestEmail: booking.guestEmail || '',
-      roomName: booking.room.name,
-      checkIn: new Date(booking.checkIn).toISOString().split('T')[0],
-      checkOut: new Date(booking.checkOut).toISOString().split('T')[0],
+      guestName: booking.guest_name,
+      guestEmail: booking.guest_email || '',
+      roomName: booking.room_name,
+      checkIn: new Date(booking.check_in).toISOString().split('T')[0],
+      checkOut: new Date(booking.check_out).toISOString().split('T')[0],
       nights,
-      adults: booking.adults,
-      children: booking.children,
-      totalPrice: booking.totalPrice,
+      adults: booking.beds_count,
+      children: 0,
+      totalPrice: booking.total_price,
       status: booking.status,
       platform: booking.platform,
-      createdAt: new Date(booking.createdAt).toISOString(),
+      createdAt: new Date(booking.created_at).toISOString(),
       notes: booking.notes,
     };
   }
 
-  /**
-   * @method getErrorMessage
-   * @description Safely extracts error message
-   * @param {unknown} error - Error object
-   * @returns {string} Error message
-   */
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return String(error);
+    return error instanceof Error ? error.message : String(error);
   }
 }
 
-/**
- * @function createBookingSync
- * @description Factory function to create a new BookingSync instance
- * @param {SheetsConfig} config - Sheets configuration
- * @returns {BookingSync} New BookingSync instance
- */
 export function createBookingSync(config: SheetsConfig): BookingSync {
   return new BookingSync(config);
 }
-
-// ✅ Archivo 2/2 - booking-sync.ts completado

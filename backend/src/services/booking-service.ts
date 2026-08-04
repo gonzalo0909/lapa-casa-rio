@@ -1,5 +1,4 @@
 // lapa-casa-hostel/backend/src/services/booking-service.ts
-// ventana3
 //
 // REQUISITO CRITICO #1 (prompt Maestro v1.5): acquire_bed_locks() +
 // check_availability() + el INSERT de reservation_beds deben correr
@@ -31,6 +30,7 @@ export class InsufficientAvailabilityError extends Error {
 
 const isOverbookingError = (error: unknown): boolean => {
   const code = (error as { code?: string })?.code;
+  // 23505 = unique_violation (trigger trg_prevent_overbooking), 23P01 = exclusion_violation (constraint EXCLUDE)
   return code === '23505' || code === '23P01';
 };
 
@@ -66,6 +66,7 @@ interface CreateBookingInput {
   status?: BookingStatus;
 }
 
+/** Selecciona `count` camas libres y elegibles por genero dentro de UNA habitacion, bajo la transaccion activa. */
 const pickAvailableBedsInRoom = async (
   client: PoolClient,
   roomTypeId: string,
@@ -98,6 +99,7 @@ export class BookingService {
       if (channelRows.length === 0) throw new Error('Canal "direct" no encontrado en la tabla channels');
       const channelId = channelRows[0].id;
 
+      // 1) Elegir camas candidatas por habitacion (sin lock todavia)
       const candidateBedIds: string[] = [];
       for (const room of data.rooms) {
         const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, 'mixed');
@@ -107,8 +109,10 @@ export class BookingService {
         candidateBedIds.push(...beds);
       }
 
+      // 2) Adquirir advisory locks de esas camas especificas, DENTRO de esta transaccion
       await acquireLock(client, candidateBedIds);
 
+      // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos
       const { rows: stillOccupied } = await client.query(
         `SELECT bed_id FROM reservation_beds
          WHERE bed_id = ANY($1::uuid[])
@@ -119,6 +123,7 @@ export class BookingService {
         throw new InsufficientAvailabilityError({ conflictingBeds: stillOccupied.map((r: any) => r.bed_id) });
       }
 
+      // 4) early_bird_discount real, via SQL (el resto del precio ya vino de pricingService)
       const bookingDate = new Date().toISOString().slice(0, 10);
       const { rows: earlyBirdRows } = await client.query(
         `SELECT calculate_early_bird_discount($1::date, $2::date) AS d`,
@@ -191,6 +196,7 @@ export class BookingService {
     return bookingRepo.findById(id);
   }
 
+  /** No reimplementa liberacion de camas -- trg_release_beds_on_status_change lo hace solo al cambiar status. */
   async cancelBooking(id: string, reason?: string): Promise<Reservation> {
     return bookingRepo.cancelReservation(id, reason);
   }
@@ -239,6 +245,7 @@ export class BookingService {
     };
   }
 
+  /** Libera reservas pending_payment vencidas (>15 min). sp_cleanup_expired_pending() cubre lo mismo desde BullMQ (Ventana 4). */
   async expirePendingBookings(): Promise<number> {
     const { rows } = await query(
       `UPDATE reservations

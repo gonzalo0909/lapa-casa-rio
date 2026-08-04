@@ -116,6 +116,7 @@ export class PaymentService {
     };
   }
 
+  // Confirma un pago por provider_payment_id (usado por webhooks)
   async confirmPayment(providerPaymentId: string): Promise<Payment> {
     const payment = await this.paymentRepo.findByProviderPaymentId(providerPaymentId);
     if (!payment) throw new AppError('Pago no encontrado', 404);
@@ -136,6 +137,7 @@ export class PaymentService {
     return confirmedPayment;
   }
 
+  // Confirma un pago por payment.id interno (usado por la ruta confirm-payment)
   async confirmPaymentById(paymentId: string): Promise<Payment> {
     const payment = await this.paymentRepo.findById(paymentId);
     if (!payment) throw new AppError('Pago no encontrado', 404);

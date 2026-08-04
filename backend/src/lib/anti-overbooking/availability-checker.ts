@@ -1,7 +1,8 @@
 // lapa-casa-hostel/backend/src/lib/anti-overbooking/availability-checker.ts
+// corrección — imports pool y redisCache corregidos
 
-import { prisma } from '../../config/database';
-import { redis } from '../../config/redis';
+import { pool } from '../../config/database';
+import { redisCache as redis } from '../../config/redis';
 import { addDays, differenceInHours, parseISO } from 'date-fns';
 
 interface RoomConfig {
@@ -46,14 +47,14 @@ interface BookingData {
 const ROOM_CONFIGS: RoomConfig[] = [
   { id: 'room_mixto_12a', name: 'Mixto 12A', capacity: 12, type: 'mixed', isFlexible: false },
   { id: 'room_mixto_12b', name: 'Mixto 12B', capacity: 12, type: 'mixed', isFlexible: false },
-  { id: 'room_mixto_7', name: 'Mixto 7', capacity: 7, type: 'mixed', isFlexible: false },
-  { id: 'room_mixto_7b', name: 'Mixto 7B', capacity: 7, type: 'mixed', isFlexible: false },
+  { id: 'room_mixto_7',   name: 'Mixto 7',   capacity: 7,  type: 'mixed', isFlexible: false },
+  { id: 'room_mixto_7b',  name: 'Mixto 7B',  capacity: 7,  type: 'mixed', isFlexible: false },
   { id: 'room_flexible_7', name: 'Flexible 7', capacity: 7, type: 'female', isFlexible: true, autoConvertHours: 48 }
 ];
 
 export class AvailabilityChecker {
   private readonly CACHE_TTL = 300;
-  private readonly CONFIRMED_STATUSES = ['CONFIRMED', 'CHECKED_IN', 'PENDING_PAYMENT'];
+  private readonly CONFIRMED_STATUSES = ['confirmed', 'pending_payment'];
 
   async checkAvailability(
     checkInDate: string | Date,
@@ -61,41 +62,29 @@ export class AvailabilityChecker {
     requestedBeds: number,
     excludeBookingId?: string
   ): Promise<AvailabilityResult> {
-    const checkIn = typeof checkInDate === 'string' ? parseISO(checkInDate) : checkInDate;
+    const checkIn  = typeof checkInDate  === 'string' ? parseISO(checkInDate)  : checkInDate;
     const checkOut = typeof checkOutDate === 'string' ? parseISO(checkOutDate) : checkOutDate;
 
     if (checkIn >= checkOut) {
       return {
-        isAvailable: false,
-        availableRooms: [],
-        totalAvailableBeds: 0,
-        requestedBeds,
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
+        isAvailable: false, availableRooms: [], totalAvailableBeds: 0,
+        requestedBeds, checkInDate: checkIn, checkOutDate: checkOut,
         conflicts: ['Check-out date must be after check-in date']
       };
     }
 
     if (checkIn < new Date()) {
       return {
-        isAvailable: false,
-        availableRooms: [],
-        totalAvailableBeds: 0,
-        requestedBeds,
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
+        isAvailable: false, availableRooms: [], totalAvailableBeds: 0,
+        requestedBeds, checkInDate: checkIn, checkOutDate: checkOut,
         conflicts: ['Check-in date cannot be in the past']
       };
     }
 
     if (requestedBeds < 1 || requestedBeds > 45) {
       return {
-        isAvailable: false,
-        availableRooms: [],
-        totalAvailableBeds: 0,
-        requestedBeds,
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
+        isAvailable: false, availableRooms: [], totalAvailableBeds: 0,
+        requestedBeds, checkInDate: checkIn, checkOutDate: checkOut,
         conflicts: ['Requested beds must be between 1 and 45']
       };
     }
@@ -106,7 +95,7 @@ export class AvailabilityChecker {
       return this.processAvailability(cached, requestedBeds, checkIn, checkOut);
     }
 
-    const bookings = await this.fetchBookingsForDateRange(checkIn, checkOut, excludeBookingId);
+    const bookings  = await this.fetchBookingsForDateRange(checkIn, checkOut, excludeBookingId);
     const occupancy = await this.calculateOccupancy(bookings, checkIn);
     await this.setCache(cacheKey, occupancy);
 
@@ -118,25 +107,31 @@ export class AvailabilityChecker {
     checkOut: Date,
     excludeBookingId?: string
   ): Promise<BookingData[]> {
-    const bookings = await prisma.booking.findMany({
-      where: {
-        AND: [
-          { status: { in: this.CONFIRMED_STATUSES } },
-          { OR: [{ AND: [{ checkInDate: { lt: checkOut } }, { checkOutDate: { gt: checkIn } }] }] },
-          excludeBookingId ? { id: { not: excludeBookingId } } : {}
-        ]
-      },
-      select: {
-        id: true,
-        roomId: true,
-        bedsCount: true,
-        checkInDate: true,
-        checkOutDate: true,
-        status: true
-      }
-    });
-
-    return bookings;
+    const params: any[] = [checkIn, checkOut];
+    let excludeClause = '';
+    if (excludeBookingId) {
+      params.push(excludeBookingId);
+      excludeClause = `AND r.id != $${params.length}::uuid`;
+    }
+    const sql = `
+      SELECT DISTINCT r.id, b.room_type_id AS room_id, r.beds_count,
+             r.check_in_date, r.check_out_date, r.status::text
+      FROM reservations r
+      JOIN reservation_beds rb ON rb.reservation_id = r.id
+      JOIN beds b ON b.id = rb.bed_id
+      WHERE r.status IN ('confirmed', 'pending_payment')
+        AND r.check_in_date < $2::date AND r.check_out_date > $1::date
+        ${excludeClause}
+    `;
+    const { rows } = await pool.query(sql, params);
+    return rows.map((row: any) => ({
+      id: row.id,
+      roomId: row.room_id,
+      bedsCount: Number(row.beds_count),
+      checkInDate: row.check_in_date,
+      checkOutDate: row.check_out_date,
+      status: row.status,
+    }));
   }
 
   private async calculateOccupancy(bookings: BookingData[], checkInDate: Date): Promise<RoomOccupancy[]> {
@@ -144,16 +139,13 @@ export class AvailabilityChecker {
 
     for (const room of ROOM_CONFIGS) {
       let roomType = room.type;
-
       if (room.isFlexible && room.autoConvertHours) {
         const hoursUntilCheckIn = differenceInHours(checkInDate, new Date());
-        const femaleBookings = bookings.filter(b => b.roomId === room.id && b.status !== 'CANCELLED');
-
+        const femaleBookings = bookings.filter(b => b.roomId === room.id && b.status !== 'cancelled');
         if (femaleBookings.length === 0 && hoursUntilCheckIn <= room.autoConvertHours) {
           roomType = 'mixed';
         }
       }
-
       occupancy.set(room.id, {
         roomId: room.id,
         roomName: room.name,
@@ -187,16 +179,12 @@ export class AvailabilityChecker {
     const isAvailable = totalAvailableBeds >= requestedBeds;
 
     const result: AvailabilityResult = {
-      isAvailable,
-      availableRooms,
-      totalAvailableBeds,
-      requestedBeds,
-      checkInDate,
-      checkOutDate
+      isAvailable, availableRooms, totalAvailableBeds,
+      requestedBeds, checkInDate, checkOutDate
     };
 
     if (!isAvailable) {
-      result.conflicts = [`Only ${totalAvailableBeds} beds available, but ${requestedBeds} beds requested`];
+      result.conflicts  = [`Only ${totalAvailableBeds} beds available, but ${requestedBeds} beds requested`];
       result.suggestions = this.generateSuggestions(occupancy, requestedBeds);
     }
 
@@ -233,15 +221,13 @@ export class AvailabilityChecker {
     daysToCheck: number = 7
   ): Promise<Map<string, AvailabilityResult>> {
     const results = new Map<string, AvailabilityResult>();
-
     for (let i = 0; i < daysToCheck; i++) {
-      const checkIn = addDays(startDate, i);
+      const checkIn  = addDays(startDate, i);
       const checkOut = addDays(endDate, i);
-      const result = await this.checkAvailability(checkIn, checkOut, requestedBeds);
-      const dateKey = checkIn.toISOString().split('T')[0];
+      const result   = await this.checkAvailability(checkIn, checkOut, requestedBeds);
+      const dateKey  = checkIn.toISOString().split('T')[0];
       results.set(dateKey, result);
     }
-
     return results;
   }
 
@@ -259,7 +245,7 @@ export class AvailabilityChecker {
   ): Promise<{ isValid: boolean; errors: string[] }> {
     const errors: string[] = [];
     const roomConfig = ROOM_CONFIGS.find(r => r.id === roomId);
-    
+
     if (!roomConfig) {
       errors.push('Invalid room ID');
       return { isValid: false, errors };
@@ -269,9 +255,9 @@ export class AvailabilityChecker {
       errors.push(`Room ${roomConfig.name} has capacity of ${roomConfig.capacity} beds`);
     }
 
-    const availability = await this.checkAvailability(checkInDate, checkOutDate, bedsCount, excludeBookingId);
+    const availability    = await this.checkAvailability(checkInDate, checkOutDate, bedsCount, excludeBookingId);
     const roomAvailability = availability.availableRooms.find(r => r.roomId === roomId);
-    
+
     if (!roomAvailability || roomAvailability.available < bedsCount) {
       errors.push(`Room ${roomConfig.name} only has ${roomAvailability?.available || 0} beds available`);
     }
@@ -284,35 +270,29 @@ export class AvailabilityChecker {
       const cacheKey = this.getCacheKey(checkInDate, checkOutDate);
       await redis.del(cacheKey);
     } else {
-      const keys = await redis.keys('availability:*');
-      if (keys.length > 0) {
-        await redis.del(...keys);
-      }
+      await redis.delPattern('availability:*');
     }
   }
 
   private getCacheKey(checkIn: Date, checkOut: Date, excludeBookingId?: string): string {
-    const checkInStr = checkIn.toISOString().split('T')[0];
+    const checkInStr  = checkIn.toISOString().split('T')[0];
     const checkOutStr = checkOut.toISOString().split('T')[0];
-    const excludeStr = excludeBookingId ? `:exclude:${excludeBookingId}` : '';
+    const excludeStr  = excludeBookingId ? `:exclude:${excludeBookingId}` : '';
     return `availability:${checkInStr}:${checkOutStr}${excludeStr}`;
   }
 
   private async getFromCache(key: string): Promise<RoomOccupancy[] | null> {
     try {
-      const cached = await redis.get(key);
-      if (cached) {
-        return JSON.parse(cached);
-      }
+      return await redis.get<RoomOccupancy[]>(key);
     } catch (error) {
       console.error('Cache read error:', error);
+      return null;
     }
-    return null;
   }
 
   private async setCache(key: string, data: RoomOccupancy[]): Promise<void> {
     try {
-      await redis.setex(key, this.CACHE_TTL, JSON.stringify(data));
+      await redis.set(key, data, this.CACHE_TTL);
     } catch (error) {
       console.error('Cache write error:', error);
     }

@@ -1,79 +1,82 @@
 // lapa-casa-hostel/backend/src/database/repositories/booking-repository.ts
-// ventana3
+// ventana 3 — migrado a Prisma 5.22.0
 
-import { query } from '../../config/database';
+import { prisma } from '../../config/prisma';
 import type { Reservation, BookingStatus } from '../../types/database';
 
 const TOTAL_BEDS = 45;
 
+function mapReservation(row: any): Reservation {
+  if (row && row.guests !== undefined) {
+    const { guests, ...rest } = row;
+    return { ...rest, guest: guests ?? undefined } as unknown as Reservation;
+  }
+  return row as unknown as Reservation;
+}
+
 export class BookingRepository {
   async findById(id: string): Promise<Reservation | null> {
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest
-       FROM reservations r
-       LEFT JOIN guests g ON r.guest_id = g.id
-       WHERE r.id = $1`,
-      [id]
-    );
-    return result.rows[0] ?? null;
+    const r = await prisma.reservations.findUnique({
+      where: { id },
+      include: { guests: true },
+    });
+    return r ? mapReservation(r) : null;
   }
 
   async findByGuest(guestId: string): Promise<Reservation[]> {
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest
-       FROM reservations r
-       LEFT JOIN guests g ON r.guest_id = g.id
-       WHERE r.guest_id = $1 ORDER BY r.created_at DESC`,
-      [guestId]
-    );
-    return result.rows;
+    const rows = await prisma.reservations.findMany({
+      where: { guest_id: guestId },
+      include: { guests: true },
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(mapReservation);
   }
 
   async findByDateRange(startDate: string, endDate: string): Promise<Reservation[]> {
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest
-       FROM reservations r
-       LEFT JOIN guests g ON r.guest_id = g.id
-       WHERE r.check_in_date < $2::date AND r.check_out_date > $1::date
-       ORDER BY r.check_in_date ASC`,
-      [startDate, endDate]
-    );
-    return result.rows;
+    const rows = await prisma.reservations.findMany({
+      where: {
+        check_in_date: { lt: new Date(endDate) },
+        check_out_date: { gt: new Date(startDate) },
+      },
+      include: { guests: true },
+      orderBy: { check_in_date: 'asc' },
+    });
+    return rows.map(mapReservation);
   }
 
   async findByStatus(status: BookingStatus): Promise<Reservation[]> {
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest
-       FROM reservations r
-       LEFT JOIN guests g ON r.guest_id = g.id
-       WHERE r.status = $1::booking_status ORDER BY r.created_at DESC`,
-      [status]
-    );
-    return result.rows;
+    const rows = await prisma.reservations.findMany({
+      where: { status: status as any },
+      include: { guests: true },
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(mapReservation);
   }
 
   async findUpcoming(limit: number = 10): Promise<Reservation[]> {
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest
-       FROM reservations r
-       LEFT JOIN guests g ON r.guest_id = g.id
-       WHERE r.status = 'confirmed' AND r.check_in_date >= CURRENT_DATE
-       ORDER BY r.check_in_date ASC LIMIT $1`,
-      [limit]
-    );
-    return result.rows;
+    const rows = await prisma.reservations.findMany({
+      where: {
+        status: 'confirmed',
+        check_in_date: { gte: new Date() },
+      },
+      include: { guests: true },
+      orderBy: { check_in_date: 'asc' },
+      take: limit,
+    });
+    return rows.map(mapReservation);
   }
 
   async findPendingPayment(): Promise<Reservation[]> {
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest
-       FROM reservations r
-       LEFT JOIN guests g ON r.guest_id = g.id
-       WHERE r.status = 'pending_payment'
-         AND r.created_at >= NOW() - INTERVAL '24 hours'
-       ORDER BY r.created_at DESC`
-    );
-    return result.rows;
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const rows = await prisma.reservations.findMany({
+      where: {
+        status: 'pending_payment',
+        created_at: { gte: cutoff },
+      },
+      include: { guests: true },
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(mapReservation);
   }
 
   async update(id: string, data: Partial<{
@@ -98,52 +101,45 @@ export class BookingRepository {
     group_discount: number;
     early_bird_discount: number;
   }>): Promise<Reservation> {
-    const fields = Object.keys(data);
-    if (fields.length === 0) {
+    if (Object.keys(data).length === 0) {
       const r = await this.findById(id);
       if (!r) throw new Error('Reservation not found');
       return r;
     }
-    const sets = fields.map((f, i) => {
-      if (f === 'status') return `${f} = $${i + 2}::booking_status`;
-      if (f === 'metadata') return `${f} = $${i + 2}::jsonb`;
-      return `${f} = $${i + 2}`;
-    }).join(', ');
-    const values = fields.map(f => (data as any)[f]);
-    const result = await query<Reservation>(
-      `UPDATE reservations SET ${sets}, updated_at = NOW() WHERE id = $1 RETURNING *`,
-      [id, ...values]
-    );
-    return result.rows[0];
+    const updated = await prisma.reservations.update({
+      where: { id },
+      data: { ...data, updated_at: new Date() } as any,
+    });
+    return updated as unknown as Reservation;
   }
 
   async updateStatus(id: string, status: BookingStatus): Promise<Reservation> {
-    const result = await query<Reservation>(
-      `UPDATE reservations SET status = $2::booking_status, updated_at = NOW() WHERE id = $1 RETURNING *`,
-      [id, status]
-    );
-    return result.rows[0];
+    const updated = await prisma.reservations.update({
+      where: { id },
+      data: { status: status as any, updated_at: new Date() },
+    });
+    return updated as unknown as Reservation;
   }
 
   async confirmReservation(id: string): Promise<Reservation> {
-    const result = await query<Reservation>(
-      `UPDATE reservations
-       SET status = 'confirmed', updated_at = NOW()
-       WHERE id = $1 RETURNING *`,
-      [id]
-    );
-    return result.rows[0];
+    const updated = await prisma.reservations.update({
+      where: { id },
+      data: { status: 'confirmed', updated_at: new Date() },
+    });
+    return updated as unknown as Reservation;
   }
 
   async cancelReservation(id: string, reason?: string): Promise<Reservation> {
-    const result = await query<Reservation>(
-      `UPDATE reservations
-       SET status = 'cancelled', cancelled_at = NOW(),
-           cancellation_reason = $2, updated_at = NOW()
-       WHERE id = $1 RETURNING *`,
-      [id, reason ?? null]
-    );
-    return result.rows[0];
+    const updated = await prisma.reservations.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        cancelled_at: new Date(),
+        cancellation_reason: reason ?? null,
+        updated_at: new Date(),
+      },
+    });
+    return updated as unknown as Reservation;
   }
 
   async search(filters: {
@@ -153,47 +149,23 @@ export class BookingRepository {
     dateFrom?: string;
     dateTo?: string;
   }): Promise<Reservation[]> {
-    const conditions: string[] = [];
-    const params: any[] = [];
-    let idx = 1;
-
-    if (filters.status) {
-      conditions.push(`r.status = $${idx}::booking_status`);
-      params.push(filters.status);
-      idx++;
-    }
-    if (filters.dateFrom) {
-      conditions.push(`r.check_in_date >= $${idx}::date`);
-      params.push(filters.dateFrom);
-      idx++;
-    }
-    if (filters.dateTo) {
-      conditions.push(`r.check_in_date <= $${idx}::date`);
-      params.push(filters.dateTo);
-      idx++;
-    }
-    if (filters.guestName) {
-      conditions.push(`g.full_name ILIKE $${idx}`);
-      params.push(`%${filters.guestName}%`);
-      idx++;
-    }
-    if (filters.guestEmail) {
-      conditions.push(`g.email ILIKE $${idx}`);
-      params.push(`%${filters.guestEmail}%`);
-      idx++;
+    const where: any = {};
+    if (filters.status)   where.status = filters.status;
+    if (filters.dateFrom) where.check_in_date = { ...(where.check_in_date ?? {}), gte: new Date(filters.dateFrom) };
+    if (filters.dateTo)   where.check_in_date = { ...(where.check_in_date ?? {}), lte: new Date(filters.dateTo) };
+    if (filters.guestName || filters.guestEmail) {
+      where.guests = {};
+      if (filters.guestName)  where.guests.full_name = { contains: filters.guestName, mode: 'insensitive' };
+      if (filters.guestEmail) where.guests.email     = { contains: filters.guestEmail, mode: 'insensitive' };
     }
 
-    const hasGuestFilter = !!(filters.guestName || filters.guestEmail);
-    const join = hasGuestFilter
-      ? 'JOIN guests g ON r.guest_id = g.id'
-      : 'LEFT JOIN guests g ON r.guest_id = g.id';
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const result = await query<Reservation>(
-      `SELECT r.*, to_json(g.*) AS guest FROM reservations r ${join} ${where} ORDER BY r.created_at DESC LIMIT 50`,
-      params
-    );
-    return result.rows;
+    const rows = await prisma.reservations.findMany({
+      where,
+      include: { guests: true },
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    });
+    return rows.map(mapReservation);
   }
 
   async getStatistics(): Promise<{
@@ -203,45 +175,44 @@ export class BookingRepository {
     totalRevenue: number;
     averageBookingValue: number;
   }> {
-    const result = await query<{
-      total: string;
-      confirmed: string;
-      pending: string;
-      revenue: string;
-    }>(
-      `SELECT
-         COUNT(*)::int AS total,
-         COUNT(*) FILTER (WHERE status IN ('confirmed','completed'))::int AS confirmed,
-         COUNT(*) FILTER (WHERE status = 'pending_payment')::int AS pending,
-         COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed','completed')), 0) AS revenue
-       FROM reservations`
-    );
-    const row = result.rows[0];
-    const confirmed = parseInt(row.confirmed, 10);
-    const revenue = parseFloat(row.revenue);
+    const rows = await prisma.$queryRaw<[{
+      total: number;
+      confirmed: number;
+      pending: number;
+      revenue: number;
+    }]>`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status IN ('confirmed','completed'))::int AS confirmed,
+        COUNT(*) FILTER (WHERE status = 'pending_payment')::int AS pending,
+        COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed','completed')), 0)::float8 AS revenue
+      FROM reservations
+    `;
+    const row = rows[0];
+    const confirmed = Number(row.confirmed);
+    const revenue = Number(row.revenue);
     return {
-      totalBookings: parseInt(row.total, 10),
+      totalBookings: Number(row.total),
       confirmedBookings: confirmed,
-      pendingBookings: parseInt(row.pending, 10),
+      pendingBookings: Number(row.pending),
       totalRevenue: revenue,
       averageBookingValue: confirmed > 0 ? Math.round((revenue / confirmed) * 100) / 100 : 0,
     };
   }
 
   async getOccupancyRate(startDate: string, endDate: string): Promise<number> {
-    const result = await query<{ bed_nights: string }>(
-      `SELECT COALESCE(SUM(
-         beds_count * (
-           LEAST(check_out_date, $2::date) - GREATEST(check_in_date, $1::date)
-         )
-       ), 0)::int AS bed_nights
-       FROM reservations
-       WHERE status IN ('confirmed','completed')
-         AND check_in_date < $2::date
-         AND check_out_date > $1::date`,
-      [startDate, endDate]
-    );
-    const bedNights = parseInt(result.rows[0].bed_nights, 10);
+    const rows = await prisma.$queryRaw<[{ bed_nights: number }]>`
+      SELECT COALESCE(SUM(
+        beds_count * (
+          LEAST(check_out_date, ${endDate}::date) - GREATEST(check_in_date, ${startDate}::date)
+        )
+      ), 0)::int AS bed_nights
+      FROM reservations
+      WHERE status IN ('confirmed','completed')
+        AND check_in_date < ${endDate}::date
+        AND check_out_date > ${startDate}::date
+    `;
+    const bedNights = Number(rows[0].bed_nights);
     const start = new Date(startDate);
     const end = new Date(endDate);
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -250,14 +221,13 @@ export class BookingRepository {
   }
 
   async getRevenueByDateRange(startDate: string, endDate: string): Promise<number> {
-    const result = await query<{ revenue: string }>(
-      `SELECT COALESCE(SUM(final_price), 0) AS revenue
-       FROM reservations
-       WHERE status IN ('confirmed','completed')
-         AND check_in_date >= $1::date AND check_in_date <= $2::date`,
-      [startDate, endDate]
-    );
-    return parseFloat(result.rows[0].revenue);
+    const rows = await prisma.$queryRaw<[{ revenue: number }]>`
+      SELECT COALESCE(SUM(final_price), 0)::float8 AS revenue
+      FROM reservations
+      WHERE status IN ('confirmed','completed')
+        AND check_in_date >= ${startDate}::date AND check_in_date <= ${endDate}::date
+    `;
+    return Number(rows[0].revenue);
   }
 }
 

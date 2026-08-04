@@ -1,7 +1,11 @@
 // lapa-casa-hostel/backend/src/database/models/booking.ts
 
-import { pool } from '../../config/database';
+import { prisma } from '../../config/prisma';
 import { BookingStatus, Reservation } from '../../types/database';
+
+function toReservation(row: any): Reservation {
+  return row as unknown as Reservation;
+}
 
 export class BookingModel {
   static async createBooking(data: {
@@ -22,67 +26,90 @@ export class BookingModel {
     metadata?: any;
   }): Promise<Reservation> {
     const reservationNumber = await this.generateBookingNumber();
-    const { rows } = await pool.query(
-      `INSERT INTO reservations (reservation_number, guest_id, channel_id, status, beds_count,
-        check_in, check_out, nights_count, base_price, group_discount, season_multiplier,
-        total_price, deposit_amount, deposit_percent, remaining_amount, notes, metadata)
-       VALUES ($1,$2,$3,'pending_payment'::booking_status,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb)
-       RETURNING *`,
-      [reservationNumber, data.guestId, data.channelId, data.bedsCount,
-       data.checkIn, data.checkOut, data.nightsCount, data.basePrice, data.groupDiscount,
-       data.seasonMultiplier, data.totalPrice, data.depositAmount, data.depositPercent,
-       data.remainingAmount, data.specialRequests || null, JSON.stringify(data.metadata || {})]
-    );
-    return rows[0];
+    const reservation = await prisma.reservations.create({
+      data: {
+        reservation_number: reservationNumber,
+        guest_id: data.guestId,
+        channel_id: data.channelId,
+        status: 'pending_payment',
+        beds_count: data.bedsCount,
+        check_in_date: data.checkIn,
+        check_out_date: data.checkOut,
+        nights_count: data.nightsCount,
+        base_price: data.basePrice,
+        group_discount: data.groupDiscount,
+        season_multiplier: data.seasonMultiplier,
+        final_price: data.totalPrice,
+        deposit_amount: data.depositAmount,
+        deposit_percent: data.depositPercent,
+        remaining_amount: data.remainingAmount,
+        special_requests: data.specialRequests ?? null,
+        metadata: data.metadata ?? undefined,
+      },
+    });
+    return toReservation(reservation);
   }
 
   static async generateBookingNumber(): Promise<string> {
     const d = new Date();
-    const prefix = `LCH-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-`;
-    const { rows } = await pool.query(
-      `SELECT reservation_number FROM reservations WHERE reservation_number LIKE $1 ORDER BY created_at DESC LIMIT 1`,
-      [prefix + '%']
-    );
-    const seq = rows.length > 0 ? parseInt(rows[0].reservation_number.split('-')[2]) + 1 : 1;
-    return `${prefix}${String(seq).padStart(4,'0')}`;
+    const prefix = `LCH-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-`;
+    const last = await prisma.reservations.findFirst({
+      where: { reservation_number: { startsWith: prefix } },
+      orderBy: { created_at: 'desc' },
+      select: { reservation_number: true },
+    });
+    const seq = last ? parseInt(last.reservation_number.split('-')[2]) + 1 : 1;
+    return `${prefix}${String(seq).padStart(4, '0')}`;
   }
 
   static async getBookingById(id: string): Promise<Reservation | null> {
-    const { rows } = await pool.query(`SELECT * FROM reservations WHERE id = $1`, [id]);
-    return rows[0] || null;
+    const r = await prisma.reservations.findUnique({ where: { id } });
+    return r ? toReservation(r) : null;
   }
 
   static async getBookingByNumber(number: string): Promise<Reservation | null> {
-    const { rows } = await pool.query(`SELECT * FROM reservations WHERE reservation_number = $1`, [number]);
-    return rows[0] || null;
+    const r = await prisma.reservations.findUnique({ where: { reservation_number: number } });
+    return r ? toReservation(r) : null;
   }
 
   static async getBookingsByGuest(guestId: string): Promise<Reservation[]> {
-    const { rows } = await pool.query(
-      `SELECT * FROM reservations WHERE guest_id = $1 ORDER BY created_at DESC`, [guestId]
-    );
-    return rows;
+    const rows = await prisma.reservations.findMany({
+      where: { guest_id: guestId },
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(toReservation);
   }
 
   static async getUpcomingBookings(limit = 10): Promise<Reservation[]> {
-    const { rows } = await pool.query(
-      `SELECT * FROM reservations WHERE status = 'confirmed' AND check_in >= NOW() ORDER BY check_in LIMIT $1`, [limit]
-    );
-    return rows;
+    const now = new Date();
+    const rows = await prisma.reservations.findMany({
+      where: {
+        status: 'confirmed',
+        check_in_date: { gte: now },
+      },
+      orderBy: { check_in_date: 'asc' },
+      take: limit,
+    });
+    return rows.map(toReservation);
   }
 
   static async getPendingPaymentBookings(): Promise<Reservation[]> {
-    const { rows } = await pool.query(
-      `SELECT * FROM reservations WHERE status = 'pending_payment' AND created_at >= NOW() - INTERVAL '24 hours'`
-    );
-    return rows;
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const rows = await prisma.reservations.findMany({
+      where: {
+        status: 'pending_payment',
+        created_at: { gte: cutoff },
+      },
+    });
+    return rows.map(toReservation);
   }
 
   static async updateBookingStatus(id: string, status: BookingStatus): Promise<Reservation> {
-    const { rows } = await pool.query(
-      `UPDATE reservations SET status = $1::booking_status, updated_at = NOW() WHERE id = $2 RETURNING *`, [status, id]
-    );
-    return rows[0];
+    const r = await prisma.reservations.update({
+      where: { id },
+      data: { status: status as any, updated_at: new Date() },
+    });
+    return toReservation(r);
   }
 
   static async confirmBooking(id: string): Promise<Reservation> {
@@ -90,51 +117,77 @@ export class BookingModel {
   }
 
   static async cancelBooking(id: string, reason?: string): Promise<Reservation> {
-    const { rows } = await pool.query(
-      `UPDATE reservations SET status = 'cancelled'::booking_status, notes = COALESCE($2, notes), updated_at = NOW()
-       WHERE id = $1 RETURNING *`,
-      [id, reason || null]
-    );
-    return rows[0];
+    const r = await prisma.reservations.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        cancellation_reason: reason ?? null,
+        cancelled_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+    return toReservation(r);
   }
 
   static async getBookingStats(): Promise<{
-    totalBookings: number; confirmedBookings: number; pendingBookings: number;
-    totalRevenue: number; averageBookingValue: number;
+    totalBookings: number;
+    confirmedBookings: number;
+    pendingBookings: number;
+    totalRevenue: number;
+    averageBookingValue: number;
   }> {
-    const { rows } = await pool.query(`
+    const rows = await prisma.$queryRaw<[{
+      total: number;
+      confirmed: number;
+      pending: number;
+      revenue: string;
+    }]>`
       SELECT
-        COUNT(*) AS total,
-        COUNT(*) FILTER (WHERE status IN ('confirmed','completed')) AS confirmed,
-        COUNT(*) FILTER (WHERE status = 'pending_payment') AS pending,
-        COALESCE(SUM(total_price) FILTER (WHERE status IN ('confirmed','completed')), 0) AS revenue
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status IN ('confirmed','completed'))::int AS confirmed,
+        COUNT(*) FILTER (WHERE status = 'pending_payment')::int AS pending,
+        COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed','completed')), 0)::float8 AS revenue
       FROM reservations
-    `);
+    `;
     const { total, confirmed, pending, revenue } = rows[0];
-    const confirmedN = Number(confirmed), rev = Number(revenue);
+    const confirmedN = Number(confirmed);
+    const rev = Number(revenue);
     return {
-      totalBookings: Number(total), confirmedBookings: confirmedN,
-      pendingBookings: Number(pending), totalRevenue: rev,
+      totalBookings: Number(total),
+      confirmedBookings: confirmedN,
+      pendingBookings: Number(pending),
+      totalRevenue: rev,
       averageBookingValue: confirmedN > 0 ? Math.round((rev / confirmedN) * 100) / 100 : 0,
     };
   }
 
   static async searchBookings(query: {
-    guestName?: string; guestEmail?: string; bookingNumber?: string;
-    status?: BookingStatus; dateFrom?: Date; dateTo?: Date;
+    guestName?: string;
+    guestEmail?: string;
+    bookingNumber?: string;
+    status?: BookingStatus;
+    dateFrom?: Date;
+    dateTo?: Date;
   }): Promise<Reservation[]> {
-    const conditions: string[] = [], params: any[] = [];
-    if (query.bookingNumber) { params.push(`%${query.bookingNumber}%`); conditions.push(`r.reservation_number ILIKE $${params.length}`); }
-    if (query.status)        { params.push(query.status); conditions.push(`r.status = $${params.length}::booking_status`); }
-    if (query.dateFrom)      { params.push(query.dateFrom); conditions.push(`r.check_in >= $${params.length}`); }
-    if (query.dateTo)        { params.push(query.dateTo); conditions.push(`r.check_in <= $${params.length}`); }
-    if (query.guestName)     { params.push(`%${query.guestName}%`); conditions.push(`g.full_name ILIKE $${params.length}`); }
-    if (query.guestEmail)    { params.push(`%${query.guestEmail}%`); conditions.push(`g.email ILIKE $${params.length}`); }
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const { rows } = await pool.query(
-      `SELECT r.* FROM reservations r JOIN guests g ON g.id = r.guest_id ${where} ORDER BY r.created_at DESC LIMIT 50`,
-      params
-    );
-    return rows;
+    const where: any = {};
+    if (query.bookingNumber) where.reservation_number = { contains: query.bookingNumber, mode: 'insensitive' };
+    if (query.status)        where.status = query.status;
+    if (query.dateFrom || query.dateTo) {
+      where.check_in_date = {};
+      if (query.dateFrom) where.check_in_date.gte = query.dateFrom;
+      if (query.dateTo)   where.check_in_date.lte = query.dateTo;
+    }
+    if (query.guestName || query.guestEmail) {
+      where.guests = {};
+      if (query.guestName)  where.guests.full_name = { contains: query.guestName, mode: 'insensitive' };
+      if (query.guestEmail) where.guests.email     = { contains: query.guestEmail, mode: 'insensitive' };
+    }
+
+    const rows = await prisma.reservations.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    });
+    return rows.map(toReservation);
   }
 }

@@ -202,7 +202,7 @@ export class GroupDiscountCalculator {
     isEligible: boolean;
     currentTier: GroupDiscountTier;
     calculation: DiscountCalculation;
-    nextTierInfo: ReturnType<typeof this.getNextDiscountTier>;
+    nextTierInfo: { nextTier: GroupDiscountTier | null; bedsNeeded: number; additionalSavings: number };
   } {
     const currentTier = this.getDiscountTier(bedsCount);
     const calculation = this.calculateDiscount(bedsCount, basePricePerBed);

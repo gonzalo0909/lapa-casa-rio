@@ -1,7 +1,7 @@
 // lapa-casa-hostel/backend/src/lib/anti-overbooking/availability-checker.ts
 
-import { prisma } from '../../config/database';
-import { redis } from '../../config/redis';
+import { pool } from '../../config/database';
+import { redisCache as redis } from '../../config/redis';
 import { addDays, differenceInHours, parseISO } from 'date-fns';
 
 interface RoomConfig {
@@ -53,7 +53,7 @@ const ROOM_CONFIGS: RoomConfig[] = [
 
 export class AvailabilityChecker {
   private readonly CACHE_TTL = 300;
-  private readonly CONFIRMED_STATUSES = ['CONFIRMED', 'CHECKED_IN', 'PENDING_PAYMENT'];
+  private readonly CONFIRMED_STATUSES = ['confirmed', 'pending_payment'];
 
   async checkAvailability(
     checkInDate: string | Date,
@@ -118,25 +118,31 @@ export class AvailabilityChecker {
     checkOut: Date,
     excludeBookingId?: string
   ): Promise<BookingData[]> {
-    const bookings = await prisma.booking.findMany({
-      where: {
-        AND: [
-          { status: { in: this.CONFIRMED_STATUSES } },
-          { OR: [{ AND: [{ checkInDate: { lt: checkOut } }, { checkOutDate: { gt: checkIn } }] }] },
-          excludeBookingId ? { id: { not: excludeBookingId } } : {}
-        ]
-      },
-      select: {
-        id: true,
-        roomId: true,
-        bedsCount: true,
-        checkInDate: true,
-        checkOutDate: true,
-        status: true
-      }
-    });
-
-    return bookings;
+    const params: any[] = [checkIn, checkOut];
+    let excludeClause = '';
+    if (excludeBookingId) {
+      params.push(excludeBookingId);
+      excludeClause = `AND r.id != $${params.length}::uuid`;
+    }
+    const sql = `
+      SELECT DISTINCT r.id, b.room_type_id AS room_id, r.beds_count,
+             r.check_in_date, r.check_out_date, r.status::text
+      FROM reservations r
+      JOIN reservation_beds rb ON rb.reservation_id = r.id
+      JOIN beds b ON b.id = rb.bed_id
+      WHERE r.status IN ('confirmed', 'pending_payment')
+        AND r.check_in_date < $2::date AND r.check_out_date > $1::date
+        ${excludeClause}
+    `;
+    const { rows } = await pool.query(sql, params);
+    return rows.map((row: any) => ({
+      id: row.id,
+      roomId: row.room_id,
+      bedsCount: Number(row.beds_count),
+      checkInDate: row.check_in_date,
+      checkOutDate: row.check_out_date,
+      status: row.status,
+    }));
   }
 
   private async calculateOccupancy(bookings: BookingData[], checkInDate: Date): Promise<RoomOccupancy[]> {
@@ -147,7 +153,7 @@ export class AvailabilityChecker {
 
       if (room.isFlexible && room.autoConvertHours) {
         const hoursUntilCheckIn = differenceInHours(checkInDate, new Date());
-        const femaleBookings = bookings.filter(b => b.roomId === room.id && b.status !== 'CANCELLED');
+        const femaleBookings = bookings.filter(b => b.roomId === room.id && b.status !== 'cancelled');
 
         if (femaleBookings.length === 0 && hoursUntilCheckIn <= room.autoConvertHours) {
           roomType = 'mixed';
@@ -259,7 +265,7 @@ export class AvailabilityChecker {
   ): Promise<{ isValid: boolean; errors: string[] }> {
     const errors: string[] = [];
     const roomConfig = ROOM_CONFIGS.find(r => r.id === roomId);
-    
+
     if (!roomConfig) {
       errors.push('Invalid room ID');
       return { isValid: false, errors };
@@ -271,7 +277,7 @@ export class AvailabilityChecker {
 
     const availability = await this.checkAvailability(checkInDate, checkOutDate, bedsCount, excludeBookingId);
     const roomAvailability = availability.availableRooms.find(r => r.roomId === roomId);
-    
+
     if (!roomAvailability || roomAvailability.available < bedsCount) {
       errors.push(`Room ${roomConfig.name} only has ${roomAvailability?.available || 0} beds available`);
     }
@@ -284,10 +290,7 @@ export class AvailabilityChecker {
       const cacheKey = this.getCacheKey(checkInDate, checkOutDate);
       await redis.del(cacheKey);
     } else {
-      const keys = await redis.keys('availability:*');
-      if (keys.length > 0) {
-        await redis.del(...keys);
-      }
+      await redis.delPattern('availability:*');
     }
   }
 
@@ -300,19 +303,17 @@ export class AvailabilityChecker {
 
   private async getFromCache(key: string): Promise<RoomOccupancy[] | null> {
     try {
-      const cached = await redis.get(key);
-      if (cached) {
-        return JSON.parse(cached);
-      }
+      const cached = await redis.get<RoomOccupancy[]>(key);
+      return cached;
     } catch (error) {
       console.error('Cache read error:', error);
+      return null;
     }
-    return null;
   }
 
   private async setCache(key: string, data: RoomOccupancy[]): Promise<void> {
     try {
-      await redis.setex(key, this.CACHE_TTL, JSON.stringify(data));
+      await redis.set(key, data, this.CACHE_TTL);
     } catch (error) {
       console.error('Cache write error:', error);
     }

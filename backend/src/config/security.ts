@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { env, isProduction } from './environment';
 import { logger } from '../utils/logger';
-import { cache } from './redis';
+import { redisCache as cache } from './redis';
 
 /**
  * Security Configuration
@@ -134,7 +134,7 @@ class RedisRateLimitStore {
  */
 export const apiRateLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX_REQUESTS,
+  max: env.RATE_LIMIT_MAX,
   message: {
     error: 'Too many requests',
     message: 'Rate limit exceeded. Please try again later.',
@@ -506,7 +506,7 @@ export const suspiciousActivityMiddleware = async (
  * Request size limiter
  */
 export const requestSizeLimiter = {
-  limit: env.MAX_REQUEST_SIZE,
+  limit: '10mb',
   message: 'Request payload too large'
 };
 

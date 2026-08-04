@@ -1,5 +1,5 @@
 // lapa-casa-hostel/backend/src/config/security.ts
-// correccion: redisCache as cache, RATE_LIMIT_MAX, '10mb'
+// corrección — imports redis y env corregidos
 
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -7,11 +7,6 @@ import { Request, Response } from 'express';
 import { env, isProduction } from './environment';
 import { logger } from '../utils/logger';
 import { redisCache as cache } from './redis';
-
-/**
- * Security Configuration
- * Comprehensive security setup for Lapa Casa Hostel API
- */
 
 export const helmetConfig = helmet({
   contentSecurityPolicy: {
@@ -33,7 +28,11 @@ export const helmetConfig = helmet({
   dnsPrefetchControl: { allow: false },
   frameguard: { action: 'deny' },
   hidePoweredBy: true,
-  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
   ieNoOpen: true,
   noSniff: true,
   originAgentCluster: true,
@@ -48,10 +47,14 @@ class RedisRateLimitStore {
   async increment(key: string): Promise<{ totalHits: number; resetTime: Date }> {
     const redisKey = `${this.prefix}:${key}`;
     const ttl = Math.floor(env.RATE_LIMIT_WINDOW_MS / 1000);
+
     try {
       const current = await cache.incr(redisKey, 1);
-      if (current === 1) await cache.expire(redisKey, ttl);
-      return { totalHits: current, resetTime: new Date(Date.now() + ttl * 1000) };
+      if (current === 1) {
+        await cache.expire(redisKey, ttl);
+      }
+      const resetTime = new Date(Date.now() + ttl * 1000);
+      return { totalHits: current, resetTime };
     } catch (error) {
       logger.error('Rate limit store error', { error });
       throw error;
@@ -93,7 +96,9 @@ export const apiRateLimiter = rateLimit({
   },
   handler: (req: Request, res: Response) => {
     logger.warn('Rate limit exceeded', {
-      ip: req.ip, path: req.path, method: req.method,
+      ip: req.ip,
+      path: req.path,
+      method: req.method,
       userAgent: req.headers['user-agent']
     });
     res.status(429).json({
@@ -102,7 +107,9 @@ export const apiRateLimiter = rateLimit({
       retryAfter: Math.ceil(env.RATE_LIMIT_WINDOW_MS / 1000)
     });
   },
-  skip: (req: Request): boolean => req.path === '/health' || req.path === '/api/health'
+  skip: (req: Request): boolean => {
+    return req.path === '/health' || req.path === '/api/health';
+  }
 });
 
 export const authRateLimiter = rateLimit({
@@ -122,7 +129,9 @@ export const authRateLimiter = rateLimit({
   },
   handler: (req: Request, res: Response) => {
     logger.error('Authentication rate limit exceeded', {
-      ip: req.ip, email: req.body?.email, path: req.path
+      ip: req.ip,
+      email: req.body?.email,
+      path: req.path
     });
     res.status(429).json({
       error: 'Too many authentication attempts',
@@ -145,7 +154,9 @@ export const paymentRateLimiter = rateLimit({
   },
   handler: (req: Request, res: Response) => {
     logger.error('Payment rate limit exceeded', {
-      ip: req.ip, path: req.path, bookingId: req.body?.bookingId
+      ip: req.ip,
+      path: req.path,
+      bookingId: req.body?.bookingId
     });
     res.status(429).json({
       error: 'Payment limit exceeded',
@@ -168,7 +179,8 @@ export const bookingRateLimiter = rateLimit({
   },
   handler: (req: Request, res: Response) => {
     logger.warn('Booking rate limit exceeded', {
-      ip: req.ip, guestEmail: req.body?.guestEmail
+      ip: req.ip,
+      guestEmail: req.body?.guestEmail
     });
     res.status(429).json({
       error: 'Booking limit exceeded',
@@ -225,15 +237,24 @@ class IPBlacklist {
 export const ipBlacklist = new IPBlacklist();
 
 export const ipBlacklistMiddleware = async (
-  req: Request, res: Response, next: any
+  req: Request,
+  res: Response,
+  next: any
 ): Promise<void> => {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   try {
     const isBlocked = await ipBlacklist.isBlacklisted(ip);
     if (isBlocked) {
       const info = await ipBlacklist.getInfo(ip);
-      logger.warn('Blocked IP attempted access', { ip, path: req.path, reason: info?.reason });
-      res.status(403).json({ error: 'Access denied', message: 'Your IP address has been temporarily blocked.' });
+      logger.warn('Blocked IP attempted access', {
+        ip,
+        path: req.path,
+        reason: info?.reason
+      });
+      res.status(403).json({
+        error: 'Access denied',
+        message: 'Your IP address has been temporarily blocked.'
+      });
       return;
     }
     next();
@@ -244,10 +265,12 @@ export const ipBlacklistMiddleware = async (
 };
 
 export const sanitizeRequestMiddleware = (
-  req: Request, res: Response, next: any
+  req: Request,
+  res: Response,
+  next: any
 ): void => {
   if (req.query) req.query = sanitizeObject(req.query);
-  if (req.body) req.body = sanitizeObject(req.body);
+  if (req.body)  req.body  = sanitizeObject(req.body);
   next();
 };
 
@@ -255,7 +278,9 @@ const sanitizeObject = (obj: any): any => {
   if (typeof obj !== 'object' || obj === null) return sanitizeString(obj);
   if (Array.isArray(obj)) return obj.map(item => sanitizeObject(item));
   const sanitized: any = {};
-  for (const [key, value] of Object.entries(obj)) sanitized[key] = sanitizeObject(value);
+  for (const [key, value] of Object.entries(obj)) {
+    sanitized[key] = sanitizeObject(value);
+  }
   return sanitized;
 };
 
@@ -269,23 +294,34 @@ const sanitizeString = (value: any): any => {
 };
 
 export const logSecurityEvent = (
-  event: string, req: Request, details?: Record<string, any>
+  event: string,
+  req: Request,
+  details?: Record<string, any>
 ): void => {
   logger.warn('Security event', {
-    event, ip: req.ip, path: req.path, method: req.method,
-    userAgent: req.headers['user-agent'], timestamp: new Date().toISOString(), ...details
+    event,
+    ip: req.ip,
+    path: req.path,
+    method: req.method,
+    userAgent: req.headers['user-agent'],
+    timestamp: new Date().toISOString(),
+    ...details
   });
 };
 
-export const detectSuspiciousActivity = async (req: Request): Promise<boolean> => {
+export const detectSuspiciousActivity = async (
+  req: Request
+): Promise<boolean> => {
   const ip = req.ip || 'unknown';
   const suspiciousPatterns = [
-    /\.\.\//, /<script/i, /union.*select/i, /exec\s*\(/i,
-    /system\s*\(/i, /\${.*}/, /\beval\b/i
+    /\.\.\//, /(<script)/i, /union.*select/i,
+    /exec\s*\(/i, /system\s*\(/i, /\${.*}/, /\beval\b/i
   ];
   const url = req.originalUrl || req.url;
   const bodyStr = JSON.stringify(req.body || {});
-  const isSuspicious = suspiciousPatterns.some(p => p.test(url) || p.test(bodyStr));
+  const isSuspicious = suspiciousPatterns.some(
+    pattern => pattern.test(url) || pattern.test(bodyStr)
+  );
   if (isSuspicious) {
     logSecurityEvent('suspicious_activity_detected', req, { url, body: req.body });
     await ipBlacklist.add(ip, 'Suspicious activity detected', 60);
@@ -295,12 +331,17 @@ export const detectSuspiciousActivity = async (req: Request): Promise<boolean> =
 };
 
 export const suspiciousActivityMiddleware = async (
-  req: Request, res: Response, next: any
+  req: Request,
+  res: Response,
+  next: any
 ): Promise<void> => {
   try {
     const isSuspicious = await detectSuspiciousActivity(req);
     if (isSuspicious) {
-      res.status(403).json({ error: 'Forbidden', message: 'Suspicious activity detected.' });
+      res.status(403).json({
+        error: 'Forbidden',
+        message: 'Suspicious activity detected.'
+      });
       return;
     }
     next();
@@ -316,7 +357,9 @@ export const requestSizeLimiter = {
 };
 
 export const secureResponseHeaders = (
-  req: Request, res: Response, next: any
+  req: Request,
+  res: Response,
+  next: any
 ): void => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   res.setHeader('X-Request-Id', requestId);
@@ -329,10 +372,17 @@ export const secureResponseHeaders = (
 export const initializeSecurity = (): void => {
   logger.info('Security configuration initialized', {
     environment: env.NODE_ENV,
-    rateLimiting: { window: `${env.RATE_LIMIT_WINDOW_MS}ms`, maxRequests: env.RATE_LIMIT_MAX },
-    helmet: 'enabled', sanitization: 'enabled', ipBlacklist: 'enabled'
+    rateLimiting: {
+      window: `${env.RATE_LIMIT_WINDOW_MS}ms`,
+      maxRequests: env.RATE_LIMIT_MAX
+    },
+    helmet: 'enabled',
+    sanitization: 'enabled',
+    ipBlacklist: 'enabled'
   });
-  if (!isProduction()) logger.warn('Running in non-production mode - some security features relaxed');
+  if (!isProduction()) {
+    logger.warn('Running in non-production mode - some security features relaxed');
+  }
 };
 
 initializeSecurity();

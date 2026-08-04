@@ -1,4 +1,5 @@
 // lapa-casa-hostel/backend/src/lib/pricing/group-discounts.ts
+// corrección — ReturnType explícito en getDiscountSummary
 
 interface GroupDiscountTier {
   minBeds: number;
@@ -27,30 +28,10 @@ interface BulkDiscountResult {
 }
 
 const GROUP_DISCOUNT_TIERS: GroupDiscountTier[] = [
-  {
-    minBeds: 26,
-    maxBeds: null,
-    discountPercentage: 0.20,
-    name: 'Large Group (26+ beds)'
-  },
-  {
-    minBeds: 16,
-    maxBeds: 25,
-    discountPercentage: 0.15,
-    name: 'Medium Group (16-25 beds)'
-  },
-  {
-    minBeds: 7,
-    maxBeds: 15,
-    discountPercentage: 0.10,
-    name: 'Small Group (7-15 beds)'
-  },
-  {
-    minBeds: 1,
-    maxBeds: 6,
-    discountPercentage: 0,
-    name: 'Individual (1-6 beds)'
-  }
+  { minBeds: 26, maxBeds: null, discountPercentage: 0.20, name: 'Large Group (26+ beds)' },
+  { minBeds: 16, maxBeds: 25,   discountPercentage: 0.15, name: 'Medium Group (16-25 beds)' },
+  { minBeds: 7,  maxBeds: 15,   discountPercentage: 0.10, name: 'Small Group (7-15 beds)' },
+  { minBeds: 1,  maxBeds: 6,    discountPercentage: 0,    name: 'Individual (1-6 beds)' }
 ];
 
 export class GroupDiscountCalculator {
@@ -60,24 +41,17 @@ export class GroupDiscountCalculator {
 
   calculateDiscount(bedsCount: number, basePricePerBed?: number): DiscountCalculation {
     const pricePerBed = basePricePerBed || this.BASE_PRICE_PER_BED;
-    
-    if (bedsCount < 1) {
-      throw new Error('Beds count must be at least 1');
-    }
+    if (bedsCount < 1) throw new Error('Beds count must be at least 1');
 
     const tier = this.getDiscountTier(bedsCount);
-    const originalPrice = bedsCount * pricePerBed;
-    const discountAmount = originalPrice * tier.discountPercentage;
-    const finalPrice = originalPrice - discountAmount;
+    const originalPrice   = bedsCount * pricePerBed;
+    const discountAmount  = originalPrice * tier.discountPercentage;
+    const finalPrice      = originalPrice - discountAmount;
 
     return {
-      originalPrice,
-      discountPercentage: tier.discountPercentage,
-      discountAmount,
-      finalPrice,
-      bedsCount,
-      tierName: tier.name,
-      savings: discountAmount
+      originalPrice, discountPercentage: tier.discountPercentage,
+      discountAmount, finalPrice, bedsCount,
+      tierName: tier.name, savings: discountAmount
     };
   }
 
@@ -91,8 +65,7 @@ export class GroupDiscountCalculator {
   }
 
   getDiscountPercentage(bedsCount: number): number {
-    const tier = this.getDiscountTier(bedsCount);
-    return tier.discountPercentage;
+    return this.getDiscountTier(bedsCount).discountPercentage;
   }
 
   calculateBulkDiscount(bookings: Array<{ bedsCount: number; basePricePerBed?: number }>): BulkDiscountResult {
@@ -104,57 +77,41 @@ export class GroupDiscountCalculator {
     for (const booking of bookings) {
       const calculation = this.calculateDiscount(booking.bedsCount, booking.basePricePerBed);
       breakdown.push(calculation);
-      
-      totalOriginalPrice += calculation.originalPrice;
+      totalOriginalPrice  += calculation.originalPrice;
       totalDiscountAmount += calculation.discountAmount;
-      totalFinalPrice += calculation.finalPrice;
+      totalFinalPrice     += calculation.finalPrice;
     }
 
     const totalSavings = totalDiscountAmount;
-    const averageDiscountPercentage = totalOriginalPrice > 0 
-      ? totalDiscountAmount / totalOriginalPrice 
+    const averageDiscountPercentage = totalOriginalPrice > 0
+      ? totalDiscountAmount / totalOriginalPrice
       : 0;
 
-    return {
-      totalOriginalPrice,
-      totalDiscountAmount,
-      totalFinalPrice,
-      totalSavings,
-      averageDiscountPercentage,
-      breakdown
-    };
+    return { totalOriginalPrice, totalDiscountAmount, totalFinalPrice, totalSavings, averageDiscountPercentage, breakdown };
   }
 
   calculateProgressiveDiscount(bedsCount: number, basePricePerBed?: number): DiscountCalculation[] {
-    const pricePerBed = basePricePerBed || this.BASE_PRICE_PER_BED;
+    const pricePerBed  = basePricePerBed || this.BASE_PRICE_PER_BED;
     const calculations: DiscountCalculation[] = [];
-    
-    let remainingBeds = bedsCount;
-    const sortedTiers = [...GROUP_DISCOUNT_TIERS].sort((a, b) => a.minBeds - b.minBeds);
+    let remainingBeds  = bedsCount;
+    const sortedTiers  = [...GROUP_DISCOUNT_TIERS].sort((a, b) => a.minBeds - b.minBeds);
 
     for (let i = 0; i < sortedTiers.length && remainingBeds > 0; i++) {
-      const tier = sortedTiers[i];
+      const tier     = sortedTiers[i];
       const nextTier = sortedTiers[i + 1];
-      
-      const bedsInTier = nextTier 
+      const bedsInTier = nextTier
         ? Math.min(remainingBeds, nextTier.minBeds - tier.minBeds)
         : remainingBeds;
 
       if (bedsInTier > 0) {
-        const originalPrice = bedsInTier * pricePerBed;
+        const originalPrice  = bedsInTier * pricePerBed;
         const discountAmount = originalPrice * tier.discountPercentage;
-        const finalPrice = originalPrice - discountAmount;
-
+        const finalPrice     = originalPrice - discountAmount;
         calculations.push({
-          originalPrice,
-          discountPercentage: tier.discountPercentage,
-          discountAmount,
-          finalPrice,
-          bedsCount: bedsInTier,
-          tierName: tier.name,
-          savings: discountAmount
+          originalPrice, discountPercentage: tier.discountPercentage,
+          discountAmount, finalPrice, bedsCount: bedsInTier,
+          tierName: tier.name, savings: discountAmount
         });
-
         remainingBeds -= bedsInTier;
       }
     }
@@ -162,30 +119,24 @@ export class GroupDiscountCalculator {
     return calculations;
   }
 
-  getNextDiscountTier(currentBedsCount: number): { 
-    nextTier: GroupDiscountTier | null; 
+  getNextDiscountTier(currentBedsCount: number): {
+    nextTier: GroupDiscountTier | null;
     bedsNeeded: number;
     additionalSavings: number;
   } {
-    const currentTier = this.getDiscountTier(currentBedsCount);
-    const sortedTiers = [...GROUP_DISCOUNT_TIERS].sort((a, b) => b.discountPercentage - a.discountPercentage);
-    
+    const currentTier  = this.getDiscountTier(currentBedsCount);
+    const sortedTiers  = [...GROUP_DISCOUNT_TIERS].sort((a, b) => b.discountPercentage - a.discountPercentage);
     const currentIndex = sortedTiers.findIndex(t => t.discountPercentage === currentTier.discountPercentage);
-    
+
     if (currentIndex === 0 || currentIndex === -1) {
-      return {
-        nextTier: null,
-        bedsNeeded: 0,
-        additionalSavings: 0
-      };
+      return { nextTier: null, bedsNeeded: 0, additionalSavings: 0 };
     }
 
-    const nextTier = sortedTiers[currentIndex - 1];
-    const bedsNeeded = nextTier.minBeds - currentBedsCount;
-    
+    const nextTier          = sortedTiers[currentIndex - 1];
+    const bedsNeeded        = nextTier.minBeds - currentBedsCount;
     const currentCalculation = this.calculateDiscount(currentBedsCount);
-    const nextCalculation = this.calculateDiscount(nextTier.minBeds);
-    const additionalSavings = nextCalculation.savings - currentCalculation.savings;
+    const nextCalculation    = this.calculateDiscount(nextTier.minBeds);
+    const additionalSavings  = nextCalculation.savings - currentCalculation.savings;
 
     return {
       nextTier,
@@ -202,19 +153,14 @@ export class GroupDiscountCalculator {
     isEligible: boolean;
     currentTier: GroupDiscountTier;
     calculation: DiscountCalculation;
-    nextTierInfo: ReturnType<typeof this.getNextDiscountTier>;
+    nextTierInfo: { nextTier: GroupDiscountTier | null; bedsNeeded: number; additionalSavings: number };
   } {
-    const currentTier = this.getDiscountTier(bedsCount);
-    const calculation = this.calculateDiscount(bedsCount, basePricePerBed);
+    const currentTier  = this.getDiscountTier(bedsCount);
+    const calculation  = this.calculateDiscount(bedsCount, basePricePerBed);
     const nextTierInfo = this.getNextDiscountTier(bedsCount);
-    const isEligible = this.isEligibleForDiscount(bedsCount);
+    const isEligible   = this.isEligibleForDiscount(bedsCount);
 
-    return {
-      isEligible,
-      currentTier,
-      calculation,
-      nextTierInfo
-    };
+    return { isEligible, currentTier, calculation, nextTierInfo };
   }
 
   static getTiers(): GroupDiscountTier[] {
@@ -243,28 +189,19 @@ export class GroupDiscountCalculator {
     netBenefit: number;
   } | null {
     const nextTierInfo = this.getNextDiscountTier(currentBedsCount);
-    
-    if (!nextTierInfo.nextTier || nextTierInfo.bedsNeeded === 0) {
-      return null;
-    }
+    if (!nextTierInfo.nextTier || nextTierInfo.bedsNeeded === 0) return null;
 
-    const pricePerBed = basePricePerBed || this.BASE_PRICE_PER_BED;
+    const pricePerBed    = basePricePerBed || this.BASE_PRICE_PER_BED;
     const upgradeToCount = currentBedsCount + nextTierInfo.bedsNeeded;
-    
-    const currentCalc = this.calculateDiscount(currentBedsCount, pricePerBed);
-    const upgradedCalc = this.calculateDiscount(upgradeToCount, pricePerBed);
-    
-    const additionalCost = (upgradeToCount - currentBedsCount) * pricePerBed;
+    const currentCalc    = this.calculateDiscount(currentBedsCount, pricePerBed);
+    const upgradedCalc   = this.calculateDiscount(upgradeToCount, pricePerBed);
+    const additionalCost    = (upgradeToCount - currentBedsCount) * pricePerBed;
     const additionalSavings = upgradedCalc.savings - currentCalc.savings;
-    const netBenefit = additionalSavings - additionalCost;
-    const shouldUpgrade = netBenefit > 0;
+    const netBenefit        = additionalSavings - additionalCost;
 
     return {
-      shouldUpgrade,
-      upgradeToCount,
-      additionalCost,
-      additionalSavings,
-      netBenefit
+      shouldUpgrade: netBenefit > 0,
+      upgradeToCount, additionalCost, additionalSavings, netBenefit
     };
   }
 
@@ -275,10 +212,10 @@ export class GroupDiscountCalculator {
     finalPriceFormatted: string;
   } {
     return {
-      originalPriceFormatted: `R$ ${calculation.originalPrice.toFixed(2)}`,
+      originalPriceFormatted:      `R$ ${calculation.originalPrice.toFixed(2)}`,
       discountPercentageFormatted: `${(calculation.discountPercentage * 100).toFixed(0)}%`,
-      savingsFormatted: `R$ ${calculation.savings.toFixed(2)}`,
-      finalPriceFormatted: `R$ ${calculation.finalPrice.toFixed(2)}`
+      savingsFormatted:            `R$ ${calculation.savings.toFixed(2)}`,
+      finalPriceFormatted:         `R$ ${calculation.finalPrice.toFixed(2)}`
     };
   }
 }

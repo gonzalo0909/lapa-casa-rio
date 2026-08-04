@@ -365,13 +365,12 @@ Se encontraron y corrigieron 13 bugs reales en el código ya existente en GitHub
 
 ## DATABASE_URL DE SUPABASE (proyecto real, ya migrado y con datos)
 
-```
-DATABASE_URL=postgresql://postgres:DwSl5oI3liT66VKx@db.rpowardrcwnhbkzjsiok.supabase.co:5432/postgres
-```
+**La contraseña que estaba acá quedó expuesta en el historial de git y fue removida.**
+No commitear nunca un `DATABASE_URL` con contraseña real en este repo. Configurarlo
+como variable de entorno local (`backend/.env`, ya excluido en `.gitignore`) o como
+secreto del entorno de ejecución — nunca en un archivo versionado.
 
-Usar directo en `backend/.env` para cualquier ventana que necesite conectarse a la base real — no hace falta pedirlo ni repetir el proceso manual.
-
-Si esta contraseña se rota y deja de funcionar: supabase.com → proyecto `lapa-casa-hostel` → ícono de engranaje (Project Settings) → Database → pestaña "Connection string" → URI → reemplazar `[YOUR-PASSWORD]` → actualizar `backend/.env`.
+Si la contraseña se rota: supabase.com → proyecto `lapa-casa-hostel` → ícono de engranaje (Project Settings) → Database → pestaña "Connection string" → URI → reemplazar `[YOUR-PASSWORD]` → actualizar `backend/.env` (local, no versionado).
 
 **Nota para quien tenga acceso al MCP de Supabase** (en vez de conexión TCP directa): el proyecto real tiene `project_id` / `ref` = `rpowardrcwnhbkzjsiok`. Herramientas como `apply_migration`, `execute_sql`, `list_tables` funcionan directo contra este proyecto sin necesitar el `DATABASE_URL`.
 

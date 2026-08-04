@@ -362,9 +362,10 @@ Las 8 migraciones + seed completo ya están aplicadas en el Supabase real (45 ca
 
 ## DATABASE_URL DE SUPABASE (proyecto real, ya migrado y con datos)
 
-```
-DATABASE_URL=postgresql://postgres:DwSl5oI3liT66VKx@db.rpowardrcwnhbkzjsiok.supabase.co:5432/postgres
-```
+**La contraseña que estaba acá quedó expuesta en el historial de git y fue removida.**
+No commitear nunca un `DATABASE_URL` con contraseña real en este repo. Configurarlo
+como variable de entorno local (`backend/.env`, ya excluido en `.gitignore`) o como
+secreto del entorno de ejecución — nunca en un archivo versionado.
 
 Proyecto: `rpowardrcwnhbkzjsiok`, región `sa-east-1`. Herramientas MCP de Supabase (`apply_migration`, `execute_sql`, `list_tables`) funcionan directo sin necesitar `DATABASE_URL`.
 

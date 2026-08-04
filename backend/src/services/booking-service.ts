@@ -211,8 +211,13 @@ export class BookingService {
     dateTo?: string;
     guestEmail?: string;
     guestName?: string;
-  } = {}): Promise<Reservation[]> {
-    return bookingRepo.search(filters);
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{ data: Reservation[]; total: number; page: number; limit: number; totalPages: number }> {
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters.limit && filters.limit > 0 ? filters.limit : 20;
+    const { data, total } = await bookingRepo.search({ ...filters, page, limit });
+    return { data, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
   }
 
   async getBookingStats(from: string, to: string): Promise<{

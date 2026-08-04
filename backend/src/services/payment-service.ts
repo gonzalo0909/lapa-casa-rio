@@ -217,6 +217,23 @@ export class PaymentService {
     return this.paymentRepo.findByReservation(reservationId);
   }
 
+  // ventana4: usado por el flujo de cobro de saldo (3 reintentos cada 24h,
+  // ver Prompt Maestro / POLITICAS OPERATIVAS) una vez que el proveedor
+  // confirma el cargo del saldo. A diferencia del deposito, pagar el saldo
+  // no cambia el status de la reserva -- ya esta 'confirmed' desde que se
+  // pago el deposito -- solo marca el registro de pago como succeeded.
+  async markRemainingPaid(reservationId: string): Promise<Payment> {
+    const payments = await this.paymentRepo.findByReservation(reservationId);
+    const remainingPayment = payments.find(p => p.payment_type === 'remaining');
+    if (!remainingPayment) {
+      throw new AppError('No existe un pago de saldo (remaining) para esta reserva', 404);
+    }
+    if (remainingPayment.status === 'succeeded') {
+      throw new AppError('El saldo ya fue pagado', 400);
+    }
+    return this.paymentRepo.markCompleted(remainingPayment.id);
+  }
+
   async getStatistics(): Promise<any> {
     return this.paymentRepo.getStatistics();
   }

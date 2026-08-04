@@ -5,6 +5,7 @@ import app from './app';
 import { logger } from '@/utils/logger';
 import { connectDatabase, disconnect } from '@/config/database';
 import { environment } from '@/config/environment';
+import './crons';
 
 const PORT = environment.PORT || 5000;
 const NODE_ENV = environment.NODE_ENV || 'development';

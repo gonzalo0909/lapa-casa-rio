@@ -538,7 +538,7 @@ export const initializeSecurity = (): void => {
     environment: env.NODE_ENV,
     rateLimiting: {
       window: `${env.RATE_LIMIT_WINDOW_MS}ms`,
-      maxRequests: env.RATE_LIMIT_MAX_REQUESTS
+      maxRequests: env.RATE_LIMIT_MAX
     },
     helmet: 'enabled',
     sanitization: 'enabled',

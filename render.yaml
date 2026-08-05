@@ -102,8 +102,6 @@ services:
   - type: web
     name: lapa-casa-hostel-landing
     env: static
-    region: oregon
-    plan: starter
     rootDir: public/landing
     buildCommand: ""
     staticPublishPath: .

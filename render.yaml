@@ -9,7 +9,7 @@ services:
     # disponible, con latencia extra hacia Supabase (sa-east-1) y los
     # usuarios reales en Rio de Janeiro -- limitacion conocida, no un bug.
     region: oregon
-    plan: starter
+    plan: free
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run start

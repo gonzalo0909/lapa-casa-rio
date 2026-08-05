@@ -476,7 +476,7 @@ ENTREGABLES
 
 3. Variables de entorno (`.env.production`):
    * `DATABASE_URL` — **apunta al proyecto Supabase real `rpowardrcwnhbkzjsiok` (`sa-east-1`), ya migrado y con seed**, no a un proyecto nuevo
-   * `REDIS_URL` — **pendiente de Ventana 4**: BullMQ necesita Redis real, hoy el "caché" es un stub en memoria; resolver qué instancia se usa (Upstash u otra) antes de esta ventana
+   * `REDIS_URL` — cargarla en el dashboard de Render (`sync: false` en `render.yaml`, ver Ventana 6); el cliente ya es real (`ioredis`, corregido en Ventana 2), solo falta apuntarlo a una instancia (Upstash u otra). Sin esta variable el sistema sigue funcionando con el fallback en memoria, pero sin compartir estado entre instancias
    * `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
    * `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`
    * `JWT_SECRET`, `ADMIN_PASSWORD_HASH`
@@ -548,7 +548,7 @@ LO QUE QUEDA PARA EL FUTURO (FASE 2)
 CONSIDERACIONES ESPECIALES
 * El deploy se hace en Railway o Render (gratuito para empezar); ver riesgo aceptado de cold-starts en el Maestro antes de operar con pagos reales
 * Supabase tiene backups automáticos en plan gratuito
-* Upstash Redis tiene persistencia en plan gratuito — evaluar si se adopta ahora, dado que hoy el caché/BullMQ dependen de un stub en memoria
+* Upstash Redis tiene persistencia en plan gratuito — evaluar si se adopta; el cliente (`ioredis`) ya está listo para usarla, solo falta la instancia real y `REDIS_URL` configurada
 * Los workers de BullMQ corren en el mismo proceso del backend (una vez implementados en Ventana 4)
 * Los logs no rotan vía Winston (no está en el proyecto) — definir el mecanismo real de rotación antes de asumir que existe
 * Health check se puede conectar a UptimeRobot para monitoreo 24/7

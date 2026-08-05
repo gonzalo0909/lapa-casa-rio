@@ -456,7 +456,7 @@ De Ventana 2, lo confirmado: `availability-service.ts`, `pricing-service.ts` y `
 
 Correcciones puntuales sobre el contexto original:
 * No es Prisma: `withTransaction()` usa `pg` (`PoolClient`) directo, en `config/database.ts`.
-* No es Redis real: el "caché" es un stub en memoria dentro del mismo proceso (`src/cache/redis-client.ts`). Funciona para probar, pero no comparte estado entre instancias.
+* Redis sí es real: `src/cache/redis-client.ts` usa `ioredis` contra `REDIS_URL` (corregido en Ventana 2), con fallback a un stub en memoria solo si esa variable no está configurada. En ese caso funciona igual pero sin compartir estado entre instancias.
 * Ya no hace falta castear `::smallint` en ningún lado — la migración `0008` cambió los parámetros de las funciones de precio a `INTEGER`.
 * El servidor real arranca en `backend/src/app.ts` (TypeScript), no en un `server.js` genérico; las rutas se montan desde `backend/src/routes/index.ts`, que protege `/admin` con `authenticateToken` (nombre real exportado por `middleware/auth.ts`, confirmado correcto — junto con `requireRole`).
 * `utils/responses.ts` expone `ApiResponse` como interfaz de tipos y como objeto en runtime (`ApiResponse.success()` / `ApiResponse.error()`) a la vez — ambos coexisten, es válido en TypeScript.

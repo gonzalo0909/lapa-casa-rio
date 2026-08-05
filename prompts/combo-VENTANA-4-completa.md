@@ -479,7 +479,7 @@ ENTREGABLES
    * `ota-sync.queue.js` - Cola para sincronización con OTAs (estructura base, activada en Ventana 5)
    * `sheets-export.queue.js` - Cola para exportar reservas a Google Sheets (solo lectura hacia afuera)
    * `cleanup.queue.js` - Cola que invoca `sp_cleanup_expired_pending()` y `sp_release_no_show()`, cada 5 minutos
-   * Configuración de Redis para BullMQ — **decidir primero si esto usa el stub en memoria actual (`src/cache/redis-client.ts`, no sirve para BullMQ real) o una instancia Redis real** (Upstash u otra); BullMQ necesita Redis de verdad, no un stub en memoria
+   * Configuración de Redis para BullMQ — `src/cache/redis-client.ts` **ya es un cliente real (`ioredis`)**, no un stub (corregido en Ventana 2); si se agrega BullMQ, evaluar si reutiliza esta misma conexión/`REDIS_URL` o si BullMQ necesita su propia configuración de conexión (suele requerir opciones distintas a un cliente de caché genérico)
    * **Nota de propiedad de scheduling:** cada worker que invoca un `sp_*` de Ventana 1 lo hace explícitamente vía llamada SQL (`CALL sp_x()` o equivalente), documentado 1 a 1 en el resumen técnico, para dejar trazabilidad clara de qué activa qué
 
 2. Workers (`src/workers/`):
@@ -549,14 +549,14 @@ ENTREGABLES
    * `getChannelStats(month, year)` - Reservas por canal
    * `getGroupStats(month, year)` - Tamaño promedio de grupo, % grupos grandes
 
-LO QUE NO INCLUYE (VIENE EN VENTANA 5)
-* Sincronización con OTAs (iCal/APIs)
-* Frontend público de booking
-* PWA y SEO
-* Deploy a producción
+LO QUE NO INCLUYE
+* Sincronización con OTAs (iCal/APIs) — viene en Ventana 5
+* Frontend público de booking — viene en Ventana 5
+* PWA y SEO — viene en Ventana 5
+* **`render.yaml` y deploy a producción — viene en Ventana 6, no en esta ni en la 5. No tocar `render.yaml` desde esta ventana** (ya fue corregido a nivel de archivo; cargar secretos y desplegar es trabajo exclusivo de Ventana 6)
 
 CONSIDERACIONES ESPECIALES
-* BullMQ necesita Redis real, no el stub en memoria actual — resolver esta dependencia antes de escribir las colas
+* `src/cache/redis-client.ts` ya tiene un cliente Redis real (`ioredis`) desde Ventana 2 — no hace falta resolver esa dependencia, solo confirmar que `REDIS_URL` esté configurada si BullMQ la necesita
 * Si un email falla, se reencola hasta 3 veces
 * Google Sheets se actualiza vía worker asíncrono (cola), no literalmente en tiempo real, solo en dirección DB → Sheets
 * El panel admin es simple pero funcional (HTML+CSS+JS vanilla)

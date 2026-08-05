@@ -504,7 +504,7 @@ ENTREGABLES
    * Middleware de validación: API key, IP whitelist, firma HMAC
    * Airbnb y Hostelworld no tienen endpoint de webhook: sus reservas se detectan exclusivamente por la importación periódica de iCal, quedan como `pending_ota_confirmation` hasta que se registran, y no pueden cancelarse en tiempo real vía webhook — solo por eliminación del evento en el feed importado
 
-5. Worker de sincronización (`workers/ota-sync.worker.ts`) — depende de que BullMQ (Ventana 4) esté resuelto con Redis real, no el stub en memoria:
+5. Worker de sincronización (`workers/ota-sync.worker.ts`) — depende de que BullMQ (Ventana 4) esté resuelto (Redis ya es real desde Ventana 2, `src/cache/redis-client.ts` con `ioredis` — lo que falta es BullMQ en sí, no Redis):
    * Procesa cola `ota-sync.queue`
    * Ejecuta `syncICalFeeds()` cada 5 minutos
    * Detecta nuevas reservas, modificaciones y cancelaciones en los feeds de Airbnb/Hostelworld, descartando eventos con UID propio y deduplicando por `external_reservation_id` contra reservas ya creadas por webhook (Booking.com)
@@ -529,7 +529,7 @@ ENTREGABLES
    * Intervalo de importación iCal para Airbnb/Hostelworld (5 minutos)
 
 LO QUE NO INCLUYE (VIENE EN VENTANA 6)
-* Deploy a producción
+* **`render.yaml` y deploy a producción — no tocar desde esta ventana** (ya fue corregido a nivel de archivo; lo que falta, cargar secretos y desplegar, es exclusivo de Ventana 6)
 * Monitoreo y health checks
 * Documentación de API
 * Frontend público de booking

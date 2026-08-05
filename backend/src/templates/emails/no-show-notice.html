@@ -1,0 +1,14 @@
+<!-- lapa-casa-hostel/backend/src/templates/emails/no-show-notice.html -->
+<h1 style="margin:0 0 16px;font-size:22px;color:#1a1a1a;">{{labelTitle}}</h1>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.6;">{{labelGreeting}} {{guestName}},</p>
+<p style="margin:0 0 24px;font-size:15px;line-height:1.6;">{{labelIntro}}</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fdeeee;border-radius:6px;margin-bottom:24px;border:1px solid #f0b8b8;">
+  <tr><td style="padding:16px 20px;">
+    <p style="margin:0 0 8px;font-size:14px;"><strong>{{labelReservation}}:</strong> {{reservationNumber}}</p>
+    <p style="margin:0 0 8px;font-size:14px;"><strong>{{labelCheckIn}}:</strong> {{checkInDateFormatted}}</p>
+    <p style="margin:0;font-size:14px;"><strong>{{labelChargeApplied}}:</strong> {{chargeAmountFormatted}}</p>
+  </td></tr>
+</table>
+
+<p style="margin:0;font-size:14px;line-height:1.6;color:#555555;">{{labelPolicyNote}}</p>

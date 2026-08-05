@@ -6,9 +6,12 @@ import { PaymentRepository } from '../database/repositories/payment-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
 import { StripeHandler } from '../lib/payments/stripe-handler';
 import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
+import { notificationService } from './notification-service';
+import { scheduleRemainingPayment } from '../queues/remaining-payment.queue';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
 import type { Payment, PaymentProvider } from '../types/database';
+import type { BookingWithGuest } from './email-service';
 
 interface CreatePaymentIntentDTO {
   reservation_id: string;
@@ -134,6 +137,7 @@ export class PaymentService {
     if (payment.payment_type === 'deposit') {
       await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
     }
+    await this.handlePaymentSucceeded(confirmedPayment);
     return confirmedPayment;
   }
 
@@ -155,7 +159,43 @@ export class PaymentService {
     if (payment.payment_type === 'deposit') {
       await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
     }
+    await this.handlePaymentSucceeded(confirmed);
     return confirmed;
+  }
+
+  // ventana4: unico punto que dispara notificaciones de pago recibido --
+  // corre tanto para el webhook real de Stripe/MercadoPago (confirmPayment)
+  // como para la confirmacion manual desde el frontend (confirmPaymentById).
+  // Antes solo la ruta confirm-payment.ts enviaba el email, asi que un pago
+  // confirmado por webhook (el camino real de produccion) nunca disparaba
+  // nada. Un fallo de email no debe tumbar la confirmacion del pago -- ya
+  // sucedio y esta persistido -- por eso el try/catch no relanza.
+  private async handlePaymentSucceeded(payment: Payment): Promise<void> {
+    try {
+      const booking = await this.bookingRepo.findById(payment.reservation_id);
+      if (!booking || !booking.guest) {
+        logger.warn('handlePaymentSucceeded: reserva o guest no encontrado, se omiten notificaciones', {
+          reservationId: payment.reservation_id
+        });
+        return;
+      }
+      const bookingWithGuest = booking as BookingWithGuest;
+
+      await notificationService.notify('payment_received', bookingWithGuest, { amount: Number(payment.amount) });
+
+      if (payment.payment_type === 'deposit' && Number(bookingWithGuest.remaining_amount) > 0) {
+        await scheduleRemainingPayment(bookingWithGuest.id, new Date(bookingWithGuest.check_in_date));
+
+        const oneDayBeforeCheckIn = new Date(new Date(bookingWithGuest.check_in_date).getTime() - 24 * 60 * 60 * 1000);
+        await notificationService.scheduleNotification('welcome', bookingWithGuest, oneDayBeforeCheckIn);
+      }
+    } catch (error: any) {
+      logger.error('Error en efectos secundarios de pago confirmado (notificaciones)', {
+        paymentId: payment.id,
+        reservationId: payment.reservation_id,
+        error: error.message
+      });
+    }
   }
 
   async getPaymentById(id: string): Promise<Payment | null> {

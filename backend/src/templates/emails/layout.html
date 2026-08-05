@@ -1,0 +1,36 @@
+<!-- lapa-casa-hostel/backend/src/templates/emails/layout.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{emailTitle}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#222222;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+          <tr>
+            <td style="background-color:#1a1a1a;padding:24px 32px;">
+              <span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:0.5px;">LAPA CASA HOSTEL</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              {{content}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px;background-color:#fafafa;border-top:1px solid #eeeeee;">
+              <p style="margin:0 0 4px;font-size:12px;color:#888888;">Lapa Casa Hostel</p>
+              <p style="margin:0 0 4px;font-size:12px;color:#888888;">Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro, RJ - Brasil</p>
+              <p style="margin:0;font-size:12px;color:#888888;">contato@lapacasahostel.com</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

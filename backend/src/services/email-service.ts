@@ -1,346 +1,380 @@
 // lapa-casa-hostel/backend/src/services/email-service.ts
+// ventana4
+//
+// Servicio de emails real, vía Resend. Sigue el mismo patron de
+// degradacion que src/cache/redis-client.ts y src/lib/payments/stripe-handler.ts:
+// sin RESEND_API_KEY configurada, no revienta -- loguea y sigue (util en
+// dev/tests sin cuenta de Resend todavia).
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { Resend } from 'resend';
+import { query } from '../config/database';
+import { renderEmailTemplate } from '../templates/render';
 import { logger } from '../utils/logger';
+import type { Reservation, Guest } from '../types/database';
 
-interface BookingConfirmationData {
-  to: string;
-  bookingId: string;
-  guestName: string;
-  checkIn: string;
-  checkOut: string;
-  rooms: Array<{ roomId: string; bedsCount: number }>;
-  totalPrice: number;
-  depositAmount: number;
-  paymentUrl: string;
-  language: 'pt' | 'en' | 'es';
+type Language = 'pt' | 'en' | 'es';
+export type BookingWithGuest = Reservation & { guest: Guest };
+
+function resolveLanguage(raw: string | null | undefined): Language {
+  return raw === 'en' || raw === 'es' ? raw : 'pt';
 }
 
-interface PaymentReminderData {
-  to: string;
-  bookingId: string;
-  guestName: string;
-  remainingAmount: number;
-  daysUntilCheckIn: number;
-  paymentUrl: string;
-  language: 'pt' | 'en' | 'es';
-}
+const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'reservas@lapacasahostel.com';
+const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Lapa Casa Hostel';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lapacasahostel.com';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lapacasahostel.com';
 
-interface CancellationData {
-  to: string;
-  bookingId: string;
-  guestName: string;
-  refundAmount: number;
-  language: 'pt' | 'en' | 'es';
-}
+let resendClient: Resend | null = null;
+let warnedNoApiKey = false;
 
-interface CheckInReminderData {
-  to: string;
-  bookingId: string;
-  guestName: string;
-  checkInDate: string;
-  checkInTime: string;
-  address: string;
-  directions: string;
-  language: 'pt' | 'en' | 'es';
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    if (!warnedNoApiKey) {
+      logger.warn('RESEND_API_KEY no configurada — emails no se envían de verdad, solo se loguean');
+      warnedNoApiKey = true;
+    }
+    return null;
+  }
+  if (!resendClient) resendClient = new Resend(apiKey);
+  return resendClient;
 }
 
 interface SendResult {
   id: string;
-  [key: string]: any;
 }
 
-// Stub sender — replace with real Resend/SMTP client when available
-async function sendEmail(opts: {
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-  tags?: Array<{ name: string; value: string }>;
-}): Promise<SendResult> {
-  logger.info('EMAIL (stub) — would send', {
-    from: opts.from,
-    to: opts.to,
-    subject: opts.subject,
-    tags: opts.tags
+async function dispatch(to: string, subject: string, html: string): Promise<SendResult> {
+  const client = getResendClient();
+  if (!client) {
+    logger.info('EMAIL (sin enviar — falta RESEND_API_KEY)', { to, subject });
+    return { id: `stub-${Date.now()}` };
+  }
+  const { data, error } = await client.emails.send({
+    from: `${FROM_NAME} <${FROM_EMAIL}>`,
+    to,
+    subject,
+    html
   });
-  return { id: `stub-${Date.now()}` };
+  if (error) {
+    logger.error('Resend rechazó el envío', { to, subject, error });
+    throw new Error(`Email send failed: ${error.message}`);
+  }
+  logger.info('Email enviado', { to, subject, messageId: data?.id });
+  return { id: data?.id ?? '' };
+}
+
+// ---- i18n: solo las etiquetas visibles en las plantillas (ver src/templates/emails/*.html) ----
+const LABELS: Record<Language, Record<string, string>> = {
+  pt: {
+    greeting: 'Olá', bookingConfirmationTitle: 'Reserva Confirmada!',
+    bookingConfirmationIntro: 'Recebemos sua reserva. Confira os detalhes abaixo:',
+    reservation: 'Reserva', checkIn: 'Check-in', checkOut: 'Check-out', nights: 'Noites', rooms: 'Acomodações',
+    total: 'Total', deposit: 'Depósito', remaining: 'Saldo restante', checkInTime: 'Horário de check-in', checkOutTime: 'Horário de check-out',
+    payNow: 'Pagar agora',
+    paymentReminderTitle: 'Lembrete de Pagamento', paymentReminderIntro: 'O saldo da sua reserva está pendente.',
+    amountDue: 'Valor pendente', dueDate: 'Vencimento', daysUntilCheckIn: 'Dias até o check-in',
+    retryNote: 'Faremos até 3 tentativas de cobrança automática nos próximos dias.',
+    paymentReceivedTitle: 'Pagamento Recebido', paymentReceivedIntro: 'Confirmamos o recebimento do seu pagamento.',
+    amountPaid: 'Valor recebido', thanks: 'Obrigado! Nos vemos em breve.',
+    remainingStillDue: 'Saldo restante ainda pendente',
+    fullyPaid: 'Sua reserva está totalmente paga.',
+    welcomeTitle: 'Bem-vindo ao Lapa Casa Hostel!', welcomeIntro: 'Estamos ansiosos para recebê-lo. Aqui vão algumas informações úteis:',
+    address: 'Endereço', wifiNetwork: 'Rede', wifiPassword: 'Senha',
+    tipsTitle: 'Dicas locais',
+    tip1: 'Bondinho de Santa Teresa: passeio histórico a poucos minutos a pé.',
+    tip2: 'Escadaria Selarón: um dos pontos turísticos mais fotografados do Rio.',
+    tip3: 'Centro da Lapa: vida noturna, samba e restaurantes a poucos quarteirões.',
+    cancellationTitle: 'Reserva Cancelada', cancellationIntro: 'Sua reserva foi cancelada conforme solicitado.',
+    refundAmount: 'Valor a reembolsar', refundTimeline: 'Prazo estimado: 5-10 dias úteis.',
+    noRefund: 'De acordo com a política de cancelamento, esta reserva não é elegível para reembolso.',
+    noShowTitle: 'Não Comparecimento Registrado', noShowIntro: 'Registramos que você não compareceu para o check-in da sua reserva.',
+    chargeApplied: 'Cobrança aplicada',
+    policyNote: 'De acordo com nossa política de cancelamento, o valor total da reserva é cobrado em caso de não comparecimento (no-show).'
+  },
+  en: {
+    greeting: 'Hello', bookingConfirmationTitle: 'Booking Confirmed!',
+    bookingConfirmationIntro: 'We received your booking. Here are the details:',
+    reservation: 'Booking', checkIn: 'Check-in', checkOut: 'Check-out', nights: 'Nights', rooms: 'Accommodations',
+    total: 'Total', deposit: 'Deposit', remaining: 'Remaining balance', checkInTime: 'Check-in time', checkOutTime: 'Check-out time',
+    payNow: 'Pay now',
+    paymentReminderTitle: 'Payment Reminder', paymentReminderIntro: 'The remaining balance of your booking is due.',
+    amountDue: 'Amount due', dueDate: 'Due date', daysUntilCheckIn: 'Days until check-in',
+    retryNote: 'We will make up to 3 automatic charge attempts over the next few days.',
+    paymentReceivedTitle: 'Payment Received', paymentReceivedIntro: 'We confirm we received your payment.',
+    amountPaid: 'Amount received', thanks: 'Thank you! See you soon.',
+    remainingStillDue: 'Remaining balance still due',
+    fullyPaid: 'Your booking is fully paid.',
+    welcomeTitle: 'Welcome to Lapa Casa Hostel!', welcomeIntro: "We're looking forward to hosting you. Some useful info:",
+    address: 'Address', wifiNetwork: 'Network', wifiPassword: 'Password',
+    tipsTitle: 'Local tips',
+    tip1: 'Santa Teresa tram: a historic ride just a short walk away.',
+    tip2: 'Selarón Steps: one of the most photographed landmarks in Rio.',
+    tip3: 'Lapa nightlife: samba and restaurants a few blocks away.',
+    cancellationTitle: 'Booking Cancelled', cancellationIntro: 'Your booking has been cancelled as requested.',
+    refundAmount: 'Refund amount', refundTimeline: 'Estimated timeline: 5-10 business days.',
+    noRefund: 'Per our cancellation policy, this booking is not eligible for a refund.',
+    noShowTitle: 'No-Show Recorded', noShowIntro: 'We recorded that you did not check in for your booking.',
+    chargeApplied: 'Charge applied',
+    policyNote: 'Per our cancellation policy, the full booking amount is charged in case of no-show.'
+  },
+  es: {
+    greeting: 'Hola', bookingConfirmationTitle: '¡Reserva Confirmada!',
+    bookingConfirmationIntro: 'Recibimos tu reserva. Estos son los detalles:',
+    reservation: 'Reserva', checkIn: 'Check-in', checkOut: 'Check-out', nights: 'Noches', rooms: 'Alojamientos',
+    total: 'Total', deposit: 'Depósito', remaining: 'Saldo restante', checkInTime: 'Horario de check-in', checkOutTime: 'Horario de check-out',
+    payNow: 'Pagar ahora',
+    paymentReminderTitle: 'Recordatorio de Pago', paymentReminderIntro: 'El saldo de tu reserva está pendiente.',
+    amountDue: 'Monto pendiente', dueDate: 'Vencimiento', daysUntilCheckIn: 'Días hasta el check-in',
+    retryNote: 'Haremos hasta 3 intentos automáticos de cobro en los próximos días.',
+    paymentReceivedTitle: 'Pago Recibido', paymentReceivedIntro: 'Confirmamos la recepción de tu pago.',
+    amountPaid: 'Monto recibido', thanks: '¡Gracias! Nos vemos pronto.',
+    remainingStillDue: 'Saldo restante aún pendiente',
+    fullyPaid: 'Tu reserva está totalmente pagada.',
+    welcomeTitle: '¡Bienvenido a Lapa Casa Hostel!', welcomeIntro: 'Estamos ansiosos por recibirte. Aquí va información útil:',
+    address: 'Dirección', wifiNetwork: 'Red', wifiPassword: 'Contraseña',
+    tipsTitle: 'Tips locales',
+    tip1: 'Tranvía de Santa Teresa: paseo histórico a pocos minutos caminando.',
+    tip2: 'Escalera Selarón: uno de los puntos turísticos más fotografiados de Río.',
+    tip3: 'Vida nocturna de Lapa: samba y restaurantes a pocas cuadras.',
+    cancellationTitle: 'Reserva Cancelada', cancellationIntro: 'Tu reserva fue cancelada según lo solicitado.',
+    refundAmount: 'Monto a reembolsar', refundTimeline: 'Plazo estimado: 5-10 días hábiles.',
+    noRefund: 'Según nuestra política de cancelación, esta reserva no es elegible para reembolso.',
+    noShowTitle: 'No Presentación Registrada', noShowIntro: 'Registramos que no realizaste el check-in de tu reserva.',
+    chargeApplied: 'Cargo aplicado',
+    policyNote: 'Según nuestra política de cancelación, se cobra el monto total de la reserva en caso de no presentación (no-show).'
+  }
+};
+
+function formatCurrency(amount: number, language: Language): string {
+  const locales: Record<Language, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
+  return new Intl.NumberFormat(locales[language], { style: 'currency', currency: 'BRL' }).format(amount);
+}
+
+function formatDate(date: Date | string, language: Language): string {
+  const locales: Record<Language, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat(locales[language], { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(d);
+}
+
+function paymentButtonHtml(url: string | undefined, label: string): string {
+  if (!url) return '';
+  return `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:4px;background-color:#1a1a1a;">
+    <a href="${url}" style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">${label}</a>
+  </td></tr></table>`;
+}
+
+async function getRoomsBreakdown(reservationId: string): Promise<Array<{ name: string; beds: number }>> {
+  const { rows } = await query<{ name: string; beds: string }>(
+    `SELECT rt.name AS name, COUNT(*)::int AS beds
+     FROM reservation_beds rb
+     JOIN beds b ON b.id = rb.bed_id
+     JOIN room_types rt ON rt.id = b.room_type_id
+     WHERE rb.reservation_id = $1
+     GROUP BY rt.name
+     ORDER BY rt.name`,
+    [reservationId]
+  );
+  return rows.map(r => ({ name: r.name, beds: Number(r.beds) }));
+}
+
+function roomsListHtml(rooms: Array<{ name: string; beds: number }>, bedLabel: string): string {
+  return rooms
+    .map(r => `<p style="margin:0 0 4px;font-size:14px;color:#444444;padding-left:8px;">• ${escapeText(r.name)}: ${r.beds} ${bedLabel}</p>`)
+    .join('');
+}
+
+function escapeText(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export class EmailService {
-  private fromEmail: string;
-  private fromName: string;
-  private readonly TEMPLATES_PATH = join(__dirname, '../integrations/email');
+  async sendBookingConfirmation(booking: BookingWithGuest): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
+    const rooms = await getRoomsBreakdown(booking.id);
+    const bedLabel = { pt: 'camas', en: 'beds', es: 'camas' }[language];
 
-  constructor() {
-    this.fromEmail = process.env.FROM_EMAIL || 'reservas@lapacasahostel.com';
-    this.fromName = 'Lapa Casa Hostel';
+    const html = renderEmailTemplate('booking-confirmation', {
+      emailTitle: t.bookingConfirmationTitle,
+      labelTitle: t.bookingConfirmationTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.bookingConfirmationIntro,
+      labelReservation: t.reservation,
+      labelCheckIn: t.checkIn,
+      labelCheckOut: t.checkOut,
+      labelNights: t.nights,
+      labelRooms: t.rooms,
+      labelTotal: t.total,
+      labelDeposit: t.deposit,
+      labelRemaining: t.remaining,
+      labelCheckInTime: t.checkInTime,
+      labelCheckOutTime: t.checkOutTime,
+      guestName: booking.guest.full_name,
+      reservationNumber: booking.reservation_number,
+      checkInFormatted: formatDate(booking.check_in_date, language),
+      checkOutFormatted: formatDate(booking.check_out_date, language),
+      nightsCount: booking.nights_count,
+      roomsHtml: roomsListHtml(rooms, bedLabel),
+      totalPriceFormatted: formatCurrency(booking.final_price, language),
+      depositAmountFormatted: formatCurrency(booking.deposit_amount, language),
+      depositPercent: Math.round(booking.deposit_percent * 100),
+      remainingAmountFormatted: formatCurrency(booking.remaining_amount, language),
+      paymentButtonHtml: paymentButtonHtml(`${FRONTEND_URL}/bookings/${booking.id}/pay`, t.payNow)
+    });
+
+    return dispatch(booking.guest.email, `${t.bookingConfirmationTitle} #${booking.reservation_number}`, html);
   }
 
-  async sendBookingConfirmation(data: BookingConfirmationData): Promise<SendResult> {
-    try {
-      logger.info('Enviando email de confirmación', { to: data.to, bookingId: data.bookingId });
+  async sendPaymentReminder(booking: BookingWithGuest): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
+    const checkIn = new Date(booking.check_in_date);
+    const daysUntilCheckIn = Math.max(0, Math.ceil((checkIn.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 
-      const html = this.buildBookingConfirmationHtml(data);
+    const html = renderEmailTemplate('payment-reminder', {
+      emailTitle: t.paymentReminderTitle,
+      labelTitle: t.paymentReminderTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.paymentReminderIntro,
+      labelReservation: t.reservation,
+      labelAmountDue: t.amountDue,
+      labelDueDate: t.dueDate,
+      labelDaysUntilCheckIn: t.daysUntilCheckIn,
+      labelRetryNote: t.retryNote,
+      guestName: booking.guest.full_name,
+      reservationNumber: booking.reservation_number,
+      remainingAmountFormatted: formatCurrency(booking.remaining_amount, language),
+      dueDateFormatted: formatDate(checkIn, language),
+      daysUntilCheckIn,
+      paymentButtonHtml: paymentButtonHtml(`${FRONTEND_URL}/bookings/${booking.id}/pay`, t.payNow)
+    });
 
-      const result = await sendEmail({
-        from: `${this.fromName} <${this.fromEmail}>`,
-        to: data.to,
-        subject: this.getSubject('bookingConfirmation', data.language),
-        html,
-        tags: [
-          { name: 'type', value: 'booking_confirmation' },
-          { name: 'booking_id', value: data.bookingId }
-        ]
-      });
-
-      logger.info('Email de confirmación enviado', { emailId: result.id, bookingId: data.bookingId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando email de confirmación', error);
-      throw new Error('Error al enviar email de confirmación');
-    }
+    return dispatch(booking.guest.email, `${t.paymentReminderTitle} #${booking.reservation_number}`, html);
   }
 
-  async sendPaymentReminder(data: PaymentReminderData): Promise<SendResult> {
-    try {
-      logger.info('Enviando recordatorio de pago', { to: data.to, bookingId: data.bookingId });
+  async sendPaymentReceived(booking: BookingWithGuest, amount: number): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
+    const stillDue = booking.remaining_amount > 0;
 
-      const html = this.buildPaymentReminderHtml(data);
+    const remainingSectionHtml = stillDue
+      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+           <tr><td style="padding:6px 0;font-size:14px;color:#555555;">${t.remainingStillDue}</td>
+           <td align="right" style="padding:6px 0;font-size:14px;font-weight:bold;">${formatCurrency(booking.remaining_amount, language)}</td></tr>
+         </table>`
+      : `<p style="margin:0 0 24px;font-size:14px;color:#0a7d2c;font-weight:bold;">${t.fullyPaid}</p>`;
 
-      const result = await sendEmail({
-        from: `${this.fromName} <${this.fromEmail}>`,
-        to: data.to,
-        subject: this.getSubject('paymentReminder', data.language),
-        html,
-        tags: [
-          { name: 'type', value: 'payment_reminder' },
-          { name: 'booking_id', value: data.bookingId }
-        ]
-      });
+    const html = renderEmailTemplate('payment-received', {
+      emailTitle: t.paymentReceivedTitle,
+      labelTitle: t.paymentReceivedTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.paymentReceivedIntro,
+      labelReservation: t.reservation,
+      labelAmountPaid: t.amountPaid,
+      labelThanks: t.thanks,
+      guestName: booking.guest.full_name,
+      reservationNumber: booking.reservation_number,
+      amountFormatted: formatCurrency(amount, language),
+      remainingSectionHtml
+    });
 
-      logger.info('Recordatorio de pago enviado', { emailId: result.id, bookingId: data.bookingId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando recordatorio de pago', error);
-      throw error;
-    }
+    return dispatch(booking.guest.email, `${t.paymentReceivedTitle} #${booking.reservation_number}`, html);
   }
 
-  async sendCancellationEmail(data: CancellationData): Promise<SendResult> {
-    try {
-      logger.info('Enviando email de cancelación', { to: data.to, bookingId: data.bookingId });
+  async sendWelcomeEmail(booking: BookingWithGuest): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
 
-      const html = this.buildCancellationHtml(data);
+    const html = renderEmailTemplate('welcome-message', {
+      emailTitle: t.welcomeTitle,
+      labelTitle: t.welcomeTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.welcomeIntro,
+      labelCheckIn: t.checkIn,
+      labelAddress: t.address,
+      labelWifiNetwork: t.wifiNetwork,
+      labelWifiPassword: t.wifiPassword,
+      labelTipsTitle: t.tipsTitle,
+      labelTip1: t.tip1,
+      labelTip2: t.tip2,
+      labelTip3: t.tip3,
+      guestName: booking.guest.full_name,
+      checkInDateFormatted: formatDate(booking.check_in_date, language),
+      checkInTime: '14:00',
+      address: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro',
+      wifiNetwork: 'LAPA_CASA_GUESTS',
+      wifiPassword: 'santateresa2024'
+    });
 
-      const result = await sendEmail({
-        from: `${this.fromName} <${this.fromEmail}>`,
-        to: data.to,
-        subject: this.getSubject('cancellation', data.language),
-        html,
-        tags: [
-          { name: 'type', value: 'cancellation' },
-          { name: 'booking_id', value: data.bookingId }
-        ]
-      });
-
-      logger.info('Email de cancelación enviado', { emailId: result.id, bookingId: data.bookingId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando email de cancelación', error);
-      throw error;
-    }
+    return dispatch(booking.guest.email, t.welcomeTitle, html);
   }
 
-  async sendCheckInReminder(data: CheckInReminderData): Promise<SendResult> {
-    try {
-      logger.info('Enviando recordatorio de check-in', { to: data.to, bookingId: data.bookingId });
+  async sendCancellationNotice(booking: BookingWithGuest, refundAmount: number): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
 
-      const html = this.buildCheckInReminderHtml(data);
+    const refundSectionHtml = refundAmount > 0
+      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+           <tr><td style="padding:6px 0;font-size:14px;color:#555555;">${t.refundAmount}</td>
+           <td align="right" style="padding:6px 0;font-size:14px;font-weight:bold;color:#0a7d2c;">${formatCurrency(refundAmount, language)}</td></tr>
+         </table><p style="margin:0;font-size:13px;color:#777777;">${t.refundTimeline}</p>`
+      : `<p style="margin:0;font-size:14px;color:#555555;">${t.noRefund}</p>`;
 
-      const result = await sendEmail({
-        from: `${this.fromName} <${this.fromEmail}>`,
-        to: data.to,
-        subject: this.getSubject('checkInReminder', data.language),
-        html,
-        tags: [
-          { name: 'type', value: 'checkin_reminder' },
-          { name: 'booking_id', value: data.bookingId }
-        ]
-      });
+    const html = renderEmailTemplate('cancellation-notice', {
+      emailTitle: t.cancellationTitle,
+      labelTitle: t.cancellationTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.cancellationIntro,
+      labelReservation: t.reservation,
+      guestName: booking.guest.full_name,
+      reservationNumber: booking.reservation_number,
+      refundSectionHtml
+    });
 
-      logger.info('Recordatorio de check-in enviado', { emailId: result.id, bookingId: data.bookingId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando recordatorio de check-in', error);
-      throw error;
-    }
+    return dispatch(booking.guest.email, `${t.cancellationTitle} #${booking.reservation_number}`, html);
   }
 
-  async sendWelcomeEmail(to: string, guestName: string, language: 'pt' | 'en' | 'es'): Promise<SendResult> {
-    try {
-      logger.info('Enviando email de bienvenida', { to });
+  async sendNoShowNotice(booking: BookingWithGuest): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
 
-      const greeting = { pt: 'Olá', en: 'Hello', es: 'Hola' }[language];
-      const welcome = { pt: 'Bem-vindo!', en: 'Welcome!', es: '¡Bienvenido!' }[language];
-      const msg = {
-        pt: 'Esperamos que aproveite sua estadia conosco',
-        en: 'We hope you enjoy your stay with us',
-        es: 'Esperamos que disfrutes tu estadía con nosotros'
-      }[language];
-      const pwd = { pt: 'Senha', en: 'Password', es: 'Contraseña' }[language];
+    const html = renderEmailTemplate('no-show-notice', {
+      emailTitle: t.noShowTitle,
+      labelTitle: t.noShowTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.noShowIntro,
+      labelReservation: t.reservation,
+      labelCheckIn: t.checkIn,
+      labelChargeApplied: t.chargeApplied,
+      labelPolicyNote: t.policyNote,
+      guestName: booking.guest.full_name,
+      reservationNumber: booking.reservation_number,
+      checkInDateFormatted: formatDate(booking.check_in_date, language),
+      chargeAmountFormatted: formatCurrency(booking.final_price, language)
+    });
 
-      const html = this.wrap(`
-        <h1>${welcome}</h1>
-        <p>${greeting} ${guestName},</p>
-        <p>${msg}</p>
-        <h2>WiFi</h2>
-        <p><strong>Red:</strong> LAPA_CASA_GUESTS<br><strong>${pwd}:</strong> santateresa2024</p>
-        <p><strong>Check-out:</strong> 11:00h</p>
-      `);
-
-      const result = await sendEmail({
-        from: `${this.fromName} <${this.fromEmail}>`,
-        to,
-        subject: this.getSubject('welcome', language),
-        html,
-        tags: [{ name: 'type', value: 'welcome' }]
-      });
-
-      logger.info('Email de bienvenida enviado', { emailId: result.id });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando email de bienvenida', error);
-      throw error;
-    }
+    return dispatch(booking.guest.email, `${t.noShowTitle} #${booking.reservation_number}`, html);
   }
 
-  async sendCustomEmail(
-    to: string,
-    subject: string,
-    html: string,
-    tags?: Array<{ name: string; value: string }>
-  ): Promise<SendResult> {
-    try {
-      const result = await sendEmail({
-        from: `${this.fromName} <${this.fromEmail}>`,
-        to,
-        subject,
-        html,
-        tags
-      });
-      logger.info('Email personalizado enviado', { emailId: result.id, to });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando email personalizado', error);
-      throw error;
-    }
-  }
-
-  private buildBookingConfirmationHtml(data: BookingConfirmationData): string {
-    const bedLabel = { pt: 'camas', en: 'beds', es: 'camas' }[data.language];
-    const roomsText = data.rooms.map(r => `${r.roomId}: ${r.bedsCount} ${bedLabel}`).join(', ');
-
-    return this.wrap(`
-      <h2>${this.getSubject('bookingConfirmation', data.language)}</h2>
-      <p>Olá ${data.guestName},</p>
-      <p><strong>Reserva:</strong> ${data.bookingId}</p>
-      <p><strong>Check-in:</strong> ${this.formatDate(data.checkIn, data.language)}</p>
-      <p><strong>Check-out:</strong> ${this.formatDate(data.checkOut, data.language)}</p>
-      <p><strong>Acomodações:</strong> ${roomsText}</p>
-      <p><strong>Total:</strong> ${this.formatCurrency(data.totalPrice, data.language)}</p>
-      <p><strong>Depósito:</strong> ${this.formatCurrency(data.depositAmount, data.language)}</p>
-      <p><a href="${data.paymentUrl}" style="background:#222;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Pagar agora</a></p>
-    `);
-  }
-
-  private buildPaymentReminderHtml(data: PaymentReminderData): string {
-    return this.wrap(`
-      <h2>${this.getSubject('paymentReminder', data.language)}</h2>
-      <p>Olá ${data.guestName},</p>
-      <p><strong>Reserva:</strong> ${data.bookingId}</p>
-      <p><strong>Valor restante:</strong> ${this.formatCurrency(data.remainingAmount, data.language)}</p>
-      <p><strong>Check-in em:</strong> ${data.daysUntilCheckIn} dias</p>
-      <p><a href="${data.paymentUrl}" style="background:#222;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Pagar agora</a></p>
-    `);
-  }
-
-  private buildCancellationHtml(data: CancellationData): string {
-    const refundLine = data.refundAmount > 0
-      ? `<p><strong>Reembolso:</strong> ${this.formatCurrency(data.refundAmount, data.language)}</p>`
+  /** Alerta interna al administrador — siempre en portugués, no depende del idioma de un huésped. */
+  async sendAdminAlert(type: string, data: Record<string, any>): Promise<SendResult> {
+    const bookingSectionHtml = data.reservationNumber
+      ? `<p style="margin:0;font-size:13px;color:#666666;"><strong>Reserva:</strong> ${escapeText(String(data.reservationNumber))}</p>`
       : '';
-    return this.wrap(`
-      <h2>${this.getSubject('cancellation', data.language)}</h2>
-      <p>Olá ${data.guestName},</p>
-      <p>Sua reserva <strong>${data.bookingId}</strong> foi cancelada.</p>
-      ${refundLine}
-    `);
-  }
+    const messageLines = Object.entries(data)
+      .map(([key, value]) => `<strong>${escapeText(key)}:</strong> ${escapeText(String(value))}`)
+      .join('<br>');
 
-  private buildCheckInReminderHtml(data: CheckInReminderData): string {
-    return this.wrap(`
-      <h2>${this.getSubject('checkInReminder', data.language)}</h2>
-      <p>Olá ${data.guestName},</p>
-      <p><strong>Reserva:</strong> ${data.bookingId}</p>
-      <p><strong>Check-in:</strong> ${this.formatDate(data.checkInDate, data.language)} às ${data.checkInTime}</p>
-      <p><strong>Endereço:</strong> ${data.address}</p>
-      <p>${data.directions}</p>
-    `);
-  }
+    const html = renderEmailTemplate('admin-alert', {
+      emailTitle: `[ADMIN] ${type}`,
+      alertTitle: type,
+      alertMessageHtml: messageLines || '—',
+      bookingSectionHtml,
+      timestampFormatted: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'America/Sao_Paulo' }).format(new Date())
+    });
 
-  private wrap(content: string): string {
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
-<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;">
-<div style="max-width:600px;margin:0 auto;padding:20px;">
-${content}
-<hr style="margin:30px 0;border:none;border-top:1px solid #eee;">
-<p style="font-size:12px;color:#666;">
-  Lapa Casa Hostel<br>Rua Silvio Romero 22, Santa Teresa<br>
-  Rio de Janeiro, RJ - Brasil<br>contato@lapacasahostel.com
-</p>
-</div></body></html>`;
-  }
-
-  private formatCurrency(amount: number, language: 'pt' | 'en' | 'es'): string {
-    const locales = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
-    return new Intl.NumberFormat(locales[language], { style: 'currency', currency: 'BRL' }).format(amount);
-  }
-
-  private formatDate(dateStr: string, language: 'pt' | 'en' | 'es'): string {
-    const locales = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
-    return new Intl.DateTimeFormat(locales[language], { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(dateStr));
-  }
-
-  private getSubject(type: string, language: 'pt' | 'en' | 'es'): string {
-    const subjects: Record<string, Record<string, string>> = {
-      bookingConfirmation: {
-        pt: 'Confirmação de Reserva - Lapa Casa Hostel',
-        en: 'Booking Confirmation - Lapa Casa Hostel',
-        es: 'Confirmación de Reserva - Lapa Casa Hostel'
-      },
-      paymentReminder: {
-        pt: 'Lembrete de Pagamento - Lapa Casa Hostel',
-        en: 'Payment Reminder - Lapa Casa Hostel',
-        es: 'Recordatorio de Pago - Lapa Casa Hostel'
-      },
-      cancellation: {
-        pt: 'Cancelamento de Reserva - Lapa Casa Hostel',
-        en: 'Booking Cancellation - Lapa Casa Hostel',
-        es: 'Cancelación de Reserva - Lapa Casa Hostel'
-      },
-      checkInReminder: {
-        pt: 'Check-in Amanhã - Lapa Casa Hostel',
-        en: 'Check-in Tomorrow - Lapa Casa Hostel',
-        es: 'Check-in Mañana - Lapa Casa Hostel'
-      },
-      welcome: {
-        pt: 'Bem-vindo ao Lapa Casa Hostel!',
-        en: 'Welcome to Lapa Casa Hostel!',
-        es: '¡Bienvenido a Lapa Casa Hostel!'
-      }
-    };
-    return subjects[type]?.[language] ?? '';
+    return dispatch(ADMIN_EMAIL, `[ADMIN] ${type}`, html);
   }
 }
 

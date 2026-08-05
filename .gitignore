@@ -11,6 +11,7 @@ build/
 out/
 *.db
 *.db-journal
+*.rdb
 *.log
 npm-debug.log*
 yarn-debug.log*

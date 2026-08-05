@@ -4,7 +4,8 @@ import { Request, Response, NextFunction } from 'express';
 import { BookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
-import { EmailService } from '../../services/email-service';
+import { notificationService } from '../../services/notification-service';
+import type { BookingWithGuest } from '../../services/email-service';
 import { InsufficientAvailabilityError } from '../../services/booking-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -12,7 +13,6 @@ import { ApiResponse } from '../../utils/responses';
 const bookingService = new BookingService();
 const availabilityService = new AvailabilityService();
 const pricingService = new PricingService();
-const emailService = new EmailService();
 
 interface CreateBookingRequest {
   checkIn: string;
@@ -147,18 +147,15 @@ export const createBookingHandler = async (
       totalPrice: pricingDetails.totalPrice
     });
 
-    // Send confirmation email (non-blocking)
-    emailService.sendBookingConfirmation({
-      to: bookingData.guest.email,
-      bookingId: booking.id,
-      guestName: fullName,
-      checkIn: bookingData.checkIn,
-      checkOut: bookingData.checkOut,
-      rooms: bookingData.rooms,
-      totalPrice: pricingDetails.totalPrice,
-      depositAmount: pricingDetails.depositAmount,
-      paymentUrl: `${process.env.FRONTEND_URL || ''}/payment/${booking.id}`,
-      language: bookingData.language || 'pt'
+    // Envio de confirmacion, no bloqueante -- se resuelve con los datos ya
+    // insertados (guest joined via bookingService.getBooking), no con el
+    // payload crudo del request.
+    bookingService.getBooking(booking.id).then(bookingWithGuest => {
+      if (!bookingWithGuest?.guest) {
+        logger.error('No se pudo cargar guest para email de confirmación', { bookingId: booking.id });
+        return;
+      }
+      return notificationService.notify('booking_confirmation', bookingWithGuest as BookingWithGuest);
     }).catch(error => {
       logger.error('Failed to send booking confirmation email', {
         bookingId: booking.id,

@@ -9,7 +9,8 @@ function renderNav(activePage) {
     { href: '/admin/index.html', label: 'Dashboard', page: 'dashboard' },
     { href: '/admin/bookings.html', label: 'Reservas', page: 'bookings' },
     { href: '/admin/rooms.html', label: 'Habitaciones', page: 'rooms' },
-    { href: '/admin/pricing.html', label: 'Precios', page: 'pricing' }
+    { href: '/admin/pricing.html', label: 'Precios', page: 'pricing' },
+    { href: '/admin/conflicts.html', label: 'Conflictos', page: 'conflicts' }
   ];
 
   const linksHtml = links.map(l =>

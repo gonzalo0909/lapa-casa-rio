@@ -34,7 +34,17 @@ app.use(helmet({
 }));
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' }));
+// ventana5: `verify` guarda el buffer crudo del body en req.rawBody antes
+// de parsearlo -- lo necesitan los webhooks de OTA (routes/webhooks/ota.routes.ts)
+// para verificar la firma HMAC contra los bytes exactos recibidos, ya que
+// el express.json() global corre antes de llegar a cualquier ruta y deja
+// el stream ya consumido para cualquier middleware posterior.
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: Request, _res: Response, buf: Buffer) => {
+    (req as Request & { rawBody?: Buffer }).rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/api/', generalRateLimiter);

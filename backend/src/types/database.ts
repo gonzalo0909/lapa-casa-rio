@@ -3,6 +3,7 @@
 export type BookingStatus =
   | 'pending_payment'
   | 'confirmed'
+  | 'pending_ota_confirmation'
   | 'cancelled'
   | 'no_show'
   | 'completed';
@@ -112,12 +113,16 @@ export interface Payment {
   updated_at: Date;
 }
 
+export type ChannelCode = 'direct' | 'booking' | 'hostelworld' | 'airbnb' | 'expedia';
+
 export interface Channel {
   id: string;
+  code: ChannelCode;
   name: string;
-  code: string;
+  commission_rate: number;
+  has_webhook: boolean;
+  ical_enabled: boolean;
   is_active: boolean;
-  commission_percent: number;
   created_at: Date;
   updated_at: Date;
 }

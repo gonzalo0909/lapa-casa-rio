@@ -99,6 +99,16 @@ tr:hover td { background: #fafafa; }
 .badge.cancelled { background: #fdeaea; color: var(--danger); }
 .badge.no_show { background: #f0e6fa; color: #7b3fa0; }
 .badge.completed { background: #e6eefc; color: #2c5cc5; }
+.badge.open { background: #fdeaea; color: var(--danger); }
+.badge.resolved_auto { background: #e6f6ea; color: var(--accent); }
+.badge.resolved_manual { background: #e6eefc; color: #2c5cc5; }
+
+.conflict-list { display: flex; flex-direction: column; gap: 12px; }
+.conflict-row { padding: 12px; border: 1px solid var(--border); border-radius: 6px; }
+.conflict-row .conflict-meta { font-size: 13px; color: var(--text-muted); margin: 6px 0 10px; }
+.conflict-row .conflict-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.conflict-row .conflict-actions button { padding: 6px 12px; border: 1px solid var(--border); background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.conflict-row .conflict-actions input[type=text] { flex: 1; min-width: 180px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
 
 .filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .filters input, .filters select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }

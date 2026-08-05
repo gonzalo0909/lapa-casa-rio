@@ -1,193 +1,141 @@
 // lapa-casa-hostel/backend/src/routes/ical/ical.routes.ts
+// ventana5
+//
+// Reescrito completo. La version anterior no estaba montada en
+// routes/index.ts (nunca respondia a ningun request real) e importaba
+// `authenticate` de middleware/auth.ts, que no existe (el real es
+// `authenticateToken`) -- bug ya señalado en el prompt de esta ventana,
+// junto con requireRole(...) recibiendo un string suelto en vez de
+// string[]. Tambien consultaba una tabla `ical_feeds` que nunca existio
+// en el schema real -- los feeds configurados viven en `system_config`
+// (ver services/ical-service.ts).
 
 import { Router } from 'express';
-import { pool } from '../../config/database';
 import { z } from 'zod';
-import { authenticate, requireRole } from '../../middleware/auth';
-import { OTASync } from '../../integrations/ical/ota-sync';
-import { ICalGenerator } from '../../integrations/ical/ical-generator';
+import { authenticateToken, requireRole } from '../../middleware/auth';
+import { rateLimiter } from '../../middleware/rate-limiter';
+import { icalService } from '../../services/ical-service';
+import { ApiResponse } from '../../utils/responses';
 
 const router = Router();
-const otaSync = new OTASync();
-const icalGenerator = new ICalGenerator();
+const exportLimiter = rateLimiter({ max: 100, windowMs: 60 * 60 * 1000 });
 
 const CreateFeedSchema = z.object({
-  name: z.string().min(1).max(100),
+  channelCode: z.enum(['direct', 'booking', 'hostelworld', 'airbnb', 'expedia']),
+  roomTypeId: z.string().uuid(),
   url: z.string().url(),
-  roomId: z.string().uuid(),
-  platform: z.enum(['airbnb', 'booking', 'expedia', 'vrbo', 'hostelworld', 'custom']),
 });
 
 const UpdateFeedSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
   url: z.string().url().optional(),
   isActive: z.boolean().optional(),
 });
 
-router.get('/feeds', authenticate, requireRole('admin'), async (req, res) => {
+function sendCalendar(res: import('express').Response, filename: string, calendar: string): void {
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  res.send(calendar);
+}
+
+/** GET /api/ical/export/:roomId — feed iCal publico de disponibilidad de UNA habitacion (room_types.id real). */
+router.get('/export/:roomId', exportLimiter, async (req, res) => {
   try {
-    const { rows: feeds } = await pool.query(
-      `SELECT f.id, f.name, f.url, f.room_id, rm.name AS room_name, f.platform,
-              f.is_active, f.last_sync_at, f.last_sync_status, f.last_sync_error,
-              COUNT(r.id) AS bookings_imported
-       FROM ical_feeds f
-       JOIN rooms rm ON rm.id = f.room_id
-       LEFT JOIN reservations r ON r.metadata->>'ical_feed_id' = f.id::text
-       GROUP BY f.id, rm.name
-       ORDER BY f.created_at DESC`
-    ).catch(() => ({ rows: [] }));
-
-    const stats = {
-      totalFeeds: feeds.length,
-      activeFeeds: feeds.filter((f: any) => f.is_active).length,
-      lastSyncTime: feeds.filter((f: any) => f.last_sync_at).sort((a: any, b: any) => new Date(b.last_sync_at).getTime() - new Date(a.last_sync_at).getTime())[0]?.last_sync_at,
-      bookingsImported: feeds.reduce((s: number, f: any) => s + Number(f.bookings_imported), 0),
-      errors: feeds.filter((f: any) => f.last_sync_status === 'error').length,
-    };
-
-    res.json({ feeds, stats });
+    const calendar = await icalService.generateICalFeed(req.params.roomId);
+    sendCalendar(res, `room-${req.params.roomId}.ics`, calendar);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch feeds', error: error instanceof Error ? error.message : 'Unknown error' });
+    res.status(404).json(ApiResponse.error('No se pudo generar el feed', error instanceof Error ? error.message : 'Error desconocido'));
   }
 });
 
-router.post('/feeds', authenticate, requireRole('admin'), async (req, res) => {
+/** GET /api/ical/export — feed iCal publico combinado con las 5 habitaciones reales. */
+router.get('/export', exportLimiter, async (_req, res) => {
+  try {
+    const calendar = await icalService.generateAllFeeds();
+    sendCalendar(res, 'lapa-casa-hostel-all-rooms.ics', calendar);
+  } catch (error) {
+    res.status(500).json(ApiResponse.error('No se pudo generar el feed combinado', error instanceof Error ? error.message : 'Error desconocido'));
+  }
+});
+
+/** GET /api/ical/feeds — feeds de importacion configurados (admin). */
+router.get('/feeds', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
+  try {
+    const feeds = await icalService.listFeeds();
+    res.status(200).json(ApiResponse.success({ feeds }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** POST /api/ical/import/config — configura una URL de feed a importar (Airbnb, Hostelworld, o respaldo Booking/Expedia). */
+router.post('/import/config', authenticateToken, requireRole(['admin']), async (req, res, next) => {
   try {
     const data = CreateFeedSchema.parse(req.body);
-
-    const { rows: roomRows } = await pool.query(`SELECT id FROM rooms WHERE id = $1`, [data.roomId]);
-    if (roomRows.length === 0) return res.status(404).json({ message: 'Room not found' });
-
-    const { rows: existing } = await pool.query(
-      `SELECT id FROM ical_feeds WHERE url = $1 AND room_id = $2`,
-      [data.url, data.roomId]
-    ).catch(() => ({ rows: [] }));
-    if (existing.length > 0) return res.status(400).json({ message: 'A feed with this URL already exists for this room' });
-
-    const { rows } = await pool.query(
-      `INSERT INTO ical_feeds (name, url, room_id, platform, is_active) VALUES ($1, $2, $3, $4, true) RETURNING *`,
-      [data.name, data.url, data.roomId, data.platform]
-    ).catch(() => ({ rows: [] }));
-
-    res.status(201).json({ message: 'Feed created successfully', feed: rows[0] });
+    const feed = await icalService.addFeed(data);
+    res.status(201).json(ApiResponse.success({ feed }, 'Feed configurado'));
   } catch (error) {
-    if (error instanceof z.ZodError) return res.status(400).json({ message: 'Validation error', errors: error.errors });
-    res.status(500).json({ message: 'Failed to create feed', error: error instanceof Error ? error.message : 'Unknown error' });
+    if (error instanceof z.ZodError) {
+      res.status(400).json(ApiResponse.error('Validation error', error.errors));
+      return;
+    }
+    next(error);
   }
 });
 
-router.patch('/feeds/:id', authenticate, requireRole('admin'), async (req, res) => {
+/** PATCH /api/ical/feeds/:id — editar URL / activar-desactivar un feed configurado. */
+router.patch('/feeds/:id', authenticateToken, requireRole(['admin']), async (req, res, next) => {
   try {
-    const { id } = req.params;
     const data = UpdateFeedSchema.parse(req.body);
-
-    const { rows: feedRows } = await pool.query(`SELECT id FROM ical_feeds WHERE id = $1`, [id]).catch(() => ({ rows: [] }));
-    if (feedRows.length === 0) return res.status(404).json({ message: 'Feed not found' });
-
-    const updates: string[] = [];
-    const params: any[] = [];
-    if (data.name !== undefined) { params.push(data.name); updates.push(`name = $${params.length}`); }
-    if (data.url !== undefined) { params.push(data.url); updates.push(`url = $${params.length}`); }
-    if (data.isActive !== undefined) { params.push(data.isActive); updates.push(`is_active = $${params.length}`); }
-
-    params.push(id);
-    const { rows } = await pool.query(
-      `UPDATE ical_feeds SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING *`,
-      params
-    ).catch(() => ({ rows: [] }));
-
-    res.json({ message: 'Feed updated successfully', feed: rows[0] });
-  } catch (error) {
-    if (error instanceof z.ZodError) return res.status(400).json({ message: 'Validation error', errors: error.errors });
-    res.status(500).json({ message: 'Failed to update feed', error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-});
-
-router.delete('/feeds/:id', authenticate, requireRole('admin'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rows: feedRows } = await pool.query(`SELECT id FROM ical_feeds WHERE id = $1`, [id]).catch(() => ({ rows: [] }));
-    if (feedRows.length === 0) return res.status(404).json({ message: 'Feed not found' });
-
-    const { rows: countRows } = await pool.query(
-      `SELECT COUNT(*) FROM reservations WHERE metadata->>'ical_feed_id' = $1`,
-      [id]
-    );
-    const bookingsCount = Number(countRows[0].count);
-
-    if (bookingsCount > 0) {
-      await pool.query(`UPDATE reservations SET status = 'cancelled' WHERE metadata->>'ical_feed_id' = $1`, [id]);
+    const feed = await icalService.updateFeed(req.params.id, data);
+    if (!feed) {
+      res.status(404).json(ApiResponse.error('Feed no encontrado'));
+      return;
     }
-
-    await pool.query(`DELETE FROM ical_feeds WHERE id = $1`, [id]).catch(() => {});
-    res.json({ message: 'Feed deleted successfully', bookingsDeleted: bookingsCount });
+    res.status(200).json(ApiResponse.success({ feed }, 'Feed actualizado'));
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete feed', error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-});
-
-router.post('/feeds/:id/sync', authenticate, requireRole('admin'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await pool.query(`SELECT id, is_active FROM ical_feeds WHERE id = $1`, [id]).catch(() => ({ rows: [] }));
-    if (rows.length === 0) return res.status(404).json({ message: 'Feed not found' });
-    if (!rows[0].is_active) return res.status(400).json({ message: 'Feed is not active' });
-
-    const result = await otaSync.syncFeed(id);
-    if (!result.success) return res.status(500).json({ message: 'Sync failed', errors: result.errors });
-
-    res.json({ message: 'Sync completed successfully', result: { bookingsImported: result.bookingsImported, bookingsUpdated: result.bookingsUpdated, blockedDatesCreated: result.blockedDatesCreated, conflictsResolved: result.conflictsResolved, syncedAt: result.syncedAt } });
-  } catch (error) {
-    res.status(500).json({ message: 'Sync failed', error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-});
-
-router.post('/sync-all', authenticate, requireRole('admin'), async (req, res) => {
-  try {
-    const result = await otaSync.syncAllActiveFeeds();
-    res.json({
-      message: 'Batch sync completed',
-      totalImported: result.totalBookingsImported,
-      totalUpdated: result.totalBookingsUpdated,
-      feedsSynced: result.successfulFeeds,
-      feedsFailed: result.failedFeeds,
-      results: result.results.map(r => ({ feedName: r.feedName, success: r.success, bookingsImported: r.bookingsImported, bookingsUpdated: r.bookingsUpdated, errors: r.errors })),
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Batch sync failed', error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-});
-
-router.get('/settings', authenticate, requireRole('admin'), async (req, res) => {
-  try {
-    const { rows } = await pool.query(`SELECT value FROM system_config WHERE key = 'ical_sync'`);
-    const config = rows[0]?.value || { autoSync: true, syncInterval: 60 };
-    res.json(config);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch settings', error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-});
-
-router.patch('/settings', authenticate, requireRole('admin'), async (req, res) => {
-  try {
-    const { autoSync, syncInterval } = req.body;
-    if (typeof autoSync !== 'boolean' && autoSync !== undefined) return res.status(400).json({ message: 'autoSync must be a boolean' });
-    if (syncInterval !== undefined) {
-      const interval = Number(syncInterval);
-      if (isNaN(interval) || interval < 15 || interval > 1440) return res.status(400).json({ message: 'syncInterval must be between 15 and 1440 minutes' });
+    if (error instanceof z.ZodError) {
+      res.status(400).json(ApiResponse.error('Validation error', error.errors));
+      return;
     }
+    next(error);
+  }
+});
 
-    const value = JSON.stringify({ autoSync: autoSync ?? true, syncInterval: syncInterval ?? 60 });
-    await pool.query(
-      `INSERT INTO system_config (key, value, description) VALUES ('ical_sync', $1::jsonb, 'iCal sync settings')
-       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-      [value]
-    );
-
-    res.json({ message: 'Settings updated successfully', settings: { autoSync: autoSync ?? true, syncInterval: syncInterval ?? 60 } });
+/** DELETE /api/ical/feeds/:id */
+router.delete('/feeds/:id', authenticateToken, requireRole(['admin']), async (req, res, next) => {
+  try {
+    const deleted = await icalService.deleteFeed(req.params.id);
+    if (!deleted) {
+      res.status(404).json(ApiResponse.error('Feed no encontrado'));
+      return;
+    }
+    res.status(200).json(ApiResponse.success({ deleted: true }, 'Feed eliminado'));
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update settings', error: error instanceof Error ? error.message : 'Unknown error' });
+    next(error);
+  }
+});
+
+/** POST /api/ical/sync — fuerza sincronizacion manual de todos los feeds configurados. */
+router.post('/sync', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
+  try {
+    const result = await icalService.syncICalFeeds();
+    res.status(200).json(ApiResponse.success(result, 'Sincronización completada'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** GET /api/ical/status — estado de la ultima sincronizacion por canal + feeds configurados. */
+router.get('/status', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
+  try {
+    const [feeds, syncStatus] = await Promise.all([icalService.listFeeds(), icalService.getSyncStatus()]);
+    res.status(200).json(ApiResponse.success({ feeds, syncStatus }));
+  } catch (error) {
+    next(error);
   }
 });
 
 export default router;
+export const icalRouter = router;

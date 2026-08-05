@@ -9,6 +9,7 @@
 import { queuesEnabled } from '../queues/connection';
 import { registerCleanupScheduler } from '../queues/cleanup.queue';
 import { registerFlexibleConversionScheduler } from '../queues/flexible-conversion.queue';
+import { registerOtaSyncScheduler } from '../queues/ota-sync.queue';
 import { startCleanupWorker } from './cleanup.worker';
 import { startFlexibleConversionWorker } from './flexible-conversion.worker';
 import { startRemainingPaymentWorker } from './remaining-payment.worker';
@@ -38,6 +39,7 @@ async function main(): Promise<void> {
   // seguro registrarlos en cada arranque del proceso de workers.
   await registerCleanupScheduler();
   await registerFlexibleConversionScheduler();
+  await registerOtaSyncScheduler();
 
   logger.info(`Workers arriba: ${workers.length} colas activas`);
 

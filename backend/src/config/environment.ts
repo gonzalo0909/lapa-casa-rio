@@ -27,6 +27,18 @@ const env = {
   CORS_CREDENTIALS: process.env.CORS_CREDENTIALS !== 'false',
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+
+  // ventana5: webhooks de reservas OTA (solo Booking.com y Expedia tienen
+  // -- Airbnb/Hostelworld son iCal-only, ver config/channels.ts). Sin el
+  // secret configurado, el webhook de ese canal rechaza todo con 401 en
+  // vez de aceptar sin verificar (nunca "modo test que acepta todo" para
+  // un endpoint que crea reservas reales).
+  BOOKING_WEBHOOK_SECRET: process.env.BOOKING_WEBHOOK_SECRET || '',
+  BOOKING_WEBHOOK_API_KEY: process.env.BOOKING_WEBHOOK_API_KEY || '',
+  BOOKING_WEBHOOK_IPS: process.env.BOOKING_WEBHOOK_IPS || '',
+  EXPEDIA_WEBHOOK_SECRET: process.env.EXPEDIA_WEBHOOK_SECRET || '',
+  EXPEDIA_WEBHOOK_API_KEY: process.env.EXPEDIA_WEBHOOK_API_KEY || '',
+  EXPEDIA_WEBHOOK_IPS: process.env.EXPEDIA_WEBHOOK_IPS || '',
 };
 
 if (!env.DATABASE_URL) {

@@ -5,7 +5,9 @@ import app from './app';
 import { logger } from '@/utils/logger';
 import { connectDatabase, disconnect } from '@/config/database';
 import { environment } from '@/config/environment';
-import './crons';
+// ventana5: no queda ningun proceso programado en node-cron -- todo el
+// scheduling (cleanup, flexible-conversion, ota-sync) vive en BullMQ,
+// consumido por el proceso separado `npm run worker` (workers/index.ts).
 
 const PORT = environment.PORT || 5000;
 const NODE_ENV = environment.NODE_ENV || 'development';

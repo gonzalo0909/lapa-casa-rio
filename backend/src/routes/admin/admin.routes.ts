@@ -23,9 +23,17 @@ import { auditLogService } from '../../services/audit-log-service';
 import { fullExport } from '../../integrations/google-sheets/booking-export';
 import { query } from '../../config/database';
 import { ApiResponse } from '../../utils/responses';
+import { adminConflictsRouter } from './conflicts.routes';
 import type { BookingWithGuest } from '../../services/email-service';
 
 const router = Router();
+
+/**
+ * /admin/conflicts — detalle + resolucion manual agregados en Ventana 5
+ * (conflict-service.ts). Reemplaza el listado inline que vivia aca desde
+ * Ventana 4 (ver mas abajo, ahora removido para no duplicar la ruta).
+ */
+router.use('/conflicts', adminConflictsRouter);
 
 /**
  * GET /admin/dashboard — KPIs del mes actual
@@ -355,31 +363,6 @@ router.get('/audit-logs', async (req, res, next) => {
       limit: limit ? parseInt(limit, 10) : undefined
     });
     res.status(200).json(ApiResponse.success(result));
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * GET /admin/conflicts — conflictos de overbooking entre canales (detalle completo: Ventana 5)
- */
-router.get('/conflicts', async (req, res, next) => {
-  try {
-    const { status } = req.query as { status?: string };
-    const params: any[] = [];
-    let where = '';
-    if (status) { params.push(status); where = `WHERE bc.status = $1::conflict_status`; }
-
-    const { rows } = await query(
-      `SELECT bc.id, bc.reservation_id_a, bc.reservation_id_b, bc.bed_id,
-              bc.channel_a, bc.channel_b, bc.status, bc.detected_at, bc.resolved_at, bc.resolution_notes
-       FROM booking_conflicts bc
-       ${where}
-       ORDER BY bc.detected_at DESC
-       LIMIT 100`,
-      params
-    );
-    res.status(200).json(ApiResponse.success({ conflicts: rows }));
   } catch (error) {
     next(error);
   }

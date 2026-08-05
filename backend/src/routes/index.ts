@@ -17,6 +17,8 @@ import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
 import { adminRouter } from './admin/admin.routes';
 import { adminAuthRouter } from './admin/admin-auth.routes';
+import icalRouter from './ical/ical.routes';
+import otaWebhooksRouter from './webhooks/ota.routes';
 import { authenticateToken, requireRole } from '../middleware/auth';
 import { rateLimiter } from '../middleware/rate-limiter';
 import { logger } from '../utils/logger';
@@ -64,6 +66,16 @@ router.get('/info', (req: Request, res: Response) => {
  */
 router.use('/availability', rateLimiter({ max: 100, windowMs: 60000 }), availabilityRouter);
 router.use('/rooms', rateLimiter({ max: 100, windowMs: 60000 }), roomsRouter);
+
+/**
+ * iCal (ventana5): export publico de disponibilidad + config/sync de
+ * importacion (estas ultimas requieren admin, aplicado dentro del propio
+ * router). Webhooks de reservas OTA: solo Booking.com y Expedia tienen
+ * (Airbnb/Hostelworld son iCal-only) -- autenticados por firma HMAC +
+ * API key propios, no por JWT de admin (ver routes/webhooks/ota.routes.ts).
+ */
+router.use('/ical', icalRouter);
+router.use('/webhooks', otaWebhooksRouter);
 
 /**
  * Semi-Protected Routes (Rate Limited)

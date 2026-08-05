@@ -422,6 +422,8 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
     });
   }
 
+  await refreshAvailabilityCache();
+
   return {
     totalFeeds: feeds.length,
     successfulFeeds: results.filter((r) => r.success).length,
@@ -430,6 +432,37 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
     totalCancelled: results.reduce((s, r) => s + r.cancelled, 0),
     results,
   };
+}
+
+/**
+ * Recalcula `availability_cache` (tabla real, 0002_tables.sql) para
+ * exportacion rapida -- es dato DERIVADO, nunca fuente de verdad (la
+ * fuente real sigue siendo reservation_beds + el constraint EXCLUDE, ver
+ * comentario en la migracion). Se apoya en `check_availability()`
+ * (unica fuente de la regla de disponibilidad, Requisito Critico #6) en
+ * vez de reimplementar el calculo de camas libres en JS.
+ *
+ * Antes de esta ventana ninguna parte del repo la poblaba (confirmado en
+ * services/stats-service.ts, que por eso calcula ocupacion en vivo en
+ * vez de leer de aca) -- Ventana 5 la deja poblada por primera vez, para
+ * que una futura exportacion/reporte rapido pueda leerla en vez de
+ * recalcular sobre reservation_beds cada vez.
+ */
+export async function refreshAvailabilityCache(daysAhead = 180): Promise<void> {
+  await query(`DELETE FROM availability_cache WHERE date < CURRENT_DATE`);
+
+  await query(
+    `INSERT INTO availability_cache (room_type_id, date, available_beds, effective_gender, computed_at)
+     SELECT a.room_type_id, d.day::date, COUNT(*) FILTER (WHERE a.is_available)::smallint, a.effective_gender, now()
+     FROM generate_series(CURRENT_DATE, CURRENT_DATE + ($1::int - 1), interval '1 day') AS d(day)
+     CROSS JOIN LATERAL check_availability(d.day::date, d.day::date + 1, 'mixed') AS a
+     GROUP BY a.room_type_id, d.day, a.effective_gender
+     ON CONFLICT (room_type_id, date) DO UPDATE SET
+       available_beds = EXCLUDED.available_beds,
+       effective_gender = EXCLUDED.effective_gender,
+       computed_at = now()`,
+    [daysAhead]
+  );
 }
 
 /** Mapea un nombre libre de habitacion (tal como aparece en una OTA) al room_type real, por `code`. */
@@ -452,5 +485,6 @@ export const icalService = {
   parseICalEvents,
   importICalFeed,
   syncICalFeeds,
+  refreshAvailabilityCache,
   mapOTARoomToLocalRoom,
 };

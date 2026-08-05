@@ -16,7 +16,8 @@ import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
 import { adminRouter } from './admin/admin.routes';
-import { authenticateToken } from '../middleware/auth';
+import { adminAuthRouter } from './admin/admin-auth.routes';
+import { authenticateToken, requireRole } from '../middleware/auth';
 import { rateLimiter } from '../middleware/rate-limiter';
 import { logger } from '../utils/logger';
 
@@ -75,9 +76,16 @@ router.use('/bookings', rateLimiter({ max: 50, windowMs: 60000 }), bookingsRoute
 router.use('/payments', rateLimiter({ max: 30, windowMs: 60000 }), paymentsRouter);
 
 /**
- * Admin Routes (Authentication Required)
+ * Admin Login (ventana4 bloque 2) — público, montado ANTES del
+ * authenticateToken de abajo (si no, nadie podría loguearse para
+ * conseguir el primer token). Rate limit estricto contra fuerza bruta.
  */
-router.use('/admin', authenticateToken, rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
+router.use('/admin/login', rateLimiter({ max: 10, windowMs: 60000 }), adminAuthRouter);
+
+/**
+ * Admin Routes (Authentication + rol admin requeridos)
+ */
+router.use('/admin', authenticateToken, requireRole(['admin']), rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
 
 /**
  * Catch-all 404 Handler

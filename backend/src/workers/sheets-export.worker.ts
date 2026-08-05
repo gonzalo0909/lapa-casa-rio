@@ -1,14 +1,14 @@
 // lapa-casa-hostel/backend/src/workers/sheets-export.worker.ts
-// ventana4 (bloque 2 pendiente)
+// ventana4 (bloque 2)
 //
-// Se levanta ya para que la cola no acumule jobs sin consumidor, pero el
-// export real a Google Sheets se implementa en el Bloque 2 (requiere
-// GOOGLE_SHEETS_ID + credenciales de service account, todavia no
-// configuradas). Por ahora deja constancia clara en el log en vez de
-// fallar silenciosamente o fingir que exportó algo.
+// Procesa el espejo DB -> Sheets. Si Google Sheets no está configurado
+// (ver sheets-client.ts), upsertBookingInSheet/deleteBookingFromSheet
+// son no-ops que solo loguean -- el job se marca completado igual, no
+// tiene sentido reintentarlo hasta que alguien cargue las credenciales.
 
 import { Worker, Job } from 'bullmq';
 import { getQueueConnection } from '../queues/connection';
+import { upsertBookingInSheet, deleteBookingFromSheet } from '../integrations/google-sheets/booking-export';
 import { logger } from '../utils/logger';
 import type { SheetsExportJobData } from '../queues/sheets-export.queue';
 
@@ -16,10 +16,12 @@ export function startSheetsExportWorker(): Worker<SheetsExportJobData> {
   const worker = new Worker<SheetsExportJobData>(
     'sheets-export',
     async (job: Job<SheetsExportJobData>) => {
-      logger.warn('sheets-export: integración no implementada todavía (Bloque 2) — job descartado', {
-        reservationId: job.data.reservationId,
-        action: job.data.action
-      });
+      const { reservationId, action } = job.data;
+      if (action === 'delete') {
+        await deleteBookingFromSheet(reservationId);
+      } else {
+        await upsertBookingInSheet(reservationId);
+      }
     },
     { connection: getQueueConnection() }
   );

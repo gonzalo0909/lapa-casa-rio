@@ -1,0 +1,56 @@
+<!-- lapa-casa-hostel/backend/src/admin/index.html — ventana4 (bloque 2) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lapa Casa Hostel — Admin</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<section id="login-screen">
+  <div class="card">
+    <h2>Iniciar sesión</h2>
+    <div id="login-msg"></div>
+    <form class="stack" id="login-form">
+      <label>Contraseña de administrador
+        <input type="password" id="password" required autofocus>
+      </label>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+</section>
+
+<div id="nav-root" class="hidden"></div>
+<main id="dashboard-screen" class="hidden">
+  <div class="card">
+    <h2>Resumen del mes</h2>
+    <div id="dashboard-msg"></div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ocupación por habitación</h2>
+    <div id="occupancy-chart" class="chart-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ingresos por canal</h2>
+    <div id="revenue-chart" class="chart-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Próximos check-ins</h2>
+    <table id="upcoming-table">
+      <thead><tr><th>Reserva</th><th>Huésped</th><th>Check-in</th><th>Camas</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/dashboard.js"></script>
+</body>
+</html>

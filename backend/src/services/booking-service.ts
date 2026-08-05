@@ -15,8 +15,17 @@ import { GuestRepository } from '../database/repositories/guest-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
 import { acquireLock } from '../database/lock-middleware';
 import { pricingService } from './pricing-service';
+import { enqueueSheetsExport } from '../queues/sheets-export.queue';
 import { logger } from '../utils/logger';
 import type { Reservation, BookingStatus } from '../types/database';
+
+// ventana4 (bloque 2): fire-and-forget -- un fallo al encolar el espejo a
+// Sheets nunca debe tumbar la operación real sobre la reserva.
+const exportToSheetsAsync = (reservationId: string, action: 'upsert' | 'delete' = 'upsert'): void => {
+  enqueueSheetsExport(reservationId, action).catch(err =>
+    logger.warn('No se pudo encolar el export a Sheets', { reservationId, error: err.message })
+  );
+};
 
 const guestRepo = new GuestRepository();
 const bookingRepo = new BookingRepository();
@@ -86,7 +95,7 @@ const pickAvailableBedsInRoom = async (
 
 export class BookingService {
   async createBooking(data: CreateBookingInput): Promise<Reservation & { bedIds: string[] }> {
-    return withTransaction(async (client) => {
+    const result = await withTransaction(async (client) => {
       const guest = await guestRepo.upsert({
         full_name: data.guest.full_name,
         email: data.guest.email,
@@ -190,6 +199,12 @@ export class BookingService {
       logger.info('Booking created', { reservationId: reservation.id, reservationNumber, beds: candidateBedIds.length });
       return { ...reservation, bedIds: candidateBedIds };
     });
+
+    // Fuera de la transaccion a proposito: si esto fallara, la reserva ya
+    // esta confirmada en la base -- un email/export perdido no debe
+    // revertir una reserva real.
+    exportToSheetsAsync(result.id);
+    return result;
   }
 
   async getBooking(id: string): Promise<Reservation | null> {
@@ -198,11 +213,15 @@ export class BookingService {
 
   /** No reimplementa liberacion de camas -- trg_release_beds_on_status_change lo hace solo al cambiar status. */
   async cancelBooking(id: string, reason?: string): Promise<Reservation> {
-    return bookingRepo.cancelReservation(id, reason);
+    const result = await bookingRepo.cancelReservation(id, reason);
+    exportToSheetsAsync(id);
+    return result;
   }
 
   async confirmBooking(id: string): Promise<Reservation> {
-    return bookingRepo.confirmReservation(id);
+    const result = await bookingRepo.confirmReservation(id);
+    exportToSheetsAsync(id);
+    return result;
   }
 
   async listBookings(filters: {
@@ -263,7 +282,9 @@ export class BookingService {
 
   // ventana3
   async updateBooking(id: string, data: Parameters<typeof bookingRepo.update>[1]): Promise<Reservation> {
-    return bookingRepo.update(id, data);
+    const result = await bookingRepo.update(id, data);
+    exportToSheetsAsync(id);
+    return result;
   }
 
   // ventana3

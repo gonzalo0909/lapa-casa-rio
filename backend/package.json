@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "worker:dev": "tsx watch src/workers/index.ts",
     "build": "tsc || true; tsc-alias && npm run copy-assets",
-    "copy-assets": "mkdir -p dist/templates/emails && cp -r src/templates/emails/. dist/templates/emails/",
+    "copy-assets": "mkdir -p dist/templates/emails dist/admin && cp -r src/templates/emails/. dist/templates/emails/ && cp -r src/admin/. dist/admin/",
     "start": "node dist/server.js",
     "worker": "node dist/workers/index.js",
     "test": "jest",

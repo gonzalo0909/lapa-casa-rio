@@ -1,4 +1,5 @@
 // lapa-casa-hostel/backend/src/services/audit-log-service.ts
+// ventana4 (bloque 2): agrega listAll() -- panel admin, filtros por fecha/entidad/operación en vez de por entidad puntual
 
 import { PoolClient } from 'pg';
 import { pool } from '../config/database';
@@ -50,4 +51,41 @@ export class AuditLogService {
     );
     return rows;
   }
+
+  async listAll(filters: {
+    entityType?: string;
+    operation?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters.limit && filters.limit > 0 ? Math.min(filters.limit, 200) : 50;
+
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (filters.entityType) { params.push(filters.entityType); conditions.push(`entity_type = $${params.length}`); }
+    if (filters.operation) { params.push(filters.operation); conditions.push(`operation = $${params.length}`); }
+    if (filters.dateFrom) { params.push(filters.dateFrom); conditions.push(`created_at >= $${params.length}::date`); }
+    if (filters.dateTo) { params.push(filters.dateTo); conditions.push(`created_at < ($${params.length}::date + interval '1 day')`); }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(
+        `SELECT id, entity_type, entity_id, operation, guest_id, reservation_id, old_data, new_data, user_id, created_at
+         FROM audit_logs ${where}
+         ORDER BY created_at DESC
+         LIMIT ${limit} OFFSET ${(page - 1) * limit}`,
+        params
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM audit_logs ${where}`, params)
+    ]);
+
+    return { data: dataResult.rows, total: countResult.rows[0].total, page, limit };
+  }
 }
+
+export const auditLogService = new AuditLogService();

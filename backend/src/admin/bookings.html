@@ -1,0 +1,75 @@
+<!-- lapa-casa-hostel/backend/src/admin/bookings.html — ventana4 (bloque 2) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservas — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Reservas</h2>
+    <div id="bookings-msg"></div>
+
+    <div class="filters">
+      <select id="filter-status">
+        <option value="">Todos los estados</option>
+        <option value="pending_payment">Pendiente</option>
+        <option value="confirmed">Confirmada</option>
+        <option value="cancelled">Cancelada</option>
+        <option value="no_show">No-show</option>
+        <option value="completed">Completada</option>
+      </select>
+      <input type="date" id="filter-from" title="Check-in desde">
+      <input type="date" id="filter-to" title="Check-in hasta">
+      <button id="filter-apply">Filtrar</button>
+    </div>
+
+    <table id="bookings-table">
+      <thead>
+        <tr>
+          <th data-sort="reservation_number">Reserva</th>
+          <th data-sort="guest_name">Huésped</th>
+          <th data-sort="check_in_date">Check-in</th>
+          <th data-sort="check_out_date">Check-out</th>
+          <th data-sort="beds_count">Camas</th>
+          <th data-sort="final_price">Total</th>
+          <th data-sort="status">Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="pagination">
+      <button id="page-prev">‹ Anterior</button>
+      <span id="page-info"></span>
+      <button id="page-next">Siguiente ›</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="edit-panel">
+    <h2>Editar reserva</h2>
+    <div id="edit-msg"></div>
+    <form class="stack" id="edit-form">
+      <input type="hidden" id="edit-id">
+      <label>Notas / pedidos especiales
+        <input type="text" id="edit-notes">
+      </label>
+      <label>Precio final (ajuste manual)
+        <input type="number" step="0.01" id="edit-price">
+      </label>
+      <button type="submit">Guardar</button>
+    </form>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/bookings.js"></script>
+</body>
+</html>

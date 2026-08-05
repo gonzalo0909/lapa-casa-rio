@@ -1,6 +1,7 @@
 // lapa-casa-hostel/backend/src/app.ts
 
 import express, { Application, Request, Response, NextFunction } from 'express';
+import path from 'path';
 import helmet from 'helmet';
 import cors from 'cors';
 import { logger } from '@/utils/logger';
@@ -37,6 +38,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/api/', generalRateLimiter);
+
+// ventana4 (bloque 2): panel admin estatico (HTML/CSS/JS vanilla). Las
+// paginas piden datos a /api/v1/admin/* con el JWT guardado en
+// localStorage -- servir estos archivos no expone nada, la proteccion
+// real vive en las rutas de la API (authenticateToken + requireRole).
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 app.get('/health', async (req: Request, res: Response) => {
   try {

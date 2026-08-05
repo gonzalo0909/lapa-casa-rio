@@ -60,6 +60,20 @@ services:
         value: Lapa Casa Hostel
       - key: ADMIN_EMAIL
         sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      # ventana4 (bloque 2): Google Sheets, exportacion de solo lectura hacia
+      # afuera. Sin estas 3 variables la exportacion queda deshabilitada sin
+      # romper el resto del backend (ver backend/.env.example para el paso
+      # a paso de como generarlas).
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_SHEETS_SPREADSHEET_ID
+        sync: false
+      - key: GOOGLE_SHEETS_SHEET_NAME
+        value: Bookings
     autoDeploy: true
 
   # Frontend Service

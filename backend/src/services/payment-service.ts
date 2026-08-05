@@ -1,6 +1,7 @@
 // lapa-casa-hostel/backend/src/services/payment-service.ts
 // ventana3
 // ventana4: agrega handlePaymentSucceeded() -- dispara email de pago recibido y agenda saldo/bienvenida, desde el mismo punto que usan tanto el webhook real de Stripe/MercadoPago como la confirmación manual (ver más abajo)
+// ventana4 (bloque 2): handlePaymentSucceeded también re-exporta la reserva a Sheets (deposit_paid/remaining_paid cambian con cada pago)
 
 import Stripe from 'stripe';
 import { PaymentRepository } from '../database/repositories/payment-repository';
@@ -9,6 +10,7 @@ import { StripeHandler } from '../lib/payments/stripe-handler';
 import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
 import { notificationService } from './notification-service';
 import { scheduleRemainingPayment } from '../queues/remaining-payment.queue';
+import { enqueueSheetsExport } from '../queues/sheets-export.queue';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
 import type { Payment, PaymentProvider } from '../types/database';
@@ -183,6 +185,9 @@ export class PaymentService {
       const bookingWithGuest = booking as BookingWithGuest;
 
       await notificationService.notify('payment_received', bookingWithGuest, { amount: Number(payment.amount) });
+      enqueueSheetsExport(bookingWithGuest.id).catch(err =>
+        logger.warn('No se pudo encolar el export a Sheets tras pago confirmado', { reservationId: bookingWithGuest.id, error: err.message })
+      );
 
       if (payment.payment_type === 'deposit' && Number(bookingWithGuest.remaining_amount) > 0) {
         await scheduleRemainingPayment(bookingWithGuest.id, new Date(bookingWithGuest.check_in_date));

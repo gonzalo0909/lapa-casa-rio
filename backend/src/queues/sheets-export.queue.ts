@@ -19,3 +19,8 @@ export const sheetsExportQueue = createSafeQueue<SheetsExportJobData>('sheets-ex
   attempts: 3,
   backoff: { type: 'exponential', delay: 30_000 }
 });
+
+/** ventana4 (bloque 2): encola el espejo DB -> Sheets de una reserva. Llamado desde booking-service.ts y payment-service.ts tras cada cambio persistido. */
+export async function enqueueSheetsExport(reservationId: string, action: 'upsert' | 'delete' = 'upsert'): Promise<void> {
+  await sheetsExportQueue.add('export-booking', { reservationId, action });
+}

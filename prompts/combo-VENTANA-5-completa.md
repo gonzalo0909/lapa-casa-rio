@@ -269,7 +269,7 @@ Las funciones SQL son la **única implementación** de las reglas de negocio. Lo
 | Cache | Cache en memoria simple (`src/cache/redis-client.ts`) — no es Redis real, es un stub in-process. Evaluar si migrar a Redis real antes de escalar a múltiples instancias |
 | Pagos | Stripe SDK + MercadoPago SDK |
 | Email transaccional | Resend (fallback SMTP si es necesario) |
-| Deploy | Railway o Render (plan gratuito) — **`render.yaml` actualmente apunta a una base de datos propia de Render, no a Supabase; hay que corregirlo antes de desplegar en serio** |
+| Deploy | Railway o Render (plan gratuito) — `render.yaml` ya corregido para apuntar al Supabase real (`DATABASE_URL` vía `sync: false`, `healthCheckPath` y `CORS_ORIGINS` arreglados). **Falta la ejecución real del deploy — cargar los secretos en el dashboard de Render y desplegar por primera vez —, eso es trabajo de Ventana 6, no adelantado** |
 | Colas | BullMQ (reintentos y procesos programados) — sin implementar todavía |
 | Logs | Logger propio liviano en `utils/logger.ts` (no usa Winston, se removió) |
 | Reporting | Google Sheets API (solo lectura) — sin auditar hoy, dependencias instaladas pero código no verificado |
@@ -356,10 +356,16 @@ Se encontraron y corrigieron 13 bugs reales en el código ya existente en GitHub
 
 ### Lo que sigue sin auditar/verificar (no tocado hoy, no asumir que funciona)
 - `routes/admin/*`, `routes/payments/*` — no probados hoy
-- `services/payment-service.ts`, `services/ical-sync-service.ts`, integraciones de Google Sheets y WhatsApp — código presente, sin verificar contra el schema real
-- `database/repositories/booking-repository.ts` → `markRemainingPaid()` — sigue con columnas inexistentes
-- BullMQ / colas — no implementado, los procedimientos `sp_*` existen en SQL pero nada los invoca todavía
-- `render.yaml` — apunta a una base de datos propia de Render, no a Supabase; corregir antes de desplegar
+- `services/ical-sync-service.ts`, integraciones de Google Sheets y WhatsApp — código presente, sin verificar contra el schema real
+- BullMQ / colas — no implementado (de los procedimientos `sp_*`, los 3 que existen de verdad ya se invocan vía `node-cron` en `crons/index.ts`, no BullMQ — ver "Ya resuelto" abajo y Ventana 4)
+
+### Ya resuelto (no volver a hacer)
+- `payment-service.markRemainingPaid()` — implementado en `services/payment-service.ts` (no en `booking-repository.ts` como decía una versión anterior de este documento), probado con 21/21 tests en verde en `database/tests/payment.test.ts`
+- `services/payment-service.ts` — verificado contra un Postgres local con el schema real (`createPaymentIntent`, `confirmPayment`, `processRefund`); las llamadas reales a la API de Stripe/MercadoPago siguen sin probar por falta de salida de red en el sandbox de pruebas
+- `routes/bookings/bookings.routes.ts` (`GET /bookings`, `GET /bookings/:id/confirmation`) — ya no devuelven datos hardcodeados, leen de la base real con paginación
+- `crons/index.ts` — creado; agenda `sp_cleanup_expired_pending`, `sp_release_no_show`, `sp_process_flexible_conversion` vía `node-cron`, e importa el cron de sync OTA que antes no se importaba desde ningún lado (nunca corría)
+- `backend/.env.example` — completo con todas las variables que el código realmente lee
+- `render.yaml` — corregido: `DATABASE_URL` ya no apunta a una base propia de Render (ahora `sync: false`, se carga a mano), `healthCheckPath` corregido a `/health`, `CORS_ORIGIN` → `CORS_ORIGINS`. **Esto fue solo el archivo de configuración — la ejecución real del deploy (cargar los secretos en el dashboard de Render, hacer el primer deploy) sigue siendo trabajo de Ventana 6, no se adelantó.**
 
 ---
 
@@ -451,6 +457,13 @@ Sin probar ni auditar hoy: pagos (Ventana 3), BullMQ/emails/Sheets/panel admin (
 El ENUM `booking_status` ya incluye `pending_ota_confirmation` en el schema real desde Ventana 1, y `booking_conflicts` existe como tabla real — esta ventana no requiere ninguna migración de schema nueva, solo usa lo que ya está.
 
 El repo ya tiene un servicio de sync iCal previo a esta reescritura (`backend/src/services/ical-sync-service.ts`, `backend/src/integrations/ical/ota-sync.ts`). Como el resto del código TypeScript que se encontró roto en otras ventanas, fue escrito contra el schema Prisma anterior (IDs `cuid`, nombres de columna viejos) — sin auditar hoy. Asumir que tiene el mismo tipo de bugs que se encontraron y corrigieron en `availability-service.ts`/`pricing-service.ts` (nombres de columna viejos, reimplementación de lógica que debería venir de SQL) hasta confirmar lo contrario. Revisar qué tan reutilizable es contra el schema real antes de asumir que hay que arrancar de cero o que sirve tal cual.
+
+**Bugs concretos ya encontrados (vía `tsc --noEmit`), para no tener que redescubrirlos:**
+* `src/routes/ical/ical.routes.ts:6` — importa `authenticate` desde `middleware/auth.ts`, que no exporta ningún miembro con ese nombre (el real, usado en el resto del backend, es `authenticateToken`).
+* `src/routes/ical/ical.routes.ts` (7 ocurrencias: líneas 27, 54, 79, 106, 129, 145, 161, 171) — pasa un `string` donde se espera `string[]`, probablemente en la llamada a `requireRole(...)` con un solo rol en vez de un array.
+* `src/integrations/ical/ical-generator.ts` (líneas 133, 134, 187, 188) — asigna strings literales (`"CANCELLED"`, `"BUSY"`, `"CONFIRMED"`, `"TENTATIVE"`) donde la librería `ical-generator` espera un enum propio (`ICalEventStatus`/`ICalEventBusyStatus`), no un string suelto.
+
+Ninguno de estos bloquea Ventana 1-3 (son archivos aislados de la capa iCal), pero si esta ventana reutiliza algo de `ical-generator.ts`, arrancar corrigiendo estos 4 puntos antes de construir encima.
 
 ESTA VENTANA (VENTANA 5): ICAL Y SINCRONIZACIÓN CON OTAS
 OBJETIVO

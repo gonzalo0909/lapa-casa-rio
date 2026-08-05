@@ -269,7 +269,7 @@ Las funciones SQL son la **única implementación** de las reglas de negocio. Lo
 | Cache | Cache en memoria simple (`src/cache/redis-client.ts`) — no es Redis real, es un stub in-process. Evaluar si migrar a Redis real antes de escalar a múltiples instancias |
 | Pagos | Stripe SDK + MercadoPago SDK |
 | Email transaccional | Resend (fallback SMTP si es necesario) |
-| Deploy | Railway o Render (plan gratuito) — **`render.yaml` actualmente apunta a una base de datos propia de Render, no a Supabase; hay que corregirlo antes de desplegar en serio** |
+| Deploy | Railway o Render (plan gratuito) — `render.yaml` ya corregido para apuntar al Supabase real (`DATABASE_URL` vía `sync: false`, `healthCheckPath` y `CORS_ORIGINS` arreglados). **Falta la ejecución real del deploy — cargar los secretos en el dashboard de Render y desplegar por primera vez —, eso es trabajo de Ventana 6, no adelantado** |
 | Colas | BullMQ (reintentos y procesos programados) — sin implementar todavía |
 | Logs | Logger propio liviano en `utils/logger.ts` (no usa Winston, se removió) |
 | Reporting | Google Sheets API (solo lectura) — sin auditar hoy, dependencias instaladas pero código no verificado |
@@ -356,10 +356,16 @@ Se encontraron y corrigieron 13 bugs reales en el código ya existente en GitHub
 
 ### Lo que sigue sin auditar/verificar (no tocado hoy, no asumir que funciona)
 - `routes/admin/*`, `routes/payments/*` — no probados hoy
-- `services/payment-service.ts`, `services/ical-sync-service.ts`, integraciones de Google Sheets y WhatsApp — código presente, sin verificar contra el schema real
-- `database/repositories/booking-repository.ts` → `markRemainingPaid()` — sigue con columnas inexistentes
-- BullMQ / colas — no implementado, los procedimientos `sp_*` existen en SQL pero nada los invoca todavía
-- `render.yaml` — apunta a una base de datos propia de Render, no a Supabase; corregir antes de desplegar
+- `services/ical-sync-service.ts`, integraciones de Google Sheets y WhatsApp — código presente, sin verificar contra el schema real
+- BullMQ / colas — no implementado (de los procedimientos `sp_*`, los 3 que existen de verdad ya se invocan vía `node-cron` en `crons/index.ts`, no BullMQ — ver "Ya resuelto" abajo y Ventana 4)
+
+### Ya resuelto (no volver a hacer)
+- `payment-service.markRemainingPaid()` — implementado en `services/payment-service.ts` (no en `booking-repository.ts` como decía una versión anterior de este documento), probado con 21/21 tests en verde en `database/tests/payment.test.ts`
+- `services/payment-service.ts` — verificado contra un Postgres local con el schema real (`createPaymentIntent`, `confirmPayment`, `processRefund`); las llamadas reales a la API de Stripe/MercadoPago siguen sin probar por falta de salida de red en el sandbox de pruebas
+- `routes/bookings/bookings.routes.ts` (`GET /bookings`, `GET /bookings/:id/confirmation`) — ya no devuelven datos hardcodeados, leen de la base real con paginación
+- `crons/index.ts` — creado; agenda `sp_cleanup_expired_pending`, `sp_release_no_show`, `sp_process_flexible_conversion` vía `node-cron`, e importa el cron de sync OTA que antes no se importaba desde ningún lado (nunca corría)
+- `backend/.env.example` — completo con todas las variables que el código realmente lee
+- `render.yaml` — corregido: `DATABASE_URL` ya no apunta a una base propia de Render (ahora `sync: false`, se carga a mano), `healthCheckPath` corregido a `/health`, `CORS_ORIGIN` → `CORS_ORIGINS`. **Esto fue solo el archivo de configuración — la ejecución real del deploy (cargar los secretos en el dashboard de Render, hacer el primer deploy) sigue siendo trabajo de Ventana 6, no se adelantó.**
 
 ---
 
@@ -451,6 +457,11 @@ Confirmado y probado hoy: Ventana 1 (base de datos, en el Supabase real `rpoward
 Los procedimientos SQL que asume este documento sí existen de verdad, definidos en `0007_procedures.sql` sobre el Supabase real: `sp_cleanup_expired_pending`, `sp_release_no_show`, `sp_process_flexible_conversion`, `sp_sync_ota_availability`, `sp_daily_audit_report`. `rate_plans` y `availability_cache` también existen como tablas propias. No hace falta corregir la arquitectura de este documento en ese sentido.
 
 BullMQ no está implementado en ningún lado del repo — todo el código de colas de este documento es trabajo nuevo, no algo para "activar". Lo mismo para emails (Resend), Google Sheets y el panel admin: existen como especificación, no como código verificado.
+
+**Bugs concretos ya encontrados (vía `tsc --noEmit`), para no tener que redescubrirlos:**
+* `src/integrations/email/template-engine.ts:70` — usa `reply_to` como opción del SDK de Resend; la propiedad real es `replyTo` (camelCase). El envío con ese campo falla en runtime, no solo en tipos.
+* `src/integrations/google-sheets/sheets-client.ts:366` — asigna un valor `number | null` a un campo tipado como `number`; hay un caso sin manejar donde el dato puede venir null desde la consulta.
+* `booking-sync.ts` (Google Sheets) no lee ninguna variable de entorno propia de autenticación hoy — no hay `GOOGLE_*` en el código. Antes de "conectarlo", definir cómo se autentica de verdad (service account, OAuth) y armar las variables correspondientes en `.env.example`.
 
 Nota cruzada con Ventana 3: `routes/admin/*` aparece listado ahí como "existe como archivo pero sin probar" — si ese código ya cubre parte del entregable 7 de este documento, auditarlo primero antes de reescribirlo de cero.
 

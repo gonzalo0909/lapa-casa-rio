@@ -269,7 +269,7 @@ Las funciones SQL son la **única implementación** de las reglas de negocio. Lo
 | Cache | Cache en memoria simple (`src/cache/redis-client.ts`) — no es Redis real, es un stub in-process. Evaluar si migrar a Redis real antes de escalar a múltiples instancias |
 | Pagos | Stripe SDK + MercadoPago SDK |
 | Email transaccional | Resend (fallback SMTP si es necesario) |
-| Deploy | Railway o Render (plan gratuito) — **`render.yaml` actualmente apunta a una base de datos propia de Render, no a Supabase; hay que corregirlo antes de desplegar en serio** |
+| Deploy | Railway o Render (plan gratuito) — `render.yaml` ya corregido para apuntar al Supabase real (`DATABASE_URL` vía `sync: false`, `healthCheckPath` y `CORS_ORIGINS` arreglados). **Falta la ejecución real del deploy — cargar los secretos en el dashboard de Render y desplegar por primera vez —, eso es trabajo de Ventana 6, no adelantado** |
 | Colas | BullMQ (reintentos y procesos programados) — sin implementar todavía |
 | Logs | Logger propio liviano en `utils/logger.ts` (no usa Winston, se removió) |
 | Reporting | Google Sheets API (solo lectura) — sin auditar hoy, dependencias instaladas pero código no verificado |
@@ -356,10 +356,16 @@ Se encontraron y corrigieron 13 bugs reales en el código ya existente en GitHub
 
 ### Lo que sigue sin auditar/verificar (no tocado hoy, no asumir que funciona)
 - `routes/admin/*`, `routes/payments/*` — no probados hoy
-- `services/payment-service.ts`, `services/ical-sync-service.ts`, integraciones de Google Sheets y WhatsApp — código presente, sin verificar contra el schema real
-- `database/repositories/booking-repository.ts` → `markRemainingPaid()` — sigue con columnas inexistentes
-- BullMQ / colas — no implementado, los procedimientos `sp_*` existen en SQL pero nada los invoca todavía
-- `render.yaml` — apunta a una base de datos propia de Render, no a Supabase; corregir antes de desplegar
+- `services/ical-sync-service.ts`, integraciones de Google Sheets y WhatsApp — código presente, sin verificar contra el schema real
+- BullMQ / colas — no implementado (de los procedimientos `sp_*`, los 3 que existen de verdad ya se invocan vía `node-cron` en `crons/index.ts`, no BullMQ — ver "Ya resuelto" abajo y Ventana 4)
+
+### Ya resuelto (no volver a hacer)
+- `payment-service.markRemainingPaid()` — implementado en `services/payment-service.ts` (no en `booking-repository.ts` como decía una versión anterior de este documento), probado con 21/21 tests en verde en `database/tests/payment.test.ts`
+- `services/payment-service.ts` — verificado contra un Postgres local con el schema real (`createPaymentIntent`, `confirmPayment`, `processRefund`); las llamadas reales a la API de Stripe/MercadoPago siguen sin probar por falta de salida de red en el sandbox de pruebas
+- `routes/bookings/bookings.routes.ts` (`GET /bookings`, `GET /bookings/:id/confirmation`) — ya no devuelven datos hardcodeados, leen de la base real con paginación
+- `crons/index.ts` — creado; agenda `sp_cleanup_expired_pending`, `sp_release_no_show`, `sp_process_flexible_conversion` vía `node-cron`, e importa el cron de sync OTA que antes no se importaba desde ningún lado (nunca corría)
+- `backend/.env.example` — completo con todas las variables que el código realmente lee
+- `render.yaml` — corregido: `DATABASE_URL` ya no apunta a una base propia de Render (ahora `sync: false`, se carga a mano), `healthCheckPath` corregido a `/health`, `CORS_ORIGIN` → `CORS_ORIGINS`. **Esto fue solo el archivo de configuración — la ejecución real del deploy (cargar los secretos en el dashboard de Render, hacer el primer deploy) sigue siendo trabajo de Ventana 6, no se adelantó.**
 
 ---
 
@@ -447,8 +453,8 @@ CONTEXTO PREVIO (verificado)
 Confirmado y probado hoy: solo Ventana 1 (base de datos, en el Supabase real `rpowardrcwnhbkzjsiok`, `sa-east-1`) y la parte de Ventana 2 ya construida (disponibilidad, precios, reservas). **No** están verificadas Ventana 3 (pagos), Ventana 4 (BullMQ/emails/Sheets/admin) ni Ventana 5 (iCal/OTAs) — existen como especificación o como código sin auditar, no como sistema probado de punta a punta. No asumir "todos los tests pasando": no hay una suite de tests formal commiteada al repo todavía.
 
 Dos correcciones puntuales para esta ventana:
-* `render.yaml` (ya existe en el repo) **apunta a una base de datos propia de Render, no a Supabase** — hay que corregirlo antes de cualquier deploy real, o el sistema se desplegaría contra la base equivocada (vacía, sin el schema).
-* El Supabase real del proyecto (`rpowardrcwnhbkzjsiok`, `sa-east-1`) ya tiene las 8 migraciones + seed aplicadas — el checklist de deploy de este documento debe apuntar a ESE proyecto existente, no crear uno nuevo.
+* `render.yaml` **ya fue corregido** (dejó de apuntar a una base propia de Render): `DATABASE_URL` pasó a `sync: false` (se carga a mano en el dashboard, nunca en el archivo — mismo criterio que el incidente de la contraseña expuesta), `healthCheckPath` corregido de `/api/health` a `/health` (la ruta real), `CORS_ORIGIN` corregido a `CORS_ORIGINS`, y se agregaron las variables que faltaban (Redis, Stripe, MercadoPago, Resend, `ENCRYPTION_KEY`). **Lo que falta y sigue siendo trabajo de esta ventana:** cargar los valores reales en el dashboard de Render y hacer el primer deploy — el archivo estaba mal, pero nadie desplegó todavía.
+* El Supabase real del proyecto (`rpowardrcwnhbkzjsiok`, `sa-east-1`) ya tiene las 8 migraciones + seed aplicadas y **verificadas de nuevo hoy contra la base real** (17 tablas, 45 camas, 5 room_types, funciones `calculate_deposit`/`check_availability`/`sp_cleanup_expired_pending` presentes) — el checklist de deploy de este documento debe apuntar a ESE proyecto existente, no crear uno nuevo.
 * El logger real (`logger.ts`) **no es Winston** — es un logger propio y liviano. Ajustar cualquier punto de este documento que asuma Winston específicamente (rotación de logs, formato) a lo que el logger real soporte, o evaluar si vale la pena migrar a Winston recién en esta ventana.
 
 ESTA VENTANA (VENTANA 6): DEPLOY Y PRODUCCIÓN
@@ -458,7 +464,7 @@ Desplegar el sistema completo en producción, con monitoreo, backups, seguridad 
 ENTREGABLES
 
 1. Configuración de deploy:
-   * `railway.json` o `render.yaml` - **corregir `render.yaml` existente para que apunte al Supabase real (`rpowardrcwnhbkzjsiok`), no a una base propia de Render**
+   * `railway.json` o `render.yaml` - **`render.yaml` ya corregido para apuntar al Supabase real (`rpowardrcwnhbkzjsiok`); falta cargar los secretos en el dashboard de Render y ejecutar el primer deploy**
    * `Dockerfile` - Contenedor para el backend (multi-stage build)
    * `docker-compose.yml` - Stack completo local (opcional, para desarrollo)
    * `.dockerignore` - Archivos excluidos del contenedor
@@ -514,8 +520,8 @@ ENTREGABLES
 
 9. Checklist pre-producción:
    * [ ] Base de datos con backups automáticos (Supabase real `rpowardrcwnhbkzjsiok`, no uno nuevo)
-   * [ ] `render.yaml` corregido para apuntar al Supabase real, no a la base propia de Render
-   * [ ] Redis real configurado (no el stub en memoria) — bloqueante para BullMQ (Ventana 4)
+   * [x] `render.yaml` corregido para apuntar al Supabase real, no a la base propia de Render (archivo listo; falta cargar los secretos en el dashboard y desplegar)
+   * [ ] `REDIS_URL` configurada en el dashboard de Render — el cliente real (`ioredis`) ya está implementado en `src/cache/redis-client.ts`, no es un stub; sin esta variable simplemente cae al fallback en memoria (funciona, pero no comparte estado entre instancias)
    * [ ] Ventanas 3, 4 y 5 verificadas de punta a punta, no solo escritas
    * [ ] Webhooks de Stripe, MP, Booking.com y Expedia registrados
    * [ ] Emails probados en producción (Resend)
@@ -561,7 +567,7 @@ CRITERIOS DE ACEPTACIÓN
 * Alerta de fechas de Carnaval faltantes se dispara correctamente en un test simulado
 
 PREGUNTAS QUE DEBEN QUEDAR RESPONDIDAS
-1. ¿`render.yaml` ya quedó corregido para apuntar al Supabase real antes de este deploy?
+1. ~~¿`render.yaml` ya quedó corregido para apuntar al Supabase real antes de este deploy?~~ Sí, el archivo ya está corregido. Falta cargar los secretos reales en el dashboard de Render y hacer el primer deploy.
 2. ¿Cómo hacemos deploy sin downtime?
 3. ¿Cómo monitoreamos overbooking y conflictos entre canales en producción?
 4. ¿Cómo hacemos backup y restore de la base de datos?

@@ -7,7 +7,7 @@ import { RoomDetails } from './room-details';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalHeader, ModalTitle, ModalBody } from '@/components/ui/modal';
 import type { DateRange, RoomAvailability } from '@/types/global';
 
 /**
@@ -178,12 +178,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         </div>
       </Card>
 
-      <Modal
-        isOpen={showDetails}
-        onClose={() => setShowDetails(false)}
-        title={room.name}
-      >
-        <RoomDetails room={room} dateRange={dateRange} locale={locale} />
+      <Modal open={showDetails} onClose={() => setShowDetails(false)}>
+        <ModalHeader>
+          <ModalTitle>{room.name}</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <RoomDetails room={room} dateRange={dateRange} locale={locale} />
+        </ModalBody>
       </Modal>
     </>
   );

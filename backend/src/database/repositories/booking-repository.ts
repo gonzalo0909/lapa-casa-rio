@@ -1,5 +1,5 @@
 // lapa-casa-hostel/backend/src/database/repositories/booking-repository.ts
-// ventana 3 — migrado a Prisma 5.22.0
+// ventana3
 
 import { prisma } from '../../config/prisma';
 import type { Reservation, BookingStatus } from '../../types/database';
@@ -148,7 +148,9 @@ export class BookingRepository {
     status?: BookingStatus;
     dateFrom?: string;
     dateTo?: string;
-  }): Promise<Reservation[]> {
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Reservation[]; total: number }> {
     const where: any = {};
     if (filters.status)   where.status = filters.status;
     if (filters.dateFrom) where.check_in_date = { ...(where.check_in_date ?? {}), gte: new Date(filters.dateFrom) };
@@ -159,13 +161,20 @@ export class BookingRepository {
       if (filters.guestEmail) where.guests.email     = { contains: filters.guestEmail, mode: 'insensitive' };
     }
 
-    const rows = await prisma.reservations.findMany({
-      where,
-      include: { guests: true },
-      orderBy: { created_at: 'desc' },
-      take: 50,
-    });
-    return rows.map(mapReservation);
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters.limit && filters.limit > 0 ? filters.limit : 20;
+
+    const [rows, total] = await Promise.all([
+      prisma.reservations.findMany({
+        where,
+        include: { guests: true },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.reservations.count({ where }),
+    ]);
+    return { data: rows.map(mapReservation), total };
   }
 
   async getStatistics(): Promise<{

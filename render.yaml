@@ -5,29 +5,79 @@ services:
   - type: web
     name: lapa-casa-hostel-api
     env: node
+    # Render no ofrece region en Sudamerica; Oregon es la mas cercana
+    # disponible, con latencia extra hacia Supabase (sa-east-1) y los
+    # usuarios reales en Rio de Janeiro -- limitacion conocida, no un bug.
     region: oregon
     plan: starter
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run start
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      # DATABASE_URL real de Supabase (proyecto rpowardrcwnhbkzjsiok) --
+      # sync: false = se carga a mano desde el dashboard de Render, nunca
+      # se commitea en este archivo (ver incidente de seguridad previo:
+      # una version anterior tenia la contrasena real en texto plano en
+      # prompts/combo-VENTANA-1-completa.md).
       - key: DATABASE_URL
-        fromDatabase:
-          name: lapa-casa-hostel-db
-          property: connectionString
+        sync: false
+      - key: REDIS_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+      - key: REFRESH_TOKEN_EXPIRES_IN
+        value: 7d
+      - key: ENCRYPTION_KEY
+        generateValue: true
       - key: PORT
         value: 10000
-      - key: CORS_ORIGIN
+      - key: CORS_ORIGINS
+        value: https://lapa-casa-hostel-frontend.onrender.com
+      - key: APP_URL
+        value: https://lapa-casa-hostel-api.onrender.com
+      - key: FRONTEND_URL
         value: https://lapa-casa-hostel-frontend.onrender.com
       - key: TIMEZONE
         value: America/Sao_Paulo
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: reservas@lapacasahostel.com
+      - key: EMAIL_FROM
+        value: reservas@lapacasahostel.com
+      - key: EMAIL_FROM_NAME
+        value: Lapa Casa Hostel
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      # ventana4 (bloque 2): Google Sheets, exportacion de solo lectura hacia
+      # afuera. Sin estas 3 variables la exportacion queda deshabilitada sin
+      # romper el resto del backend (ver backend/.env.example para el paso
+      # a paso de como generarlas).
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_SHEETS_SPREADSHEET_ID
+        sync: false
+      # ventana4 (bloque 2): debe coincidir EXACTO con el nombre de la
+      # pestaña real en Google Sheets -- "Hoja 1" es el nombre por
+      # defecto que Google le pone a la primera pestaña en cuentas en
+      # español (no "Sheet1"). Verificado contra la hoja real del hostel.
+      - key: GOOGLE_SHEETS_SHEET_NAME
+        value: Hoja 1
     autoDeploy: true
 
   # Frontend Service
@@ -60,10 +110,6 @@ services:
         value: production
     autoDeploy: true
 
-# Database
-databases:
-  - name: lapa-casa-hostel-db
-    databaseName: lapacasa
-    user: lapacasa_user
-    plan: starter
-    region: oregon
+# No hay bloque "databases": la base es la Supabase real
+# (proyecto rpowardrcwnhbkzjsiok), no una base gestionada por Render.
+# DATABASE_URL se carga a mano en el dashboard (ver envVars del backend).

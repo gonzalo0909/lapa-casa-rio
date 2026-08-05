@@ -1,10 +1,10 @@
 // lapa-casa-hostel/backend/src/routes/payments/confirm-payment.ts
 // ventana3
+// ventana4: el email de pago recibido se centralizó en PaymentService.handlePaymentSucceeded() (ver payment-service.ts) -- ya no se dispara desde acá, para no duplicar con el webhook real
 
 import { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
-import { emailService } from '../../services/email-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -54,22 +54,11 @@ export const confirmPaymentHandler = async (
     const isDepositPaid = totalPaid >= depositAmount;
     const isFullyPaid = totalPaid >= finalPrice;
 
-    if (!isFullyPaid) {
-      const daysUntilCheckIn = Math.ceil(
-        (new Date(booking.check_in_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-      );
-      emailService.sendPaymentReminder({
-        to: booking.guest?.email ?? '',
-        bookingId: booking.id,
-        guestName: booking.guest?.full_name ?? '',
-        remainingAmount: finalPrice - totalPaid,
-        daysUntilCheckIn,
-        paymentUrl: '',
-        language: 'pt',
-      }).catch((err: Error) => {
-        logger.error('Error al enviar email de recordatorio de pago', { paymentId, error: err.message });
-      });
-    }
+    // ventana4: el email de "pago recibido" (y el scheduling de saldo /
+    // bienvenida si corresponde) ya se dispara dentro de
+    // paymentService.confirmPaymentById() -- ver
+    // PaymentService.handlePaymentSucceeded(), el mismo punto que usa el
+    // webhook real de Stripe/MercadoPago. No se duplica aca.
 
     res.status(200).json(
       ApiResponse.success({

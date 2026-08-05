@@ -1,278 +1,203 @@
 // lapa-casa-hostel/backend/src/services/notification-service.ts
+// ventana4
+//
+// Servicio de notificaciones por email: envia inmediato (notify) o
+// programa para mas adelante (scheduleNotification, via BullMQ). Toda
+// notificacion queda persistida en la tabla real `notifications`
+// (0002_tables.sql) -- getNotificationHistory lee de ahi, no de un log.
+//
+// El canal WhatsApp vive aparte en whatsapp-notification-service.ts
+// (deshabilitado por defecto, WHATSAPP_ENABLED=false) -- este archivo
+// es el que Ventana 4 pide bajo el nombre notification-service.ts.
 
-import { WhatsAppClient } from '../integrations/whatsapp/whatsapp-client';
-import { MessageTemplates } from '../integrations/whatsapp/message-templates';
+import { query } from '../config/database';
+import bookingRepo from '../database/repositories/booking-repository';
+import { emailService, BookingWithGuest } from './email-service';
+import { emailNotificationsQueue } from '../queues/email-notifications.queue';
 import { logger } from '../utils/logger';
-import { AppError } from '../utils/responses';
 
-interface BookingNotificationData {
-  phone: string;
-  bookingId: string;
-  checkIn: string;
-  language: 'pt' | 'en' | 'es';
+export type NotificationType =
+  | 'booking_confirmation'
+  | 'payment_reminder'
+  | 'payment_received'
+  | 'welcome'
+  | 'cancellation'
+  | 'no_show';
+
+export interface NotificationRecord {
+  id: string;
+  reservation_id: string | null;
+  guest_id: string | null;
+  channel: string;
+  template: string;
+  status: string;
+  payload: Record<string, any> | null;
+  sent_at: Date | null;
+  error: string | null;
+  created_at: Date;
 }
 
-interface PaymentNotificationData {
-  phone: string;
-  bookingId: string;
-  amount: number;
-  dueDate: string;
-  language: 'pt' | 'en' | 'es';
-}
-
-interface CheckInNotificationData {
-  phone: string;
-  guestName: string;
-  checkInDate: string;
-  checkInTime: string;
-  language: 'pt' | 'en' | 'es';
-}
-
-interface AdminAlertData {
-  type: 'NEW_BOOKING' | 'PAYMENT_RECEIVED' | 'CANCELLATION' | 'PAYMENT_FAILED';
-  bookingId: string;
-  details: string;
+async function dispatchByType(type: NotificationType, booking: BookingWithGuest, data: Record<string, any>): Promise<void> {
+  switch (type) {
+    case 'booking_confirmation':
+      await emailService.sendBookingConfirmation(booking);
+      return;
+    case 'payment_reminder':
+      await emailService.sendPaymentReminder(booking);
+      return;
+    case 'payment_received':
+      await emailService.sendPaymentReceived(booking, data.amount);
+      return;
+    case 'welcome':
+      await emailService.sendWelcomeEmail(booking);
+      return;
+    case 'cancellation':
+      await emailService.sendCancellationNotice(booking, data.refundAmount ?? 0);
+      return;
+    case 'no_show':
+      await emailService.sendNoShowNotice(booking);
+      return;
+    default:
+      throw new Error(`Tipo de notificación desconocido: ${type}`);
+  }
 }
 
 export class NotificationService {
-  private whatsappClient: WhatsAppClient;
-  private messageTemplates: MessageTemplates;
-  private readonly ADMIN_PHONES = ['+5521999999999'];
-  private readonly WHATSAPP_ENABLED = process.env.WHATSAPP_ENABLED === 'true';
+  /**
+   * ventana4: intenta el envío ya mismo, en el request actual. Si falla,
+   * se reencola en email-notifications (hasta 3 veces con backoff
+   * exponencial, ver queues/email-notifications.queue.ts) en vez de darlo
+   * por perdido -- así cumple "si un email falla, se reencola hasta 3
+   * veces" (CONSIDERACIONES ESPECIALES del prompt de esta ventana). El
+   * reintento lo procesa el mismo processScheduled() que usa
+   * scheduleNotification, así que no duplica lógica.
+   */
+  async notify(type: NotificationType, booking: BookingWithGuest, data: Record<string, any> = {}): Promise<void> {
+    const notificationId = await this.recordNotification({
+      reservationId: booking.id,
+      guestId: booking.guest.id,
+      template: type,
+      status: 'pending',
+      payload: data
+    });
 
-  constructor() {
-    this.whatsappClient = new WhatsAppClient();
-    this.messageTemplates = new MessageTemplates();
-  }
-
-  async sendBookingNotification(data: BookingNotificationData): Promise<any> {
     try {
-      if (!this.WHATSAPP_ENABLED) {
-        logger.debug('WhatsApp deshabilitado');
-        return { success: false, reason: 'WhatsApp disabled' };
-      }
-
-      logger.info('Enviando notificación de booking por WhatsApp', { phone: data.phone, bookingId: data.bookingId });
-
-      const message = this.messageTemplates.getBookingConfirmation({
-        bookingId: data.bookingId,
-        checkIn: this.formatDate(data.checkIn, data.language),
-        language: data.language
+      await dispatchByType(type, booking, data);
+      await this.updateNotification(notificationId, { status: 'sent', sentAt: new Date() });
+    } catch (error: any) {
+      logger.error('Error enviando notificación, se reencola para reintento', {
+        type,
+        reservationId: booking.id,
+        notificationId,
+        error: error.message
       });
-
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(data.phone), message);
-
-      logger.info('Notificación de booking enviada', { phone: data.phone, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando notificación de booking', error);
-      return { success: false, error };
+      await emailNotificationsQueue.add('retry-notification', { notificationId, reservationId: booking.id, type });
+      // No relanza: el reintento queda en manos del worker, el llamador no
+      // tiene por qué bloquear ni fallar la respuesta HTTP por esto.
     }
   }
 
-  async sendPaymentReminder(data: PaymentNotificationData): Promise<any> {
+  /** Encola el envio para `sendAt` via BullMQ (delay). Si REDIS_URL no esta configurada, safe-queue loguea y no encola -- ver src/queues/connection.ts. */
+  async scheduleNotification(
+    type: NotificationType,
+    booking: BookingWithGuest,
+    sendAt: Date,
+    data: Record<string, any> = {}
+  ): Promise<string> {
+    const notificationId = await this.recordNotification({
+      reservationId: booking.id,
+      guestId: booking.guest.id,
+      template: type,
+      status: 'pending',
+      payload: data
+    });
+
+    const delayMs = Math.max(0, sendAt.getTime() - Date.now());
+    await emailNotificationsQueue.add(
+      'send-scheduled-notification',
+      { notificationId, reservationId: booking.id, type },
+      { delay: delayMs }
+    );
+
+    return notificationId;
+  }
+
+  /** Usado por el worker (workers/email-notifications.worker.ts) al procesar un job encolado por scheduleNotification. */
+  async processScheduled(notificationId: string, reservationId: string, type: NotificationType): Promise<void> {
+    const notification = await this.getNotificationById(notificationId);
+    if (!notification) {
+      logger.warn('Notificación programada no encontrada, se descarta', { notificationId });
+      return;
+    }
+
+    const booking = await bookingRepo.findById(reservationId);
+    if (!booking || !booking.guest) {
+      await this.updateNotification(notificationId, { status: 'failed', error: 'reservation_or_guest_not_found' });
+      logger.error('No se pudo procesar notificación programada: reserva o huésped inexistente', { notificationId, reservationId });
+      return;
+    }
+
     try {
-      if (!this.WHATSAPP_ENABLED) {
-        return { success: false, reason: 'WhatsApp disabled' };
-      }
-
-      logger.info('Enviando recordatorio de pago por WhatsApp', { phone: data.phone, bookingId: data.bookingId });
-
-      const message = this.messageTemplates.getPaymentReminder({
-        bookingId: data.bookingId,
-        amount: this.formatCurrency(data.amount, data.language),
-        dueDate: this.formatDate(data.dueDate, data.language),
-        language: data.language
-      });
-
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(data.phone), message);
-
-      logger.info('Recordatorio de pago enviado', { phone: data.phone, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando recordatorio de pago', error);
-      return { success: false, error };
+      await dispatchByType(type, booking as BookingWithGuest, notification.payload ?? {});
+      await this.updateNotification(notificationId, { status: 'sent', sentAt: new Date() });
+    } catch (error: any) {
+      await this.updateNotification(notificationId, { status: 'failed', error: error.message });
+      throw error; // deja que BullMQ reintente segun la política de la cola
     }
   }
 
-  async sendCheckInReminder(data: CheckInNotificationData): Promise<any> {
-    try {
-      if (!this.WHATSAPP_ENABLED) {
-        return { success: false, reason: 'WhatsApp disabled' };
-      }
-
-      logger.info('Enviando recordatorio de check-in por WhatsApp', { phone: data.phone, guestName: data.guestName });
-
-      const message = this.messageTemplates.getCheckInReminder({
-        guestName: data.guestName,
-        checkInDate: this.formatDate(data.checkInDate, data.language),
-        checkInTime: data.checkInTime,
-        language: data.language
-      });
-
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(data.phone), message);
-
-      logger.info('Recordatorio de check-in enviado', { phone: data.phone, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando recordatorio de check-in', error);
-      return { success: false, error };
-    }
+  async getNotificationHistory(bookingId: string): Promise<NotificationRecord[]> {
+    const { rows } = await query<NotificationRecord>(
+      `SELECT id, reservation_id, guest_id, channel, template, status, payload, sent_at, error, created_at
+       FROM notifications
+       WHERE reservation_id = $1
+       ORDER BY created_at DESC`,
+      [bookingId]
+    );
+    return rows;
   }
 
-  async sendPaymentConfirmation(
-    phone: string,
-    bookingId: string,
-    amount: number,
-    language: 'pt' | 'en' | 'es'
-  ): Promise<any> {
-    try {
-      if (!this.WHATSAPP_ENABLED) {
-        return { success: false, reason: 'WhatsApp disabled' };
-      }
-
-      logger.info('Enviando confirmación de pago por WhatsApp', { phone, bookingId });
-
-      const message = this.messageTemplates.getPaymentConfirmation({
-        bookingId,
-        amount: this.formatCurrency(amount, language),
-        language
-      });
-
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(phone), message);
-
-      logger.info('Confirmación de pago enviada', { phone, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando confirmación de pago', error);
-      return { success: false, error };
-    }
+  private async recordNotification(entry: {
+    reservationId: string;
+    guestId: string;
+    template: string;
+    status: 'sent' | 'pending' | 'failed';
+    payload?: Record<string, any>;
+    sentAt?: Date;
+    error?: string;
+  }): Promise<string> {
+    const { rows } = await query<{ id: string }>(
+      `INSERT INTO notifications (reservation_id, guest_id, channel, template, status, payload, sent_at, error)
+       VALUES ($1, $2, 'email', $3, $4, $5, $6, $7)
+       RETURNING id`,
+      [
+        entry.reservationId,
+        entry.guestId,
+        entry.template,
+        entry.status,
+        entry.payload ? JSON.stringify(entry.payload) : null,
+        entry.sentAt ?? null,
+        entry.error ?? null
+      ]
+    );
+    return rows[0].id;
   }
 
-  async sendAdminAlert(data: AdminAlertData): Promise<any> {
-    try {
-      logger.info('Enviando alerta al administrador', { type: data.type, bookingId: data.bookingId });
-
-      const message = this.formatAdminAlert(data);
-      const results = [];
-
-      for (const adminPhone of this.ADMIN_PHONES) {
-        try {
-          const result = await this.whatsappClient.sendMessage(adminPhone, message);
-          results.push({ phone: adminPhone, success: true, messageId: result.messageId });
-        } catch (error) {
-          logger.error('Error enviando alerta a admin', { adminPhone, error });
-          results.push({ phone: adminPhone, success: false, error });
-        }
-      }
-
-      logger.info('Alertas de admin enviadas', { total: results.length, successful: results.filter(r => r.success).length });
-      return results;
-    } catch (error) {
-      logger.error('Error enviando alertas de admin', error);
-      return { success: false, error };
-    }
+  private async updateNotification(id: string, update: { status: 'sent' | 'failed'; sentAt?: Date; error?: string }): Promise<void> {
+    await query(
+      `UPDATE notifications SET status = $2, sent_at = $3, error = $4 WHERE id = $1`,
+      [id, update.status, update.sentAt ?? null, update.error ?? null]
+    );
   }
 
-  async sendCustomMessage(phone: string, message: string): Promise<any> {
-    try {
-      if (!this.WHATSAPP_ENABLED) {
-        throw new AppError('WhatsApp está deshabilitado', 503);
-      }
-
-      const result = await this.whatsappClient.sendMessage(this.formatPhoneNumber(phone), message);
-
-      logger.info('Mensaje personalizado enviado', { phone, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando mensaje personalizado', error);
-      throw error;
-    }
-  }
-
-  async sendFileMessage(phone: string, fileUrl: string, caption?: string): Promise<any> {
-    try {
-      if (!this.WHATSAPP_ENABLED) {
-        throw new AppError('WhatsApp está deshabilitado', 503);
-      }
-
-      const result = await this.whatsappClient.sendFile(this.formatPhoneNumber(phone), fileUrl, caption);
-
-      logger.info('Archivo enviado por WhatsApp', { phone, fileUrl, messageId: result.messageId });
-      return result;
-    } catch (error) {
-      logger.error('Error enviando archivo', error);
-      throw error;
-    }
-  }
-
-  async sendBulkNotifications(phones: string[], message: string): Promise<any[]> {
-    const results = [];
-
-    for (const phone of phones) {
-      try {
-        const result = await this.sendCustomMessage(phone, message);
-        results.push({ phone, success: true, messageId: result.messageId });
-      } catch (error) {
-        logger.error('Error enviando notificación masiva', { phone, error });
-        results.push({ phone, success: false, error });
-      }
-
-      await this.delay(1000);
-    }
-
-    logger.info('Notificaciones masivas enviadas', { total: results.length, successful: results.filter(r => r.success).length });
-    return results;
-  }
-
-  private formatPhoneNumber(phone: string): string {
-    let cleaned = phone.replace(/\D/g, '');
-
-    if (!cleaned.startsWith('55')) {
-      cleaned = '55' + cleaned;
-    }
-
-    return '+' + cleaned;
-  }
-
-  private formatDate(dateStr: string, language: 'pt' | 'en' | 'es'): string {
-    const date = new Date(dateStr);
-    const formatters = {
-      pt: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-      en: new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'long', year: 'numeric' }),
-      es: new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
-    };
-    return formatters[language].format(date);
-  }
-
-  private formatCurrency(amount: number, language: 'pt' | 'en' | 'es'): string {
-    const formatters = {
-      pt: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
-      en: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }),
-      es: new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'BRL' })
-    };
-    return formatters[language].format(amount);
-  }
-
-  private formatAdminAlert(data: AdminAlertData): string {
-    const emojis = {
-      NEW_BOOKING: '🎉',
-      PAYMENT_RECEIVED: '💰',
-      CANCELLATION: '❌',
-      PAYMENT_FAILED: '⚠️'
-    };
-
-    const titles = {
-      NEW_BOOKING: 'Nueva Reserva',
-      PAYMENT_RECEIVED: 'Pago Recibido',
-      CANCELLATION: 'Cancelación',
-      PAYMENT_FAILED: 'Pago Fallido'
-    };
-
-    return `${emojis[data.type]} *${titles[data.type]}*\n\n*Reserva:* ${data.bookingId}\n\n${data.details}`;
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  private async getNotificationById(id: string): Promise<NotificationRecord | null> {
+    const { rows } = await query<NotificationRecord>(
+      `SELECT id, reservation_id, guest_id, channel, template, status, payload, sent_at, error, created_at
+       FROM notifications WHERE id = $1`,
+      [id]
+    );
+    return rows[0] ?? null;
   }
 }
+
+export const notificationService = new NotificationService();

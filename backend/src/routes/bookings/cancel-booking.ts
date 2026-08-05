@@ -1,10 +1,12 @@
 // lapa-casa-hostel/backend/src/routes/bookings/cancel-booking.ts
 // ventana3
+// ventana4: email de cancelación vía notificationService.notify('cancellation', ...); de paso corrige un bug real que rompía esta ruta (booking.final_price llegaba como Decimal de Prisma a un parámetro de pg crudo)
 
 import { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';
 import { paymentService } from '../../services/payment-service';
-import { emailService } from '../../services/email-service';
+import { notificationService } from '../../services/notification-service';
+import type { BookingWithGuest } from '../../services/email-service';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -44,14 +46,20 @@ export const cancelBookingHandler = async (
       return;
     }
 
-    // Calcular reembolso con la función SQL (política real: 168h/48h)
+    // Calcular reembolso con la función SQL (política real: 168h/48h).
+    // booking.final_price viene de Prisma como Decimal -- pasado tal cual a
+    // un parámetro de pg (raw query), pg lo serializa con JSON.stringify(),
+    // que via el toJSON() de Decimal produce la STRING '"114"' (con
+    // comillas incluidas), no el número: Postgres rechazaba el literal con
+    // "invalid input syntax for type numeric". Number(...) lo evita.
+    const finalPrice = Number(booking.final_price);
     const refundResult = await query<{ refund_amount: string }>(
       `SELECT calculate_cancellation_refund($1, $2::date, NOW()) AS refund_amount`,
-      [booking.final_price, booking.check_in_date]
+      [finalPrice, booking.check_in_date]
     );
     const refundAmount = parseFloat(refundResult.rows[0]?.refund_amount ?? '0');
-    const refundPercentage = booking.final_price > 0
-      ? Math.round((refundAmount / booking.final_price) * 100)
+    const refundPercentage = finalPrice > 0
+      ? Math.round((refundAmount / finalPrice) * 100)
       : 0;
 
     const payments = await paymentService.getPaymentsByReservation(id);
@@ -90,15 +98,13 @@ export const cancelBookingHandler = async (
 
     logger.info('Reserva cancelada', { bookingId: id, refundAmount: actualRefund });
 
-    emailService.sendCancellationEmail({
-      to: booking.guest?.email || '',
-      bookingId: id,
-      guestName: booking.guest?.full_name || '',
-      refundAmount: actualRefund,
-      language: 'pt',
-    }).catch(error => {
-      logger.error('Error al enviar email de cancelación', { bookingId: id, error: error.message });
-    });
+    if (booking.guest) {
+      notificationService
+        .notify('cancellation', booking as BookingWithGuest, { refundAmount: actualRefund })
+        .catch((error: Error) => {
+          logger.error('Error al enviar email de cancelación', { bookingId: id, error: error.message });
+        });
+    }
 
     res.status(200).json(
       ApiResponse.success({

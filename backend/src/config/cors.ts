@@ -34,7 +34,7 @@ const getAllowedOrigins = (): string[] => {
   }
 
   // Production: Parse from environment variable
-  const origins = env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+  const origins = env.CORS_ORIGINS.split(',').map(origin => origin.trim());
   
   return [
     'https://lapacasahostel.com',
@@ -190,7 +190,7 @@ export const validateCorsConfig = (): void => {
   });
 
   // Warn if using wildcard in production
-  if (isProduction() && env.CORS_ORIGIN === '*') {
+  if (isProduction() && env.CORS_ORIGINS === '*') {
     logger.warn('SECURITY WARNING: CORS wildcard (*) enabled in production');
   }
 

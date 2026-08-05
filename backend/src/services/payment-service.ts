@@ -1,14 +1,20 @@
 // lapa-casa-hostel/backend/src/services/payment-service.ts
 // ventana3
+// ventana4: agrega handlePaymentSucceeded() -- dispara email de pago recibido y agenda saldo/bienvenida, desde el mismo punto que usan tanto el webhook real de Stripe/MercadoPago como la confirmación manual (ver más abajo)
+// ventana4 (bloque 2): handlePaymentSucceeded también re-exporta la reserva a Sheets (deposit_paid/remaining_paid cambian con cada pago)
 
 import Stripe from 'stripe';
 import { PaymentRepository } from '../database/repositories/payment-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
 import { StripeHandler } from '../lib/payments/stripe-handler';
 import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
+import { notificationService } from './notification-service';
+import { scheduleRemainingPayment } from '../queues/remaining-payment.queue';
+import { enqueueSheetsExport } from '../queues/sheets-export.queue';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
 import type { Payment, PaymentProvider } from '../types/database';
+import type { BookingWithGuest } from './email-service';
 
 interface CreatePaymentIntentDTO {
   reservation_id: string;
@@ -116,6 +122,7 @@ export class PaymentService {
     };
   }
 
+  // Confirma un pago por provider_payment_id (usado por webhooks)
   async confirmPayment(providerPaymentId: string): Promise<Payment> {
     const payment = await this.paymentRepo.findByProviderPaymentId(providerPaymentId);
     if (!payment) throw new AppError('Pago no encontrado', 404);
@@ -133,9 +140,11 @@ export class PaymentService {
     if (payment.payment_type === 'deposit') {
       await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
     }
+    await this.handlePaymentSucceeded(confirmedPayment);
     return confirmedPayment;
   }
 
+  // Confirma un pago por payment.id interno (usado por la ruta confirm-payment)
   async confirmPaymentById(paymentId: string): Promise<Payment> {
     const payment = await this.paymentRepo.findById(paymentId);
     if (!payment) throw new AppError('Pago no encontrado', 404);
@@ -153,7 +162,46 @@ export class PaymentService {
     if (payment.payment_type === 'deposit') {
       await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
     }
+    await this.handlePaymentSucceeded(confirmed);
     return confirmed;
+  }
+
+  // ventana4: unico punto que dispara notificaciones de pago recibido --
+  // corre tanto para el webhook real de Stripe/MercadoPago (confirmPayment)
+  // como para la confirmacion manual desde el frontend (confirmPaymentById).
+  // Antes solo la ruta confirm-payment.ts enviaba el email, asi que un pago
+  // confirmado por webhook (el camino real de produccion) nunca disparaba
+  // nada. Un fallo de email no debe tumbar la confirmacion del pago -- ya
+  // sucedio y esta persistido -- por eso el try/catch no relanza.
+  private async handlePaymentSucceeded(payment: Payment): Promise<void> {
+    try {
+      const booking = await this.bookingRepo.findById(payment.reservation_id);
+      if (!booking || !booking.guest) {
+        logger.warn('handlePaymentSucceeded: reserva o guest no encontrado, se omiten notificaciones', {
+          reservationId: payment.reservation_id
+        });
+        return;
+      }
+      const bookingWithGuest = booking as BookingWithGuest;
+
+      await notificationService.notify('payment_received', bookingWithGuest, { amount: Number(payment.amount) });
+      enqueueSheetsExport(bookingWithGuest.id).catch(err =>
+        logger.warn('No se pudo encolar el export a Sheets tras pago confirmado', { reservationId: bookingWithGuest.id, error: err.message })
+      );
+
+      if (payment.payment_type === 'deposit' && Number(bookingWithGuest.remaining_amount) > 0) {
+        await scheduleRemainingPayment(bookingWithGuest.id, new Date(bookingWithGuest.check_in_date));
+
+        const oneDayBeforeCheckIn = new Date(new Date(bookingWithGuest.check_in_date).getTime() - 24 * 60 * 60 * 1000);
+        await notificationService.scheduleNotification('welcome', bookingWithGuest, oneDayBeforeCheckIn);
+      }
+    } catch (error: any) {
+      logger.error('Error en efectos secundarios de pago confirmado (notificaciones)', {
+        paymentId: payment.id,
+        reservationId: payment.reservation_id,
+        error: error.message
+      });
+    }
   }
 
   async getPaymentById(id: string): Promise<Payment | null> {
@@ -213,6 +261,23 @@ export class PaymentService {
 
   async getPaymentsByReservation(reservationId: string): Promise<Payment[]> {
     return this.paymentRepo.findByReservation(reservationId);
+  }
+
+  // ventana4: usado por el flujo de cobro de saldo (3 reintentos cada 24h,
+  // ver Prompt Maestro / POLITICAS OPERATIVAS) una vez que el proveedor
+  // confirma el cargo del saldo. A diferencia del deposito, pagar el saldo
+  // no cambia el status de la reserva -- ya esta 'confirmed' desde que se
+  // pago el deposito -- solo marca el registro de pago como succeeded.
+  async markRemainingPaid(reservationId: string): Promise<Payment> {
+    const payments = await this.paymentRepo.findByReservation(reservationId);
+    const remainingPayment = payments.find(p => p.payment_type === 'remaining');
+    if (!remainingPayment) {
+      throw new AppError('No existe un pago de saldo (remaining) para esta reserva', 404);
+    }
+    if (remainingPayment.status === 'succeeded') {
+      throw new AppError('El saldo ya fue pagado', 400);
+    }
+    return this.paymentRepo.markCompleted(remainingPayment.id);
   }
 
   async getStatistics(): Promise<any> {

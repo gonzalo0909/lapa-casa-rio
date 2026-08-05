@@ -1,5 +1,4 @@
 // lapa-casa-hostel/backend/src/services/booking-service.ts
-// ventana3
 //
 // REQUISITO CRITICO #1 (prompt Maestro v1.5): acquire_bed_locks() +
 // check_availability() + el INSERT de reservation_beds deben correr
@@ -16,8 +15,17 @@ import { GuestRepository } from '../database/repositories/guest-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
 import { acquireLock } from '../database/lock-middleware';
 import { pricingService } from './pricing-service';
+import { enqueueSheetsExport } from '../queues/sheets-export.queue';
 import { logger } from '../utils/logger';
 import type { Reservation, BookingStatus } from '../types/database';
+
+// ventana4 (bloque 2): fire-and-forget -- un fallo al encolar el espejo a
+// Sheets nunca debe tumbar la operación real sobre la reserva.
+const exportToSheetsAsync = (reservationId: string, action: 'upsert' | 'delete' = 'upsert'): void => {
+  enqueueSheetsExport(reservationId, action).catch(err =>
+    logger.warn('No se pudo encolar el export a Sheets', { reservationId, error: err.message })
+  );
+};
 
 const guestRepo = new GuestRepository();
 const bookingRepo = new BookingRepository();
@@ -31,6 +39,7 @@ export class InsufficientAvailabilityError extends Error {
 
 const isOverbookingError = (error: unknown): boolean => {
   const code = (error as { code?: string })?.code;
+  // 23505 = unique_violation (trigger trg_prevent_overbooking), 23P01 = exclusion_violation (constraint EXCLUDE)
   return code === '23505' || code === '23P01';
 };
 
@@ -66,6 +75,7 @@ interface CreateBookingInput {
   status?: BookingStatus;
 }
 
+/** Selecciona `count` camas libres y elegibles por genero dentro de UNA habitacion, bajo la transaccion activa. */
 const pickAvailableBedsInRoom = async (
   client: PoolClient,
   roomTypeId: string,
@@ -85,7 +95,7 @@ const pickAvailableBedsInRoom = async (
 
 export class BookingService {
   async createBooking(data: CreateBookingInput): Promise<Reservation & { bedIds: string[] }> {
-    return withTransaction(async (client) => {
+    const result = await withTransaction(async (client) => {
       const guest = await guestRepo.upsert({
         full_name: data.guest.full_name,
         email: data.guest.email,
@@ -98,6 +108,7 @@ export class BookingService {
       if (channelRows.length === 0) throw new Error('Canal "direct" no encontrado en la tabla channels');
       const channelId = channelRows[0].id;
 
+      // 1) Elegir camas candidatas por habitacion (sin lock todavia)
       const candidateBedIds: string[] = [];
       for (const room of data.rooms) {
         const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, 'mixed');
@@ -107,8 +118,10 @@ export class BookingService {
         candidateBedIds.push(...beds);
       }
 
+      // 2) Adquirir advisory locks de esas camas especificas, DENTRO de esta transaccion
       await acquireLock(client, candidateBedIds);
 
+      // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos
       const { rows: stillOccupied } = await client.query(
         `SELECT bed_id FROM reservation_beds
          WHERE bed_id = ANY($1::uuid[])
@@ -119,6 +132,7 @@ export class BookingService {
         throw new InsufficientAvailabilityError({ conflictingBeds: stillOccupied.map((r: any) => r.bed_id) });
       }
 
+      // 4) early_bird_discount real, via SQL (el resto del precio ya vino de pricingService)
       const bookingDate = new Date().toISOString().slice(0, 10);
       const { rows: earlyBirdRows } = await client.query(
         `SELECT calculate_early_bird_discount($1::date, $2::date) AS d`,
@@ -185,18 +199,29 @@ export class BookingService {
       logger.info('Booking created', { reservationId: reservation.id, reservationNumber, beds: candidateBedIds.length });
       return { ...reservation, bedIds: candidateBedIds };
     });
+
+    // Fuera de la transaccion a proposito: si esto fallara, la reserva ya
+    // esta confirmada en la base -- un email/export perdido no debe
+    // revertir una reserva real.
+    exportToSheetsAsync(result.id);
+    return result;
   }
 
   async getBooking(id: string): Promise<Reservation | null> {
     return bookingRepo.findById(id);
   }
 
+  /** No reimplementa liberacion de camas -- trg_release_beds_on_status_change lo hace solo al cambiar status. */
   async cancelBooking(id: string, reason?: string): Promise<Reservation> {
-    return bookingRepo.cancelReservation(id, reason);
+    const result = await bookingRepo.cancelReservation(id, reason);
+    exportToSheetsAsync(id);
+    return result;
   }
 
   async confirmBooking(id: string): Promise<Reservation> {
-    return bookingRepo.confirmReservation(id);
+    const result = await bookingRepo.confirmReservation(id);
+    exportToSheetsAsync(id);
+    return result;
   }
 
   async listBookings(filters: {
@@ -205,8 +230,13 @@ export class BookingService {
     dateTo?: string;
     guestEmail?: string;
     guestName?: string;
-  } = {}): Promise<Reservation[]> {
-    return bookingRepo.search(filters);
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{ data: Reservation[]; total: number; page: number; limit: number; totalPages: number }> {
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters.limit && filters.limit > 0 ? filters.limit : 20;
+    const { data, total } = await bookingRepo.search({ ...filters, page, limit });
+    return { data, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
   }
 
   async getBookingStats(from: string, to: string): Promise<{
@@ -239,6 +269,7 @@ export class BookingService {
     };
   }
 
+  /** Libera reservas pending_payment vencidas (>15 min). sp_cleanup_expired_pending() cubre lo mismo desde BullMQ (Ventana 4). */
   async expirePendingBookings(): Promise<number> {
     const { rows } = await query(
       `UPDATE reservations
@@ -251,7 +282,9 @@ export class BookingService {
 
   // ventana3
   async updateBooking(id: string, data: Parameters<typeof bookingRepo.update>[1]): Promise<Reservation> {
-    return bookingRepo.update(id, data);
+    const result = await bookingRepo.update(id, data);
+    exportToSheetsAsync(id);
+    return result;
   }
 
   // ventana3

@@ -1,95 +1,121 @@
-/**
- * File: lapa-casa-hostel/backend/src/routes/admin/admin.routes.ts
- * Admin Routes Module
- * Lapa Casa Hostel Channel Manager
- * 
- * Handles administrative operations and management endpoints
- * Requires authentication and admin privileges
- * 
- * @module routes/admin
- * @requires express
- */
+// lapa-casa-hostel/backend/src/routes/admin/admin.routes.ts
+// ventana4 (bloque 2)
+//
+// Reescrito completo: la version anterior devolvia datos hardcodeados en
+// cada endpoint (bookings: [], stats fijas, "Room updated" sin tocar la
+// base). Todo acá lee/escribe la base real. authenticateToken ya se
+// aplica en routes/index.ts para todo /admin -- login vive aparte en
+// admin-auth.routes.ts, montado sin ese middleware.
+//
+// REQUISITO CRITICO #1 respetado a proposito: PUT /bookings/:id NO
+// permite cambiar fechas/habitaciones/status acá (eso saltearia el
+// motor anti-overbooking real de create-booking.ts, que adquiere locks
+// y reverifica disponibilidad bajo transaccion). Para eso: cancelar
+// (DELETE /bookings/:id, ya calcula reembolso) + crear una reserva
+// nueva. Este endpoint es solo para correcciones que no tocan
+// disponibilidad (contacto del huesped, notas, ajuste manual de precio).
 
 import { Router } from 'express';
-import { validationMiddleware } from '../../middleware/validation';
-import { logger } from '../../utils/logger';
+import { bookingService } from '../../services/booking-service';
+import { notificationService } from '../../services/notification-service';
+import { statsService } from '../../services/stats-service';
+import { auditLogService } from '../../services/audit-log-service';
+import { fullExport } from '../../integrations/google-sheets/booking-export';
+import { query } from '../../config/database';
 import { ApiResponse } from '../../utils/responses';
+import { adminConflictsRouter } from './conflicts.routes';
+import type { BookingWithGuest } from '../../services/email-service';
 
 const router = Router();
 
 /**
- * Get Dashboard Statistics
- * @route GET /admin/dashboard
- * @group Admin - Administrative operations
- * @returns {object} 200 - Dashboard statistics
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
+ * /admin/conflicts — detalle + resolucion manual agregados en Ventana 5
+ * (conflict-service.ts). Reemplaza el listado inline que vivia aca desde
+ * Ventana 4 (ver mas abajo, ahora removido para no duplicar la ruta).
+ */
+router.use('/conflicts', adminConflictsRouter);
+
+/**
+ * GET /admin/dashboard — KPIs del mes actual
  */
 router.get('/dashboard', async (req, res, next) => {
   try {
-    logger.info('Get admin dashboard');
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
 
-    const stats = {
-      bookings: {
-        today: 3,
-        thisWeek: 12,
-        thisMonth: 45,
-        pending: 8,
-        confirmed: 35,
-        completed: 120
-      },
-      revenue: {
-        today: 1800.0,
-        thisWeek: 8400.0,
-        thisMonth: 27000.0,
-        currency: 'BRL'
-      },
-      occupancy: {
-        current: 0.72,
-        thisWeek: 0.68,
-        thisMonth: 0.75,
-        nextMonth: 0.55
-      },
-      rooms: {
-        total: 4,
-        totalBeds: 38,
-        occupiedBeds: 27,
-        availableBeds: 11
-      }
-    };
+    const [bookingStats, occupancy, revenue, channels, groups, upcoming] = await Promise.all([
+      bookingService.getBookingStats(
+        `${year}-${String(month).padStart(2, '0')}-01`,
+        new Date(year, month, 0).toISOString().slice(0, 10)
+      ),
+      statsService.getOccupancyStats(month, year),
+      statsService.getRevenueStats(month, year),
+      statsService.getChannelStats(month, year),
+      statsService.getGroupStats(month, year),
+      query<{ id: string; reservation_number: string; check_in_date: string; guest_name: string; beds_count: number }>(
+        `SELECT r.id, r.reservation_number, r.check_in_date::text, g.full_name AS guest_name, r.beds_count
+         FROM reservations r JOIN guests g ON g.id = r.guest_id
+         WHERE r.status = 'confirmed' AND r.check_in_date >= CURRENT_DATE
+         ORDER BY r.check_in_date ASC LIMIT 10`
+      )
+    ]);
 
-    res.status(200).json(ApiResponse.success(stats, 'Dashboard data retrieved'));
+    res.status(200).json(
+      ApiResponse.success({
+        period: { month, year },
+        bookings: bookingStats,
+        occupancy: { averagePercent: occupancy.averageOccupancyPercent, byRoom: occupancy.byRoom },
+        revenue,
+        channels,
+        groups,
+        upcomingCheckIns: upcoming.rows
+      }, 'Dashboard data retrieved')
+    );
   } catch (error) {
     next(error);
   }
 });
 
 /**
- * Get All Bookings (Admin)
- * @route GET /admin/bookings
- * @group Admin - Administrative operations
- * @param {string} status.query - Filter by status
- * @param {string} from.query - Filter from date
- * @param {string} to.query - Filter to date
- * @returns {Array} 200 - List of bookings
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
+ * GET /admin/bookings — listado con filtros
  */
 router.get('/bookings', async (req, res, next) => {
   try {
-    const { status, from, to } = req.query;
+    const { status, from, to, channel, page, limit } = req.query as Record<string, string>;
 
-    logger.info('Get admin bookings', { status, from, to });
+    const conditions: string[] = [];
+    const params: any[] = [];
+    if (status) { params.push(status); conditions.push(`r.status = $${params.length}`); }
+    if (from) { params.push(from); conditions.push(`r.check_in_date >= $${params.length}::date`); }
+    if (to) { params.push(to); conditions.push(`r.check_in_date <= $${params.length}::date`); }
+    if (channel) { params.push(channel); conditions.push(`c.code = $${params.length}`); }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit || '20', 10) || 20));
+
+    const [dataResult, countResult] = await Promise.all([
+      query(
+        `SELECT r.id, r.reservation_number, r.status, r.check_in_date, r.check_out_date,
+                r.beds_count, r.final_price, r.deposit_amount, r.remaining_amount,
+                g.full_name AS guest_name, g.email AS guest_email,
+                c.code AS channel_code, r.created_at
+         FROM reservations r
+         JOIN guests g ON g.id = r.guest_id
+         JOIN channels c ON c.id = r.channel_id
+         ${where}
+         ORDER BY r.created_at DESC
+         LIMIT ${limitNum} OFFSET ${(pageNum - 1) * limitNum}`,
+        params
+      ),
+      query(`SELECT COUNT(*)::int AS total FROM reservations r JOIN channels c ON c.id = r.channel_id ${where}`, params)
+    ]);
 
     res.status(200).json(
       ApiResponse.success({
-        bookings: [],
-        filters: { status, from, to },
-        pagination: {
-          page: 1,
-          limit: 50,
-          total: 0
-        }
+        bookings: dataResult.rows,
+        pagination: { page: pageNum, limit: limitNum, total: countResult.rows[0].total }
       })
     );
   } catch (error) {
@@ -98,200 +124,161 @@ router.get('/bookings', async (req, res, next) => {
 });
 
 /**
- * Update Room Configuration
- * @route PATCH /admin/rooms/:id
- * @group Admin - Administrative operations
- * @param {string} id.path.required - Room ID
- * @param {object} updates.body.required - Room updates
- * @returns {object} 200 - Updated room
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 404 - Room not found
- * @returns {Error} 500 - Server error
+ * PUT /admin/bookings/:id — corrección manual (no toca fechas/habitaciones/status, ver nota arriba)
  */
-router.patch('/rooms/:id', async (req, res, next) => {
+router.put('/bookings/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const body = req.body as Record<string, any>;
 
-    logger.info('Update room configuration', { roomId: id, updates });
+    const forbidden = ['checkIn', 'checkOut', 'check_in_date', 'check_out_date', 'rooms', 'status'];
+    const attempted = forbidden.filter(f => body[f] !== undefined);
+    if (attempted.length > 0) {
+      res.status(400).json(
+        ApiResponse.error(
+          `No se pueden modificar estos campos desde acá (saltearía el motor anti-overbooking): ${attempted.join(', ')}. Para cambiar fechas/habitaciones: cancelar y crear una reserva nueva. Para cambiar el status: usar los endpoints dedicados (confirmar/cancelar).`
+        )
+      );
+      return;
+    }
 
-    res.status(200).json(
-      ApiResponse.success({ id, ...updates }, 'Room updated successfully')
-    );
+    const existing = await bookingService.getBooking(id);
+    if (!existing) {
+      res.status(404).json(ApiResponse.error('Reserva no encontrada'));
+      return;
+    }
+
+    const updateData: Record<string, any> = {};
+    if (body.specialRequests !== undefined) updateData.special_requests = body.specialRequests;
+    if (body.finalPrice !== undefined) updateData.final_price = Number(body.finalPrice);
+    if (body.depositAmount !== undefined) updateData.deposit_amount = Number(body.depositAmount);
+    if (body.remainingAmount !== undefined) updateData.remaining_amount = Number(body.remainingAmount);
+
+    if (Object.keys(updateData).length > 0) {
+      await bookingService.updateBooking(id, updateData);
+    }
+
+    if (body.guest) {
+      const guestUpdate: Record<string, any> = {};
+      if (body.guest.fullName) guestUpdate.full_name = body.guest.fullName;
+      if (body.guest.phone) guestUpdate.phone = body.guest.phone;
+      if (body.guest.country) guestUpdate.country = body.guest.country;
+      if (Object.keys(guestUpdate).length > 0) {
+        await bookingService.updateGuest(existing.guest_id, guestUpdate);
+      }
+    }
+
+    await auditLogService.log({
+      entity_type: 'reservation',
+      entity_id: id,
+      operation: 'ADMIN_UPDATE',
+      reservation_id: id,
+      guest_id: existing.guest_id,
+      old_data: existing as unknown as Record<string, unknown>,
+      new_data: { ...updateData, guest: body.guest }
+    });
+
+    const updated = await bookingService.getBooking(id);
+    res.status(200).json(ApiResponse.success(updated, 'Reserva actualizada'));
   } catch (error) {
     next(error);
   }
 });
 
 /**
- * Manual Price Override
- * @route POST /admin/pricing/override
- * @group Admin - Administrative operations
- * @param {object} override.body.required - Price override details
- * @returns {object} 201 - Override created
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
+ * POST /admin/bookings/:id/resend-confirmation
  */
-router.post('/pricing/override', async (req, res, next) => {
+router.post('/bookings/:id/resend-confirmation', async (req, res, next) => {
   try {
-    const override = req.body;
-
-    logger.info('Create price override', override);
-
-    res.status(201).json(
-      ApiResponse.success(override, 'Price override created')
-    );
+    const { id } = req.params;
+    const booking = await bookingService.getBooking(id);
+    if (!booking || !booking.guest) {
+      res.status(404).json(ApiResponse.error('Reserva o huésped no encontrado'));
+      return;
+    }
+    await notificationService.notify('booking_confirmation', booking as BookingWithGuest);
+    res.status(200).json(ApiResponse.success({ sent: true }, 'Confirmación reenviada'));
   } catch (error) {
     next(error);
   }
 });
 
 /**
- * Export Bookings to CSV
- * @route GET /admin/export/bookings
- * @group Admin - Administrative operations
- * @param {string} from.query.required - Start date
- * @param {string} to.query.required - End date
- * @returns {file} 200 - CSV file
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
- */
-router.get('/export/bookings', async (req, res, next) => {
-  try {
-    const { from, to } = req.query;
-
-    logger.info('Export bookings to CSV', { from, to });
-
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=bookings.csv');
-    res.status(200).send('id,guest,checkIn,checkOut,total\n');
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Sync Bookings to Google Sheets
- * @route POST /admin/sync/sheets
- * @group Admin - Administrative operations
- * @returns {object} 200 - Sync status
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
- */
-router.post('/sync/sheets', async (req, res, next) => {
-  try {
-    logger.info('Manual sync to Google Sheets');
-
-    res.status(200).json(
-      ApiResponse.success({ synced: 0, failed: 0 }, 'Sync completed')
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Get Payment Reports
- * @route GET /admin/reports/payments
- * @group Admin - Administrative operations
- * @param {string} period.query - Report period (daily/weekly/monthly)
- * @returns {object} 200 - Payment report
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
- */
-router.get('/reports/payments', async (req, res, next) => {
-  try {
-    const { period = 'monthly' } = req.query;
-
-    logger.info('Get payment reports', { period });
-
-    res.status(200).json(
-      ApiResponse.success({
-        period,
-        totalRevenue: 0,
-        totalPayments: 0,
-        successRate: 0,
-        averageBookingValue: 0,
-        currency: 'BRL'
-      })
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Get Occupancy Reports
- * @route GET /admin/reports/occupancy
- * @group Admin - Administrative operations
- * @param {string} from.query.required - Start date
- * @param {string} to.query.required - End date
- * @returns {object} 200 - Occupancy report
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
- */
-router.get('/reports/occupancy', async (req, res, next) => {
-  try {
-    const { from, to } = req.query;
-
-    logger.info('Get occupancy reports', { from, to });
-
-    res.status(200).json(
-      ApiResponse.success({
-        period: { from, to },
-        averageOccupancy: 0,
-        totalNights: 0,
-        totalRevenue: 0,
-        byRoom: []
-      })
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Manual Booking Creation (Admin)
- * @route POST /admin/bookings
- * @group Admin - Administrative operations
- * @param {object} booking.body.required - Booking details
- * @returns {object} 201 - Created booking
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 400 - Validation error
- * @returns {Error} 500 - Server error
- */
-router.post('/bookings', async (req, res, next) => {
-  try {
-    const booking = req.body;
-
-    logger.info('Admin creating manual booking', booking);
-
-    res.status(201).json(
-      ApiResponse.success({ id: 'manual_booking_id', ...booking }, 'Booking created')
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Force Confirm Booking (Admin Override)
- * @route POST /admin/bookings/:id/confirm
- * @group Admin - Administrative operations
- * @param {string} id.path.required - Booking ID
- * @returns {object} 200 - Confirmed booking
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 404 - Booking not found
- * @returns {Error} 500 - Server error
+ * POST /admin/bookings/:id/confirm — override manual, confirma sin depender de un pago
  */
 router.post('/bookings/:id/confirm', async (req, res, next) => {
   try {
     const { id } = req.params;
+    const existing = await bookingService.getBooking(id);
+    if (!existing) {
+      res.status(404).json(ApiResponse.error('Reserva no encontrada'));
+      return;
+    }
+    const updated = await bookingService.confirmBooking(id);
+    await auditLogService.log({
+      entity_type: 'reservation', entity_id: id, operation: 'ADMIN_FORCE_CONFIRM',
+      reservation_id: id, guest_id: existing.guest_id,
+      old_data: { status: existing.status }, new_data: { status: 'confirmed' }
+    });
+    res.status(200).json(ApiResponse.success(updated, 'Reserva confirmada'));
+  } catch (error) {
+    next(error);
+  }
+});
 
-    logger.info('Admin force confirming booking', { bookingId: id });
+/**
+ * PUT /admin/rooms/:id/settings — precio base y flag de flexible
+ */
+router.put('/rooms/:id/settings', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { basePrice, isFlexible } = req.body as { basePrice?: number; isFlexible?: boolean };
 
+    if (basePrice === undefined && isFlexible === undefined) {
+      res.status(400).json(ApiResponse.error('Nada para actualizar: basePrice y/o isFlexible'));
+      return;
+    }
+
+    const sets: string[] = [];
+    const params: any[] = [];
+    if (basePrice !== undefined) { params.push(basePrice); sets.push(`base_price = $${params.length}`); }
+    if (isFlexible !== undefined) { params.push(isFlexible); sets.push(`is_flexible = $${params.length}`); }
+    params.push(id);
+
+    const { rows } = await query(
+      `UPDATE room_types SET ${sets.join(', ')}, updated_at = now() WHERE id = $${params.length} RETURNING *`,
+      params
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Habitación no encontrada'));
+      return;
+    }
+
+    await auditLogService.log({
+      entity_type: 'room_type', entity_id: id, operation: 'ADMIN_UPDATE_SETTINGS',
+      new_data: { basePrice, isFlexible }
+    });
+
+    res.status(200).json(ApiResponse.success(rows[0], 'Habitación actualizada'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/pricing — estado actual de rate_plans + fechas de Carnaval, para poblar el formulario del panel
+ */
+router.get('/pricing', async (req, res, next) => {
+  try {
+    const [ratePlans, carnivalConfig] = await Promise.all([
+      query(`SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`),
+      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`)
+    ]);
     res.status(200).json(
-      ApiResponse.success({ id, status: 'CONFIRMED' }, 'Booking confirmed')
+      ApiResponse.success({
+        ratePlans: ratePlans.rows,
+        carnivalDates: carnivalConfig.rows[0]?.value ?? []
+      })
     );
   } catch (error) {
     next(error);
@@ -299,104 +286,173 @@ router.post('/bookings/:id/confirm', async (req, res, next) => {
 });
 
 /**
- * Get System Health
- * @route GET /admin/health
- * @group Admin - Administrative operations
- * @returns {object} 200 - System health status
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
+ * PUT /admin/pricing — rate_plans (multiplicador/mín. noches por temporada) + fechas de Carnaval
+ */
+router.put('/pricing', async (req, res, next) => {
+  try {
+    const { seasonType, multiplier, minNights, carnival } = req.body as {
+      seasonType?: 'alta' | 'media' | 'baja' | 'carnaval';
+      multiplier?: number;
+      minNights?: number;
+      // ventana4: system_config.carnival_dates es un ARRAY de rangos
+      // {year, start_date, end_date} (ver 0001_seed.sql y
+      // get_season_type() en 0004_pricing_functions.sql, que itera el
+      // array buscando en qué rango cae la fecha) -- no un mapa por año.
+      carnival?: { year: number; startDate: string; endDate: string };
+    };
+
+    const updated: Record<string, any> = {};
+
+    if (seasonType && (multiplier !== undefined || minNights !== undefined)) {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (multiplier !== undefined) { params.push(multiplier); sets.push(`multiplier = $${params.length}`); }
+      if (minNights !== undefined) { params.push(minNights); sets.push(`min_nights = $${params.length}`); }
+      params.push(seasonType);
+      const { rows } = await query(
+        `UPDATE rate_plans SET ${sets.join(', ')}, updated_at = now() WHERE season_type = $${params.length}::season_type RETURNING *`,
+        params
+      );
+      if (rows.length === 0) {
+        res.status(404).json(ApiResponse.error(`Temporada "${seasonType}" no encontrada`));
+        return;
+      }
+      updated.ratePlan = rows[0];
+    }
+
+    if (carnival) {
+      const { rows: existingRows } = await query<{ value: Array<{ year: number; start_date: string; end_date: string }> }>(
+        `SELECT value FROM system_config WHERE key = 'carnival_dates'`
+      );
+      const currentValue = existingRows[0]?.value ?? [];
+      // Reemplaza el rango existente de ese año (si lo había) en vez de acumular duplicados -- "mantenimiento anual" del Maestro.
+      const nextValue = [
+        ...currentValue.filter(p => p.year !== carnival.year),
+        { year: carnival.year, start_date: carnival.startDate, end_date: carnival.endDate }
+      ].sort((a, b) => a.year - b.year);
+
+      const { rows } = await query(
+        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'carnival_dates' RETURNING *`,
+        [JSON.stringify(nextValue)]
+      );
+      updated.carnivalDates = rows[0];
+    }
+
+    if (Object.keys(updated).length === 0) {
+      res.status(400).json(ApiResponse.error('Nada para actualizar: seasonType+multiplier/minNights, o carnival'));
+      return;
+    }
+
+    await auditLogService.log({ entity_type: 'pricing_config', entity_id: 'global', operation: 'ADMIN_UPDATE_PRICING', new_data: updated });
+
+    res.status(200).json(ApiResponse.success(updated, 'Precios actualizados'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/audit-logs
+ */
+router.get('/audit-logs', async (req, res, next) => {
+  try {
+    const { entityType, operation, from, to, page, limit } = req.query as Record<string, string>;
+    const result = await auditLogService.listAll({
+      entityType, operation, dateFrom: from, dateTo: to,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined
+    });
+    res.status(200).json(ApiResponse.success(result));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/stats/occupancy?month=&year=
+ */
+router.get('/stats/occupancy', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const month = parseInt((req.query.month as string) || String(now.getMonth() + 1), 10);
+    const year = parseInt((req.query.year as string) || String(now.getFullYear()), 10);
+    const stats = await statsService.getOccupancyStats(month, year);
+    res.status(200).json(ApiResponse.success(stats));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/stats/revenue?month=&year=
+ */
+router.get('/stats/revenue', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const month = parseInt((req.query.month as string) || String(now.getMonth() + 1), 10);
+    const year = parseInt((req.query.year as string) || String(now.getFullYear()), 10);
+    const stats = await statsService.getRevenueStats(month, year);
+    res.status(200).json(ApiResponse.success(stats));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/stats/channels?month=&year=
+ */
+router.get('/stats/channels', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const month = parseInt((req.query.month as string) || String(now.getMonth() + 1), 10);
+    const year = parseInt((req.query.year as string) || String(now.getFullYear()), 10);
+    const stats = await statsService.getChannelStats(month, year);
+    res.status(200).json(ApiResponse.success(stats));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/stats/groups?month=&year=
+ */
+router.get('/stats/groups', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const month = parseInt((req.query.month as string) || String(now.getMonth() + 1), 10);
+    const year = parseInt((req.query.year as string) || String(now.getFullYear()), 10);
+    const stats = await statsService.getGroupStats(month, year);
+    res.status(200).json(ApiResponse.success(stats));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /admin/sync/sheets — export manual completo a Google Sheets
+ */
+router.post('/sync/sheets', async (req, res, next) => {
+  try {
+    const result = await fullExport();
+    res.status(200).json(ApiResponse.success(result, result.errors.length === 0 ? 'Sync completado' : 'Sync completado con errores'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/health
  */
 router.get('/health', async (req, res, next) => {
   try {
-    logger.info('Get system health');
-
+    const { testConnection } = await import('../../config/database');
+    const dbOk = await testConnection();
     res.status(200).json(
       ApiResponse.success({
-        status: 'healthy',
+        status: dbOk ? 'healthy' : 'degraded',
         uptime: process.uptime(),
-        database: 'connected',
-        redis: 'connected',
-        stripe: 'operational',
-        mercadopago: 'operational',
-        googleSheets: 'connected'
+        database: dbOk ? 'connected' : 'disconnected'
       })
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Get System Logs
- * @route GET /admin/logs
- * @group Admin - Administrative operations
- * @param {string} level.query - Log level filter
- * @param {number} limit.query - Number of logs to return
- * @returns {Array} 200 - System logs
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
- */
-router.get('/logs', async (req, res, next) => {
-  try {
-    const { level = 'all', limit = 100 } = req.query;
-
-    logger.info('Get system logs', { level, limit });
-
-    res.status(200).json(
-      ApiResponse.success({
-        logs: [],
-        level,
-        limit: parseInt(limit as string, 10)
-      })
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Update System Settings
- * @route PATCH /admin/settings
- * @group Admin - Administrative operations
- * @param {object} settings.body.required - Settings to update
- * @returns {object} 200 - Updated settings
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 500 - Server error
- */
-router.patch('/settings', async (req, res, next) => {
-  try {
-    const settings = req.body;
-
-    logger.info('Update system settings', settings);
-
-    res.status(200).json(
-      ApiResponse.success(settings, 'Settings updated')
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Refund Payment (Admin)
- * @route POST /admin/payments/:id/refund
- * @group Admin - Administrative operations
- * @param {string} id.path.required - Payment ID
- * @param {object} refund.body.required - Refund details
- * @returns {object} 200 - Refund processed
- * @returns {Error} 401 - Unauthorized
- * @returns {Error} 404 - Payment not found
- * @returns {Error} 500 - Server error
- */
-router.post('/payments/:id/refund', async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const refund = req.body;
-
-    logger.info('Admin processing refund', { paymentId: id, refund });
-
-    res.status(200).json(
-      ApiResponse.success({ id, ...refund, status: 'REFUNDED' }, 'Refund processed')
     );
   } catch (error) {
     next(error);

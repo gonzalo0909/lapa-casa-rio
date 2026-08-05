@@ -68,9 +68,7 @@ export class MercadoPagoPaymentHandler {
       body.installments = data.installments;
     }
     if (data.paymentMethod === 'pix') {
-      body.date_of_expiration = new Date(
-        Date.now() + this.PIX_EXPIRATION_MINUTES * 60 * 1000
-      ).toISOString();
+      body.date_of_expiration = new Date(Date.now() + this.PIX_EXPIRATION_MINUTES * 60 * 1000).toISOString();
     }
 
     const resp = await fetch('https://api.mercadopago.com/v1/payments', {
@@ -92,30 +90,23 @@ export class MercadoPagoPaymentHandler {
       id: payment.id.toString(),
       qrCode: payment.point_of_interaction?.transaction_data?.qr_code,
       qrCodeBase64: payment.point_of_interaction?.transaction_data?.qr_code_base64,
-      expiresAt: payment.date_of_expiration
-        ? new Date(payment.date_of_expiration)
-        : undefined,
+      expiresAt: payment.date_of_expiration ? new Date(payment.date_of_expiration) : undefined,
     };
   }
 
   async createRefund(data: MPRefundInput): Promise<void> {
     if (!this.accessToken) {
-      logger.warn('MercadoPago no configurado — reembolso simulado', {
-        paymentId: data.paymentId,
-      });
+      logger.warn('MercadoPago no configurado — reembolso simulado', { paymentId: data.paymentId });
       return;
     }
-    const resp = await fetch(
-      `https://api.mercadopago.com/v1/payments/${data.paymentId}/refunds`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ amount: data.amount }),
-      }
-    );
+    const resp = await fetch(`https://api.mercadopago.com/v1/payments/${data.paymentId}/refunds`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount: data.amount }),
+    });
     if (!resp.ok) {
       const err = await resp.text();
       throw new Error(`MercadoPago refund error: ${resp.status} ${err}`);
@@ -145,16 +136,14 @@ export class MercadoPagoPaymentHandler {
   }
 
   getMaxInstallments(amount: number): number {
-    return Math.min(
-      Math.floor(amount / this.MIN_INSTALLMENT_AMOUNT),
-      this.MAX_INSTALLMENTS
-    );
+    return Math.min(Math.floor(amount / this.MIN_INSTALLMENT_AMOUNT), this.MAX_INSTALLMENTS);
   }
 
-  calculateInstallmentAmount(
-    amount: number,
-    installments: number
-  ): { installmentAmount: number; totalAmount: number; interestRate: number } {
+  calculateInstallmentAmount(amount: number, installments: number): {
+    installmentAmount: number;
+    totalAmount: number;
+    interestRate: number;
+  } {
     const rates: Record<number, number> = {
       1: 0, 2: 0, 3: 0,
       4: 0.0299, 5: 0.0299, 6: 0.0299,

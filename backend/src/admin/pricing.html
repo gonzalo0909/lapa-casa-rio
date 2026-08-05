@@ -1,0 +1,50 @@
+<!-- lapa-casa-hostel/backend/src/admin/pricing.html — ventana4 (bloque 2) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precios — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Temporadas</h2>
+    <div id="seasons-msg"></div>
+    <table id="seasons-table">
+      <thead><tr><th>Temporada</th><th>Multiplicador</th><th>Mín. noches</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Fechas de Carnaval</h2>
+    <p style="font-size:13px;color:#888;">Fechas móviles — requieren mantenimiento anual. Cargar un rango nuevo reemplaza el rango existente de ese año.</p>
+    <div id="carnival-msg"></div>
+    <table id="carnival-table">
+      <thead><tr><th>Año</th><th>Desde</th><th>Hasta</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <form class="stack" id="carnival-form" style="margin-top:16px;">
+      <label>Año
+        <input type="number" id="carnival-year" required min="2026" max="2100">
+      </label>
+      <label>Desde
+        <input type="date" id="carnival-start" required>
+      </label>
+      <label>Hasta
+        <input type="date" id="carnival-end" required>
+      </label>
+      <button type="submit">Guardar rango</button>
+    </form>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/pricing.js"></script>
+</body>
+</html>

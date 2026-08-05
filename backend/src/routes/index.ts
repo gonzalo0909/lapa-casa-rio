@@ -16,7 +16,10 @@ import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
 import { adminRouter } from './admin/admin.routes';
-import { authMiddleware } from '../middleware/auth';
+import { adminAuthRouter } from './admin/admin-auth.routes';
+import icalRouter from './ical/ical.routes';
+import otaWebhooksRouter from './webhooks/ota.routes';
+import { authenticateToken, requireRole } from '../middleware/auth';
 import { rateLimiter } from '../middleware/rate-limiter';
 import { logger } from '../utils/logger';
 
@@ -65,6 +68,16 @@ router.use('/availability', rateLimiter({ max: 100, windowMs: 60000 }), availabi
 router.use('/rooms', rateLimiter({ max: 100, windowMs: 60000 }), roomsRouter);
 
 /**
+ * iCal (ventana5): export publico de disponibilidad + config/sync de
+ * importacion (estas ultimas requieren admin, aplicado dentro del propio
+ * router). Webhooks de reservas OTA: solo Booking.com y Expedia tienen
+ * (Airbnb/Hostelworld son iCal-only) -- autenticados por firma HMAC +
+ * API key propios, no por JWT de admin (ver routes/webhooks/ota.routes.ts).
+ */
+router.use('/ical', icalRouter);
+router.use('/webhooks', otaWebhooksRouter);
+
+/**
  * Semi-Protected Routes (Rate Limited)
  */
 router.use('/bookings', rateLimiter({ max: 50, windowMs: 60000 }), bookingsRouter);
@@ -75,9 +88,16 @@ router.use('/bookings', rateLimiter({ max: 50, windowMs: 60000 }), bookingsRoute
 router.use('/payments', rateLimiter({ max: 30, windowMs: 60000 }), paymentsRouter);
 
 /**
- * Admin Routes (Authentication Required)
+ * Admin Login (ventana4 bloque 2) — público, montado ANTES del
+ * authenticateToken de abajo (si no, nadie podría loguearse para
+ * conseguir el primer token). Rate limit estricto contra fuerza bruta.
  */
-router.use('/admin', authMiddleware, rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
+router.use('/admin/login', rateLimiter({ max: 10, windowMs: 60000 }), adminAuthRouter);
+
+/**
+ * Admin Routes (Authentication + rol admin requeridos)
+ */
+router.use('/admin', authenticateToken, requireRole(['admin']), rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
 
 /**
  * Catch-all 404 Handler

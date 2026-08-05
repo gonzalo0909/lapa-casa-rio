@@ -1,422 +1,220 @@
 // lapa-casa-hostel/backend/src/integrations/google-sheets/sheets-client.ts
+// ventana4 (bloque 2)
+//
+// Cliente de bajo nivel contra la API de Google Sheets. Reescrito
+// contra el schema real (0002_tables.sql) y la estructura de columnas
+// A-N del prompt de esta ventana -- la version anterior apuntaba a una
+// tabla `rooms` y columnas (`total_price`, `notes`, `room_id`) que no
+// existen en el schema real, y nunca se probo.
+//
+// Autenticacion: service account de Google Cloud. Sin las credenciales
+// configuradas (GOOGLE_SERVICE_ACCOUNT_EMAIL / _PRIVATE_KEY /
+// GOOGLE_SHEETS_SPREADSHEET_ID), el cliente queda deshabilitado y cada
+// metodo resuelve como no-op logueando un warning -- mismo patron que
+// Resend/Stripe/MercadoPago en el resto del repo, para no romper el
+// server si Sheets todavia no esta configurado.
 
 import { google, sheets_v4 } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { logger } from '../../utils/logger';
 
 /**
- * @module SheetsClient
- * @description Google Sheets API client for syncing booking data
- */
-
-/**
- * @interface BookingRowData
- * @description Data structure for a booking row in Google Sheets
+ * Estructura de columnas A-N (prompt de Ventana 4):
+ * A=booking_id, B=guest_name, C=guest_email, D=guest_phone, E=check_in,
+ * F=check_out, G=room_assigned, H=beds_count, I=total_price,
+ * J=deposit_paid, K=remaining_paid, L=booking_status, M=created_date, N=notes
  */
 export interface BookingRowData {
   bookingId: string;
   guestName: string;
   guestEmail: string;
-  roomName: string;
+  guestPhone: string;
   checkIn: string;
   checkOut: string;
-  nights: number;
-  adults: number;
-  children: number;
+  roomAssigned: string;
+  bedsCount: number;
   totalPrice: number;
-  status: string;
-  platform: string;
-  createdAt: string;
-  notes?: string;
+  depositPaid: number;
+  remainingPaid: number;
+  bookingStatus: string;
+  createdDate: string;
+  notes: string;
 }
 
-/**
- * @interface SheetsConfig
- * @description Configuration for Google Sheets integration
- */
-export interface SheetsConfig {
-  spreadsheetId: string;
-  sheetName: string;
-  credentials: {
-    clientEmail: string;
-    privateKey: string;
+const COLUMN_RANGE = 'A:N';
+const HEADER_ROW = [
+  'booking_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in', 'check_out',
+  'room_assigned', 'beds_count', 'total_price', 'deposit_paid', 'remaining_paid',
+  'booking_status', 'created_date', 'notes'
+];
+
+function rowToValues(data: BookingRowData): (string | number)[] {
+  return [
+    data.bookingId, data.guestName, data.guestEmail, data.guestPhone,
+    data.checkIn, data.checkOut, data.roomAssigned, data.bedsCount,
+    data.totalPrice, data.depositPaid, data.remainingPaid,
+    data.bookingStatus, data.createdDate, data.notes
+  ];
+}
+
+function valuesToRow(row: any[]): BookingRowData {
+  return {
+    bookingId: String(row[0] ?? ''),
+    guestName: String(row[1] ?? ''),
+    guestEmail: String(row[2] ?? ''),
+    guestPhone: String(row[3] ?? ''),
+    checkIn: String(row[4] ?? ''),
+    checkOut: String(row[5] ?? ''),
+    roomAssigned: String(row[6] ?? ''),
+    bedsCount: Number(row[7] ?? 0),
+    totalPrice: Number(row[8] ?? 0),
+    depositPaid: Number(row[9] ?? 0),
+    remainingPaid: Number(row[10] ?? 0),
+    bookingStatus: String(row[11] ?? ''),
+    createdDate: String(row[12] ?? ''),
+    notes: String(row[13] ?? '')
   };
 }
 
-/**
- * @interface SheetRange
- * @description Represents a range in Google Sheets
- */
-export interface SheetRange {
-  sheetName: string;
-  startRow: number;
-  endRow?: number;
-  startColumn?: string;
-  endColumn?: string;
-}
-
-/**
- * @class SheetsClient
- * @description Client for interacting with Google Sheets API
- */
 export class SheetsClient {
-  private auth: JWT;
-  private sheets: sheets_v4.Sheets;
+  private sheets: sheets_v4.Sheets | null = null;
   private spreadsheetId: string;
   private sheetName: string;
 
-  constructor(config: SheetsConfig) {
-    this.spreadsheetId = config.spreadsheetId;
-    this.sheetName = config.sheetName;
+  constructor() {
+    this.spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID ?? '';
+    this.sheetName = process.env.GOOGLE_SHEETS_SHEET_NAME || 'Bookings';
 
-    // Initialize authentication
-    this.auth = new JWT({
-      email: config.credentials.clientEmail,
-      key: config.credentials.privateKey.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+
+    if (!email || !privateKey || !this.spreadsheetId) {
+      logger.warn('Google Sheets no configurado (faltan GOOGLE_SERVICE_ACCOUNT_EMAIL / _PRIVATE_KEY / GOOGLE_SHEETS_SPREADSHEET_ID) — exportación deshabilitada');
+      return;
+    }
+
+    const auth = new JWT({
+      email,
+      key: privateKey.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    });
+    this.sheets = google.sheets({ version: 'v4', auth });
+  }
+
+  isEnabled(): boolean {
+    return this.sheets !== null;
+  }
+
+  private requireClient(): sheets_v4.Sheets {
+    if (!this.sheets) throw new Error('Google Sheets no configurado');
+    return this.sheets;
+  }
+
+  async initializeSheet(): Promise<void> {
+    if (!this.sheets) return;
+    const existing = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.sheetName}!A1:N1`
+    });
+    if (existing.data.values && existing.data.values.length > 0) return;
+
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.sheetName}!A1:N1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [HEADER_ROW] }
     });
 
-    // Initialize Sheets API
-    this.sheets = google.sheets({ version: 'v4', auth: this.auth });
+    const sheetId = await this.getSheetId();
+    await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: this.spreadsheetId,
+      requestBody: {
+        requests: [{
+          repeatCell: {
+            range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+            cell: { userEnteredFormat: { textFormat: { bold: true } } },
+            fields: 'userEnteredFormat.textFormat.bold'
+          }
+        }]
+      }
+    });
   }
 
-  /**
-   * @method appendRow
-   * @description Appends a new row to the sheet
-   * @param {BookingRowData} data - Booking data to append
-   * @returns {Promise<void>}
-   */
   async appendRow(data: BookingRowData): Promise<void> {
-    try {
-      const values = [
-        [
-          data.bookingId,
-          data.guestName,
-          data.guestEmail,
-          data.roomName,
-          data.checkIn,
-          data.checkOut,
-          data.nights,
-          data.adults,
-          data.children,
-          data.totalPrice,
-          data.status,
-          data.platform,
-          data.createdAt,
-          data.notes || '',
-        ],
-      ];
-
-      await this.sheets.spreadsheets.values.append({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A:N`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values,
-        },
-      });
-    } catch (error) {
-      console.error('Error appending row to Google Sheets:', error);
-      throw new Error(`Failed to append row: ${this.getErrorMessage(error)}`);
-    }
+    const sheets = this.requireClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.sheetName}!${COLUMN_RANGE}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [rowToValues(data)] }
+    });
   }
 
-  /**
-   * @method updateRow
-   * @description Updates an existing row in the sheet
-   * @param {number} rowIndex - Row index (1-based)
-   * @param {BookingRowData} data - Updated booking data
-   * @returns {Promise<void>}
-   */
   async updateRow(rowIndex: number, data: BookingRowData): Promise<void> {
-    try {
-      const values = [
-        [
-          data.bookingId,
-          data.guestName,
-          data.guestEmail,
-          data.roomName,
-          data.checkIn,
-          data.checkOut,
-          data.nights,
-          data.adults,
-          data.children,
-          data.totalPrice,
-          data.status,
-          data.platform,
-          data.createdAt,
-          data.notes || '',
-        ],
-      ];
-
-      await this.sheets.spreadsheets.values.update({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A${rowIndex}:N${rowIndex}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values,
-        },
-      });
-    } catch (error) {
-      console.error('Error updating row in Google Sheets:', error);
-      throw new Error(`Failed to update row: ${this.getErrorMessage(error)}`);
-    }
+    const sheets = this.requireClient();
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.sheetName}!A${rowIndex}:N${rowIndex}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [rowToValues(data)] }
+    });
   }
 
-  /**
-   * @method findRowByBookingId
-   * @description Finds a row by booking ID
-   * @param {string} bookingId - Booking ID to search for
-   * @returns {Promise<number | null>} Row index (1-based) or null if not found
-   */
+  /** Devuelve el índice de fila (1-based) para un bookingId, o null si no existe. */
   async findRowByBookingId(bookingId: string): Promise<number | null> {
-    try {
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A:A`,
-      });
-
-      const rows = response.data.values;
-      if (!rows || rows.length === 0) {
-        return null;
-      }
-
-      for (let i = 0; i < rows.length; i++) {
-        if (rows[i][0] === bookingId) {
-          return i + 1; // Return 1-based index
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error finding row in Google Sheets:', error);
-      throw new Error(`Failed to find row: ${this.getErrorMessage(error)}`);
+    const sheets = this.requireClient();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.sheetName}!A:A`
+    });
+    const rows = response.data.values;
+    if (!rows) return null;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i][0] === bookingId) return i + 1;
     }
+    return null;
   }
 
-  /**
-   * @method getAllRows
-   * @description Retrieves all rows from the sheet
-   * @returns {Promise<BookingRowData[]>} Array of booking data
-   */
-  async getAllRows(): Promise<BookingRowData[]> {
-    try {
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A2:N`, // Skip header row
-      });
-
-      const rows = response.data.values;
-      if (!rows || rows.length === 0) {
-        return [];
-      }
-
-      return rows.map((row) => this.parseRowData(row));
-    } catch (error) {
-      console.error('Error getting all rows from Google Sheets:', error);
-      throw new Error(`Failed to get rows: ${this.getErrorMessage(error)}`);
-    }
-  }
-
-  /**
-   * @method deleteRow
-   * @description Deletes a row from the sheet
-   * @param {number} rowIndex - Row index (1-based)
-   * @returns {Promise<void>}
-   */
   async deleteRow(rowIndex: number): Promise<void> {
-    try {
-      // Get sheet ID first
-      const sheetId = await this.getSheetId();
-
-      await this.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: this.spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              deleteDimension: {
-                range: {
-                  sheetId,
-                  dimension: 'ROWS',
-                  startIndex: rowIndex - 1, // 0-based for API
-                  endIndex: rowIndex,
-                },
-              },
-            },
-          ],
-        },
-      });
-    } catch (error) {
-      console.error('Error deleting row from Google Sheets:', error);
-      throw new Error(`Failed to delete row: ${this.getErrorMessage(error)}`);
-    }
-  }
-
-  /**
-   * @method clearSheet
-   * @description Clears all data from the sheet (except header)
-   * @returns {Promise<void>}
-   */
-  async clearSheet(): Promise<void> {
-    try {
-      await this.sheets.spreadsheets.values.clear({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A2:N`,
-      });
-    } catch (error) {
-      console.error('Error clearing Google Sheets:', error);
-      throw new Error(`Failed to clear sheet: ${this.getErrorMessage(error)}`);
-    }
-  }
-
-  /**
-   * @method initializeSheet
-   * @description Initializes the sheet with headers if empty
-   * @returns {Promise<void>}
-   */
-  async initializeSheet(): Promise<void> {
-    try {
-      const headers = [
-        [
-          'Booking ID',
-          'Guest Name',
-          'Guest Email',
-          'Room',
-          'Check In',
-          'Check Out',
-          'Nights',
-          'Adults',
-          'Children',
-          'Total Price',
-          'Status',
-          'Platform',
-          'Created At',
-          'Notes',
-        ],
-      ];
-
-      // Check if headers already exist
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.sheetName}!A1:N1`,
-      });
-
-      if (!response.data.values || response.data.values.length === 0) {
-        // Add headers
-        await this.sheets.spreadsheets.values.update({
-          spreadsheetId: this.spreadsheetId,
-          range: `${this.sheetName}!A1:N1`,
-          valueInputOption: 'USER_ENTERED',
-          requestBody: {
-            values: headers,
-          },
-        });
-
-        // Format headers (bold)
-        const sheetId = await this.getSheetId();
-        await this.sheets.spreadsheets.batchUpdate({
-          spreadsheetId: this.spreadsheetId,
-          requestBody: {
-            requests: [
-              {
-                repeatCell: {
-                  range: {
-                    sheetId,
-                    startRowIndex: 0,
-                    endRowIndex: 1,
-                  },
-                  cell: {
-                    userEnteredFormat: {
-                      textFormat: {
-                        bold: true,
-                      },
-                    },
-                  },
-                  fields: 'userEnteredFormat.textFormat.bold',
-                },
-              },
-            ],
-          },
-        });
+    const sheets = this.requireClient();
+    const sheetId = await this.getSheetId();
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: this.spreadsheetId,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: { sheetId, dimension: 'ROWS', startIndex: rowIndex - 1, endIndex: rowIndex }
+          }
+        }]
       }
-    } catch (error) {
-      console.error('Error initializing Google Sheets:', error);
-      throw new Error(`Failed to initialize sheet: ${this.getErrorMessage(error)}`);
-    }
+    });
   }
 
-  /**
-   * @method getSheetId
-   * @description Gets the sheet ID by name
-   * @returns {Promise<number>} Sheet ID
-   */
+  async getAllRows(): Promise<BookingRowData[]> {
+    const sheets = this.requireClient();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.sheetName}!A2:N`
+    });
+    const rows = response.data.values;
+    if (!rows) return [];
+    return rows.map(valuesToRow);
+  }
+
   private async getSheetId(): Promise<number> {
-    try {
-      const response = await this.sheets.spreadsheets.get({
-        spreadsheetId: this.spreadsheetId,
-      });
-
-      const sheet = response.data.sheets?.find(
-        (s) => s.properties?.title === this.sheetName
-      );
-
-      if (!sheet || sheet.properties?.sheetId === undefined) {
-        throw new Error(`Sheet "${this.sheetName}" not found`);
-      }
-
-      return sheet.properties.sheetId;
-    } catch (error) {
-      console.error('Error getting sheet ID:', error);
-      throw error;
+    const sheets = this.requireClient();
+    const response = await sheets.spreadsheets.get({ spreadsheetId: this.spreadsheetId });
+    const sheet = response.data.sheets?.find(s => s.properties?.title === this.sheetName);
+    // ventana4: acá estaba el bug reportado (sheet.properties?.sheetId es
+    // `number | null`, no se puede devolver directo como `number`) --
+    // 0 es un sheetId valido (la primera hoja de un spreadsheet nuevo lo
+    // usa), por eso se chequea con `??`, no con `||`.
+    const sheetId = sheet?.properties?.sheetId;
+    if (sheetId === undefined || sheetId === null) {
+      throw new Error(`Hoja "${this.sheetName}" no encontrada en el spreadsheet`);
     }
-  }
-
-  /**
-   * @method parseRowData
-   * @description Parses raw row data into BookingRowData
-   * @param {any[]} row - Raw row data
-   * @returns {BookingRowData} Parsed booking data
-   */
-  private parseRowData(row: any[]): BookingRowData {
-    return {
-      bookingId: String(row[0] || ''),
-      guestName: String(row[1] || ''),
-      guestEmail: String(row[2] || ''),
-      roomName: String(row[3] || ''),
-      checkIn: String(row[4] || ''),
-      checkOut: String(row[5] || ''),
-      nights: Number(row[6] || 0),
-      adults: Number(row[7] || 0),
-      children: Number(row[8] || 0),
-      totalPrice: Number(row[9] || 0),
-      status: String(row[10] || ''),
-      platform: String(row[11] || ''),
-      createdAt: String(row[12] || ''),
-      notes: row[13] ? String(row[13]) : undefined,
-    };
-  }
-
-  /**
-   * @method getErrorMessage
-   * @description Safely extracts error message
-   * @param {unknown} error - Error object
-   * @returns {string} Error message
-   */
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return String(error);
+    return sheetId;
   }
 }
 
-/**
- * @function createSheetsClient
- * @description Factory function to create a new SheetsClient instance
- * @param {SheetsConfig} config - Sheets configuration
- * @returns {SheetsClient} New SheetsClient instance
- */
-export function createSheetsClient(config: SheetsConfig): SheetsClient {
-  return new SheetsClient(config);
-}
-
-// ✅ Archivo 1/2 - sheets-client.ts completado
+export const sheetsClient = new SheetsClient();

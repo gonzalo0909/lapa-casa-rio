@@ -1,5 +1,4 @@
 // lapa-casa-hostel/backend/src/lib/anti-overbooking/availability-checker.ts
-// corrección — imports pool y redisCache corregidos
 
 import { pool } from '../../config/database';
 import { redisCache as redis } from '../../config/redis';
@@ -47,8 +46,8 @@ interface BookingData {
 const ROOM_CONFIGS: RoomConfig[] = [
   { id: 'room_mixto_12a', name: 'Mixto 12A', capacity: 12, type: 'mixed', isFlexible: false },
   { id: 'room_mixto_12b', name: 'Mixto 12B', capacity: 12, type: 'mixed', isFlexible: false },
-  { id: 'room_mixto_7',   name: 'Mixto 7',   capacity: 7,  type: 'mixed', isFlexible: false },
-  { id: 'room_mixto_7b',  name: 'Mixto 7B',  capacity: 7,  type: 'mixed', isFlexible: false },
+  { id: 'room_mixto_7', name: 'Mixto 7', capacity: 7, type: 'mixed', isFlexible: false },
+  { id: 'room_mixto_7b', name: 'Mixto 7B', capacity: 7, type: 'mixed', isFlexible: false },
   { id: 'room_flexible_7', name: 'Flexible 7', capacity: 7, type: 'female', isFlexible: true, autoConvertHours: 48 }
 ];
 
@@ -62,29 +61,41 @@ export class AvailabilityChecker {
     requestedBeds: number,
     excludeBookingId?: string
   ): Promise<AvailabilityResult> {
-    const checkIn  = typeof checkInDate  === 'string' ? parseISO(checkInDate)  : checkInDate;
+    const checkIn = typeof checkInDate === 'string' ? parseISO(checkInDate) : checkInDate;
     const checkOut = typeof checkOutDate === 'string' ? parseISO(checkOutDate) : checkOutDate;
 
     if (checkIn >= checkOut) {
       return {
-        isAvailable: false, availableRooms: [], totalAvailableBeds: 0,
-        requestedBeds, checkInDate: checkIn, checkOutDate: checkOut,
+        isAvailable: false,
+        availableRooms: [],
+        totalAvailableBeds: 0,
+        requestedBeds,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
         conflicts: ['Check-out date must be after check-in date']
       };
     }
 
     if (checkIn < new Date()) {
       return {
-        isAvailable: false, availableRooms: [], totalAvailableBeds: 0,
-        requestedBeds, checkInDate: checkIn, checkOutDate: checkOut,
+        isAvailable: false,
+        availableRooms: [],
+        totalAvailableBeds: 0,
+        requestedBeds,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
         conflicts: ['Check-in date cannot be in the past']
       };
     }
 
     if (requestedBeds < 1 || requestedBeds > 45) {
       return {
-        isAvailable: false, availableRooms: [], totalAvailableBeds: 0,
-        requestedBeds, checkInDate: checkIn, checkOutDate: checkOut,
+        isAvailable: false,
+        availableRooms: [],
+        totalAvailableBeds: 0,
+        requestedBeds,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
         conflicts: ['Requested beds must be between 1 and 45']
       };
     }
@@ -95,7 +106,7 @@ export class AvailabilityChecker {
       return this.processAvailability(cached, requestedBeds, checkIn, checkOut);
     }
 
-    const bookings  = await this.fetchBookingsForDateRange(checkIn, checkOut, excludeBookingId);
+    const bookings = await this.fetchBookingsForDateRange(checkIn, checkOut, excludeBookingId);
     const occupancy = await this.calculateOccupancy(bookings, checkIn);
     await this.setCache(cacheKey, occupancy);
 
@@ -139,13 +150,16 @@ export class AvailabilityChecker {
 
     for (const room of ROOM_CONFIGS) {
       let roomType = room.type;
+
       if (room.isFlexible && room.autoConvertHours) {
         const hoursUntilCheckIn = differenceInHours(checkInDate, new Date());
         const femaleBookings = bookings.filter(b => b.roomId === room.id && b.status !== 'cancelled');
+
         if (femaleBookings.length === 0 && hoursUntilCheckIn <= room.autoConvertHours) {
           roomType = 'mixed';
         }
       }
+
       occupancy.set(room.id, {
         roomId: room.id,
         roomName: room.name,
@@ -179,12 +193,16 @@ export class AvailabilityChecker {
     const isAvailable = totalAvailableBeds >= requestedBeds;
 
     const result: AvailabilityResult = {
-      isAvailable, availableRooms, totalAvailableBeds,
-      requestedBeds, checkInDate, checkOutDate
+      isAvailable,
+      availableRooms,
+      totalAvailableBeds,
+      requestedBeds,
+      checkInDate,
+      checkOutDate
     };
 
     if (!isAvailable) {
-      result.conflicts  = [`Only ${totalAvailableBeds} beds available, but ${requestedBeds} beds requested`];
+      result.conflicts = [`Only ${totalAvailableBeds} beds available, but ${requestedBeds} beds requested`];
       result.suggestions = this.generateSuggestions(occupancy, requestedBeds);
     }
 
@@ -221,13 +239,15 @@ export class AvailabilityChecker {
     daysToCheck: number = 7
   ): Promise<Map<string, AvailabilityResult>> {
     const results = new Map<string, AvailabilityResult>();
+
     for (let i = 0; i < daysToCheck; i++) {
-      const checkIn  = addDays(startDate, i);
+      const checkIn = addDays(startDate, i);
       const checkOut = addDays(endDate, i);
-      const result   = await this.checkAvailability(checkIn, checkOut, requestedBeds);
-      const dateKey  = checkIn.toISOString().split('T')[0];
+      const result = await this.checkAvailability(checkIn, checkOut, requestedBeds);
+      const dateKey = checkIn.toISOString().split('T')[0];
       results.set(dateKey, result);
     }
+
     return results;
   }
 
@@ -255,7 +275,7 @@ export class AvailabilityChecker {
       errors.push(`Room ${roomConfig.name} has capacity of ${roomConfig.capacity} beds`);
     }
 
-    const availability    = await this.checkAvailability(checkInDate, checkOutDate, bedsCount, excludeBookingId);
+    const availability = await this.checkAvailability(checkInDate, checkOutDate, bedsCount, excludeBookingId);
     const roomAvailability = availability.availableRooms.find(r => r.roomId === roomId);
 
     if (!roomAvailability || roomAvailability.available < bedsCount) {
@@ -275,15 +295,16 @@ export class AvailabilityChecker {
   }
 
   private getCacheKey(checkIn: Date, checkOut: Date, excludeBookingId?: string): string {
-    const checkInStr  = checkIn.toISOString().split('T')[0];
+    const checkInStr = checkIn.toISOString().split('T')[0];
     const checkOutStr = checkOut.toISOString().split('T')[0];
-    const excludeStr  = excludeBookingId ? `:exclude:${excludeBookingId}` : '';
+    const excludeStr = excludeBookingId ? `:exclude:${excludeBookingId}` : '';
     return `availability:${checkInStr}:${checkOutStr}${excludeStr}`;
   }
 
   private async getFromCache(key: string): Promise<RoomOccupancy[] | null> {
     try {
-      return await redis.get<RoomOccupancy[]>(key);
+      const cached = await redis.get<RoomOccupancy[]>(key);
+      return cached;
     } catch (error) {
       console.error('Cache read error:', error);
       return null;

@@ -1,5 +1,5 @@
 // lapa-casa-hostel/backend/src/database/repositories/payment-repository.ts
-// ventana 3 — migrado a Prisma 5.22.0
+// ventana3
 
 import { prisma } from '../../config/prisma';
 import type { Payment, PaymentStatus } from '../../types/database';
@@ -39,6 +39,7 @@ export class PaymentRepository {
       null;
     const paymentType = (data.payment_type ?? 'deposit') as 'deposit' | 'remaining';
 
+    // Resolve guest_id from reservation if not provided
     let guestId = data.guest_id ?? null;
     if (!guestId) {
       const reservation = await prisma.reservations.findUnique({

@@ -72,8 +72,12 @@ services:
         sync: false
       - key: GOOGLE_SHEETS_SPREADSHEET_ID
         sync: false
+      # ventana4 (bloque 2): debe coincidir EXACTO con el nombre de la
+      # pestaña real en Google Sheets -- "Hoja 1" es el nombre por
+      # defecto que Google le pone a la primera pestaña en cuentas en
+      # español (no "Sheet1"). Verificado contra la hoja real del hostel.
       - key: GOOGLE_SHEETS_SHEET_NAME
-        value: Bookings
+        value: Hoja 1
     autoDeploy: true
 
   # Frontend Service

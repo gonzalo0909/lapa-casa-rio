@@ -10,6 +10,7 @@ import { queuesEnabled } from '../queues/connection';
 import { registerCleanupScheduler } from '../queues/cleanup.queue';
 import { registerFlexibleConversionScheduler } from '../queues/flexible-conversion.queue';
 import { registerOtaSyncScheduler } from '../queues/ota-sync.queue';
+import { registerMonitoringAlertsScheduler } from '../queues/monitoring-alerts.queue';
 import { startCleanupWorker } from './cleanup.worker';
 import { startFlexibleConversionWorker } from './flexible-conversion.worker';
 import { startRemainingPaymentWorker } from './remaining-payment.worker';
@@ -17,6 +18,7 @@ import { startRemainingPaymentRetriesWorker } from './remaining-payment-retries.
 import { startEmailNotificationsWorker } from './email-notifications.worker';
 import { startSheetsExportWorker } from './sheets-export.worker';
 import { startOtaSyncWorker } from './ota-sync.worker';
+import { startMonitoringAlertsWorker } from './monitoring-alerts.worker';
 import { logger } from '../utils/logger';
 
 async function main(): Promise<void> {
@@ -32,7 +34,8 @@ async function main(): Promise<void> {
     startRemainingPaymentRetriesWorker(),
     startEmailNotificationsWorker(),
     startSheetsExportWorker(),
-    startOtaSyncWorker()
+    startOtaSyncWorker(),
+    startMonitoringAlertsWorker()
   ];
 
   // Los repeatable jobs son idempotentes (upsertJobScheduler con id fijo) --
@@ -40,6 +43,7 @@ async function main(): Promise<void> {
   await registerCleanupScheduler();
   await registerFlexibleConversionScheduler();
   await registerOtaSyncScheduler();
+  await registerMonitoringAlertsScheduler();
 
   logger.info(`Workers arriba: ${workers.length} colas activas`);
 

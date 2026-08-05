@@ -62,8 +62,8 @@ async function loadDashboard() {
     const tbody = document.querySelector('#upcoming-table tbody');
     tbody.innerHTML = data.upcomingCheckIns.map(b => `
       <tr>
-        <td>${b.reservation_number}</td>
-        <td>${b.guest_name}</td>
+        <td>${escapeHtml(b.reservation_number)}</td>
+        <td>${escapeHtml(b.guest_name)}</td>
         <td>${fmtDate(b.check_in_date)}</td>
         <td>${b.beds_count}</td>
       </tr>

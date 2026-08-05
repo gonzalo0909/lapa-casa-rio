@@ -23,10 +23,23 @@ router.post('/confirm', confirmPaymentHandler);
 // POST /payments/deposit
 router.post('/deposit', processDepositHandler);
 
-// POST /payments/webhook/stripe  — requiere raw body
+// POST /payments/webhook/stripe
+// ventana6: el `express.raw({ type: 'application/json' })` que estaba aca
+// era inefectivo (bug real, no cosmetico) -- app.ts ya corre
+// express.json() de forma GLOBAL para toda la app antes de que cualquier
+// request llegue a este router, asi que el body ya viene consumido y
+// parseado a objeto cuando llega aca. body-parser no vuelve a leer el
+// stream una segunda vez, asi que este express.raw() nunca tenia chance
+// de producir el Buffer que Stripe necesita para verificar la firma --
+// en produccion, CUALQUIER webhook real de Stripe fallaba con "Webhook
+// inválido" (confirmado con una request real contra este endpoint).
+// El fix real es el mismo patron que ya usan los webhooks de OTA (ver
+// routes/webhooks/ota.routes.ts): app.ts captura el body crudo en
+// req.rawBody durante el parseo global (verify callback), y
+// handle-webhook.ts usa ESE buffer para stripeHandler.constructWebhookEvent(),
+// nunca req.body.
 router.post(
   '/webhook/stripe',
-  express.raw({ type: 'application/json' }),
   handleWebhookHandler
 );
 

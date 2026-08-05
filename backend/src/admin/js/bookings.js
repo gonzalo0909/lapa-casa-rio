@@ -49,8 +49,8 @@ function renderTable() {
   const tbody = document.querySelector('#bookings-table tbody');
   tbody.innerHTML = rows.map(b => `
     <tr>
-      <td>${b.reservation_number}</td>
-      <td>${b.guest_name}<br><small style="color:#888;">${b.guest_email}</small></td>
+      <td>${escapeHtml(b.reservation_number)}</td>
+      <td>${escapeHtml(b.guest_name)}<br><small style="color:#888;">${escapeHtml(b.guest_email)}</small></td>
       <td>${fmtDate(b.check_in_date)}</td>
       <td>${fmtDate(b.check_out_date)}</td>
       <td>${b.beds_count}</td>

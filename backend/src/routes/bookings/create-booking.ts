@@ -1,4 +1,5 @@
 // lapa-casa-hostel/backend/src/routes/bookings/create-booking.ts
+// ventana4: envío de email de confirmación reenganchado a notificationService (ver notify('booking_confirmation', ...) más abajo)
 
 import { Request, Response, NextFunction } from 'express';
 import { BookingService } from '../../services/booking-service';

@@ -1,5 +1,6 @@
 // lapa-casa-hostel/backend/src/services/payment-service.ts
 // ventana3
+// ventana4: agrega handlePaymentSucceeded() -- dispara email de pago recibido y agenda saldo/bienvenida, desde el mismo punto que usan tanto el webhook real de Stripe/MercadoPago como la confirmación manual (ver más abajo)
 
 import Stripe from 'stripe';
 import { PaymentRepository } from '../database/repositories/payment-repository';

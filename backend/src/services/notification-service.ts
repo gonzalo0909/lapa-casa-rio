@@ -63,29 +63,37 @@ async function dispatchByType(type: NotificationType, booking: BookingWithGuest,
 }
 
 export class NotificationService {
-  /** Envia ya mismo, en el request actual. Para llamados que puedan tardar/fallar sin bloquear al usuario, usar scheduleNotification con sendAt=now. */
+  /**
+   * ventana4: intenta el envío ya mismo, en el request actual. Si falla,
+   * se reencola en email-notifications (hasta 3 veces con backoff
+   * exponencial, ver queues/email-notifications.queue.ts) en vez de darlo
+   * por perdido -- así cumple "si un email falla, se reencola hasta 3
+   * veces" (CONSIDERACIONES ESPECIALES del prompt de esta ventana). El
+   * reintento lo procesa el mismo processScheduled() que usa
+   * scheduleNotification, así que no duplica lógica.
+   */
   async notify(type: NotificationType, booking: BookingWithGuest, data: Record<string, any> = {}): Promise<void> {
+    const notificationId = await this.recordNotification({
+      reservationId: booking.id,
+      guestId: booking.guest.id,
+      template: type,
+      status: 'pending',
+      payload: data
+    });
+
     try {
       await dispatchByType(type, booking, data);
-      await this.recordNotification({
-        reservationId: booking.id,
-        guestId: booking.guest.id,
-        template: type,
-        status: 'sent',
-        payload: data,
-        sentAt: new Date()
-      });
+      await this.updateNotification(notificationId, { status: 'sent', sentAt: new Date() });
     } catch (error: any) {
-      logger.error('Error enviando notificación', { type, reservationId: booking.id, error: error.message });
-      await this.recordNotification({
+      logger.error('Error enviando notificación, se reencola para reintento', {
+        type,
         reservationId: booking.id,
-        guestId: booking.guest.id,
-        template: type,
-        status: 'failed',
-        payload: data,
+        notificationId,
         error: error.message
       });
-      throw error;
+      await emailNotificationsQueue.add('retry-notification', { notificationId, reservationId: booking.id, type });
+      // No relanza: el reintento queda en manos del worker, el llamador no
+      // tiene por qué bloquear ni fallar la respuesta HTTP por esto.
     }
   }
 

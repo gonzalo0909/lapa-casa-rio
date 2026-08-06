@@ -32,12 +32,16 @@ function log(level: LogLevel, message: string, meta?: any): void {
     }
   }
 
-  const line = JSON.stringify(entry);
+  // Bug corregido: antes solo el nivel 'error' imprimia el meta (motivo real
+  // del error, ej. err.message de una excepcion) -- 'warn'/'info'/'debug'
+  // imprimian el mensaje pelado y el detalle se perdia por completo (nunca
+  // llegaba a los logs), aunque ya se calculaba arriba en `entry`.
+  const line = `[${entry.timestamp}] ${level.toUpperCase()}: ${message}${meta !== undefined ? ` ${JSON.stringify(meta)}` : ''}`;
 
   if (level === 'error') {
-    process.stderr.write(`[${entry.timestamp}] ${level.toUpperCase()}: ${message} ${meta ? JSON.stringify(meta) : ''}\n`);
+    process.stderr.write(`${line}\n`);
   } else {
-    process.stdout.write(`[${entry.timestamp}] ${level.toUpperCase()}: ${message}\n`);
+    process.stdout.write(`${line}\n`);
   }
 }
 

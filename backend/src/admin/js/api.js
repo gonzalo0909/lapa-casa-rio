@@ -68,3 +68,17 @@ function statusLabel(status) {
   };
   return labels[status] || status;
 }
+
+/**
+ * Escapa HTML antes de interpolar en innerHTML. Obligatorio para
+ * cualquier campo que haya sido escrito por un huesped (guest_name,
+ * guest_email, etc. vienen de POST /api/v1/bookings, publico y sin
+ * autenticacion) -- sin esto, un nombre de huesped como
+ * "<img src=x onerror=...>" ejecuta en la sesion del admin (que tiene el
+ * JWT en localStorage) la primera vez que alguien abre esta pantalla.
+ */
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}

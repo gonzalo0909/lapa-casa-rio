@@ -63,9 +63,14 @@ router.get('/info', (req: Request, res: Response) => {
 
 /**
  * Public Routes (No Authentication Required)
+ * ventana6: limites por endpoint segun el checklist de seguridad
+ * (disponibilidad 10 req/s, reservas 3 req/s, admin 5 req/s) -- se
+ * implementan como windowMs:1000 en vez de convertir a un equivalente
+ * por minuto, para que el numero en el codigo sea literalmente el del
+ * checklist.
  */
-router.use('/availability', rateLimiter({ max: 100, windowMs: 60000 }), availabilityRouter);
-router.use('/rooms', rateLimiter({ max: 100, windowMs: 60000 }), roomsRouter);
+router.use('/availability', rateLimiter({ max: 10, windowMs: 1000 }), availabilityRouter);
+router.use('/rooms', rateLimiter({ max: 10, windowMs: 1000 }), roomsRouter);
 
 /**
  * iCal (ventana5): export publico de disponibilidad + config/sync de
@@ -80,12 +85,12 @@ router.use('/webhooks', otaWebhooksRouter);
 /**
  * Semi-Protected Routes (Rate Limited)
  */
-router.use('/bookings', rateLimiter({ max: 50, windowMs: 60000 }), bookingsRouter);
+router.use('/bookings', rateLimiter({ max: 3, windowMs: 1000 }), bookingsRouter);
 
 /**
  * Payment Routes (Strict Rate Limiting)
  */
-router.use('/payments', rateLimiter({ max: 30, windowMs: 60000 }), paymentsRouter);
+router.use('/payments', rateLimiter({ max: 3, windowMs: 1000 }), paymentsRouter);
 
 /**
  * Admin Login (ventana4 bloque 2) — público, montado ANTES del
@@ -97,7 +102,7 @@ router.use('/admin/login', rateLimiter({ max: 10, windowMs: 60000 }), adminAuthR
 /**
  * Admin Routes (Authentication + rol admin requeridos)
  */
-router.use('/admin', authenticateToken, requireRole(['admin']), rateLimiter({ max: 200, windowMs: 60000 }), adminRouter);
+router.use('/admin', authenticateToken, requireRole(['admin']), rateLimiter({ max: 5, windowMs: 1000 }), adminRouter);
 
 /**
  * Catch-all 404 Handler

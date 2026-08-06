@@ -20,9 +20,20 @@ export const handleWebhookHandler = async (
         res.status(400).json({ error: 'Falta stripe-signature' });
         return;
       }
+      // ventana6: la verificacion de firma de Stripe necesita los bytes
+      // EXACTOS del body, no el objeto ya parseado por el express.json()
+      // global de app.ts -- ese mismo parser guarda el buffer crudo en
+      // req.rawBody antes de parsear (verify callback), igual que ya
+      // hacen los webhooks de OTA (ver routes/webhooks/ota.routes.ts).
+      const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+      if (!rawBody) {
+        logger.error('Stripe webhook sin rawBody -- no se puede verificar la firma');
+        res.status(400).json({ error: 'Webhook inválido' });
+        return;
+      }
       let event;
       try {
-        event = stripeHandler.constructWebhookEvent(req.body, signature);
+        event = stripeHandler.constructWebhookEvent(rawBody, signature);
       } catch (err) {
         logger.warn('Stripe webhook inválido', { err: (err as Error).message });
         res.status(400).json({ error: 'Webhook inválido' });

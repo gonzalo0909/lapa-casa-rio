@@ -1,0 +1,492 @@
+{
+  "info": {
+    "name": "Lapa Casa Hostel — Channel Manager",
+    "description": "Coleccion de la API real del backend (ver backend/src/routes). Requiere las variables de entorno del archivo adjunto (development o production). El login de admin guarda el token automaticamente en {{adminToken}} via test script -- correr 'Admin > Login' antes de cualquier request de la carpeta Admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001", "type": "string" },
+    { "key": "apiVersion", "value": "v1", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "reservationId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health (basico, usado por Render)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" },
+          "response": []
+        },
+        {
+          "name": "Health extendido (DB, Redis, colas, Stripe, MP, email)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/health" },
+          "response": []
+        },
+        {
+          "name": "Ready",
+          "request": { "method": "GET", "url": "{{baseUrl}}/ready" },
+          "response": []
+        },
+        {
+          "name": "Metricas basicas",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/metrics" },
+          "response": []
+        },
+        {
+          "name": "Root / info",
+          "request": { "method": "GET", "url": "{{baseUrl}}/" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "Listar las 5 habitaciones",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/rooms" },
+          "response": []
+        },
+        {
+          "name": "Detalle de una habitacion",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/rooms/:roomId", "variable": [{ "key": "roomId", "value": "" }] },
+          "response": []
+        },
+        {
+          "name": "Estado de Flexible 7",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/rooms/flexible/status" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Availability",
+      "item": [
+        {
+          "name": "Chequear disponibilidad",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/availability/check?checkIn=2026-09-10&checkOut=2026-09-13&bedsCount=8",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "availability", "check"],
+              "query": [
+                { "key": "checkIn", "value": "2026-09-10" },
+                { "key": "checkOut", "value": "2026-09-13" },
+                { "key": "bedsCount", "value": "8" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Disponibilidad por habitacion",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/availability/room/:roomId?checkIn=2026-09-10&checkOut=2026-09-13",
+            "variable": [{ "key": "roomId", "value": "" }]
+          },
+          "response": []
+        },
+        {
+          "name": "Calendario de ocupacion",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/availability/calendar?month=2026-09" },
+          "response": []
+        },
+        {
+          "name": "Resumen de disponibilidad",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/availability/summary" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Crear reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('reservationId', body.data ? body.data.id : body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/bookings",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkIn\": \"2026-09-10\",\n  \"checkOut\": \"2026-09-13\",\n  \"rooms\": [\n    { \"roomId\": \"<uuid-real-de-room_types>\", \"bedsCount\": 8 }\n  ],\n  \"guest\": {\n    \"firstName\": \"Maria\",\n    \"lastName\": \"Silva\",\n    \"email\": \"maria@example.com\",\n    \"phone\": \"+5521999999999\",\n    \"country\": \"BR\"\n  },\n  \"specialRequests\": \"Chegada tarde, depois das 22h\",\n  \"language\": \"pt\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener reserva por ID",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/bookings/{{reservationId}}" },
+          "response": []
+        },
+        {
+          "name": "Confirmacion de reserva",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/bookings/{{reservationId}}/confirmation" },
+          "response": []
+        },
+        {
+          "name": "Actualizar reserva (PATCH, campos permitidos)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/bookings/{{reservationId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"specialRequests\": \"Actualizado desde Postman\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancelar reserva",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/bookings/{{reservationId}}?reason=guest_request"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar reservas (admin/reporting)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/bookings?page=1&limit=20"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Crear payment intent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/payments/intent",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": \"{{reservationId}}\",\n  \"paymentType\": \"deposit\",\n  \"provider\": \"stripe\",\n  \"currency\": \"BRL\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar pago",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/payments/confirm",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"paymentIntentId\": \"<id-del-provider>\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Procesar deposito",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/payments/deposit",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": \"{{reservationId}}\",\n  \"provider\": \"mercadopago\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Estado de un pago",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/payments/:paymentId/status", "variable": [{ "key": "paymentId", "value": "" }] },
+          "response": []
+        },
+        {
+          "name": "Pagos de una reserva",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/payments/reservation/{{reservationId}}" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "iCal / OTA",
+      "item": [
+        {
+          "name": "Export iCal (todas las habitaciones)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/ical/export" },
+          "response": []
+        },
+        {
+          "name": "Export iCal (una habitacion)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/{{apiVersion}}/ical/export/:roomId", "variable": [{ "key": "roomId", "value": "" }] },
+          "response": []
+        },
+        {
+          "name": "Webhook Booking.com (requiere firma HMAC real)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/webhooks/booking",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Api-Key", "value": "<BOOKING_WEBHOOK_API_KEY>" },
+              { "key": "X-Signature", "value": "<hmac-sha256-hex-del-body-con-BOOKING_WEBHOOK_SECRET>" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"booking.created\",\n  \"reservationId\": \"BDC-12345\",\n  \"roomId\": \"mixto_12a\",\n  \"guestName\": \"John Doe\",\n  \"guestEmail\": \"john@example.com\",\n  \"checkIn\": \"2026-09-10\",\n  \"checkOut\": \"2026-09-13\",\n  \"bedsCount\": 2\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('adminToken', body.data ? body.data.token : body.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"password\": \"<contraseña-admin>\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/dashboard",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar reservas (panel)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/bookings?page=1&limit=20",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Corregir reserva (campos permitidos)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/bookings/{{reservationId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"finalPrice\": 1500.00\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Reenviar confirmacion por email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/bookings/{{reservationId}}/resend-confirmation",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar reserva manualmente",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/bookings/{{reservationId}}/confirm",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar settings de una habitacion",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/rooms/:roomId/settings",
+            "variable": [{ "key": "roomId", "value": "" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"basePrice\": 65.00\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Ver pricing (rate_plans + fechas de Carnaval)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/pricing",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar pricing / fechas de Carnaval",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/pricing",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carnival\": [\n    { \"year\": 2028, \"start_date\": \"2028-02-26\", \"end_date\": \"2028-03-01\" }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Audit logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/audit-logs",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: ocupacion",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/stats/occupancy",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: revenue",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/stats/revenue",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: canales",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/stats/channels",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: grupos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/stats/groups",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Sincronizar Google Sheets",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/sync/sheets",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Conflictos: listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/conflicts",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Conflictos: detalle",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/conflicts/:conflictId",
+            "variable": [{ "key": "conflictId", "value": "" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Conflictos: resolver",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/admin/conflicts/:conflictId/resolve",
+            "variable": [{ "key": "conflictId", "value": "" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"keep_direct\",\n  \"reason\": \"Reserva directa confirmada primero\"\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "iCal: feeds configurados",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/ical/feeds",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "iCal: agregar feed a importar",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/ical/import/config",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelCode\": \"airbnb\",\n  \"roomTypeId\": \"<uuid-real-de-room_types>\",\n  \"icalUrl\": \"https://www.airbnb.com/calendar/ical/xxxxx.ics\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "iCal: forzar sync",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/ical/sync",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "iCal: estado de sync",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/{{apiVersion}}/ical/status",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

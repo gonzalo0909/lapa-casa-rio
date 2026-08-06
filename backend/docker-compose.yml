@@ -43,6 +43,11 @@ services:
 
   # ===========================================
   # POSTGRESQL DATABASE
+  # Primer arranque: DB vacia. Aplicar schema real con
+  #   docker compose exec backend node database/scripts/migrate.js
+  #   docker compose exec backend node database/scripts/seed.js
+  # (no hay init.sql -- el schema completo vive en database/migrations/,
+  # ver Ventana 1 y backend/database/README.md)
   # ===========================================
   postgres:
     container_name: lapa-casa-postgres
@@ -56,7 +61,6 @@ services:
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - lapa-casa-network
     restart: unless-stopped

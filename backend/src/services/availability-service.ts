@@ -88,6 +88,41 @@ export class AvailabilityService {
     };
   }
 
+  /**
+   * Ocupacion dia por dia de UNA habitacion real (UUID), para el detalle de
+   * disponibilidad. Delega en check_availability() dia por dia -- nunca
+   * reimplementa la regla de solapamiento en JS (mismo criterio del resto
+   * del archivo).
+   */
+  async getRoomDailyOccupancy(
+    roomTypeId: string,
+    checkIn: string,
+    checkOut: string
+  ): Promise<Array<{ date: string; available: number; occupied: number }>> {
+    const days: Array<{ date: string; available: number; occupied: number }> = [];
+    const current = new Date(checkIn);
+    const end = new Date(checkOut);
+
+    while (current < end) {
+      const dateStr = current.toISOString().slice(0, 10);
+      const next = new Date(current);
+      next.setDate(next.getDate() + 1);
+      const nextStr = next.toISOString().slice(0, 10);
+
+      const rows = await this.rawCheckAvailability(dateStr, nextStr, 'mixed');
+      const roomRows = rows.filter((r) => r.roomTypeId === roomTypeId);
+      days.push({
+        date: dateStr,
+        available: roomRows.filter((r) => r.isAvailable).length,
+        occupied: roomRows.filter((r) => r.isOccupied).length
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return days;
+  }
+
   async findAlternativeDates(
     checkIn: string,
     checkOut: string,

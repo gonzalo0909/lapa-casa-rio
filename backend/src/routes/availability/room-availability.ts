@@ -1,18 +1,24 @@
 // lapa-casa-hostel/backend/src/routes/availability/room-availability.ts
+//
+// Antes usaba un mapa ROOM_CONFIGS local con 4 habitaciones e IDs
+// ficticios ("room_mixto_12a", sin mixto_7c) -- nunca matcheaba un UUID
+// real de room_types, mismo bug de fondo que tenian get-room.ts y
+// list-rooms.ts antes de corregirse (ver room-service.ts). Se corrige
+// aca con el mismo patron: roomService.getRoom() como unica fuente de
+// verdad. De paso se corrige un segundo bug: el desglose diario usaba
+// un metodo (getBookingsForRoom) que no existe en availability-service.ts
+// -- el chequeo `typeof === 'function'` siempre daba falso, asi que el
+// desglose mostraba 100% disponible todos los dias sin importar la
+// realidad. Ahora usa availabilityService.getRoomDailyOccupancy(), que
+// delega en check_availability() dia por dia.
 
 import { Request, Response, NextFunction } from 'express';
 import { AvailabilityService } from '../../services/availability-service';
+import { roomService } from '../../services/room-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
 const availabilityService = new AvailabilityService();
-
-const ROOM_CONFIGS: Record<string, { name: string; type: string; capacity: number; isFlexible: boolean }> = {
-  room_mixto_12a:  { name: 'Mixto 12A',  type: 'mixed',  capacity: 12, isFlexible: false },
-  room_mixto_12b:  { name: 'Mixto 12B',  type: 'mixed',  capacity: 12, isFlexible: false },
-  room_mixto_7:    { name: 'Mixto 7',    type: 'mixed',  capacity: 7,  isFlexible: false },
-  room_flexible_7: { name: 'Flexible 7', type: 'female', capacity: 7,  isFlexible: true  }
-};
 
 export const roomAvailabilityHandler = async (
   req: Request<{ roomId: string }, {}, {}, { checkIn: string; checkOut: string }>,
@@ -25,8 +31,8 @@ export const roomAvailabilityHandler = async (
 
     logger.info('Checking room availability', { roomId, checkIn, checkOut });
 
-    const roomConfig = ROOM_CONFIGS[roomId];
-    if (!roomConfig) {
+    const room = await roomService.getRoom(roomId);
+    if (!room) {
       res.status(404).json(ApiResponse.error('Room not found', { roomId }));
       return;
     }
@@ -45,36 +51,23 @@ export const roomAvailabilityHandler = async (
     }
 
     const avail = await availabilityService.checkRoomAvailability(roomId, checkIn, checkOut);
-
-    const availableBeds = avail.availableBeds;
-    const occupiedBeds = avail.occupiedBeds ?? (roomConfig.capacity - availableBeds);
-
-    // Fetch bookings for the room (method may not exist — degrade gracefully)
-    let bookings: any[] = [];
-    try {
-      if (typeof (availabilityService as any).getBookingsForRoom === 'function') {
-        bookings = await (availabilityService as any).getBookingsForRoom(roomId, checkIn, checkOut);
-      }
-    } catch {
-      bookings = [];
-    }
+    const occupancyByDate = await availabilityService.getRoomDailyOccupancy(roomId, checkIn, checkOut);
 
     const nights = Math.round(
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const occupancyByDate = calculateDailyOccupancy(checkInDate, checkOutDate, bookings, roomConfig.capacity);
-
     let flexibleRoomStatus = null;
-    if (roomConfig.isFlexible) {
+    if (room.isFlexible) {
+      const status = await availabilityService.getFlexibleRoomStatus(roomId, checkIn);
       const hoursUntilCheckIn = Math.ceil(
         (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60)
       );
       flexibleRoomStatus = {
-        currentType: roomConfig.type,
+        currentType: status.effectiveGender,
         autoConvertEnabled: true,
         hoursUntilCheckIn,
-        willAutoConvert: hoursUntilCheckIn <= 48 && occupiedBeds === 0,
+        willAutoConvert: status.willConvertPrediction,
         convertedType: 'mixed',
         autoConvertThreshold: 48
       };
@@ -83,27 +76,20 @@ export const roomAvailabilityHandler = async (
     res.status(200).json(
       ApiResponse.success({
         room: {
-          id: roomId,
-          name: roomConfig.name,
-          type: roomConfig.type,
-          capacity: roomConfig.capacity,
-          isFlexible: roomConfig.isFlexible
+          id: room.id,
+          name: room.name,
+          type: room.type,
+          capacity: room.capacity,
+          isFlexible: room.isFlexible
         },
         period: { checkIn, checkOut, nights },
         availability: {
-          availableBeds,
-          occupiedBeds,
-          capacity: roomConfig.capacity,
-          availabilityPercentage: Math.round((availableBeds / roomConfig.capacity) * 100)
+          availableBeds: avail.availableBeds,
+          occupiedBeds: avail.occupiedBeds,
+          capacity: room.capacity,
+          availabilityPercentage: Math.round((avail.availableBeds / room.capacity) * 100)
         },
         occupancyByDate,
-        bookings: bookings.map((b: any) => ({
-          id: b.id,
-          checkIn: b.check_in_date ?? b.checkIn ?? b.check_in,
-          checkOut: b.check_out_date ?? b.checkOut ?? b.check_out,
-          bedsOccupied: b.total_beds ?? b.bedsCount ?? 1,
-          status: b.status
-        })),
         flexibleRoomStatus
       }, 'Room availability retrieved successfully')
     );
@@ -115,34 +101,3 @@ export const roomAvailabilityHandler = async (
     next(error);
   }
 };
-
-function calculateDailyOccupancy(
-  checkIn: Date,
-  checkOut: Date,
-  bookings: any[],
-  capacity: number
-): Array<{ date: string; available: number; occupied: number; capacity: number; bookingsCount: number }> {
-  const occupancy = [];
-  const current = new Date(checkIn);
-
-  while (current < checkOut) {
-    const dateStr = current.toISOString().split('T')[0];
-    let occupied = 0;
-    let bookingsCount = 0;
-
-    for (const b of bookings) {
-      if (b.status !== 'confirmed') continue;
-      const bIn  = new Date(b.check_in_date  ?? b.checkIn  ?? b.check_in);
-      const bOut = new Date(b.check_out_date ?? b.checkOut ?? b.check_out);
-      if (current >= bIn && current < bOut) {
-        occupied += b.total_beds ?? b.bedsCount ?? 1;
-        bookingsCount++;
-      }
-    }
-
-    occupancy.push({ date: dateStr, available: capacity - occupied, occupied, capacity, bookingsCount });
-    current.setDate(current.getDate() + 1);
-  }
-
-  return occupancy;
-}

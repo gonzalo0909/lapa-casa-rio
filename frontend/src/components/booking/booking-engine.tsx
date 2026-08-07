@@ -5,6 +5,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DateSelector } from './date-selector';
+import { GenderSelector } from './gender-selector';
 import { RoomSelector } from './room-selector';
 import { PricingCalculator } from './pricing-calculator';
 import { GuestForm } from './guest-form';
@@ -42,10 +43,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const router = useRouter();
   const {
     dateRange,
+    gender,
     selectedRooms,
     guestDetails,
     totalPrice,
     setDateRange,
+    setGender,
     setSelectedRooms,
     setGuestDetails,
     setTotalPrice,
@@ -174,6 +177,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         rooms: selectedRooms!,
         guestDetails: guestDetails!,
         totalPrice: totalPrice!,
+        gender,
         locale
       });
 
@@ -187,7 +191,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       setError(err.message || T('errors.bookingFailed', locale));
       setIsProcessing(false);
     }
-  }, [validateStep, createBooking, dateRange, selectedRooms, guestDetails, totalPrice, locale, onComplete, router]);
+  }, [validateStep, createBooking, dateRange, selectedRooms, guestDetails, totalPrice, gender, locale, onComplete, router]);
 
   const progress = ((STEPS.indexOf(currentStep) + 1) / STEPS.length) * 100;
 
@@ -230,11 +234,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         {currentStep === 'dates' && (
-          <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
+          <>
+            <GenderSelector value={gender} onChange={setGender} locale={locale} className="mb-6" />
+            <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
+          </>
         )}
         {currentStep === 'rooms' && (
           <RoomSelector
             dateRange={dateRange!}
+            gender={gender}
             availableRooms={availableRooms}
             selectedRooms={selectedRooms}
             onChange={handleRoomSelection}

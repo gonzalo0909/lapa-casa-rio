@@ -49,8 +49,13 @@ export const checkAvailabilityHandler = async (
 
     const { rows: roomTypes } = await query<{
       id: string; code: string; name: string; capacity: number;
-      default_gender: string; is_flexible: boolean;
-    }>(`SELECT id, code, name, capacity, default_gender, is_flexible FROM room_types ORDER BY capacity, code`);
+      default_gender: string; is_flexible: boolean; base_price: string;
+      group_discount_min_beds: number; group_discount_percentage: string;
+    }>(
+      `SELECT id, code, name, capacity, default_gender, is_flexible, base_price,
+              group_discount_min_beds, group_discount_percentage
+       FROM room_types ORDER BY base_price, code`
+    );
 
     const roomsAvailability = await Promise.all(
       roomTypes.map(async (rt) => {
@@ -61,6 +66,9 @@ export const checkAvailabilityHandler = async (
           type: rt.default_gender,
           capacity: rt.capacity,
           isFlexible: rt.is_flexible,
+          basePrice: parseFloat(rt.base_price),
+          groupDiscountMinBeds: rt.group_discount_min_beds,
+          groupDiscountPercentage: parseFloat(rt.group_discount_percentage),
           availableBeds: avail.availableBeds,
           occupiedBeds: avail.occupiedBeds
         };
@@ -130,6 +138,9 @@ export const checkAvailabilityHandler = async (
           capacity: room.capacity,
           availableBeds: room.availableBeds,
           isFlexible: room.isFlexible,
+          basePrice: room.basePrice,
+          groupDiscountMinBeds: room.groupDiscountMinBeds,
+          groupDiscountPercentage: room.groupDiscountPercentage,
           autoConverted: room.isFlexible && room.type === 'mixed' && hoursUntilCheckIn <= 48
         })),
         allocationOptions: pricedOptions,

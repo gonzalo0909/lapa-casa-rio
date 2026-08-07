@@ -8,6 +8,9 @@
 
 export type BookingStep = 'dates' | 'rooms' | 'guest' | 'summary';
 
+/** Género elegido por el huésped junto con las fechas -- filtra qué cuartos son elegibles (mixto ve solo mixtos; mujeres ven mixtos + el cuarto solo-mujeres). */
+export type BookingGender = 'mixed' | 'female';
+
 export interface DateRange {
   checkIn: Date | null;
   checkOut: Date | null;
@@ -23,6 +26,8 @@ export interface RoomAvailability {
   availableBeds: number;
   basePrice: number;
   isFlexible: boolean;
+  groupDiscountMinBeds: number;
+  groupDiscountPercentage: number;
 }
 
 /** Habitación + cantidad de camas elegidas por el huésped durante la reserva. */

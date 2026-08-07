@@ -33,6 +33,7 @@ interface CreateBookingRequest {
   specialRequests?: string;
   language?: 'pt' | 'en' | 'es';
   source?: string;
+  guestGender?: 'mixed' | 'female' | 'male';
 }
 
 export const createBookingHandler = async (
@@ -140,7 +141,8 @@ export const createBookingHandler = async (
       specialRequests: bookingData.specialRequests,
       source: bookingData.source || 'website',
       language: bookingData.language || 'pt',
-      status: 'pending_payment'
+      status: 'pending_payment',
+      guestGender: bookingData.guestGender || 'mixed'
     });
 
     logger.info('Booking created successfully', {

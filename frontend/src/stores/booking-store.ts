@@ -2,23 +2,26 @@
 
 import { create } from 'zustand';
 import { bookingAPI } from '@/lib/api';
-import type { DateRange, Room, GuestDetails } from '@/types/global';
+import type { DateRange, Room, GuestDetails, BookingGender } from '@/types/global';
 
 interface CreateBookingParams {
   dateRange: DateRange;
   rooms: Room[];
   guestDetails: GuestDetails;
   totalPrice: number;
+  gender: BookingGender;
   locale?: 'pt' | 'es' | 'en';
 }
 
 interface BookingState {
   dateRange: DateRange | null;
+  gender: BookingGender;
   selectedRooms: Room[];
   guestDetails: GuestDetails | null;
   totalPrice: number | null;
 
   setDateRange: (range: DateRange) => void;
+  setGender: (gender: BookingGender) => void;
   setSelectedRooms: (rooms: Room[]) => void;
   setGuestDetails: (details: GuestDetails) => void;
   setTotalPrice: (price: number) => void;
@@ -42,18 +45,20 @@ function splitFullName(fullName: string): { firstName: string; lastName: string 
 
 export const useBookingStore = create<BookingState>((set) => ({
   dateRange: null,
+  gender: 'mixed',
   selectedRooms: [],
   guestDetails: null,
   totalPrice: null,
 
   setDateRange: (range) => set({ dateRange: range }),
+  setGender: (gender) => set({ gender, selectedRooms: [] }),
   setSelectedRooms: (rooms) => set({ selectedRooms: rooms }),
   setGuestDetails: (details) => set({ guestDetails: details }),
   setTotalPrice: (price) => set({ totalPrice: price }),
   clearBooking: () =>
-    set({ dateRange: null, selectedRooms: [], guestDetails: null, totalPrice: null }),
+    set({ dateRange: null, gender: 'mixed', selectedRooms: [], guestDetails: null, totalPrice: null }),
 
-  createBooking: async ({ dateRange, rooms, guestDetails, locale }) => {
+  createBooking: async ({ dateRange, rooms, guestDetails, gender, locale }) => {
     if (!dateRange.checkIn || !dateRange.checkOut) {
       throw new Error('Missing check-in/check-out dates');
     }
@@ -75,6 +80,7 @@ export const useBookingStore = create<BookingState>((set) => ({
       specialRequests: guestDetails.specialRequests,
       language: locale,
       source: 'direct',
+      guestGender: gender,
     });
 
     return response.data.booking.id as string;

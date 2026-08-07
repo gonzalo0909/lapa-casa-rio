@@ -217,6 +217,7 @@ export const bookingAPI = {
     specialRequests?: string;
     language?: 'pt' | 'es' | 'en';
     source?: string;
+    guestGender?: 'mixed' | 'female';
   }) => api.post('/bookings', data),
 
   /**

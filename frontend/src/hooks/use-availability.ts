@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from 'react';
 import { availabilityAPI, handleAPIError } from '@/lib/api';
-import { BASE_PRICE_PER_BED } from '@/lib/pricing';
 import type { RoomAvailability } from '@/types/global';
 
 function toDateOnly(date: Date): string {
@@ -16,6 +15,9 @@ interface BackendRoom {
   capacity: number;
   availableBeds: number;
   isFlexible: boolean;
+  basePrice: number;
+  groupDiscountMinBeds: number;
+  groupDiscountPercentage: number;
 }
 
 export function useAvailability() {
@@ -49,8 +51,10 @@ export function useAvailability() {
           type: r.type,
           capacity: r.capacity,
           availableBeds: r.availableBeds,
-          basePrice: BASE_PRICE_PER_BED,
+          basePrice: r.basePrice,
           isFlexible: r.isFlexible,
+          groupDiscountMinBeds: r.groupDiscountMinBeds,
+          groupDiscountPercentage: r.groupDiscountPercentage,
         }))
       );
     } catch (err) {

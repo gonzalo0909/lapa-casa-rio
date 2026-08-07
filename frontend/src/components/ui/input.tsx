@@ -86,7 +86,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = id || React.useId();
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
     const hasError = !!error;
     const currentVariant = hasError ? 'error' : variant;
     const currentLength = typeof value === 'string' ? value.length : 0;

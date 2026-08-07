@@ -112,7 +112,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         setIsProcessing(true);
         try {
           await checkAvailability(dateRange.checkIn, dateRange.checkOut);
-        } catch (err) {
+        } catch (_err) {
           setError(T('errors.availabilityCheck', locale));
           return;
         } finally {
@@ -141,7 +141,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       if (validation.isValid) {
         try {
           await checkAvailability(newRange.checkIn, newRange.checkOut);
-        } catch (err) {
+        } catch (_err) {
           // Handled by hook
         }
       }
@@ -163,7 +163,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [dateRange, setSelectedRooms, setTotalPrice]);
 
   const handleConfirm = useCallback(async () => {
-    if (!validateStep('summary')) return;
+    if (!validateStep('summary')) {return;}
 
     setIsProcessing(true);
     setError(null);
@@ -178,7 +178,11 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       });
 
       clearBooking();
-      onComplete ? onComplete(bookingId) : router.push(`/payment/${bookingId}`);
+      if (onComplete) {
+        onComplete(bookingId);
+      } else {
+        router.push(`/payment/${bookingId}`);
+      }
     } catch (err: any) {
       setError(err.message || T('errors.bookingFailed', locale));
       setIsProcessing(false);

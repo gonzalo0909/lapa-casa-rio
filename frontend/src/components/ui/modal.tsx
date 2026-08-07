@@ -186,6 +186,7 @@ ModalHeader.displayName = 'ModalHeader';
 // Modal Title Component
 const ModalTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- envoltorio genérico, el contenido lo pasa quien lo usa
     <h2
       ref={ref}
       className={`text-xl font-semibold leading-tight text-gray-900 pr-8 ${className || ''}`}

@@ -261,7 +261,7 @@ export function validateCPF(cpf: string): ValidationResult {
     sum += parseInt(cleaned.charAt(i)) * (10 - i);
   }
   let digit = 11 - (sum % 11);
-  if (digit >= 10) digit = 0;
+  if (digit >= 10) {digit = 0;}
 
   if (digit !== parseInt(cleaned.charAt(9))) {
     return { valid: false, error: 'Invalid CPF' };
@@ -272,7 +272,7 @@ export function validateCPF(cpf: string): ValidationResult {
     sum += parseInt(cleaned.charAt(i)) * (11 - i);
   }
   digit = 11 - (sum % 11);
-  if (digit >= 10) digit = 0;
+  if (digit >= 10) {digit = 0;}
 
   if (digit !== parseInt(cleaned.charAt(10))) {
     return { valid: false, error: 'Invalid CPF' };
@@ -496,8 +496,8 @@ export function validateBookingForm(data: {
       errors.dates = dateRangeValidation.error || 'Invalid date range';
     }
   } else {
-    if (!data.checkIn) errors.checkIn = 'Check-in date is required';
-    if (!data.checkOut) errors.checkOut = 'Check-out date is required';
+    if (!data.checkIn) {errors.checkIn = 'Check-in date is required';}
+    if (!data.checkOut) {errors.checkOut = 'Check-out date is required';}
   }
 
   if (data.beds !== undefined) {
@@ -527,7 +527,7 @@ export function validateBookingForm(data: {
  * ```
  */
 export function sanitizeInput(input: string): string {
-  if (!input || typeof input !== 'string') return '';
+  if (!input || typeof input !== 'string') {return '';}
   
   return input
     .replace(/<[^>]*>/g, '')

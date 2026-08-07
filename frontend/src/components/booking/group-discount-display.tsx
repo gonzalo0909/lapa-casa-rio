@@ -29,16 +29,16 @@ export const GroupDiscountDisplay: React.FC<GroupDiscountDisplayProps> = ({
   className = ''
 }) => {
   const getDiscountTier = () => {
-    if (totalBeds >= 26) return 'platinum';
-    if (totalBeds >= 16) return 'gold';
-    if (totalBeds >= 7) return 'silver';
+    if (totalBeds >= 26) {return 'platinum';}
+    if (totalBeds >= 16) {return 'gold';}
+    if (totalBeds >= 7) {return 'silver';}
     return 'none';
   };
 
   const getNextTier = () => {
-    if (totalBeds < 7) return { beds: 7, discount: 10, name: 'silver' };
-    if (totalBeds < 16) return { beds: 16, discount: 15, name: 'gold' };
-    if (totalBeds < 26) return { beds: 26, discount: 20, name: 'platinum' };
+    if (totalBeds < 7) {return { beds: 7, discount: 10, name: 'silver' };}
+    if (totalBeds < 16) {return { beds: 16, discount: 15, name: 'gold' };}
+    if (totalBeds < 26) {return { beds: 26, discount: 20, name: 'platinum' };}
     return null;
   };
 

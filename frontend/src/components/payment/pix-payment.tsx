@@ -36,7 +36,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
   }, [bookingId, amount]);
 
   useEffect(() => {
-    if (!pixData) return;
+    if (!pixData) {return;}
 
     const checkInterval = setInterval(() => {
       checkPaymentStatus();
@@ -46,7 +46,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
   }, [pixData]);
 
   useEffect(() => {
-    if (!pixData?.expiresAt) return;
+    if (!pixData?.expiresAt) {return;}
 
     const calculateTimeRemaining = () => {
       const now = new Date().getTime();
@@ -92,7 +92,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
   };
 
   const checkPaymentStatus = async () => {
-    if (!pixData || isChecking) return;
+    if (!pixData || isChecking) {return;}
 
     setIsChecking(true);
 
@@ -123,7 +123,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
   };
 
   const copyPixCode = async () => {
-    if (!pixData) return;
+    if (!pixData) {return;}
 
     try {
       await navigator.clipboard.writeText(pixData.qrCode);
@@ -162,7 +162,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
     );
   }
 
-  if (!pixData) return null;
+  if (!pixData) {return null;}
 
   return (
     <div className="space-y-6">
@@ -205,16 +205,16 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
 
       <div className="space-y-3">
         <div className="bg-gray-50 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="pix-code" className="block text-sm font-medium text-gray-700 mb-2">
             Código PIX (Copia e Cola)
           </label>
           <div className="flex items-center gap-2">
             <input
+              id="pix-code"
               type="text"
               value={pixData.qrCode}
               readOnly
               className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono"
-              aria-label="Código PIX"
             />
             <Button
               type="button"

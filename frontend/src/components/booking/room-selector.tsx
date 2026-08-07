@@ -84,8 +84,8 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
 
   const sortedRooms = useMemo(() => {
     return [...availableRooms].sort((a, b) => {
-      if (a.availableBeds === 0 && b.availableBeds > 0) return 1;
-      if (a.availableBeds > 0 && b.availableBeds === 0) return -1;
+      if (a.availableBeds === 0 && b.availableBeds > 0) {return 1;}
+      if (a.availableBeds > 0 && b.availableBeds === 0) {return -1;}
       return b.capacity - a.capacity;
     });
   }, [availableRooms]);
@@ -202,9 +202,9 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
 };
 
 function getGroupDiscountPercent(totalBeds: number): number {
-  if (totalBeds >= 26) return 20;
-  if (totalBeds >= 16) return 15;
-  if (totalBeds >= 7) return 10;
+  if (totalBeds >= 26) {return 20;}
+  if (totalBeds >= 16) {return 15;}
+  if (totalBeds >= 7) {return 10;}
   return 0;
 }
 

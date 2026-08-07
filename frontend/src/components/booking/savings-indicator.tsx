@@ -27,7 +27,7 @@ export const SavingsIndicator: React.FC<SavingsIndicatorProps> = ({
 }) => {
   const savingsPercent = Math.round((savings / originalPrice) * 100);
 
-  if (savings <= 0) return null;
+  if (savings <= 0) {return null;}
 
   return (
     <div className={`savings-indicator ${className}`}>

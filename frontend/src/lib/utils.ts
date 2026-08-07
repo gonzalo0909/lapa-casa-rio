@@ -218,7 +218,7 @@ export function sleep(ms: number): Promise<void> {
  * ```
  */
 export function capitalize(str: string): string {
-  if (!str) return '';
+  if (!str) {return '';}
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
@@ -236,7 +236,7 @@ export function capitalize(str: string): string {
  * ```
  */
 export function truncate(str: string, length: number, suffix: string = '...'): string {
-  if (!str || str.length <= length) return str;
+  if (!str || str.length <= length) {return str;}
   return str.substring(0, length).trim() + suffix;
 }
 
@@ -300,10 +300,10 @@ export function buildQueryString(params: Record<string, any>): string {
  * ```
  */
 export function isEmpty(value: any): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value === 'string') return value.trim().length === 0;
-  if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === 'object') return Object.keys(value).length === 0;
+  if (value === null || value === undefined) {return true;}
+  if (typeof value === 'string') {return value.trim().length === 0;}
+  if (Array.isArray(value)) {return value.length === 0;}
+  if (typeof value === 'object') {return Object.keys(value).length === 0;}
   return false;
 }
 
@@ -320,9 +320,9 @@ export function isEmpty(value: any): boolean {
  * ```
  */
 export function deepClone<T>(obj: T): T {
-  if (obj === null || typeof obj !== 'object') return obj;
-  if (obj instanceof Date) return new Date(obj.getTime()) as any;
-  if (obj instanceof Array) return obj.map((item) => deepClone(item)) as any;
+  if (obj === null || typeof obj !== 'object') {return obj;}
+  if (obj instanceof Date) {return new Date(obj.getTime()) as any;}
+  if (obj instanceof Array) {return obj.map((item) => deepClone(item)) as any;}
   if (obj instanceof Object) {
     const clonedObj = {} as T;
     for (const key in obj) {
@@ -354,8 +354,8 @@ export function compareDates(date1: string | Date, date2: string | Date): number
   d1.setHours(0, 0, 0, 0);
   d2.setHours(0, 0, 0, 0);
 
-  if (d1.getTime() < d2.getTime()) return -1;
-  if (d1.getTime() > d2.getTime()) return 1;
+  if (d1.getTime() < d2.getTime()) {return -1;}
+  if (d1.getTime() > d2.getTime()) {return 1;}
   return 0;
 }
 

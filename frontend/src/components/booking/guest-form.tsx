@@ -151,7 +151,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
 
   const handleSubmit = useCallback(
     (e?: React.FormEvent) => {
-      if (e) e.preventDefault();
+      if (e) {e.preventDefault();}
 
       const allTouched = Object.keys(formData).reduce(
         (acc, key) => ({ ...acc, [key]: true }),

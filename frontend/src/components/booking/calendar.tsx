@@ -44,7 +44,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     const startDayOfWeek = firstDay.getDay();
 
     const days: (Date | null)[] = [];
-    for (let i = 0; i < startDayOfWeek; i++) days.push(null);
+    for (let i = 0; i < startDayOfWeek; i++) {days.push(null);}
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day));
     }
@@ -53,8 +53,8 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const isDateDisabled = useCallback(
     (date: Date): boolean => {
-      if (minDate && date < minDate) return true;
-      if (maxDate && date > maxDate) return true;
+      if (minDate && date < minDate) {return true;}
+      if (maxDate && date > maxDate) {return true;}
       return disabledDates.some((d) => isSameDay(d, date));
     },
     [minDate, maxDate, disabledDates]
@@ -62,9 +62,9 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const isDateSelected = useCallback(
     (date: Date): boolean => {
-      if (!value?.checkIn) return false;
-      if (isSameDay(date, value.checkIn)) return true;
-      if (value.checkOut && isSameDay(date, value.checkOut)) return true;
+      if (!value?.checkIn) {return false;}
+      if (isSameDay(date, value.checkIn)) {return true;}
+      if (value.checkOut && isSameDay(date, value.checkOut)) {return true;}
       return false;
     },
     [value]
@@ -72,7 +72,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const isDateInRange = useCallback(
     (date: Date): boolean => {
-      if (!value?.checkIn || !value?.checkOut) return false;
+      if (!value?.checkIn || !value?.checkOut) {return false;}
       return date > value.checkIn && date < value.checkOut;
     },
     [value]
@@ -80,7 +80,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const handleDateClick = useCallback(
     (date: Date) => {
-      if (isDateDisabled(date)) return;
+      if (isDateDisabled(date)) {return;}
 
       if (!value?.checkIn || (value.checkIn && value.checkOut)) {
         onChange({ checkIn: date, checkOut: null });

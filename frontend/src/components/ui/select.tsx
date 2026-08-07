@@ -82,7 +82,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     },
     ref
   ) => {
-    const selectId = id || React.useId();
+    const generatedId = React.useId();
+    const selectId = id || generatedId;
     const hasError = !!error;
     const currentVariant = hasError ? 'error' : variant;
 

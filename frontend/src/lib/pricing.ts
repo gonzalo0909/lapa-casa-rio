@@ -197,7 +197,7 @@ export function getAverageSeasonMultiplier(
 
   const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   
-  if (nights <= 0) return 1.0;
+  if (nights <= 0) {return 1.0;}
 
   let totalMultiplier = 0;
   const currentDate = new Date(start);
@@ -403,7 +403,7 @@ export function calculateTotalPrice(params: {
   checkOut: string | Date;
 }): number {
   const totalBeds = params.rooms.reduce((sum, r) => sum + r.bedsCount, 0);
-  if (totalBeds === 0) return 0;
+  if (totalBeds === 0) {return 0;}
 
   return calculatePricing({
     checkIn: params.checkIn,

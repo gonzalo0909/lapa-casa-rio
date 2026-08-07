@@ -61,7 +61,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const showTooltip = () => {
-    if (disabled) return;
+    if (disabled) {return;}
     timeoutRef.current = setTimeout(() => {
       setIsReady(true);
       setIsVisible(true);
@@ -77,11 +77,11 @@ const Tooltip: React.FC<TooltipProps> = ({
   };
 
   const handleMouseEnter = () => {
-    if (trigger === 'hover') showTooltip();
+    if (trigger === 'hover') {showTooltip();}
   };
 
   const handleMouseLeave = () => {
-    if (trigger === 'hover') hideTooltip();
+    if (trigger === 'hover') {hideTooltip();}
   };
 
   const handleClick = () => {
@@ -95,11 +95,11 @@ const Tooltip: React.FC<TooltipProps> = ({
   };
 
   const handleFocus = () => {
-    if (trigger === 'focus') showTooltip();
+    if (trigger === 'focus') {showTooltip();}
   };
 
   const handleBlur = () => {
-    if (trigger === 'focus') hideTooltip();
+    if (trigger === 'focus') {hideTooltip();}
   };
 
   React.useEffect(() => {

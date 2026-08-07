@@ -79,7 +79,7 @@ export function formatDate(
   }
 
   if (format === 'iso') {
-    return dateObj.toISOString().split('T')[0];
+    return dateObj.toISOString().slice(0, 10);
   }
 
   if (format === 'long') {

@@ -28,11 +28,6 @@ const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-
 const PHONE_REGEX_BR = /^(?:\+?55\s?)?(?:\(?[1-9]{2}\)?\s?)?(?:9\s?)?[0-9]{4}-?[0-9]{4}$/;
 
 /**
- * CPF validation regex
- */
-const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-
-/**
  * Credit card number regex (basic format)
  */
 const CREDIT_CARD_REGEX = /^[0-9]{13,19}$/;

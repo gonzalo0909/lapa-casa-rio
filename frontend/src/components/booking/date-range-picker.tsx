@@ -175,7 +175,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </div>
 
       {error && (
-        <Alert id="date-error" variant="error" className="mt-4">
+        <Alert id="date-error" variant="danger" className="mt-4">
           {error}
         </Alert>
       )}

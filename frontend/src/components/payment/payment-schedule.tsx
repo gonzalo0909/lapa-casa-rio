@@ -48,7 +48,7 @@ export function PaymentSchedule({
       pending: <Badge variant="warning">Pendente</Badge>,
       paid: <Badge variant="success">Pago</Badge>,
       scheduled: <Badge variant="info">Agendado</Badge>,
-      failed: <Badge variant="destructive">Falhou</Badge>
+      failed: <Badge variant="danger">Falhou</Badge>
     };
     return badges[status as keyof typeof badges] || badges.pending;
   };

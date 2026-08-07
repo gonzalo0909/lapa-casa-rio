@@ -8,7 +8,7 @@ import { GroupDiscountDisplay } from './group-discount-display';
 import { SeasonMultiplierDisplay } from './season-multiplier-display';
 import { SavingsIndicator } from './savings-indicator';
 import { Card } from '@/components/ui/card';
-import { calculateTotalPrice, getSeasonMultiplier, getGroupDiscount } from '@/lib/pricing';
+import { getAverageSeasonMultiplier, calculateGroupDiscount } from '@/lib/pricing';
 import type { DateRange, Room } from '@/types/global';
 
 /**
@@ -45,8 +45,8 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
     const basePrice = 60.0;
     const subtotal = totalBeds * nights * basePrice;
 
-    const seasonMultiplier = getSeasonMultiplier(dateRange.checkIn, dateRange.checkOut);
-    const groupDiscountPercent = getGroupDiscount(totalBeds);
+    const seasonMultiplier = getAverageSeasonMultiplier(dateRange.checkIn, dateRange.checkOut);
+    const groupDiscountPercent = calculateGroupDiscount(totalBeds) * 100;
 
     const seasonAdjustment = subtotal * (seasonMultiplier - 1);
     const subtotalWithSeason = subtotal + seasonAdjustment;

@@ -208,7 +208,7 @@ function getWeekDays(locale: string): string[] {
     es: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
     en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   };
-  return days[locale] || days.en;
+  return (days[locale] || days.en)!;
 }
 
 function getLocaleString(locale: string): string {

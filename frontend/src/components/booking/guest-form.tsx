@@ -176,7 +176,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
       </div>
 
       {error && (
-        <Alert variant="error" className="mb-6">
+        <Alert variant="danger" className="mb-6">
           {error}
         </Alert>
       )}

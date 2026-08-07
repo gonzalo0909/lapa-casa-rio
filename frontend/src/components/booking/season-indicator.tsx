@@ -100,7 +100,6 @@ function getSeasonForDateRange(checkIn: Date, checkOut: Date, locale: string): S
   const checkOutMonth = checkOut.getMonth() + 1;
 
   const isHighSeason = (month: number) => month === 12 || month === 1 || month === 2 || month === 3;
-  const isMediumSeason = (month: number) => month === 4 || month === 5 || month === 10 || month === 11;
   const isLowSeason = (month: number) => month === 6 || month === 7 || month === 8 || month === 9;
 
   if (isHighSeason(checkInMonth) && isHighSeason(checkOutMonth)) {

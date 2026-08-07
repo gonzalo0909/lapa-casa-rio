@@ -17,7 +17,6 @@ interface StripeElementsWrapperProps {
 
 export function StripeElementsWrapper({
   clientSecret,
-  amount,
   currency,
   children
 }: StripeElementsWrapperProps) {

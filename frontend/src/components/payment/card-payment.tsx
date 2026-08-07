@@ -93,7 +93,7 @@ export function CardPayment({ bookingId, amount, currency, onSuccess, onError }:
         throw new Error('Erro ao criar intenção de pagamento');
       }
 
-      const { clientSecret, paymentIntentId } = await response.json();
+      const { clientSecret } = await response.json();
 
       const cardElement = elements.getElement(CardNumberElement);
       
@@ -210,7 +210,7 @@ export function CardPayment({ bookingId, amount, currency, onSuccess, onError }:
       )}
 
       {error && (
-        <Alert variant="destructive" role="alert">
+        <Alert variant="danger" role="alert">
           {error}
         </Alert>
       )}

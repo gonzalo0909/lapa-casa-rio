@@ -4,7 +4,7 @@
 
 import React, { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
-import { calculateTotalPrice, getSeasonMultiplier, getGroupDiscount } from '@/lib/pricing';
+import { getAverageSeasonMultiplier, calculateGroupDiscount } from '@/lib/pricing';
 import type { DateRange, Room } from '@/types/global';
 
 interface PriceSummaryProps {
@@ -29,8 +29,8 @@ export const PriceSummary: React.FC<PriceSummaryProps> = ({
     const totalBeds = rooms.reduce((sum, r) => sum + r.bedsCount, 0);
     const basePrice = 60.0;
     const subtotal = totalBeds * nights * basePrice;
-    const seasonMultiplier = getSeasonMultiplier(dateRange.checkIn!, dateRange.checkOut!);
-    const groupDiscountPercent = getGroupDiscount(totalBeds);
+    const seasonMultiplier = getAverageSeasonMultiplier(dateRange.checkIn!, dateRange.checkOut!);
+    const groupDiscountPercent = calculateGroupDiscount(totalBeds) * 100;
     const seasonAdjustment = subtotal * (seasonMultiplier - 1);
     const subtotalWithSeason = subtotal + seasonAdjustment;
     const discountAmount = subtotalWithSeason * (groupDiscountPercent / 100);

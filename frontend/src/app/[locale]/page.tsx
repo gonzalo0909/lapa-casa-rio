@@ -1,20 +1,13 @@
-import { useTranslations } from 'next-intl';
+import { BookingEngine } from '@/components/booking/booking-engine';
 
-export default function HomePage() {
-  const t = useTranslations('hero');
+type Locale = 'pt' | 'es' | 'en';
+
+export default function HomePage({ params }: { params: { locale: string } }) {
+  const locale = (['pt', 'es', 'en'].includes(params.locale) ? params.locale : 'pt') as Locale;
 
   return (
-    <main className="container flex min-h-screen flex-col items-center justify-center gap-6 py-16 text-center">
-      <h1 className="font-display text-4xl font-semibold text-foreground sm:text-5xl">
-        {t('title')}
-      </h1>
-      <p className="max-w-xl text-lg text-muted-foreground">{t('subtitle')}</p>
-      <a
-        href="#"
-        className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition hover:opacity-90"
-      >
-        {t('checkAvailability')}
-      </a>
+    <main className="min-h-screen bg-background">
+      <BookingEngine locale={locale} />
     </main>
   );
 }

@@ -32,13 +32,14 @@ export const SpecialRequests: React.FC<SpecialRequestsProps> = ({
           id="arrivalTime"
           value={formData.arrivalTime || ''}
           onChange={(e) => onChange('arrivalTime', e.target.value)}
-        >
-          <option value="">{T('selectTime', locale)}</option>
-          <option value="morning">08:00 - 12:00</option>
-          <option value="afternoon">12:00 - 18:00</option>
-          <option value="evening">18:00 - 22:00</option>
-          <option value="night">22:00 - 02:00</option>
-        </Select>
+          placeholder={T('selectTime', locale)}
+          options={[
+            { value: 'morning', label: '08:00 - 12:00' },
+            { value: 'afternoon', label: '12:00 - 18:00' },
+            { value: 'evening', label: '18:00 - 22:00' },
+            { value: 'night', label: '22:00 - 02:00' },
+          ]}
+        />
         <p className="text-xs text-gray-500 mt-1">{T('arrivalHelp', locale)}</p>
       </div>
 
@@ -50,15 +51,16 @@ export const SpecialRequests: React.FC<SpecialRequestsProps> = ({
           id="dietaryRestrictions"
           value={formData.dietaryRestrictions || ''}
           onChange={(e) => onChange('dietaryRestrictions', e.target.value)}
-        >
-          <option value="">{T('selectDietary', locale)}</option>
-          <option value="none">{T('none', locale)}</option>
-          <option value="vegetarian">{T('vegetarian', locale)}</option>
-          <option value="vegan">{T('vegan', locale)}</option>
-          <option value="gluten-free">{T('glutenFree', locale)}</option>
-          <option value="lactose-free">{T('lactoseFree', locale)}</option>
-          <option value="other">{T('other', locale)}</option>
-        </Select>
+          placeholder={T('selectDietary', locale)}
+          options={[
+            { value: 'none', label: T('none', locale) },
+            { value: 'vegetarian', label: T('vegetarian', locale) },
+            { value: 'vegan', label: T('vegan', locale) },
+            { value: 'gluten-free', label: T('glutenFree', locale) },
+            { value: 'lactose-free', label: T('lactoseFree', locale) },
+            { value: 'other', label: T('other', locale) },
+          ]}
+        />
       </div>
 
       <div>

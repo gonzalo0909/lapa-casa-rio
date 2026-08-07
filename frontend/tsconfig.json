@@ -58,6 +58,8 @@
     "out",
     "dist",
     "build",
-    "coverage"
+    "coverage",
+    "src/components/admin",
+    "src/components/analytics"
   ]
 }

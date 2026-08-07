@@ -12,7 +12,7 @@
 /**
  * Event parameters type
  */
-type EventParams = Record<string, string | number | boolean | undefined>;
+type EventParams = Record<string, unknown>;
 
 /**
  * Track custom event

@@ -107,7 +107,7 @@ export function PaymentIntent({
   if (error && retryCount >= 3) {
     return (
       <div className="py-8">
-        <Alert variant="destructive" role="alert">
+        <Alert variant="danger" role="alert">
           <div className="space-y-2">
             <p className="font-medium">Erro ao inicializar pagamento</p>
             <p className="text-sm">{error}</p>

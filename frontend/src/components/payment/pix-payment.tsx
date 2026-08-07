@@ -152,7 +152,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
   if (error) {
     return (
       <div className="space-y-4">
-        <Alert variant="destructive" role="alert">
+        <Alert variant="danger" role="alert">
           {error}
         </Alert>
         <Button onClick={generatePixCode} className="w-full">
@@ -189,7 +189,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
           <p className="text-2xl font-bold text-gray-900">{formatTime(timeRemaining)}</p>
         </div>
       ) : (
-        <Alert variant="destructive">
+        <Alert variant="danger">
           Código PIX expirado. Gere um novo código.
         </Alert>
       )}
@@ -219,7 +219,7 @@ export function PixPayment({ bookingId, amount, onSuccess, onError }: PixPayment
             <Button
               type="button"
               onClick={copyPixCode}
-              variant={copied ? 'default' : 'outline'}
+              variant={copied ? 'success' : 'outline'}
               size="sm"
             >
               {copied ? (

@@ -174,7 +174,7 @@ export class BookingService {
           data.pricing.depositAmount,
           data.pricing.remainingAmount,
           initialStatus,
-          initialStatus === 'pending_payment' ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null,
+          initialStatus === 'pending_payment' ? new Date(Date.now() + 5 * 60 * 1000).toISOString() : null,
           data.specialRequests ?? null,
           data.source ?? 'direct'
         ]

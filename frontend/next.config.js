@@ -8,6 +8,8 @@
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
+const createNextIntlPlugin = require('next-intl/plugin');
+const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -18,12 +20,8 @@ const nextConfig = {
     },
   },
 
-  // I18n configuration for PT/ES/EN
-  i18n: {
-    locales: ['pt', 'es', 'en'],
-    defaultLocale: 'pt',
-    localeDetection: true,
-  },
+  // Idiomas pt/es/en manejados por next-intl vía app/[locale] + middleware.ts,
+  // no por el i18n de Pages Router (incompatible con App Router).
 
   // Image optimization
   images: {
@@ -231,4 +229,4 @@ const nextConfig = {
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+module.exports = withNextIntl(withBundleAnalyzer(nextConfig));

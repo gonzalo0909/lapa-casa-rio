@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Lapa Casa Hostel — tokens de marca en HSL (consumidos por tailwind.config.js vía hsl(var(--x))) */
+    --background: 46 41% 89%;
+    --foreground: 150 24% 11%;
+
+    --primary: 160 42% 21%;
+    --primary-foreground: 46 41% 94%;
+
+    --secondary: 200 53% 36%;
+    --secondary-foreground: 46 41% 94%;
+
+    --destructive: 7 55% 40%;
+    --destructive-foreground: 46 41% 94%;
+
+    --muted: 46 20% 80%;
+    --muted-foreground: 150 10% 35%;
+
+    --accent: 307 86% 59%;
+    --accent-foreground: 46 41% 96%;
+
+    --popover: 46 41% 96%;
+    --popover-foreground: 150 24% 11%;
+
+    --card: 46 30% 97%;
+    --card-foreground: 150 24% 11%;
+
+    --border: 46 19% 79%;
+    --input: 46 19% 79%;
+    --ring: 160 42% 21%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 94 19% 7%;
+    --foreground: 46 11% 89%;
+
+    --primary: 155 39% 27%;
+    --primary-foreground: 46 11% 94%;
+
+    --secondary: 200 50% 45%;
+    --secondary-foreground: 46 11% 94%;
+
+    --destructive: 7 65% 55%;
+    --destructive-foreground: 46 11% 94%;
+
+    --muted: 90 15% 18%;
+    --muted-foreground: 46 8% 65%;
+
+    --accent: 307 86% 59%;
+    --accent-foreground: 46 11% 96%;
+
+    --popover: 90 20% 10%;
+    --popover-foreground: 46 11% 89%;
+
+    --card: 90 20% 10%;
+    --card-foreground: 46 11% 89%;
+
+    --border: 88 15% 20%;
+    --input: 88 15% 20%;
+    --ring: 155 39% 27%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}

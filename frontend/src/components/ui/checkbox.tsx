@@ -1,45 +1,69 @@
-// lapa-casa-hostel/frontend/src/components/ui/card.tsx
+// lapa-casa-hostel/frontend/src/components/ui/checkbox.tsx
 
 import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Card Component - Lapa Casa Hostel
- * 
- * Flexible card container with header, body, and footer sections.
- * Optimized for room cards, booking summaries, and pricing displays.
- * 
+ * Checkbox Component - Lapa Casa Hostel
+ *
+ * Accessible checkbox with label and error state.
+ * Used for consent/terms acceptance in the booking flow.
+ *
  * @component
  * @example
- * <Card>
- *   <CardHeader>
- *     <CardTitle>Mixto 12A</CardTitle>
- *     <CardDescription>12 camas - Quarto compartilhado</CardDescription>
- *   </CardHeader>
- *   <CardContent>
- *     <p>Conteúdo do cartão</p>
- *   </CardContent>
- *   <CardFooter>
- *     <Button>Reservar</Button>
- *   </CardFooter>
- * </Card>
+ * <Checkbox label="Acepto los términos y condiciones" />
  */
 
-const cardVariants = cva(
-  'rounded-xl border bg-white transition-all duration-200',
-  {
-    variants: {
-      variant: {
-        default: 'border-gray-200 shadow-sm',
-        elevated: 'border-transparent shadow-lg',
-        outlined: 'border-gray-300 shadow-none',
-        interactive: 'border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer',
-      },
-      padding: {
-        none: 'p-0',
-        sm: 'p-4',
-        md: 'p-6',
-        lg: 'p-8',
-      },
-    },
-    defaultV
+export interface CheckboxProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
+  /** Label text displayed next to the checkbox */
+  label?: React.ReactNode;
+  /** Error message displayed below the checkbox */
+  error?: string;
+}
+
+const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
+  ({ className, label, error, id, required, disabled, ...props }, ref) => {
+    const checkboxId = id || React.useId();
+    const hasError = !!error;
+
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-start gap-2">
+          <input
+            ref={ref}
+            id={checkboxId}
+            type="checkbox"
+            disabled={disabled}
+            required={required}
+            aria-invalid={hasError}
+            aria-describedby={hasError ? `${checkboxId}-error` : undefined}
+            className={`mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+              hasError ? 'border-destructive' : ''
+            } ${className || ''}`}
+            {...props}
+          />
+          {label && (
+            <label htmlFor={checkboxId} className="text-sm text-foreground">
+              {label}
+              {required && (
+                <span className="ml-1 text-destructive" aria-label="required">
+                  *
+                </span>
+              )}
+            </label>
+          )}
+        </div>
+
+        {error && (
+          <p id={`${checkboxId}-error`} className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+
+Checkbox.displayName = 'Checkbox';
+
+export { Checkbox };

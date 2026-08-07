@@ -227,15 +227,28 @@ router.post('/bookings/:id/confirm', async (req, res, next) => {
 });
 
 /**
- * PUT /admin/rooms/:id/settings — precio base y flag de flexible
+ * PUT /admin/rooms/:id/settings — precio base, flag de flexible, y el
+ * descuento por grupo de ESE cuarto (a partir de cuantas camas y que
+ * porcentaje -- ver 0009_room_group_discount.sql, reemplaza el tramo fijo
+ * global que existia antes).
  */
 router.put('/rooms/:id/settings', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { basePrice, isFlexible } = req.body as { basePrice?: number; isFlexible?: boolean };
+    const { basePrice, isFlexible, groupDiscountMinBeds, groupDiscountPercentage } = req.body as {
+      basePrice?: number;
+      isFlexible?: boolean;
+      groupDiscountMinBeds?: number;
+      groupDiscountPercentage?: number;
+    };
 
-    if (basePrice === undefined && isFlexible === undefined) {
-      res.status(400).json(ApiResponse.error('Nada para actualizar: basePrice y/o isFlexible'));
+    if (
+      basePrice === undefined && isFlexible === undefined &&
+      groupDiscountMinBeds === undefined && groupDiscountPercentage === undefined
+    ) {
+      res.status(400).json(ApiResponse.error(
+        'Nada para actualizar: basePrice, isFlexible, groupDiscountMinBeds y/o groupDiscountPercentage'
+      ));
       return;
     }
 
@@ -243,6 +256,8 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
     const params: any[] = [];
     if (basePrice !== undefined) { params.push(basePrice); sets.push(`base_price = $${params.length}`); }
     if (isFlexible !== undefined) { params.push(isFlexible); sets.push(`is_flexible = $${params.length}`); }
+    if (groupDiscountMinBeds !== undefined) { params.push(groupDiscountMinBeds); sets.push(`group_discount_min_beds = $${params.length}`); }
+    if (groupDiscountPercentage !== undefined) { params.push(groupDiscountPercentage); sets.push(`group_discount_percentage = $${params.length}`); }
     params.push(id);
 
     const { rows } = await query(
@@ -256,7 +271,7 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
 
     await auditLogService.log({
       entity_type: 'room_type', entity_id: id, operation: 'ADMIN_UPDATE_SETTINGS',
-      new_data: { basePrice, isFlexible }
+      new_data: { basePrice, isFlexible, groupDiscountMinBeds, groupDiscountPercentage }
     });
 
     res.status(200).json(ApiResponse.success(rows[0], 'Habitación actualizada'));

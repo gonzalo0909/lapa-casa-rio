@@ -254,9 +254,9 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
       // una unica conexion (Promise.all aca dispararia
       // "Calling client.query() when the client is already executing a
       // query is deprecated").
-      const { rows: finalPriceRows } = await client.query(`SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS v`, [basePrice, nights, bedsCount, bookingData.checkIn, bookingDate]);
+      const { rows: finalPriceRows } = await client.query(`SELECT calculate_final_price($1::uuid, $2::numeric, $3, $4, $5::date, $6::date) AS v`, [roomType.id, basePrice, nights, bedsCount, bookingData.checkIn, bookingDate]);
       const { rows: seasonRows } = await client.query(`SELECT calculate_season_multiplier($1::date) AS v`, [bookingData.checkIn]);
-      const { rows: groupRows } = await client.query(`SELECT calculate_group_discount($1) AS v`, [bedsCount]);
+      const { rows: groupRows } = await client.query(`SELECT calculate_group_discount($1::uuid, $2) AS v`, [roomType.id, bedsCount]);
       const { rows: earlyBirdRows } = await client.query(`SELECT calculate_early_bird_discount($1::date, $2::date) AS v`, [bookingDate, bookingData.checkIn]);
       const finalPrice = parseFloat(finalPriceRows[0].v);
       const seasonMultiplier = parseFloat(seasonRows[0].v);

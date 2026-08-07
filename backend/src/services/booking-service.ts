@@ -73,6 +73,8 @@ interface CreateBookingInput {
   source?: string;
   language?: 'pt' | 'en' | 'es';
   status?: BookingStatus;
+  /** Genero de la reserva, elegido por el huesped junto con las fechas -- determina que camas son elegibles (ver check_availability/is_gender_eligible). Antes quedaba hardcodeado en 'mixed' para toda reserva directa, lo que rompia reservar Flexible 7 (female) por este canal. */
+  guestGender?: 'mixed' | 'female' | 'male';
 }
 
 /** Selecciona `count` camas libres y elegibles por genero dentro de UNA habitacion, bajo la transaccion activa. */
@@ -109,9 +111,10 @@ export class BookingService {
       const channelId = channelRows[0].id;
 
       // 1) Elegir camas candidatas por habitacion (sin lock todavia)
+      const guestGender = data.guestGender ?? 'mixed';
       const candidateBedIds: string[] = [];
       for (const room of data.rooms) {
-        const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, 'mixed');
+        const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, guestGender);
         if (beds.length < room.bedsCount) {
           throw new InsufficientAvailabilityError({ roomId: room.roomId, requested: room.bedsCount, found: beds.length });
         }
@@ -145,22 +148,23 @@ export class BookingService {
 
       const { rows: reservationRows } = await client.query(
         `INSERT INTO reservations (
-           reservation_number, guest_id, channel_id,
+           reservation_number, guest_id, channel_id, guest_gender,
            check_in_date, check_out_date, nights_count, beds_count,
            base_price, season_multiplier, group_discount, early_bird_discount, final_price,
            deposit_percent, deposit_amount, remaining_amount,
            status, pending_expires_at, special_requests, source
          ) VALUES (
-           $1, $2, $3,
-           $4::date, $5::date, $6, $7,
-           $8, $9, $10, $11, $12,
-           $13, $14, $15,
-           $16::booking_status, $17, $18, $19
+           $1, $2, $3, $4::bed_gender,
+           $5::date, $6::date, $7, $8,
+           $9, $10, $11, $12, $13,
+           $14, $15, $16,
+           $17::booking_status, $18, $19, $20
          ) RETURNING *`,
         [
           reservationNumber,
           guest.id,
           channelId,
+          guestGender,
           data.checkIn,
           data.checkOut,
           data.nights,
@@ -174,7 +178,7 @@ export class BookingService {
           data.pricing.depositAmount,
           data.pricing.remainingAmount,
           initialStatus,
-          initialStatus === 'pending_payment' ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null,
+          initialStatus === 'pending_payment' ? new Date(Date.now() + 5 * 60 * 1000).toISOString() : null,
           data.specialRequests ?? null,
           data.source ?? 'direct'
         ]

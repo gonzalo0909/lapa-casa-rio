@@ -119,6 +119,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
     };
 
     return (
+      // eslint-disable-next-line jsx-a11y/heading-has-content -- envoltorio genérico, el contenido lo pasa quien lo usa
       <h3
         ref={ref}
         className={`font-semibold leading-tight text-gray-900 ${sizeClasses[size]} ${className || ''}`}

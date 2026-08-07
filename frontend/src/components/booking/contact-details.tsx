@@ -141,14 +141,9 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
             className={touched.country && errors.country ? 'border-red-500' : ''}
             aria-invalid={touched.country && !!errors.country}
             aria-describedby={errors.country ? 'country-error' : undefined}
-          >
-            <option value="">{T('selectCountry', locale)}</option>
-            {countries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name}
-              </option>
-            ))}
-          </Select>
+            placeholder={T('selectCountry', locale)}
+            options={countries.map((country) => ({ value: country.code, label: country.name }))}
+          />
           {touched.country && errors.country && (
             <p id="country-error" className="text-sm text-red-600 mt-1">
               {errors.country}

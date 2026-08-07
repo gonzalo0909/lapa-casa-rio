@@ -81,6 +81,7 @@ async function createReservation(client, opts) {
     checkOut,
     nights,
     beds,
+    roomTypeId,
     status = 'pending_payment',
     pendingExpiresAt = null,
     bookingDate = '2020-01-01', // lejos en el pasado -> sin early bird por defecto, salvo que el escenario lo pida
@@ -89,13 +90,13 @@ async function createReservation(client, opts) {
   const basePrice = 60;
   const { rows: seasonRows } = await client.query('SELECT calculate_season_multiplier($1) AS m', [checkIn]);
   const seasonMultiplier = Number(seasonRows[0].m);
-  const { rows: groupRows } = await client.query('SELECT calculate_group_discount($1) AS d', [beds]);
+  const { rows: groupRows } = await client.query('SELECT calculate_group_discount($1, $2) AS d', [roomTypeId, beds]);
   const groupDiscount = Number(groupRows[0].d);
   const { rows: ebRows } = await client.query('SELECT calculate_early_bird_discount($1, $2) AS d', [bookingDate, checkIn]);
   const earlyBirdDiscount = Number(ebRows[0].d);
   const { rows: priceRows } = await client.query(
-    'SELECT calculate_final_price($1, $2, $3, $4, $5) AS p',
-    [basePrice, nights, beds, checkIn, bookingDate]
+    'SELECT calculate_final_price($1, $2, $3, $4, $5, $6) AS p',
+    [roomTypeId, basePrice, nights, beds, checkIn, bookingDate]
   );
   const finalPrice = Number(priceRows[0].p);
   const { rows: depositRows } = await client.query('SELECT * FROM calculate_deposit($1, $2)', [finalPrice, beds]);
@@ -133,6 +134,7 @@ async function testHappyPath(client) {
   const guestId = await createGuest(client, 'sc1@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'direct');
   const bedId = await getBedId(client, 'C1');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const r = await createReservation(client, {
     reservationNumber: 'LCH-SC1-0001',
@@ -142,6 +144,7 @@ async function testHappyPath(client) {
     checkOut: '2027-07-12',
     nights: 2,
     beds: 1,
+    roomTypeId,
     bookingDate: '2027-07-01', // 9 dias antes -> sin early bird, para aislar el efecto de la temporada
     pendingExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
   });
@@ -230,10 +233,11 @@ async function testExcludeIsFinalAuthority(client) {
   const guestId = await createGuest(client, 'sc3@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'direct');
   const bedId = await getBedId(client, 'C2');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const r1 = await createReservation(client, {
     reservationNumber: 'LCH-SC3-0001', guestId, channelId,
-    checkIn: '2027-07-15', checkOut: '2027-07-17', nights: 2, beds: 1,
+    checkIn: '2027-07-15', checkOut: '2027-07-17', nights: 2, beds: 1, roomTypeId,
     status: 'confirmed',
   });
   await assignBed(client, r1.id, bedId, '2027-07-15', '2027-07-17');
@@ -243,7 +247,7 @@ async function testExcludeIsFinalAuthority(client) {
   try {
     const r2 = await createReservation(client, {
       reservationNumber: 'LCH-SC3-0002', guestId, channelId,
-      checkIn: '2027-07-16', checkOut: '2027-07-18', nights: 2, beds: 1,
+      checkIn: '2027-07-16', checkOut: '2027-07-18', nights: 2, beds: 1, roomTypeId,
       status: 'confirmed',
     });
     await assignBed(client, r2.id, bedId, '2027-07-16', '2027-07-18');
@@ -263,11 +267,12 @@ async function testOtaWebhookChannel(client) {
   const guestId = await createGuest(client, 'sc4@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'booking');
   const bedId = await getBedId(client, 'C3');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const r = await createReservation(client, {
     reservationNumber: 'LCH-SC4-0001', guestId, channelId,
     externalReservationId: 'BOOKING-EXT-0001',
-    checkIn: '2027-07-20', checkOut: '2027-07-22', nights: 2, beds: 1,
+    checkIn: '2027-07-20', checkOut: '2027-07-22', nights: 2, beds: 1, roomTypeId,
     status: 'confirmed', pendingExpiresAt: null,
   });
   await assignBed(client, r.id, bedId, '2027-07-20', '2027-07-22');
@@ -290,11 +295,12 @@ async function testOtaIcalOnlyChannel(client) {
   const guestId = await createGuest(client, 'sc5@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'hostelworld');
   const bedId = await getBedId(client, 'C4');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const r = await createReservation(client, {
     reservationNumber: 'LCH-SC5-0001', guestId, channelId,
     externalReservationId: 'HW-EXT-0001',
-    checkIn: '2027-07-25', checkOut: '2027-07-27', nights: 2, beds: 1,
+    checkIn: '2027-07-25', checkOut: '2027-07-27', nights: 2, beds: 1, roomTypeId,
     status: 'pending_ota_confirmation', pendingExpiresAt: null,
   });
   await assignBed(client, r.id, bedId, '2027-07-25', '2027-07-27');
@@ -315,10 +321,11 @@ async function testExpiredPendingCleanup(client) {
   const guestId = await createGuest(client, 'sc6@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'direct');
   const bedId = await getBedId(client, 'C5');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const r = await createReservation(client, {
     reservationNumber: 'LCH-SC6-0001', guestId, channelId,
-    checkIn: '2027-08-01', checkOut: '2027-08-03', nights: 2, beds: 1,
+    checkIn: '2027-08-01', checkOut: '2027-08-03', nights: 2, beds: 1, roomTypeId,
     status: 'pending_payment',
     pendingExpiresAt: new Date(Date.now() - 60 * 1000), // vencido hace 1 minuto
   });
@@ -346,11 +353,12 @@ async function testOtaExemptFromTimeout(client) {
   const guestId = await createGuest(client, 'sc7@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'airbnb');
   const bedId = await getBedId(client, 'C6');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const r = await createReservation(client, {
     reservationNumber: 'LCH-SC7-0001', guestId, channelId,
     externalReservationId: 'ABB-EXT-0001',
-    checkIn: '2027-08-05', checkOut: '2027-08-07', nights: 2, beds: 1,
+    checkIn: '2027-08-05', checkOut: '2027-08-07', nights: 2, beds: 1, roomTypeId,
     status: 'pending_ota_confirmation', pendingExpiresAt: null,
   });
   await assignBed(client, r.id, bedId, '2027-08-05', '2027-08-07');
@@ -368,6 +376,7 @@ async function testNoShowRelease(client) {
   const guestId = await createGuest(client, 'sc8@test.lapacasahostel.internal', 'mixed');
   const channelId = await getChannelId(client, 'direct');
   const bedId = await getBedId(client, 'C7');
+  const roomTypeId = await getRoomTypeId(client, 'mixto_7');
 
   const yesterday = new Date();
   yesterday.setUTCDate(yesterday.getUTCDate() - 2);
@@ -376,7 +385,7 @@ async function testNoShowRelease(client) {
 
   const r = await createReservation(client, {
     reservationNumber: 'LCH-SC8-0001', guestId, channelId,
-    checkIn: checkInPast, checkOut: checkOutPast, nights: 2, beds: 1,
+    checkIn: checkInPast, checkOut: checkOutPast, nights: 2, beds: 1, roomTypeId,
     status: 'confirmed',
   });
   await assignBed(client, r.id, bedId, checkInPast, checkOutPast);
@@ -412,7 +421,7 @@ async function testFlexibleConversion(client) {
   const channelId = await getChannelId(client, 'direct');
   const rB = await createReservation(client, {
     reservationNumber: 'LCH-SC10-0001', guestId, channelId, guestGender: 'female',
-    checkIn: dateB, checkOut: addDays(dateB, 2), nights: 2, beds: 1, status: 'confirmed',
+    checkIn: dateB, checkOut: addDays(dateB, 2), nights: 2, beds: 1, roomTypeId: flexRoomId, status: 'confirmed',
   });
   await assignBed(client, rB.id, bedF2, dateB, addDays(dateB, 2));
 
@@ -453,21 +462,33 @@ async function testFlexibleConversion(client) {
 // y la comision de canal jamas afecta el precio del huesped.
 // ------------------------------------------------------------
 async function testPricingMatrix(client) {
+  // El descuento por grupo es por cuarto (room_types.group_discount_min_beds/
+  // percentage, ver 0009_room_group_discount.sql) -- se lee de la tabla real,
+  // nunca se hardcodea un tramo aca (Requisito Critico #6).
+  const roomTypeId = await getRoomTypeId(client, 'mixto_12a');
+  const { rows: roomRows } = await client.query(
+    'SELECT group_discount_min_beds, group_discount_percentage FROM room_types WHERE id = $1',
+    [roomTypeId]
+  );
+  const minBeds = roomRows[0].group_discount_min_beds;
+  const pct = Number(roomRows[0].group_discount_percentage);
+
   const cases = [
-    // [checkIn, bookingDate, beds, nights, temporada esperada, multiplicador, descuento grupo, early bird]
-    { checkIn: '2027-01-15', bookingDate: '2026-12-01', beds: 5, nights: 3, multiplier: 1.5, groupDiscount: 0.00, earlyBird: 0.05 },
-    { checkIn: '2027-07-15', bookingDate: '2027-07-01', beds: 10, nights: 2, multiplier: 0.8, groupDiscount: 0.10, earlyBird: 0.00 },
-    { checkIn: '2027-04-15', bookingDate: '2027-03-01', beds: 20, nights: 2, multiplier: 1.0, groupDiscount: 0.15, earlyBird: 0.05 },
+    // [checkIn, bookingDate, beds, nights, temporada esperada, multiplicador, early bird] -- descuento de grupo se calcula segun minBeds/pct del cuarto
+    { checkIn: '2027-01-15', bookingDate: '2026-12-01', beds: minBeds - 1, nights: 3, multiplier: 1.5, earlyBird: 0.05 },
+    { checkIn: '2027-07-15', bookingDate: '2027-07-01', beds: minBeds, nights: 2, multiplier: 0.8, earlyBird: 0.00 },
+    { checkIn: '2027-04-15', bookingDate: '2027-03-01', beds: minBeds + 2, nights: 2, multiplier: 1.0, earlyBird: 0.05 },
     // 2027-02-08 cae dentro del rango de Carnaval sembrado en system_config (2027-02-06 a 2027-02-10)
-    { checkIn: '2027-02-08', bookingDate: '2027-01-01', beds: 30, nights: 5, multiplier: 2.0, groupDiscount: 0.20, earlyBird: 0.05 },
+    { checkIn: '2027-02-08', bookingDate: '2027-01-01', beds: 12, nights: 5, multiplier: 2.0, earlyBird: 0.05 },
   ];
 
   for (const c of cases) {
+    const groupDiscount = c.beds >= minBeds ? pct : 0;
     const { rows } = await client.query(
-      'SELECT calculate_final_price($1,$2,$3,$4,$5) AS p',
-      [60, c.nights, c.beds, c.checkIn, c.bookingDate]
+      'SELECT calculate_final_price($1,$2,$3,$4,$5,$6) AS p',
+      [roomTypeId, 60, c.nights, c.beds, c.checkIn, c.bookingDate]
     );
-    const expected = 60 * c.nights * c.beds * c.multiplier * (1 - c.groupDiscount) * (1 - c.earlyBird);
+    const expected = 60 * c.nights * c.beds * c.multiplier * (1 - groupDiscount) * (1 - c.earlyBird);
     const actual = Number(rows[0].p);
     assert(
       Math.abs(actual - expected) < 0.01,
@@ -477,8 +498,8 @@ async function testPricingMatrix(client) {
 
   // La comision de canal es independiente del precio del huesped
   const { rows: priceRows } = await client.query(
-    'SELECT calculate_final_price($1,$2,$3,$4,$5) AS p',
-    [60, 2, 7, '2027-06-01', '2027-05-01']
+    'SELECT calculate_final_price($1,$2,$3,$4,$5,$6) AS p',
+    [roomTypeId, 60, 2, 7, '2027-06-01', '2027-05-01']
   );
   const guestPrice = Number(priceRows[0].p);
 

@@ -86,16 +86,14 @@ export function InstallmentsSelector({
       <Select
         id="installments"
         value={selectedInstallments.toString()}
-        onValueChange={handleChange}
+        onChange={(e) => handleChange(e.target.value)}
         disabled={disabled}
         aria-label="Selecionar número de parcelas"
-      >
-        {installmentOptions.map((option) => (
-          <option key={option.value} value={option.value.toString()}>
-            {option.label}
-          </option>
-        ))}
-      </Select>
+        options={installmentOptions.map((option) => ({
+          value: option.value.toString(),
+          label: option.label,
+        }))}
+      />
 
       {selectedOption && selectedOption.hasInterest && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">

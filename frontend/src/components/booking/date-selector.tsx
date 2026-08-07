@@ -116,7 +116,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       </div>
 
       {(error || localError) && (
-        <Alert variant="error" className="mb-4">
+        <Alert variant="danger" className="mb-4">
           {error || localError}
         </Alert>
       )}

@@ -75,7 +75,7 @@ INSERT INTO cancellation_policies (label, min_hours_before, refund_percent) VALU
 -- ============================================================
 INSERT INTO system_config (key, value, description) VALUES
   ('timezone', '"America/Sao_Paulo"', 'Zona horaria operativa unica del sistema'),
-  ('pending_payment_timeout_minutes', '15', 'Timeout de reservas directas con pago pendiente'),
+  ('pending_payment_timeout_minutes', '5', 'Timeout de reservas directas con pago pendiente'),
   ('flexible_conversion_hours', '48', 'Horas antes del check-in en que se evalua la conversion de Flexible 7'),
   ('no_show_release_time', '"23:59"', 'Hora local (America/Sao_Paulo) de liberacion automatica por no-show'),
   (

@@ -97,6 +97,8 @@ interface RoomTypeRow {
   default_gender: string;
   is_flexible: boolean;
   base_price: string;
+  group_discount_min_beds: number;
+  group_discount_percentage: string;
 }
 
 export interface RoomSummary {
@@ -108,12 +110,17 @@ export interface RoomSummary {
   isFlexible: boolean;
   basePrice: number;
   currency: 'BRL';
+  groupDiscountMinBeds: number;
+  groupDiscountPercentage: number;
   description: { en: string; pt: string; es: string };
   amenities: string[];
   floor: number;
   features: { windowView: boolean; ensuiteBathroom: boolean; balcony: boolean };
   flexibleRoomPolicy?: unknown;
 }
+
+const ROOM_TYPE_COLUMNS = `id, code, name, capacity, default_gender, is_flexible, base_price,
+       group_discount_min_beds, group_discount_percentage`;
 
 const mergeContent = (r: RoomTypeRow): RoomSummary => {
   const content = ROOM_CONTENT[r.code] ?? {
@@ -131,6 +138,8 @@ const mergeContent = (r: RoomTypeRow): RoomSummary => {
     isFlexible: r.is_flexible,
     basePrice: parseFloat(r.base_price),
     currency: 'BRL',
+    groupDiscountMinBeds: r.group_discount_min_beds,
+    groupDiscountPercentage: parseFloat(r.group_discount_percentage),
     ...content
   };
 };
@@ -139,7 +148,7 @@ export class RoomService {
   /** Las 5 habitaciones reales, con contenido descriptivo mergeado por `code`. */
   async getRooms(): Promise<RoomSummary[]> {
     const { rows } = await query<RoomTypeRow>(
-      `SELECT id, code, name, capacity, default_gender, is_flexible, base_price
+      `SELECT ${ROOM_TYPE_COLUMNS}
        FROM room_types ORDER BY capacity, code`
     );
     return rows.map(mergeContent);
@@ -152,7 +161,7 @@ export class RoomService {
     if (!UUID_RE.test(roomId)) return null;
 
     const { rows } = await query<RoomTypeRow>(
-      `SELECT id, code, name, capacity, default_gender, is_flexible, base_price
+      `SELECT ${ROOM_TYPE_COLUMNS}
        FROM room_types WHERE id = $1::uuid`,
       [roomId]
     );
@@ -200,17 +209,27 @@ export class RoomService {
     return predictions;
   }
 
-  /** Actualiza configuracion editable de una habitacion. Hoy solo el precio base. */
-  async updateRoomSettings(roomId: string, settings: { basePrice?: number }): Promise<RoomSummary | null> {
-    if (settings.basePrice === undefined) {
-      const room = await this.getRoom(roomId);
-      return room;
+  /** Actualiza configuracion editable de una habitacion: precio base, flexible, y el descuento por grupo de ese cuarto. */
+  async updateRoomSettings(
+    roomId: string,
+    settings: { basePrice?: number; isFlexible?: boolean; groupDiscountMinBeds?: number; groupDiscountPercentage?: number }
+  ): Promise<RoomSummary | null> {
+    const sets: string[] = [];
+    const params: unknown[] = [roomId];
+    if (settings.basePrice !== undefined) { params.push(settings.basePrice); sets.push(`base_price = $${params.length}::numeric`); }
+    if (settings.isFlexible !== undefined) { params.push(settings.isFlexible); sets.push(`is_flexible = $${params.length}`); }
+    if (settings.groupDiscountMinBeds !== undefined) { params.push(settings.groupDiscountMinBeds); sets.push(`group_discount_min_beds = $${params.length}`); }
+    if (settings.groupDiscountPercentage !== undefined) { params.push(settings.groupDiscountPercentage); sets.push(`group_discount_percentage = $${params.length}::numeric`); }
+
+    if (sets.length === 0) {
+      return this.getRoom(roomId);
     }
+
     const { rows } = await query<RoomTypeRow>(
-      `UPDATE room_types SET base_price = $2::numeric, updated_at = NOW()
+      `UPDATE room_types SET ${sets.join(', ')}, updated_at = NOW()
        WHERE id = $1::uuid
-       RETURNING id, code, name, capacity, default_gender, is_flexible, base_price`,
-      [roomId, settings.basePrice]
+       RETURNING ${ROOM_TYPE_COLUMNS}`,
+      params
     );
     if (rows.length === 0) return null;
     return mergeContent(rows[0]);

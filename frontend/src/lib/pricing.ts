@@ -197,7 +197,7 @@ export function getAverageSeasonMultiplier(
 
   const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   
-  if (nights <= 0) return 1.0;
+  if (nights <= 0) {return 1.0;}
 
   let totalMultiplier = 0;
   const currentDate = new Date(start);
@@ -387,6 +387,63 @@ export function formatPricingBreakdown(pricing: PricingResult): {
     total: formatBRL(pricing.total),
     savings: formatBRL(pricing.savings)
   };
+}
+
+/**
+ * Calculate total price for a set of selected rooms and a date range.
+ * Thin wrapper around calculatePricing() for callers that already have
+ * the rooms array with bed counts instead of a raw total.
+ *
+ * @param params - rooms (with bedsCount), checkIn, checkOut
+ * @returns Total price in BRL
+ */
+export function calculateTotalPrice(params: {
+  rooms: { bedsCount: number }[];
+  checkIn: string | Date;
+  checkOut: string | Date;
+}): number {
+  const totalBeds = params.rooms.reduce((sum, r) => sum + r.bedsCount, 0);
+  if (totalBeds === 0) {return 0;}
+
+  return calculatePricing({
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    totalBeds,
+    rooms: [],
+  }).total;
+}
+
+/**
+ * Validate a booking's date range: check-in can't be in the past,
+ * check-out must be after check-in, and carnival minimum-stay rules apply.
+ *
+ * @param checkIn - Check-in date
+ * @param checkOut - Check-out date
+ * @returns Validation result with an error message when invalid
+ */
+export function validateBookingDates(
+  checkIn: string | Date,
+  checkOut: string | Date
+): { isValid: boolean; error?: string } {
+  const start = typeof checkIn === 'string' ? new Date(checkIn) : checkIn;
+  const end = typeof checkOut === 'string' ? new Date(checkOut) : checkOut;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (start < today) {
+    return { isValid: false, error: 'Check-in date cannot be in the past' };
+  }
+  if (end <= start) {
+    return { isValid: false, error: 'Check-out date must be after check-in date' };
+  }
+
+  const carnival = validateCarnivalBooking(start, end);
+  if (!carnival.valid) {
+    return { isValid: false, error: carnival.message };
+  }
+
+  return { isValid: true };
 }
 
 /**

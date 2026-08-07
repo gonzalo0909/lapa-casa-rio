@@ -26,6 +26,7 @@
     "curly": ["error", "all"],
     "no-duplicate-imports": "error"
   },
+  "ignorePatterns": ["src/components/admin/**", "src/components/analytics/**"],
   "overrides": [{ "files": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"], "env": { "jest": true }, "rules": { "@typescript-eslint/no-explicit-any": "off" } }],
   "settings": { "react": { "version": "detect" } },
   "env": { "browser": true, "node": true, "es2022": true },

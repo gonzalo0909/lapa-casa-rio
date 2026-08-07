@@ -12,7 +12,7 @@
  */
 
 import Head from 'next/head';
-import { useTranslations, useLocale } from 'next-intl';
+import { useLocale } from 'next-intl';
 
 /**
  * Meta tags configuration interface
@@ -115,7 +115,6 @@ export function MetaTags({
   jsonLd,
   alternateUrls = []
 }: MetaTagsProps) {
-  const t = useTranslations('seo');
   const locale = useLocale();
 
   const fullTitle = title 

@@ -55,7 +55,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       onDismiss?.();
     };
 
-    if (isDismissed) return null;
+    if (isDismissed) {return null;}
 
     const defaultIcons = {
       default: (
@@ -125,6 +125,7 @@ Alert.displayName = 'Alert';
 // Alert Title Component
 const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- envoltorio genérico, el contenido lo pasa quien lo usa
     <h5
       ref={ref}
       className={`mb-1 font-semibold leading-tight ${className || ''}`}

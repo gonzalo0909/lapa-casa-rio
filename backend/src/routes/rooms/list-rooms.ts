@@ -56,13 +56,10 @@ export const listRoomsHandler = async (
           smallestRoom: Math.min(...ROOMS.map(r => r.capacity))
         },
         pricing: {
-          basePrice: 60.0,
           currency: 'BRL',
-          groupDiscounts: [
-            { minBeds: 7, discount: 10, description: '10% off for 7-15 beds' },
-            { minBeds: 16, discount: 15, description: '15% off for 16-25 beds' },
-            { minBeds: 26, discount: 20, description: '20% off for 26+ beds' }
-          ],
+          // El descuento por grupo es por cuarto, no un tramo global fijo --
+          // ver groupDiscountMinBeds/groupDiscountPercentage en cada item de
+          // "rooms" (editable desde /admin/rooms.html, 0009_room_group_discount.sql).
           seasonalAdjustments: {
             high: { multiplier: 1.5, months: 'Dec-Mar', description: '+50%' },
             medium: { multiplier: 1.0, months: 'Apr-May, Oct-Nov', description: 'Base price' },

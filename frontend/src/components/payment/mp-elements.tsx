@@ -110,7 +110,7 @@ export function MercadoPagoElements({
 
   if (error) {
     return (
-      <Alert variant="destructive" role="alert">
+      <Alert variant="danger" role="alert">
         {error}
       </Alert>
     );
@@ -122,11 +122,15 @@ export function MercadoPagoElements({
 
   return (
     <div className="mercadopago-payment-wrapper">
+      {/* @mercadopago/sdk-react declara tipos incompletos para el Card Payment Brick:
+          preferenceId y creditCard/debitCard existen en la API real pero no en sus .d.ts. */}
       <MPCardPayment
-        initialization={{
-          amount,
-          preferenceId
-        }}
+        initialization={
+          {
+            amount,
+            preferenceId,
+          } as any
+        }
         customization={{
           visual: {
             style: {
@@ -151,7 +155,7 @@ export function MercadoPagoElements({
             minInstallments: 1,
             creditCard: 'all',
             debitCard: 'all'
-          }
+          } as any
         }}
         onSubmit={handleSubmit}
         onReady={() => console.log('Mercado Pago ready')}

@@ -5,6 +5,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DateSelector } from './date-selector';
+import { GenderSelector } from './gender-selector';
 import { RoomSelector } from './room-selector';
 import { PricingCalculator } from './pricing-calculator';
 import { GuestForm } from './guest-form';
@@ -14,7 +15,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useBookingStore } from '@/stores/booking-store';
 import { useAvailability } from '@/hooks/use-availability';
 import { calculateTotalPrice, validateBookingDates } from '@/lib/pricing';
-import type { BookingStep, Room, DateRange, GuestDetails } from '@/types/global';
+import type { BookingStep, Room, DateRange } from '@/types/global';
 
 /**
  * BookingEngine Component
@@ -42,10 +43,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const router = useRouter();
   const {
     dateRange,
+    gender,
     selectedRooms,
     guestDetails,
     totalPrice,
     setDateRange,
+    setGender,
     setSelectedRooms,
     setGuestDetails,
     setTotalPrice,
@@ -56,7 +59,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [currentStep, setCurrentStep] = useState<BookingStep>(initialStep);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
 
   const {
     availableRooms,
@@ -104,25 +106,23 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
   const handleNext = useCallback(async () => {
     if (!validateStep(currentStep)) {
-      setTouched(true);
       return;
     }
 
     const idx = STEPS.indexOf(currentStep);
     if (idx < STEPS.length - 1) {
-      if (currentStep === 'dates' && dateRange) {
+      if (currentStep === 'dates' && dateRange?.checkIn && dateRange?.checkOut) {
         setIsProcessing(true);
         try {
           await checkAvailability(dateRange.checkIn, dateRange.checkOut);
-        } catch (err) {
+        } catch (_err) {
           setError(T('errors.availabilityCheck', locale));
           return;
         } finally {
           setIsProcessing(false);
         }
       }
-      setCurrentStep(STEPS[idx + 1]);
-      setTouched(false);
+      setCurrentStep(STEPS[idx + 1]!);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentStep, validateStep, dateRange, checkAvailability, locale]);
@@ -130,9 +130,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const handleBack = useCallback(() => {
     const idx = STEPS.indexOf(currentStep);
     if (idx > 0) {
-      setCurrentStep(STEPS[idx - 1]);
+      setCurrentStep(STEPS[idx - 1]!);
       setError(null);
-      setTouched(false);
     }
   }, [currentStep]);
 
@@ -145,7 +144,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       if (validation.isValid) {
         try {
           await checkAvailability(newRange.checkIn, newRange.checkOut);
-        } catch (err) {
+        } catch (_err) {
           // Handled by hook
         }
       }
@@ -156,7 +155,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     setSelectedRooms(rooms);
     setError(null);
     
-    if (dateRange && rooms.length > 0) {
+    if (dateRange?.checkIn && dateRange?.checkOut && rooms.length > 0) {
       const price = calculateTotalPrice({
         rooms,
         checkIn: dateRange.checkIn,
@@ -167,7 +166,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [dateRange, setSelectedRooms, setTotalPrice]);
 
   const handleConfirm = useCallback(async () => {
-    if (!validateStep('summary')) return;
+    if (!validateStep('summary')) {return;}
 
     setIsProcessing(true);
     setError(null);
@@ -178,15 +177,21 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         rooms: selectedRooms!,
         guestDetails: guestDetails!,
         totalPrice: totalPrice!,
+        gender,
         locale
       });
 
-      onComplete ? onComplete(bookingId) : router.push(`/payment/${bookingId}`);
+      clearBooking();
+      if (onComplete) {
+        onComplete(bookingId);
+      } else {
+        router.push(`/payment/${bookingId}`);
+      }
     } catch (err: any) {
       setError(err.message || T('errors.bookingFailed', locale));
       setIsProcessing(false);
     }
-  }, [validateStep, createBooking, dateRange, selectedRooms, guestDetails, totalPrice, locale, onComplete, router]);
+  }, [validateStep, createBooking, dateRange, selectedRooms, guestDetails, totalPrice, gender, locale, onComplete, router]);
 
   const progress = ((STEPS.indexOf(currentStep) + 1) / STEPS.length) * 100;
 
@@ -215,13 +220,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         </div>
       </div>
 
-      {error && <Alert variant="error" className="mb-6">{error}</Alert>}
+      {error && <Alert variant="danger" className="mb-6">{error}</Alert>}
       {availabilityError && <Alert variant="warning" className="mb-6">{availabilityError}</Alert>}
 
       {(isProcessing || isLoading) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8">
-            <LoadingSpinner size="large" />
+            <LoadingSpinner size="lg" />
             <p className="mt-4 text-center">{T('loading', locale)}</p>
           </div>
         </div>
@@ -229,11 +234,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         {currentStep === 'dates' && (
-          <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
+          <>
+            <GenderSelector value={gender} onChange={setGender} locale={locale} className="mb-6" />
+            <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
+          </>
         )}
         {currentStep === 'rooms' && (
           <RoomSelector
             dateRange={dateRange!}
+            gender={gender}
             availableRooms={availableRooms}
             selectedRooms={selectedRooms}
             onChange={handleRoomSelection}

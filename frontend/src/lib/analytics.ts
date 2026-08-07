@@ -12,7 +12,7 @@
 /**
  * Event parameters type
  */
-type EventParams = Record<string, string | number | boolean | undefined>;
+type EventParams = Record<string, unknown>;
 
 /**
  * Track custom event
@@ -26,7 +26,7 @@ type EventParams = Record<string, string | number | boolean | undefined>;
  * ```
  */
 export function trackEvent(eventName: string, params?: EventParams): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   try {
     if (typeof window.gtag === 'function') {
@@ -53,7 +53,7 @@ export function trackEvent(eventName: string, params?: EventParams): void {
  * ```
  */
 export function trackPageView(path: string, title?: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   try {
     if (typeof window.gtag === 'function') {
@@ -373,7 +373,7 @@ export function trackScrollDepth(depth: number, page: string): void {
  * ```
  */
 export function setUserProperties(properties: EventParams): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   try {
     if (typeof window.gtag === 'function') {
@@ -399,7 +399,7 @@ export function setUserProperties(properties: EventParams): void {
  * ```
  */
 export function setUserId(userId: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {return;}
 
   try {
     if (typeof window.gtag === 'function') {

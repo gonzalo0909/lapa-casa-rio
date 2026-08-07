@@ -33,6 +33,7 @@ interface CreateBookingRequest {
   specialRequests?: string;
   language?: 'pt' | 'en' | 'es';
   source?: string;
+  guestGender?: 'mixed' | 'female' | 'male';
 }
 
 export const createBookingHandler = async (
@@ -140,7 +141,8 @@ export const createBookingHandler = async (
       specialRequests: bookingData.specialRequests,
       source: bookingData.source || 'website',
       language: bookingData.language || 'pt',
-      status: 'pending_payment'
+      status: 'pending_payment',
+      guestGender: bookingData.guestGender || 'mixed'
     });
 
     logger.info('Booking created successfully', {
@@ -190,12 +192,18 @@ export const createBookingHandler = async (
           payment: {
             depositRequired: true,
             depositAmount: pricingDetails.depositAmount,
-            depositDueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            // Antes hardcodeado a +24h, sin relación con el hold real de la
+            // reserva -- ahora usa el mismo pending_expires_at que ya vino
+            // en el INSERT (booking-service.ts), la única fuente de verdad.
+            depositDueDate: booking.pending_expires_at,
             remainingAmount: pricingDetails.remainingAmount,
             remainingDueDate: new Date(
               checkIn.getTime() - 7 * 24 * 60 * 60 * 1000
             ).toISOString()
-          }
+          },
+          // Expiración real del hold (5 min) para que el frontend arme el
+          // contador regresivo con el dato correcto, no un valor inventado.
+          pendingExpiresAt: booking.pending_expires_at
         }
       }, 'Booking created successfully')
     );

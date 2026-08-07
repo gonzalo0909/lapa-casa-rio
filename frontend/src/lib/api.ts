@@ -13,7 +13,7 @@
  * API configuration
  */
 const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
   timeout: 30000,
   retryAttempts: 3,
   retryDelay: 1000
@@ -54,7 +54,7 @@ interface RequestOptions {
 /**
  * API response interface
  */
-interface APIResponse<T = any> {
+export interface APIResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
@@ -195,20 +195,29 @@ export const api = {
 };
 
 /**
- * Booking API endpoints
+ * Booking API endpoints — alineados con backend/src/routes/bookings/bookings.routes.ts
  */
 export const bookingAPI = {
   /**
-   * Create new booking
+   * Create new booking. Body shape matches create-booking.ts exactamente
+   * (roomId = room_types.id real, guest.firstName/lastName por separado).
    */
   create: (data: {
-    guestName: string;
-    guestEmail: string;
-    guestPhone: string;
     checkIn: string;
     checkOut: string;
-    rooms: Array<{ roomId: string; beds: number }>;
+    rooms: Array<{ roomId: string; bedsCount: number }>;
+    guest: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      country: string;
+      document?: string;
+    };
     specialRequests?: string;
+    language?: 'pt' | 'es' | 'en';
+    source?: string;
+    guestGender?: 'mixed' | 'female';
   }) => api.post('/bookings', data),
 
   /**
@@ -217,85 +226,100 @@ export const bookingAPI = {
   getById: (bookingId: string) => api.get(`/bookings/${bookingId}`),
 
   /**
-   * Update booking
+   * Update booking (fechas/habitaciones bloqueadas dentro de 48h del check-in)
    */
-  update: (bookingId: string, data: any) => api.put(`/bookings/${bookingId}`, data),
+  update: (bookingId: string, data: any) => api.patch(`/bookings/${bookingId}`, data),
 
   /**
-   * Cancel booking
+   * Cancel booking. El backend calcula el reembolso automático según política.
    */
   cancel: (bookingId: string, reason?: string) =>
-    api.post(`/bookings/${bookingId}/cancel`, { reason }),
+    api.delete(`/bookings/${bookingId}${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`),
 
   /**
-   * Confirm booking
+   * Confirmation details (número de confirmación, QR, instrucciones de check-in)
    */
-  confirm: (bookingId: string) => api.post(`/bookings/${bookingId}/confirm`)
+  getConfirmation: (bookingId: string) => api.get(`/bookings/${bookingId}/confirmation`)
 };
 
 /**
- * Availability API endpoints
+ * Availability API endpoints — alineados con backend/src/routes/availability/
  */
 export const availabilityAPI = {
   /**
-   * Check availability for date range
+   * Check availability for date range (devuelve las 5 habitaciones reales + pricing)
    */
   check: (params: { checkIn: string; checkOut: string; beds: number }) =>
     api.get(`/availability/check?checkIn=${params.checkIn}&checkOut=${params.checkOut}&beds=${params.beds}`),
 
   /**
-   * Get room availability
+   * Get single room availability. roomId = room_types.id real (UUID).
    */
   getRoomAvailability: (roomId: string, params: { checkIn: string; checkOut: string }) =>
-    api.get(`/availability/rooms/${roomId}?checkIn=${params.checkIn}&checkOut=${params.checkOut}`)
+    api.get(`/availability/room/${roomId}?checkIn=${params.checkIn}&checkOut=${params.checkOut}`),
+
+  /**
+   * Monthly calendar of occupancy
+   */
+  getCalendar: (params: { month: string; roomId?: string }) =>
+    api.get(`/availability/calendar?month=${params.month}${params.roomId ? `&roomId=${params.roomId}` : ''}`)
 };
 
 /**
- * Payment API endpoints
+ * Payment API endpoints — alineados con backend/src/routes/payments/
  */
 export const paymentAPI = {
   /**
-   * Create payment intent (Stripe)
+   * Create a payment intent (Stripe o Mercado Pago, depósito o saldo)
    */
-  createIntent: (data: { bookingId: string; amount: number; currency: string }) =>
-    api.post('/payments/create-intent', data),
+  createIntent: (data: {
+    reservationId: string;
+    paymentType: 'deposit' | 'remaining';
+    provider: 'stripe' | 'mercadopago';
+    currency?: string;
+    installments?: number;
+  }) => api.post('/payments/intent', data),
 
   /**
-   * Confirm payment
+   * Confirm a payment by its ID
    */
-  confirm: (paymentId: string, data: { paymentMethodId: string }) =>
-    api.post(`/payments/${paymentId}/confirm`, data),
+  confirm: (paymentId: string) => api.post('/payments/confirm', { paymentId }),
 
   /**
-   * Process deposit
+   * Process the deposit shortcut for a reservation
    */
-  processDeposit: (bookingId: string) => api.post(`/payments/${bookingId}/deposit`),
+  processDeposit: (reservationId: string, provider: 'stripe' | 'mercadopago', installments?: number) =>
+    api.post('/payments/deposit', { reservationId, provider, installments }),
 
   /**
    * Get payment status
    */
-  getStatus: (paymentId: string) => api.get(`/payments/${paymentId}/status`)
+  getStatus: (paymentId: string) => api.get(`/payments/${paymentId}/status`),
+
+  /**
+   * Full payment history for a reservation
+   */
+  getByReservation: (reservationId: string) => api.get(`/payments/reservation/${reservationId}`)
 };
 
 /**
- * Rooms API endpoints
+ * Rooms API endpoints — alineados con backend/src/routes/rooms/
  */
 export const roomsAPI = {
   /**
-   * List all rooms
+   * List all rooms (las 5 reales) + info del hostel, precios base, descuentos, políticas
    */
   list: () => api.get('/rooms'),
 
   /**
-   * Get room by ID
+   * Get room by real room_types.id UUID
    */
   getById: (roomId: string) => api.get(`/rooms/${roomId}`),
 
   /**
-   * Get room pricing
+   * Flexible-7 conversion status/prediction for a date
    */
-  getPricing: (roomId: string, params: { checkIn: string; checkOut: string; beds: number }) =>
-    api.get(`/rooms/${roomId}/pricing?checkIn=${params.checkIn}&checkOut=${params.checkOut}&beds=${params.beds}`)
+  getFlexibleStatus: (date: string) => api.get(`/rooms/flexible/status?date=${date}`)
 };
 
 /**

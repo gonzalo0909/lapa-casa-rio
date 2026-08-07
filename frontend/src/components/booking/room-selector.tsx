@@ -7,18 +7,19 @@ import { RoomCard } from './room-card';
 import { AvailabilityIndicator } from './availability-indicator';
 import { FlexibleRoomNotice } from './flexible-room-notice';
 import { Alert } from '@/components/ui/alert';
-import type { DateRange, Room, RoomAvailability } from '@/types/global';
+import type { BookingGender, DateRange, Room, RoomAvailability } from '@/types/global';
 
 /**
  * RoomSelector Component
- * 
+ *
  * Displays available rooms and handles room/bed selection
  * Shows availability, pricing, and flexible room logic
- * 
+ *
  * @component
  */
 interface RoomSelectorProps {
   dateRange: DateRange;
+  gender: BookingGender;
   availableRooms: RoomAvailability[];
   selectedRooms: Room[] | null;
   onChange: (rooms: Room[]) => void;
@@ -29,6 +30,7 @@ interface RoomSelectorProps {
 
 export const RoomSelector: React.FC<RoomSelectorProps> = ({
   dateRange,
+  gender,
   availableRooms,
   selectedRooms,
   onChange,
@@ -44,7 +46,37 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
     return Array.from(localSelections.values()).reduce((sum, beds) => sum + beds, 0);
   }, [localSelections]);
 
-  const hasGroupDiscount = totalSelectedBeds >= 7;
+  // Cuartos mixtos son elegibles para cualquiera; el cuarto solo-mujeres
+  // (isFlexible) solo aparece si el huesped eligio "solo mujeres" en el
+  // primer paso (ver GenderSelector).
+  const visibleRooms = useMemo(() => {
+    return availableRooms.filter((r) => gender === 'female' || !r.isFlexible);
+  }, [availableRooms, gender]);
+
+  // El cuarto de 12 siempre es mas barato por cama que el de 7 (regla de
+  // negocio manual, ver room_types.base_price) -- ordenar por precio
+  // ascendente muestra esa opcion primero, como pidio el dueno.
+  const sortedRooms = useMemo(() => {
+    return [...visibleRooms].sort((a, b) => {
+      if (a.availableBeds === 0 && b.availableBeds > 0) {return 1;}
+      if (a.availableBeds > 0 && b.availableBeds === 0) {return -1;}
+      return a.basePrice - b.basePrice;
+    });
+  }, [visibleRooms]);
+
+  // Descuento por grupo: es por cuarto (group_discount_min_beds/percentage
+  // de room_types, editable desde el admin), no un tramo global fijo --
+  // ver cada cuarto seleccionado contra su propio umbral.
+  const roomsWithDiscount = useMemo(() => {
+    return Array.from(localSelections.entries())
+      .map(([id, beds]) => {
+        const room = availableRooms.find((r) => r.id === id);
+        if (!room || beds < room.groupDiscountMinBeds) {return null;}
+        return { name: room.name, percentage: room.groupDiscountPercentage };
+      })
+      .filter((r): r is { name: string; percentage: number } => r !== null);
+  }, [localSelections, availableRooms]);
+  const hasGroupDiscount = roomsWithDiscount.length > 0;
 
   const handleRoomSelection = useCallback(
     (roomId: string, bedsCount: number) => {
@@ -76,19 +108,11 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
     [localSelections, availableRooms, onChange]
   );
 
-  const flexibleRoom = availableRooms.find(r => r.isFlexible);
+  const flexibleRoom = visibleRooms.find(r => r.isFlexible);
   const hoursUntilCheckIn = dateRange.checkIn
     ? Math.floor((dateRange.checkIn.getTime() - Date.now()) / (1000 * 60 * 60))
     : 0;
   const showFlexibleNotice = flexibleRoom && hoursUntilCheckIn <= 48 && hoursUntilCheckIn > 0;
-
-  const sortedRooms = useMemo(() => {
-    return [...availableRooms].sort((a, b) => {
-      if (a.availableBeds === 0 && b.availableBeds > 0) return 1;
-      if (a.availableBeds > 0 && b.availableBeds === 0) return -1;
-      return b.capacity - a.capacity;
-    });
-  }, [availableRooms]);
 
   return (
     <div className={`room-selector ${className}`}>
@@ -98,7 +122,7 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
       </div>
 
       {error && (
-        <Alert variant="error" className="mb-4">
+        <Alert variant="danger" className="mb-4">
           {error}
         </Alert>
       )}
@@ -114,8 +138,8 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
 
       <div className="mb-6">
         <AvailabilityIndicator
-          totalBeds={availableRooms.reduce((sum, r) => sum + r.capacity, 0)}
-          availableBeds={availableRooms.reduce((sum, r) => sum + r.availableBeds, 0)}
+          totalBeds={visibleRooms.reduce((sum, r) => sum + r.capacity, 0)}
+          availableBeds={visibleRooms.reduce((sum, r) => sum + r.availableBeds, 0)}
           selectedBeds={totalSelectedBeds}
           locale={locale}
         />
@@ -127,12 +151,11 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
             <span className="text-2xl">🎉</span>
             <div>
               <p className="font-semibold">{T('groupDiscountTitle', locale)}</p>
-              <p className="text-sm">
-                {T('groupDiscountDesc', locale).replace(
-                  '{discount}',
-                  getGroupDiscountPercent(totalSelectedBeds).toString()
-                )}
-              </p>
+              {roomsWithDiscount.map((r) => (
+                <p key={r.name} className="text-sm">
+                  {r.name}: {Math.round(r.percentage * 100)}% {T('off', locale)}
+                </p>
+              ))}
             </div>
           </div>
         </Alert>
@@ -171,7 +194,7 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
               </p>
               {hasGroupDiscount && (
                 <p className="text-sm text-green-700 font-medium mt-1">
-                  ✓ {T('discountApplied', locale)}: {getGroupDiscountPercent(totalSelectedBeds)}%
+                  ✓ {T('discountApplied', locale)}
                 </p>
               )}
             </div>
@@ -191,22 +214,17 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
         <h3 className="font-semibold text-gray-900 mb-2">{T('importantInfo', locale)}</h3>
         <ul className="space-y-2 text-sm text-gray-600">
-          <li>• {T('pricePerBed', locale)}</li>
-          <li>• {T('groupDiscount7', locale)}</li>
-          <li>• {T('groupDiscount16', locale)}</li>
-          <li>• {T('groupDiscount26', locale)}</li>
+          {sortedRooms.map((room) => (
+            <li key={room.id}>
+              • {room.name}: R$ {room.basePrice.toFixed(0)}/{T('bed', locale)} — {T('discountFrom', locale)}{' '}
+              {room.groupDiscountMinBeds} {T('beds', locale)} ({Math.round(room.groupDiscountPercentage * 100)}%)
+            </li>
+          ))}
         </ul>
       </div>
     </div>
   );
 };
-
-function getGroupDiscountPercent(totalBeds: number): number {
-  if (totalBeds >= 26) return 20;
-  if (totalBeds >= 16) return 15;
-  if (totalBeds >= 7) return 10;
-  return 0;
-}
 
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
@@ -216,17 +234,14 @@ function T(key: string, locale: string): string {
       totalSelected: 'Total selecionado',
       bed: 'cama',
       beds: 'camas',
+      off: 'de desconto',
       clearSelection: 'Limpar seleção',
       groupDiscountTitle: 'Desconto para Grupos Ativo!',
-      groupDiscountDesc: 'Você está recebendo {discount}% de desconto',
       discountApplied: 'Desconto aplicado',
+      discountFrom: 'desconto a partir de',
       noAvailability: 'Sem Disponibilidade',
       tryOtherDates: 'Tente outras datas',
-      importantInfo: 'Informações Importantes',
-      pricePerBed: 'Preço base: R$ 60 por cama/noite',
-      groupDiscount7: '7-15 camas: 10% desconto',
-      groupDiscount16: '16-25 camas: 15% desconto',
-      groupDiscount26: '26+ camas: 20% desconto'
+      importantInfo: 'Informações Importantes'
     },
     es: {
       title: 'Elige tus Habitaciones',
@@ -234,17 +249,14 @@ function T(key: string, locale: string): string {
       totalSelected: 'Total seleccionado',
       bed: 'cama',
       beds: 'camas',
+      off: 'de descuento',
       clearSelection: 'Limpiar selección',
       groupDiscountTitle: '¡Descuento para Grupos Activo!',
-      groupDiscountDesc: 'Estás recibiendo {discount}% de descuento',
       discountApplied: 'Descuento aplicado',
+      discountFrom: 'descuento desde',
       noAvailability: 'Sin Disponibilidad',
       tryOtherDates: 'Prueba otras fechas',
-      importantInfo: 'Información Importante',
-      pricePerBed: 'Precio base: R$ 60 por cama/noche',
-      groupDiscount7: '7-15 camas: 10% descuento',
-      groupDiscount16: '16-25 camas: 15% descuento',
-      groupDiscount26: '26+ camas: 20% descuento'
+      importantInfo: 'Información Importante'
     },
     en: {
       title: 'Choose your Rooms',
@@ -252,17 +264,14 @@ function T(key: string, locale: string): string {
       totalSelected: 'Total selected',
       bed: 'bed',
       beds: 'beds',
+      off: 'off',
       clearSelection: 'Clear selection',
       groupDiscountTitle: 'Group Discount Active!',
-      groupDiscountDesc: 'You are getting {discount}% discount',
       discountApplied: 'Discount applied',
+      discountFrom: 'discount from',
       noAvailability: 'No Availability',
       tryOtherDates: 'Try other dates',
-      importantInfo: 'Important Information',
-      pricePerBed: 'Base price: R$ 60 per bed/night',
-      groupDiscount7: '7-15 beds: 10% discount',
-      groupDiscount16: '16-25 beds: 15% discount',
-      groupDiscount26: '26+ beds: 20% discount'
+      importantInfo: 'Important Information'
     }
   };
   return t[locale]?.[key] || key;

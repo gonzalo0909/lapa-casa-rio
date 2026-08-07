@@ -59,16 +59,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   }, [room.availableBeds, onSelectBeds]);
 
   const getRoomIcon = (type: string, isFlexible: boolean) => {
-    if (isFlexible) return '🔄';
-    if (type === 'female') return '👩';
-    if (type === 'male') return '👨';
+    if (isFlexible) {return '🔄';}
+    if (type === 'female') {return '👩';}
+    if (type === 'male') {return '👨';}
     return '👥';
   };
 
   const getRoomTypeLabel = (type: string, isFlexible: boolean) => {
-    if (isFlexible) return T('flexible', locale);
-    if (type === 'female') return T('female', locale);
-    if (type === 'male') return T('male', locale);
+    if (isFlexible) {return T('flexible', locale);}
+    if (type === 'female') {return T('female', locale);}
+    if (type === 'male') {return T('male', locale);}
     return T('mixed', locale);
   };
 

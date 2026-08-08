@@ -22,7 +22,8 @@ export type NotificationType =
   | 'payment_received'
   | 'welcome'
   | 'cancellation'
-  | 'no_show';
+  | 'no_show'
+  | 'booking_expired';
 
 export interface NotificationRecord {
   id: string;
@@ -56,6 +57,9 @@ async function dispatchByType(type: NotificationType, booking: BookingWithGuest,
       return;
     case 'no_show':
       await emailService.sendNoShowNotice(booking);
+      return;
+    case 'booking_expired':
+      await emailService.sendBookingExpiredNotice(booking);
       return;
     default:
       throw new Error(`Tipo de notificación desconocido: ${type}`);

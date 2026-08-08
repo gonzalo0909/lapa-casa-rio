@@ -23,6 +23,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'reservas
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Lapa Casa Hostel';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lapacasahostel.com';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lapacasahostel.com';
+const WHATSAPP_CONTACT_URL = 'https://wa.me/5521977157530';
 
 let resendClient: Resend | null = null;
 let warnedNoApiKey = false;
@@ -74,7 +75,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     payNow: 'Pagar agora',
     paymentReminderTitle: 'Lembrete de Pagamento', paymentReminderIntro: 'O saldo da sua reserva está pendente.',
     amountDue: 'Valor pendente', dueDate: 'Vencimento', daysUntilCheckIn: 'Dias até o check-in',
-    retryNote: 'Faremos até 3 tentativas de cobrança automática nos próximos dias.',
+    retryNote: 'Vamos te enviar até 3 lembretes por email nos próximos dias.',
     paymentReceivedTitle: 'Pagamento Recebido', paymentReceivedIntro: 'Confirmamos o recebimento do seu pagamento.',
     amountPaid: 'Valor recebido', thanks: 'Obrigado! Nos vemos em breve.',
     remainingStillDue: 'Saldo restante ainda pendente',
@@ -90,7 +91,12 @@ const LABELS: Record<Language, Record<string, string>> = {
     noRefund: 'De acordo com a política de cancelamento, esta reserva não é elegível para reembolso.',
     noShowTitle: 'Não Comparecimento Registrado', noShowIntro: 'Registramos que você não compareceu para o check-in da sua reserva.',
     chargeApplied: 'Cobrança aplicada',
-    policyNote: 'De acordo com nossa política de cancelamento, o valor total da reserva é cobrado em caso de não comparecimento (no-show).'
+    policyNote: 'De acordo com nossa política de cancelamento, o valor total da reserva é cobrado em caso de não comparecimento (no-show).',
+    bookingExpiredTitle: 'Sua reserva não foi concluída',
+    bookingExpiredIntro: 'Vimos que você começou uma reserva no Lapa Casa Hostel, mas o pagamento do depósito não foi concluído a tempo, então as camas foram liberadas.',
+    bookingExpiredCta: 'Se ainda quiser se hospedar, você pode iniciar uma nova reserva quando quiser.',
+    bookingExpiredHelp: 'Se teve algum problema no pagamento ou precisa de ajuda, é só responder este email ou nos chamar no WhatsApp.',
+    tryAgain: 'Reservar novamente'
   },
   en: {
     greeting: 'Hello', bookingConfirmationTitle: 'Booking Confirmed!',
@@ -100,7 +106,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     payNow: 'Pay now',
     paymentReminderTitle: 'Payment Reminder', paymentReminderIntro: 'The remaining balance of your booking is due.',
     amountDue: 'Amount due', dueDate: 'Due date', daysUntilCheckIn: 'Days until check-in',
-    retryNote: 'We will make up to 3 automatic charge attempts over the next few days.',
+    retryNote: 'We\'ll send you up to 3 email reminders over the next few days.',
     paymentReceivedTitle: 'Payment Received', paymentReceivedIntro: 'We confirm we received your payment.',
     amountPaid: 'Amount received', thanks: 'Thank you! See you soon.',
     remainingStillDue: 'Remaining balance still due',
@@ -116,7 +122,12 @@ const LABELS: Record<Language, Record<string, string>> = {
     noRefund: 'Per our cancellation policy, this booking is not eligible for a refund.',
     noShowTitle: 'No-Show Recorded', noShowIntro: 'We recorded that you did not check in for your booking.',
     chargeApplied: 'Charge applied',
-    policyNote: 'Per our cancellation policy, the full booking amount is charged in case of no-show.'
+    policyNote: 'Per our cancellation policy, the full booking amount is charged in case of no-show.',
+    bookingExpiredTitle: 'Your booking wasn\'t completed',
+    bookingExpiredIntro: 'We saw you started a booking at Lapa Casa Hostel, but the deposit payment wasn\'t completed in time, so the beds were released.',
+    bookingExpiredCta: 'If you\'d still like to stay with us, you can start a new booking whenever you\'re ready.',
+    bookingExpiredHelp: 'If something went wrong with the payment or you need help, just reply to this email or message us on WhatsApp.',
+    tryAgain: 'Book again'
   },
   es: {
     greeting: 'Hola', bookingConfirmationTitle: '¡Reserva Confirmada!',
@@ -126,7 +137,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     payNow: 'Pagar ahora',
     paymentReminderTitle: 'Recordatorio de Pago', paymentReminderIntro: 'El saldo de tu reserva está pendiente.',
     amountDue: 'Monto pendiente', dueDate: 'Vencimiento', daysUntilCheckIn: 'Días hasta el check-in',
-    retryNote: 'Haremos hasta 3 intentos automáticos de cobro en los próximos días.',
+    retryNote: 'Te vamos a mandar hasta 3 recordatorios por email en los próximos días.',
     paymentReceivedTitle: 'Pago Recibido', paymentReceivedIntro: 'Confirmamos la recepción de tu pago.',
     amountPaid: 'Monto recibido', thanks: '¡Gracias! Nos vemos pronto.',
     remainingStillDue: 'Saldo restante aún pendiente',
@@ -142,7 +153,12 @@ const LABELS: Record<Language, Record<string, string>> = {
     noRefund: 'Según nuestra política de cancelación, esta reserva no es elegible para reembolso.',
     noShowTitle: 'No Presentación Registrada', noShowIntro: 'Registramos que no realizaste el check-in de tu reserva.',
     chargeApplied: 'Cargo aplicado',
-    policyNote: 'Según nuestra política de cancelación, se cobra el monto total de la reserva en caso de no presentación (no-show).'
+    policyNote: 'Según nuestra política de cancelación, se cobra el monto total de la reserva en caso de no presentación (no-show).',
+    bookingExpiredTitle: 'Tu reserva no se completó',
+    bookingExpiredIntro: 'Vimos que empezaste una reserva en Lapa Casa Hostel, pero el pago del depósito no se completó a tiempo, así que las camas quedaron liberadas.',
+    bookingExpiredCta: 'Si todavía querés hospedarte, podés iniciar una nueva reserva cuando quieras.',
+    bookingExpiredHelp: 'Si tuviste algún problema con el pago o necesitás ayuda, respondé este email o escribinos por WhatsApp.',
+    tryAgain: 'Reservar de nuevo'
   }
 };
 
@@ -355,6 +371,26 @@ export class EmailService {
     });
 
     return dispatch(booking.guest.email, `${t.noShowTitle} #${booking.reservation_number}`, html);
+  }
+
+  /** Se manda cuando el hold de 15 min vence sin que se pagara el depósito (sp_cleanup_expired_pending, ver cleanup.worker.ts) -- no es un no-show ni una cancelación pedida por el huésped, así que tiene su propio texto e invita a reintentar o pedir ayuda. */
+  async sendBookingExpiredNotice(booking: BookingWithGuest): Promise<SendResult> {
+    const language = resolveLanguage(booking.guest.language);
+    const t = LABELS[language];
+
+    const html = renderEmailTemplate('booking-expired', {
+      emailTitle: t.bookingExpiredTitle,
+      labelTitle: t.bookingExpiredTitle,
+      labelGreeting: t.greeting,
+      labelIntro: t.bookingExpiredIntro,
+      labelCta: t.bookingExpiredCta,
+      labelHelp: t.bookingExpiredHelp,
+      guestName: booking.guest.full_name,
+      tryAgainButtonHtml: paymentButtonHtml(FRONTEND_URL, t.tryAgain),
+      whatsappUrl: WHATSAPP_CONTACT_URL
+    });
+
+    return dispatch(booking.guest.email, t.bookingExpiredTitle, html);
   }
 
   /** Alerta interna al administrador — siempre en portugués, no depende del idioma de un huésped. */

@@ -36,6 +36,37 @@ async function notifyPendingNoShows(): Promise<void> {
   }
 }
 
+async function notifyExpiredPending(): Promise<void> {
+  // Mismo patron idempotente que notifyPendingNoShows(): no depende de una
+  // ventana de tiempo, asi que corridas superpuestas del job nunca
+  // duplican el envio. cancellation_reason='auto_timeout_15min' es el
+  // valor que pone sp_cleanup_expired_pending() (0007_procedures.sql) --
+  // distingue esta cancelacion automatica por hold vencido de una
+  // cancelacion pedida por el huesped, que ya tiene su propio email.
+  const { rows } = await query<{ id: string }>(
+    `SELECT r.id FROM reservations r
+     WHERE r.status = 'cancelled'
+       AND r.cancellation_reason = 'auto_timeout_15min'
+       AND NOT EXISTS (
+         SELECT 1 FROM notifications n
+         WHERE n.reservation_id = r.id AND n.template = 'booking_expired' AND n.status = 'sent'
+       )`
+  );
+
+  for (const row of rows) {
+    const booking = await bookingRepo.findById(row.id);
+    if (!booking?.guest) {
+      logger.warn('Reserva expirada sin guest cargado, se omite notificación', { reservationId: row.id });
+      continue;
+    }
+    try {
+      await notificationService.notify('booking_expired', booking as BookingWithGuest);
+    } catch (error: any) {
+      logger.error('Error notificando reserva expirada', { reservationId: row.id, error: error.message });
+    }
+  }
+}
+
 export function startCleanupWorker(): Worker {
   const worker = new Worker(
     'cleanup',
@@ -44,6 +75,7 @@ export function startCleanupWorker(): Worker {
       await query('CALL sp_cleanup_expired_pending()');
       await query('CALL sp_release_no_show()');
       await notifyPendingNoShows();
+      await notifyExpiredPending();
       logger.info('cleanup worker completado', { ms: Date.now() - start });
     },
     { connection: getQueueConnection() }

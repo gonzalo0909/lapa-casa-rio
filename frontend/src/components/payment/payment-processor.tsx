@@ -82,8 +82,11 @@ export function PaymentProcessor({
         provider
       });
     } catch (err) {
-      setError(handleAPIError(err));
-      setMethod(null);
+      // No se deselecciona el método al fallar: si lo hiciéramos, ninguno
+      // de los dos botones queda marcado y el huésped no sabe qué tocó ni
+      // qué reintentar -- se deja marcado y "Reintentar" vuelve a llamar
+      // a handleSelectMethod con el mismo método.
+      setError(handleAPIError(err, locale));
     } finally {
       setIsCreating(false);
     }
@@ -96,7 +99,18 @@ export function PaymentProcessor({
 
       {error && (
         <Alert variant="danger" role="alert">
-          {error}
+          <div className="flex items-center justify-between gap-4">
+            <span>{error}</span>
+            {method && (
+              <button
+                type="button"
+                onClick={() => handleSelectMethod(method)}
+                className="text-sm font-semibold underline whitespace-nowrap"
+              >
+                {T('retry', locale)}
+              </button>
+            )}
+          </div>
         </Alert>
       )}
 
@@ -201,7 +215,8 @@ function T(key: string, locale: string): string {
       pixInstant: 'Aprovação imediata',
       selectPrompt: 'Selecione um método de pagamento acima',
       sslNote: 'Conexão segura SSL/TLS',
-      stripeMisconfigured: 'Pagamento com cartão indisponível no momento. Tente PIX ou fale conosco.'
+      stripeMisconfigured: 'Pagamento com cartão indisponível no momento. Tente PIX ou fale conosco.',
+      retry: 'Tentar novamente'
     },
     es: {
       methodTitle: 'Método de Pago',
@@ -209,7 +224,8 @@ function T(key: string, locale: string): string {
       pixInstant: 'Aprobación inmediata',
       selectPrompt: 'Seleccioná un método de pago arriba',
       sslNote: 'Conexión segura SSL/TLS',
-      stripeMisconfigured: 'El pago con tarjeta no está disponible en este momento. Probá con PIX o contactanos.'
+      stripeMisconfigured: 'El pago con tarjeta no está disponible en este momento. Probá con PIX o contactanos.',
+      retry: 'Reintentar'
     },
     en: {
       methodTitle: 'Payment Method',
@@ -217,7 +233,8 @@ function T(key: string, locale: string): string {
       pixInstant: 'Instant approval',
       selectPrompt: 'Select a payment method above',
       sslNote: 'Secure SSL/TLS connection',
-      stripeMisconfigured: 'Card payment is unavailable right now. Try PIX or contact us.'
+      stripeMisconfigured: 'Card payment is unavailable right now. Try PIX or contact us.',
+      retry: 'Retry'
     },
     fr: {
       methodTitle: 'Mode de Paiement',
@@ -225,7 +242,8 @@ function T(key: string, locale: string): string {
       pixInstant: 'Approbation immédiate',
       selectPrompt: 'Sélectionnez un mode de paiement ci-dessus',
       sslNote: 'Connexion sécurisée SSL/TLS',
-      stripeMisconfigured: 'Le paiement par carte est indisponible pour le moment. Essayez PIX ou contactez-nous.'
+      stripeMisconfigured: 'Le paiement par carte est indisponible pour le moment. Essayez PIX ou contactez-nous.',
+      retry: 'Réessayer'
     },
     de: {
       methodTitle: 'Zahlungsmethode',
@@ -233,7 +251,8 @@ function T(key: string, locale: string): string {
       pixInstant: 'Sofortige Genehmigung',
       selectPrompt: 'Wählen Sie oben eine Zahlungsmethode',
       sslNote: 'Sichere SSL/TLS-Verbindung',
-      stripeMisconfigured: 'Kartenzahlung ist momentan nicht verfügbar. Versuchen Sie PIX oder kontaktieren Sie uns.'
+      stripeMisconfigured: 'Kartenzahlung ist momentan nicht verfügbar. Versuchen Sie PIX oder kontaktieren Sie uns.',
+      retry: 'Erneut versuchen'
     }
   };
   return t[locale]?.[key] || key;

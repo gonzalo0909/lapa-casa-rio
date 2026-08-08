@@ -136,7 +136,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Alta temporada', totalAmount: 'Valor total', depositLabel: 'Depósito inicial',
       ofTotal: 'do valor total', depositNote1: 'Pague agora para confirmar sua reserva',
       depositNote2: 'Reembolsável conforme política de cancelamento', remainingLabel: 'Saldo restante',
-      remainingNote1: 'Será cobrado 7 dias antes do check-in', remainingNote2: 'Mesmo cartão usado no depósito',
+      remainingNote1: 'Te enviamos um lembrete por email 7 dias antes do check-in', remainingNote2: 'Pagamento manual, não é cobrado automaticamente',
       secureNote: 'Pagamento 100% seguro e criptografado'
     },
     es: {
@@ -144,7 +144,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Temporada alta', totalAmount: 'Monto total', depositLabel: 'Depósito inicial',
       ofTotal: 'del monto total', depositNote1: 'Pagá ahora para confirmar tu reserva',
       depositNote2: 'Reembolsable según la política de cancelación', remainingLabel: 'Saldo restante',
-      remainingNote1: 'Se cobra 7 días antes del check-in', remainingNote2: 'Con la misma tarjeta del depósito',
+      remainingNote1: 'Te mandamos un recordatorio por email 7 días antes del check-in', remainingNote2: 'Pago manual, no se cobra automáticamente',
       secureNote: 'Pago 100% seguro y cifrado'
     },
     en: {
@@ -152,7 +152,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'High season', totalAmount: 'Total amount', depositLabel: 'Initial deposit',
       ofTotal: 'of the total', depositNote1: 'Pay now to confirm your booking',
       depositNote2: 'Refundable per our cancellation policy', remainingLabel: 'Remaining balance',
-      remainingNote1: 'Charged 7 days before check-in', remainingNote2: 'Same card used for the deposit',
+      remainingNote1: 'We\'ll email you a reminder 7 days before check-in', remainingNote2: 'Manual payment, not charged automatically',
       secureNote: '100% secure, encrypted payment'
     },
     fr: {
@@ -160,7 +160,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Haute saison', totalAmount: 'Montant total', depositLabel: 'Acompte initial',
       ofTotal: 'du montant total', depositNote1: 'Payez maintenant pour confirmer votre réservation',
       depositNote2: 'Remboursable selon notre politique d’annulation', remainingLabel: 'Solde restant',
-      remainingNote1: 'Prélevé 7 jours avant l’arrivée', remainingNote2: 'Même carte que pour l’acompte',
+      remainingNote1: 'Nous vous enverrons un rappel par e-mail 7 jours avant l’arrivée', remainingNote2: 'Paiement manuel, non prélevé automatiquement',
       secureNote: 'Paiement 100% sécurisé et chiffré'
     },
     de: {
@@ -168,7 +168,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Hochsaison', totalAmount: 'Gesamtbetrag', depositLabel: 'Erste Anzahlung',
       ofTotal: 'des Gesamtbetrags', depositNote1: 'Jetzt zahlen, um Ihre Buchung zu bestätigen',
       depositNote2: 'Erstattungsfähig gemäß unseren Stornierungsbedingungen', remainingLabel: 'Restbetrag',
-      remainingNote1: 'Abbuchung 7 Tage vor Check-in', remainingNote2: 'Gleiche Karte wie bei der Anzahlung',
+      remainingNote1: 'Wir erinnern Sie 7 Tage vor Check-in per E-Mail', remainingNote2: 'Manuelle Zahlung, keine automatische Abbuchung',
       secureNote: '100% sichere, verschlüsselte Zahlung'
     }
   };

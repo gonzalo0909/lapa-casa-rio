@@ -106,13 +106,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         const autoIds = roomBeds.filter((b) => b.isAvailable).slice(0, selectedBeds).map((b) => b.bedId);
         setSelectedBedIds(autoIds);
       } catch (err) {
-        setBedsError(handleAPIError(err));
+        setBedsError(handleAPIError(err, locale));
       } finally {
         setIsLoadingBeds(false);
       }
     }
     setMode('manual');
-  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds]);
+  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds, locale]);
 
   const closeManualMode = useCallback(() => {
     setMode('quick');

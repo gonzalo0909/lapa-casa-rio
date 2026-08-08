@@ -91,7 +91,7 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
         })
         .catch((err) => {
           if (!cancelled) {
-            setError(handleAPIError(err));
+            setError(handleAPIError(err, locale));
           }
         })
         .finally(() => {

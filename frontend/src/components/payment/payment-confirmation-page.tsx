@@ -77,11 +77,11 @@ export const PaymentConfirmationPage: React.FC<PaymentConfirmationPageProps> = (
         fullyPaid: data.payment.fullyPaid
       });
     } catch (err) {
-      setError(handleAPIError(err));
+      setError(handleAPIError(err, locale));
     } finally {
       setIsLoading(false);
     }
-  }, [bookingId]);
+  }, [bookingId, locale]);
 
   useEffect(() => {
     loadBooking();

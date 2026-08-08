@@ -335,19 +335,29 @@ export const roomsAPI = {
  * @param error - Error object
  * @returns Formatted error message
  */
-export function handleAPIError(error: unknown): string {
+const GENERIC_ERROR_TEXT: Record<string, { timeout: string; unexpected: string }> = {
+  pt: { timeout: 'A conexão demorou demais. Tente novamente.', unexpected: 'Ocorreu um erro inesperado. Tente novamente.' },
+  es: { timeout: 'La conexión demoró demasiado. Intentá de nuevo.', unexpected: 'Ocurrió un error inesperado. Intentá de nuevo.' },
+  en: { timeout: 'The connection timed out. Please try again.', unexpected: 'An unexpected error occurred. Please try again.' },
+  fr: { timeout: 'La connexion a pris trop de temps. Réessayez.', unexpected: 'Une erreur inattendue est survenue. Réessayez.' },
+  de: { timeout: 'Die Verbindung hat zu lange gedauert. Bitte versuchen Sie es erneut.', unexpected: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.' },
+};
+
+export function handleAPIError(error: unknown, locale: 'pt' | 'es' | 'en' | 'fr' | 'de' = 'pt'): string {
+  const text = GENERIC_ERROR_TEXT[locale] ?? GENERIC_ERROR_TEXT.pt!;
+
   if (error instanceof APIError) {
     return error.message;
   }
 
   if (error instanceof Error) {
     if (error.name === 'AbortError') {
-      return 'Request timeout. Please try again.';
+      return text.timeout;
     }
     return error.message;
   }
 
-  return 'An unexpected error occurred. Please try again.';
+  return text.unexpected;
 }
 
 /**

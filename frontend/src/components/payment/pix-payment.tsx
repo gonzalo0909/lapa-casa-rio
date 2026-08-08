@@ -58,7 +58,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     } catch (err) {
-      setError(handleAPIError(err));
+      setError(handleAPIError(err, locale));
       onError(err instanceof Error ? err : new Error(String(err)));
     }
   };

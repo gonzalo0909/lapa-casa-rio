@@ -118,6 +118,29 @@ export function DepositInfo({
           </details>
         </div>
       </div>
+
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" clipRule="evenodd"/>
+          </svg>
+          {T('policyTitle', locale)}
+        </h4>
+        <ul className="space-y-2 text-sm text-gray-700">
+          <li className="flex items-start gap-2">
+            <span className="font-semibold text-green-700 whitespace-nowrap">100%</span>
+            <span>{T('policyFull', locale)}</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-semibold text-amber-700 whitespace-nowrap">50%</span>
+            <span>{T('policyPartial', locale)}</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-semibold text-red-700 whitespace-nowrap">0%</span>
+            <span>{T('policyNone', locale)}</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -137,7 +160,11 @@ function T(key: string, locale: string): string {
       faq1Q: 'O que acontece se eu cancelar?',
       faq1A: 'Cancelamentos com mais de 7 dias de antecedência recebem reembolso total do depósito. Para cancelamentos mais próximos da data, consulte nossa política completa.',
       faq2Q: 'O que acontece se eu não pagar o saldo?',
-      faq2A: 'Enviamos até 3 lembretes por email nos dias seguintes. Se ainda assim não pagar, entraremos em contato diretamente com você antes do check-in.'
+      faq2A: 'Enviamos até 3 lembretes por email nos dias seguintes. Se ainda assim não pagar, entraremos em contato diretamente com você antes do check-in.',
+      policyTitle: 'Política de Cancelamento',
+      policyFull: 'Cancelando com mais de 7 dias antes do check-in: reembolso total do depósito.',
+      policyPartial: 'Cancelando entre 2 e 7 dias antes do check-in: reembolso de 50% do depósito.',
+      policyNone: 'Cancelando com menos de 48h ou não comparecendo: sem reembolso.'
     },
     es: {
       title: 'Pago en 2 Etapas',
@@ -152,7 +179,11 @@ function T(key: string, locale: string): string {
       faq1Q: '¿Qué pasa si cancelo?',
       faq1A: 'Las cancelaciones con más de 7 días de anticipación reciben reembolso total del depósito. Para cancelaciones más cercanas a la fecha, consultá nuestra política completa.',
       faq2Q: '¿Qué pasa si no pago el saldo?',
-      faq2A: 'Te mandamos hasta 3 recordatorios por email en los días siguientes. Si igual no pagás, te contactamos directamente antes del check-in.'
+      faq2A: 'Te mandamos hasta 3 recordatorios por email en los días siguientes. Si igual no pagás, te contactamos directamente antes del check-in.',
+      policyTitle: 'Política de Cancelación',
+      policyFull: 'Cancelando con más de 7 días antes del check-in: reembolso total del depósito.',
+      policyPartial: 'Cancelando entre 2 y 7 días antes del check-in: reembolso del 50% del depósito.',
+      policyNone: 'Cancelando con menos de 48h o no-show: sin reembolso.'
     },
     en: {
       title: '2-Step Payment',
@@ -167,7 +198,11 @@ function T(key: string, locale: string): string {
       faq1Q: 'What happens if I cancel?',
       faq1A: 'Cancellations more than 7 days in advance get a full deposit refund. For cancellations closer to the date, check our full policy.',
       faq2Q: 'What if I don\'t pay the balance?',
-      faq2A: 'We\'ll send up to 3 email reminders over the following days. If it\'s still unpaid, we\'ll contact you directly before check-in.'
+      faq2A: 'We\'ll send up to 3 email reminders over the following days. If it\'s still unpaid, we\'ll contact you directly before check-in.',
+      policyTitle: 'Cancellation Policy',
+      policyFull: 'Cancel more than 7 days before check-in: full deposit refund.',
+      policyPartial: 'Cancel between 2 and 7 days before check-in: 50% deposit refund.',
+      policyNone: 'Cancel less than 48h before check-in, or no-show: no refund.'
     },
     fr: {
       title: 'Paiement en 2 Étapes',
@@ -182,7 +217,11 @@ function T(key: string, locale: string): string {
       faq1Q: 'Que se passe-t-il si j’annule ?',
       faq1A: 'Les annulations plus de 7 jours à l’avance sont intégralement remboursées. Pour les annulations plus proches de la date, consultez notre politique complète.',
       faq2Q: 'Que se passe-t-il si je ne paie pas le solde ?',
-      faq2A: 'Nous vous envoyons jusqu’à 3 rappels par e-mail les jours suivants. Si le solde reste impayé, nous vous contacterons directement avant l’arrivée.'
+      faq2A: 'Nous vous envoyons jusqu’à 3 rappels par e-mail les jours suivants. Si le solde reste impayé, nous vous contacterons directement avant l’arrivée.',
+      policyTitle: 'Politique d’Annulation',
+      policyFull: 'Annulation plus de 7 jours avant l’arrivée : remboursement intégral de l’acompte.',
+      policyPartial: 'Annulation entre 2 et 7 jours avant l’arrivée : remboursement de 50% de l’acompte.',
+      policyNone: 'Annulation moins de 48h avant l’arrivée, ou non-présentation : aucun remboursement.'
     },
     de: {
       title: 'Zahlung in 2 Schritten',
@@ -197,7 +236,11 @@ function T(key: string, locale: string): string {
       faq1Q: 'Was passiert, wenn ich storniere?',
       faq1A: 'Stornierungen mehr als 7 Tage im Voraus erhalten die volle Anzahlung zurück. Für spätere Stornierungen siehe unsere vollständigen Bedingungen.',
       faq2Q: 'Was, wenn ich den Restbetrag nicht zahle?',
-      faq2A: 'Wir senden in den folgenden Tagen bis zu 3 E-Mail-Erinnerungen. Bleibt es unbezahlt, kontaktieren wir Sie direkt vor dem Check-in.'
+      faq2A: 'Wir senden in den folgenden Tagen bis zu 3 E-Mail-Erinnerungen. Bleibt es unbezahlt, kontaktieren wir Sie direkt vor dem Check-in.',
+      policyTitle: 'Stornierungsbedingungen',
+      policyFull: 'Stornierung mehr als 7 Tage vor Check-in: volle Rückerstattung der Anzahlung.',
+      policyPartial: 'Stornierung zwischen 2 und 7 Tagen vor Check-in: 50% Rückerstattung der Anzahlung.',
+      policyNone: 'Stornierung weniger als 48h vor Check-in oder Nichterscheinen: keine Rückerstattung.'
     }
   };
   return t[locale]?.[key] || key;

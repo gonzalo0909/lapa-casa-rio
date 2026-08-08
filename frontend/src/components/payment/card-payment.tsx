@@ -100,7 +100,7 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
         onSuccess({ paymentId, amount, currency });
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : handleAPIError(err);
+      const message = err instanceof Error ? err.message : handleAPIError(err, locale);
       setError(message);
       onError(err instanceof Error ? err : new Error(message));
     } finally {

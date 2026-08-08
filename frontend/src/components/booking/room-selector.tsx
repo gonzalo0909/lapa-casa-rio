@@ -60,16 +60,22 @@ function buildFamilies(rooms: RoomAvailability[], gender: BookingGender): Family
 }
 
 function familyToCard(family: Family, locale: string): RoomAvailability {
-  const totalCapacity = family.members.reduce((s, m) => s + m.capacity, 0);
   const totalAvailable = family.members.reduce((s, m) => s + m.availableBeds, 0);
   const primary = family.members[0]!;
+  // El nombre de la familia ("hasta 12"/"hasta 7") describe la capacidad
+  // de UN cuarto real, no la suma de los dos cuartos que la familia puede
+  // llegar a combinar -- así que lo que se puede elegir en la tarjeta
+  // (contador, capacidad mostrada) se topa ahí, aunque entre los dos
+  // cuartos reales haya más camas libres en total. allocateFamily() sigue
+  // pudiendo repartir entre ambos cuartos reales para grupos grandes; acá
+  // solo se limita lo que esta tarjeta puntual ofrece.
   return {
     id: family.key,
     code: family.key,
     name: T(family.labelKey, locale),
     type: family.key === 'female' ? 'female' : 'mixed',
-    capacity: totalCapacity,
-    availableBeds: totalAvailable,
+    capacity: primary.capacity,
+    availableBeds: Math.min(totalAvailable, primary.capacity),
     basePrice: primary.basePrice,
     isFlexible: family.key === 'female',
   };

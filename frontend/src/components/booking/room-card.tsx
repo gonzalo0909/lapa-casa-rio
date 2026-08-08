@@ -151,7 +151,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             </div>
 
             {room.availableBeds >= 3 && (
-              <div className="flex gap-2">
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">{T('quickSelect', locale)}</p>
+                <div className="flex gap-2">
                 {[3, 5, room.availableBeds].filter((v, i, a) => a.indexOf(v) === i && v <= room.availableBeds).map(beds => (
                   <button
                     key={beds}
@@ -162,9 +164,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
                     }`}
                   >
-                    {beds === room.availableBeds ? T('all', locale) : beds}
+                    {beds === room.availableBeds ? T('all', locale) : `${beds} ${T('beds', locale)}`}
                   </button>
                 ))}
+                </div>
               </div>
             )}
           </>
@@ -209,6 +212,7 @@ function T(key: string, locale: string): string {
       available: 'Disponível',
       fewBedsLeft: 'Poucas camas restantes',
       selectBeds: 'Selecionar camas',
+      quickSelect: 'Seleção rápida:',
       decrease: 'Diminuir',
       increase: 'Aumentar',
       all: 'Todas',
@@ -227,6 +231,7 @@ function T(key: string, locale: string): string {
       available: 'Disponible',
       fewBedsLeft: 'Pocas camas restantes',
       selectBeds: 'Seleccionar camas',
+      quickSelect: 'Selección rápida:',
       decrease: 'Disminuir',
       increase: 'Aumentar',
       all: 'Todas',
@@ -245,6 +250,7 @@ function T(key: string, locale: string): string {
       available: 'Available',
       fewBedsLeft: 'Few beds left',
       selectBeds: 'Select beds',
+      quickSelect: 'Quick select:',
       decrease: 'Decrease',
       increase: 'Increase',
       all: 'All',
@@ -263,6 +269,7 @@ function T(key: string, locale: string): string {
       available: 'Disponible',
       fewBedsLeft: 'Peu de lits restants',
       selectBeds: 'Sélectionner les lits',
+      quickSelect: 'Sélection rapide :',
       decrease: 'Diminuer',
       increase: 'Augmenter',
       all: 'Tous',
@@ -281,6 +288,7 @@ function T(key: string, locale: string): string {
       available: 'Verfügbar',
       fewBedsLeft: 'Nur noch wenige Betten',
       selectBeds: 'Betten auswählen',
+      quickSelect: 'Schnellauswahl:',
       decrease: 'Verringern',
       increase: 'Erhöhen',
       all: 'Alle',

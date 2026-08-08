@@ -2,77 +2,128 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PriceBreakdown } from './price-breakdown';
 import { GroupDiscountDisplay } from './group-discount-display';
 import { SeasonMultiplierDisplay } from './season-multiplier-display';
 import { SavingsIndicator } from './savings-indicator';
 import { Card } from '@/components/ui/card';
-import { getAverageSeasonMultiplier, calculateGroupDiscount } from '@/lib/pricing';
-import type { DateRange, Room } from '@/types/global';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { availabilityAPI, handleAPIError } from '@/lib/api';
+import type { DateRange, GroupDiscountTier, Room } from '@/types/global';
 
 /**
  * PricingCalculator Component
- * 
- * Comprehensive pricing display with breakdowns
- * Shows base price, discounts, multipliers, and total
- * 
+ *
+ * Pide el precio real a POST /api/v1/availability/quote (temporada +
+ * descuento de grupo reales, calculados por el backend) en vez de
+ * recalcularlo en el navegador con constantes -- lo que se muestra acá
+ * coincide con lo que create-booking.ts termina cobrando de verdad.
+ *
  * @component
  */
 interface PricingCalculatorProps {
   dateRange: DateRange;
   rooms: Room[];
+  groupDiscountTiers: GroupDiscountTier[];
   locale?: 'pt' | 'es' | 'en';
   className?: string;
+}
+
+interface QuoteResponse {
+  basePrice: number;
+  groupDiscountPercent: number;
+  discountAmount: number;
+  seasonMultiplier: number;
+  priceAfterSeason: number;
+  totalPrice: number;
+  depositAmount: number;
+  remainingAmount: number;
+  nights: number;
+  pricePerBed: number;
+  breakdown: {
+    bedBasePrice: number;
+    seasonAdjustment: number;
+  };
+}
+
+function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
 export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   dateRange,
   rooms,
+  groupDiscountTiers,
   locale = 'pt',
   className = ''
 }) => {
-  const pricing = useMemo(() => {
+  const [pricing, setPricing] = useState<QuoteResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const totalBeds = rooms.reduce((sum, room) => sum + room.bedsCount, 0);
+
+  useEffect(() => {
     if (!dateRange.checkIn || !dateRange.checkOut || rooms.length === 0) {
-      return null;
+      setPricing(null);
+      return;
     }
 
-    const nights = Math.ceil(
-      (dateRange.checkOut.getTime() - dateRange.checkIn.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
 
-    const totalBeds = rooms.reduce((sum, room) => sum + room.bedsCount, 0);
-    const basePrice = 60.0;
-    const subtotal = totalBeds * nights * basePrice;
+    // Debounced: el huésped suele hacer varios clics de +1/-1 seguidos en el
+    // selector de camas -- sin esto se dispara una consulta por cada clic.
+    const timeoutId = setTimeout(() => {
+      if (!dateRange.checkIn || !dateRange.checkOut) {
+        return;
+      }
+      availabilityAPI
+        .quote({
+          checkIn: toDateOnly(dateRange.checkIn),
+          checkOut: toDateOnly(dateRange.checkOut),
+          rooms: rooms.map((r) => ({ roomId: r.id, bedsCount: r.bedsCount })),
+        })
+        .then((response) => {
+          if (!cancelled) {
+            setPricing(response.data as QuoteResponse);
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(handleAPIError(err));
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsLoading(false);
+          }
+        });
+    }, 400);
 
-    const seasonMultiplier = getAverageSeasonMultiplier(dateRange.checkIn, dateRange.checkOut);
-    const groupDiscountPercent = calculateGroupDiscount(totalBeds) * 100;
-
-    const seasonAdjustment = subtotal * (seasonMultiplier - 1);
-    const subtotalWithSeason = subtotal + seasonAdjustment;
-
-    const discountAmount = subtotalWithSeason * (groupDiscountPercent / 100);
-    const total = subtotalWithSeason - discountAmount;
-
-    const depositAmount = total * 0.3;
-    const remainingAmount = total - depositAmount;
-
-    return {
-      nights,
-      totalBeds,
-      basePrice,
-      subtotal,
-      seasonMultiplier,
-      seasonAdjustment,
-      subtotalWithSeason,
-      groupDiscountPercent,
-      discountAmount,
-      total,
-      depositAmount,
-      remainingAmount,
-      totalSavings: discountAmount
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [dateRange, rooms]);
+  }, [dateRange.checkIn, dateRange.checkOut, rooms]);
+
+  if (isLoading && !pricing) {
+    return (
+      <Card className={`pricing-calculator p-6 flex justify-center ${className}`}>
+        <LoadingSpinner size="md" />
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className={`pricing-calculator p-6 ${className}`}>
+        <p className="text-sm text-red-600">{error}</p>
+      </Card>
+    );
+  }
 
   if (!pricing) {
     return null;
@@ -91,51 +142,52 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             </div>
             <div>
               <p className="text-gray-600">{T('beds', locale)}:</p>
-              <p className="font-semibold text-gray-900">{pricing.totalBeds}</p>
+              <p className="font-semibold text-gray-900">{totalBeds}</p>
             </div>
             <div>
               <p className="text-gray-600">{T('basePrice', locale)}:</p>
-              <p className="font-semibold text-gray-900">R$ {pricing.basePrice.toFixed(2)}</p>
+              <p className="font-semibold text-gray-900">R$ {pricing.breakdown.bedBasePrice.toFixed(2)}</p>
             </div>
             <div>
               <p className="text-gray-600">{T('subtotal', locale)}:</p>
-              <p className="font-semibold text-gray-900">R$ {pricing.subtotal.toFixed(2)}</p>
+              <p className="font-semibold text-gray-900">R$ {pricing.basePrice.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
-        {pricing.seasonMultiplier !== 1.0 && (
+        {pricing.seasonMultiplier !== 1.0 && dateRange.checkIn && dateRange.checkOut && (
           <SeasonMultiplierDisplay
             multiplier={pricing.seasonMultiplier}
-            adjustment={pricing.seasonAdjustment}
-            checkIn={dateRange.checkIn!}
-            checkOut={dateRange.checkOut!}
+            adjustment={pricing.breakdown.seasonAdjustment}
+            checkIn={dateRange.checkIn}
+            checkOut={dateRange.checkOut}
             locale={locale}
           />
         )}
 
         {pricing.groupDiscountPercent > 0 && (
           <GroupDiscountDisplay
-            totalBeds={pricing.totalBeds}
+            totalBeds={totalBeds}
             discountPercent={pricing.groupDiscountPercent}
             discountAmount={pricing.discountAmount}
+            tiers={groupDiscountTiers}
             locale={locale}
           />
         )}
 
-        {pricing.totalSavings > 0 && (
+        {pricing.discountAmount > 0 && (
           <SavingsIndicator
-            savings={pricing.totalSavings}
-            originalPrice={pricing.subtotalWithSeason}
+            savings={pricing.discountAmount}
+            originalPrice={pricing.priceAfterSeason}
             locale={locale}
           />
         )}
 
         <PriceBreakdown
-          subtotal={pricing.subtotal}
-          seasonAdjustment={pricing.seasonAdjustment}
+          subtotal={pricing.basePrice}
+          seasonAdjustment={pricing.breakdown.seasonAdjustment}
           discountAmount={pricing.discountAmount}
-          total={pricing.total}
+          total={pricing.totalPrice}
           depositAmount={pricing.depositAmount}
           remainingAmount={pricing.remainingAmount}
           locale={locale}
@@ -145,11 +197,11 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
           <div className="flex items-center justify-between mb-2">
             <span className="text-lg font-bold text-gray-900">{T('totalPrice', locale)}:</span>
             <span className="text-2xl font-bold text-blue-600">
-              R$ {pricing.total.toFixed(2)}
+              R$ {pricing.totalPrice.toFixed(2)}
             </span>
           </div>
           <p className="text-xs text-gray-600 text-right">
-            {T('pricePerBed', locale)}: R$ {(pricing.total / pricing.totalBeds).toFixed(2)}
+            {T('pricePerBed', locale)}: R$ {pricing.pricePerBed.toFixed(2)}
           </p>
         </div>
 

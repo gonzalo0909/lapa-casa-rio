@@ -262,7 +262,14 @@ export const availabilityAPI = {
    * Monthly calendar of occupancy
    */
   getCalendar: (params: { month: string; roomId?: string }) =>
-    api.get(`/availability/calendar?month=${params.month}${params.roomId ? `&roomId=${params.roomId}` : ''}`)
+    api.get(`/availability/calendar?month=${params.month}${params.roomId ? `&roomId=${params.roomId}` : ''}`),
+
+  /**
+   * Precio real (temporada + descuento de grupo real, no un cálculo del
+   * navegador) para los cuartos/camas que el huésped ya eligió.
+   */
+  quote: (data: { checkIn: string; checkOut: string; rooms: Array<{ roomId: string; bedsCount: number }> }) =>
+    api.post('/availability/quote', data)
 };
 
 /**

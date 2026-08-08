@@ -14,7 +14,8 @@ import { Alert } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useBookingStore } from '@/stores/booking-store';
 import { useAvailability } from '@/hooks/use-availability';
-import { calculateTotalPrice, validateBookingDates } from '@/lib/pricing';
+import { validateBookingDates } from '@/lib/pricing';
+import { availabilityAPI } from '@/lib/api';
 import type { BookingStep, Room, DateRange } from '@/types/global';
 
 /**
@@ -152,17 +153,23 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     }
   }, [setDateRange, checkAvailability]);
 
-  const handleRoomSelection = useCallback((rooms: Room[]) => {
+  const handleRoomSelection = useCallback(async (rooms: Room[]) => {
     setSelectedRooms(rooms);
     setError(null);
-    
+
     if (dateRange?.checkIn && dateRange?.checkOut && rooms.length > 0) {
-      const price = calculateTotalPrice({
-        rooms,
-        checkIn: dateRange.checkIn,
-        checkOut: dateRange.checkOut
-      });
-      setTotalPrice(price);
+      try {
+        const response = await availabilityAPI.quote({
+          checkIn: dateRange.checkIn.toISOString().slice(0, 10),
+          checkOut: dateRange.checkOut.toISOString().slice(0, 10),
+          rooms: rooms.map((r) => ({ roomId: r.id, bedsCount: r.bedsCount })),
+        });
+        setTotalPrice(response.data.totalPrice as number);
+      } catch (_err) {
+        // El error real se muestra en PricingCalculator; acá solo evitamos
+        // dejar un totalPrice viejo/incorrecto si la cotización falla.
+        setTotalPrice(0);
+      }
     }
   }, [dateRange, setSelectedRooms, setTotalPrice]);
 
@@ -266,7 +273,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       </div>
 
       {currentStep !== 'dates' && dateRange && selectedRooms && selectedRooms.length > 0 && (
-        <PricingCalculator dateRange={dateRange} rooms={selectedRooms} locale={locale} className="mb-6" />
+        <PricingCalculator dateRange={dateRange} rooms={selectedRooms} groupDiscountTiers={groupDiscountTiers} locale={locale} className="mb-6" />
       )}
 
       <div className="flex gap-4 justify-between">

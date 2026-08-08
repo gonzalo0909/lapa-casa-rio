@@ -7,12 +7,46 @@ import { roomAvailabilityHandler } from './room-availability';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 import { availabilityService } from '../../services/availability-service';
+import { pricingService } from '../../services/pricing-service';
 
 const router = Router();
 
 router.get('/check', checkAvailabilityHandler);
 
 router.get('/room/:roomId', roomAvailabilityHandler);
+
+/**
+ * POST /availability/quote — precio real (mismo camino que create-booking.ts,
+ * pricingService.calculateTotalPrice) para los cuartos/camas que el huésped
+ * ya eligió en el paso de reserva. El frontend antes recalculaba esto solo,
+ * en el navegador, con un precio base fijo (60 BRL) y tramos de descuento
+ * viejos -- ese numero podia no coincidir con lo que create-booking.ts
+ * termina cobrando de verdad.
+ */
+router.post('/quote', async (req, res, next) => {
+  try {
+    const { checkIn, checkOut, rooms } = req.body as {
+      checkIn?: string;
+      checkOut?: string;
+      rooms?: Array<{ roomId: string; bedsCount: number }>;
+    };
+
+    if (!checkIn || !checkOut || !rooms || rooms.length === 0) {
+      res.status(400).json(ApiResponse.error('checkIn, checkOut y rooms (con al menos 1 cuarto) son requeridos'));
+      return;
+    }
+
+    const totalBeds = rooms.reduce((sum, r) => sum + r.bedsCount, 0);
+    const pricing = await pricingService.calculateTotalPrice({ checkInDate: checkIn, checkOutDate: checkOut, rooms, totalBeds });
+
+    res.status(200).json(ApiResponse.success(pricing, 'Quote calculated'));
+  } catch (error) {
+    logger.error('Error calculating quote', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
+  }
+});
 
 router.get('/calendar', async (req, res, next) => {
   try {

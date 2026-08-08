@@ -2,9 +2,9 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { getAverageSeasonMultiplier, calculateGroupDiscount } from '@/lib/pricing';
+import { availabilityAPI } from '@/lib/api';
 import type { DateRange, Room } from '@/types/global';
 
 interface PriceSummaryProps {
@@ -15,6 +15,14 @@ interface PriceSummaryProps {
   className?: string;
 }
 
+interface Breakdown {
+  subtotal: number;
+  seasonAdjustment: number;
+  discountAmount: number;
+  depositAmount: number;
+  remainingAmount: number;
+}
+
 export const PriceSummary: React.FC<PriceSummaryProps> = ({
   dateRange,
   rooms,
@@ -22,29 +30,49 @@ export const PriceSummary: React.FC<PriceSummaryProps> = ({
   locale = 'pt',
   className = ''
 }) => {
-  const breakdown = useMemo(() => {
-    const nights = Math.ceil(
-      (dateRange.checkOut!.getTime() - dateRange.checkIn!.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const totalBeds = rooms.reduce((sum, r) => sum + r.bedsCount, 0);
-    const basePrice = 60.0;
-    const subtotal = totalBeds * nights * basePrice;
-    const seasonMultiplier = getAverageSeasonMultiplier(dateRange.checkIn!, dateRange.checkOut!);
-    const groupDiscountPercent = calculateGroupDiscount(totalBeds) * 100;
-    const seasonAdjustment = subtotal * (seasonMultiplier - 1);
-    const subtotalWithSeason = subtotal + seasonAdjustment;
-    const discountAmount = subtotalWithSeason * (groupDiscountPercent / 100);
-    const depositAmount = totalPrice * 0.3;
-    const remainingAmount = totalPrice - depositAmount;
+  const [breakdown, setBreakdown] = useState<Breakdown>({
+    subtotal: 0, seasonAdjustment: 0, discountAmount: 0, depositAmount: 0, remainingAmount: 0
+  });
 
-    return {
-      subtotal,
-      seasonAdjustment,
-      discountAmount,
-      depositAmount,
-      remainingAmount
+  useEffect(() => {
+    if (!dateRange.checkIn || !dateRange.checkOut || rooms.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    availabilityAPI
+      .quote({
+        checkIn: dateRange.checkIn.toISOString().slice(0, 10),
+        checkOut: dateRange.checkOut.toISOString().slice(0, 10),
+        rooms: rooms.map((r) => ({ roomId: r.id, bedsCount: r.bedsCount })),
+      })
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        const p = response.data as {
+          basePrice: number;
+          discountAmount: number;
+          depositAmount: number;
+          remainingAmount: number;
+          breakdown: { seasonAdjustment: number };
+        };
+        setBreakdown({
+          subtotal: p.basePrice,
+          seasonAdjustment: p.breakdown.seasonAdjustment,
+          discountAmount: p.discountAmount,
+          depositAmount: p.depositAmount,
+          remainingAmount: p.remainingAmount,
+        });
+      })
+      .catch(() => {
+        // El error se muestra en PricingCalculator, un paso antes; acá no repetimos el mensaje.
+      });
+
+    return () => {
+      cancelled = true;
     };
-  }, [dateRange, rooms, totalPrice]);
+  }, [dateRange.checkIn, dateRange.checkOut, rooms]);
 
   return (
     <Card className={`price-summary p-6 ${className}`}>

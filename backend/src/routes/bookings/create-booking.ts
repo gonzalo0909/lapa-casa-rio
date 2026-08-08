@@ -56,8 +56,16 @@ export const createBookingHandler = async (
     const checkOut = new Date(bookingData.checkOut);
     const now = new Date();
 
-    if (checkIn < now) {
-      res.status(400).json(ApiResponse.error('Check-in date cannot be in the past'));
+    // Ni fechas pasadas ni el mismo día (decisión explícita del dueño): un
+    // simple "checkIn < now" no alcanza para excluir HOY -- con now() a
+    // media mañana, una fecha de check-in de hoy sigue siendo "en el
+    // futuro" en términos de reloj puro. Se compara la fecha de calendario
+    // en America/Sao_Paulo (zona horaria operativa unica del sistema, ver
+    // 0004_pricing_functions.sql) contra la de check-in; esto ya cubre
+    // tambien cualquier fecha pasada, no solo hoy.
+    const todayInSaoPaulo = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
+    if (bookingData.checkIn <= todayInSaoPaulo) {
+      res.status(400).json(ApiResponse.error('No se aceptan reservas para el mismo día -- elegí una fecha a partir de mañana'));
       return;
     }
 

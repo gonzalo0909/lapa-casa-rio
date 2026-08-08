@@ -135,40 +135,40 @@ function T(key: string, locale: string): string {
       title: 'Resumo do Pagamento', baseAmount: 'Valor base', groupDiscount: 'Desconto grupo',
       seasonSurcharge: 'Alta temporada', totalAmount: 'Valor total', depositLabel: 'Depósito inicial',
       ofTotal: 'do valor total', depositNote1: 'Pague agora para confirmar sua reserva',
-      depositNote2: 'Reembolsável conforme política de cancelamento', remainingLabel: 'Saldo restante',
-      remainingNote1: 'Te enviamos um lembrete por email 7 dias antes do check-in', remainingNote2: 'Pagamento manual, não é cobrado automaticamente',
+      depositNote2: 'Não reembolsável em caso de cancelamento ou não comparecimento', remainingLabel: 'Saldo restante',
+      remainingNote1: 'Pago no hostel na chegada (dinheiro), salvo se preferir pagar com cartão', remainingNote2: 'Não é cobrado automaticamente -- te enviamos um lembrete por email 7 dias antes do check-in',
       secureNote: 'Pagamento 100% seguro e criptografado'
     },
     es: {
       title: 'Resumen del Pago', baseAmount: 'Monto base', groupDiscount: 'Descuento grupo',
       seasonSurcharge: 'Temporada alta', totalAmount: 'Monto total', depositLabel: 'Depósito inicial',
       ofTotal: 'del monto total', depositNote1: 'Pagá ahora para confirmar tu reserva',
-      depositNote2: 'Reembolsable según la política de cancelación', remainingLabel: 'Saldo restante',
-      remainingNote1: 'Te mandamos un recordatorio por email 7 días antes del check-in', remainingNote2: 'Pago manual, no se cobra automáticamente',
+      depositNote2: 'No reembolsable en caso de cancelación o no-show', remainingLabel: 'Saldo restante',
+      remainingNote1: 'Se paga en el hostel al llegar (efectivo), salvo que prefieras pagar con tarjeta', remainingNote2: 'No se cobra automáticamente -- te mandamos un recordatorio por email 7 días antes del check-in',
       secureNote: 'Pago 100% seguro y cifrado'
     },
     en: {
       title: 'Payment Summary', baseAmount: 'Base amount', groupDiscount: 'Group discount',
       seasonSurcharge: 'High season', totalAmount: 'Total amount', depositLabel: 'Initial deposit',
       ofTotal: 'of the total', depositNote1: 'Pay now to confirm your booking',
-      depositNote2: 'Refundable per our cancellation policy', remainingLabel: 'Remaining balance',
-      remainingNote1: 'We\'ll email you a reminder 7 days before check-in', remainingNote2: 'Manual payment, not charged automatically',
+      depositNote2: 'Non-refundable in case of cancellation or no-show', remainingLabel: 'Remaining balance',
+      remainingNote1: 'Paid at the hostel on arrival (cash), unless you\'d rather pay by card', remainingNote2: 'Not charged automatically -- we\'ll email you a reminder 7 days before check-in',
       secureNote: '100% secure, encrypted payment'
     },
     fr: {
       title: 'Résumé du Paiement', baseAmount: 'Montant de base', groupDiscount: 'Remise de groupe',
       seasonSurcharge: 'Haute saison', totalAmount: 'Montant total', depositLabel: 'Acompte initial',
       ofTotal: 'du montant total', depositNote1: 'Payez maintenant pour confirmer votre réservation',
-      depositNote2: 'Remboursable selon notre politique d’annulation', remainingLabel: 'Solde restant',
-      remainingNote1: 'Nous vous enverrons un rappel par e-mail 7 jours avant l’arrivée', remainingNote2: 'Paiement manuel, non prélevé automatiquement',
+      depositNote2: 'Non remboursable en cas d’annulation ou de non-présentation', remainingLabel: 'Solde restant',
+      remainingNote1: 'Payé à l’auberge à l’arrivée (espèces), sauf si vous préférez payer par carte', remainingNote2: 'Non prélevé automatiquement -- nous vous enverrons un rappel par e-mail 7 jours avant l’arrivée',
       secureNote: 'Paiement 100% sécurisé et chiffré'
     },
     de: {
       title: 'Zahlungsübersicht', baseAmount: 'Grundbetrag', groupDiscount: 'Gruppenrabatt',
       seasonSurcharge: 'Hochsaison', totalAmount: 'Gesamtbetrag', depositLabel: 'Erste Anzahlung',
       ofTotal: 'des Gesamtbetrags', depositNote1: 'Jetzt zahlen, um Ihre Buchung zu bestätigen',
-      depositNote2: 'Erstattungsfähig gemäß unseren Stornierungsbedingungen', remainingLabel: 'Restbetrag',
-      remainingNote1: 'Wir erinnern Sie 7 Tage vor Check-in per E-Mail', remainingNote2: 'Manuelle Zahlung, keine automatische Abbuchung',
+      depositNote2: 'Nicht erstattungsfähig bei Stornierung oder Nichterscheinen', remainingLabel: 'Restbetrag',
+      remainingNote1: 'Zahlung im Hostel bei Ankunft (bar), außer Sie zahlen lieber mit Karte', remainingNote2: 'Keine automatische Abbuchung -- wir erinnern Sie 7 Tage vor Check-in per E-Mail',
       secureNote: '100% sichere, verschlüsselte Zahlung'
     }
   };

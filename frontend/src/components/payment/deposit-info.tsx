@@ -126,20 +126,7 @@ export function DepositInfo({
           </svg>
           {T('policyTitle', locale)}
         </h4>
-        <ul className="space-y-2 text-sm text-gray-700">
-          <li className="flex items-start gap-2">
-            <span className="font-semibold text-green-700 whitespace-nowrap">100%</span>
-            <span>{T('policyFull', locale)}</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="font-semibold text-amber-700 whitespace-nowrap">50%</span>
-            <span>{T('policyPartial', locale)}</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="font-semibold text-red-700 whitespace-nowrap">0%</span>
-            <span>{T('policyNone', locale)}</span>
-          </li>
-        </ul>
+        <p className="text-sm text-gray-700">{T('policyNone', locale)}</p>
       </div>
     </div>
   );
@@ -150,7 +137,7 @@ function T(key: string, locale: string): string {
     pt: {
       title: 'Pagamento em 2 Etapas',
       step1: 'Depósito agora', step1Note: 'Confirma sua reserva imediatamente',
-      step2: 'Saldo em', step2Note: 'Você recebe um lembrete por email 7 dias antes do check-in',
+      step2: 'Saldo em', step2Note: 'Pago no hostel na chegada (dinheiro), salvo se preferir cartão -- você recebe um lembrete por email 7 dias antes do check-in',
       guaranteesTitle: 'Garantias e Segurança',
       instant: 'Confirmação instantânea da reserva',
       flexible: 'Política de cancelamento flexível',
@@ -158,18 +145,16 @@ function T(key: string, locale: string): string {
       encrypted: 'Dados criptografados e seguros',
       faqTitle: 'Perguntas Frequentes',
       faq1Q: 'O que acontece se eu cancelar?',
-      faq1A: 'Cancelamentos com mais de 7 dias de antecedência recebem reembolso total do depósito. Para cancelamentos mais próximos da data, consulte nossa política completa.',
+      faq1A: 'O depósito não é reembolsável em caso de cancelamento, qualquer que seja a antecedência.',
       faq2Q: 'O que acontece se eu não pagar o saldo?',
       faq2A: 'Enviamos até 3 lembretes por email nos dias seguintes. Se ainda assim não pagar, entraremos em contato diretamente com você antes do check-in.',
       policyTitle: 'Política de Cancelamento',
-      policyFull: 'Cancelando com mais de 7 dias antes do check-in: reembolso total do depósito.',
-      policyPartial: 'Cancelando entre 2 e 7 dias antes do check-in: reembolso de 50% do depósito.',
-      policyNone: 'Cancelando com menos de 48h ou não comparecendo: sem reembolso.'
+      policyNone: 'O depósito não é reembolsável em caso de cancelamento ou não comparecimento, qualquer que seja a antecedência.'
     },
     es: {
       title: 'Pago en 2 Etapas',
       step1: 'Depósito ahora', step1Note: 'Confirma tu reserva de inmediato',
-      step2: 'Saldo el', step2Note: 'Te mandamos un recordatorio por email 7 días antes del check-in',
+      step2: 'Saldo el', step2Note: 'Se paga en el hostel al llegar (efectivo), salvo que prefieras tarjeta -- te mandamos un recordatorio por email 7 días antes del check-in',
       guaranteesTitle: 'Garantías y Seguridad',
       instant: 'Confirmación instantánea de la reserva',
       flexible: 'Política de cancelación flexible',
@@ -177,18 +162,16 @@ function T(key: string, locale: string): string {
       encrypted: 'Datos cifrados y seguros',
       faqTitle: 'Preguntas Frecuentes',
       faq1Q: '¿Qué pasa si cancelo?',
-      faq1A: 'Las cancelaciones con más de 7 días de anticipación reciben reembolso total del depósito. Para cancelaciones más cercanas a la fecha, consultá nuestra política completa.',
+      faq1A: 'El depósito no es reembolsable en caso de cancelación, sin importar con cuánta anticipación avises.',
       faq2Q: '¿Qué pasa si no pago el saldo?',
       faq2A: 'Te mandamos hasta 3 recordatorios por email en los días siguientes. Si igual no pagás, te contactamos directamente antes del check-in.',
       policyTitle: 'Política de Cancelación',
-      policyFull: 'Cancelando con más de 7 días antes del check-in: reembolso total del depósito.',
-      policyPartial: 'Cancelando entre 2 y 7 días antes del check-in: reembolso del 50% del depósito.',
-      policyNone: 'Cancelando con menos de 48h o no-show: sin reembolso.'
+      policyNone: 'El depósito no es reembolsable en caso de cancelación o no-show, sin importar con cuánta anticipación avises.'
     },
     en: {
       title: '2-Step Payment',
       step1: 'Deposit now', step1Note: 'Confirms your booking immediately',
-      step2: 'Balance on', step2Note: 'You\'ll get an email reminder 7 days before check-in',
+      step2: 'Balance on', step2Note: 'Paid at the hostel on arrival (cash), unless you\'d rather pay by card -- you\'ll get an email reminder 7 days before check-in',
       guaranteesTitle: 'Guarantees & Security',
       instant: 'Instant booking confirmation',
       flexible: 'Flexible cancellation policy',
@@ -196,18 +179,16 @@ function T(key: string, locale: string): string {
       encrypted: 'Encrypted, secure data',
       faqTitle: 'Frequently Asked Questions',
       faq1Q: 'What happens if I cancel?',
-      faq1A: 'Cancellations more than 7 days in advance get a full deposit refund. For cancellations closer to the date, check our full policy.',
+      faq1A: 'The deposit is non-refundable in case of cancellation, no matter how much notice you give.',
       faq2Q: 'What if I don\'t pay the balance?',
       faq2A: 'We\'ll send up to 3 email reminders over the following days. If it\'s still unpaid, we\'ll contact you directly before check-in.',
       policyTitle: 'Cancellation Policy',
-      policyFull: 'Cancel more than 7 days before check-in: full deposit refund.',
-      policyPartial: 'Cancel between 2 and 7 days before check-in: 50% deposit refund.',
-      policyNone: 'Cancel less than 48h before check-in, or no-show: no refund.'
+      policyNone: 'The deposit is non-refundable in case of cancellation or no-show, no matter how much notice you give.'
     },
     fr: {
       title: 'Paiement en 2 Étapes',
       step1: 'Acompte maintenant', step1Note: 'Confirme votre réservation immédiatement',
-      step2: 'Solde le', step2Note: 'Vous recevrez un rappel par e-mail 7 jours avant l’arrivée',
+      step2: 'Solde le', step2Note: 'Payé à l’auberge à l’arrivée (espèces), sauf si vous préférez la carte -- vous recevrez un rappel par e-mail 7 jours avant l’arrivée',
       guaranteesTitle: 'Garanties et Sécurité',
       instant: 'Confirmation instantanée de la réservation',
       flexible: 'Politique d’annulation flexible',
@@ -215,18 +196,16 @@ function T(key: string, locale: string): string {
       encrypted: 'Données chiffrées et sécurisées',
       faqTitle: 'Questions Fréquentes',
       faq1Q: 'Que se passe-t-il si j’annule ?',
-      faq1A: 'Les annulations plus de 7 jours à l’avance sont intégralement remboursées. Pour les annulations plus proches de la date, consultez notre politique complète.',
+      faq1A: 'L’acompte n’est pas remboursable en cas d’annulation, quel que soit le délai de prévenance.',
       faq2Q: 'Que se passe-t-il si je ne paie pas le solde ?',
       faq2A: 'Nous vous envoyons jusqu’à 3 rappels par e-mail les jours suivants. Si le solde reste impayé, nous vous contacterons directement avant l’arrivée.',
       policyTitle: 'Politique d’Annulation',
-      policyFull: 'Annulation plus de 7 jours avant l’arrivée : remboursement intégral de l’acompte.',
-      policyPartial: 'Annulation entre 2 et 7 jours avant l’arrivée : remboursement de 50% de l’acompte.',
-      policyNone: 'Annulation moins de 48h avant l’arrivée, ou non-présentation : aucun remboursement.'
+      policyNone: 'L’acompte n’est pas remboursable en cas d’annulation ou de non-présentation, quel que soit le délai de prévenance.'
     },
     de: {
       title: 'Zahlung in 2 Schritten',
       step1: 'Anzahlung jetzt', step1Note: 'Bestätigt Ihre Buchung sofort',
-      step2: 'Restbetrag am', step2Note: 'Sie erhalten 7 Tage vor Check-in eine E-Mail-Erinnerung',
+      step2: 'Restbetrag am', step2Note: 'Zahlung im Hostel bei Ankunft (bar), außer Sie zahlen lieber mit Karte -- Sie erhalten 7 Tage vor Check-in eine E-Mail-Erinnerung',
       guaranteesTitle: 'Garantien & Sicherheit',
       instant: 'Sofortige Buchungsbestätigung',
       flexible: 'Flexible Stornierungsbedingungen',
@@ -234,13 +213,11 @@ function T(key: string, locale: string): string {
       encrypted: 'Verschlüsselte, sichere Daten',
       faqTitle: 'Häufige Fragen',
       faq1Q: 'Was passiert, wenn ich storniere?',
-      faq1A: 'Stornierungen mehr als 7 Tage im Voraus erhalten die volle Anzahlung zurück. Für spätere Stornierungen siehe unsere vollständigen Bedingungen.',
+      faq1A: 'Die Anzahlung wird bei Stornierung nicht erstattet, unabhängig von der Vorlaufzeit.',
       faq2Q: 'Was, wenn ich den Restbetrag nicht zahle?',
       faq2A: 'Wir senden in den folgenden Tagen bis zu 3 E-Mail-Erinnerungen. Bleibt es unbezahlt, kontaktieren wir Sie direkt vor dem Check-in.',
       policyTitle: 'Stornierungsbedingungen',
-      policyFull: 'Stornierung mehr als 7 Tage vor Check-in: volle Rückerstattung der Anzahlung.',
-      policyPartial: 'Stornierung zwischen 2 und 7 Tagen vor Check-in: 50% Rückerstattung der Anzahlung.',
-      policyNone: 'Stornierung weniger als 48h vor Check-in oder Nichterscheinen: keine Rückerstattung.'
+      policyNone: 'Die Anzahlung wird bei Stornierung oder Nichterscheinen nicht erstattet, unabhängig von der Vorlaufzeit.'
     }
   };
   return t[locale]?.[key] || key;

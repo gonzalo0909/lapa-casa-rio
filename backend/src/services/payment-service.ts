@@ -20,6 +20,8 @@ interface CreatePaymentIntentDTO {
   reservation_id: string;
   guest_id?: string;
   amount: number;
+  /** Monto antes del recargo por tarjeta (si lo hay) -- lo que realmente cubre de la reserva, sin la comisión de Stripe. Se guarda en provider_metadata para que confirm-payment.ts pueda calcular el saldo restante real, no el monto bruto cobrado. */
+  baseAmount?: number;
   currency?: string;
   guest_email: string;
   payment_type: 'deposit' | 'remaining';
@@ -106,7 +108,7 @@ export class PaymentService {
       amount: data.amount,
       currency,
       provider_payment_id: providerPaymentId,
-      metadata: { installments: data.installments, client_secret: stripeClientSecret },
+      metadata: { installments: data.installments, client_secret: stripeClientSecret, base_amount: data.baseAmount },
     });
 
     return {

@@ -281,7 +281,7 @@ async function testOtaWebhookChannel(client) {
 
   const { rows } = await client.query('SELECT status, pending_expires_at FROM reservations WHERE id = $1', [r.id]);
   assert(rows[0].status === 'confirmed', 'reserva OTA con webhook deberia entrar confirmed');
-  assert(rows[0].pending_expires_at === null, 'reserva OTA no deberia tener timeout de 15 min');
+  assert(rows[0].pending_expires_at === null, 'reserva OTA no deberia tener timeout de pago');
 
   const { rows: occ } = await client.query(
     `SELECT is_available FROM check_availability('2027-07-20','2027-07-22','mixed') WHERE bed_id = $1`, [bedId]

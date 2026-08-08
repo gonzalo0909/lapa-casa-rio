@@ -39,14 +39,14 @@ async function notifyPendingNoShows(): Promise<void> {
 async function notifyExpiredPending(): Promise<void> {
   // Mismo patron idempotente que notifyPendingNoShows(): no depende de una
   // ventana de tiempo, asi que corridas superpuestas del job nunca
-  // duplican el envio. cancellation_reason='auto_timeout_15min' es el
-  // valor que pone sp_cleanup_expired_pending() (0007_procedures.sql) --
-  // distingue esta cancelacion automatica por hold vencido de una
+  // duplican el envio. cancellation_reason='auto_timeout_pending_expired'
+  // es el valor que pone sp_cleanup_expired_pending() (0013_fix_pending_timeout_label.sql)
+  // -- distingue esta cancelacion automatica por hold vencido de una
   // cancelacion pedida por el huesped, que ya tiene su propio email.
   const { rows } = await query<{ id: string }>(
     `SELECT r.id FROM reservations r
      WHERE r.status = 'cancelled'
-       AND r.cancellation_reason = 'auto_timeout_15min'
+       AND r.cancellation_reason = 'auto_timeout_pending_expired'
        AND NOT EXISTS (
          SELECT 1 FROM notifications n
          WHERE n.reservation_id = r.id AND n.template = 'booking_expired' AND n.status = 'sent'

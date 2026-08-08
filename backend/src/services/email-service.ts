@@ -373,7 +373,7 @@ export class EmailService {
     return dispatch(booking.guest.email, `${t.noShowTitle} #${booking.reservation_number}`, html);
   }
 
-  /** Se manda cuando el hold de 15 min vence sin que se pagara el depósito (sp_cleanup_expired_pending, ver cleanup.worker.ts) -- no es un no-show ni una cancelación pedida por el huésped, así que tiene su propio texto e invita a reintentar o pedir ayuda. */
+  /** Se manda cuando el hold de 5 min vence sin que se pagara el depósito (sp_cleanup_expired_pending, ver cleanup.worker.ts) -- no es un no-show ni una cancelación pedida por el huésped, así que tiene su propio texto e invita a reintentar o pedir ayuda. */
   async sendBookingExpiredNotice(booking: BookingWithGuest): Promise<SendResult> {
     const language = resolveLanguage(booking.guest.language);
     const t = LABELS[language];

@@ -28,6 +28,14 @@ interface DateSelectorProps {
   className?: string;
 }
 
+/** No se aceptan reservas para el mismo día (ver create-booking.ts) -- se calcula "mañana" a medianoche local en vez de `new Date()` para que la fecha de hoy quede excluida sin depender de a qué hora del día se abre el calendario. */
+function tomorrowAtMidnight(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 export const DateSelector: React.FC<DateSelectorProps> = ({
   value,
   onChange,
@@ -126,11 +134,11 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
           value={value}
           onChange={handleDateChange}
           locale={locale}
-          minDate={new Date()}
+          minDate={tomorrowAtMidnight()}
           maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
         />
       ) : (
-        <DateRangePicker value={value} onChange={handleDateChange} locale={locale} minDate={new Date()} />
+        <DateRangePicker value={value} onChange={handleDateChange} locale={locale} minDate={tomorrowAtMidnight()} />
       )}
 
       {value?.checkIn && value?.checkOut && (

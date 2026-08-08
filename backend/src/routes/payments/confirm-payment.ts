@@ -45,9 +45,17 @@ export const confirmPaymentHandler = async (
     if (!booking) throw new Error('Reserva no encontrada para el pago confirmado');
 
     const allPayments = await paymentService.getPaymentsByReservation(payment.reservation_id);
+    // El recargo por tarjeta (ver process-deposit.ts) no es progreso real
+    // hacia el precio de la reserva -- es la comisión de Stripe. Para el
+    // saldo restante se usa provider_metadata.base_amount cuando existe
+    // (pagos con recargo), y el monto bruto para el resto (PIX, pagos
+    // viejos sin recargo).
     const totalPaid = allPayments
       .filter(p => p.status === 'succeeded')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+      .reduce((sum, p) => {
+        const baseAmount = (p.provider_metadata as { base_amount?: number } | null)?.base_amount;
+        return sum + (baseAmount ?? Number(p.amount));
+      }, 0);
 
     const finalPrice = Number(booking.final_price);
     const depositAmount = Number(booking.deposit_amount);

@@ -306,7 +306,7 @@ export class BookingService {
     };
   }
 
-  /** Libera reservas pending_payment vencidas (>15 min). sp_cleanup_expired_pending() cubre lo mismo desde BullMQ (Ventana 4). */
+  /** Libera reservas pending_payment vencidas (>5 min). sp_cleanup_expired_pending() cubre lo mismo desde BullMQ (Ventana 4). */
   async expirePendingBookings(): Promise<number> {
     const { rows } = await query(
       `UPDATE reservations

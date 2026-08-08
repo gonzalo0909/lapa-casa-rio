@@ -41,6 +41,9 @@ interface DepositIntent {
   qrCode?: string;
   qrCodeBase64?: string;
   provider: 'stripe' | 'mercadopago';
+  /** Monto real que se cobra -- con tarjeta incluye el recargo por comisión de Stripe (ver process-deposit.ts), con PIX es igual al depósito base. Nunca mostrar depositAmount en el botón de pago: tiene que coincidir con lo que de verdad se cobra. */
+  amount: number;
+  cardSurchargePercent: number;
 }
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -79,7 +82,9 @@ export function PaymentProcessor({
         clientSecret: payment.clientSecret,
         qrCode: payment.qrCode,
         qrCodeBase64: payment.qrCodeBase64,
-        provider
+        provider,
+        amount: payment.amount ?? depositAmount,
+        cardSurchargePercent: payment.cardSurchargePercent ?? 0
       });
     } catch (err) {
       // No se deselecciona el método al fallar: si lo hiciéramos, ninguno
@@ -160,17 +165,24 @@ export function PaymentProcessor({
 
         {!isCreating && method === 'card' && intent?.clientSecret && (
           stripePromise ? (
-            <Elements stripe={stripePromise} options={{ clientSecret: intent.clientSecret }}>
-              <CardPayment
-                paymentId={intent.paymentId}
-                clientSecret={intent.clientSecret}
-                amount={depositAmount}
-                currency="BRL"
-                locale={locale}
-                onSuccess={onSuccess}
-                onError={(err) => setError(err.message)}
-              />
-            </Elements>
+            <>
+              {intent.cardSurchargePercent > 0 && (
+                <p className="text-xs text-gray-600 mb-3">
+                  {T('surchargeNote', locale).replace('{pct}', intent.cardSurchargePercent.toString())}
+                </p>
+              )}
+              <Elements stripe={stripePromise} options={{ clientSecret: intent.clientSecret }}>
+                <CardPayment
+                  paymentId={intent.paymentId}
+                  clientSecret={intent.clientSecret}
+                  amount={intent.amount}
+                  currency="BRL"
+                  locale={locale}
+                  onSuccess={onSuccess}
+                  onError={(err) => setError(err.message)}
+                />
+              </Elements>
+            </>
           ) : (
             <Alert variant="danger">{T('stripeMisconfigured', locale)}</Alert>
           )
@@ -181,7 +193,7 @@ export function PaymentProcessor({
             paymentId={intent.paymentId}
             qrCode={intent.qrCode}
             qrCodeBase64={intent.qrCodeBase64}
-            amount={depositAmount}
+            amount={intent.amount}
             locale={locale}
             onSuccess={onSuccess}
             onError={(err) => setError(err.message)}
@@ -216,7 +228,8 @@ function T(key: string, locale: string): string {
       selectPrompt: 'Selecione um método de pagamento acima',
       sslNote: 'Conexão segura SSL/TLS',
       stripeMisconfigured: 'Pagamento com cartão indisponível no momento. Tente PIX ou fale conosco.',
-      retry: 'Tentar novamente'
+      retry: 'Tentar novamente',
+      surchargeNote: 'O total já inclui um recargo de {pct}% pela comissão do pagamento com cartão. Via PIX não há esse recargo.'
     },
     es: {
       methodTitle: 'Método de Pago',
@@ -225,7 +238,8 @@ function T(key: string, locale: string): string {
       selectPrompt: 'Seleccioná un método de pago arriba',
       sslNote: 'Conexión segura SSL/TLS',
       stripeMisconfigured: 'El pago con tarjeta no está disponible en este momento. Probá con PIX o contactanos.',
-      retry: 'Reintentar'
+      retry: 'Reintentar',
+      surchargeNote: 'El total ya incluye un recargo del {pct}% por la comisión del pago con tarjeta. Por PIX no aplica ese recargo.'
     },
     en: {
       methodTitle: 'Payment Method',
@@ -234,7 +248,8 @@ function T(key: string, locale: string): string {
       selectPrompt: 'Select a payment method above',
       sslNote: 'Secure SSL/TLS connection',
       stripeMisconfigured: 'Card payment is unavailable right now. Try PIX or contact us.',
-      retry: 'Retry'
+      retry: 'Retry',
+      surchargeNote: 'The total already includes a {pct}% surcharge for the card payment fee. Paying via PIX has no surcharge.'
     },
     fr: {
       methodTitle: 'Mode de Paiement',
@@ -243,7 +258,8 @@ function T(key: string, locale: string): string {
       selectPrompt: 'Sélectionnez un mode de paiement ci-dessus',
       sslNote: 'Connexion sécurisée SSL/TLS',
       stripeMisconfigured: 'Le paiement par carte est indisponible pour le moment. Essayez PIX ou contactez-nous.',
-      retry: 'Réessayer'
+      retry: 'Réessayer',
+      surchargeNote: 'Le total inclut déjà des frais de {pct}% pour la commission du paiement par carte. Via PIX, ces frais ne s\'appliquent pas.'
     },
     de: {
       methodTitle: 'Zahlungsmethode',
@@ -252,7 +268,8 @@ function T(key: string, locale: string): string {
       selectPrompt: 'Wählen Sie oben eine Zahlungsmethode',
       sslNote: 'Sichere SSL/TLS-Verbindung',
       stripeMisconfigured: 'Kartenzahlung ist momentan nicht verfügbar. Versuchen Sie PIX oder kontaktieren Sie uns.',
-      retry: 'Erneut versuchen'
+      retry: 'Erneut versuchen',
+      surchargeNote: 'Der Gesamtbetrag enthält bereits einen Aufschlag von {pct}% für die Kartenzahlungsgebühr. Bei PIX entfällt dieser Aufschlag.'
     }
   };
   return t[locale]?.[key] || key;

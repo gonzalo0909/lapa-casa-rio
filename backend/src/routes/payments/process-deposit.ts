@@ -4,8 +4,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
+import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
+
+/** Stripe cobra una comision real por pago con tarjeta que PIX (Mercado Pago) no tiene -- se suma al monto que paga el huesped, editable en /admin/pricing.html (system_config.card_surcharge_percent) para que el dueño la ajuste si Stripe cambia sus tarifas, sin depender de un deploy. */
+async function getCardSurchargePercent(): Promise<number> {
+  const { rows } = await query<{ value: number }>(
+    `SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`
+  );
+  return rows[0]?.value ?? 0;
+}
 
 interface ProcessDepositRequest {
   reservationId: string;
@@ -59,13 +68,19 @@ export const processDepositHandler = async (
     const depositPercentage = bedsCount >= 15 ? 0.50 : 0.30;
     const depositAmount = Number(booking.deposit_amount);
 
-    logger.info('Cálculo de depósito', { reservationId, bedsCount, depositPercentage, depositAmount });
+    // El recargo solo aplica a tarjeta (Stripe cobra comisión real); PIX
+    // via Mercado Pago no la tiene, así que ahí se cobra el monto justo.
+    const cardSurchargePercent = provider === 'stripe' ? await getCardSurchargePercent() : 0;
+    const chargedAmount = Math.round(depositAmount * (1 + cardSurchargePercent / 100) * 100) / 100;
+
+    logger.info('Cálculo de depósito', { reservationId, bedsCount, depositPercentage, depositAmount, cardSurchargePercent, chargedAmount });
 
     // Depósito sin reintento: si falla, lanzará excepción y la reserva queda en pending_payment
     const paymentIntent = await paymentService.createPaymentIntent({
       reservation_id: reservationId,
       guest_id: booking.guest_id,
-      amount: depositAmount,
+      amount: chargedAmount,
+      baseAmount: depositAmount,
       currency: 'BRL',
       guest_email: booking.guest?.email ?? '',
       payment_type: 'deposit',
@@ -80,7 +95,9 @@ export const processDepositHandler = async (
         payment: {
           paymentId: paymentIntent.payment_id,
           type: 'deposit',
-          amount: depositAmount,
+          amount: chargedAmount,
+          baseAmount: depositAmount,
+          cardSurchargePercent,
           currency: 'BRL',
           status: 'pending',
           provider,

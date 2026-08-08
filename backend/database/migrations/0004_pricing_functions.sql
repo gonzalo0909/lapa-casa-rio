@@ -17,8 +17,8 @@
 -- fecha X en la zona horaria operativa" (no-show, conversion Flexible 7,
 -- ventanas de cancelacion medidas en horas antes del check-in).
 --
--- Nota sobre timeouts puros por duracion (ej. el timeout de pago de 15
--- minutos): al ser TIMESTAMPTZ un instante absoluto, "ahora + 15 minutos"
+-- Nota sobre timeouts puros por duracion (ej. el timeout de pago de 5
+-- minutos): al ser TIMESTAMPTZ un instante absoluto, "ahora + 5 minutos"
 -- es el mismo instante sin importar la zona horaria -- no requieren pasar
 -- por esta funcion. brt_midnight() es necesaria especificamente para
 -- reglas ancladas a un limite de calendario (medianoche de una fecha

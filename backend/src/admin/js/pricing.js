@@ -16,10 +16,22 @@ async function loadPricing() {
     renderSeasons(data.ratePlans);
     renderCarnival(data.carnivalDates);
     renderDiscountTiers(data.groupDiscountTiers);
+    document.getElementById('surcharge-pct').value = data.cardSurchargePercent;
   } catch (err) {
     showMsg('seasons-msg', err.message, 'error');
   }
 }
+
+document.getElementById('surcharge-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const cardSurchargePercent = Number(document.getElementById('surcharge-pct').value);
+  try {
+    await apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ cardSurchargePercent }) });
+    showMsg('surcharge-msg', 'Recargo por tarjeta actualizado.', 'success');
+  } catch (err) {
+    showMsg('surcharge-msg', err.message, 'error');
+  }
+});
 
 function renderDiscountTiers(tiers) {
   const tbody = document.querySelector('#discount-tiers-table tbody');

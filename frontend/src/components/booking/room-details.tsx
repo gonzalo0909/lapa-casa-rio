@@ -119,9 +119,9 @@ export const RoomDetails: React.FC<RoomDetailsProps> = ({
         <h4 className="font-semibold text-gray-900 mb-3">{T('policies', locale)}</h4>
         <ul className="space-y-2 text-sm text-gray-700">
           <li>✓ {T('policy1', locale)}</li>
-          <li>✓ {T('policy3', locale)}</li>
           <li>✓ {T('policy4', locale)}</li>
           <li>✗ {T('policy2', locale)}</li>
+          <li>✗ {T('policy3', locale)}</li>
           <li>✗ {T('policy5', locale)}</li>
           <li>✗ {T('policy6', locale)}</li>
         </ul>
@@ -170,7 +170,7 @@ function T(key: string, locale: string): string {
       policies: 'Políticas',
       policy1: 'Lençóis inclusos',
       policy2: 'Café da manhã não incluído (disponível como oferta à parte)',
-      policy3: 'Cancelamento grátis até 7 dias antes',
+      policy3: 'Depósito não reembolsável em caso de cancelamento',
       policy4: 'Depósito de 30% na reserva',
       policy5: 'Animais não permitidos',
       policy6: 'Fumar não permitido',
@@ -209,7 +209,7 @@ function T(key: string, locale: string): string {
       policies: 'Políticas',
       policy1: 'Sábanas incluidas',
       policy2: 'Desayuno no incluido (disponible como oferta aparte)',
-      policy3: 'Cancelación gratis hasta 7 días antes',
+      policy3: 'Depósito no reembolsable en caso de cancelación',
       policy4: 'Depósito del 30% en la reserva',
       policy5: 'No se permiten mascotas',
       policy6: 'No se permite fumar',
@@ -248,7 +248,7 @@ function T(key: string, locale: string): string {
       policies: 'Policies',
       policy1: 'Sheets included',
       policy2: 'Breakfast not included (available as a separate add-on)',
-      policy3: 'Free cancellation up to 7 days before',
+      policy3: 'Deposit is non-refundable if you cancel',
       policy4: '30% deposit on booking',
       policy5: 'Pets not allowed',
       policy6: 'Smoking not allowed',
@@ -287,7 +287,7 @@ function T(key: string, locale: string): string {
       policies: 'Politiques',
       policy1: 'Draps inclus',
       policy2: 'Petit-déjeuner non inclus (disponible en option)',
-      policy3: 'Annulation gratuite jusqu’à 7 jours avant',
+      policy3: 'Acompte non remboursable en cas d’annulation',
       policy4: 'Acompte de 30% à la réservation',
       policy5: 'Animaux non autorisés',
       policy6: 'Interdiction de fumer',
@@ -326,7 +326,7 @@ function T(key: string, locale: string): string {
       policies: 'Richtlinien',
       policy1: 'Bettwäsche inklusive',
       policy2: 'Frühstück nicht inklusive (separat buchbar)',
-      policy3: 'Kostenlose Stornierung bis 7 Tage vorher',
+      policy3: 'Anzahlung bei Stornierung nicht erstattungsfähig',
       policy4: '30% Anzahlung bei Buchung',
       policy5: 'Haustiere nicht erlaubt',
       policy6: 'Rauchen nicht erlaubt',

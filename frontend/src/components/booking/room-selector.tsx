@@ -4,7 +4,6 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { RoomCard } from './room-card';
-import { AvailabilityIndicator } from './availability-indicator';
 import { FlexibleRoomNotice } from './flexible-room-notice';
 import { Alert } from '@/components/ui/alert';
 import type { BookingGender, DateRange, GroupDiscountTier, Room, RoomAvailability } from '@/types/global';
@@ -180,9 +179,6 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
     : 0;
   const showFlexibleNotice = flexibleRoom && hoursUntilCheckIn <= 48 && hoursUntilCheckIn > 0;
 
-  const totalCapacity = families.reduce((sum, f) => sum + f.members.reduce((s, m) => s + m.capacity, 0), 0);
-  const totalAvailable = families.reduce((sum, f) => sum + f.members.reduce((s, m) => s + m.availableBeds, 0), 0);
-
   return (
     <div className={`room-selector ${className}`}>
       <div className="mb-6">
@@ -204,15 +200,6 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
           className="mb-6"
         />
       )}
-
-      <div className="mb-6">
-        <AvailabilityIndicator
-          totalBeds={totalCapacity}
-          availableBeds={totalAvailable}
-          selectedBeds={totalSelectedBeds}
-          locale={locale}
-        />
-      </div>
 
       {hasGroupDiscount && (
         <Alert variant="info" className="mb-6">

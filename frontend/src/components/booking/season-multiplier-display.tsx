@@ -148,7 +148,7 @@ function T(key: string, locale: string): string {
       carnival: 'Carnaval',
       highSeason: 'Alta Temporada',
       mediumSeason: 'Temporada Média',
-      lowSeason: 'Baixa Temporada',
+      lowSeason: 'Oferta de Inverno',
       increase: 'Acréscimo',
       discount: 'Desconto',
       carnivalSpecial: 'Especial Carnaval',
@@ -156,13 +156,13 @@ function T(key: string, locale: string): string {
       summerPeak: 'Verão no Rio',
       summerInfo: 'Alta temporada: Dezembro a Março. Praias lotadas!',
       winterDeal: 'Oferta de Inverno',
-      winterInfo: 'Baixa temporada: Junho a Setembro. Melhores preços!'
+      winterInfo: 'Junho a Setembro. Melhores preços!'
     },
     es: {
       carnival: 'Carnaval',
       highSeason: 'Temporada Alta',
       mediumSeason: 'Temporada Media',
-      lowSeason: 'Temporada Baja',
+      lowSeason: 'Oferta de Invierno',
       increase: 'Incremento',
       discount: 'Descuento',
       carnivalSpecial: 'Especial Carnaval',
@@ -170,27 +170,27 @@ function T(key: string, locale: string): string {
       summerPeak: 'Verano en Río',
       summerInfo: 'Temporada alta: Diciembre a Marzo. ¡Playas llenas!',
       winterDeal: 'Oferta de Invierno',
-      winterInfo: 'Temporada baja: Junio a Septiembre. ¡Mejores precios!'
+      winterInfo: 'Junio a Septiembre. ¡Mejores precios!'
     },
     en: {
       carnival: 'Carnival',
       highSeason: 'High Season',
       mediumSeason: 'Medium Season',
-      lowSeason: 'Low Season',
+      lowSeason: 'Winter Offer',
       increase: 'Increase',
       discount: 'Discount',
       carnivalSpecial: 'Carnival Special',
       carnivalInfo: 'Peak demand period. Minimum 5 nights required.',
       summerPeak: 'Rio Summer',
       summerInfo: 'High season: December to March. Crowded beaches!',
-      winterDeal: 'Winter Deal',
-      winterInfo: 'Low season: June to September. Best prices!'
+      winterDeal: 'Winter Offer',
+      winterInfo: 'June to September. Best prices!'
     },
     fr: {
       carnival: 'Carnaval',
       highSeason: 'Haute Saison',
       mediumSeason: 'Saison Moyenne',
-      lowSeason: 'Basse Saison',
+      lowSeason: 'Offre d’Hiver',
       increase: 'Majoration',
       discount: 'Remise',
       carnivalSpecial: 'Spécial Carnaval',
@@ -198,13 +198,13 @@ function T(key: string, locale: string): string {
       summerPeak: 'Été à Rio',
       summerInfo: 'Haute saison : décembre à mars. Plages bondées !',
       winterDeal: 'Offre d’Hiver',
-      winterInfo: 'Basse saison : juin à septembre. Meilleurs prix !'
+      winterInfo: 'Juin à septembre. Meilleurs prix !'
     },
     de: {
       carnival: 'Karneval',
       highSeason: 'Hochsaison',
       mediumSeason: 'Zwischensaison',
-      lowSeason: 'Nebensaison',
+      lowSeason: 'Winterangebot',
       increase: 'Aufschlag',
       discount: 'Rabatt',
       carnivalSpecial: 'Karneval-Special',
@@ -212,7 +212,7 @@ function T(key: string, locale: string): string {
       summerPeak: 'Sommer in Rio',
       summerInfo: 'Hochsaison: Dezember bis März. Überfüllte Strände!',
       winterDeal: 'Winterangebot',
-      winterInfo: 'Nebensaison: Juni bis September. Beste Preise!'
+      winterInfo: 'Juni bis September. Beste Preise!'
     }
   };
   return t[locale]?.[key] || key;

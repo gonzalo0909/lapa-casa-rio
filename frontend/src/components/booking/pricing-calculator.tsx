@@ -10,7 +10,7 @@ import { SavingsIndicator } from './savings-indicator';
 import { Card } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { availabilityAPI, handleAPIError } from '@/lib/api';
-import type { DateRange, GroupDiscountTier, Room } from '@/types/global';
+import type { DateRange, Room } from '@/types/global';
 
 /**
  * PricingCalculator Component
@@ -25,7 +25,6 @@ import type { DateRange, GroupDiscountTier, Room } from '@/types/global';
 interface PricingCalculatorProps {
   dateRange: DateRange;
   rooms: Room[];
-  groupDiscountTiers: GroupDiscountTier[];
   locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
@@ -54,7 +53,6 @@ function toDateOnly(date: Date): string {
 export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   dateRange,
   rooms,
-  groupDiscountTiers,
   locale = 'pt',
   className = ''
 }) => {
@@ -170,7 +168,6 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             totalBeds={totalBeds}
             discountPercent={pricing.groupDiscountPercent}
             discountAmount={pricing.discountAmount}
-            tiers={groupDiscountTiers}
             locale={locale}
           />
         )}

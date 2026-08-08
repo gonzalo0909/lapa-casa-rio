@@ -39,6 +39,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
   const isAvailable = room.availableBeds > 0;
   const isFullyBooked = room.availableBeds === 0;
+  const occupancyPercent = room.capacity > 0
+    ? ((room.capacity - room.availableBeds) / room.capacity) * 100
+    : 0;
+  // Antes del 60% de ocupación no mostramos ningún número de disponibilidad
+  // (ni la capacidad total): con pocas reservas, exponer "X/24 camas" hace
+  // pensar que hay un solo cuarto de 24 camas en vez de una familia de dos
+  // cuartos reales. Pasado el 60%, sí vale la pena mostrar cuánto queda.
+  const showAvailability = occupancyPercent >= 60;
 
   const handleIncrement = useCallback(() => {
     if (selectedBeds < room.availableBeds) {
@@ -89,9 +97,6 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               <Badge variant={room.isFlexible ? 'warning' : 'default'}>
                 {getRoomTypeLabel(room.type, room.isFlexible)}
               </Badge>
-              <Badge variant="outline">
-                {room.capacity} {room.capacity === 1 ? T('bed', locale) : T('beds', locale)}
-              </Badge>
             </div>
           </div>
           <Button
@@ -104,17 +109,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           </Button>
         </div>
 
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">{T('available', locale)}:</span>
-            <span className={`font-semibold ${isFullyBooked ? 'text-red-600' : 'text-green-600'}`}>
-              {room.availableBeds}/{room.capacity} {T('beds', locale)}
-            </span>
+        {showAvailability && !isFullyBooked && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{T('available', locale)}:</span>
+              <span className="font-semibold text-green-600">
+                {room.availableBeds} {T('beds', locale)}
+              </span>
+            </div>
+            {room.availableBeds <= 3 && (
+              <p className="text-xs text-orange-600 mt-1">⚠️ {T('fewBedsLeft', locale)}</p>
+            )}
           </div>
-          {room.availableBeds > 0 && room.availableBeds <= 3 && (
-            <p className="text-xs text-orange-600 mt-1">⚠️ {T('fewBedsLeft', locale)}</p>
-          )}
-        </div>
+        )}
 
         {isAvailable ? (
           <>

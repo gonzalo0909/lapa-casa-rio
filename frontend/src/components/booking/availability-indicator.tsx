@@ -56,16 +56,20 @@ export const AvailabilityIndicator: React.FC<AvailabilityIndicatorProps> = ({
 
   const status = getAvailabilityStatus();
 
+  // Con poca ocupación, mostrar la capacidad total y un "buena
+  // disponibilidad" verde no aporta nada -- solo expone cuántas camas
+  // reales hay y da una señal vacía cuando todavía no hay huéspedes.
+  // Recién pasado el 60% de ocupación vale la pena mostrar este bloque.
+  if (occupancyData.occupancyPercent < 60) {
+    return null;
+  }
+
   return (
     <Card className={`availability-indicator p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">{status.icon}</span>
           <span className="font-semibold text-gray-900">{status.label}</span>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">{T('totalCapacity', locale)}</p>
-          <p className="font-bold text-gray-900">{totalBeds} {T('beds', locale)}</p>
         </div>
       </div>
 

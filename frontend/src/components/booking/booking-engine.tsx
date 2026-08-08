@@ -273,7 +273,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       </div>
 
       {currentStep !== 'dates' && dateRange && selectedRooms && selectedRooms.length > 0 && (
-        <PricingCalculator dateRange={dateRange} rooms={selectedRooms} groupDiscountTiers={groupDiscountTiers} locale={locale} className="mb-6" />
+        <PricingCalculator dateRange={dateRange} rooms={selectedRooms} locale={locale} className="mb-6" />
       )}
 
       <div className="flex gap-4 justify-between">

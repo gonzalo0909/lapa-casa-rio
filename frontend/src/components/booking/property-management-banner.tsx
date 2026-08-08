@@ -51,27 +51,27 @@ export const PropertyManagementBanner: React.FC<PropertyManagementBannerProps> =
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
-      title: 'Seu apartamento rendendo em Santa Teresa, sem você mexer um dedo.',
+      title: 'Seu apartamento rendendo no Rio de Janeiro, sem você mexer um dedo.',
       subtitle: 'Cuidamos de tudo: gestão do aluguel por temporada, hóspedes e limpeza. Você só recebe.',
       cta: 'Quero saber mais'
     },
     es: {
-      title: 'Tu apartamento generando ingresos en Santa Teresa, sin mover un dedo.',
+      title: 'Tu apartamento generando ingresos en Río de Janeiro, sin mover un dedo.',
       subtitle: 'Nos encargamos de todo: gestión del alquiler por temporada, huéspedes y limpieza. Vos solo cobrás.',
       cta: 'Quiero saber más'
     },
     en: {
-      title: 'Your apartment earning in Santa Teresa, without you lifting a finger.',
+      title: 'Your apartment earning in Rio de Janeiro, without you lifting a finger.',
       subtitle: "We handle everything: short-term rental management, guests, and cleaning. You just collect.",
       cta: 'Tell me more'
     },
     fr: {
-      title: 'Votre appartement génère des revenus à Santa Teresa, sans que vous ayez à vous en occuper.',
+      title: 'Votre appartement génère des revenus à Rio de Janeiro, sans que vous ayez à vous en occuper.',
       subtitle: 'On s’occupe de tout : gestion de la location saisonnière, voyageurs et ménage. Vous n’avez qu’à encaisser.',
       cta: 'En savoir plus'
     },
     de: {
-      title: 'Ihre Wohnung in Santa Teresa bringt Einnahmen, ohne dass Sie etwas tun müssen.',
+      title: 'Ihre Wohnung in Rio de Janeiro bringt Einnahmen, ohne dass Sie etwas tun müssen.',
       subtitle: 'Wir kümmern uns um alles: Verwaltung der Ferienvermietung, Gäste und Reinigung. Sie kassieren einfach.',
       cta: 'Mehr erfahren'
     }

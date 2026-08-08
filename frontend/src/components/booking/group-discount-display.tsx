@@ -4,15 +4,14 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import type { GroupDiscountTier } from '@/types/global';
 
 /**
  * GroupDiscountDisplay Component
  *
- * Muestra el tramo de descuento activo y el próximo tramo, a partir de
- * los tramos reales (group_discount_tiers, editables desde el admin) --
- * antes tenía 3 tramos fijos (7/16/26 camas -> 10/15/20%) hardcodeados
- * acá adentro, desconectados de la API.
+ * Muestra únicamente el tramo de descuento ya activo para el total de
+ * camas reservadas -- a pedido del dueño, no se muestra el resto de los
+ * tramos (ej. el de 13+ camas cuando ya aplica el de 3+) para no
+ * distraer con información que no aplica a esta reserva.
  *
  * @component
  */
@@ -20,7 +19,6 @@ interface GroupDiscountDisplayProps {
   totalBeds: number;
   discountPercent: number;
   discountAmount: number;
-  tiers: GroupDiscountTier[];
   locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
@@ -29,14 +27,9 @@ export const GroupDiscountDisplay: React.FC<GroupDiscountDisplayProps> = ({
   totalBeds,
   discountPercent,
   discountAmount,
-  tiers,
   locale = 'pt',
   className = ''
 }) => {
-  const sortedTiers = [...tiers].sort((a, b) => a.minBeds - b.minBeds);
-  const nextTier = sortedTiers.find((t) => totalBeds < t.minBeds) ?? null;
-  const bedsToNextTier = nextTier ? nextTier.minBeds - totalBeds : 0;
-
   return (
     <div className={`group-discount-display ${className}`}>
       <div className="p-4 rounded-lg border-2 bg-green-50 border-green-300">
@@ -62,41 +55,6 @@ export const GroupDiscountDisplay: React.FC<GroupDiscountDisplayProps> = ({
           </span>
         </div>
       </div>
-
-      {nextTier && (
-        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl">🎯</span>
-            <p className="text-sm font-semibold text-blue-900">{T('nextTier', locale)}</p>
-          </div>
-          <p className="text-sm text-blue-800">
-            {T('addMore', locale).replace('{beds}', bedsToNextTier.toString())} {' '}
-            {T('toUnlock', locale)} <strong>{Math.round(nextTier.percentage * 100)}%</strong> {T('discount', locale)}
-          </p>
-          <div className="mt-2 h-2 bg-blue-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all duration-300"
-              style={{ width: `${Math.min(100, (totalBeds / nextTier.minBeds) * 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {sortedTiers.length > 0 && (
-        <div className={`mt-3 grid gap-2`} style={{ gridTemplateColumns: `repeat(${sortedTiers.length}, minmax(0, 1fr))` }}>
-          {sortedTiers.map((tier) => (
-            <div
-              key={tier.minBeds}
-              className={`p-2 rounded text-center ${totalBeds >= tier.minBeds ? 'bg-green-200' : 'bg-gray-100'}`}
-            >
-              <p className="text-xs text-gray-600">{tier.minBeds}+ {T('beds', locale)}</p>
-              <p className={`font-bold ${totalBeds >= tier.minBeds ? 'text-green-900' : 'text-gray-500'}`}>
-                {Math.round(tier.percentage * 100)}%
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
@@ -109,9 +67,6 @@ function T(key: string, locale: string): string {
       beds: 'camas',
       discount: 'desconto',
       youSave: 'Você economiza',
-      nextTier: 'Próximo Nível',
-      addMore: 'Adicione mais {beds} camas',
-      toUnlock: 'para desbloquear'
     },
     es: {
       title: 'Descuento para Grupos',
@@ -119,9 +74,6 @@ function T(key: string, locale: string): string {
       beds: 'camas',
       discount: 'descuento',
       youSave: 'Ahorras',
-      nextTier: 'Próximo Nivel',
-      addMore: 'Añade {beds} camas más',
-      toUnlock: 'para desbloquear'
     },
     en: {
       title: 'Group Discount',
@@ -129,9 +81,6 @@ function T(key: string, locale: string): string {
       beds: 'beds',
       discount: 'discount',
       youSave: 'You save',
-      nextTier: 'Next Tier',
-      addMore: 'Add {beds} more beds',
-      toUnlock: 'to unlock'
     },
     fr: {
       title: 'Remise de Groupe',
@@ -139,9 +88,6 @@ function T(key: string, locale: string): string {
       beds: 'lits',
       discount: 'remise',
       youSave: 'Vous économisez',
-      nextTier: 'Palier Suivant',
-      addMore: 'Ajoutez {beds} lits de plus',
-      toUnlock: 'pour débloquer'
     },
     de: {
       title: 'Gruppenrabatt',
@@ -149,9 +95,6 @@ function T(key: string, locale: string): string {
       beds: 'Betten',
       discount: 'Rabatt',
       youSave: 'Sie sparen',
-      nextTier: 'Nächste Stufe',
-      addMore: 'Fügen Sie {beds} weitere Betten hinzu',
-      toUnlock: 'um freizuschalten'
     }
   };
   return t[locale]?.[key] || key;

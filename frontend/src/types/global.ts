@@ -53,5 +53,4 @@ export interface GuestDetails {
   documentNumber: string;
   specialRequests?: string;
   arrivalTime?: string;
-  dietaryRestrictions?: string;
 }

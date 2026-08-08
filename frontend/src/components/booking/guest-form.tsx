@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ContactDetails } from './contact-details';
 import { SpecialRequests } from './special-requests';
 import { Alert } from '@/components/ui/alert';
@@ -39,8 +39,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
       country: '',
       documentNumber: '',
       specialRequests: '',
-      arrivalTime: '',
-      dietaryRestrictions: ''
+      arrivalTime: ''
     }
   );
 
@@ -124,6 +123,15 @@ export const GuestForm: React.FC<GuestFormProps> = ({
     },
     [formData, validateField]
   );
+
+  // El formulario no tiene botón propio de envío -- el paso completo se
+  // avanza con el botón "Siguiente" compartido de BookingEngine, así que
+  // los datos se sincronizan al padre en cada cambio (mismo patrón que el
+  // resto de los pasos del wizard) en vez de esperar un submit que nunca
+  // ocurre.
+  useEffect(() => {
+    onSubmit(formData as GuestDetails);
+  }, [formData, onSubmit]);
 
   const validateForm = useCallback((): boolean => {
     const requiredFields: (keyof GuestDetails)[] = [

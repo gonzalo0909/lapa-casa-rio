@@ -173,20 +173,32 @@ function getSeasonDescription(season: Season, locale: string): string {
     pt: {
       high: 'Alta temporada - Verão no Rio de Janeiro',
       medium: 'Temporada média - Clima ameno',
-      low: 'Baixa temporada - Inverno, melhores preços',
+      low: 'Inverno, melhores preços',
       carnival: 'Carnaval - Maior evento do ano'
     },
     es: {
       high: 'Temporada alta - Verano en Río de Janeiro',
       medium: 'Temporada media - Clima templado',
-      low: 'Temporada baja - Invierno, mejores precios',
+      low: 'Invierno, mejores precios',
       carnival: 'Carnaval - Mayor evento del año'
     },
     en: {
       high: 'High season - Summer in Rio de Janeiro',
       medium: 'Medium season - Mild weather',
-      low: 'Low season - Winter, best prices',
+      low: 'Winter, best prices',
       carnival: 'Carnival - Biggest event of the year'
+    },
+    fr: {
+      high: 'Haute saison - Été à Rio de Janeiro',
+      medium: 'Saison moyenne - Climat doux',
+      low: 'Hiver, meilleurs prix',
+      carnival: 'Carnaval - Plus grand événement de l’année'
+    },
+    de: {
+      high: 'Hochsaison - Sommer in Rio de Janeiro',
+      medium: 'Zwischensaison - Mildes Klima',
+      low: 'Winter, beste Preise',
+      carnival: 'Karneval - Größtes Ereignis des Jahres'
     }
   };
   return descriptions[locale]?.[season] || '';
@@ -197,7 +209,7 @@ function T(key: string, locale: string): string {
     pt: {
       seasonHigh: 'Alta Temporada',
       seasonMedium: 'Temporada Média',
-      seasonLow: 'Baixa Temporada',
+      seasonLow: 'Oferta de Inverno',
       seasonCarnival: 'Carnaval',
       carnival: 'Carnaval',
       carnivalMinimum: 'Carnaval requer mínimo 5 noites'
@@ -205,7 +217,7 @@ function T(key: string, locale: string): string {
     es: {
       seasonHigh: 'Temporada Alta',
       seasonMedium: 'Temporada Media',
-      seasonLow: 'Temporada Baja',
+      seasonLow: 'Oferta de Invierno',
       seasonCarnival: 'Carnaval',
       carnival: 'Carnaval',
       carnivalMinimum: 'Carnaval requiere mínimo 5 noches'
@@ -213,7 +225,7 @@ function T(key: string, locale: string): string {
     en: {
       seasonHigh: 'High Season',
       seasonMedium: 'Medium Season',
-      seasonLow: 'Low Season',
+      seasonLow: 'Winter Offer',
       seasonCarnival: 'Carnival',
       carnival: 'Carnival',
       carnivalMinimum: 'Carnival requires minimum 5 nights'
@@ -221,7 +233,7 @@ function T(key: string, locale: string): string {
     fr: {
       seasonHigh: 'Haute Saison',
       seasonMedium: 'Saison Moyenne',
-      seasonLow: 'Basse Saison',
+      seasonLow: 'Offre d’Hiver',
       seasonCarnival: 'Carnaval',
       carnival: 'Carnaval',
       carnivalMinimum: 'Le Carnaval exige un minimum de 5 nuits'
@@ -229,7 +241,7 @@ function T(key: string, locale: string): string {
     de: {
       seasonHigh: 'Hochsaison',
       seasonMedium: 'Zwischensaison',
-      seasonLow: 'Nebensaison',
+      seasonLow: 'Winterangebot',
       seasonCarnival: 'Karneval',
       carnival: 'Karneval',
       carnivalMinimum: 'Karneval erfordert mindestens 5 Nächte'

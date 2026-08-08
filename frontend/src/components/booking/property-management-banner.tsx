@@ -51,29 +51,29 @@ export const PropertyManagementBanner: React.FC<PropertyManagementBannerProps> =
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
-      title: 'Você tem um apartamento em Santa Teresa ou no Rio?',
-      subtitle: 'Fazemos parcerias para administrar seu imóvel para aluguel por temporada — cuidamos também da limpeza.',
-      cta: 'Fale conosco'
+      title: 'Seu apartamento rendendo em Santa Teresa, sem você mexer um dedo.',
+      subtitle: 'Cuidamos de tudo: gestão do aluguel por temporada, hóspedes e limpeza. Você só recebe.',
+      cta: 'Quero saber mais'
     },
     es: {
-      title: '¿Tenés un apartamento en Santa Teresa o en Río?',
-      subtitle: 'Hacemos parcerías para administrar tu propiedad para alquiler por temporada — también nos encargamos de la limpieza.',
-      cta: 'Contactanos'
+      title: 'Tu apartamento generando ingresos en Santa Teresa, sin mover un dedo.',
+      subtitle: 'Nos encargamos de todo: gestión del alquiler por temporada, huéspedes y limpieza. Vos solo cobrás.',
+      cta: 'Quiero saber más'
     },
     en: {
-      title: 'Do you own an apartment in Santa Teresa or Rio?',
-      subtitle: 'We partner with owners to manage short-term rental properties — we also handle the cleaning.',
-      cta: 'Contact us'
+      title: 'Your apartment earning in Santa Teresa, without you lifting a finger.',
+      subtitle: "We handle everything: short-term rental management, guests, and cleaning. You just collect.",
+      cta: 'Tell me more'
     },
     fr: {
-      title: 'Vous possédez un appartement à Santa Teresa ou à Rio ?',
-      subtitle: 'Nous nous associons aux propriétaires pour gérer des locations saisonnières — nous nous occupons aussi du ménage.',
-      cta: 'Contactez-nous'
+      title: 'Votre appartement génère des revenus à Santa Teresa, sans que vous ayez à vous en occuper.',
+      subtitle: 'On s’occupe de tout : gestion de la location saisonnière, voyageurs et ménage. Vous n’avez qu’à encaisser.',
+      cta: 'En savoir plus'
     },
     de: {
-      title: 'Besitzen Sie eine Wohnung in Santa Teresa oder Rio?',
-      subtitle: 'Wir gehen Partnerschaften ein, um Ferienwohnungen zu verwalten — inklusive Reinigung.',
-      cta: 'Kontaktieren Sie uns'
+      title: 'Ihre Wohnung in Santa Teresa bringt Einnahmen, ohne dass Sie etwas tun müssen.',
+      subtitle: 'Wir kümmern uns um alles: Verwaltung der Ferienvermietung, Gäste und Reinigung. Sie kassieren einfach.',
+      cta: 'Mehr erfahren'
     }
   };
   return t[locale]?.[key] || key;

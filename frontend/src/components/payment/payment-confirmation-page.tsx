@@ -177,7 +177,7 @@ function T(key: string, locale: string): string {
       checkIn: 'Check-in', checkOut: 'Check-out', guest: 'Hóspede', beds: 'Camas',
       notFound: 'Não encontramos essa reserva.',
       depositSuccessTitle: 'Depósito recebido! Sua reserva está confirmada.',
-      depositSuccessNote: 'Enviamos os detalhes por email. O saldo restante será cobrado automaticamente 7 dias antes do check-in.',
+      depositSuccessNote: 'Enviamos os detalhes por email. Vamos te lembrar de pagar o saldo restante 7 dias antes do check-in.',
       cancelledNote: 'Esta reserva não está mais disponível para pagamento.'
     },
     es: {
@@ -186,7 +186,7 @@ function T(key: string, locale: string): string {
       checkIn: 'Check-in', checkOut: 'Check-out', guest: 'Huésped', beds: 'Camas',
       notFound: 'No encontramos esa reserva.',
       depositSuccessTitle: '¡Depósito recibido! Tu reserva está confirmada.',
-      depositSuccessNote: 'Te enviamos los detalles por email. El saldo restante se cobra automáticamente 7 días antes del check-in.',
+      depositSuccessNote: 'Te enviamos los detalles por email. Te vamos a recordar que pagues el saldo restante 7 días antes del check-in.',
       cancelledNote: 'Esta reserva ya no está disponible para pagar.'
     },
     en: {
@@ -195,7 +195,7 @@ function T(key: string, locale: string): string {
       checkIn: 'Check-in', checkOut: 'Check-out', guest: 'Guest', beds: 'Beds',
       notFound: 'We couldn’t find that booking.',
       depositSuccessTitle: 'Deposit received! Your booking is confirmed.',
-      depositSuccessNote: 'We sent the details by email. The remaining balance is charged automatically 7 days before check-in.',
+      depositSuccessNote: 'We sent the details by email. We\'ll remind you to pay the remaining balance 7 days before check-in.',
       cancelledNote: 'This booking is no longer available for payment.'
     },
     fr: {
@@ -204,7 +204,7 @@ function T(key: string, locale: string): string {
       checkIn: 'Arrivée', checkOut: 'Départ', guest: 'Client', beds: 'Lits',
       notFound: 'Nous n’avons pas trouvé cette réservation.',
       depositSuccessTitle: 'Acompte reçu ! Votre réservation est confirmée.',
-      depositSuccessNote: 'Nous avons envoyé les détails par e-mail. Le solde est prélevé automatiquement 7 jours avant l’arrivée.',
+      depositSuccessNote: 'Nous avons envoyé les détails par e-mail. Nous vous rappellerons de payer le solde 7 jours avant l’arrivée.',
       cancelledNote: 'Cette réservation n’est plus disponible pour le paiement.'
     },
     de: {
@@ -213,7 +213,7 @@ function T(key: string, locale: string): string {
       checkIn: 'Check-in', checkOut: 'Check-out', guest: 'Gast', beds: 'Betten',
       notFound: 'Wir konnten diese Buchung nicht finden.',
       depositSuccessTitle: 'Anzahlung erhalten! Ihre Buchung ist bestätigt.',
-      depositSuccessNote: 'Wir haben Ihnen die Details per E-Mail gesendet. Der Restbetrag wird automatisch 7 Tage vor Check-in abgebucht.',
+      depositSuccessNote: 'Wir haben Ihnen die Details per E-Mail gesendet. Wir erinnern Sie daran, den Restbetrag 7 Tage vor Check-in zu zahlen.',
       cancelledNote: 'Diese Buchung ist nicht mehr für die Zahlung verfügbar.'
     }
   };

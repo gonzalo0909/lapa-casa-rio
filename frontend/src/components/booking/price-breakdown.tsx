@@ -133,7 +133,7 @@ function T(key: string, locale: string): string {
       remaining: 'Saldo restante',
       payNow: 'agora',
       payLater: 'depois',
-      autoChargeInfo: 'Saldo cobrado automaticamente 7 dias antes do check-in',
+      autoChargeInfo: 'Te lembramos por email para pagar o saldo 7 dias antes do check-in',
       transparentPricing: 'Preços transparentes, sem taxas ocultas'
     },
     es: {
@@ -147,7 +147,7 @@ function T(key: string, locale: string): string {
       remaining: 'Saldo restante',
       payNow: 'ahora',
       payLater: 'después',
-      autoChargeInfo: 'Saldo cobrado automáticamente 7 días antes del check-in',
+      autoChargeInfo: 'Te recordamos por email para pagar el saldo 7 días antes del check-in',
       transparentPricing: 'Precios transparentes, sin tarifas ocultas'
     },
     en: {
@@ -161,7 +161,7 @@ function T(key: string, locale: string): string {
       remaining: 'Remaining balance',
       payNow: 'now',
       payLater: 'later',
-      autoChargeInfo: 'Balance charged automatically 7 days before check-in',
+      autoChargeInfo: 'We\'ll email you a reminder to pay the balance 7 days before check-in',
       transparentPricing: 'Transparent pricing, no hidden fees'
     },
     fr: {
@@ -175,7 +175,7 @@ function T(key: string, locale: string): string {
       remaining: 'Solde restant',
       payNow: 'maintenant',
       payLater: 'plus tard',
-      autoChargeInfo: 'Solde débité automatiquement 7 jours avant l’arrivée',
+      autoChargeInfo: 'Nous vous rappellerons par e-mail de payer le solde 7 jours avant l’arrivée',
       transparentPricing: 'Tarifs transparents, sans frais cachés'
     },
     de: {
@@ -189,7 +189,7 @@ function T(key: string, locale: string): string {
       remaining: 'Restbetrag',
       payNow: 'jetzt',
       payLater: 'später',
-      autoChargeInfo: 'Restbetrag wird automatisch 7 Tage vor Check-in abgebucht',
+      autoChargeInfo: 'Wir erinnern Sie per E-Mail, den Restbetrag 7 Tage vor Check-in zu zahlen',
       transparentPricing: 'Transparente Preise, keine versteckten Gebühren'
     }
   };

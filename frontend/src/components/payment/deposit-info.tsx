@@ -127,7 +127,7 @@ function T(key: string, locale: string): string {
     pt: {
       title: 'Pagamento em 2 Etapas',
       step1: 'Depósito agora', step1Note: 'Confirma sua reserva imediatamente',
-      step2: 'Saldo em', step2Note: 'Cobrança automática 7 dias antes do check-in',
+      step2: 'Saldo em', step2Note: 'Você recebe um lembrete por email 7 dias antes do check-in',
       guaranteesTitle: 'Garantias e Segurança',
       instant: 'Confirmação instantânea da reserva',
       flexible: 'Política de cancelamento flexível',
@@ -136,13 +136,13 @@ function T(key: string, locale: string): string {
       faqTitle: 'Perguntas Frequentes',
       faq1Q: 'O que acontece se eu cancelar?',
       faq1A: 'Cancelamentos com mais de 7 dias de antecedência recebem reembolso total do depósito. Para cancelamentos mais próximos da data, consulte nossa política completa.',
-      faq2Q: 'O que acontece se o pagamento do saldo falhar?',
-      faq2A: 'Tentaremos processar novamente automaticamente algumas vezes. Se persistir, entraremos em contato para regularizar antes do check-in.'
+      faq2Q: 'O que acontece se eu não pagar o saldo?',
+      faq2A: 'Enviamos até 3 lembretes por email nos dias seguintes. Se ainda assim não pagar, entraremos em contato diretamente com você antes do check-in.'
     },
     es: {
       title: 'Pago en 2 Etapas',
       step1: 'Depósito ahora', step1Note: 'Confirma tu reserva de inmediato',
-      step2: 'Saldo el', step2Note: 'Cobro automático 7 días antes del check-in',
+      step2: 'Saldo el', step2Note: 'Te mandamos un recordatorio por email 7 días antes del check-in',
       guaranteesTitle: 'Garantías y Seguridad',
       instant: 'Confirmación instantánea de la reserva',
       flexible: 'Política de cancelación flexible',
@@ -151,13 +151,13 @@ function T(key: string, locale: string): string {
       faqTitle: 'Preguntas Frecuentes',
       faq1Q: '¿Qué pasa si cancelo?',
       faq1A: 'Las cancelaciones con más de 7 días de anticipación reciben reembolso total del depósito. Para cancelaciones más cercanas a la fecha, consultá nuestra política completa.',
-      faq2Q: '¿Qué pasa si falla el pago del saldo?',
-      faq2A: 'Vamos a reintentar el cobro automáticamente algunas veces. Si persiste, te vamos a contactar para regularizarlo antes del check-in.'
+      faq2Q: '¿Qué pasa si no pago el saldo?',
+      faq2A: 'Te mandamos hasta 3 recordatorios por email en los días siguientes. Si igual no pagás, te contactamos directamente antes del check-in.'
     },
     en: {
       title: '2-Step Payment',
       step1: 'Deposit now', step1Note: 'Confirms your booking immediately',
-      step2: 'Balance on', step2Note: 'Automatic charge 7 days before check-in',
+      step2: 'Balance on', step2Note: 'You\'ll get an email reminder 7 days before check-in',
       guaranteesTitle: 'Guarantees & Security',
       instant: 'Instant booking confirmation',
       flexible: 'Flexible cancellation policy',
@@ -166,13 +166,13 @@ function T(key: string, locale: string): string {
       faqTitle: 'Frequently Asked Questions',
       faq1Q: 'What happens if I cancel?',
       faq1A: 'Cancellations more than 7 days in advance get a full deposit refund. For cancellations closer to the date, check our full policy.',
-      faq2Q: 'What if the balance payment fails?',
-      faq2A: 'We\'ll automatically retry the charge a few times. If it keeps failing, we\'ll contact you to sort it out before check-in.'
+      faq2Q: 'What if I don\'t pay the balance?',
+      faq2A: 'We\'ll send up to 3 email reminders over the following days. If it\'s still unpaid, we\'ll contact you directly before check-in.'
     },
     fr: {
       title: 'Paiement en 2 Étapes',
       step1: 'Acompte maintenant', step1Note: 'Confirme votre réservation immédiatement',
-      step2: 'Solde le', step2Note: 'Prélèvement automatique 7 jours avant l’arrivée',
+      step2: 'Solde le', step2Note: 'Vous recevrez un rappel par e-mail 7 jours avant l’arrivée',
       guaranteesTitle: 'Garanties et Sécurité',
       instant: 'Confirmation instantanée de la réservation',
       flexible: 'Politique d’annulation flexible',
@@ -181,13 +181,13 @@ function T(key: string, locale: string): string {
       faqTitle: 'Questions Fréquentes',
       faq1Q: 'Que se passe-t-il si j’annule ?',
       faq1A: 'Les annulations plus de 7 jours à l’avance sont intégralement remboursées. Pour les annulations plus proches de la date, consultez notre politique complète.',
-      faq2Q: 'Que se passe-t-il si le paiement du solde échoue ?',
-      faq2A: 'Nous réessaierons automatiquement le prélèvement quelques fois. Si le problème persiste, nous vous contacterons avant l’arrivée.'
+      faq2Q: 'Que se passe-t-il si je ne paie pas le solde ?',
+      faq2A: 'Nous vous envoyons jusqu’à 3 rappels par e-mail les jours suivants. Si le solde reste impayé, nous vous contacterons directement avant l’arrivée.'
     },
     de: {
       title: 'Zahlung in 2 Schritten',
       step1: 'Anzahlung jetzt', step1Note: 'Bestätigt Ihre Buchung sofort',
-      step2: 'Restbetrag am', step2Note: 'Automatische Abbuchung 7 Tage vor Check-in',
+      step2: 'Restbetrag am', step2Note: 'Sie erhalten 7 Tage vor Check-in eine E-Mail-Erinnerung',
       guaranteesTitle: 'Garantien & Sicherheit',
       instant: 'Sofortige Buchungsbestätigung',
       flexible: 'Flexible Stornierungsbedingungen',
@@ -196,8 +196,8 @@ function T(key: string, locale: string): string {
       faqTitle: 'Häufige Fragen',
       faq1Q: 'Was passiert, wenn ich storniere?',
       faq1A: 'Stornierungen mehr als 7 Tage im Voraus erhalten die volle Anzahlung zurück. Für spätere Stornierungen siehe unsere vollständigen Bedingungen.',
-      faq2Q: 'Was, wenn die Zahlung des Restbetrags fehlschlägt?',
-      faq2A: 'Wir versuchen die Abbuchung automatisch einige Male erneut. Bleibt es erfolglos, kontaktieren wir Sie vor dem Check-in.'
+      faq2Q: 'Was, wenn ich den Restbetrag nicht zahle?',
+      faq2A: 'Wir senden in den folgenden Tagen bis zu 3 E-Mail-Erinnerungen. Bleibt es unbezahlt, kontaktieren wir Sie direkt vor dem Check-in.'
     }
   };
   return t[locale]?.[key] || key;

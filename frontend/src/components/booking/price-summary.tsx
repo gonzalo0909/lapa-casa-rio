@@ -152,7 +152,7 @@ function T(key: string, locale: string): string {
       payNow: 'agora',
       remaining: 'Saldo Restante',
       payLater: 'em 7 dias',
-      paymentInfo: 'Saldo cobrado automaticamente 7 dias antes do check-in'
+      paymentInfo: 'Lembramos você por email para pagar o saldo 7 dias antes do check-in'
     },
     es: {
       title: 'Resumen de Pago',
@@ -165,7 +165,7 @@ function T(key: string, locale: string): string {
       payNow: 'ahora',
       remaining: 'Saldo Restante',
       payLater: 'en 7 días',
-      paymentInfo: 'Saldo cobrado automáticamente 7 días antes del check-in'
+      paymentInfo: 'Te recordamos por email para pagar el saldo 7 días antes del check-in'
     },
     en: {
       title: 'Payment Summary',
@@ -178,7 +178,7 @@ function T(key: string, locale: string): string {
       payNow: 'now',
       remaining: 'Remaining Balance',
       payLater: 'in 7 days',
-      paymentInfo: 'Balance charged automatically 7 days before check-in'
+      paymentInfo: 'We\'ll remind you by email to pay the balance 7 days before check-in'
     },
     fr: {
       title: 'Résumé du Paiement',
@@ -191,7 +191,7 @@ function T(key: string, locale: string): string {
       payNow: 'maintenant',
       remaining: 'Solde Restant',
       payLater: 'dans 7 jours',
-      paymentInfo: 'Solde débité automatiquement 7 jours avant l’arrivée'
+      paymentInfo: 'Nous vous rappellerons par e-mail de payer le solde 7 jours avant l’arrivée'
     },
     de: {
       title: 'Zahlungsübersicht',
@@ -204,7 +204,7 @@ function T(key: string, locale: string): string {
       payNow: 'jetzt',
       remaining: 'Restbetrag',
       payLater: 'in 7 Tagen',
-      paymentInfo: 'Restbetrag wird automatisch 7 Tage vor Check-in abgebucht'
+      paymentInfo: 'Wir erinnern Sie per E-Mail, den Restbetrag 7 Tage vor Check-in zu zahlen'
     }
   };
   return t[locale]?.[key] || key;

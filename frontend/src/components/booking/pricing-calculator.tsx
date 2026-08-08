@@ -233,7 +233,7 @@ function T(key: string, locale: string): string {
       pricePerBed: 'Por cama',
       depositNow: 'Depósito agora',
       payLater: 'Pagar depois',
-      paymentInfo: 'Saldo restante cobrado automaticamente 7 dias antes do check-in'
+      paymentInfo: 'Lembramos você por email para pagar o saldo restante 7 dias antes do check-in'
     },
     es: {
       title: 'Resumen de Precios',
@@ -245,7 +245,7 @@ function T(key: string, locale: string): string {
       pricePerBed: 'Por cama',
       depositNow: 'Depósito ahora',
       payLater: 'Pagar después',
-      paymentInfo: 'Saldo restante cobrado automáticamente 7 días antes del check-in'
+      paymentInfo: 'Te recordamos por email para pagar el saldo restante 7 días antes del check-in'
     },
     en: {
       title: 'Price Summary',
@@ -257,7 +257,7 @@ function T(key: string, locale: string): string {
       pricePerBed: 'Per bed',
       depositNow: 'Deposit now',
       payLater: 'Pay later',
-      paymentInfo: 'Remaining balance charged automatically 7 days before check-in'
+      paymentInfo: 'We\'ll remind you by email to pay the remaining balance 7 days before check-in'
     },
     fr: {
       title: 'Résumé des Prix',
@@ -269,7 +269,7 @@ function T(key: string, locale: string): string {
       pricePerBed: 'Par lit',
       depositNow: 'Acompte maintenant',
       payLater: 'Payer plus tard',
-      paymentInfo: 'Solde restant débité automatiquement 7 jours avant l’arrivée'
+      paymentInfo: 'Nous vous rappellerons par e-mail de payer le solde restant 7 jours avant l’arrivée'
     },
     de: {
       title: 'Preisübersicht',
@@ -281,7 +281,7 @@ function T(key: string, locale: string): string {
       pricePerBed: 'Pro Bett',
       depositNow: 'Anzahlung jetzt',
       payLater: 'Später bezahlen',
-      paymentInfo: 'Restbetrag wird automatisch 7 Tage vor Check-in abgebucht'
+      paymentInfo: 'Wir erinnern Sie per E-Mail, den Restbetrag 7 Tage vor Check-in zu zahlen'
     }
   };
   return t[locale]?.[key] || key;

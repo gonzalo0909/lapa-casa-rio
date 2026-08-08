@@ -43,6 +43,15 @@ export interface Room {
   capacity: number;
   basePrice: number;
   isFlexible: boolean;
+  /** Camas puntuales elegidas a mano en el selector (modo "elegir camas específicas"). Opcional: si falta, el backend asigna solo. */
+  preferredBedIds?: string[];
+}
+
+/** Una cama real de un cuarto (bed_code + disponibilidad), para el selector manual tipo butacas. */
+export interface RoomBed {
+  bedId: string;
+  bedCode: string;
+  isAvailable: boolean;
 }
 
 export interface GuestDetails {

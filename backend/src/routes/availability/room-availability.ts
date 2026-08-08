@@ -52,6 +52,7 @@ export const roomAvailabilityHandler = async (
 
     const avail = await availabilityService.checkRoomAvailability(roomId, checkIn, checkOut);
     const occupancyByDate = await availabilityService.getRoomDailyOccupancy(roomId, checkIn, checkOut);
+    const beds = await availabilityService.getRoomBeds(roomId, checkIn, checkOut);
 
     const nights = Math.round(
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -90,6 +91,7 @@ export const roomAvailabilityHandler = async (
           availabilityPercentage: Math.round((avail.availableBeds / room.capacity) * 100)
         },
         occupancyByDate,
+        beds,
         flexibleRoomStatus
       }, 'Room availability retrieved successfully')
     );

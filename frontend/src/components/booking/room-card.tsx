@@ -2,33 +2,49 @@
 
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { RoomDetails } from './room-details';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalTitle, ModalBody } from '@/components/ui/modal';
-import type { DateRange, RoomAvailability } from '@/types/global';
+import { availabilityAPI, handleAPIError } from '@/lib/api';
+import type { DateRange, RoomAvailability, RoomBed } from '@/types/global';
 
 /**
  * RoomCard Component
- * 
- * Individual room card with selection controls
- * Shows room info, availability, and bed counter
- * 
+ *
+ * Cantidad de camas por defecto (modo rápido, asignación automática) con
+ * la opción de abrir un selector manual con las camas reales del cuarto,
+ * agrupadas en treliches de 3 (abajo/medio/arriba, en ese orden real --
+ * ver bed_code en database/seeds/0001_seed.sql). La asignación
+ * automática y la manual usan el mismo criterio (primeras camas libres
+ * por bed_code), así que cambiar de modo no pierde la selección.
+ *
  * @component
  */
 interface RoomCardProps {
   room: RoomAvailability;
+  /** UUID real del cuarto físico (room_types.id) que se muestra en el selector manual -- distinto del id sintético de la familia. */
+  realRoomId: string;
   dateRange: DateRange;
   selectedBeds: number;
-  onSelectBeds: (beds: number) => void;
+  onSelectBeds: (beds: number, bedIds?: string[]) => void;
   locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
+function groupIntoBunks(beds: RoomBed[]): RoomBed[][] {
+  const bunks: RoomBed[][] = [];
+  for (let i = 0; i < beds.length; i += 3) {
+    bunks.push(beds.slice(i, i + 3));
+  }
+  return bunks;
+}
+
 export const RoomCard: React.FC<RoomCardProps> = ({
   room,
+  realRoomId,
   dateRange,
   selectedBeds,
   onSelectBeds,
@@ -36,6 +52,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   className = ''
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [mode, setMode] = useState<'quick' | 'manual'>('quick');
+  const [beds, setBeds] = useState<RoomBed[] | null>(null);
+  const [isLoadingBeds, setIsLoadingBeds] = useState(false);
+  const [bedsError, setBedsError] = useState<string | null>(null);
+  const [selectedBedIds, setSelectedBedIds] = useState<string[]>([]);
+
+  // Si cambian las fechas, la disponibilidad de camas puntuales ya
+  // consultada queda vieja -- se vuelve al modo rápido y se descarta.
+  useEffect(() => {
+    setMode('quick');
+    setBeds(null);
+    setSelectedBedIds([]);
+  }, [dateRange.checkIn, dateRange.checkOut, realRoomId]);
 
   const isAvailable = room.availableBeds > 0;
   const isFullyBooked = room.availableBeds === 0;
@@ -60,11 +89,42 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     }
   }, [selectedBeds, onSelectBeds]);
 
-  const handleQuickSelect = useCallback((beds: number) => {
-    if (beds <= room.availableBeds) {
-      onSelectBeds(beds);
+  const openManualMode = useCallback(async () => {
+    if (!beds) {
+      setIsLoadingBeds(true);
+      setBedsError(null);
+      try {
+        const response = await availabilityAPI.getRoomAvailability(realRoomId, {
+          checkIn: dateRange.checkIn!.toISOString().slice(0, 10),
+          checkOut: dateRange.checkOut!.toISOString().slice(0, 10)
+        });
+        const roomBeds: RoomBed[] = response.data.beds;
+        setBeds(roomBeds);
+        // Preselecciona las mismas camas que ya elegiría la asignación
+        // automática (primeras libres por bed_code), para no perder lo
+        // ya elegido en modo rápido al abrir el selector manual.
+        const autoIds = roomBeds.filter((b) => b.isAvailable).slice(0, selectedBeds).map((b) => b.bedId);
+        setSelectedBedIds(autoIds);
+      } catch (err) {
+        setBedsError(handleAPIError(err));
+      } finally {
+        setIsLoadingBeds(false);
+      }
     }
-  }, [room.availableBeds, onSelectBeds]);
+    setMode('manual');
+  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds]);
+
+  const closeManualMode = useCallback(() => {
+    setMode('quick');
+  }, []);
+
+  const toggleBed = useCallback((bedId: string) => {
+    setSelectedBedIds((prev) => {
+      const next = prev.includes(bedId) ? prev.filter((id) => id !== bedId) : [...prev, bedId];
+      onSelectBeds(next.length, next);
+      return next;
+    });
+  }, [onSelectBeds]);
 
   const getRoomIcon = (type: string, isFlexible: boolean) => {
     if (isFlexible) {return '🔄';}
@@ -79,6 +139,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     if (type === 'male') {return T('male', locale);}
     return T('mixed', locale);
   };
+
+  const bunks = beds ? groupIntoBunks(beds) : [];
 
   return (
     <>
@@ -125,49 +187,86 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
         {isAvailable ? (
           <>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-700">{T('selectBeds', locale)}:</span>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleDecrement}
-                  disabled={selectedBeds === 0}
-                  className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  aria-label={T('decrease', locale)}
-                >
-                  −
-                </button>
-                <span className="text-xl font-bold text-gray-900 w-8 text-center">
-                  {selectedBeds}
-                </span>
-                <button
-                  onClick={handleIncrement}
-                  disabled={selectedBeds >= room.availableBeds}
-                  className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  aria-label={T('increase', locale)}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {room.availableBeds >= 3 && (
-              <div>
-                <p className="text-xs text-gray-500 mb-1.5">{T('quickSelect', locale)}</p>
-                <div className="flex gap-2">
-                {[3, 5, room.availableBeds].filter((v, i, a) => a.indexOf(v) === i && v <= room.availableBeds).map(beds => (
-                  <button
-                    key={beds}
-                    onClick={() => handleQuickSelect(beds)}
-                    className={`flex-1 px-3 py-1 text-sm rounded border transition-colors ${
-                      selectedBeds === beds
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
-                    }`}
-                  >
-                    {beds === room.availableBeds ? T('all', locale) : `${beds} ${T('beds', locale)}`}
-                  </button>
-                ))}
+            {mode === 'quick' && (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700">{T('selectBeds', locale)}:</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleDecrement}
+                      disabled={selectedBeds === 0}
+                      className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      aria-label={T('decrease', locale)}
+                    >
+                      −
+                    </button>
+                    <span className="text-xl font-bold text-gray-900 w-8 text-center">
+                      {selectedBeds}
+                    </span>
+                    <button
+                      onClick={handleIncrement}
+                      disabled={selectedBeds >= room.availableBeds}
+                      className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      aria-label={T('increase', locale)}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={openManualMode}
+                  disabled={isLoadingBeds}
+                  className="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  {isLoadingBeds ? T('loadingBeds', locale) : `🛏️ ${T('chooseSpecific', locale)}`}
+                </button>
+                {bedsError && <p className="text-xs text-red-600 mt-1">{bedsError}</p>}
+              </>
+            )}
+
+            {mode === 'manual' && (
+              <div>
+                <div className="flex flex-wrap gap-2 justify-center mb-3">
+                  {bunks.map((bunk, i) => (
+                    <div key={i} className="flex flex-col-reverse gap-1 bg-gray-50 border border-gray-200 rounded-lg p-1.5">
+                      {bunk.map((bed) => {
+                        const isSelected = selectedBedIds.includes(bed.bedId);
+                        return (
+                          <button
+                            key={bed.bedId}
+                            type="button"
+                            disabled={!bed.isAvailable}
+                            onClick={() => toggleBed(bed.bedId)}
+                            aria-label={`${T('bed', locale)} ${bed.bedCode}${!bed.isAvailable ? `, ${T('fullyBooked', locale)}` : ''}`}
+                            aria-pressed={isSelected}
+                            className={`w-11 h-6 rounded text-[10px] font-bold flex items-center justify-center border-2 transition-colors ${
+                              !bed.isAvailable
+                                ? 'bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed'
+                                : isSelected
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-600 hover:border-blue-400'
+                            }`}
+                          >
+                            {!bed.isAvailable ? '✕' : isSelected ? '✓' : bed.bedCode}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-3 text-[10px] text-gray-500 mb-3">
+                  <span className="flex items-center gap-1"><i className="inline-block w-2.5 h-2.5 rounded-sm border-2 border-gray-300" />{T('available', locale)}</span>
+                  <span className="flex items-center gap-1"><i className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-600 border-2 border-blue-600" />{T('selectedBed', locale)}</span>
+                  <span className="flex items-center gap-1"><i className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-200 border-2 border-gray-200" />{T('fullyBooked', locale)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeManualMode}
+                  className="text-xs font-semibold text-blue-600 hover:underline"
+                >
+                  ← {T('backToQuick', locale)}
+                </button>
               </div>
             )}
           </>
@@ -212,10 +311,12 @@ function T(key: string, locale: string): string {
       available: 'Disponível',
       fewBedsLeft: 'Poucas camas restantes',
       selectBeds: 'Selecionar camas',
-      quickSelect: 'Seleção rápida:',
+      chooseSpecific: 'Escolher camas específicas',
+      loadingBeds: 'Carregando camas...',
+      backToQuick: 'Voltar à seleção rápida',
+      selectedBed: 'Selecionada',
       decrease: 'Diminuir',
       increase: 'Aumentar',
-      all: 'Todas',
       fullyBooked: 'Esgotado',
       tryOtherDates: 'Tente outras datas',
       pricePerNight: 'Preço por noite',
@@ -231,10 +332,12 @@ function T(key: string, locale: string): string {
       available: 'Disponible',
       fewBedsLeft: 'Pocas camas restantes',
       selectBeds: 'Seleccionar camas',
-      quickSelect: 'Selección rápida:',
+      chooseSpecific: 'Elegir camas específicas',
+      loadingBeds: 'Cargando camas...',
+      backToQuick: 'Volver a selección rápida',
+      selectedBed: 'Seleccionada',
       decrease: 'Disminuir',
       increase: 'Aumentar',
-      all: 'Todas',
       fullyBooked: 'Agotado',
       tryOtherDates: 'Prueba otras fechas',
       pricePerNight: 'Precio por noche',
@@ -250,10 +353,12 @@ function T(key: string, locale: string): string {
       available: 'Available',
       fewBedsLeft: 'Few beds left',
       selectBeds: 'Select beds',
-      quickSelect: 'Quick select:',
+      chooseSpecific: 'Choose specific beds',
+      loadingBeds: 'Loading beds...',
+      backToQuick: 'Back to quick select',
+      selectedBed: 'Selected',
       decrease: 'Decrease',
       increase: 'Increase',
-      all: 'All',
       fullyBooked: 'Fully Booked',
       tryOtherDates: 'Try other dates',
       pricePerNight: 'Price per night',
@@ -269,10 +374,12 @@ function T(key: string, locale: string): string {
       available: 'Disponible',
       fewBedsLeft: 'Peu de lits restants',
       selectBeds: 'Sélectionner les lits',
-      quickSelect: 'Sélection rapide :',
+      chooseSpecific: 'Choisir des lits précis',
+      loadingBeds: 'Chargement des lits...',
+      backToQuick: 'Retour à la sélection rapide',
+      selectedBed: 'Sélectionné',
       decrease: 'Diminuer',
       increase: 'Augmenter',
-      all: 'Tous',
       fullyBooked: 'Complet',
       tryOtherDates: 'Essayez d’autres dates',
       pricePerNight: 'Prix par nuit',
@@ -288,10 +395,12 @@ function T(key: string, locale: string): string {
       available: 'Verfügbar',
       fewBedsLeft: 'Nur noch wenige Betten',
       selectBeds: 'Betten auswählen',
-      quickSelect: 'Schnellauswahl:',
+      chooseSpecific: 'Bestimmte Betten wählen',
+      loadingBeds: 'Betten werden geladen...',
+      backToQuick: 'Zurück zur Schnellauswahl',
+      selectedBed: 'Ausgewählt',
       decrease: 'Verringern',
       increase: 'Erhöhen',
-      all: 'Alle',
       fullyBooked: 'Ausgebucht',
       tryOtherDates: 'Andere Daten versuchen',
       pricePerNight: 'Preis pro Nacht',

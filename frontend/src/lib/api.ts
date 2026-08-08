@@ -205,7 +205,7 @@ export const bookingAPI = {
   create: (data: {
     checkIn: string;
     checkOut: string;
-    rooms: Array<{ roomId: string; bedsCount: number }>;
+    rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
     guest: {
       firstName: string;
       lastName: string;

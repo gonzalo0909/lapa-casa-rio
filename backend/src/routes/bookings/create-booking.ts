@@ -21,6 +21,8 @@ interface CreateBookingRequest {
   rooms: Array<{
     roomId: string;
     bedsCount: number;
+    /** Camas puntuales elegidas a mano en el selector -- opcional, ver bookingService.createBooking(). */
+    preferredBedIds?: string[];
   }>;
   guest: {
     firstName: string;

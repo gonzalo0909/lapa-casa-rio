@@ -142,12 +142,33 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
   const hasGroupDiscount = groupDiscount > 0;
 
   const handleFamilySelection = useCallback(
-    (familyKey: string, beds: number) => {
+    (familyKey: string, beds: number, bedIds?: string[]) => {
       setSelectedFamilyKey(beds > 0 ? familyKey : null);
       setBedsCount(beds);
 
       const family = families.find((f) => f.key === familyKey);
-      const rooms = beds > 0 && family ? allocateFamily(family, beds) : [];
+      let rooms: Room[] = [];
+      if (beds > 0 && family) {
+        if (bedIds && bedIds.length > 0) {
+          // Selector manual: las camas puntuales elegidas son siempre de
+          // UN cuarto real (el primario), porque familyToCard() ya topa
+          // lo elegible a la capacidad de un solo cuarto -- no hace falta
+          // repartir entre los dos cuartos reales de la familia.
+          const primary = family.members[0]!;
+          rooms = [{
+            id: primary.id,
+            name: primary.name,
+            type: primary.type,
+            bedsCount: beds,
+            capacity: primary.capacity,
+            basePrice: primary.basePrice,
+            isFlexible: primary.isFlexible,
+            preferredBedIds: bedIds,
+          }];
+        } else {
+          rooms = allocateFamily(family, beds);
+        }
+      }
       onChange(rooms);
     },
     [families, onChange]
@@ -212,9 +233,10 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
           <RoomCard
             key={family.key}
             room={familyToCard(family, locale)}
+            realRoomId={family.members[0]!.id}
             dateRange={dateRange}
             selectedBeds={selectedFamilyKey === family.key ? bedsCount : 0}
-            onSelectBeds={(beds) => handleFamilySelection(family.key, beds)}
+            onSelectBeds={(beds, bedIds) => handleFamilySelection(family.key, beds, bedIds)}
             locale={locale}
           />
         ))}

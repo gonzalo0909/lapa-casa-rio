@@ -68,7 +68,7 @@ export const useBookingStore = create<BookingState>((set) => ({
     const response = await bookingAPI.create({
       checkIn: toDateOnly(dateRange.checkIn),
       checkOut: toDateOnly(dateRange.checkOut),
-      rooms: rooms.map((r) => ({ roomId: r.id, bedsCount: r.bedsCount })),
+      rooms: rooms.map((r) => ({ roomId: r.id, bedsCount: r.bedsCount, preferredBedIds: r.preferredBedIds })),
       guest: {
         firstName,
         lastName,

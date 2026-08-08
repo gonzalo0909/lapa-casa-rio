@@ -16,6 +16,7 @@ import { BookingRepository } from '../database/repositories/booking-repository';
 import { acquireLock } from '../database/lock-middleware';
 import { pricingService } from './pricing-service';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
+import redisClient from '../cache/redis-client';
 import { logger } from '../utils/logger';
 import type { Reservation, BookingStatus } from '../types/database';
 
@@ -24,6 +25,19 @@ import type { Reservation, BookingStatus } from '../types/database';
 const exportToSheetsAsync = (reservationId: string, action: 'upsert' | 'delete' = 'upsert'): void => {
   enqueueSheetsExport(reservationId, action).catch(err =>
     logger.warn('No se pudo encolar el export a Sheets', { reservationId, error: err.message })
+  );
+};
+
+// El cache de disponibilidad (availability-service.ts, TTL 5 min) queda
+// desactualizado apenas se crea o cancela una reserva -- una cama recién
+// tomada podía seguir apareciendo "libre" hasta por 5 minutos. No es un
+// riesgo de overbooking real (la verificación bajo lock en createBooking()
+// sigue siendo la única autoridad), pero sí de UX confusa en el selector
+// de camas específicas. Fire-and-forget: si Redis falla acá, la reserva
+// real ya quedó guardada, no hay nada que revertir.
+const invalidateAvailabilityCache = (): void => {
+  redisClient.delPattern('availability:*').catch((err) =>
+    logger.warn('No se pudo invalidar el cache de disponibilidad', { error: err.message })
   );
 };
 
@@ -49,7 +63,13 @@ const generateReservationNumber = (): string =>
 interface CreateBookingInput {
   checkIn: string;
   checkOut: string;
-  rooms: Array<{ roomId: string; bedsCount: number }>;
+  /** preferredBedIds: opcional, camas puntuales que el huésped eligió a
+   * mano en el selector (ver frontend room-card manual mode). Es solo
+   * una preferencia -- si alguna ya no está libre para cuando se procesa
+   * la reserva, se completa el resto con las primeras camas disponibles
+   * de esa habitación, igual que siempre. La verificación real bajo lock
+   * (más abajo) sigue siendo la única autoridad anti-overbooking. */
+  rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
   guest: {
     full_name: string;
     email: string;
@@ -77,20 +97,31 @@ interface CreateBookingInput {
   guestGender?: 'mixed' | 'female' | 'male';
 }
 
-/** Selecciona `count` camas libres y elegibles por genero dentro de UNA habitacion, bajo la transaccion activa. */
+/**
+ * Selecciona `count` camas libres y elegibles por genero dentro de UNA
+ * habitacion, bajo la transaccion activa. Si el huésped eligió camas
+ * puntuales a mano (preferredBedIds), esas van primero en el orden --
+ * pero siguen siendo candidatas nomás: la verificación real bajo lock en
+ * createBooking() es la que decide si de verdad siguen libres.
+ */
 const pickAvailableBedsInRoom = async (
   client: PoolClient,
   roomTypeId: string,
   checkIn: string,
   checkOut: string,
   count: number,
-  gender: 'mixed' | 'female' | 'male'
+  gender: 'mixed' | 'female' | 'male',
+  preferredBedIds: string[] = []
 ): Promise<string[]> => {
   const { rows } = await client.query(
     `SELECT bed_id FROM check_availability($1::date, $2::date, $3::bed_gender)
      WHERE room_type_id = $4::uuid AND is_gender_eligible = true AND is_available = true
+     ORDER BY
+       (bed_id = ANY($6::uuid[])) DESC,
+       regexp_replace(bed_code, '[0-9]+$', ''),
+       NULLIF(regexp_replace(bed_code, '^[^0-9]*', ''), '')::INT
      LIMIT $5`,
-    [checkIn, checkOut, gender, roomTypeId, count]
+    [checkIn, checkOut, gender, roomTypeId, count, preferredBedIds]
   );
   return rows.map((r: any) => r.bed_id);
 };
@@ -114,7 +145,7 @@ export class BookingService {
       const guestGender = data.guestGender ?? 'mixed';
       const candidateBedIds: string[] = [];
       for (const room of data.rooms) {
-        const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, guestGender);
+        const beds = await pickAvailableBedsInRoom(client, room.roomId, data.checkIn, data.checkOut, room.bedsCount, guestGender, room.preferredBedIds);
         if (beds.length < room.bedsCount) {
           throw new InsufficientAvailabilityError({ roomId: room.roomId, requested: room.bedsCount, found: beds.length });
         }
@@ -208,6 +239,7 @@ export class BookingService {
     // esta confirmada en la base -- un email/export perdido no debe
     // revertir una reserva real.
     exportToSheetsAsync(result.id);
+    invalidateAvailabilityCache();
     return result;
   }
 
@@ -219,6 +251,7 @@ export class BookingService {
   async cancelBooking(id: string, reason?: string): Promise<Reservation> {
     const result = await bookingRepo.cancelReservation(id, reason);
     exportToSheetsAsync(id);
+    invalidateAvailabilityCache();
     return result;
   }
 

@@ -89,6 +89,25 @@ export class AvailabilityService {
   }
 
   /**
+   * Camas reales (bed_code + disponibilidad) de UNA habitacion, para el
+   * selector de camas específicas del frontend (elegir cama puntual en
+   * vez de solo una cantidad). El genero no afecta ocupado/disponible
+   * (check_availability() ya lo aisla en is_gender_eligible, que acá no
+   * se usa), así que 'mixed' sirve como valor neutro igual que en
+   * checkRoomAvailability().
+   */
+  async getRoomBeds(
+    roomTypeId: string,
+    checkIn: string,
+    checkOut: string
+  ): Promise<Array<{ bedId: string; bedCode: string; isAvailable: boolean }>> {
+    const rows = await this.rawCheckAvailability(checkIn, checkOut, 'mixed');
+    return rows
+      .filter((r) => r.roomTypeId === roomTypeId)
+      .map((r) => ({ bedId: r.bedId, bedCode: r.bedCode, isAvailable: r.isAvailable }));
+  }
+
+  /**
    * Ocupacion dia por dia de UNA habitacion real (UUID), para el detalle de
    * disponibilidad. Delega en check_availability() dia por dia -- nunca
    * reimplementa la regla de solapamiento en JS (mismo criterio del resto

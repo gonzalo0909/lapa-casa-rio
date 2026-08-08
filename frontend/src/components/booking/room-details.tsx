@@ -64,9 +64,6 @@ export const RoomDetails: React.FC<RoomDetailsProps> = ({
           <span className="text-4xl">{room.isFlexible ? '🔄' : room.type === 'female' ? '👩' : '👥'}</span>
           <div>
             <h3 className="text-xl font-bold text-gray-900">{room.name}</h3>
-            <p className="text-sm text-gray-600">
-              {T('capacity', locale)}: {room.capacity} {room.capacity === 1 ? T('bed', locale) : T('beds', locale)}
-            </p>
           </div>
         </div>
 

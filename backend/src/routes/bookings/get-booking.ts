@@ -74,6 +74,7 @@ export const getBookingHandler = async (
         status: booking.status,
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
+        pendingExpiresAt: booking.pending_expires_at,
       },
       dates: {
         checkIn: booking.check_in_date,

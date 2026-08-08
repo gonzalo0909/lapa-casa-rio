@@ -13,7 +13,10 @@ interface PaymentBreakdownProps {
   groupDiscount?: number;
   seasonMultiplier?: number;
   baseAmount?: number;
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
 }
+
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
 
 export function PaymentBreakdown({
   amount,
@@ -22,10 +25,11 @@ export function PaymentBreakdown({
   currency,
   groupDiscount = 0,
   seasonMultiplier = 1,
-  baseAmount
+  baseAmount,
+  locale = 'pt'
 }: PaymentBreakdownProps) {
   const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('pt-BR', {
+    return new Intl.NumberFormat(BCP47[locale] ?? 'pt-BR', {
       style: 'currency',
       currency: currency === 'BRL' ? 'BRL' : 'USD'
     }).format(value);
@@ -37,13 +41,13 @@ export function PaymentBreakdown({
 
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Resumo do Pagamento</h3>
+      <h3 className="text-lg font-semibold mb-4">{T('title', locale)}</h3>
 
       <div className="space-y-3">
         {baseAmount && baseAmount !== amount && (
           <>
             <div className="flex justify-between items-center text-gray-600">
-              <span>Valor base</span>
+              <span>{T('baseAmount', locale)}</span>
               <span>{formatCurrency(baseAmount)}</span>
             </div>
 
@@ -53,7 +57,7 @@ export function PaymentBreakdown({
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd"/>
                   </svg>
-                  Desconto grupo ({(groupDiscount * 100).toFixed(0)}%)
+                  {T('groupDiscount', locale)} ({(groupDiscount * 100).toFixed(0)}%)
                 </span>
                 <span>-{formatCurrency(baseAmount * groupDiscount)}</span>
               </div>
@@ -65,7 +69,7 @@ export function PaymentBreakdown({
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd"/>
                   </svg>
-                  Alta temporada (+{((seasonMultiplier - 1) * 100).toFixed(0)}%)
+                  {T('seasonSurcharge', locale)} (+{((seasonMultiplier - 1) * 100).toFixed(0)}%)
                 </span>
                 <span>+{formatCurrency(baseAmount * (seasonMultiplier - 1))}</span>
               </div>
@@ -76,7 +80,7 @@ export function PaymentBreakdown({
         )}
 
         <div className="flex justify-between items-center font-semibold text-lg">
-          <span>Valor total</span>
+          <span>{T('totalAmount', locale)}</span>
           <span>{formatCurrency(amount)}</span>
         </div>
 
@@ -85,38 +89,30 @@ export function PaymentBreakdown({
         <div className="bg-blue-50 rounded-lg p-4 space-y-3">
           <div className="flex justify-between items-center">
             <div>
-              <p className="font-medium text-blue-900">Depósito inicial</p>
-              <p className="text-sm text-blue-700">
-                {depositPercentage.toFixed(0)}% do valor total
-              </p>
+              <p className="font-medium text-blue-900">{T('depositLabel', locale)}</p>
+              <p className="text-sm text-blue-700">{depositPercentage.toFixed(0)}% {T('ofTotal', locale)}</p>
             </div>
-            <span className="text-xl font-bold text-blue-900">
-              {formatCurrency(depositAmount)}
-            </span>
+            <span className="text-xl font-bold text-blue-900">{formatCurrency(depositAmount)}</span>
           </div>
 
           <div className="text-xs text-blue-700 space-y-1">
-            <p>• Pague agora para confirmar sua reserva</p>
-            <p>• Reembolsável conforme política de cancelamento</p>
+            <p>• {T('depositNote1', locale)}</p>
+            <p>• {T('depositNote2', locale)}</p>
           </div>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4 space-y-2">
           <div className="flex justify-between items-center">
             <div>
-              <p className="font-medium text-gray-900">Saldo restante</p>
-              <p className="text-sm text-gray-600">
-                {(100 - depositPercentage).toFixed(0)}% do valor total
-              </p>
+              <p className="font-medium text-gray-900">{T('remainingLabel', locale)}</p>
+              <p className="text-sm text-gray-600">{(100 - depositPercentage).toFixed(0)}% {T('ofTotal', locale)}</p>
             </div>
-            <span className="text-xl font-bold text-gray-900">
-              {formatCurrency(remainingAmount)}
-            </span>
+            <span className="text-xl font-bold text-gray-900">{formatCurrency(remainingAmount)}</span>
           </div>
 
           <div className="text-xs text-gray-600 space-y-1">
-            <p>• Será cobrado 7 dias antes do check-in</p>
-            <p>• Mesmo cartão usado no depósito</p>
+            <p>• {T('remainingNote1', locale)}</p>
+            <p>• {T('remainingNote2', locale)}</p>
           </div>
         </div>
 
@@ -126,9 +122,55 @@ export function PaymentBreakdown({
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
           </svg>
-          <span>Pagamento 100% seguro e criptografado</span>
+          <span>{T('secureNote', locale)}</span>
         </div>
       </div>
     </Card>
   );
+}
+
+function T(key: string, locale: string): string {
+  const t: Record<string, Record<string, string>> = {
+    pt: {
+      title: 'Resumo do Pagamento', baseAmount: 'Valor base', groupDiscount: 'Desconto grupo',
+      seasonSurcharge: 'Alta temporada', totalAmount: 'Valor total', depositLabel: 'Depósito inicial',
+      ofTotal: 'do valor total', depositNote1: 'Pague agora para confirmar sua reserva',
+      depositNote2: 'Reembolsável conforme política de cancelamento', remainingLabel: 'Saldo restante',
+      remainingNote1: 'Será cobrado 7 dias antes do check-in', remainingNote2: 'Mesmo cartão usado no depósito',
+      secureNote: 'Pagamento 100% seguro e criptografado'
+    },
+    es: {
+      title: 'Resumen del Pago', baseAmount: 'Monto base', groupDiscount: 'Descuento grupo',
+      seasonSurcharge: 'Temporada alta', totalAmount: 'Monto total', depositLabel: 'Depósito inicial',
+      ofTotal: 'del monto total', depositNote1: 'Pagá ahora para confirmar tu reserva',
+      depositNote2: 'Reembolsable según la política de cancelación', remainingLabel: 'Saldo restante',
+      remainingNote1: 'Se cobra 7 días antes del check-in', remainingNote2: 'Con la misma tarjeta del depósito',
+      secureNote: 'Pago 100% seguro y cifrado'
+    },
+    en: {
+      title: 'Payment Summary', baseAmount: 'Base amount', groupDiscount: 'Group discount',
+      seasonSurcharge: 'High season', totalAmount: 'Total amount', depositLabel: 'Initial deposit',
+      ofTotal: 'of the total', depositNote1: 'Pay now to confirm your booking',
+      depositNote2: 'Refundable per our cancellation policy', remainingLabel: 'Remaining balance',
+      remainingNote1: 'Charged 7 days before check-in', remainingNote2: 'Same card used for the deposit',
+      secureNote: '100% secure, encrypted payment'
+    },
+    fr: {
+      title: 'Résumé du Paiement', baseAmount: 'Montant de base', groupDiscount: 'Remise de groupe',
+      seasonSurcharge: 'Haute saison', totalAmount: 'Montant total', depositLabel: 'Acompte initial',
+      ofTotal: 'du montant total', depositNote1: 'Payez maintenant pour confirmer votre réservation',
+      depositNote2: 'Remboursable selon notre politique d’annulation', remainingLabel: 'Solde restant',
+      remainingNote1: 'Prélevé 7 jours avant l’arrivée', remainingNote2: 'Même carte que pour l’acompte',
+      secureNote: 'Paiement 100% sécurisé et chiffré'
+    },
+    de: {
+      title: 'Zahlungsübersicht', baseAmount: 'Grundbetrag', groupDiscount: 'Gruppenrabatt',
+      seasonSurcharge: 'Hochsaison', totalAmount: 'Gesamtbetrag', depositLabel: 'Erste Anzahlung',
+      ofTotal: 'des Gesamtbetrags', depositNote1: 'Jetzt zahlen, um Ihre Buchung zu bestätigen',
+      depositNote2: 'Erstattungsfähig gemäß unseren Stornierungsbedingungen', remainingLabel: 'Restbetrag',
+      remainingNote1: 'Abbuchung 7 Tage vor Check-in', remainingNote2: 'Gleiche Karte wie bei der Anzahlung',
+      secureNote: '100% sichere, verschlüsselte Zahlung'
+    }
+  };
+  return t[locale]?.[key] || key;
 }

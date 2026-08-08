@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { DateSelector } from './date-selector';
 import { GenderSelector } from './gender-selector';
@@ -60,6 +60,21 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [currentStep, setCurrentStep] = useState<BookingStep>(initialStep);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const bookingConfirmedRef = useRef(false);
+
+  // Limpia el store recién al desmontar (navegación real fuera del wizard),
+  // nunca en el mismo render en que se confirma -- limpiarlo antes dejaba
+  // el paso "summary" renderizando con dateRange/selectedRooms/guestDetails
+  // en null mientras router.push todavía no terminó de navegar, y esos
+  // valores se leen con `!` en el JSX de más abajo (crash real en
+  // producción al confirmar la reserva).
+  useEffect(() => {
+    return () => {
+      if (bookingConfirmedRef.current) {
+        clearBooking();
+      }
+    };
+  }, [clearBooking]);
 
   const {
     availableRooms,
@@ -189,11 +204,11 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         locale
       });
 
-      clearBooking();
+      bookingConfirmedRef.current = true;
       if (onComplete) {
         onComplete(bookingId);
       } else {
-        router.push(`/payment/${bookingId}`);
+        router.push(`/${locale}/payment/${bookingId}`);
       }
     } catch (err: any) {
       setError(err.message || T('errors.bookingFailed', locale));

@@ -240,10 +240,9 @@
   },
   "groups": {
     "title": "Especialistas em Grupos",
-    "subtitle": "A partir de 7 pessoas com descontos especiais",
-    "discount7to15": "10% de desconto para 7-15 camas",
-    "discount16to25": "15% de desconto para 16-25 camas",
-    "discount26plus": "20% de desconto para 26+ camas",
+    "subtitle": "A partir de 3 pessoas com descontos especiais",
+    "discount3to12": "10% de desconto para 3-12 pessoas",
+    "discount13plus": "15% de desconto para 13+ pessoas",
     "corporateGroups": "Grupos Corporativos",
     "friendsGroups": "Grupos de Amigos",
     "familyGroups": "Grupos Familiares",
@@ -334,7 +333,7 @@
     "roomsTitle": "Quartos - Lapa Casa Hostel",
     "roomsDescription": "Conheça nossos quartos. Dormitórios mistos e femininos com capacidade de 7 a 12 camas.",
     "groupsTitle": "Grupos - Lapa Casa Hostel",
-    "groupsDescription": "Especialistas em grupos. Descontos de até 20% para grupos de 7+ pessoas. Orçamentos personalizados."
+    "groupsDescription": "Especialistas em grupos. Descontos de até 15% para grupos de 3+ pessoas. Orçamentos personalizados."
   },
   "calendar": {
     "today": "Hoje",

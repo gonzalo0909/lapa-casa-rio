@@ -26,7 +26,7 @@ interface PricingCalculatorProps {
   dateRange: DateRange;
   rooms: Room[];
   groupDiscountTiers: GroupDiscountTier[];
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -261,6 +261,30 @@ function T(key: string, locale: string): string {
       depositNow: 'Deposit now',
       payLater: 'Pay later',
       paymentInfo: 'Remaining balance charged automatically 7 days before check-in'
+    },
+    fr: {
+      title: 'Résumé des Prix',
+      nights: 'Nuits',
+      beds: 'Lits',
+      basePrice: 'Prix de base',
+      subtotal: 'Sous-total',
+      totalPrice: 'Prix Total',
+      pricePerBed: 'Par lit',
+      depositNow: 'Acompte maintenant',
+      payLater: 'Payer plus tard',
+      paymentInfo: 'Solde restant débité automatiquement 7 jours avant l’arrivée'
+    },
+    de: {
+      title: 'Preisübersicht',
+      nights: 'Nächte',
+      beds: 'Betten',
+      basePrice: 'Grundpreis',
+      subtotal: 'Zwischensumme',
+      totalPrice: 'Gesamtpreis',
+      pricePerBed: 'Pro Bett',
+      depositNow: 'Anzahlung jetzt',
+      payLater: 'Später bezahlen',
+      paymentInfo: 'Restbetrag wird automatisch 7 Tage vor Check-in abgebucht'
     }
   };
   return t[locale]?.[key] || key;

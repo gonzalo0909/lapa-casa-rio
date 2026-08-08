@@ -1,10 +1,9 @@
 import { setRequestLocale } from 'next-intl/server';
 import { BookingEngine } from '@/components/booking/booking-engine';
-
-type Locale = 'pt' | 'es' | 'en';
+import { locales, defaultLocale, type Locale } from '@/i18n';
 
 export default function HomePage({ params }: { params: { locale: string } }) {
-  const locale = (['pt', 'es', 'en'].includes(params.locale) ? params.locale : 'pt') as Locale;
+  const locale = (locales.includes(params.locale as Locale) ? params.locale : defaultLocale) as Locale;
   setRequestLocale(locale);
 
   return (

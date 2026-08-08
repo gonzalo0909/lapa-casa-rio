@@ -29,7 +29,7 @@ interface RoomSelectorProps {
   groupDiscountTiers: GroupDiscountTier[];
   selectedRooms: Room[] | null;
   onChange: (rooms: Room[]) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   error?: string;
   className?: string;
 }
@@ -323,6 +323,44 @@ function T(key: string, locale: string): string {
       noAvailability: 'No Availability',
       tryOtherDates: 'Try other dates',
       importantInfo: 'Important Information'
+    },
+    fr: {
+      title: 'Choisissez votre Chambre',
+      subtitle: 'Sélectionnez un type de chambre et le nombre de personnes',
+      familyTwelve: 'Mixte (jusqu’à 24 personnes)',
+      familySeven: 'Mixte (jusqu’à 14 personnes)',
+      familyFemale: 'Femmes uniquement (jusqu’à 7 personnes)',
+      oneFamilyOnly: 'Un seul type de chambre peut être choisi par réservation.',
+      totalSelected: 'Total sélectionné',
+      bed: 'personne',
+      beds: 'personnes',
+      off: 'de réduction',
+      clearSelection: 'Effacer la sélection',
+      groupDiscountTitle: 'Remise de Groupe Active !',
+      discountApplied: 'Remise appliquée',
+      discountFrom: 'remise à partir de',
+      noAvailability: 'Aucune Disponibilité',
+      tryOtherDates: 'Essayez d’autres dates',
+      importantInfo: 'Informations Importantes'
+    },
+    de: {
+      title: 'Wählen Sie Ihr Zimmer',
+      subtitle: 'Wählen Sie einen Zimmertyp und die Personenanzahl',
+      familyTwelve: 'Gemischt (bis zu 24 Personen)',
+      familySeven: 'Gemischt (bis zu 14 Personen)',
+      familyFemale: 'Nur Frauen (bis zu 7 Personen)',
+      oneFamilyOnly: 'Pro Buchung kann nur ein Zimmertyp gewählt werden.',
+      totalSelected: 'Insgesamt ausgewählt',
+      bed: 'Person',
+      beds: 'Personen',
+      off: 'Rabatt',
+      clearSelection: 'Auswahl löschen',
+      groupDiscountTitle: 'Gruppenrabatt Aktiv!',
+      discountApplied: 'Rabatt angewendet',
+      discountFrom: 'Rabatt ab',
+      noAvailability: 'Keine Verfügbarkeit',
+      tryOtherDates: 'Andere Daten versuchen',
+      importantInfo: 'Wichtige Informationen'
     }
   };
   return t[locale]?.[key] || key;

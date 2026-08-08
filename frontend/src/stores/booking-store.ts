@@ -10,7 +10,7 @@ interface CreateBookingParams {
   guestDetails: GuestDetails;
   totalPrice: number;
   gender: BookingGender;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
 }
 
 interface BookingState {

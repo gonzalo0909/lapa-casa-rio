@@ -16,7 +16,7 @@ import type { DateRange } from '@/types/global';
 interface CalendarProps {
   value: DateRange | null;
   onChange: (dateRange: DateRange) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   minDate?: Date;
   maxDate?: Date;
   disabledDates?: Date[];
@@ -206,13 +206,21 @@ function getWeekDays(locale: string): string[] {
   const days: Record<string, string[]> = {
     pt: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
     es: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    fr: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+    de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
   };
   return (days[locale] || days.en)!;
 }
 
 function getLocaleString(locale: string): string {
-  return locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US';
+  switch (locale) {
+    case 'pt': return 'pt-BR';
+    case 'es': return 'es-ES';
+    case 'fr': return 'fr-FR';
+    case 'de': return 'de-DE';
+    default: return 'en-US';
+  }
 }
 
 function formatDate(date: Date, locale: string): string {
@@ -245,6 +253,20 @@ function T(key: string, locale: string): string {
       today: 'Today',
       selected: 'Selected',
       range: 'Range'
+    },
+    fr: {
+      prevMonth: 'Mois précédent',
+      nextMonth: 'Mois suivant',
+      today: 'Aujourd’hui',
+      selected: 'Sélectionné',
+      range: 'Période'
+    },
+    de: {
+      prevMonth: 'Vorheriger Monat',
+      nextMonth: 'Nächster Monat',
+      today: 'Heute',
+      selected: 'Ausgewählt',
+      range: 'Zeitraum'
     }
   };
   return t[locale]?.[key] || key;

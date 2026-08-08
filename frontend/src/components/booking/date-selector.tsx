@@ -21,7 +21,7 @@ import type { DateRange } from '@/types/global';
 interface DateSelectorProps {
   value: DateRange | null;
   onChange: (dateRange: DateRange) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   error?: string;
   minNights?: number;
   maxNights?: number;
@@ -173,10 +173,12 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   );
 };
 
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+
 function formatDate(date: Date, locale: string): string {
   const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
   return date.toLocaleDateString(
-    locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US',
+    BCP47[locale] ?? 'en-US',
     opts
   );
 }
@@ -239,6 +241,44 @@ function T(key: string, locale: string): string {
       minNightsError: 'Minimum {n} nights',
       maxNightsError: 'Maximum {n} nights',
       pastDateError: 'Invalid date'
+    },
+    fr: {
+      title: 'Choisissez vos Dates',
+      subtitle: 'Sélectionnez la période de votre séjour',
+      calendarMode: 'Calendrier',
+      manualMode: 'Manuel',
+      selectedDates: 'Dates sélectionnées',
+      night: 'nuit',
+      nights: 'nuits',
+      clear: 'Effacer',
+      clearDates: 'Effacer les dates',
+      importantInfo: 'Informations Importantes',
+      checkInTime: 'Arrivée',
+      checkOutTime: 'Départ',
+      minStay: 'Séjour minimum',
+      carnivalNote: 'Carnaval : minimum 5 nuits',
+      minNightsError: 'Minimum {n} nuits',
+      maxNightsError: 'Maximum {n} nuits',
+      pastDateError: 'Date invalide'
+    },
+    de: {
+      title: 'Wählen Sie Ihre Daten',
+      subtitle: 'Wählen Sie Ihren Aufenthaltszeitraum',
+      calendarMode: 'Kalender',
+      manualMode: 'Manuell',
+      selectedDates: 'Ausgewählte Daten',
+      night: 'Nacht',
+      nights: 'Nächte',
+      clear: 'Löschen',
+      clearDates: 'Daten löschen',
+      importantInfo: 'Wichtige Informationen',
+      checkInTime: 'Check-in',
+      checkOutTime: 'Check-out',
+      minStay: 'Mindestaufenthalt',
+      carnivalNote: 'Karneval: mindestens 5 Nächte',
+      minNightsError: 'Mindestens {n} Nächte',
+      maxNightsError: 'Höchstens {n} Nächte',
+      pastDateError: 'Ungültiges Datum'
     }
   };
   return t[locale]?.[key] || key;

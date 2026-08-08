@@ -21,7 +21,7 @@ interface GroupDiscountDisplayProps {
   discountPercent: number;
   discountAmount: number;
   tiers: GroupDiscountTier[];
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -132,6 +132,26 @@ function T(key: string, locale: string): string {
       nextTier: 'Next Tier',
       addMore: 'Add {beds} more beds',
       toUnlock: 'to unlock'
+    },
+    fr: {
+      title: 'Remise de Groupe',
+      bed: 'lit',
+      beds: 'lits',
+      discount: 'remise',
+      youSave: 'Vous économisez',
+      nextTier: 'Palier Suivant',
+      addMore: 'Ajoutez {beds} lits de plus',
+      toUnlock: 'pour débloquer'
+    },
+    de: {
+      title: 'Gruppenrabatt',
+      bed: 'Bett',
+      beds: 'Betten',
+      discount: 'Rabatt',
+      youSave: 'Sie sparen',
+      nextTier: 'Nächste Stufe',
+      addMore: 'Fügen Sie {beds} weitere Betten hinzu',
+      toUnlock: 'um freizuschalten'
     }
   };
   return t[locale]?.[key] || key;

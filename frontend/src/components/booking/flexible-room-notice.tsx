@@ -16,7 +16,7 @@ import { Alert } from '@/components/ui/alert';
 interface FlexibleRoomNoticeProps {
   roomName: string;
   hoursRemaining: number;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -131,6 +131,38 @@ function T(key: string, locale: string): string {
       benefit1: 'Guarantee your preference by booking now',
       benefit2: 'Same price for all room types',
       benefit3: 'Automatic conversion maximizes occupancy'
+    },
+    fr: {
+      urgentTitle: 'Chambre Flexible - Conversion Imminente',
+      infoTitle: 'Chambre Flexible Disponible',
+      roomName: 'Chambre',
+      description: 'Cette chambre est féminine par défaut, mais sera automatiquement convertie en mixte s’il n’y a pas de réservations féminines 48 heures avant l’arrivée.',
+      timeRemaining: 'Temps avant conversion',
+      conversionSoon: 'Conversion imminente ! Réservez vite si vous préférez une chambre féminine',
+      day: 'jour',
+      days: 'jours',
+      hour: 'heure',
+      hours: 'heures',
+      and: 'et',
+      benefit1: 'Garantissez votre préférence en réservant maintenant',
+      benefit2: 'Même prix pour tous les types de chambre',
+      benefit3: 'La conversion automatique maximise l’occupation'
+    },
+    de: {
+      urgentTitle: 'Flexibles Zimmer - Umwandlung bald',
+      infoTitle: 'Flexibles Zimmer Verfügbar',
+      roomName: 'Zimmer',
+      description: 'Dieses Zimmer ist standardmäßig für Frauen, wird aber automatisch gemischt, falls 48 Stunden vor Check-in keine Buchungen von Frauen vorliegen.',
+      timeRemaining: 'Zeit bis zur Umwandlung',
+      conversionSoon: 'Umwandlung steht bevor! Buchen Sie bald, wenn Sie ein Frauenzimmer bevorzugen',
+      day: 'Tag',
+      days: 'Tage',
+      hour: 'Stunde',
+      hours: 'Stunden',
+      and: 'und',
+      benefit1: 'Sichern Sie sich Ihre Präferenz durch sofortige Buchung',
+      benefit2: 'Gleicher Preis für alle Zimmertypen',
+      benefit3: 'Automatische Umwandlung maximiert die Auslastung'
     }
   };
   return t[locale]?.[key] || key;

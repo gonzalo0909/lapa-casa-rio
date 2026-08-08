@@ -19,7 +19,7 @@ interface PriceBreakdownProps {
   total: number;
   depositAmount: number;
   remainingAmount: number;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   showDeposit?: boolean;
   className?: string;
 }
@@ -163,6 +163,34 @@ function T(key: string, locale: string): string {
       payLater: 'later',
       autoChargeInfo: 'Balance charged automatically 7 days before check-in',
       transparentPricing: 'Transparent pricing, no hidden fees'
+    },
+    fr: {
+      subtotal: 'Sous-total',
+      seasonIncrease: 'Ajustement saisonnier',
+      seasonDiscount: 'Remise saisonnière',
+      subtotalAfterSeason: 'Sous-total après saison',
+      groupDiscount: 'Remise de groupe',
+      total: 'Total',
+      deposit: 'Acompte',
+      remaining: 'Solde restant',
+      payNow: 'maintenant',
+      payLater: 'plus tard',
+      autoChargeInfo: 'Solde débité automatiquement 7 jours avant l’arrivée',
+      transparentPricing: 'Tarifs transparents, sans frais cachés'
+    },
+    de: {
+      subtotal: 'Zwischensumme',
+      seasonIncrease: 'Saisonaler Aufschlag',
+      seasonDiscount: 'Saisonrabatt',
+      subtotalAfterSeason: 'Zwischensumme nach Saison',
+      groupDiscount: 'Gruppenrabatt',
+      total: 'Gesamt',
+      deposit: 'Anzahlung',
+      remaining: 'Restbetrag',
+      payNow: 'jetzt',
+      payLater: 'später',
+      autoChargeInfo: 'Restbetrag wird automatisch 7 Tage vor Check-in abgebucht',
+      transparentPricing: 'Transparente Preise, keine versteckten Gebühren'
     }
   };
   return t[locale]?.[key] || key;

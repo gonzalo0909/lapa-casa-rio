@@ -18,7 +18,7 @@ import type { DateRange } from '@/types/global';
 interface DateRangePickerProps {
   value: DateRange | null;
   onChange: (dateRange: DateRange) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   minDate?: Date;
   maxDate?: Date;
   className?: string;
@@ -217,10 +217,12 @@ function formatDateForInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+
 function formatDateDisplay(date: Date, locale: string): string {
   const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
   return date.toLocaleDateString(
-    locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US',
+    BCP47[locale] ?? 'en-US',
     opts
   );
 }
@@ -281,6 +283,40 @@ function T(key: string, locale: string): string {
       checkOutAfterCheckIn: 'Check-out must be after check-in',
       checkInTooEarly: 'Check-in cannot be in the past',
       checkOutTooLate: 'Check-out too far'
+    },
+    fr: {
+      checkIn: 'Arrivée',
+      checkOut: 'Départ',
+      checkInTime: 'Heure',
+      checkOutTime: 'Heure',
+      night: 'nuit',
+      nights: 'nuits',
+      clear: 'Effacer',
+      dateFormat: 'Format : JJ/MM/AAAA',
+      invalidCheckIn: 'Date d’arrivée invalide',
+      invalidCheckOut: 'Date de départ invalide',
+      invalidDates: 'Dates invalides',
+      checkInRequired: 'Sélectionnez d’abord la date d’arrivée',
+      checkOutAfterCheckIn: 'Le départ doit être après l’arrivée',
+      checkInTooEarly: 'L’arrivée ne peut pas être dans le passé',
+      checkOutTooLate: 'Départ trop éloigné'
+    },
+    de: {
+      checkIn: 'Check-in',
+      checkOut: 'Check-out',
+      checkInTime: 'Uhrzeit',
+      checkOutTime: 'Uhrzeit',
+      night: 'Nacht',
+      nights: 'Nächte',
+      clear: 'Löschen',
+      dateFormat: 'Format: TT.MM.JJJJ',
+      invalidCheckIn: 'Ungültiges Check-in-Datum',
+      invalidCheckOut: 'Ungültiges Check-out-Datum',
+      invalidDates: 'Ungültige Daten',
+      checkInRequired: 'Wählen Sie zuerst das Check-in-Datum',
+      checkOutAfterCheckIn: 'Check-out muss nach dem Check-in liegen',
+      checkInTooEarly: 'Check-in darf nicht in der Vergangenheit liegen',
+      checkOutTooLate: 'Check-out zu weit entfernt'
     }
   };
   return t[locale]?.[key] || key;

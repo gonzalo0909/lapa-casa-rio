@@ -11,7 +11,7 @@ interface PriceSummaryProps {
   dateRange: DateRange;
   rooms: Room[];
   totalPrice: number;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -179,6 +179,32 @@ function T(key: string, locale: string): string {
       remaining: 'Remaining Balance',
       payLater: 'in 7 days',
       paymentInfo: 'Balance charged automatically 7 days before check-in'
+    },
+    fr: {
+      title: 'Résumé du Paiement',
+      subtotal: 'Sous-total',
+      seasonIncrease: 'Ajustement saisonnier',
+      seasonDiscount: 'Remise saisonnière',
+      groupDiscount: 'Remise de groupe',
+      total: 'Total',
+      depositNow: 'Acompte Maintenant',
+      payNow: 'maintenant',
+      remaining: 'Solde Restant',
+      payLater: 'dans 7 jours',
+      paymentInfo: 'Solde débité automatiquement 7 jours avant l’arrivée'
+    },
+    de: {
+      title: 'Zahlungsübersicht',
+      subtotal: 'Zwischensumme',
+      seasonIncrease: 'Saisonaler Aufschlag',
+      seasonDiscount: 'Saisonrabatt',
+      groupDiscount: 'Gruppenrabatt',
+      total: 'Gesamt',
+      depositNow: 'Anzahlung Jetzt',
+      payNow: 'jetzt',
+      remaining: 'Restbetrag',
+      payLater: 'in 7 Tagen',
+      paymentInfo: 'Restbetrag wird automatisch 7 Tage vor Check-in abgebucht'
     }
   };
   return t[locale]?.[key] || key;

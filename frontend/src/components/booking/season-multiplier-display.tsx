@@ -18,7 +18,7 @@ interface SeasonMultiplierDisplayProps {
   adjustment: number;
   checkIn: Date;
   checkOut: Date;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -132,10 +132,12 @@ export const SeasonMultiplierDisplay: React.FC<SeasonMultiplierDisplayProps> = (
   );
 };
 
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+
 function formatDate(date: Date, locale: string): string {
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
   return date.toLocaleDateString(
-    locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US',
+    BCP47[locale] ?? 'en-US',
     opts
   );
 }
@@ -183,6 +185,34 @@ function T(key: string, locale: string): string {
       summerInfo: 'High season: December to March. Crowded beaches!',
       winterDeal: 'Winter Deal',
       winterInfo: 'Low season: June to September. Best prices!'
+    },
+    fr: {
+      carnival: 'Carnaval',
+      highSeason: 'Haute Saison',
+      mediumSeason: 'Saison Moyenne',
+      lowSeason: 'Basse Saison',
+      increase: 'Majoration',
+      discount: 'Remise',
+      carnivalSpecial: 'Spécial Carnaval',
+      carnivalInfo: 'Période de forte demande. Minimum 5 nuits obligatoire.',
+      summerPeak: 'Été à Rio',
+      summerInfo: 'Haute saison : décembre à mars. Plages bondées !',
+      winterDeal: 'Offre d’Hiver',
+      winterInfo: 'Basse saison : juin à septembre. Meilleurs prix !'
+    },
+    de: {
+      carnival: 'Karneval',
+      highSeason: 'Hochsaison',
+      mediumSeason: 'Zwischensaison',
+      lowSeason: 'Nebensaison',
+      increase: 'Aufschlag',
+      discount: 'Rabatt',
+      carnivalSpecial: 'Karneval-Special',
+      carnivalInfo: 'Zeit hoher Nachfrage. Mindestens 5 Nächte erforderlich.',
+      summerPeak: 'Sommer in Rio',
+      summerInfo: 'Hochsaison: Dezember bis März. Überfüllte Strände!',
+      winterDeal: 'Winterangebot',
+      winterInfo: 'Nebensaison: Juni bis September. Beste Preise!'
     }
   };
   return t[locale]?.[key] || key;

@@ -19,7 +19,7 @@ import type { GuestDetails } from '@/types/global';
 interface GuestFormProps {
   value: GuestDetails | null;
   onSubmit: (details: GuestDetails) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   error?: string;
   className?: string;
 }
@@ -286,6 +286,44 @@ function T(key: string, locale: string): string {
       info4: 'Confirmation sent by email',
       acceptTerms: 'I accept the',
       termsLink: 'terms and conditions'
+    },
+    fr: {
+      title: 'Informations du Client',
+      subtitle: 'Complétez vos données pour finaliser la réservation',
+      errorFullName: 'Le nom complet est requis',
+      errorFullNameFormat: 'Le nom ne doit contenir que des lettres',
+      errorEmail: 'L’e-mail est requis',
+      errorEmailFormat: 'E-mail invalide',
+      errorPhone: 'Le téléphone est requis',
+      errorPhoneFormat: 'Téléphone invalide',
+      errorCountry: 'Le pays est requis',
+      errorDocument: 'Le document est requis',
+      importantInfo: 'Informations Importantes',
+      info1: 'Arrivée : 14h00 - Départ : 11h00',
+      info2: 'Pièce d’identité obligatoire',
+      info3: 'Âge minimum : 18 ans',
+      info4: 'Confirmation envoyée par e-mail',
+      acceptTerms: 'J’accepte les',
+      termsLink: 'termes et conditions'
+    },
+    de: {
+      title: 'Gastinformationen',
+      subtitle: 'Füllen Sie Ihre Daten aus, um die Buchung abzuschließen',
+      errorFullName: 'Vollständiger Name ist erforderlich',
+      errorFullNameFormat: 'Name darf nur Buchstaben enthalten',
+      errorEmail: 'E-Mail ist erforderlich',
+      errorEmailFormat: 'Ungültige E-Mail',
+      errorPhone: 'Telefon ist erforderlich',
+      errorPhoneFormat: 'Ungültiges Telefon',
+      errorCountry: 'Land ist erforderlich',
+      errorDocument: 'Dokument ist erforderlich',
+      importantInfo: 'Wichtige Informationen',
+      info1: 'Check-in: 14:00 - Check-out: 11:00',
+      info2: 'Ausweisdokument erforderlich',
+      info3: 'Mindestalter: 18 Jahre',
+      info4: 'Bestätigung per E-Mail gesendet',
+      acceptTerms: 'Ich akzeptiere die',
+      termsLink: 'Allgemeinen Geschäftsbedingungen'
     }
   };
   return t[locale]?.[key] || key;

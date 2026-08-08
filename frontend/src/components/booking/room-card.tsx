@@ -23,7 +23,7 @@ interface RoomCardProps {
   dateRange: DateRange;
   selectedBeds: number;
   onSelectBeds: (beds: number) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -245,6 +245,42 @@ function T(key: string, locale: string): string {
       tryOtherDates: 'Try other dates',
       pricePerNight: 'Price per night',
       viewDetails: 'View details'
+    },
+    fr: {
+      bed: 'lit',
+      beds: 'lits',
+      mixed: 'Mixte',
+      female: 'Féminin',
+      male: 'Masculin',
+      flexible: 'Flexible',
+      available: 'Disponible',
+      fewBedsLeft: 'Peu de lits restants',
+      selectBeds: 'Sélectionner les lits',
+      decrease: 'Diminuer',
+      increase: 'Augmenter',
+      all: 'Tous',
+      fullyBooked: 'Complet',
+      tryOtherDates: 'Essayez d’autres dates',
+      pricePerNight: 'Prix par nuit',
+      viewDetails: 'Voir les détails'
+    },
+    de: {
+      bed: 'Bett',
+      beds: 'Betten',
+      mixed: 'Gemischt',
+      female: 'Weiblich',
+      male: 'Männlich',
+      flexible: 'Flexibel',
+      available: 'Verfügbar',
+      fewBedsLeft: 'Nur noch wenige Betten',
+      selectBeds: 'Betten auswählen',
+      decrease: 'Verringern',
+      increase: 'Erhöhen',
+      all: 'Alle',
+      fullyBooked: 'Ausgebucht',
+      tryOtherDates: 'Andere Daten versuchen',
+      pricePerNight: 'Preis pro Nacht',
+      viewDetails: 'Details ansehen'
     }
   };
   return t[locale]?.[key] || key;

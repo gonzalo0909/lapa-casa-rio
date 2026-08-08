@@ -18,7 +18,7 @@ import type { BookingGender } from '@/types/global';
 interface GenderSelectorProps {
   value: BookingGender;
   onChange: (gender: BookingGender) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -81,6 +81,18 @@ function T(key: string, locale: string): string {
       mixed: 'Mixed group',
       female: 'Women only',
       hint: 'This decides which rooms show up in the next step.'
+    },
+    fr: {
+      title: 'Qui va séjourner ?',
+      mixed: 'Groupe mixte',
+      female: 'Femmes uniquement',
+      hint: 'Cela détermine quelles chambres apparaissent à l’étape suivante.'
+    },
+    de: {
+      title: 'Wer übernachtet?',
+      mixed: 'Gemischte Gruppe',
+      female: 'Nur Frauen',
+      hint: 'Das legt fest, welche Zimmer im nächsten Schritt angezeigt werden.'
     }
   };
   return t[locale]?.[key] || key;

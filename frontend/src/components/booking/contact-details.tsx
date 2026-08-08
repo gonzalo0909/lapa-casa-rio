@@ -21,7 +21,7 @@ interface ContactDetailsProps {
   touched: Record<string, boolean>;
   onChange: (field: keyof GuestDetails, value: string) => void;
   onBlur: (field: keyof GuestDetails) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -233,6 +233,38 @@ function T(key: string, locale: string): string {
       documentHelp: 'Required for check-in',
       other: 'Other',
       privacyNote: 'Your data is protected and will only be used for the booking'
+    },
+    fr: {
+      title: 'Coordonnées',
+      fullName: 'Nom Complet',
+      fullNamePlaceholder: 'Jean Dupont',
+      email: 'E-mail',
+      emailPlaceholder: 'jean@email.com',
+      phone: 'Téléphone',
+      phonePlaceholder: '+55 21 99999-9999',
+      country: 'Pays',
+      selectCountry: 'Sélectionnez votre pays',
+      documentNumber: 'Pièce d’Identité',
+      documentPlaceholder: 'Passeport, carte d’identité',
+      documentHelp: 'Requis pour l’enregistrement',
+      other: 'Autre',
+      privacyNote: 'Vos données sont protégées et utilisées uniquement pour la réservation'
+    },
+    de: {
+      title: 'Kontaktdaten',
+      fullName: 'Vollständiger Name',
+      fullNamePlaceholder: 'Max Mustermann',
+      email: 'E-Mail',
+      emailPlaceholder: 'max@email.com',
+      phone: 'Telefon',
+      phonePlaceholder: '+55 21 99999-9999',
+      country: 'Land',
+      selectCountry: 'Land auswählen',
+      documentNumber: 'Ausweisdokument',
+      documentPlaceholder: 'Reisepass, Personalausweis',
+      documentHelp: 'Erforderlich für den Check-in',
+      other: 'Andere',
+      privacyNote: 'Ihre Daten sind geschützt und werden nur für die Buchung verwendet'
     }
   };
   return t[locale]?.[key] || key;

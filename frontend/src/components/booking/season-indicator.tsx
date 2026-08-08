@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 interface SeasonIndicatorProps {
   checkIn: Date;
   checkOut: Date;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -217,6 +217,22 @@ function T(key: string, locale: string): string {
       seasonCarnival: 'Carnival',
       carnival: 'Carnival',
       carnivalMinimum: 'Carnival requires minimum 5 nights'
+    },
+    fr: {
+      seasonHigh: 'Haute Saison',
+      seasonMedium: 'Saison Moyenne',
+      seasonLow: 'Basse Saison',
+      seasonCarnival: 'Carnaval',
+      carnival: 'Carnaval',
+      carnivalMinimum: 'Le Carnaval exige un minimum de 5 nuits'
+    },
+    de: {
+      seasonHigh: 'Hochsaison',
+      seasonMedium: 'Zwischensaison',
+      seasonLow: 'Nebensaison',
+      seasonCarnival: 'Karneval',
+      carnival: 'Karneval',
+      carnivalMinimum: 'Karneval erfordert mindestens 5 Nächte'
     }
   };
   return t[locale]?.[key] || key;

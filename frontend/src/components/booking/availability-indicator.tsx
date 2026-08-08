@@ -17,7 +17,7 @@ interface AvailabilityIndicatorProps {
   totalBeds: number;
   availableBeds: number;
   selectedBeds: number;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -179,6 +179,32 @@ function T(key: string, locale: string): string {
       available: 'Available',
       yourSelection: 'Your selection',
       hurryUp: 'Book soon! Few beds available'
+    },
+    fr: {
+      almostFull: 'Presque Complet',
+      limitedAvailability: 'Disponibilité Limitée',
+      goodAvailability: 'Bonne Disponibilité',
+      totalCapacity: 'Capacité Totale',
+      bed: 'lit',
+      beds: 'lits',
+      occupied: 'Occupés',
+      selected: 'Sélectionnés',
+      available: 'Disponibles',
+      yourSelection: 'Votre sélection',
+      hurryUp: 'Réservez vite ! Peu de lits disponibles'
+    },
+    de: {
+      almostFull: 'Fast Ausgebucht',
+      limitedAvailability: 'Begrenzte Verfügbarkeit',
+      goodAvailability: 'Gute Verfügbarkeit',
+      totalCapacity: 'Gesamtkapazität',
+      bed: 'Bett',
+      beds: 'Betten',
+      occupied: 'Belegt',
+      selected: 'Ausgewählt',
+      available: 'Verfügbar',
+      yourSelection: 'Ihre Auswahl',
+      hurryUp: 'Buchen Sie bald! Nur noch wenige Betten verfügbar'
     }
   };
   return t[locale]?.[key] || key;

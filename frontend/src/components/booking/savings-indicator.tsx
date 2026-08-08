@@ -15,7 +15,7 @@ import React from 'react';
 interface SavingsIndicatorProps {
   savings: number;
   originalPrice: number;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -127,6 +127,28 @@ function T(key: string, locale: string): string {
       benefit1: 'Best price',
       benefit2: 'Ideal group',
       benefit3: 'Value guaranteed'
+    },
+    fr: {
+      title: 'Vous Économisez !',
+      subtitle: 'Remise de groupe appliquée',
+      totalSavings: 'Économies totales',
+      off: 'DE RÉDUCTION',
+      originalPrice: 'Prix sans remise',
+      message: 'Réservation intelligente = plus d’économies',
+      benefit1: 'Meilleur prix',
+      benefit2: 'Groupe idéal',
+      benefit3: 'Valeur garantie'
+    },
+    de: {
+      title: 'Sie sparen!',
+      subtitle: 'Gruppenrabatt angewendet',
+      totalSavings: 'Gesamtersparnis',
+      off: 'RABATT',
+      originalPrice: 'Preis ohne Rabatt',
+      message: 'Clevere Buchung = mehr Ersparnis',
+      benefit1: 'Bester Preis',
+      benefit2: 'Ideale Gruppe',
+      benefit3: 'Garantierter Wert'
     }
   };
   return t[locale]?.[key] || key;

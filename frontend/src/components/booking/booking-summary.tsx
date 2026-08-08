@@ -13,7 +13,7 @@ interface BookingSummaryProps {
   rooms: Room[];
   guestDetails: GuestDetails;
   totalPrice: number;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -127,9 +127,11 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   );
 };
 
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+
 function formatDate(date: Date, locale: string): string {
   return date.toLocaleDateString(
-    locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US',
+    BCP47[locale] ?? 'en-US',
     { day: '2-digit', month: 'long', year: 'numeric' }
   );
 }
@@ -198,6 +200,48 @@ function T(key: string, locale: string): string {
       country: 'Country',
       specialRequests: 'Special requests',
       confirmation: 'Confirmation will be sent to your email'
+    },
+    fr: {
+      title: 'Résumé de la Réservation',
+      subtitle: 'Vérifiez tous les détails avant de confirmer',
+      dates: 'Dates',
+      checkIn: 'Arrivée',
+      checkOut: 'Départ',
+      totalNights: 'Total des nuits',
+      night: 'nuit',
+      nights: 'nuits',
+      rooms: 'Chambres',
+      bed: 'lit',
+      beds: 'lits',
+      totalBeds: 'Total des lits',
+      guest: 'Client',
+      name: 'Nom',
+      email: 'E-mail',
+      phone: 'Téléphone',
+      country: 'Pays',
+      specialRequests: 'Demandes spéciales',
+      confirmation: 'La confirmation sera envoyée à votre e-mail'
+    },
+    de: {
+      title: 'Buchungsübersicht',
+      subtitle: 'Überprüfen Sie alle Details vor der Bestätigung',
+      dates: 'Daten',
+      checkIn: 'Check-in',
+      checkOut: 'Check-out',
+      totalNights: 'Nächte insgesamt',
+      night: 'Nacht',
+      nights: 'Nächte',
+      rooms: 'Zimmer',
+      bed: 'Bett',
+      beds: 'Betten',
+      totalBeds: 'Betten insgesamt',
+      guest: 'Gast',
+      name: 'Name',
+      email: 'E-Mail',
+      phone: 'Telefon',
+      country: 'Land',
+      specialRequests: 'Besondere Wünsche',
+      confirmation: 'Die Bestätigung wird an Ihre E-Mail gesendet'
     }
   };
   return t[locale]?.[key] || key;

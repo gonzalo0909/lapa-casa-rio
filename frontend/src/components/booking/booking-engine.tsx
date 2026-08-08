@@ -28,7 +28,7 @@ import type { BookingStep, Room, DateRange } from '@/types/global';
  */
 interface BookingEngineProps {
   onComplete?: (bookingId: string) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   initialStep?: BookingStep;
   className?: string;
 }
@@ -321,6 +321,22 @@ function T(key: string, locale: string): string {
       'errors.roomRequired': 'Select room', 'errors.bedsRequired': 'Select beds',
       'errors.guestRequired': 'Fill details', 'errors.availabilityCheck': 'Availability error',
       'errors.bookingFailed': 'Booking failed', 'loading': 'Processing...'
+    },
+    fr: {
+      'steps.dates': 'Dates', 'steps.rooms': 'Chambres', 'steps.guest': 'Client', 'steps.summary': 'Résumé',
+      'buttons.back': 'Retour', 'buttons.next': 'Suivant', 'buttons.confirm': 'Confirmer',
+      'errors.datesRequired': 'Sélectionnez les dates', 'errors.invalidDates': 'Dates invalides',
+      'errors.roomRequired': 'Sélectionnez une chambre', 'errors.bedsRequired': 'Sélectionnez les lits',
+      'errors.guestRequired': 'Complétez les données', 'errors.availabilityCheck': 'Erreur de disponibilité',
+      'errors.bookingFailed': 'Échec du traitement', 'loading': 'Traitement en cours...'
+    },
+    de: {
+      'steps.dates': 'Daten', 'steps.rooms': 'Zimmer', 'steps.guest': 'Gast', 'steps.summary': 'Übersicht',
+      'buttons.back': 'Zurück', 'buttons.next': 'Weiter', 'buttons.confirm': 'Bestätigen',
+      'errors.datesRequired': 'Daten auswählen', 'errors.invalidDates': 'Ungültige Daten',
+      'errors.roomRequired': 'Zimmer auswählen', 'errors.bedsRequired': 'Betten auswählen',
+      'errors.guestRequired': 'Angaben ausfüllen', 'errors.availabilityCheck': 'Fehler bei der Verfügbarkeit',
+      'errors.bookingFailed': 'Verarbeitung fehlgeschlagen', 'loading': 'Wird verarbeitet...'
     }
   };
   return t[locale]?.[key] || key;

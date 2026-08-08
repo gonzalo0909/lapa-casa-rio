@@ -10,7 +10,7 @@ import type { GuestDetails } from '@/types/global';
 interface SpecialRequestsProps {
   formData: Partial<GuestDetails>;
   onChange: (field: keyof GuestDetails, value: string) => void;
-  locale?: 'pt' | 'es' | 'en';
+  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
 }
 
@@ -144,6 +144,42 @@ function T(key: string, locale: string): string {
       requestsPlaceholder: 'High floor, lower bunk, near bathroom...',
       characters: 'characters',
       requestsNote: 'We will do our best but cannot guarantee'
+    },
+    fr: {
+      title: 'Demandes Spéciales',
+      arrivalTime: 'Heure d’Arrivée Prévue',
+      selectTime: 'Sélectionnez l’heure',
+      arrivalHelp: 'Arrivée à partir de 14h00',
+      dietary: 'Restrictions Alimentaires',
+      selectDietary: 'Sélectionnez une option',
+      none: 'Aucune',
+      vegetarian: 'Végétarien',
+      vegan: 'Végan',
+      glutenFree: 'Sans gluten',
+      lactoseFree: 'Sans lactose',
+      other: 'Autre',
+      requests: 'Demandes Supplémentaires',
+      requestsPlaceholder: 'Étage élevé, lit du bas, proche des toilettes...',
+      characters: 'caractères',
+      requestsNote: 'Nous ferons de notre mieux, sans garantie'
+    },
+    de: {
+      title: 'Besondere Wünsche',
+      arrivalTime: 'Voraussichtliche Ankunftszeit',
+      selectTime: 'Uhrzeit wählen',
+      arrivalHelp: 'Check-in ab 14:00 Uhr',
+      dietary: 'Ernährungseinschränkungen',
+      selectDietary: 'Option wählen',
+      none: 'Keine',
+      vegetarian: 'Vegetarisch',
+      vegan: 'Vegan',
+      glutenFree: 'Glutenfrei',
+      lactoseFree: 'Laktosefrei',
+      other: 'Andere',
+      requests: 'Zusätzliche Wünsche',
+      requestsPlaceholder: 'Hohes Stockwerk, unteres Bett, nahe Badezimmer...',
+      characters: 'Zeichen',
+      requestsNote: 'Wir tun unser Bestes, können es aber nicht garantieren'
     }
   };
   return t[locale]?.[key] || key;

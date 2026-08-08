@@ -35,11 +35,16 @@ const getAllowedOrigins = (): string[] => {
 
   // Production: Parse from environment variable
   const origins = env.CORS_ORIGINS.split(',').map(origin => origin.trim());
-  
+
   return [
     'https://lapacasahostel.com',
     'https://www.lapacasahostel.com',
     'https://booking.lapacasahostel.com',
+    // El panel /admin se sirve desde el propio backend (mismo origen que
+    // APP_URL) -- sin esto, fetch() desde /admin/index.html manda
+    // Origin: <APP_URL> y el login queda bloqueado por CORS (ver login
+    // admin devolviendo 500 "Origin ... not allowed by CORS policy").
+    env.APP_URL,
     ...origins
   ].filter(origin => origin !== '*');
 };

@@ -248,19 +248,6 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-semibold text-gray-900 mb-2">{T('importantInfo', locale)}</h3>
-        <ul className="space-y-2 text-sm text-gray-600">
-          {families.map((family) => (
-            <li key={family.key}>• {T(family.labelKey, locale)}: R$ {family.members[0]!.basePrice.toFixed(0)}/{T('bed', locale)}</li>
-          ))}
-          {[...groupDiscountTiers].sort((a, b) => a.minBeds - b.minBeds).map((tier) => (
-            <li key={tier.minBeds}>
-              • {T('discountFrom', locale)} {tier.minBeds} {T('beds', locale)}: {Math.round(tier.percentage * 100)}%
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 };

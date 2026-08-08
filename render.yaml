@@ -136,8 +136,12 @@ services:
         value: 10000
       - key: NEXT_PUBLIC_SITE_URL
         value: https://lapa-casa-hostel-frontend.onrender.com
+      # lib/api.ts arma las rutas como `${NEXT_PUBLIC_API_URL}/availability/...`
+      # -- el backend real las expone bajo /api/v1 (ver backend/src/app.ts),
+      # asi que el prefijo tiene que venir incluido aca o cada llamada
+      # devuelve "Route not found".
       - key: NEXT_PUBLIC_API_URL
-        value: https://lapa-casa-hostel-api.onrender.com
+        value: https://lapa-casa-hostel-api.onrender.com/api/v1
       # Claves publicas/publishable -- seguras para exponer en el cliente,
       # a diferencia de STRIPE_SECRET_KEY/MP_ACCESS_TOKEN (esas solo viven
       # en el backend, ver arriba). Cargadas a mano en el dashboard.

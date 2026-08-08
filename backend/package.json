@@ -9,7 +9,7 @@
     "build": "tsc || true; tsc-alias && npm run copy-assets",
     "copy-assets": "mkdir -p dist/templates/emails dist/admin && cp -r src/templates/emails/. dist/templates/emails/ && cp -r src/admin/. dist/admin/",
     "migrate": "node database/scripts/migrate.js",
-    "start": "npm run migrate && node dist/server.js",
+    "start": "npm run migrate; node dist/server.js",
     "worker": "node dist/workers/index.js",
     "test": "jest",
     "test:watch": "jest --watch",

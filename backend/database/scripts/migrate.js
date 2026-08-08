@@ -14,6 +14,26 @@ const { pool } = require('./db');
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
 
+// La base de produccion (Supabase) tenia el esquema completo de 0001 a
+// 0008 desde antes de que este script existiera -- se cargo a mano en su
+// momento, sin pasar por schema_migrations. La primera vez que este
+// script corrio contra esa base, encontro schema_migrations vacia e
+// intento reaplicar 0001 desde cero, chocando con tipos/tablas que ya
+// existian ("type booking_status already exists"). Si la tabla de
+// bookkeeping esta vacia pero el esquema real ya existe (room_types),
+// se asume que todo lo anterior a 0009 ya esta aplicado y se marca como
+// tal sin volver a correrlo -- recien de ahi en mas corre normalmente.
+const PRE_EXISTING_MIGRATIONS = [
+  '0001_extensions_and_enums.sql',
+  '0002_tables.sql',
+  '0003_exclude_constraint.sql',
+  '0004_pricing_functions.sql',
+  '0005_availability_and_locks.sql',
+  '0006_triggers.sql',
+  '0007_procedures.sql',
+  '0008_fix_integer_params.sql',
+];
+
 async function ensureMigrationsTable(client) {
   await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -22,6 +42,24 @@ async function ensureMigrationsTable(client) {
       applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+
+  const { rows } = await client.query('SELECT count(*)::int AS n FROM schema_migrations');
+  if (rows[0].n > 0) return;
+
+  const { rows: roomTypeRows } = await client.query(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables WHERE table_name = 'room_types'
+    ) AS exists
+  `);
+  if (!roomTypeRows[0].exists) return;
+
+  for (const filename of PRE_EXISTING_MIGRATIONS) {
+    await client.query(
+      'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING',
+      [filename]
+    );
+    console.log(`  bootstrap  ${filename} (esquema ya existia, marcada como aplicada)`);
+  }
 }
 
 async function getAppliedMigrations(client) {

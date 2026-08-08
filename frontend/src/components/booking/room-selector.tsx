@@ -7,13 +7,18 @@ import { RoomCard } from './room-card';
 import { AvailabilityIndicator } from './availability-indicator';
 import { FlexibleRoomNotice } from './flexible-room-notice';
 import { Alert } from '@/components/ui/alert';
-import type { BookingGender, DateRange, Room, RoomAvailability } from '@/types/global';
+import type { BookingGender, DateRange, GroupDiscountTier, Room, RoomAvailability } from '@/types/global';
 
 /**
  * RoomSelector Component
  *
- * Displays available rooms and handles room/bed selection
- * Shows availability, pricing, and flexible room logic
+ * El huésped elige UNA sola "familia" de cuarto -- no se pueden combinar
+ * dos familias en la misma reserva (pedido explícito del dueño). Grupo
+ * mixto ve 2 familias (12 y 7 camas); solo-mujeres ve esas 2 más la
+ * familia de mujeres (Flexible 7). Cada familia puede tener 2 cuartos
+ * reales atrás (ej. Mixto 12A + 12B) para grupos que superan la
+ * capacidad de un solo cuarto -- la asignación entre esos cuartos
+ * reales es automática, invisible para el huésped.
  *
  * @component
  */
@@ -21,6 +26,7 @@ interface RoomSelectorProps {
   dateRange: DateRange;
   gender: BookingGender;
   availableRooms: RoomAvailability[];
+  groupDiscountTiers: GroupDiscountTier[];
   selectedRooms: Room[] | null;
   onChange: (rooms: Room[]) => void;
   locale?: 'pt' | 'es' | 'en';
@@ -28,91 +34,127 @@ interface RoomSelectorProps {
   className?: string;
 }
 
+interface Family {
+  key: string;
+  labelKey: string;
+  members: RoomAvailability[];
+}
+
+function buildFamilies(rooms: RoomAvailability[], gender: BookingGender): Family[] {
+  const byName = (a: RoomAvailability, b: RoomAvailability) => a.name.localeCompare(b.name);
+  const twelve = rooms.filter((r) => r.capacity === 12).sort(byName);
+  const seven = rooms.filter((r) => r.capacity === 7 && !r.isFlexible).sort(byName);
+  const female = rooms.filter((r) => r.isFlexible);
+
+  const families: Family[] = [];
+  if (twelve.length > 0) {
+    families.push({ key: 'twelve', labelKey: 'familyTwelve', members: twelve });
+  }
+  if (seven.length > 0) {
+    families.push({ key: 'seven', labelKey: 'familySeven', members: seven });
+  }
+  if (gender === 'female' && female.length > 0) {
+    families.push({ key: 'female', labelKey: 'familyFemale', members: female });
+  }
+  return families;
+}
+
+function familyToCard(family: Family, locale: string): RoomAvailability {
+  const totalCapacity = family.members.reduce((s, m) => s + m.capacity, 0);
+  const totalAvailable = family.members.reduce((s, m) => s + m.availableBeds, 0);
+  const primary = family.members[0]!;
+  return {
+    id: family.key,
+    code: family.key,
+    name: T(family.labelKey, locale),
+    type: family.key === 'female' ? 'female' : 'mixed',
+    capacity: totalCapacity,
+    availableBeds: totalAvailable,
+    basePrice: primary.basePrice,
+    isFlexible: family.key === 'female',
+  };
+}
+
+/** Reparte `desiredBeds` entre los cuartos reales de la familia, en orden de preferencia (ej. llena 12A antes de usar 12B). */
+function allocateFamily(family: Family, desiredBeds: number): Room[] {
+  let remaining = desiredBeds;
+  const result: Room[] = [];
+  for (const member of family.members) {
+    if (remaining <= 0) {
+      break;
+    }
+    const take = Math.min(remaining, member.availableBeds);
+    if (take > 0) {
+      result.push({
+        id: member.id,
+        name: member.name,
+        type: member.type,
+        bedsCount: take,
+        capacity: member.capacity,
+        basePrice: member.basePrice,
+        isFlexible: member.isFlexible,
+      });
+      remaining -= take;
+    }
+  }
+  return result;
+}
+
+function groupDiscountFor(beds: number, tiers: GroupDiscountTier[]): number {
+  const applicable = tiers.filter((t) => beds >= t.minBeds).sort((a, b) => b.minBeds - a.minBeds);
+  return applicable[0]?.percentage ?? 0;
+}
+
 export const RoomSelector: React.FC<RoomSelectorProps> = ({
   dateRange,
   gender,
   availableRooms,
+  groupDiscountTiers,
   selectedRooms,
   onChange,
   locale = 'pt',
   error,
   className = ''
 }) => {
-  const [localSelections, setLocalSelections] = useState<Map<string, number>>(
-    new Map(selectedRooms?.map(r => [r.id, r.bedsCount]) || [])
+  const families = useMemo(() => buildFamilies(availableRooms, gender), [availableRooms, gender]);
+
+  const initialFamily = useMemo(() => {
+    if (!selectedRooms || selectedRooms.length === 0) {
+      return null;
+    }
+    const selectedIds = new Set(selectedRooms.map((r) => r.id));
+    return families.find((f) => f.members.some((m) => selectedIds.has(m.id)))?.key ?? null;
+  }, [selectedRooms, families]);
+
+  const [selectedFamilyKey, setSelectedFamilyKey] = useState<string | null>(initialFamily);
+  const [bedsCount, setBedsCount] = useState<number>(
+    selectedRooms?.reduce((sum, r) => sum + r.bedsCount, 0) ?? 0
   );
 
-  const totalSelectedBeds = useMemo(() => {
-    return Array.from(localSelections.values()).reduce((sum, beds) => sum + beds, 0);
-  }, [localSelections]);
+  const totalSelectedBeds = selectedFamilyKey ? bedsCount : 0;
+  const groupDiscount = groupDiscountFor(totalSelectedBeds, groupDiscountTiers);
+  const hasGroupDiscount = groupDiscount > 0;
 
-  // Cuartos mixtos son elegibles para cualquiera; el cuarto solo-mujeres
-  // (isFlexible) solo aparece si el huesped eligio "solo mujeres" en el
-  // primer paso (ver GenderSelector).
-  const visibleRooms = useMemo(() => {
-    return availableRooms.filter((r) => gender === 'female' || !r.isFlexible);
-  }, [availableRooms, gender]);
+  const handleFamilySelection = useCallback(
+    (familyKey: string, beds: number) => {
+      setSelectedFamilyKey(beds > 0 ? familyKey : null);
+      setBedsCount(beds);
 
-  // El cuarto de 12 siempre es mas barato por cama que el de 7 (regla de
-  // negocio manual, ver room_types.base_price) -- ordenar por precio
-  // ascendente muestra esa opcion primero, como pidio el dueno.
-  const sortedRooms = useMemo(() => {
-    return [...visibleRooms].sort((a, b) => {
-      if (a.availableBeds === 0 && b.availableBeds > 0) {return 1;}
-      if (a.availableBeds > 0 && b.availableBeds === 0) {return -1;}
-      return a.basePrice - b.basePrice;
-    });
-  }, [visibleRooms]);
-
-  // Descuento por grupo: es por cuarto (group_discount_min_beds/percentage
-  // de room_types, editable desde el admin), no un tramo global fijo --
-  // ver cada cuarto seleccionado contra su propio umbral.
-  const roomsWithDiscount = useMemo(() => {
-    return Array.from(localSelections.entries())
-      .map(([id, beds]) => {
-        const room = availableRooms.find((r) => r.id === id);
-        if (!room || beds < room.groupDiscountMinBeds) {return null;}
-        return { name: room.name, percentage: room.groupDiscountPercentage };
-      })
-      .filter((r): r is { name: string; percentage: number } => r !== null);
-  }, [localSelections, availableRooms]);
-  const hasGroupDiscount = roomsWithDiscount.length > 0;
-
-  const handleRoomSelection = useCallback(
-    (roomId: string, bedsCount: number) => {
-      const newSelections = new Map(localSelections);
-
-      if (bedsCount === 0) {
-        newSelections.delete(roomId);
-      } else {
-        newSelections.set(roomId, bedsCount);
-      }
-
-      setLocalSelections(newSelections);
-
-      const rooms: Room[] = Array.from(newSelections.entries()).map(([id, beds]) => {
-        const roomData = availableRooms.find(r => r.id === id);
-        return {
-          id,
-          name: roomData?.name || '',
-          type: roomData?.type || 'mixed',
-          bedsCount: beds,
-          capacity: roomData?.capacity || 0,
-          basePrice: roomData?.basePrice || 60,
-          isFlexible: roomData?.isFlexible || false
-        };
-      });
-
+      const family = families.find((f) => f.key === familyKey);
+      const rooms = beds > 0 && family ? allocateFamily(family, beds) : [];
       onChange(rooms);
     },
-    [localSelections, availableRooms, onChange]
+    [families, onChange]
   );
 
-  const flexibleRoom = visibleRooms.find(r => r.isFlexible);
+  const flexibleRoom = availableRooms.find((r) => r.isFlexible && gender === 'female');
   const hoursUntilCheckIn = dateRange.checkIn
     ? Math.floor((dateRange.checkIn.getTime() - Date.now()) / (1000 * 60 * 60))
     : 0;
   const showFlexibleNotice = flexibleRoom && hoursUntilCheckIn <= 48 && hoursUntilCheckIn > 0;
+
+  const totalCapacity = families.reduce((sum, f) => sum + f.members.reduce((s, m) => s + m.capacity, 0), 0);
+  const totalAvailable = families.reduce((sum, f) => sum + f.members.reduce((s, m) => s + m.availableBeds, 0), 0);
 
   return (
     <div className={`room-selector ${className}`}>
@@ -138,8 +180,8 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
 
       <div className="mb-6">
         <AvailabilityIndicator
-          totalBeds={visibleRooms.reduce((sum, r) => sum + r.capacity, 0)}
-          availableBeds={visibleRooms.reduce((sum, r) => sum + r.availableBeds, 0)}
+          totalBeds={totalCapacity}
+          availableBeds={totalAvailable}
           selectedBeds={totalSelectedBeds}
           locale={locale}
         />
@@ -151,30 +193,28 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
             <span className="text-2xl">🎉</span>
             <div>
               <p className="font-semibold">{T('groupDiscountTitle', locale)}</p>
-              {roomsWithDiscount.map((r) => (
-                <p key={r.name} className="text-sm">
-                  {r.name}: {Math.round(r.percentage * 100)}% {T('off', locale)}
-                </p>
-              ))}
+              <p className="text-sm">{Math.round(groupDiscount * 100)}% {T('off', locale)}</p>
             </div>
           </div>
         </Alert>
       )}
 
+      <p className="text-sm text-gray-600 mb-3">{T('oneFamilyOnly', locale)}</p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {sortedRooms.map(room => (
+        {families.map((family) => (
           <RoomCard
-            key={room.id}
-            room={room}
+            key={family.key}
+            room={familyToCard(family, locale)}
             dateRange={dateRange}
-            selectedBeds={localSelections.get(room.id) || 0}
-            onSelectBeds={(beds) => handleRoomSelection(room.id, beds)}
+            selectedBeds={selectedFamilyKey === family.key ? bedsCount : 0}
+            onSelectBeds={(beds) => handleFamilySelection(family.key, beds)}
             locale={locale}
           />
         ))}
       </div>
 
-      {sortedRooms.length === 0 && (
+      {families.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">😔</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -199,10 +239,7 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
               )}
             </div>
             <button
-              onClick={() => {
-                setLocalSelections(new Map());
-                onChange([]);
-              }}
+              onClick={() => handleFamilySelection(selectedFamilyKey ?? '', 0)}
               className="text-sm text-red-600 hover:text-red-800 font-medium"
             >
               {T('clearSelection', locale)}
@@ -214,10 +251,12 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
         <h3 className="font-semibold text-gray-900 mb-2">{T('importantInfo', locale)}</h3>
         <ul className="space-y-2 text-sm text-gray-600">
-          {sortedRooms.map((room) => (
-            <li key={room.id}>
-              • {room.name}: R$ {room.basePrice.toFixed(0)}/{T('bed', locale)} — {T('discountFrom', locale)}{' '}
-              {room.groupDiscountMinBeds} {T('beds', locale)} ({Math.round(room.groupDiscountPercentage * 100)}%)
+          {families.map((family) => (
+            <li key={family.key}>• {T(family.labelKey, locale)}: R$ {family.members[0]!.basePrice.toFixed(0)}/{T('bed', locale)}</li>
+          ))}
+          {[...groupDiscountTiers].sort((a, b) => a.minBeds - b.minBeds).map((tier) => (
+            <li key={tier.minBeds}>
+              • {T('discountFrom', locale)} {tier.minBeds} {T('beds', locale)}: {Math.round(tier.percentage * 100)}%
             </li>
           ))}
         </ul>
@@ -229,11 +268,15 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
-      title: 'Escolha seus Quartos',
-      subtitle: 'Selecione os quartos e quantidade de camas',
+      title: 'Escolha seu Quarto',
+      subtitle: 'Selecione um tipo de quarto e a quantidade de pessoas',
+      familyTwelve: 'Misto (até 24 pessoas)',
+      familySeven: 'Misto (até 14 pessoas)',
+      familyFemale: 'Só mulheres (até 7 pessoas)',
+      oneFamilyOnly: 'Só se pode escolher um tipo de quarto por reserva.',
       totalSelected: 'Total selecionado',
-      bed: 'cama',
-      beds: 'camas',
+      bed: 'pessoa',
+      beds: 'pessoas',
       off: 'de desconto',
       clearSelection: 'Limpar seleção',
       groupDiscountTitle: 'Desconto para Grupos Ativo!',
@@ -244,11 +287,15 @@ function T(key: string, locale: string): string {
       importantInfo: 'Informações Importantes'
     },
     es: {
-      title: 'Elige tus Habitaciones',
-      subtitle: 'Selecciona las habitaciones y cantidad de camas',
+      title: 'Elige tu Habitación',
+      subtitle: 'Selecciona un tipo de habitación y la cantidad de personas',
+      familyTwelve: 'Mixto (hasta 24 personas)',
+      familySeven: 'Mixto (hasta 14 personas)',
+      familyFemale: 'Solo mujeres (hasta 7 personas)',
+      oneFamilyOnly: 'Solo se puede elegir un tipo de habitación por reserva.',
       totalSelected: 'Total seleccionado',
-      bed: 'cama',
-      beds: 'camas',
+      bed: 'persona',
+      beds: 'personas',
       off: 'de descuento',
       clearSelection: 'Limpiar selección',
       groupDiscountTitle: '¡Descuento para Grupos Activo!',
@@ -259,11 +306,15 @@ function T(key: string, locale: string): string {
       importantInfo: 'Información Importante'
     },
     en: {
-      title: 'Choose your Rooms',
-      subtitle: 'Select rooms and number of beds',
+      title: 'Choose your Room',
+      subtitle: 'Select a room type and number of people',
+      familyTwelve: 'Mixed (up to 24 people)',
+      familySeven: 'Mixed (up to 14 people)',
+      familyFemale: 'Women only (up to 7 people)',
+      oneFamilyOnly: 'Only one room type can be chosen per booking.',
       totalSelected: 'Total selected',
-      bed: 'bed',
-      beds: 'beds',
+      bed: 'person',
+      beds: 'people',
       off: 'off',
       clearSelection: 'Clear selection',
       groupDiscountTitle: 'Group Discount Active!',

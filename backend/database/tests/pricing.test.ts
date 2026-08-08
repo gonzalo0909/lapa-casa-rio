@@ -29,24 +29,26 @@ describe('pricingService: wrapper delgado sobre las funciones SQL (bit a bit)', 
 
   it.each(seasonDates)('calculateGroupDiscount coincide con calculate_group_discount() SQL para cada tramo de camas (fecha de referencia %s no afecta esta funcion)', async () => {
     for (const beds of bedCounts) {
-      const service = await pricingService.calculateGroupDiscount(roomId, beds);
-      const { rows } = await pool.query(`SELECT calculate_group_discount($1::uuid, $2) AS d`, [roomId, beds]);
+      const service = await pricingService.calculateGroupDiscount(beds);
+      const { rows } = await pool.query(`SELECT calculate_group_discount($1) AS d`, [beds]);
       expect(service.discount).toBe(parseFloat(rows[0].d));
     }
   });
 
-  it.each(seasonDates)('calculateFinalPrice(%s) coincide con calculate_final_price() SQL', async (checkIn) => {
+  it.each(seasonDates)('calculateFinalPrice(%s) coincide con calculate_final_price() + calculate_group_discount() SQL', async (checkIn) => {
     const checkOut = new Date(new Date(checkIn).getTime() + 3 * 86400000).toISOString().slice(0, 10);
     for (const beds of bedCounts) {
       const nights = 3;
       const bookingDate = new Date().toISOString().slice(0, 10);
 
       const service = await pricingService.calculateFinalPrice(checkIn, checkOut, beds, roomId);
-      const { rows } = await pool.query(
-        `SELECT calculate_final_price($1::uuid, $2::numeric, $3, $4, $5::date, $6::date) AS p`,
-        [roomId, roomBasePrice, nights, beds, checkIn, bookingDate]
+      const { rows: priceRows } = await pool.query(
+        `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
+        [roomBasePrice, nights, beds, checkIn, bookingDate]
       );
-      expect(service.totalPrice).toBe(parseFloat(rows[0].p));
+      const { rows: discountRows } = await pool.query(`SELECT calculate_group_discount($1) AS d`, [beds]);
+      const expected = Math.round(parseFloat(priceRows[0].p) * (1 - parseFloat(discountRows[0].d)) * 100) / 100;
+      expect(service.totalPrice).toBe(expected);
     }
   });
 
@@ -97,9 +99,10 @@ describe('pricingService: wrapper delgado sobre las funciones SQL (bit a bit)', 
       totalBeds: 2
     });
     const { rows: sqlRows } = await pool.query(
-      `SELECT calculate_final_price($1::uuid, $2::numeric, 2, 2, $3::date, $4::date) AS p`,
-      [roomId, roomRows[0].base_price, checkIn, bookingDate]
+      `SELECT calculate_final_price($1::numeric, 2, 2, $2::date, $3::date) AS p`,
+      [roomRows[0].base_price, checkIn, bookingDate]
     );
+    // 2 camas no llega al minimo del tramo mas chico (3) -- sin descuento de grupo.
     expect(result.totalPrice).toBe(parseFloat(sqlRows[0].p));
   });
 });

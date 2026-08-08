@@ -62,6 +62,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
   const {
     availableRooms,
+    groupDiscountTiers,
     isLoading,
     error: availabilityError,
     checkAvailability
@@ -244,6 +245,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
             dateRange={dateRange!}
             gender={gender}
             availableRooms={availableRooms}
+            groupDiscountTiers={groupDiscountTiers}
             selectedRooms={selectedRooms}
             onChange={handleRoomSelection}
             locale={locale}

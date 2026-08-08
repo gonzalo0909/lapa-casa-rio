@@ -26,8 +26,12 @@ export interface RoomAvailability {
   availableBeds: number;
   basePrice: number;
   isFlexible: boolean;
-  groupDiscountMinBeds: number;
-  groupDiscountPercentage: number;
+}
+
+/** Tramo de descuento por grupo -- global, se evalúa sobre el total de camas de toda la reserva (no por cuarto). */
+export interface GroupDiscountTier {
+  minBeds: number;
+  percentage: number;
 }
 
 /** Habitación + cantidad de camas elegidas por el huésped durante la reserva. */

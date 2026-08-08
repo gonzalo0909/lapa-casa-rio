@@ -97,8 +97,6 @@ interface RoomTypeRow {
   default_gender: string;
   is_flexible: boolean;
   base_price: string;
-  group_discount_min_beds: number;
-  group_discount_percentage: string;
 }
 
 export interface RoomSummary {
@@ -110,8 +108,6 @@ export interface RoomSummary {
   isFlexible: boolean;
   basePrice: number;
   currency: 'BRL';
-  groupDiscountMinBeds: number;
-  groupDiscountPercentage: number;
   description: { en: string; pt: string; es: string };
   amenities: string[];
   floor: number;
@@ -119,8 +115,7 @@ export interface RoomSummary {
   flexibleRoomPolicy?: unknown;
 }
 
-const ROOM_TYPE_COLUMNS = `id, code, name, capacity, default_gender, is_flexible, base_price,
-       group_discount_min_beds, group_discount_percentage`;
+const ROOM_TYPE_COLUMNS = `id, code, name, capacity, default_gender, is_flexible, base_price`;
 
 const mergeContent = (r: RoomTypeRow): RoomSummary => {
   const content = ROOM_CONTENT[r.code] ?? {
@@ -138,8 +133,6 @@ const mergeContent = (r: RoomTypeRow): RoomSummary => {
     isFlexible: r.is_flexible,
     basePrice: parseFloat(r.base_price),
     currency: 'BRL',
-    groupDiscountMinBeds: r.group_discount_min_beds,
-    groupDiscountPercentage: parseFloat(r.group_discount_percentage),
     ...content
   };
 };
@@ -209,17 +202,15 @@ export class RoomService {
     return predictions;
   }
 
-  /** Actualiza configuracion editable de una habitacion: precio base, flexible, y el descuento por grupo de ese cuarto. */
+  /** Actualiza configuracion editable de una habitacion: precio base y flexible. */
   async updateRoomSettings(
     roomId: string,
-    settings: { basePrice?: number; isFlexible?: boolean; groupDiscountMinBeds?: number; groupDiscountPercentage?: number }
+    settings: { basePrice?: number; isFlexible?: boolean }
   ): Promise<RoomSummary | null> {
     const sets: string[] = [];
     const params: unknown[] = [roomId];
     if (settings.basePrice !== undefined) { params.push(settings.basePrice); sets.push(`base_price = $${params.length}::numeric`); }
     if (settings.isFlexible !== undefined) { params.push(settings.isFlexible); sets.push(`is_flexible = $${params.length}`); }
-    if (settings.groupDiscountMinBeds !== undefined) { params.push(settings.groupDiscountMinBeds); sets.push(`group_discount_min_beds = $${params.length}`); }
-    if (settings.groupDiscountPercentage !== undefined) { params.push(settings.groupDiscountPercentage); sets.push(`group_discount_percentage = $${params.length}::numeric`); }
 
     if (sets.length === 0) {
       return this.getRoom(roomId);

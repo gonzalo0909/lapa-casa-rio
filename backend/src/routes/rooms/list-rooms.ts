@@ -57,9 +57,10 @@ export const listRoomsHandler = async (
         },
         pricing: {
           currency: 'BRL',
-          // El descuento por grupo es por cuarto, no un tramo global fijo --
-          // ver groupDiscountMinBeds/groupDiscountPercentage en cada item de
-          // "rooms" (editable desde /admin/rooms.html, 0009_room_group_discount.sql).
+          // El descuento por grupo es global (se evalua sobre el total de
+          // camas de toda la reserva, no por cuarto) -- ver
+          // GET /api/v1/availability/check para los tramos reales
+          // (group_discount_tiers, editable desde /admin/pricing.html).
           seasonalAdjustments: {
             high: { multiplier: 1.5, months: 'Dec-Mar', description: '+50%' },
             medium: { multiplier: 1.0, months: 'Apr-May, Oct-Nov', description: 'Base price' },

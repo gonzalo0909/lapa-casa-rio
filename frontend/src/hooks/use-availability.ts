@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { availabilityAPI, handleAPIError } from '@/lib/api';
-import type { RoomAvailability } from '@/types/global';
+import type { GroupDiscountTier, RoomAvailability } from '@/types/global';
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -16,12 +16,11 @@ interface BackendRoom {
   availableBeds: number;
   isFlexible: boolean;
   basePrice: number;
-  groupDiscountMinBeds: number;
-  groupDiscountPercentage: number;
 }
 
 export function useAvailability() {
   const [availableRooms, setAvailableRooms] = useState<RoomAvailability[]>([]);
+  const [groupDiscountTiers, setGroupDiscountTiers] = useState<GroupDiscountTier[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,10 +52,9 @@ export function useAvailability() {
           availableBeds: r.availableBeds,
           basePrice: r.basePrice,
           isFlexible: r.isFlexible,
-          groupDiscountMinBeds: r.groupDiscountMinBeds,
-          groupDiscountPercentage: r.groupDiscountPercentage,
         }))
       );
+      setGroupDiscountTiers(response.data?.groupDiscountTiers || []);
     } catch (err) {
       setError(handleAPIError(err));
       throw err;
@@ -65,5 +63,5 @@ export function useAvailability() {
     }
   }, []);
 
-  return { availableRooms, isLoading, error, checkAvailability };
+  return { availableRooms, groupDiscountTiers, isLoading, error, checkAvailability };
 }

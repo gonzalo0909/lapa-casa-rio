@@ -227,28 +227,21 @@ router.post('/bookings/:id/confirm', async (req, res, next) => {
 });
 
 /**
- * PUT /admin/rooms/:id/settings — precio base, flag de flexible, y el
- * descuento por grupo de ESE cuarto (a partir de cuantas camas y que
- * porcentaje -- ver 0009_room_group_discount.sql, reemplaza el tramo fijo
- * global que existia antes).
+ * PUT /admin/rooms/:id/settings — precio base y flag de flexible. El
+ * descuento por grupo dejó de ser por cuarto (ver 0010_global_group_discount_tiers.sql,
+ * PUT /admin/group-discounts más abajo) porque depende del total de
+ * camas de toda la reserva, no de un cuarto individual.
  */
 router.put('/rooms/:id/settings', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { basePrice, isFlexible, groupDiscountMinBeds, groupDiscountPercentage } = req.body as {
+    const { basePrice, isFlexible } = req.body as {
       basePrice?: number;
       isFlexible?: boolean;
-      groupDiscountMinBeds?: number;
-      groupDiscountPercentage?: number;
     };
 
-    if (
-      basePrice === undefined && isFlexible === undefined &&
-      groupDiscountMinBeds === undefined && groupDiscountPercentage === undefined
-    ) {
-      res.status(400).json(ApiResponse.error(
-        'Nada para actualizar: basePrice, isFlexible, groupDiscountMinBeds y/o groupDiscountPercentage'
-      ));
+    if (basePrice === undefined && isFlexible === undefined) {
+      res.status(400).json(ApiResponse.error('Nada para actualizar: basePrice y/o isFlexible'));
       return;
     }
 
@@ -256,8 +249,6 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
     const params: any[] = [];
     if (basePrice !== undefined) { params.push(basePrice); sets.push(`base_price = $${params.length}`); }
     if (isFlexible !== undefined) { params.push(isFlexible); sets.push(`is_flexible = $${params.length}`); }
-    if (groupDiscountMinBeds !== undefined) { params.push(groupDiscountMinBeds); sets.push(`group_discount_min_beds = $${params.length}`); }
-    if (groupDiscountPercentage !== undefined) { params.push(groupDiscountPercentage); sets.push(`group_discount_percentage = $${params.length}`); }
     params.push(id);
 
     const { rows } = await query(
@@ -271,7 +262,7 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
 
     await auditLogService.log({
       entity_type: 'room_type', entity_id: id, operation: 'ADMIN_UPDATE_SETTINGS',
-      new_data: { basePrice, isFlexible, groupDiscountMinBeds, groupDiscountPercentage }
+      new_data: { basePrice, isFlexible }
     });
 
     res.status(200).json(ApiResponse.success(rows[0], 'Habitación actualizada'));
@@ -285,14 +276,16 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, carnivalConfig] = await Promise.all([
+    const [ratePlans, carnivalConfig, groupDiscountTiers] = await Promise.all([
       query(`SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`),
-      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`)
+      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`),
+      query(`SELECT id, min_beds, percentage FROM group_discount_tiers ORDER BY min_beds`)
     ]);
     res.status(200).json(
       ApiResponse.success({
         ratePlans: ratePlans.rows,
-        carnivalDates: carnivalConfig.rows[0]?.value ?? []
+        carnivalDates: carnivalConfig.rows[0]?.value ?? [],
+        groupDiscountTiers: groupDiscountTiers.rows
       })
     );
   } catch (error) {
@@ -361,6 +354,48 @@ router.put('/pricing', async (req, res, next) => {
     await auditLogService.log({ entity_type: 'pricing_config', entity_id: 'global', operation: 'ADMIN_UPDATE_PRICING', new_data: updated });
 
     res.status(200).json(ApiResponse.success(updated, 'Precios actualizados'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /admin/group-discount-tiers/:id — edita un tramo existente
+ * (a partir de cuantas camas, y que porcentaje). Ver 0010_global_group_discount_tiers.sql:
+ * el descuento se evalua sobre el total de camas de TODA la reserva, no
+ * por cuarto -- por eso es un ajuste global, no algo de room_types.
+ */
+router.put('/group-discount-tiers/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { minBeds, percentage } = req.body as { minBeds?: number; percentage?: number };
+
+    if (minBeds === undefined && percentage === undefined) {
+      res.status(400).json(ApiResponse.error('Nada para actualizar: minBeds y/o percentage'));
+      return;
+    }
+
+    const sets: string[] = [];
+    const params: any[] = [];
+    if (minBeds !== undefined) { params.push(minBeds); sets.push(`min_beds = $${params.length}`); }
+    if (percentage !== undefined) { params.push(percentage); sets.push(`percentage = $${params.length}`); }
+    params.push(id);
+
+    const { rows } = await query(
+      `UPDATE group_discount_tiers SET ${sets.join(', ')}, updated_at = now() WHERE id = $${params.length} RETURNING *`,
+      params
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Tramo de descuento no encontrado'));
+      return;
+    }
+
+    await auditLogService.log({
+      entity_type: 'group_discount_tier', entity_id: id, operation: 'ADMIN_UPDATE_SETTINGS',
+      new_data: { minBeds, percentage }
+    });
+
+    res.status(200).json(ApiResponse.success(rows[0], 'Tramo de descuento actualizado'));
   } catch (error) {
     next(error);
   }

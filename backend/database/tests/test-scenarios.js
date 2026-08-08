@@ -90,15 +90,17 @@ async function createReservation(client, opts) {
   const basePrice = 60;
   const { rows: seasonRows } = await client.query('SELECT calculate_season_multiplier($1) AS m', [checkIn]);
   const seasonMultiplier = Number(seasonRows[0].m);
-  const { rows: groupRows } = await client.query('SELECT calculate_group_discount($1, $2) AS d', [roomTypeId, beds]);
+  const { rows: groupRows } = await client.query('SELECT calculate_group_discount($1) AS d', [beds]);
   const groupDiscount = Number(groupRows[0].d);
   const { rows: ebRows } = await client.query('SELECT calculate_early_bird_discount($1, $2) AS d', [bookingDate, checkIn]);
   const earlyBirdDiscount = Number(ebRows[0].d);
   const { rows: priceRows } = await client.query(
-    'SELECT calculate_final_price($1, $2, $3, $4, $5, $6) AS p',
-    [roomTypeId, basePrice, nights, beds, checkIn, bookingDate]
+    'SELECT calculate_final_price($1, $2, $3, $4, $5) AS p',
+    [basePrice, nights, beds, checkIn, bookingDate]
   );
-  const finalPrice = Number(priceRows[0].p);
+  // calculate_final_price ya no aplica el descuento de grupo internamente
+  // (depende del total de TODA la reserva, no de un cuarto) -- se aplica aca.
+  const finalPrice = Math.round(Number(priceRows[0].p) * (1 - groupDiscount) * 100) / 100;
   const { rows: depositRows } = await client.query('SELECT * FROM calculate_deposit($1, $2)', [finalPrice, beds]);
   const { deposit_percent: depositPercent, deposit_amount: depositAmount, remaining_amount: remainingAmount } = depositRows[0];
 
@@ -462,46 +464,59 @@ async function testFlexibleConversion(client) {
 // y la comision de canal jamas afecta el precio del huesped.
 // ------------------------------------------------------------
 async function testPricingMatrix(client) {
-  // El descuento por grupo es por cuarto (room_types.group_discount_min_beds/
-  // percentage, ver 0009_room_group_discount.sql) -- se lee de la tabla real,
-  // nunca se hardcodea un tramo aca (Requisito Critico #6).
-  const roomTypeId = await getRoomTypeId(client, 'mixto_12a');
-  const { rows: roomRows } = await client.query(
-    'SELECT group_discount_min_beds, group_discount_percentage FROM room_types WHERE id = $1',
-    [roomTypeId]
-  );
-  const minBeds = roomRows[0].group_discount_min_beds;
-  const pct = Number(roomRows[0].group_discount_percentage);
+  // El descuento por grupo es global (group_discount_tiers, ver
+  // 0010_global_group_discount_tiers.sql) -- se lee de la tabla real,
+  // nunca se hardcodea un tramo aca (Requisito Critico #6). Se aplica
+  // sobre calculate_final_price() por separado, no adentro de esa
+  // funcion (que ya no conoce el total de la reserva).
+  const { rows: tierRows } = await client.query('SELECT min_beds, percentage FROM group_discount_tiers ORDER BY min_beds');
+  const tiers = tierRows.map(t => ({ minBeds: t.min_beds, pct: Number(t.percentage) }));
+  const expectedDiscount = (beds) => {
+    const applicable = tiers.filter(t => beds >= t.minBeds).sort((a, b) => b.minBeds - a.minBeds);
+    return applicable.length > 0 ? applicable[0].pct : 0;
+  };
+  const tier1 = tiers[0].minBeds;
+  const tier2 = tiers[1].minBeds;
 
   const cases = [
-    // [checkIn, bookingDate, beds, nights, temporada esperada, multiplicador, early bird] -- descuento de grupo se calcula segun minBeds/pct del cuarto
-    { checkIn: '2027-01-15', bookingDate: '2026-12-01', beds: minBeds - 1, nights: 3, multiplier: 1.5, earlyBird: 0.05 },
-    { checkIn: '2027-07-15', bookingDate: '2027-07-01', beds: minBeds, nights: 2, multiplier: 0.8, earlyBird: 0.00 },
-    { checkIn: '2027-04-15', bookingDate: '2027-03-01', beds: minBeds + 2, nights: 2, multiplier: 1.0, earlyBird: 0.05 },
+    // [checkIn, bookingDate, beds, nights, temporada esperada, multiplicador, early bird] -- descuento de grupo se calcula segun los tramos reales de group_discount_tiers
+    { checkIn: '2027-01-15', bookingDate: '2026-12-01', beds: tier1 - 1, nights: 3, multiplier: 1.5, earlyBird: 0.05 },
+    { checkIn: '2027-07-15', bookingDate: '2027-07-01', beds: tier1, nights: 2, multiplier: 0.8, earlyBird: 0.00 },
+    { checkIn: '2027-04-15', bookingDate: '2027-03-01', beds: tier2 - 1, nights: 2, multiplier: 1.0, earlyBird: 0.05 },
+    { checkIn: '2027-05-15', bookingDate: '2027-04-20', beds: tier2, nights: 2, multiplier: 1.0, earlyBird: 0.00 },
     // 2027-02-08 cae dentro del rango de Carnaval sembrado en system_config (2027-02-06 a 2027-02-10)
-    { checkIn: '2027-02-08', bookingDate: '2027-01-01', beds: 12, nights: 5, multiplier: 2.0, earlyBird: 0.05 },
+    { checkIn: '2027-02-08', bookingDate: '2027-01-01', beds: tier2 + 5, nights: 5, multiplier: 2.0, earlyBird: 0.05 },
   ];
 
   for (const c of cases) {
-    const groupDiscount = c.beds >= minBeds ? pct : 0;
+    // calculate_final_price ya no incluye el descuento de grupo (depende del
+    // total de la reserva, no de este cuarto) -- solo temporada + early bird.
     const { rows } = await client.query(
-      'SELECT calculate_final_price($1,$2,$3,$4,$5,$6) AS p',
-      [roomTypeId, 60, c.nights, c.beds, c.checkIn, c.bookingDate]
+      'SELECT calculate_final_price($1,$2,$3,$4,$5) AS p',
+      [60, c.nights, c.beds, c.checkIn, c.bookingDate]
     );
-    const expected = 60 * c.nights * c.beds * c.multiplier * (1 - groupDiscount) * (1 - c.earlyBird);
-    const actual = Number(rows[0].p);
+    const preDiscountExpected = 60 * c.nights * c.beds * c.multiplier * (1 - c.earlyBird);
+    const preDiscountActual = Number(rows[0].p);
     assert(
-      Math.abs(actual - expected) < 0.01,
-      `pricing para checkIn=${c.checkIn} beds=${c.beds}: esperado ${expected.toFixed(2)}, obtuvo ${actual}`
+      Math.abs(preDiscountActual - preDiscountExpected) < 0.01,
+      `pricing (pre-descuento) para checkIn=${c.checkIn} beds=${c.beds}: esperado ${preDiscountExpected.toFixed(2)}, obtuvo ${preDiscountActual}`
+    );
+
+    // El descuento de grupo se aplica aparte, sobre el total de camas de la reserva.
+    const groupDiscount = expectedDiscount(c.beds);
+    const { rows: discountRows } = await client.query('SELECT calculate_group_discount($1) AS d', [c.beds]);
+    assert(
+      Math.abs(Number(discountRows[0].d) - groupDiscount) < 0.001,
+      `descuento de grupo para beds=${c.beds}: esperado ${groupDiscount}, obtuvo ${discountRows[0].d}`
     );
   }
 
   // La comision de canal es independiente del precio del huesped
   const { rows: priceRows } = await client.query(
-    'SELECT calculate_final_price($1,$2,$3,$4,$5,$6) AS p',
-    [roomTypeId, 60, 2, 7, '2027-06-01', '2027-05-01']
+    'SELECT calculate_final_price($1,$2,$3,$4,$5) AS p',
+    [60, 2, 7, '2027-06-01', '2027-05-01']
   );
-  const guestPrice = Number(priceRows[0].p);
+  const guestPrice = Number(priceRows[0].p) * (1 - expectedDiscount(7));
 
   const { rows: channelRows } = await client.query('SELECT id, code, commission_rate FROM channels');
   for (const ch of channelRows) {

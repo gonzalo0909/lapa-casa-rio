@@ -15,8 +15,41 @@ async function loadPricing() {
     const data = await apiFetch('/admin/pricing');
     renderSeasons(data.ratePlans);
     renderCarnival(data.carnivalDates);
+    renderDiscountTiers(data.groupDiscountTiers);
   } catch (err) {
     showMsg('seasons-msg', err.message, 'error');
+  }
+}
+
+function renderDiscountTiers(tiers) {
+  const tbody = document.querySelector('#discount-tiers-table tbody');
+  const sorted = [...tiers].sort((a, b) => a.min_beds - b.min_beds);
+  tbody.innerHTML = sorted.map(t => `
+    <tr data-id="${t.id}">
+      <td><input type="number" step="1" min="1" class="min-beds" value="${t.min_beds}" style="width:60px;"> personas o más</td>
+      <td><input type="number" step="1" min="0" max="99" class="pct" value="${Math.round(t.percentage * 100)}" style="width:60px;">%</td>
+      <td><button data-action="save-tier">Guardar</button></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('button[data-action="save-tier"]').forEach(btn => {
+    btn.addEventListener('click', () => saveDiscountTier(btn.closest('tr')));
+  });
+}
+
+async function saveDiscountTier(row) {
+  const id = row.dataset.id;
+  const minBeds = Number(row.querySelector('.min-beds').value);
+  const percentage = Number(row.querySelector('.pct').value) / 100;
+  try {
+    await apiFetch(`/admin/group-discount-tiers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ minBeds, percentage })
+    });
+    showMsg('discount-tiers-msg', 'Tramo de descuento actualizado.', 'success');
+    loadPricing();
+  } catch (err) {
+    showMsg('discount-tiers-msg', err.message, 'error');
   }
 }
 

@@ -52,7 +52,15 @@ const nightsBetween = (checkIn: string, checkOut: string): number =>
 const todayDate = (): string => new Date().toISOString().slice(0, 10);
 
 export class PricingService {
-  /** Precio final via calculate_final_price() -- suma por habitacion si cada una tiene base_price distinto. */
+  /**
+   * Precio final via calculate_final_price() -- suma por habitacion (cada
+   * una con su propio base_price y temporada/early-bird aplicados). El
+   * descuento por grupo NO se resuelve por cuarto: depende del total de
+   * camas de TODA la reserva (una reserva de 13+ personas necesariamente
+   * cruza dos cuartos, ej. 12A+12B, y ningun cuarto individual ve nunca
+   * ese total) -- se calcula una sola vez con calculate_group_discount()
+   * y se aplica sobre la suma de todos los cuartos.
+   */
   async calculateTotalPrice(request: PricingRequest): Promise<PricingResponse> {
     const nights = nightsBetween(request.checkInDate, request.checkOutDate);
     if (nights < 1) {
@@ -61,14 +69,8 @@ export class PricingService {
 
     const bookingDate = todayDate();
 
-    // Precio base ponderado: consulta room_types real por cada roomId solicitado.
-    // El descuento por grupo es por cuarto (group_discount_min_beds/percentage
-    // en room_types, ver 0009_room_group_discount.sql) -- se promedia
-    // ponderado por camas solo para el resumen mostrado al huesped; el
-    // total cobrado (finalPrice) siempre sale de calculate_final_price().
     let basePrice = 0;
-    let finalPrice = 0;
-    let weightedDiscountSum = 0;
+    let preDiscountTotal = 0;
     for (const room of request.rooms) {
       const { rows } = await query<{ base_price: string }>(
         `SELECT base_price FROM room_types WHERE id = $1`,
@@ -78,17 +80,16 @@ export class PricingService {
       basePrice += roomBasePrice * nights * room.bedsCount;
 
       const { rows: priceRows } = await query<{ p: string }>(
-        `SELECT calculate_final_price($1::uuid, $2::numeric, $3, $4, $5::date, $6::date) AS p`,
-        [room.roomId, roomBasePrice, nights, room.bedsCount, request.checkInDate, bookingDate]
+        `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
+        [roomBasePrice, nights, room.bedsCount, request.checkInDate, bookingDate]
       );
-      finalPrice += parseFloat(priceRows[0].p);
-
-      const roomDiscount = await this.getGroupDiscountRate(room.roomId, room.bedsCount);
-      weightedDiscountSum += roomDiscount * room.bedsCount;
+      preDiscountTotal += parseFloat(priceRows[0].p);
     }
-    finalPrice = Math.round(finalPrice * 100) / 100;
 
-    const groupDiscount = request.totalBeds > 0 ? weightedDiscountSum / request.totalBeds : 0;
+    const groupDiscount = await this.getGroupDiscountRate(request.totalBeds);
+    const discountAmount = Math.round(preDiscountTotal * groupDiscount * 100) / 100;
+    const finalPrice = Math.round((preDiscountTotal - discountAmount) * 100) / 100;
+
     const seasonMultiplier = await this.getSeasonMultiplier(request.checkInDate);
     const seasonType = await this.getSeasonType(request.checkInDate);
     const minNights = await this.getMinNightsFromDb(request.checkInDate);
@@ -96,7 +97,6 @@ export class PricingService {
       throw new Error(`Durante Carnaval se requiere minimo ${minNights} noches`);
     }
 
-    const discountAmount = Math.round(basePrice * groupDiscount * 100) / 100;
     const priceAfterDiscount = basePrice - discountAmount;
     const priceAfterSeason = Math.round(priceAfterDiscount * seasonMultiplier * 100) / 100;
 
@@ -165,10 +165,12 @@ export class PricingService {
     const basePrice = rows[0] ? parseFloat(rows[0].base_price) : 60;
     const bookingDate = todayDate();
     const { rows: priceRows } = await query<{ p: string }>(
-      `SELECT calculate_final_price($1::uuid, $2::numeric, $3, $4, $5::date, $6::date) AS p`,
-      [roomTypeId, basePrice, nights, totalBeds, checkInDate, bookingDate]
+      `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
+      [basePrice, nights, totalBeds, checkInDate, bookingDate]
     );
-    const totalPrice = parseFloat(priceRows[0].p);
+    const preDiscountTotal = parseFloat(priceRows[0].p);
+    const groupDiscount = await this.getGroupDiscountRate(totalBeds);
+    const totalPrice = Math.round(preDiscountTotal * (1 - groupDiscount) * 100) / 100;
     const deposit = await this.calculateDeposit(totalPrice, totalBeds);
     return { totalPrice, depositAmount: deposit.amount, remainingAmount: deposit.remaining, nights };
   }
@@ -177,16 +179,16 @@ export class PricingService {
     return 60 * totalBeds * nights;
   }
 
-  /** calculate_group_discount() -- nunca hardcodear los tramos en JS; el descuento es por cuarto (room_types.group_discount_*). */
-  async calculateGroupDiscount(roomTypeId: string, totalBeds: number): Promise<{ discount: number; name: string }> {
-    const discount = await this.getGroupDiscountRate(roomTypeId, totalBeds);
+  /** calculate_group_discount() -- nunca hardcodear los tramos en JS; los tramos viven en group_discount_tiers, editables desde el admin. */
+  async calculateGroupDiscount(totalBeds: number): Promise<{ discount: number; name: string }> {
+    const discount = await this.getGroupDiscountRate(totalBeds);
     return { discount, name: discount > 0 ? `${discount * 100}% de descuento por grupo` : 'Sin descuento' };
   }
 
-  private async getGroupDiscountRate(roomTypeId: string, totalBeds: number): Promise<number> {
+  private async getGroupDiscountRate(totalBeds: number): Promise<number> {
     const { rows } = await query<{ calculate_group_discount: string }>(
-      `SELECT calculate_group_discount($1::uuid, $2) AS calculate_group_discount`,
-      [roomTypeId, totalBeds]
+      `SELECT calculate_group_discount($1) AS calculate_group_discount`,
+      [totalBeds]
     );
     return parseFloat(rows[0].calculate_group_discount);
   }
@@ -239,7 +241,6 @@ export class PricingService {
     return parseFloat(rows[0].calculate_channel_net_revenue);
   }
 
-  /** Estimacion generica sin cuarto elegido todavia -- el descuento por grupo es por cuarto, asi que no se aplica aca (ver calculateTotalPrice/calculateFinalPrice para el precio real de una reserva concreta). */
   async estimatePriceRange(
     checkInDate: string,
     checkOutDate: string,
@@ -247,13 +248,15 @@ export class PricingService {
   ): Promise<{ minPrice: number; maxPrice: number; averagePrice: number; seasonType: string }> {
     const nights = nightsBetween(checkInDate, checkOutDate);
     const basePrice = this.calculateBasePrice(totalBeds, nights);
+    const { discount } = await this.calculateGroupDiscount(totalBeds);
+    const priceAfterDiscount = basePrice * (1 - discount);
     const seasonType = await this.getSeasonType(checkInDate);
     const seasonMultiplier = await this.getSeasonMultiplier(checkInDate);
-    const seasonPrice = basePrice * seasonMultiplier;
+    const seasonPrice = priceAfterDiscount * seasonMultiplier;
 
     return {
-      minPrice: Math.round(basePrice * 0.8 * 100) / 100,
-      maxPrice: Math.round(basePrice * 2.0 * 100) / 100,
+      minPrice: Math.round(priceAfterDiscount * 0.8 * 100) / 100,
+      maxPrice: Math.round(priceAfterDiscount * 2.0 * 100) / 100,
       averagePrice: Math.round(seasonPrice * 100) / 100,
       seasonType
     };

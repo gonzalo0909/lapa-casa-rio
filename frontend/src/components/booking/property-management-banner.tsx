@@ -37,7 +37,9 @@ export const PropertyManagementBanner: React.FC<PropertyManagementBannerProps> =
             </p>
           </div>
           <a
-            href="mailto:info@lapacasahostel.com"
+            href={`https://wa.me/5521977157530?text=${encodeURIComponent(T('whatsappMessage', locale))}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="shrink-0 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
           >
             {T('cta', locale)}
@@ -53,27 +55,32 @@ function T(key: string, locale: string): string {
     pt: {
       title: 'Seu apartamento rendendo no Rio de Janeiro, sem você mexer um dedo.',
       subtitle: 'Cuidamos de tudo: gestão do aluguel por temporada, hóspedes e limpeza. Você só recebe.',
-      cta: 'Quero saber mais'
+      cta: 'Quero saber mais',
+      whatsappMessage: 'Olá! Tenho um apartamento no Rio de Janeiro e quero saber mais sobre a gestão de aluguel por temporada.'
     },
     es: {
       title: 'Tu apartamento generando ingresos en Río de Janeiro, sin mover un dedo.',
       subtitle: 'Nos encargamos de todo: gestión del alquiler por temporada, huéspedes y limpieza. Vos solo cobrás.',
-      cta: 'Quiero saber más'
+      cta: 'Quiero saber más',
+      whatsappMessage: '¡Hola! Tengo un apartamento en Río de Janeiro y quiero saber más sobre la gestión de alquiler por temporada.'
     },
     en: {
       title: 'Your apartment earning in Rio de Janeiro, without you lifting a finger.',
       subtitle: "We handle everything: short-term rental management, guests, and cleaning. You just collect.",
-      cta: 'Tell me more'
+      cta: 'Tell me more',
+      whatsappMessage: 'Hi! I have an apartment in Rio de Janeiro and I want to know more about your short-term rental management.'
     },
     fr: {
       title: 'Votre appartement génère des revenus à Rio de Janeiro, sans que vous ayez à vous en occuper.',
       subtitle: 'On s’occupe de tout : gestion de la location saisonnière, voyageurs et ménage. Vous n’avez qu’à encaisser.',
-      cta: 'En savoir plus'
+      cta: 'En savoir plus',
+      whatsappMessage: 'Bonjour ! J’ai un appartement à Rio de Janeiro et je voudrais en savoir plus sur votre gestion de location saisonnière.'
     },
     de: {
       title: 'Ihre Wohnung in Rio de Janeiro bringt Einnahmen, ohne dass Sie etwas tun müssen.',
       subtitle: 'Wir kümmern uns um alles: Verwaltung der Ferienvermietung, Gäste und Reinigung. Sie kassieren einfach.',
-      cta: 'Mehr erfahren'
+      cta: 'Mehr erfahren',
+      whatsappMessage: 'Hallo! Ich habe eine Wohnung in Rio de Janeiro und möchte mehr über Ihre Verwaltung von Ferienwohnungen erfahren.'
     }
   };
   return t[locale]?.[key] || key;

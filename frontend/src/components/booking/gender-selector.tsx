@@ -8,10 +8,10 @@ import type { BookingGender } from '@/types/global';
 /**
  * GenderSelector Component
  *
- * Se elige junto con las fechas, antes de ver los cuartos: determina
- * si el huésped ve solo cuartos mixtos, o también el cuarto solo-mujeres
- * (Flexible 7). Los hombres siempre reservan mixto; las mujeres pueden
- * elegir entre mixto o solo-mujeres.
+ * Se elige junto con las fechas, antes de ver los cuartos: pregunta
+ * directamente el sexo del huésped (hombre/mujer), no el tipo de grupo.
+ * Los hombres ven los cuartos mixtos (12 y 7 camas); las mujeres ven
+ * esos dos más el cuarto solo-mujeres (Flexible 7).
  *
  * @component
  */
@@ -66,32 +66,32 @@ function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
       title: 'Quem vai se hospedar?',
-      mixed: 'Grupo misto',
-      female: 'Só mulheres',
+      mixed: 'Homens + Grupo misto',
+      female: 'Mulheres',
       hint: 'Isso define quais quartos aparecem na próxima etapa.'
     },
     es: {
       title: '¿Quién se va a hospedar?',
-      mixed: 'Grupo mixto',
-      female: 'Solo mujeres',
+      mixed: 'Hombres + Grupo mixto',
+      female: 'Mujeres',
       hint: 'Esto define qué habitaciones aparecen en el próximo paso.'
     },
     en: {
       title: 'Who is staying?',
-      mixed: 'Mixed group',
-      female: 'Women only',
+      mixed: 'Men + Mixed group',
+      female: 'Women',
       hint: 'This decides which rooms show up in the next step.'
     },
     fr: {
       title: 'Qui va séjourner ?',
-      mixed: 'Groupe mixte',
-      female: 'Femmes uniquement',
+      mixed: 'Hommes + Groupe mixte',
+      female: 'Femmes',
       hint: 'Cela détermine quelles chambres apparaissent à l’étape suivante.'
     },
     de: {
       title: 'Wer übernachtet?',
-      mixed: 'Gemischte Gruppe',
-      female: 'Nur Frauen',
+      mixed: 'Männer + Gemischte Gruppe',
+      female: 'Frauen',
       hint: 'Das legt fest, welche Zimmer im nächsten Schritt angezeigt werden.'
     }
   };

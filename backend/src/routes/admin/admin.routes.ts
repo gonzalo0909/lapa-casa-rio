@@ -24,6 +24,7 @@ import { fullExport } from '../../integrations/google-sheets/booking-export';
 import { query } from '../../config/database';
 import { ApiResponse } from '../../utils/responses';
 import { adminConflictsRouter } from './conflicts.routes';
+import { adminPhotosRouter } from './photos.routes';
 import type { BookingWithGuest } from '../../services/email-service';
 
 const router = Router();
@@ -34,6 +35,11 @@ const router = Router();
  * Ventana 4 (ver mas abajo, ahora removido para no duplicar la ruta).
  */
 router.use('/conflicts', adminConflictsRouter);
+
+/**
+ * /admin/photos — galería curada de fotos de huéspedes (photos.routes.ts)
+ */
+router.use('/photos', adminPhotosRouter);
 
 /**
  * GET /admin/dashboard — KPIs del mes actual

@@ -330,6 +330,15 @@ export const roomsAPI = {
 };
 
 /**
+ * Photos API — galería pública de fotos de huéspedes ("bitácora de viajantes"),
+ * alineada con backend/src/routes/photos/photos.routes.ts. Solo lectura:
+ * la carga es exclusiva del admin (backend/src/admin/photos.html).
+ */
+export const photosAPI = {
+  list: () => api.get('/photos')
+};
+
+/**
  * Handle API errors globally
  * 
  * @param error - Error object

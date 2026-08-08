@@ -12,6 +12,7 @@
 
 import { Router, Request, Response } from 'express';
 import { bookingsRouter } from './bookings/bookings.routes';
+import { photosRouter } from './photos/photos.routes';
 import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
@@ -71,6 +72,7 @@ router.get('/info', (req: Request, res: Response) => {
  */
 router.use('/availability', rateLimiter({ max: 10, windowMs: 1000 }), availabilityRouter);
 router.use('/rooms', rateLimiter({ max: 10, windowMs: 1000 }), roomsRouter);
+router.use('/photos', rateLimiter({ max: 10, windowMs: 1000 }), photosRouter);
 
 /**
  * iCal (ventana5): export publico de disponibilidad + config/sync de

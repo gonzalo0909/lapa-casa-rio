@@ -54,6 +54,15 @@ export interface RoomBed {
   isAvailable: boolean;
 }
 
+export interface GuestPhoto {
+  id: string;
+  image_url: string;
+  guest_name: string | null;
+  guest_country: string | null;
+  caption: string | null;
+  created_at: string;
+}
+
 export interface GuestDetails {
   fullName: string;
   email: string;

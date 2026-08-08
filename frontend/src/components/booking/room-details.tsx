@@ -46,10 +46,8 @@ export const RoomDetails: React.FC<RoomDetailsProps> = ({
 
   const getSharedAmenities = () => [
     { icon: '🍳', label: T('sharedKitchen', locale) },
-    { icon: '🧺', label: T('laundry', locale) },
     { icon: '📶', label: T('freeWifi', locale) },
     { icon: '🎮', label: T('commonArea', locale) },
-    { icon: '🌳', label: T('terrace', locale) },
     { icon: '🔐', label: T('security24h', locale) }
   ];
 
@@ -76,14 +74,6 @@ export const RoomDetails: React.FC<RoomDetailsProps> = ({
           </Badge>
         </div>
       </div>
-
-      {room.isFlexible && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            <strong>⚠️ {T('flexibleRoomNotice', locale)}:</strong> {T('flexibleRoomDesc', locale)}
-          </p>
-        </div>
-      )}
 
       <div className="mb-6">
         <h4 className="font-semibold text-gray-900 mb-3">{T('roomAmenities', locale)}</h4>
@@ -129,9 +119,9 @@ export const RoomDetails: React.FC<RoomDetailsProps> = ({
         <h4 className="font-semibold text-gray-900 mb-3">{T('policies', locale)}</h4>
         <ul className="space-y-2 text-sm text-gray-700">
           <li>✓ {T('policy1', locale)}</li>
-          <li>✓ {T('policy2', locale)}</li>
           <li>✓ {T('policy3', locale)}</li>
           <li>✓ {T('policy4', locale)}</li>
+          <li>✗ {T('policy2', locale)}</li>
           <li>✗ {T('policy5', locale)}</li>
           <li>✗ {T('policy6', locale)}</li>
         </ul>
@@ -162,8 +152,6 @@ function T(key: string, locale: string): string {
       female: 'Feminino',
       flexible: 'Flexível',
       available: 'disponíveis',
-      flexibleRoomNotice: 'Quarto Flexível',
-      flexibleRoomDesc: 'Este quarto é feminino por padrão, mas converte para misto automaticamente 48h antes do check-in se não houver reservas femininas',
       roomAmenities: 'Comodidades do Quarto',
       bunkBeds: 'Beliches',
       lockers: 'Armários',
@@ -174,16 +162,14 @@ function T(key: string, locale: string): string {
       privateBathroom: 'Banheiro privado',
       sharedAmenities: 'Áreas Compartilhadas',
       sharedKitchen: 'Cozinha',
-      laundry: 'Lavanderia',
       freeWifi: 'WiFi grátis',
       commonArea: 'Área comum',
-      terrace: 'Terraço',
       security24h: 'Segurança 24h',
       pricing: 'Preços',
       basePrice: 'Preço base',
       policies: 'Políticas',
-      policy1: 'Lençóis e toalhas inclusos',
-      policy2: 'Café da manhã simples incluído',
+      policy1: 'Lençóis inclusos',
+      policy2: 'Café da manhã não incluído (disponível como oferta à parte)',
       policy3: 'Cancelamento grátis até 7 dias antes',
       policy4: 'Depósito de 30% na reserva',
       policy5: 'Animais não permitidos',
@@ -205,11 +191,9 @@ function T(key: string, locale: string): string {
       female: 'Femenino',
       flexible: 'Flexible',
       available: 'disponibles',
-      flexibleRoomNotice: 'Habitación Flexible',
-      flexibleRoomDesc: 'Esta habitación es femenina por defecto, pero se convierte en mixta automáticamente 48h antes del check-in si no hay reservas femeninas',
       roomAmenities: 'Comodidades de la Habitación',
       bunkBeds: 'Literas',
-      lockers: 'Taquillas',
+      lockers: 'Casilleros',
       outlets: 'Enchufes',
       readingLights: 'Luces de lectura',
       airConditioning: 'Aire acondicionado',
@@ -217,16 +201,14 @@ function T(key: string, locale: string): string {
       privateBathroom: 'Baño privado',
       sharedAmenities: 'Áreas Compartidas',
       sharedKitchen: 'Cocina',
-      laundry: 'Lavandería',
       freeWifi: 'WiFi gratis',
       commonArea: 'Área común',
-      terrace: 'Terraza',
       security24h: 'Seguridad 24h',
       pricing: 'Precios',
       basePrice: 'Precio base',
       policies: 'Políticas',
-      policy1: 'Sábanas y toallas incluidas',
-      policy2: 'Desayuno simple incluido',
+      policy1: 'Sábanas incluidas',
+      policy2: 'Desayuno no incluido (disponible como oferta aparte)',
       policy3: 'Cancelación gratis hasta 7 días antes',
       policy4: 'Depósito del 30% en la reserva',
       policy5: 'No se permiten mascotas',
@@ -248,8 +230,6 @@ function T(key: string, locale: string): string {
       female: 'Female',
       flexible: 'Flexible',
       available: 'available',
-      flexibleRoomNotice: 'Flexible Room',
-      flexibleRoomDesc: 'This room is female by default, but converts to mixed automatically 48h before check-in if there are no female bookings',
       roomAmenities: 'Room Amenities',
       bunkBeds: 'Bunk beds',
       lockers: 'Lockers',
@@ -260,16 +240,14 @@ function T(key: string, locale: string): string {
       privateBathroom: 'Private bathroom',
       sharedAmenities: 'Shared Areas',
       sharedKitchen: 'Kitchen',
-      laundry: 'Laundry',
       freeWifi: 'Free WiFi',
       commonArea: 'Common area',
-      terrace: 'Terrace',
       security24h: '24h security',
       pricing: 'Pricing',
       basePrice: 'Base price',
       policies: 'Policies',
-      policy1: 'Sheets and towels included',
-      policy2: 'Simple breakfast included',
+      policy1: 'Sheets included',
+      policy2: 'Breakfast not included (available as a separate add-on)',
       policy3: 'Free cancellation up to 7 days before',
       policy4: '30% deposit on booking',
       policy5: 'Pets not allowed',
@@ -291,8 +269,6 @@ function T(key: string, locale: string): string {
       female: 'Féminin',
       flexible: 'Flexible',
       available: 'disponibles',
-      flexibleRoomNotice: 'Chambre Flexible',
-      flexibleRoomDesc: 'Cette chambre est féminine par défaut, mais devient automatiquement mixte 48h avant l’arrivée s’il n’y a pas de réservations féminines',
       roomAmenities: 'Équipements de la Chambre',
       bunkBeds: 'Lits superposés',
       lockers: 'Casiers',
@@ -303,16 +279,14 @@ function T(key: string, locale: string): string {
       privateBathroom: 'Salle de bain privée',
       sharedAmenities: 'Espaces Communs',
       sharedKitchen: 'Cuisine',
-      laundry: 'Laverie',
       freeWifi: 'WiFi gratuit',
       commonArea: 'Espace commun',
-      terrace: 'Terrasse',
       security24h: 'Sécurité 24h/24',
       pricing: 'Tarifs',
       basePrice: 'Prix de base',
       policies: 'Politiques',
-      policy1: 'Draps et serviettes inclus',
-      policy2: 'Petit-déjeuner simple inclus',
+      policy1: 'Draps inclus',
+      policy2: 'Petit-déjeuner non inclus (disponible en option)',
       policy3: 'Annulation gratuite jusqu’à 7 jours avant',
       policy4: 'Acompte de 30% à la réservation',
       policy5: 'Animaux non autorisés',
@@ -334,8 +308,6 @@ function T(key: string, locale: string): string {
       female: 'Weiblich',
       flexible: 'Flexibel',
       available: 'verfügbar',
-      flexibleRoomNotice: 'Flexibles Zimmer',
-      flexibleRoomDesc: 'Dieses Zimmer ist standardmäßig für Frauen, wird aber automatisch 48h vor Check-in gemischt, falls keine Buchungen von Frauen vorliegen',
       roomAmenities: 'Zimmerausstattung',
       bunkBeds: 'Etagenbetten',
       lockers: 'Schließfächer',
@@ -346,16 +318,14 @@ function T(key: string, locale: string): string {
       privateBathroom: 'Eigenes Badezimmer',
       sharedAmenities: 'Gemeinschaftsbereiche',
       sharedKitchen: 'Küche',
-      laundry: 'Waschküche',
       freeWifi: 'Kostenloses WLAN',
       commonArea: 'Gemeinschaftsraum',
-      terrace: 'Terrasse',
       security24h: '24h-Sicherheit',
       pricing: 'Preise',
       basePrice: 'Grundpreis',
       policies: 'Richtlinien',
-      policy1: 'Bettwäsche und Handtücher inklusive',
-      policy2: 'Einfaches Frühstück inklusive',
+      policy1: 'Bettwäsche inklusive',
+      policy2: 'Frühstück nicht inklusive (separat buchbar)',
       policy3: 'Kostenlose Stornierung bis 7 Tage vorher',
       policy4: '30% Anzahlung bei Buchung',
       policy5: 'Haustiere nicht erlaubt',

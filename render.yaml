@@ -122,7 +122,12 @@ services:
     region: oregon
     plan: free
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    # --include=dev: next.config.js importa @next/bundle-analyzer sin
+    # condicion (solo su USO es condicional a ANALYZE=true), y es una
+    # devDependency -- con NODE_ENV=production npm salta devDependencies
+    # por defecto y el build tira MODULE_NOT_FOUND. Mismo patron que ya
+    # usa el backend arriba.
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV

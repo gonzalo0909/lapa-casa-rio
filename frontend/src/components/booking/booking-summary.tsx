@@ -49,7 +49,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">{T('checkOut', locale)}:</span>
-            <span className="font-medium">{formatDate(dateRange.checkOut!, locale)} - 11:00</span>
+            <span className="font-medium">{formatDate(dateRange.checkOut!, locale)} - 12:00</span>
           </div>
           <div className="flex justify-between pt-2 border-t">
             <span className="text-gray-600">{T('totalNights', locale)}:</span>

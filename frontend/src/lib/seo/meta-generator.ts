@@ -189,7 +189,7 @@ function getBaseMetaForPageType(pageType: PageType): MetaData {
     },
     booking: {
       title: 'Book Your Group Stay',
-      description: 'Reserve beds at Lapa Casa Hostel with instant confirmation. Group discounts up to 20%. Flexible cancellation policy. Best rates guaranteed.',
+      description: 'Reserve beds at Lapa Casa Hostel with instant confirmation. Group discounts up to 15%. Flexible cancellation policy. Best rates guaranteed.',
       keywords: ['hostel booking', 'group reservation', 'book hostel rio', 'instant confirmation'],
       ogImage: '/images/booking-page.jpg',
       canonical: '/booking'

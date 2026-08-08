@@ -170,7 +170,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             aria-label={T('checkOut', locale)}
             aria-describedby={error ? 'date-error' : undefined}
           />
-          <p className="text-xs text-gray-500 mt-1">{T('checkOutTime', locale)}: 11:00</p>
+          <p className="text-xs text-gray-500 mt-1">{T('checkOutTime', locale)}: 12:00</p>
         </div>
       </div>
 

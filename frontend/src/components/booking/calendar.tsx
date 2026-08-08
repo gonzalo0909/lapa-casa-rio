@@ -112,32 +112,32 @@ export const Calendar: React.FC<CalendarProps> = ({
   const weekDays = getWeekDays(locale);
 
   return (
-    <div className={`calendar ${className}`}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={`calendar max-w-xs mx-auto ${className}`}>
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={prevMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           aria-label={T('prevMonth', locale)}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h3 className="font-semibold text-lg capitalize">{monthName}</h3>
+        <h3 className="font-semibold text-sm capitalize">{monthName}</h3>
         <button
           onClick={nextMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           aria-label={T('nextMonth', locale)}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-xs font-semibold text-gray-600 py-2">
+          <div key={day} className="text-center text-[10px] font-semibold text-gray-600 py-1">
             {day}
           </div>
         ))}
@@ -156,7 +156,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               key={idx}
               onClick={() => handleDateClick(date)}
               disabled={disabled}
-              className={`aspect-square flex items-center justify-center text-sm rounded-lg transition-colors ${
+              className={`aspect-square flex items-center justify-center text-xs rounded-md transition-colors ${
                 disabled
                   ? 'text-gray-300 cursor-not-allowed'
                   : selected
@@ -176,17 +176,17 @@ export const Calendar: React.FC<CalendarProps> = ({
         })}
       </div>
 
-      <div className="mt-4 flex items-center gap-4 text-xs text-gray-600">
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-gray-600">
         <div className="flex items-center gap-1">
-          <div className="w-6 h-6 border-2 border-blue-600 rounded" />
+          <div className="w-3 h-3 border-2 border-blue-600 rounded" />
           <span>{T('today', locale)}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-6 h-6 bg-blue-600 rounded" />
+          <div className="w-3 h-3 bg-blue-600 rounded" />
           <span>{T('selected', locale)}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-6 h-6 bg-blue-100 rounded" />
+          <div className="w-3 h-3 bg-blue-100 rounded" />
           <span>{T('range', locale)}</span>
         </div>
       </div>

@@ -161,7 +161,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         <h3 className="font-semibold text-gray-900 mb-2">{T('importantInfo', locale)}</h3>
         <ul className="space-y-2 text-sm text-gray-600">
           <li>• {T('checkInTime', locale)}: 14:00</li>
-          <li>• {T('checkOutTime', locale)}: 11:00</li>
+          <li>• {T('checkOutTime', locale)}: 12:00</li>
           <li>
             • {T('minStay', locale)}: {minNights}{' '}
             {minNights === 1 ? T('night', locale) : T('nights', locale)}

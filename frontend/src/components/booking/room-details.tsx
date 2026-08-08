@@ -144,7 +144,7 @@ export const RoomDetails: React.FC<RoomDetailsProps> = ({
         <h4 className="font-semibold text-blue-900 mb-2">{T('importantInfo', locale)}</h4>
         <ul className="space-y-1 text-sm text-blue-800">
           <li>• {T('checkIn', locale)}: 14:00</li>
-          <li>• {T('checkOut', locale)}: 11:00</li>
+          <li>• {T('checkOut', locale)}: 12:00</li>
           <li>• {T('minAge', locale)}: 18 {T('years', locale)}</li>
           <li>• {T('idRequired', locale)}</li>
         </ul>

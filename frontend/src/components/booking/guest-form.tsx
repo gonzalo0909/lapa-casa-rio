@@ -215,6 +215,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
           <li>• {T('info2', locale)}</li>
           <li>• {T('info3', locale)}</li>
           <li>• {T('info4', locale)}</li>
+          <li>• {T('info5', locale)}</li>
         </ul>
       </div>
 
@@ -254,6 +255,7 @@ function T(key: string, locale: string): string {
       info2: 'Documento de identidade obrigatório',
       info3: 'Idade mínima: 18 anos',
       info4: 'Confirmação enviada por email',
+      info5: 'Não aceitamos crianças nem animais de estimação',
       acceptTerms: 'Aceito os',
       termsLink: 'termos e condições'
     },
@@ -273,6 +275,7 @@ function T(key: string, locale: string): string {
       info2: 'Documento de identidad obligatorio',
       info3: 'Edad mínima: 18 años',
       info4: 'Confirmación enviada por email',
+      info5: 'No aceptamos niños ni mascotas',
       acceptTerms: 'Acepto los',
       termsLink: 'términos y condiciones'
     },
@@ -292,6 +295,7 @@ function T(key: string, locale: string): string {
       info2: 'ID document required',
       info3: 'Minimum age: 18 years',
       info4: 'Confirmation sent by email',
+      info5: 'We do not accept children or pets',
       acceptTerms: 'I accept the',
       termsLink: 'terms and conditions'
     },
@@ -311,6 +315,7 @@ function T(key: string, locale: string): string {
       info2: 'Pièce d’identité obligatoire',
       info3: 'Âge minimum : 18 ans',
       info4: 'Confirmation envoyée par e-mail',
+      info5: 'Nous n’acceptons ni enfants ni animaux',
       acceptTerms: 'J’accepte les',
       termsLink: 'termes et conditions'
     },
@@ -330,6 +335,7 @@ function T(key: string, locale: string): string {
       info2: 'Ausweisdokument erforderlich',
       info3: 'Mindestalter: 18 Jahre',
       info4: 'Bestätigung per E-Mail gesendet',
+      info5: 'Wir akzeptieren keine Kinder oder Haustiere',
       acceptTerms: 'Ich akzeptiere die',
       termsLink: 'Allgemeinen Geschäftsbedingungen'
     }

@@ -6,6 +6,7 @@ import { BookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
 import { notificationService } from '../../services/notification-service';
+import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
 import type { BookingWithGuest } from '../../services/email-service';
 import { InsufficientAvailabilityError } from '../../services/booking-service';
 import { logger } from '../../utils/logger';
@@ -168,7 +169,24 @@ export const createBookingHandler = async (
         logger.error('No se pudo cargar guest para email de confirmación', { bookingId: booking.id });
         return;
       }
-      return notificationService.notify('booking_confirmation', bookingWithGuest as BookingWithGuest);
+      const guest = bookingWithGuest as BookingWithGuest;
+      // WhatsApp queda deshabilitado hasta que haya credenciales reales de
+      // Meta (WHATSAPP_ENABLED=false por defecto, ver whatsapp-notification-service.ts)
+      // -- sendBookingNotification() no-opea sola en ese caso, así que es
+      // seguro llamarla siempre sin chequear el flag acá.
+      if (guest.guest.phone) {
+        whatsappNotificationService
+          .sendBookingNotification({
+            phone: guest.guest.phone,
+            bookingId: guest.reservation_number,
+            checkIn: String(guest.check_in_date),
+            language: (['pt', 'en', 'es'] as string[]).includes(guest.guest.language ?? '') ? (guest.guest.language as 'pt' | 'en' | 'es') : 'en'
+          })
+          .catch(error => {
+            logger.error('Failed to send booking confirmation WhatsApp', { bookingId: booking.id, error: error.message });
+          });
+      }
+      return notificationService.notify('booking_confirmation', guest);
     }).catch(error => {
       logger.error('Failed to send booking confirmation email', {
         bookingId: booking.id,

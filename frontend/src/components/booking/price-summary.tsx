@@ -130,9 +130,9 @@ export const PriceSummary: React.FC<PriceSummaryProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-xs text-yellow-800">
-          💳 {T('paymentInfo', locale)}
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-xs text-blue-800">
+          ✉️ {T('paymentInfo', locale)}
         </p>
       </div>
     </Card>
@@ -151,8 +151,8 @@ function T(key: string, locale: string): string {
       depositNow: 'Depósito Agora',
       payNow: 'agora',
       remaining: 'Saldo Restante',
-      payLater: 'em 7 dias',
-      paymentInfo: 'Lembramos você por email para pagar o saldo 7 dias antes do check-in'
+      payLater: 'na chegada',
+      paymentInfo: 'A confirmação da sua reserva chega por email e WhatsApp'
     },
     es: {
       title: 'Resumen de Pago',
@@ -164,8 +164,8 @@ function T(key: string, locale: string): string {
       depositNow: 'Depósito Ahora',
       payNow: 'ahora',
       remaining: 'Saldo Restante',
-      payLater: 'en 7 días',
-      paymentInfo: 'Te recordamos por email para pagar el saldo 7 días antes del check-in'
+      payLater: 'al llegar',
+      paymentInfo: 'La confirmación de tu reserva te llega por email y WhatsApp'
     },
     en: {
       title: 'Payment Summary',
@@ -177,8 +177,8 @@ function T(key: string, locale: string): string {
       depositNow: 'Deposit Now',
       payNow: 'now',
       remaining: 'Remaining Balance',
-      payLater: 'in 7 days',
-      paymentInfo: 'We\'ll remind you by email to pay the balance 7 days before check-in'
+      payLater: 'on arrival',
+      paymentInfo: 'Your booking confirmation is sent by email and WhatsApp'
     },
     fr: {
       title: 'Résumé du Paiement',
@@ -190,8 +190,8 @@ function T(key: string, locale: string): string {
       depositNow: 'Acompte Maintenant',
       payNow: 'maintenant',
       remaining: 'Solde Restant',
-      payLater: 'dans 7 jours',
-      paymentInfo: 'Nous vous rappellerons par e-mail de payer le solde 7 jours avant l’arrivée'
+      payLater: 'à l’arrivée',
+      paymentInfo: 'La confirmation de votre réservation vous est envoyée par e-mail et WhatsApp'
     },
     de: {
       title: 'Zahlungsübersicht',
@@ -203,8 +203,8 @@ function T(key: string, locale: string): string {
       depositNow: 'Anzahlung Jetzt',
       payNow: 'jetzt',
       remaining: 'Restbetrag',
-      payLater: 'in 7 Tagen',
-      paymentInfo: 'Wir erinnern Sie per E-Mail, den Restbetrag 7 Tage vor Check-in zu zahlen'
+      payLater: 'bei Ankunft',
+      paymentInfo: 'Die Bestätigung Ihrer Buchung erhalten Sie per E-Mail und WhatsApp'
     }
   };
   return t[locale]?.[key] || key;

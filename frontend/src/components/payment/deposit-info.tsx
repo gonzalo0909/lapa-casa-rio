@@ -136,8 +136,8 @@ function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
       title: 'Pagamento em 2 Etapas',
-      step1: 'Depósito agora', step1Note: 'Confirma sua reserva imediatamente',
-      step2: 'Saldo em', step2Note: 'Pago no hostel na chegada (dinheiro), salvo se preferir cartão -- você recebe um lembrete por email 7 dias antes do check-in',
+      step1: 'Depósito agora', step1Note: 'Confirma sua reserva imediatamente -- a confirmação chega por email e WhatsApp',
+      step2: 'Saldo em', step2Note: 'Pago no hostel na chegada, salvo se preferir cartão',
       guaranteesTitle: 'Garantias e Segurança',
       instant: 'Confirmação instantânea da reserva',
       flexible: 'Política de cancelamento flexível',
@@ -153,8 +153,8 @@ function T(key: string, locale: string): string {
     },
     es: {
       title: 'Pago en 2 Etapas',
-      step1: 'Depósito ahora', step1Note: 'Confirma tu reserva de inmediato',
-      step2: 'Saldo el', step2Note: 'Se paga en el hostel al llegar (efectivo), salvo que prefieras tarjeta -- te mandamos un recordatorio por email 7 días antes del check-in',
+      step1: 'Depósito ahora', step1Note: 'Confirma tu reserva de inmediato -- la confirmación te llega por email y WhatsApp',
+      step2: 'Saldo el', step2Note: 'Se paga en el hostel al llegar, salvo que prefieras tarjeta',
       guaranteesTitle: 'Garantías y Seguridad',
       instant: 'Confirmación instantánea de la reserva',
       flexible: 'Política de cancelación flexible',
@@ -170,8 +170,8 @@ function T(key: string, locale: string): string {
     },
     en: {
       title: '2-Step Payment',
-      step1: 'Deposit now', step1Note: 'Confirms your booking immediately',
-      step2: 'Balance on', step2Note: 'Paid at the hostel on arrival (cash), unless you\'d rather pay by card -- you\'ll get an email reminder 7 days before check-in',
+      step1: 'Deposit now', step1Note: 'Confirms your booking immediately -- the confirmation is sent by email and WhatsApp',
+      step2: 'Balance on', step2Note: 'Paid at the hostel on arrival, unless you\'d rather pay by card',
       guaranteesTitle: 'Guarantees & Security',
       instant: 'Instant booking confirmation',
       flexible: 'Flexible cancellation policy',
@@ -187,8 +187,8 @@ function T(key: string, locale: string): string {
     },
     fr: {
       title: 'Paiement en 2 Étapes',
-      step1: 'Acompte maintenant', step1Note: 'Confirme votre réservation immédiatement',
-      step2: 'Solde le', step2Note: 'Payé à l’auberge à l’arrivée (espèces), sauf si vous préférez la carte -- vous recevrez un rappel par e-mail 7 jours avant l’arrivée',
+      step1: 'Acompte maintenant', step1Note: 'Confirme votre réservation immédiatement -- la confirmation vous est envoyée par e-mail et WhatsApp',
+      step2: 'Solde le', step2Note: 'Payé à l’auberge à l’arrivée, sauf si vous préférez la carte',
       guaranteesTitle: 'Garanties et Sécurité',
       instant: 'Confirmation instantanée de la réservation',
       flexible: 'Politique d’annulation flexible',
@@ -204,8 +204,8 @@ function T(key: string, locale: string): string {
     },
     de: {
       title: 'Zahlung in 2 Schritten',
-      step1: 'Anzahlung jetzt', step1Note: 'Bestätigt Ihre Buchung sofort',
-      step2: 'Restbetrag am', step2Note: 'Zahlung im Hostel bei Ankunft (bar), außer Sie zahlen lieber mit Karte -- Sie erhalten 7 Tage vor Check-in eine E-Mail-Erinnerung',
+      step1: 'Anzahlung jetzt', step1Note: 'Bestätigt Ihre Buchung sofort -- die Bestätigung erhalten Sie per E-Mail und WhatsApp',
+      step2: 'Restbetrag am', step2Note: 'Zahlung im Hostel bei Ankunft, außer Sie zahlen lieber mit Karte',
       guaranteesTitle: 'Garantien & Sicherheit',
       instant: 'Sofortige Buchungsbestätigung',
       flexible: 'Flexible Stornierungsbedingungen',

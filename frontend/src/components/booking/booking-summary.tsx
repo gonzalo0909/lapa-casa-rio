@@ -157,7 +157,7 @@ function T(key: string, locale: string): string {
       phone: 'Telefone',
       country: 'País',
       specialRequests: 'Solicitações especiais',
-      confirmation: 'Confirmação será enviada para seu email'
+      confirmation: 'Confirmação será enviada por email e WhatsApp'
     },
     es: {
       title: 'Resumen de Reserva',
@@ -178,7 +178,7 @@ function T(key: string, locale: string): string {
       phone: 'Teléfono',
       country: 'País',
       specialRequests: 'Solicitudes especiales',
-      confirmation: 'Confirmación será enviada a tu email'
+      confirmation: 'Confirmación será enviada por email y WhatsApp'
     },
     en: {
       title: 'Booking Summary',
@@ -199,7 +199,7 @@ function T(key: string, locale: string): string {
       phone: 'Phone',
       country: 'Country',
       specialRequests: 'Special requests',
-      confirmation: 'Confirmation will be sent to your email'
+      confirmation: 'Confirmation will be sent by email and WhatsApp'
     },
     fr: {
       title: 'Résumé de la Réservation',
@@ -220,7 +220,7 @@ function T(key: string, locale: string): string {
       phone: 'Téléphone',
       country: 'Pays',
       specialRequests: 'Demandes spéciales',
-      confirmation: 'La confirmation sera envoyée à votre e-mail'
+      confirmation: 'La confirmation vous sera envoyée par e-mail et WhatsApp'
     },
     de: {
       title: 'Buchungsübersicht',
@@ -241,7 +241,7 @@ function T(key: string, locale: string): string {
       phone: 'Telefon',
       country: 'Land',
       specialRequests: 'Besondere Wünsche',
-      confirmation: 'Die Bestätigung wird an Ihre E-Mail gesendet'
+      confirmation: 'Die Bestätigung wird per E-Mail und WhatsApp gesendet'
     }
   };
   return t[locale]?.[key] || key;

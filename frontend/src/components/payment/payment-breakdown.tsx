@@ -136,7 +136,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Alta temporada', totalAmount: 'Valor total', depositLabel: 'Depósito inicial',
       ofTotal: 'do valor total', depositNote1: 'Pague agora para confirmar sua reserva',
       depositNote2: 'Não reembolsável em caso de cancelamento ou não comparecimento', remainingLabel: 'Saldo restante',
-      remainingNote1: 'Pago no hostel na chegada (dinheiro), salvo se preferir pagar com cartão', remainingNote2: 'Não é cobrado automaticamente -- te enviamos um lembrete por email 7 dias antes do check-in',
+      remainingNote1: 'Pago no hostel na chegada, salvo se preferir pagar com cartão', remainingNote2: 'Não é cobrado automaticamente -- a confirmação da sua reserva chega por email e WhatsApp',
       secureNote: 'Pagamento 100% seguro e criptografado'
     },
     es: {
@@ -144,7 +144,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Temporada alta', totalAmount: 'Monto total', depositLabel: 'Depósito inicial',
       ofTotal: 'del monto total', depositNote1: 'Pagá ahora para confirmar tu reserva',
       depositNote2: 'No reembolsable en caso de cancelación o no-show', remainingLabel: 'Saldo restante',
-      remainingNote1: 'Se paga en el hostel al llegar (efectivo), salvo que prefieras pagar con tarjeta', remainingNote2: 'No se cobra automáticamente -- te mandamos un recordatorio por email 7 días antes del check-in',
+      remainingNote1: 'Se paga en el hostel al llegar, salvo que prefieras pagar con tarjeta', remainingNote2: 'No se cobra automáticamente -- la confirmación de tu reserva te llega por email y WhatsApp',
       secureNote: 'Pago 100% seguro y cifrado'
     },
     en: {
@@ -152,7 +152,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'High season', totalAmount: 'Total amount', depositLabel: 'Initial deposit',
       ofTotal: 'of the total', depositNote1: 'Pay now to confirm your booking',
       depositNote2: 'Non-refundable in case of cancellation or no-show', remainingLabel: 'Remaining balance',
-      remainingNote1: 'Paid at the hostel on arrival (cash), unless you\'d rather pay by card', remainingNote2: 'Not charged automatically -- we\'ll email you a reminder 7 days before check-in',
+      remainingNote1: 'Paid at the hostel on arrival, unless you\'d rather pay by card', remainingNote2: 'Not charged automatically -- your booking confirmation is sent by email and WhatsApp',
       secureNote: '100% secure, encrypted payment'
     },
     fr: {
@@ -160,7 +160,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Haute saison', totalAmount: 'Montant total', depositLabel: 'Acompte initial',
       ofTotal: 'du montant total', depositNote1: 'Payez maintenant pour confirmer votre réservation',
       depositNote2: 'Non remboursable en cas d’annulation ou de non-présentation', remainingLabel: 'Solde restant',
-      remainingNote1: 'Payé à l’auberge à l’arrivée (espèces), sauf si vous préférez payer par carte', remainingNote2: 'Non prélevé automatiquement -- nous vous enverrons un rappel par e-mail 7 jours avant l’arrivée',
+      remainingNote1: 'Payé à l’auberge à l’arrivée, sauf si vous préférez payer par carte', remainingNote2: 'Non prélevé automatiquement -- la confirmation de votre réservation vous est envoyée par e-mail et WhatsApp',
       secureNote: 'Paiement 100% sécurisé et chiffré'
     },
     de: {
@@ -168,7 +168,7 @@ function T(key: string, locale: string): string {
       seasonSurcharge: 'Hochsaison', totalAmount: 'Gesamtbetrag', depositLabel: 'Erste Anzahlung',
       ofTotal: 'des Gesamtbetrags', depositNote1: 'Jetzt zahlen, um Ihre Buchung zu bestätigen',
       depositNote2: 'Nicht erstattungsfähig bei Stornierung oder Nichterscheinen', remainingLabel: 'Restbetrag',
-      remainingNote1: 'Zahlung im Hostel bei Ankunft (bar), außer Sie zahlen lieber mit Karte', remainingNote2: 'Keine automatische Abbuchung -- wir erinnern Sie 7 Tage vor Check-in per E-Mail',
+      remainingNote1: 'Zahlung im Hostel bei Ankunft, außer Sie zahlen lieber mit Karte', remainingNote2: 'Keine automatische Abbuchung -- die Bestätigung Ihrer Buchung erhalten Sie per E-Mail und WhatsApp',
       secureNote: '100% sichere, verschlüsselte Zahlung'
     }
   };

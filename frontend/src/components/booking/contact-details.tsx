@@ -118,11 +118,15 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
             placeholder={T('phonePlaceholder', locale)}
             className={touched.phone && errors.phone ? 'border-red-500' : ''}
             aria-invalid={touched.phone && !!errors.phone}
-            aria-describedby={errors.phone ? 'phone-error' : undefined}
+            aria-describedby={errors.phone ? 'phone-error' : 'phone-hint'}
           />
-          {touched.phone && errors.phone && (
+          {touched.phone && errors.phone ? (
             <p id="phone-error" className="text-sm text-red-600 mt-1">
               {errors.phone}
+            </p>
+          ) : (
+            <p id="phone-hint" className="text-xs text-gray-500 mt-1">
+              {T('phoneHint', locale)}
             </p>
           )}
         </div>
@@ -194,6 +198,7 @@ function T(key: string, locale: string): string {
       emailPlaceholder: 'joao@email.com',
       phone: 'Telefone (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
+      phoneHint: 'Use o número do seu WhatsApp, mesmo morando fora do Brasil -- é assim que vamos te contatar se precisarmos, sem custo de ligação internacional.',
       country: 'País',
       selectCountry: 'Selecione seu país',
       documentNumber: 'Documento de Identidade',
@@ -210,6 +215,7 @@ function T(key: string, locale: string): string {
       emailPlaceholder: 'juan@email.com',
       phone: 'Teléfono (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
+      phoneHint: 'Poné el número de tu WhatsApp, aunque vivas fuera de Brasil -- así te contactamos si hace falta, sin costo de llamada internacional.',
       country: 'País',
       selectCountry: 'Selecciona tu país',
       documentNumber: 'Documento de Identidad',
@@ -226,6 +232,7 @@ function T(key: string, locale: string): string {
       emailPlaceholder: 'john@email.com',
       phone: 'Phone (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
+      phoneHint: 'Enter your WhatsApp number, even if you live abroad -- that\'s how we\'ll reach you if needed, with no international call cost.',
       country: 'Country',
       selectCountry: 'Select your country',
       documentNumber: 'ID Document',
@@ -242,6 +249,7 @@ function T(key: string, locale: string): string {
       emailPlaceholder: 'jean@email.com',
       phone: 'Téléphone (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
+      phoneHint: 'Indiquez votre numéro WhatsApp, même si vous vivez hors du Brésil -- c’est ainsi que nous vous contacterons si besoin, sans frais d’appel international.',
       country: 'Pays',
       selectCountry: 'Sélectionnez votre pays',
       documentNumber: 'Pièce d’Identité',
@@ -258,6 +266,7 @@ function T(key: string, locale: string): string {
       emailPlaceholder: 'max@email.com',
       phone: 'Telefon (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
+      phoneHint: 'Geben Sie Ihre WhatsApp-Nummer an, auch wenn Sie außerhalb Brasiliens leben -- so erreichen wir Sie bei Bedarf ohne Kosten für internationale Anrufe.',
       country: 'Land',
       selectCountry: 'Land auswählen',
       documentNumber: 'Ausweisdokument',

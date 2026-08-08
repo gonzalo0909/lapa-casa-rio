@@ -254,7 +254,7 @@ function T(key: string, locale: string): string {
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'Documento de identidade obrigatório',
       info3: 'Idade mínima: 18 anos',
-      info4: 'Confirmação enviada por email',
+      info4: 'Confirmação enviada por email e WhatsApp',
       info5: 'Não aceitamos crianças nem animais de estimação',
       acceptTerms: 'Aceito os',
       termsLink: 'termos e condições'
@@ -274,7 +274,7 @@ function T(key: string, locale: string): string {
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'Documento de identidad obligatorio',
       info3: 'Edad mínima: 18 años',
-      info4: 'Confirmación enviada por email',
+      info4: 'Confirmación enviada por email y WhatsApp',
       info5: 'No aceptamos niños ni mascotas',
       acceptTerms: 'Acepto los',
       termsLink: 'términos y condiciones'
@@ -294,7 +294,7 @@ function T(key: string, locale: string): string {
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'ID document required',
       info3: 'Minimum age: 18 years',
-      info4: 'Confirmation sent by email',
+      info4: 'Confirmation sent by email and WhatsApp',
       info5: 'We do not accept children or pets',
       acceptTerms: 'I accept the',
       termsLink: 'terms and conditions'
@@ -314,7 +314,7 @@ function T(key: string, locale: string): string {
       info1: 'Arrivée : 14h00 - Départ : 12h00',
       info2: 'Pièce d’identité obligatoire',
       info3: 'Âge minimum : 18 ans',
-      info4: 'Confirmation envoyée par e-mail',
+      info4: 'Confirmation envoyée par e-mail et WhatsApp',
       info5: 'Nous n’acceptons ni enfants ni animaux',
       acceptTerms: 'J’accepte les',
       termsLink: 'termes et conditions'
@@ -334,7 +334,7 @@ function T(key: string, locale: string): string {
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'Ausweisdokument erforderlich',
       info3: 'Mindestalter: 18 Jahre',
-      info4: 'Bestätigung per E-Mail gesendet',
+      info4: 'Bestätigung per E-Mail und WhatsApp gesendet',
       info5: 'Wir akzeptieren keine Kinder oder Haustiere',
       acceptTerms: 'Ich akzeptiere die',
       termsLink: 'Allgemeinen Geschäftsbedingungen'

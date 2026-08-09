@@ -111,7 +111,7 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="cardholder-name" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="cardholder-name" className="block text-sm font-medium text-foreground mb-2">
           {T('cardholderName', locale)}
         </label>
         <input
@@ -120,7 +120,7 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
           value={cardholderName}
           onChange={(e) => setCardholderName(e.target.value)}
           placeholder={T('cardholderPlaceholder', locale)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={isProcessing}
           required
           aria-required="true"
@@ -128,10 +128,14 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
       </div>
 
       <div>
-        <label htmlFor="card-number" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="card-number" className="block text-sm font-medium text-foreground mb-2">
           {T('cardNumber', locale)}
         </label>
-        <div className="px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+        {/* bg-white fijo a propósito: Stripe Elements corre en un iframe con su propio
+            color de texto (CARD_ELEMENT_OPTIONS.style.base.color, no puede leer CSS
+            variables del tema) -- sin un fondo claro fijo acá, el texto oscuro de
+            Stripe queda ilegible sobre el fondo oscuro de la página. */}
+        <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
           <CardNumberElement id="card-number" options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardNumber')} />
         </div>
         {cardErrors.cardNumber && <p className="mt-1 text-sm text-red-600" role="alert">{cardErrors.cardNumber}</p>}
@@ -139,20 +143,20 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="card-expiry" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="card-expiry" className="block text-sm font-medium text-foreground mb-2">
             {T('expiry', locale)}
           </label>
-          <div className="px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
             <CardExpiryElement id="card-expiry" options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardExpiry')} />
           </div>
           {cardErrors.cardExpiry && <p className="mt-1 text-sm text-red-600" role="alert">{cardErrors.cardExpiry}</p>}
         </div>
 
         <div>
-          <label htmlFor="card-cvc" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="card-cvc" className="block text-sm font-medium text-foreground mb-2">
             {T('cvc', locale)}
           </label>
-          <div className="px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
             <CardCvcElement id="card-cvc" options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardCvc')} />
           </div>
           {cardErrors.cardCvc && <p className="mt-1 text-sm text-red-600" role="alert">{cardErrors.cardCvc}</p>}
@@ -176,7 +180,7 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
         )}
       </Button>
 
-      <div className="flex items-center justify-center gap-2 text-xs text-gray-500 pt-2">
+      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
         </svg>

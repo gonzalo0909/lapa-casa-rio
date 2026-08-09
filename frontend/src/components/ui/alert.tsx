@@ -24,11 +24,11 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-gray-50 border-gray-200 text-gray-900 [&>svg]:text-gray-600',
-        info: 'bg-blue-50 border-blue-200 text-blue-900 [&>svg]:text-blue-600',
-        success: 'bg-green-50 border-green-200 text-green-900 [&>svg]:text-green-600',
-        warning: 'bg-yellow-50 border-yellow-200 text-yellow-900 [&>svg]:text-yellow-600',
-        danger: 'bg-red-50 border-red-200 text-red-900 [&>svg]:text-red-600',
+        default: 'bg-gray-50 dark:bg-muted border-gray-200 dark:border-border text-gray-900 dark:text-foreground [&>svg]:text-gray-600 dark:[&>svg]:text-muted-foreground',
+        info: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400',
+        success: 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800 text-green-900 dark:text-green-200 [&>svg]:text-green-600 dark:[&>svg]:text-green-400',
+        warning: 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800 text-yellow-900 dark:text-yellow-200 [&>svg]:text-yellow-600 dark:[&>svg]:text-yellow-400',
+        danger: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200 [&>svg]:text-red-600 dark:[&>svg]:text-red-400',
       },
     },
     defaultVariants: {

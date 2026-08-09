@@ -119,41 +119,41 @@ export function PaymentProcessor({
         </Alert>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h3 className="text-lg font-semibold mb-4">{T('methodTitle', locale)}</h3>
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+        <h3 className="text-lg font-semibold mb-4 text-foreground">{T('methodTitle', locale)}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <button
             type="button"
             onClick={() => handleSelectMethod('card')}
             className={`p-4 border-2 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              method === 'card' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              method === 'card' ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40' : 'border-border hover:border-muted-foreground'
             }`}
             aria-pressed={method === 'card'}
           >
             <div className="flex items-center justify-center mb-2">
-              <svg className="w-8 h-8 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-muted-foreground" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
               </svg>
             </div>
-            <p className="font-medium text-gray-900">{T('card', locale)}</p>
+            <p className="font-medium text-foreground">{T('card', locale)}</p>
           </button>
 
           <button
             type="button"
             onClick={() => handleSelectMethod('pix')}
             className={`p-4 border-2 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              method === 'pix' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              method === 'pix' ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40' : 'border-border hover:border-muted-foreground'
             }`}
             aria-pressed={method === 'pix'}
           >
             <div className="flex items-center justify-center mb-2">
-              <svg className="w-8 h-8 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-muted-foreground" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
               </svg>
             </div>
-            <p className="font-medium text-gray-900">PIX</p>
-            <p className="text-sm text-gray-500">{T('pixInstant', locale)}</p>
+            <p className="font-medium text-foreground">PIX</p>
+            <p className="text-sm text-muted-foreground">{T('pixInstant', locale)}</p>
           </button>
         </div>
 
@@ -167,7 +167,7 @@ export function PaymentProcessor({
           stripePromise ? (
             <>
               {intent.cardSurchargePercent > 0 && (
-                <p className="text-xs text-gray-600 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   {T('surchargeNote', locale).replace('{pct}', intent.cardSurchargePercent.toString())}
                 </p>
               )}
@@ -201,13 +201,13 @@ export function PaymentProcessor({
         )}
 
         {!method && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <p>{T('selectPrompt', locale)}</p>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />

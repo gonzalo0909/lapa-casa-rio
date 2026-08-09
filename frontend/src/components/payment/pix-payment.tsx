@@ -65,14 +65,14 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
           <div className="flex-1">
-            <h4 className="font-medium text-blue-900 mb-1">{T('howTo', locale)}</h4>
-            <ol className="text-sm text-blue-800 space-y-1">
+            <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-1">{T('howTo', locale)}</h4>
+            <ol className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
               <li>{T('step1', locale)}</li>
               <li>{T('step2', locale)}</li>
               <li>{T('step3', locale)}</li>
@@ -82,7 +82,9 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
         </div>
       </div>
 
-      <div className="flex justify-center bg-white p-6 rounded-lg border">
+      {/* bg-white fijo a propósito: el QR necesita alto contraste para escanear bien,
+          independiente del tema de la página. */}
+      <div className="flex justify-center bg-white p-6 rounded-lg border border-gray-300">
         {qrCodeBase64 ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={`data:image/png;base64,${qrCodeBase64}`} alt="QR Code Pix" width={256} height={256} />
@@ -98,8 +100,8 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
       )}
 
       <div className="space-y-3">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <label htmlFor="pix-code" className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <label htmlFor="pix-code" className="block text-sm font-medium text-foreground mb-2">
             {T('codeLabel', locale)}
           </label>
           <div className="flex items-center gap-2">
@@ -108,7 +110,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
               type="text"
               value={qrCode}
               readOnly
-              className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono"
+              className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-900"
             />
             <Button type="button" onClick={copyPixCode} variant={copied ? 'success' : 'outline'} size="sm">
               {copied ? T('copied', locale) : T('copy', locale)}
@@ -116,20 +118,20 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-card border border-border rounded-lg p-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">{T('amountLabel', locale)}</span>
-            <span className="text-xl font-bold text-gray-900">R$ {amount.toFixed(2)}</span>
+            <span className="text-sm font-medium text-foreground">{T('amountLabel', locale)}</span>
+            <span className="text-xl font-bold text-foreground">R$ {amount.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
         <LoadingSpinner size="sm" />
         <span>{T('waiting', locale)}</span>
       </div>
 
-      <div className="text-center text-xs text-gray-500 pt-4 border-t">
+      <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
         <p>{T('autoConfirm', locale)}</p>
         <p className="mt-1">{T('dontClose', locale)}</p>
       </div>

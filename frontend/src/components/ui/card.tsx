@@ -26,14 +26,14 @@ import { cva, type VariantProps } from 'class-variance-authority';
  */
 
 const cardVariants = cva(
-  'rounded-xl border bg-white transition-all duration-200',
+  'rounded-xl border bg-card text-card-foreground transition-all duration-200',
   {
     variants: {
       variant: {
-        default: 'border-gray-200 shadow-sm',
+        default: 'border-border shadow-sm',
         elevated: 'border-transparent shadow-lg',
-        outlined: 'border-gray-300 shadow-none',
-        interactive: 'border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer',
+        outlined: 'border-border shadow-none',
+        interactive: 'border-border shadow-sm hover:shadow-md hover:border-primary cursor-pointer',
       },
       padding: {
         none: 'p-0',
@@ -96,7 +96,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className, bordered = false, ...props }, ref) => (
     <div
       ref={ref}
-      className={`flex flex-col gap-1.5 ${bordered ? 'border-b border-gray-200 pb-4' : ''} ${className || ''}`}
+      className={`flex flex-col gap-1.5 ${bordered ? 'border-b border-border pb-4' : ''} ${className || ''}`}
       {...props}
     />
   )
@@ -122,7 +122,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
       // eslint-disable-next-line jsx-a11y/heading-has-content -- envoltorio genérico, el contenido lo pasa quien lo usa
       <h3
         ref={ref}
-        className={`font-semibold leading-tight text-gray-900 ${sizeClasses[size]} ${className || ''}`}
+        className={`font-semibold leading-tight text-foreground ${sizeClasses[size]} ${className || ''}`}
         {...props}
       />
     );
@@ -136,7 +136,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={`text-sm text-gray-500 ${className || ''}`}
+      className={`text-sm text-muted-foreground ${className || ''}`}
       {...props}
     />
   )
@@ -167,7 +167,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className, bordered = false, ...props }, ref) => (
     <div
       ref={ref}
-      className={`flex items-center pt-4 ${bordered ? 'border-t border-gray-200' : ''} ${className || ''}`}
+      className={`flex items-center pt-4 ${bordered ? 'border-t border-border' : ''} ${className || ''}`}
       {...props}
     />
   )

@@ -46,24 +46,24 @@ export function DepositInfo({
       <Alert variant="info">
         <div className="space-y-3">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
             </svg>
             <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 mb-2">{T('title', locale)}</h4>
-              <div className="space-y-2 text-sm text-blue-800">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">{T('title', locale)}</h4>
+              <div className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
                 <div className="flex items-start gap-2">
                   <span className="font-bold">1.</span>
                   <div>
                     <p className="font-medium">{T('step1', locale)}: {formatCurrency(depositAmount)}</p>
-                    <p className="text-blue-700">{T('step1Note', locale)}</p>
+                    <p className="text-blue-700 dark:text-blue-400">{T('step1Note', locale)}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="font-bold">2.</span>
                   <div>
                     <p className="font-medium">{T('step2', locale)} {remainingPaymentDate}: {formatCurrency(remainingAmount)}</p>
-                    <p className="text-blue-700">{T('step2Note', locale)}</p>
+                    <p className="text-blue-700 dark:text-blue-400">{T('step2Note', locale)}</p>
                   </div>
                 </div>
               </div>
@@ -72,16 +72,16 @@ export function DepositInfo({
         </div>
       </Alert>
 
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+      <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <div className="bg-green-100 rounded-full p-2">
-            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+          <div className="bg-green-100 dark:bg-green-900/60 rounded-full p-2">
+            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
             </svg>
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-green-900 mb-2">{T('guaranteesTitle', locale)}</h4>
-            <ul className="space-y-1 text-sm text-green-800">
+            <h4 className="font-semibold text-green-900 dark:text-green-200 mb-2">{T('guaranteesTitle', locale)}</h4>
+            <ul className="space-y-1 text-sm text-green-800 dark:text-green-300">
               {['instant', 'flexible', 'fraud', 'encrypted'].map((k) => (
                 <li key={k} className="flex items-center gap-2">
                   <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -95,8 +95,8 @@ export function DepositInfo({
         </div>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+      <div className="bg-card rounded-lg p-4 border border-border">
+        <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
           </svg>
@@ -104,29 +104,29 @@ export function DepositInfo({
         </h4>
         <div className="space-y-3 text-sm">
           <details className="group">
-            <summary className="cursor-pointer font-medium text-gray-900 hover:text-blue-600 transition-colors">
+            <summary className="cursor-pointer font-medium text-foreground hover:text-primary transition-colors">
               {T('faq1Q', locale)}
             </summary>
-            <p className="mt-2 text-gray-600 pl-4">{T('faq1A', locale)}</p>
+            <p className="mt-2 text-muted-foreground pl-4">{T('faq1A', locale)}</p>
           </details>
 
           <details className="group">
-            <summary className="cursor-pointer font-medium text-gray-900 hover:text-blue-600 transition-colors">
+            <summary className="cursor-pointer font-medium text-foreground hover:text-primary transition-colors">
               {T('faq2Q', locale)}
             </summary>
-            <p className="mt-2 text-gray-600 pl-4">{T('faq2A', locale)}</p>
+            <p className="mt-2 text-muted-foreground pl-4">{T('faq2A', locale)}</p>
           </details>
         </div>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+      <div className="bg-card rounded-lg p-4 border border-border">
+        <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" clipRule="evenodd"/>
           </svg>
           {T('policyTitle', locale)}
         </h4>
-        <p className="text-sm text-gray-700">{T('policyNone', locale)}</p>
+        <p className="text-sm text-muted-foreground">{T('policyNone', locale)}</p>
       </div>
     </div>
   );

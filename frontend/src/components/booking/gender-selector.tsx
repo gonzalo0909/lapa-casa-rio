@@ -8,10 +8,12 @@ import type { BookingGender } from '@/types/global';
 /**
  * GenderSelector Component
  *
- * Se elige junto con las fechas, antes de ver los cuartos: pregunta
- * directamente el sexo del huésped (hombre/mujer), no el tipo de grupo.
- * Los hombres ven los cuartos mixtos (12 y 7 camas); las mujeres ven
- * esos dos más el cuarto solo-mujeres (Flexible 7).
+ * Se elige junto con las fechas, antes de ver los cuartos.
+ * "Solo hombres" muestra los cuartos mixtos (12 y 7 camas).
+ * "Mujeres / Grupo mixto" muestra esos mismos más el cuarto Flexible 7
+ * (solo-mujeres) -- aplica tanto para grupos de mujeres como para un
+ * hombre que reserva en nombre de un grupo que incluye mujeres y necesita
+ * ese cuarto para ellas.
  *
  * @component
  */
@@ -65,34 +67,34 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
-      title: 'Quem vai se hospedar?',
-      mixed: 'Homens + Grupo misto',
-      female: 'Mulheres',
-      hint: 'Isso define quais quartos aparecem na próxima etapa.'
+      title: ‘Quem vai se hospedar?’,
+      mixed: ‘So homens’,
+      female: ‘Mulheres / Grupo misto’,
+      hint: ‘Escolha "Mulheres / Grupo misto" se alguem do grupo precisar do quarto feminino exclusivo.’
     },
     es: {
-      title: '¿Quién se va a hospedar?',
-      mixed: 'Hombres + Grupo mixto',
-      female: 'Mujeres',
-      hint: 'Esto define qué habitaciones aparecen en el próximo paso.'
+      title: ‘¿Quién se va a hospedar?’,
+      mixed: ‘Solo hombres’,
+      female: ‘Mujeres / Grupo mixto’,
+      hint: ‘Elegí "Mujeres / Grupo mixto" si alguien del grupo necesita el cuarto solo-mujeres.’
     },
     en: {
-      title: 'Who is staying?',
-      mixed: 'Men + Mixed group',
-      female: 'Women',
-      hint: 'This decides which rooms show up in the next step.'
+      title: ‘Who is staying?’,
+      mixed: ‘Men only’,
+      female: ‘Women / Mixed group’,
+      hint: ‘Choose "Women / Mixed group" if anyone in the group needs the female-only room.’
     },
     fr: {
-      title: 'Qui va séjourner ?',
-      mixed: 'Hommes + Groupe mixte',
-      female: 'Femmes',
-      hint: 'Cela détermine quelles chambres apparaissent à l’étape suivante.'
+      title: ‘Qui va séjourner ?’,
+      mixed: ‘Hommes seulement’,
+      female: ‘Femmes / Groupe mixte’,
+      hint: ‘Choisissez "Femmes / Groupe mixte" si quelqu\’un du groupe a besoin de la chambre réservée aux femmes.’
     },
     de: {
-      title: 'Wer übernachtet?',
-      mixed: 'Männer + Gemischte Gruppe',
-      female: 'Frauen',
-      hint: 'Das legt fest, welche Zimmer im nächsten Schritt angezeigt werden.'
+      title: ‘Wer übernachtet?’,
+      mixed: ‘Nur Männer’,
+      female: ‘Frauen / Gemischte Gruppe’,
+      hint: ‘Wählen Sie "Frauen / Gemischte Gruppe", wenn jemand aus der Gruppe das Frauenzimmer benötigt.’
     }
   };
   return t[locale]?.[key] || key;

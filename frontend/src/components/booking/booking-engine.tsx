@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { DateSelector } from './date-selector';
-import { GenderSelector } from './gender-selector';
 import { RoomSelector } from './room-selector';
 import { PricingCalculator } from './pricing-calculator';
 import { GuestForm } from './guest-form';
@@ -182,6 +181,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const handleRoomSelection = useCallback(async (rooms: Room[]) => {
     setSelectedRooms(rooms);
     setError(null);
+    // Inferir género desde los cuartos elegidos: si hay algún cuarto
+    // solo-mujeres (isFlexible), se registra 'female'; si no, 'mixed'.
+    // El usuario ya confirmó explícitamente en el modal del room-selector.
+    setGender(rooms.some((r) => r.isFlexible) ? 'female' : 'mixed');
 
     if (dateRange?.checkIn && dateRange?.checkOut && rooms.length > 0) {
       try {
@@ -271,10 +274,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
       <div className="bg-card rounded-lg shadow-lg p-6 mb-6 border border-border">
         {currentStep === 'dates' && (
-          <>
-            <GenderSelector value={gender} onChange={setGender} locale={locale} className="mb-6" />
-            <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
-          </>
+          <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
         )}
         {currentStep === 'rooms' && (
           <RoomSelector

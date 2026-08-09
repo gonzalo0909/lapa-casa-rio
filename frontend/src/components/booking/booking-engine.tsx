@@ -134,9 +134,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [dateRange, selectedRooms, guestDetails, t]);
 
   const handleNext = useCallback(async () => {
-    if (!validateStep(currentStep)) {
-      return;
-    }
+    if (!validateStep(currentStep)) return;
 
     const idx = STEPS.indexOf(currentStep);
     if (idx < STEPS.length - 1) {
@@ -201,9 +199,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [dateRange, setSelectedRooms, setTotalPrice]);
 
   const handleConfirm = useCallback(async () => {
-    if (!validateStep('summary')) {
-      return;
-    }
+    if (!validateStep('summary')) return;
 
     setIsProcessing(true);
     setError(null);

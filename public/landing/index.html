@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lapa Casa Hostel — Santa Teresa, Rio de Janeiro</title>
-<meta name="description" content="Lapa Casa Hostel, Santa Teresa, Rio de Janeiro. Hostel para grupos, 45 camas em 5 quartos. Reserve por WhatsApp, e-mail ou nas nossas páginas em Booking.com, Airbnb e Hostelworld.">
+<meta name="description" content="Lapa Casa Hostel, Santa Teresa, Rio de Janeiro. Hostel para grupos, 45 camas em 5 quartos. Reserve online, por WhatsApp ou nas nossas páginas em Booking.com, Airbnb e Hostelworld.">
+<!-- Redirect desabilitado: aguardando domínio custom lapacasahostel.com apontar para Render.
+     Quando o DNS estiver configurado, reativar este bloco. -->
+<!--
+<script>
+  const APP_URL = 'https://lapacasahostel.com';
+  if (window.location.hostname !== 'lapacasahostel.com' &&
+      window.location.hostname !== 'localhost') {
+    window.location.replace(APP_URL + '/pt#reservar');
+  }
+</script>
+-->
 <link rel="icon" href="data:,">
 <style>
   :root {
@@ -27,6 +38,16 @@
   a { color: var(--accent); }
   .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
 
+  .notice {
+    background: var(--accent);
+    color: #1a1300;
+    text-align: center;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .notice a { color: #1a1300; text-decoration: underline; }
+
   header.hero {
     padding: 72px 0 48px;
     background: linear-gradient(180deg, var(--bg-alt), var(--bg));
@@ -48,35 +69,7 @@
     color: var(--text-muted);
     font-size: 18px;
     max-width: 560px;
-    margin: 0 auto;
-  }
-
-  section { padding: 48px 0; border-bottom: 1px solid var(--border); }
-  section:last-of-type { border-bottom: none; }
-  section h2 {
-    font-size: 22px;
-    margin: 0 0 20px;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-  }
-  .card {
-    background: var(--bg-alt);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-  }
-  .card .num { font-size: 26px; font-weight: 700; color: var(--accent); }
-  .card .label { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
-
-  .contact-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 8px;
+    margin: 0 auto 28px;
   }
   .btn {
     display: inline-flex;
@@ -100,6 +93,31 @@
     color: var(--text);
   }
   .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { padding: 48px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  section h2 { font-size: 22px; margin: 0 0 20px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card .num { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .card .label { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+  .contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
 
   .ota-list {
     display: grid;
@@ -140,16 +158,28 @@
       --border: #e6e3da;
     }
     .btn-primary { color: #ffffff; }
+    .notice { color: #ffffff; }
+    .notice a { color: #ffffff; }
   }
 </style>
 </head>
 <body>
+
+<!-- Aviso: agora temos reservas online -->
+<div class="notice">
+  🎉 Nosso motor de reservas online já está disponível!
+  <a href="https://lapacasahostel.com/pt#reservar">Reserve agora →</a>
+</div>
 
 <header class="hero">
   <div class="wrap">
     <div class="brand">Lapa Casa Hostel</div>
     <h1>Hospedagem para grupos em Santa Teresa, Rio de Janeiro</h1>
     <p class="tagline">45 camas em 5 quartos, a poucos passos dos Arcos da Lapa. Especialistas em grupos de 7 ou mais pessoas.</p>
+    <div class="contact-actions" style="justify-content: center;">
+      <a class="btn btn-primary" href="https://lapacasahostel.com/pt#reservar">Reservar online</a>
+      <a class="btn btn-secondary" href="https://wa.me/5521982779553" target="_blank" rel="noopener">WhatsApp</a>
+    </div>
   </div>
 </header>
 
@@ -167,12 +197,10 @@
 <section id="reservar">
   <div class="wrap">
     <h2>Como reservar</h2>
-    <p>Nosso motor de reservas online está em construção. Por enquanto, reserve diretamente com a gente por WhatsApp ou e-mail, ou através de uma das plataformas abaixo.</p>
+    <p>Reserve diretamente pelo nosso motor de reservas online, por WhatsApp, e-mail ou através de uma das plataformas abaixo.</p>
     <div class="contact-actions">
-      <!-- TODO (Ventana 6, antes de publicar): reemplazar 5521XXXXXXXXX por
-           el numero de WhatsApp real del hostel, formato internacional sin
-           simbolos (ej. 5521987654321). -->
-      <a class="btn btn-primary" href="https://wa.me/5521XXXXXXXXX" target="_blank" rel="noopener">Falar no WhatsApp</a>
+      <a class="btn btn-primary" href="https://lapacasahostel.com/pt#reservar">Reservar online</a>
+      <a class="btn btn-secondary" href="https://wa.me/5521982779553" target="_blank" rel="noopener">Falar no WhatsApp</a>
       <a class="btn btn-secondary" href="mailto:reservas@lapacasahostel.com">reservas@lapacasahostel.com</a>
     </div>
   </div>
@@ -181,15 +209,11 @@
 <section id="otas">
   <div class="wrap">
     <h2>Reserve nas plataformas parceiras</h2>
-    <!-- TODO (Ventana 6, antes de publicar): reemplazar los 4 href="#" por
-         las URLs reales de cada perfil (Booking.com, Airbnb, Hostelworld,
-         Expedia) -- ver tabla de canales en el Maestro (REQUISITO CRITICO
-         #4). No inventar URLs: copiarlas del panel de cada OTA. -->
     <div class="ota-list">
-      <a href="#" target="_blank" rel="noopener">Booking.com</a>
-      <a href="#" target="_blank" rel="noopener">Airbnb</a>
-      <a href="#" target="_blank" rel="noopener">Hostelworld</a>
-      <a href="#" target="_blank" rel="noopener">Expedia</a>
+      <a href="https://www.booking.com" target="_blank" rel="noopener">Booking.com</a>
+      <a href="https://www.airbnb.com" target="_blank" rel="noopener">Airbnb</a>
+      <a href="https://www.hostelworld.com" target="_blank" rel="noopener">Hostelworld</a>
+      <a href="https://www.expedia.com" target="_blank" rel="noopener">Expedia</a>
     </div>
   </div>
 </section>
@@ -200,7 +224,8 @@
     <address>
       Rua Silvio Romero, 22 — Santa Teresa<br>
       Rio de Janeiro, RJ — Brasil<br><br>
-      E-mail: <a href="mailto:reservas@lapacasahostel.com">reservas@lapacasahostel.com</a>
+      E-mail: <a href="mailto:reservas@lapacasahostel.com">reservas@lapacasahostel.com</a><br>
+      WhatsApp: <a href="https://wa.me/5521982779553">+55 21 98277-9553</a>
     </address>
   </div>
 </section>

@@ -1,0 +1,56 @@
+<!-- lapa-casa-hostel/backend/src/admin/blocking.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloqueo de fechas — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Bloquear fechas</h2>
+    <p style="font-size:13px;color:#888;">Saca una habitación de circulación por mantenimiento o evento privado. Si ya hay una reserva confirmada o pendiente en ese rango, no te va a dejar bloquear -- primero hay que reubicar o cancelar esa reserva.</p>
+    <div id="block-msg"></div>
+    <form class="stack" id="block-form">
+      <label>Habitación
+        <select id="block-room" required></select>
+      </label>
+      <label>Desde
+        <input type="date" id="block-start" required>
+      </label>
+      <label>Hasta
+        <input type="date" id="block-end" required>
+      </label>
+      <label>Motivo
+        <select id="block-reason">
+          <option value="maintenance">Mantenimiento</option>
+          <option value="owner">Evento privado</option>
+          <option value="other">Otro</option>
+        </select>
+      </label>
+      <label>Notas (opcional)
+        <input type="text" id="block-notes" placeholder="...">
+      </label>
+      <button type="submit">Bloquear</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Fechas bloqueadas</h2>
+    <div id="blocks-msg"></div>
+    <table id="blocks-table">
+      <thead><tr><th>Habitación</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/blocking.js"></script>
+</body>
+</html>

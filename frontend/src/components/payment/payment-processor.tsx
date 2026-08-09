@@ -188,7 +188,7 @@ export function PaymentProcessor({
           )
         )}
 
-        {!isCreating && method === 'pix' && intent?.qrCode && (
+        {!isCreating && method === 'pix' && intent && intent.qrCode && (
           <PixPayment
             paymentId={intent.paymentId}
             qrCode={intent.qrCode}
@@ -198,6 +198,15 @@ export function PaymentProcessor({
             onSuccess={onSuccess}
             onError={(err) => setError(err.message)}
           />
+        )}
+
+        {/* Si el backend respondió bien pero sin QR, el huésped no puede
+            pagar por PIX -- mejor mostrar un error claro que dejarlo con
+            la pantalla vacía sin saber qué pasó. */}
+        {!isCreating && method === 'pix' && intent && !intent.qrCode && !error && (
+          <Alert variant="danger" role="alert">
+            {T('pixQrMissing', locale)}
+          </Alert>
         )}
 
         {!method && (
@@ -229,7 +238,8 @@ function T(key: string, locale: string): string {
       sslNote: 'Conexão segura SSL/TLS',
       stripeMisconfigured: 'Pagamento com cartão indisponível no momento. Tente PIX ou fale conosco.',
       retry: 'Tentar novamente',
-      surchargeNote: 'O total já inclui um recargo de {pct}% pela comissão do pagamento com cartão. Via PIX não há esse recargo.'
+      surchargeNote: 'O total já inclui um recargo de {pct}% pela comissão do pagamento com cartão. Via PIX não há esse recargo.',
+      pixQrMissing: 'Não foi possível gerar o código PIX. Por favor, tente com cartão ou entre em contato conosco.'
     },
     es: {
       methodTitle: 'Método de Pago',
@@ -239,7 +249,8 @@ function T(key: string, locale: string): string {
       sslNote: 'Conexión segura SSL/TLS',
       stripeMisconfigured: 'El pago con tarjeta no está disponible en este momento. Probá con PIX o contactanos.',
       retry: 'Reintentar',
-      surchargeNote: 'El total ya incluye un recargo del {pct}% por la comisión del pago con tarjeta. Por PIX no aplica ese recargo.'
+      surchargeNote: 'El total ya incluye un recargo del {pct}% por la comisión del pago con tarjeta. Por PIX no aplica ese recargo.',
+      pixQrMissing: 'No se pudo generar el código PIX. Por favor, intentá con tarjeta o contactanos.'
     },
     en: {
       methodTitle: 'Payment Method',
@@ -249,7 +260,8 @@ function T(key: string, locale: string): string {
       sslNote: 'Secure SSL/TLS connection',
       stripeMisconfigured: 'Card payment is unavailable right now. Try PIX or contact us.',
       retry: 'Retry',
-      surchargeNote: 'The total already includes a {pct}% surcharge for the card payment fee. Paying via PIX has no surcharge.'
+      surchargeNote: 'The total already includes a {pct}% surcharge for the card payment fee. Paying via PIX has no surcharge.',
+      pixQrMissing: 'Could not generate the PIX code. Please try with a card or contact us.'
     },
     fr: {
       methodTitle: 'Mode de Paiement',
@@ -259,7 +271,8 @@ function T(key: string, locale: string): string {
       sslNote: 'Connexion sécurisée SSL/TLS',
       stripeMisconfigured: 'Le paiement par carte est indisponible pour le moment. Essayez PIX ou contactez-nous.',
       retry: 'Réessayer',
-      surchargeNote: 'Le total inclut déjà des frais de {pct}% pour la commission du paiement par carte. Via PIX, ces frais ne s\'appliquent pas.'
+      surchargeNote: 'Le total inclut déjà des frais de {pct}% pour la commission du paiement par carte. Via PIX, ces frais ne s\'appliquent pas.',
+      pixQrMissing: 'Impossible de générer le code PIX. Veuillez essayer par carte ou nous contacter.'
     },
     de: {
       methodTitle: 'Zahlungsmethode',
@@ -269,7 +282,8 @@ function T(key: string, locale: string): string {
       sslNote: 'Sichere SSL/TLS-Verbindung',
       stripeMisconfigured: 'Kartenzahlung ist momentan nicht verfügbar. Versuchen Sie PIX oder kontaktieren Sie uns.',
       retry: 'Erneut versuchen',
-      surchargeNote: 'Der Gesamtbetrag enthält bereits einen Aufschlag von {pct}% für die Kartenzahlungsgebühr. Bei PIX entfällt dieser Aufschlag.'
+      surchargeNote: 'Der Gesamtbetrag enthält bereits einen Aufschlag von {pct}% für die Kartenzahlungsgebühr. Bei PIX entfällt dieser Aufschlag.',
+      pixQrMissing: 'PIX-Code konnte nicht generiert werden. Bitte versuchen Sie es mit einer Karte oder kontaktieren Sie uns.'
     }
   };
   return t[locale]?.[key] || key;

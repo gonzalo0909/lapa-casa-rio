@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { paymentAPI, handleAPIError } from '@/lib/api';
 import { Button } from '../ui/button';
@@ -33,24 +33,56 @@ interface PixPaymentProps {
 export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = 'pt', onSuccess, onError }: PixPaymentProps) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  // Evita disparar onSuccess más de una vez si el polling y el botón
+  // manual coinciden en el tiempo.
+  const successFiredRef = useRef(false);
+
+  const handleSuccess = useCallback(() => {
+    if (successFiredRef.current) return;
+    successFiredRef.current = true;
+    onSuccess({ paymentId, amount });
+  }, [paymentId, amount, onSuccess]);
 
   const checkPaymentStatus = useCallback(async () => {
     try {
       const response = await paymentAPI.getStatus(paymentId);
       const status = response.data?.status;
       if (status === 'succeeded' || status === 'approved' || status === 'paid') {
-        onSuccess({ paymentId, amount });
+        handleSuccess();
       }
     } catch (_err) {
       // Se reintenta solo en el próximo tick -- un error de red puntual
       // consultando el estado no debe interrumpir la espera del Pix.
     }
-  }, [paymentId, amount, onSuccess]);
+  }, [paymentId, handleSuccess]);
 
   useEffect(() => {
     const interval = setInterval(checkPaymentStatus, 5000);
     return () => clearInterval(interval);
   }, [checkPaymentStatus]);
+
+  // Verificación manual: el huésped ya escaneó y pagó pero el webhook de
+  // MercadoPago todavía no llegó (puede tardar unos segundos). Al hacer
+  // click, el backend consulta directamente la API de MP para saber si el
+  // pago fue aprobado -- si sí, lo marca como succeeded y dispara las
+  // notificaciones. Evita que el huésped quede esperando indefinidamente
+  // si el webhook está demorado o no está configurado en el dashboard de MP.
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    setError(null);
+    try {
+      await paymentAPI.confirm(paymentId);
+      handleSuccess();
+    } catch (err) {
+      // Si el backend dice "no aprobado todavía" mostramos un aviso suave,
+      // no un error rojo -- el usuario puede reintentar en unos segundos.
+      const msg = handleAPIError(err, locale);
+      setError(msg);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const copyPixCode = async () => {
     try {
@@ -131,6 +163,29 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
         <span>{T('waiting', locale)}</span>
       </div>
 
+      {/* Botón de verificación manual: el webhook de MercadoPago puede
+          tardar o no estar configurado todavía. El huésped hace click
+          después de pagar para que el backend consulte MP directamente. */}
+      <div className="flex flex-col items-center gap-2 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleVerify}
+          disabled={isVerifying}
+          className="w-full"
+        >
+          {isVerifying ? (
+            <span className="flex items-center justify-center gap-2">
+              <LoadingSpinner size="sm" />
+              {T('verifying', locale)}
+            </span>
+          ) : (
+            T('alreadyPaid', locale)
+          )}
+        </Button>
+        <p className="text-xs text-muted-foreground text-center">{T('alreadyPaidHint', locale)}</p>
+      </div>
+
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
         <p>{T('autoConfirm', locale)}</p>
         <p className="mt-1">{T('dontClose', locale)}</p>
@@ -153,7 +208,10 @@ function T(key: string, locale: string): string {
       amountLabel: 'Valor a pagar',
       waiting: 'Aguardando confirmação do pagamento...',
       autoConfirm: 'O pagamento será confirmado automaticamente após a aprovação.',
-      dontClose: 'Não feche esta página até a confirmação.'
+      dontClose: 'Não feche esta página até a confirmação.',
+      alreadyPaid: 'Já paguei — verificar agora',
+      alreadyPaidHint: 'Clique após realizar o pagamento se a confirmação demorar.',
+      verifying: 'Verificando...'
     },
     es: {
       howTo: 'Cómo pagar con PIX',
@@ -167,7 +225,10 @@ function T(key: string, locale: string): string {
       amountLabel: 'Monto a pagar',
       waiting: 'Esperando confirmación del pago...',
       autoConfirm: 'El pago se confirma automáticamente al aprobarse.',
-      dontClose: 'No cierres esta página hasta la confirmación.'
+      dontClose: 'No cierres esta página hasta la confirmación.',
+      alreadyPaid: 'Ya pagué — verificar ahora',
+      alreadyPaidHint: 'Hacé click si el pago tardó en confirmarse.',
+      verifying: 'Verificando...'
     },
     en: {
       howTo: 'How to pay with PIX',
@@ -181,11 +242,14 @@ function T(key: string, locale: string): string {
       amountLabel: 'Amount to pay',
       waiting: 'Waiting for payment confirmation...',
       autoConfirm: 'Payment confirms automatically once approved.',
-      dontClose: 'Don’t close this page until confirmed.'
+      dontClose: "Don't close this page until confirmed.",
+      alreadyPaid: 'I already paid — verify now',
+      alreadyPaidHint: 'Click here if confirmation is taking a while.',
+      verifying: 'Verifying...'
     },
     fr: {
       howTo: 'Comment payer avec PIX',
-      step1: '1. Ouvrez l’appli de votre banque',
+      step1: "1. Ouvrez l'appli de votre banque",
       step2: '2. Choisissez de payer avec PIX',
       step3: '3. Scannez le QR code ou copiez le code',
       step4: '4. Confirmez le paiement',
@@ -195,7 +259,10 @@ function T(key: string, locale: string): string {
       amountLabel: 'Montant à payer',
       waiting: 'En attente de la confirmation du paiement...',
       autoConfirm: 'Le paiement se confirme automatiquement une fois approuvé.',
-      dontClose: 'Ne fermez pas cette page avant la confirmation.'
+      dontClose: 'Ne fermez pas cette page avant la confirmation.',
+      alreadyPaid: "J'ai déjà payé — vérifier maintenant",
+      alreadyPaidHint: 'Cliquez si la confirmation tarde à arriver.',
+      verifying: 'Vérification...'
     },
     de: {
       howTo: 'So bezahlen Sie mit PIX',
@@ -209,7 +276,10 @@ function T(key: string, locale: string): string {
       amountLabel: 'Zu zahlender Betrag',
       waiting: 'Warten auf Zahlungsbestätigung...',
       autoConfirm: 'Die Zahlung wird nach Genehmigung automatisch bestätigt.',
-      dontClose: 'Schließen Sie diese Seite erst nach der Bestätigung.'
+      dontClose: 'Schließen Sie diese Seite erst nach der Bestätigung.',
+      alreadyPaid: 'Ich habe bereits bezahlt — jetzt prüfen',
+      alreadyPaidHint: 'Klicken Sie hier, wenn die Bestätigung länger dauert.',
+      verifying: 'Wird geprüft...'
     }
   };
   return t[locale]?.[key] || key;

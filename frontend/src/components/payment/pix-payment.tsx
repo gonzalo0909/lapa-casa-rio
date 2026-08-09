@@ -110,7 +110,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
               type="text"
               value={qrCode}
               readOnly
-              className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-900"
+              className="flex-1 px-3 py-2 bg-input border border-border rounded-lg text-sm font-mono text-foreground"
             />
             <Button type="button" onClick={copyPixCode} variant={copied ? 'success' : 'outline'} size="sm">
               {copied ? T('copied', locale) : T('copy', locale)}

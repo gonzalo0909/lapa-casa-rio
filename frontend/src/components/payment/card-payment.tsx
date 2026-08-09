@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement } from '@stripe/react-stripe-js';
 import { paymentAPI, handleAPIError } from '@/lib/api';
 import { Button } from '../ui/button';
@@ -29,22 +29,30 @@ interface CardPaymentProps {
   onError: (error: Error) => void;
 }
 
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      fontSize: '16px',
-      color: '#1f2937',
-      fontFamily: 'system-ui, sans-serif',
-      '::placeholder': {
-        color: '#9ca3af'
+/**
+ * Stripe Elements corre en un iframe y no puede leer las variables CSS
+ * del tema -- el color del texto hay que pasárselo fijo por JS. Se arma
+ * según prefers-color-scheme detectado en el cliente (ver isDark más
+ * abajo) para que no quede oscuro sobre oscuro ni claro sobre claro.
+ */
+function getCardElementOptions(isDark: boolean) {
+  return {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: isDark ? '#f2efe6' : '#1f2937',
+        fontFamily: 'system-ui, sans-serif',
+        '::placeholder': {
+          color: isDark ? '#a39c88' : '#9ca3af'
+        }
+      },
+      invalid: {
+        color: '#f87171',
+        iconColor: '#f87171'
       }
-    },
-    invalid: {
-      color: '#dc2626',
-      iconColor: '#dc2626'
     }
-  }
-};
+  };
+}
 
 export function CardPayment({ paymentId, clientSecret, amount, currency, locale = 'pt', onSuccess, onError }: CardPaymentProps) {
   const stripe = useStripe();
@@ -58,6 +66,17 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
     cardExpiry: '',
     cardCvc: ''
   });
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDark(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const cardElementOptions = useMemo(() => getCardElementOptions(isDark), [isDark]);
 
   const handleCardChange = (field: string) => (event: { error?: { message: string } }) => {
     setCardErrors((prev) => ({ ...prev, [field]: event.error?.message || '' }));
@@ -120,7 +139,7 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
           value={cardholderName}
           onChange={(e) => setCardholderName(e.target.value)}
           placeholder={T('cardholderPlaceholder', locale)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 border border-border bg-input rounded-lg text-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={isProcessing}
           required
           aria-required="true"
@@ -131,12 +150,8 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
         <label htmlFor="card-number" className="block text-sm font-medium text-foreground mb-2">
           {T('cardNumber', locale)}
         </label>
-        {/* bg-white fijo a propósito: Stripe Elements corre en un iframe con su propio
-            color de texto (CARD_ELEMENT_OPTIONS.style.base.color, no puede leer CSS
-            variables del tema) -- sin un fondo claro fijo acá, el texto oscuro de
-            Stripe queda ilegible sobre el fondo oscuro de la página. */}
-        <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-          <CardNumberElement id="card-number" options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardNumber')} />
+        <div className="px-4 py-3 border border-border bg-input rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <CardNumberElement id="card-number" options={cardElementOptions} onChange={handleCardChange('cardNumber')} />
         </div>
         {cardErrors.cardNumber && <p className="mt-1 text-sm text-red-600" role="alert">{cardErrors.cardNumber}</p>}
       </div>
@@ -146,8 +161,8 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
           <label htmlFor="card-expiry" className="block text-sm font-medium text-foreground mb-2">
             {T('expiry', locale)}
           </label>
-          <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-            <CardExpiryElement id="card-expiry" options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardExpiry')} />
+          <div className="px-4 py-3 border border-border bg-input rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+            <CardExpiryElement id="card-expiry" options={cardElementOptions} onChange={handleCardChange('cardExpiry')} />
           </div>
           {cardErrors.cardExpiry && <p className="mt-1 text-sm text-red-600" role="alert">{cardErrors.cardExpiry}</p>}
         </div>
@@ -156,8 +171,8 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
           <label htmlFor="card-cvc" className="block text-sm font-medium text-foreground mb-2">
             {T('cvc', locale)}
           </label>
-          <div className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-            <CardCvcElement id="card-cvc" options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardCvc')} />
+          <div className="px-4 py-3 border border-border bg-input rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+            <CardCvcElement id="card-cvc" options={cardElementOptions} onChange={handleCardChange('cardCvc')} />
           </div>
           {cardErrors.cardCvc && <p className="mt-1 text-sm text-red-600" role="alert">{cardErrors.cardCvc}</p>}
         </div>

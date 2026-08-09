@@ -7,7 +7,10 @@
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: ['class'],
+  // No hay ningún toggle en la app que le ponga la clase .dark a nada --
+  // 'media' hace que las clases dark: respondan directo a
+  // prefers-color-scheme del sistema, sin depender de JS.
+  darkMode: ['media'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

@@ -5,6 +5,13 @@
 @layer base {
   :root {
     /* Lapa Casa Hostel — tokens de marca en HSL (consumidos por tailwind.config.js vía hsl(var(--x))) */
+    /* color-scheme le dice al navegador que esta página maneja su propio
+       claro/oscuro -- sin esto, algunos navegadores (Chrome en Android,
+       sobre todo) "inventan" un oscuro heurístico por su cuenta, invierte
+       colores a los ponchazos y deja cajas claras sueltas sin invertir
+       bien (gradientes, inputs) -- eso es lo que se veía roto. */
+    color-scheme: light dark;
+
     --background: 46 41% 89%;
     --foreground: 150 24% 11%;
 
@@ -64,6 +71,42 @@
     --border: 88 15% 20%;
     --input: 88 15% 20%;
     --ring: 155 39% 27%;
+  }
+
+  /* Mismos valores que .dark, pero disparados por la preferencia real del
+     sistema -- nada en la app le pone la clase .dark a nada, así que sin
+     esto el sitio siempre renderizaba claro y quedaba a merced del
+     oscuro heurístico del navegador. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 94 19% 7%;
+      --foreground: 46 11% 89%;
+
+      --primary: 155 39% 27%;
+      --primary-foreground: 46 11% 94%;
+
+      --secondary: 200 50% 45%;
+      --secondary-foreground: 46 11% 94%;
+
+      --destructive: 7 65% 55%;
+      --destructive-foreground: 46 11% 94%;
+
+      --muted: 90 15% 18%;
+      --muted-foreground: 46 8% 65%;
+
+      --accent: 307 86% 59%;
+      --accent-foreground: 46 11% 96%;
+
+      --popover: 90 20% 10%;
+      --popover-foreground: 46 11% 89%;
+
+      --card: 90 20% 10%;
+      --card-foreground: 46 11% 89%;
+
+      --border: 88 15% 20%;
+      --input: 88 15% 20%;
+      --ring: 155 39% 27%;
+    }
   }
 
   * {

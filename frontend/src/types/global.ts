@@ -6,7 +6,7 @@
  * — ver backend/database/migrations/0002_tables.sql.
  */
 
-export type BookingStep = 'dates' | 'rooms' | 'guest' | 'summary';
+export type BookingStep = 'dates' | 'rooms' | 'summary';
 
 /** Género elegido por el huésped junto con las fechas -- filtra qué cuartos son elegibles (mixto ve solo mixtos; mujeres ven mixtos + el cuarto solo-mujeres). */
 export type BookingGender = 'mixed' | 'female';
@@ -70,5 +70,5 @@ export interface GuestDetails {
   country: string;
   documentNumber: string;
   specialRequests?: string;
-  arrivalTime?: string;
+  arrivalTime: string;
 }

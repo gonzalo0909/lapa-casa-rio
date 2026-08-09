@@ -176,10 +176,17 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
         } else {
           rooms = allocateFamily(family, beds);
         }
+        // El cuarto solo-mujeres tiene nombre interno ("Flexible 7" u otros).
+        // Se reemplaza por el nombre localizado para que en el resumen y el
+        // correo de confirmación nunca aparezca terminología interna.
+        if (familyKey === 'female') {
+          const displayName = T('familyFemale', locale);
+          rooms = rooms.map((r) => ({ ...r, name: displayName, type: 'female' as const }));
+        }
       }
       onChange(rooms);
     },
-    [families, onChange]
+    [families, locale, onChange]
   );
 
   const handleFamilySelection = useCallback(

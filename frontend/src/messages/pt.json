@@ -362,6 +362,7 @@
     "errorDatesRequired": "Selecione as datas",
     "errorInvalidDates": "Datas inválidas",
     "errorRoomRequired": "Selecione um quarto",
+    "errorArrivalRequired": "Horário de chegada é obrigatório",
     "errorBedsRequired": "Selecione camas",
     "errorGuestRequired": "Preencha os dados",
     "errorAvailabilityCheck": "Erro na disponibilidade",

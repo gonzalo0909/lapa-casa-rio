@@ -362,6 +362,7 @@
     "errorDatesRequired": "Select dates",
     "errorInvalidDates": "Invalid dates",
     "errorRoomRequired": "Select room",
+    "errorArrivalRequired": "Arrival time is required",
     "errorBedsRequired": "Select beds",
     "errorGuestRequired": "Fill in details",
     "errorAvailabilityCheck": "Availability error",

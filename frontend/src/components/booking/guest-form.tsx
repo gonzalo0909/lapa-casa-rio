@@ -89,6 +89,12 @@ export const GuestForm: React.FC<GuestFormProps> = ({
           }
           return null;
 
+        case 'arrivalTime':
+          if (!value) {
+            return T('errorArrivalTime', locale);
+          }
+          return null;
+
         default:
           return null;
       }
@@ -139,7 +145,8 @@ export const GuestForm: React.FC<GuestFormProps> = ({
       'email',
       'phone',
       'country',
-      'documentNumber'
+      'documentNumber',
+      'arrivalTime'
     ];
 
     const newErrors: Record<string, string> = {};
@@ -250,6 +257,7 @@ function T(key: string, locale: string): string {
       errorPhoneFormat: 'Telefone inválido',
       errorCountry: 'País é obrigatório',
       errorDocument: 'Documento é obrigatório',
+      errorArrivalTime: 'Horário de chegada é obrigatório',
       importantInfo: 'Informações Importantes',
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'Documento de identidade obrigatório',
@@ -270,6 +278,7 @@ function T(key: string, locale: string): string {
       errorPhoneFormat: 'Teléfono inválido',
       errorCountry: 'País es obligatorio',
       errorDocument: 'Documento es obligatorio',
+      errorArrivalTime: 'El horario de llegada es obligatorio',
       importantInfo: 'Información Importante',
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'Documento de identidad obligatorio',
@@ -290,6 +299,7 @@ function T(key: string, locale: string): string {
       errorPhoneFormat: 'Invalid phone',
       errorCountry: 'Country is required',
       errorDocument: 'Document is required',
+      errorArrivalTime: 'Arrival time is required',
       importantInfo: 'Important Information',
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'ID document required',
@@ -300,16 +310,17 @@ function T(key: string, locale: string): string {
       termsLink: 'terms and conditions'
     },
     fr: {
-      title: 'Informations du Client',
-      subtitle: 'Complétez vos données pour finaliser la réservation',
-      errorFullName: 'Le nom complet est requis',
-      errorFullNameFormat: 'Le nom ne doit contenir que des lettres',
-      errorEmail: 'L’e-mail est requis',
-      errorEmailFormat: 'E-mail invalide',
-      errorPhone: 'Le téléphone est requis',
-      errorPhoneFormat: 'Téléphone invalide',
-      errorCountry: 'Le pays est requis',
-      errorDocument: 'Le document est requis',
+      title: ‘Informations du Client’,
+      subtitle: ‘Complétez vos données pour finaliser la réservation’,
+      errorFullName: ‘Le nom complet est requis’,
+      errorFullNameFormat: ‘Le nom ne doit contenir que des lettres’,
+      errorEmail: ‘L’e-mail est requis’,
+      errorEmailFormat: ‘E-mail invalide’,
+      errorPhone: ‘Le téléphone est requis’,
+      errorPhoneFormat: ‘Téléphone invalide’,
+      errorCountry: ‘Le pays est requis’,
+      errorDocument: ‘Le document est requis’,
+      errorArrivalTime: ‘L’heure d’arrivée est requise’,
       importantInfo: 'Informations Importantes',
       info1: 'Arrivée : 14h00 - Départ : 12h00',
       info2: 'Pièce d’identité obligatoire',
@@ -330,6 +341,7 @@ function T(key: string, locale: string): string {
       errorPhoneFormat: 'Ungültiges Telefon',
       errorCountry: 'Land ist erforderlich',
       errorDocument: 'Dokument ist erforderlich',
+      errorArrivalTime: 'Ankunftszeit ist erforderlich',
       importantInfo: 'Wichtige Informationen',
       info1: 'Check-in: 14:00 - Check-out: 12:00',
       info2: 'Ausweisdokument erforderlich',

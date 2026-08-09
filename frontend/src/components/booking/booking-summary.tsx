@@ -11,7 +11,7 @@ import type { DateRange, Room, GuestDetails } from '@/types/global';
 interface BookingSummaryProps {
   dateRange: DateRange;
   rooms: Room[];
-  guestDetails: GuestDetails;
+  guestDetails: GuestDetails | null;
   totalPrice: number;
   locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
@@ -81,35 +81,43 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
       </Card>
 
-      <Card className="p-6 mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <span>👤</span> {T('guest', locale)}
-        </h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">{T('name', locale)}:</span>
-            <span className="font-medium">{guestDetails.fullName}</span>
+      {guestDetails?.fullName && (
+        <Card className="p-6 mb-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span>👤</span> {T('guest', locale)}
+          </h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">{T('name', locale)}:</span>
+              <span className="font-medium">{guestDetails.fullName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">{T('email', locale)}:</span>
+              <span className="font-medium">{guestDetails.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">{T('phone', locale)}:</span>
+              <span className="font-medium">{guestDetails.phone}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">{T('country', locale)}:</span>
+              <span className="font-medium">{guestDetails.country}</span>
+            </div>
+            {guestDetails.arrivalTime && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">{T('arrivalTime', locale)}:</span>
+                <span className="font-medium">{guestDetails.arrivalTime.replace('-', ':00 - ')}:00</span>
+              </div>
+            )}
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">{T('email', locale)}:</span>
-            <span className="font-medium">{guestDetails.email}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">{T('phone', locale)}:</span>
-            <span className="font-medium">{guestDetails.phone}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">{T('country', locale)}:</span>
-            <span className="font-medium">{guestDetails.country}</span>
-          </div>
-        </div>
-        {guestDetails.specialRequests && (
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-sm text-gray-600 mb-1">{T('specialRequests', locale)}:</p>
-            <p className="text-sm text-gray-900">{guestDetails.specialRequests}</p>
-          </div>
-        )}
-      </Card>
+          {guestDetails.specialRequests && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-gray-600 mb-1">{T('specialRequests', locale)}:</p>
+              <p className="text-sm text-gray-900">{guestDetails.specialRequests}</p>
+            </div>
+          )}
+        </Card>
+      )}
 
       <PriceSummary
         dateRange={dateRange}
@@ -156,6 +164,7 @@ function T(key: string, locale: string): string {
       email: 'Email',
       phone: 'Telefone',
       country: 'País',
+      arrivalTime: 'Horário de chegada',
       specialRequests: 'Solicitações especiais',
       confirmation: 'Confirmação será enviada por email e WhatsApp'
     },
@@ -177,6 +186,7 @@ function T(key: string, locale: string): string {
       email: 'Email',
       phone: 'Teléfono',
       country: 'País',
+      arrivalTime: 'Hora de llegada',
       specialRequests: 'Solicitudes especiales',
       confirmation: 'Confirmación será enviada por email y WhatsApp'
     },
@@ -198,6 +208,7 @@ function T(key: string, locale: string): string {
       email: 'Email',
       phone: 'Phone',
       country: 'Country',
+      arrivalTime: 'Arrival time',
       specialRequests: 'Special requests',
       confirmation: 'Confirmation will be sent by email and WhatsApp'
     },
@@ -219,6 +230,7 @@ function T(key: string, locale: string): string {
       email: 'E-mail',
       phone: 'Téléphone',
       country: 'Pays',
+      arrivalTime: 'Heure d'arrivée',
       specialRequests: 'Demandes spéciales',
       confirmation: 'La confirmation vous sera envoyée par e-mail et WhatsApp'
     },
@@ -240,6 +252,7 @@ function T(key: string, locale: string): string {
       email: 'E-Mail',
       phone: 'Telefon',
       country: 'Land',
+      arrivalTime: 'Ankunftszeit',
       specialRequests: 'Besondere Wünsche',
       confirmation: 'Die Bestätigung wird per E-Mail und WhatsApp gesendet'
     }

@@ -25,7 +25,7 @@ export const SpecialRequests: React.FC<SpecialRequestsProps> = ({
 
       <div>
         <label htmlFor="arrivalTime" className="block text-sm font-medium text-gray-700 mb-2">
-          {T('arrivalTime', locale)}
+          {T('arrivalTime', locale)} <span className="text-red-500">*</span>
         </label>
         <Select
           id="arrivalTime"
@@ -33,8 +33,10 @@ export const SpecialRequests: React.FC<SpecialRequestsProps> = ({
           onChange={(e) => onChange('arrivalTime', e.target.value)}
           placeholder={T('selectTime', locale)}
           options={[
-            { value: 'afternoon', label: '14:00 - 18:00' },
-            { value: 'evening', label: '18:00 - 22:00' },
+            { value: '14-16', label: '14:00 - 16:00' },
+            { value: '16-18', label: '16:00 - 18:00' },
+            { value: '18-20', label: '18:00 - 20:00' },
+            { value: '20-22', label: '20:00 - 22:00' },
           ]}
         />
         <p className="text-xs text-gray-500 mt-1">{T('arrivalHelp', locale)}</p>

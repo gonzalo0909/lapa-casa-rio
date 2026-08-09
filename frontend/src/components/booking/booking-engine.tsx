@@ -35,12 +35,14 @@ interface BookingEngineProps {
   className?: string;
 }
 
-const STEPS: BookingStep[] = ['dates', 'rooms', 'guest', 'summary'];
+// El paso 'guest' se fusionó con 'summary': el formulario de datos
+// personales y el resumen de la reserva aparecen juntos en la última
+// pantalla para evitar el scroll innecesario entre pasos consecutivos.
+const STEPS: BookingStep[] = ['dates', 'rooms', 'summary'];
 
 const STEP_KEYS: Record<BookingStep, string> = {
   dates: 'stepDates',
   rooms: 'stepRooms',
-  guest: 'stepGuest',
   summary: 'stepSummary',
 };
 
@@ -121,9 +123,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       }
     }
 
-    if (step === 'guest') {
+    // 'summary' ahora incluye el formulario de datos del huésped;
+    // validamos todos los campos requeridos antes de confirmar.
+    if (step === 'summary') {
       if (!guestDetails?.fullName || !guestDetails?.email || !guestDetails?.phone) {
         setError(t('errorGuestRequired'));
+        return false;
+      }
+      if (!guestDetails?.arrivalTime) {
+        setError(t('errorArrivalRequired'));
         return false;
       }
     }
@@ -287,17 +295,19 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
             locale={locale}
           />
         )}
-        {currentStep === 'guest' && (
-          <GuestForm value={guestDetails} onSubmit={setGuestDetails} locale={locale} />
-        )}
         {currentStep === 'summary' && (
-          <BookingSummary
-            dateRange={dateRange!}
-            rooms={selectedRooms!}
-            guestDetails={guestDetails!}
-            totalPrice={totalPrice!}
-            locale={locale}
-          />
+          <>
+            <GuestForm value={guestDetails} onSubmit={setGuestDetails} locale={locale} className="mb-8" />
+            {selectedRooms && selectedRooms.length > 0 && dateRange?.checkIn && dateRange?.checkOut && (
+              <BookingSummary
+                dateRange={dateRange}
+                rooms={selectedRooms}
+                guestDetails={guestDetails}
+                totalPrice={totalPrice ?? 0}
+                locale={locale}
+              />
+            )}
+          </>
         )}
       </div>
 

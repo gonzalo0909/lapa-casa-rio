@@ -2,6 +2,7 @@
 // ventana3
 
 import { logger } from '../../utils/logger';
+import { AppError } from '../../middleware/error-handler';
 
 interface MPCreatePaymentInput {
   amount: number;
@@ -47,6 +48,16 @@ export class MercadoPagoPaymentHandler {
 
   async createPaymentIntent(data: MPCreatePaymentInput): Promise<MPPaymentResult> {
     if (!this.accessToken) {
+      // En producción sin MP_ACCESS_TOKEN, esto antes devolvía un QR
+      // falso (qr_test_code / qr_test_base64): la imagen del QR salía
+      // rota (base64 inválido) y el código PIX no servía para nada -- el
+      // huésped veía el botón de PIX "trabado" sin ningún mensaje de
+      // error. En producción es mejor fallar acá con un mensaje claro.
+      // Fuera de producción (tests, dev local sin keys) se mantiene el
+      // stub para no requerir credenciales reales.
+      if (process.env.NODE_ENV === 'production') {
+        throw new AppError('Pago con PIX no disponible en este momento', 503);
+      }
       const fakeId = `mp_test_${Date.now()}`;
       return {
         paymentIntentId: fakeId,

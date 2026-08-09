@@ -3,6 +3,7 @@
 
 import Stripe from 'stripe';
 import { logger } from '../../utils/logger';
+import { AppError } from '../../middleware/error-handler';
 
 interface CreatePaymentIntentInput {
   amount: number;
@@ -40,6 +41,16 @@ export class StripeHandler {
 
   async createPaymentIntent(data: CreatePaymentIntentInput): Promise<PaymentIntentResult> {
     if (!this.stripe) {
+      // En producción sin STRIPE_SECRET_KEY, esto antes devolvía un
+      // clientSecret falso (pi_test_..._secret_test): el checkout parecía
+      // funcionar pero Stripe Elements nunca podía montar con un secret
+      // inventado -- el huésped veía el botón de tarjeta "trabado" sin
+      // ningún mensaje de error. En producción es mejor fallar acá con un
+      // mensaje claro. Fuera de producción (tests, dev local sin keys)
+      // se mantiene el stub para no requerir credenciales reales.
+      if (process.env.NODE_ENV === 'production') {
+        throw new AppError('Pago con tarjeta no disponible en este momento', 503);
+      }
       return { paymentIntentId: `pi_test_${Date.now()}`, clientSecret: `pi_test_${Date.now()}_secret_test` };
     }
     const amountCents = Math.round(data.amount * 100);

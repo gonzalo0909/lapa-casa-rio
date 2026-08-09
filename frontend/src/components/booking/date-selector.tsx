@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Calendar } from './calendar';
 import { DateRangePicker } from './date-range-picker';
 import { SeasonIndicator } from './season-indicator';
@@ -12,10 +13,11 @@ import type { DateRange } from '@/types/global';
 
 /**
  * DateSelector Component
- * 
- * Date selection interface with calendar and manual input modes
- * Validates min/max nights and displays season information
- * 
+ *
+ * Interface de seleção de datas com calendário e input manual.
+ * Valida mínimo/máximo de noites e exibe info de temporada.
+ * Usa next-intl para i18n.
+ *
  * @component
  */
 interface DateSelectorProps {
@@ -28,12 +30,22 @@ interface DateSelectorProps {
   className?: string;
 }
 
-/** No se aceptan reservas para el mismo día (ver create-booking.ts) -- se calcula "mañana" a medianoche local en vez de `new Date()` para que la fecha de hoy quede excluida sin depender de a qué hora del día se abre el calendario. */
+/** Check-in mínimo: amanhã à meia-noite local (hoje fica excluído). */
 function tomorrowAtMidnight(): Date {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+const BCP47: Record<string, string> = {
+  pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE',
+};
+
+function formatDate(date: Date, locale: string): string {
+  return date.toLocaleDateString(BCP47[locale] ?? 'en-US', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
 }
 
 export const DateSelector: React.FC<DateSelectorProps> = ({
@@ -45,6 +57,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   maxNights = 30,
   className = ''
 }) => {
+  const t = useTranslations('dateSelector');
   const [mode, setMode] = useState<'calendar' | 'manual'>('calendar');
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -61,12 +74,12 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     );
 
     if (nights < minNights) {
-      setLocalError(T('minNightsError', locale).replace('{n}', minNights.toString()));
+      setLocalError(t('minNightsError', { n: minNights }));
       return;
     }
 
     if (nights > maxNights) {
-      setLocalError(T('maxNightsError', locale).replace('{n}', maxNights.toString()));
+      setLocalError(t('maxNightsError', { n: maxNights }));
       return;
     }
 
@@ -74,12 +87,12 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     today.setHours(0, 0, 0, 0);
 
     if (newRange.checkIn < today) {
-      setLocalError(T('pastDateError', locale));
+      setLocalError(t('pastDateError'));
       return;
     }
 
     onChange(newRange);
-  }, [onChange, minNights, maxNights, locale]);
+  }, [onChange, minNights, maxNights, t]);
 
   const handleClear = useCallback(() => {
     onChange({ checkIn: null, checkOut: null });
@@ -94,8 +107,8 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   return (
     <div className={`date-selector ${className}`}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{T('title', locale)}</h2>
-        <p className="text-gray-600">{T('subtitle', locale)}</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">{t('title')}</h2>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -103,23 +116,23 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
           onClick={() => setMode('calendar')}
           className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
             mode === 'calendar'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-foreground hover:bg-muted/80'
           }`}
           aria-pressed={mode === 'calendar'}
         >
-          {T('calendarMode', locale)}
+          {t('calendarMode')}
         </button>
         <button
           onClick={() => setMode('manual')}
           className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
             mode === 'manual'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-foreground hover:bg-muted/80'
           }`}
           aria-pressed={mode === 'manual'}
         >
-          {T('manualMode', locale)}
+          {t('manualMode')}
         </button>
       </div>
 
@@ -138,156 +151,50 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
           maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
         />
       ) : (
-        <DateRangePicker value={value} onChange={handleDateChange} locale={locale} minDate={tomorrowAtMidnight()} />
+        <DateRangePicker
+          value={value}
+          onChange={handleDateChange}
+          locale={locale}
+          minDate={tomorrowAtMidnight()}
+        />
       )}
 
       {value?.checkIn && value?.checkOut && (
-        <Card className="mt-6 p-4 bg-blue-50 border-blue-200">
+        <Card className="mt-6 p-4 bg-primary/5 border-primary/20">
           <div className="flex justify-between items-center mb-3">
             <div>
-              <p className="text-sm text-gray-600 mb-1">{T('selectedDates', locale)}</p>
-              <p className="font-semibold text-gray-900">
+              <p className="text-sm text-muted-foreground mb-1">{t('selectedDates')}</p>
+              <p className="font-semibold text-foreground">
                 {formatDate(value.checkIn, locale)} → {formatDate(value.checkOut, locale)}
               </p>
-              <p className="text-sm text-gray-600 mt-1">
-                {nights} {nights === 1 ? T('night', locale) : T('nights', locale)}
+              <p className="text-sm text-muted-foreground mt-1">
+                {nights} {nights === 1 ? t('night') : t('nights')}
               </p>
             </div>
             <button
               onClick={handleClear}
-              className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
-              aria-label={T('clearDates', locale)}
+              className="px-3 py-1 text-sm text-destructive hover:bg-destructive/10 rounded transition-colors"
+              aria-label={t('clearDates')}
             >
-              {T('clear', locale)}
+              {t('clear')}
             </button>
           </div>
           <SeasonIndicator checkIn={value.checkIn} checkOut={value.checkOut} locale={locale} />
         </Card>
       )}
 
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-semibold text-gray-900 mb-2">{T('importantInfo', locale)}</h3>
-        <ul className="space-y-2 text-sm text-gray-600">
-          <li>• {T('checkInTime', locale)}: 14:00</li>
-          <li>• {T('checkOutTime', locale)}: 12:00</li>
+      <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+        <h3 className="font-semibold text-foreground mb-2">{t('importantInfo')}</h3>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li>• {t('checkInTime')}: 14:00</li>
+          <li>• {t('checkOutTime')}: 12:00</li>
           <li>
-            • {T('minStay', locale)}: {minNights}{' '}
-            {minNights === 1 ? T('night', locale) : T('nights', locale)}
+            • {t('minStay')}: {minNights}{' '}
+            {minNights === 1 ? t('night') : t('nights')}
           </li>
-          <li>• {T('carnivalNote', locale)}</li>
+          <li>• {t('carnivalNote')}</li>
         </ul>
       </div>
     </div>
   );
 };
-
-const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
-
-function formatDate(date: Date, locale: string): string {
-  const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
-  return date.toLocaleDateString(
-    BCP47[locale] ?? 'en-US',
-    opts
-  );
-}
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: {
-      title: 'Escolha suas Datas',
-      subtitle: 'Selecione o período da sua estadia',
-      calendarMode: 'Calendário',
-      manualMode: 'Manual',
-      selectedDates: 'Datas selecionadas',
-      night: 'noite',
-      nights: 'noites',
-      clear: 'Limpar',
-      clearDates: 'Limpar datas',
-      importantInfo: 'Informações Importantes',
-      checkInTime: 'Check-in',
-      checkOutTime: 'Check-out',
-      minStay: 'Estadia mínima',
-      carnivalNote: 'Carnaval: mínimo 5 noites',
-      minNightsError: 'Mínimo {n} noites',
-      maxNightsError: 'Máximo {n} noites',
-      pastDateError: 'Data inválida'
-    },
-    es: {
-      title: 'Elige tus Fechas',
-      subtitle: 'Selecciona el período de tu estadía',
-      calendarMode: 'Calendario',
-      manualMode: 'Manual',
-      selectedDates: 'Fechas seleccionadas',
-      night: 'noche',
-      nights: 'noches',
-      clear: 'Limpiar',
-      clearDates: 'Limpiar fechas',
-      importantInfo: 'Información Importante',
-      checkInTime: 'Check-in',
-      checkOutTime: 'Check-out',
-      minStay: 'Estadía mínima',
-      carnivalNote: 'Carnaval: mínimo 5 noches',
-      minNightsError: 'Mínimo {n} noches',
-      maxNightsError: 'Máximo {n} noches',
-      pastDateError: 'Fecha inválida'
-    },
-    en: {
-      title: 'Choose your Dates',
-      subtitle: 'Select your stay period',
-      calendarMode: 'Calendar',
-      manualMode: 'Manual',
-      selectedDates: 'Selected dates',
-      night: 'night',
-      nights: 'nights',
-      clear: 'Clear',
-      clearDates: 'Clear dates',
-      importantInfo: 'Important Information',
-      checkInTime: 'Check-in',
-      checkOutTime: 'Check-out',
-      minStay: 'Minimum stay',
-      carnivalNote: 'Carnival: min 5 nights',
-      minNightsError: 'Minimum {n} nights',
-      maxNightsError: 'Maximum {n} nights',
-      pastDateError: 'Invalid date'
-    },
-    fr: {
-      title: 'Choisissez vos Dates',
-      subtitle: 'Sélectionnez la période de votre séjour',
-      calendarMode: 'Calendrier',
-      manualMode: 'Manuel',
-      selectedDates: 'Dates sélectionnées',
-      night: 'nuit',
-      nights: 'nuits',
-      clear: 'Effacer',
-      clearDates: 'Effacer les dates',
-      importantInfo: 'Informations Importantes',
-      checkInTime: 'Arrivée',
-      checkOutTime: 'Départ',
-      minStay: 'Séjour minimum',
-      carnivalNote: 'Carnaval : minimum 5 nuits',
-      minNightsError: 'Minimum {n} nuits',
-      maxNightsError: 'Maximum {n} nuits',
-      pastDateError: 'Date invalide'
-    },
-    de: {
-      title: 'Wählen Sie Ihre Daten',
-      subtitle: 'Wählen Sie Ihren Aufenthaltszeitraum',
-      calendarMode: 'Kalender',
-      manualMode: 'Manuell',
-      selectedDates: 'Ausgewählte Daten',
-      night: 'Nacht',
-      nights: 'Nächte',
-      clear: 'Löschen',
-      clearDates: 'Daten löschen',
-      importantInfo: 'Wichtige Informationen',
-      checkInTime: 'Check-in',
-      checkOutTime: 'Check-out',
-      minStay: 'Mindestaufenthalt',
-      carnivalNote: 'Karneval: mindestens 5 Nächte',
-      minNightsError: 'Mindestens {n} Nächte',
-      maxNightsError: 'Höchstens {n} Nächte',
-      pastDateError: 'Ungültiges Datum'
-    }
-  };
-  return t[locale]?.[key] || key;
-}

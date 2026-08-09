@@ -4,6 +4,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+
 import { DateSelector } from './date-selector';
 import { GenderSelector } from './gender-selector';
 import { RoomSelector } from './room-selector';
@@ -21,10 +23,11 @@ import type { BookingStep, Room, DateRange } from '@/types/global';
 
 /**
  * BookingEngine Component
- * 
- * Main booking orchestrator for Lapa Casa Hostel
- * Handles 4-step flow: Dates → Rooms → Guest → Summary
- * 
+ *
+ * Orquestrador principal da reserva do Lapa Casa Hostel.
+ * Fluxo de 4 passos: Datas → Quartos → Hóspede → Resumo.
+ * Usa next-intl para i18n em vez de funcções T() embutidas.
+ *
  * @component
  */
 interface BookingEngineProps {
@@ -36,6 +39,13 @@ interface BookingEngineProps {
 
 const STEPS: BookingStep[] = ['dates', 'rooms', 'guest', 'summary'];
 
+const STEP_KEYS: Record<BookingStep, string> = {
+  dates: 'stepDates',
+  rooms: 'stepRooms',
+  guest: 'stepGuest',
+  summary: 'stepSummary',
+};
+
 export const BookingEngine: React.FC<BookingEngineProps> = ({
   onComplete,
   locale = 'pt',
@@ -43,6 +53,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   className = ''
 }) => {
   const router = useRouter();
+  const t = useTranslations('bookingEngine');
+  const tc = useTranslations('common');
+
   const {
     dateRange,
     gender,
@@ -63,12 +76,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [error, setError] = useState<string | null>(null);
   const bookingConfirmedRef = useRef(false);
 
-  // Limpia el store recién al desmontar (navegación real fuera del wizard),
-  // nunca en el mismo render en que se confirma -- limpiarlo antes dejaba
-  // el paso "summary" renderizando con dateRange/selectedRooms/guestDetails
-  // en null mientras router.push todavía no terminó de navegar, y esos
-  // valores se leen con `!` en el JSX de más abajo (crash real en
-  // producción al confirmar la reserva).
+  // Limpa o store só ao desmontar (navegação real fora do wizard).
+  // Limpar antes deixava o passo "summary" renderizando com dateRange/
+  // selectedRooms/guestDetails em null enquanto router.push ainda não
+  // terminou, causando crash em produção.
   useEffect(() => {
     return () => {
       if (bookingConfirmedRef.current) {
@@ -87,45 +98,43 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
   const validateStep = useCallback((step: BookingStep): boolean => {
     setError(null);
-    
+
     if (step === 'dates') {
       if (!dateRange?.checkIn || !dateRange?.checkOut) {
-        setError(T('errors.datesRequired', locale));
+        setError(t('errorDatesRequired'));
         return false;
       }
       const validation = validateBookingDates(dateRange.checkIn, dateRange.checkOut);
       if (!validation.isValid) {
-        setError(validation.error || T('errors.invalidDates', locale));
+        setError(validation.error || t('errorInvalidDates'));
         return false;
       }
     }
 
     if (step === 'rooms') {
       if (!selectedRooms || selectedRooms.length === 0) {
-        setError(T('errors.roomRequired', locale));
+        setError(t('errorRoomRequired'));
         return false;
       }
       const totalBeds = selectedRooms.reduce((sum, r) => sum + r.bedsCount, 0);
       if (totalBeds === 0) {
-        setError(T('errors.bedsRequired', locale));
+        setError(t('errorBedsRequired'));
         return false;
       }
     }
 
     if (step === 'guest') {
       if (!guestDetails?.fullName || !guestDetails?.email || !guestDetails?.phone) {
-        setError(T('errors.guestRequired', locale));
+        setError(t('errorGuestRequired'));
         return false;
       }
     }
 
     return true;
-  }, [dateRange, selectedRooms, guestDetails, locale]);
+  }, [dateRange, selectedRooms, guestDetails, t]);
 
   const handleNext = useCallback(async () => {
-    if (!validateStep(currentStep)) {
-      return;
-    }
+    if (!validateStep(currentStep)) return;
 
     const idx = STEPS.indexOf(currentStep);
     if (idx < STEPS.length - 1) {
@@ -134,7 +143,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         try {
           await checkAvailability(dateRange.checkIn, dateRange.checkOut);
         } catch (_err) {
-          setError(T('errors.availabilityCheck', locale));
+          setError(t('errorAvailabilityCheck'));
           return;
         } finally {
           setIsProcessing(false);
@@ -143,7 +152,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       setCurrentStep(STEPS[idx + 1]!);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [currentStep, validateStep, dateRange, checkAvailability, locale]);
+  }, [currentStep, validateStep, dateRange, checkAvailability, t]);
 
   const handleBack = useCallback(() => {
     const idx = STEPS.indexOf(currentStep);
@@ -156,7 +165,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const handleDateChange = useCallback(async (newRange: DateRange) => {
     setDateRange(newRange);
     setError(null);
-    
+
     if (newRange.checkIn && newRange.checkOut) {
       const validation = validateBookingDates(newRange.checkIn, newRange.checkOut);
       if (validation.isValid) {
@@ -182,15 +191,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         });
         setTotalPrice(response.data.totalPrice as number);
       } catch (_err) {
-        // El error real se muestra en PricingCalculator; acá solo evitamos
-        // dejar un totalPrice viejo/incorrecto si la cotización falla.
+        // O erro real é mostrado no PricingCalculator; aqui só evitamos
+        // deixar um totalPrice velho/incorreto se a cotização falhar.
         setTotalPrice(0);
       }
     }
   }, [dateRange, setSelectedRooms, setTotalPrice]);
 
   const handleConfirm = useCallback(async () => {
-    if (!validateStep('summary')) {return;}
+    if (!validateStep('summary')) return;
 
     setIsProcessing(true);
     setError(null);
@@ -212,15 +221,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         router.push(`/${locale}/payment/${bookingId}`);
       }
     } catch (err: any) {
-      setError(err.message || T('errors.bookingFailed', locale));
+      setError(err.message || t('errorBookingFailed'));
       setIsProcessing(false);
     }
-  }, [validateStep, createBooking, dateRange, selectedRooms, guestDetails, totalPrice, gender, locale, onComplete, router]);
+  }, [validateStep, createBooking, dateRange, selectedRooms, guestDetails, totalPrice, gender, locale, onComplete, router, t]);
 
   const progress = ((STEPS.indexOf(currentStep) + 1) / STEPS.length) * 100;
 
   return (
     <div className={`max-w-6xl mx-auto px-4 py-8 ${className}`} role="main">
+      {/* Barra de progresso */}
       <div className="mb-8">
         <div className="flex justify-between mb-2">
           {STEPS.map((step, i) => (
@@ -228,17 +238,17 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
               key={step}
               className={`flex-1 text-center text-sm ${
                 i <= STEPS.indexOf(currentStep)
-                  ? 'text-blue-600 font-semibold'
-                  : 'text-gray-400'
+                  ? 'text-primary font-semibold'
+                  : 'text-muted-foreground'
               }`}
             >
-              {T(`steps.${step}`, locale)}
+              {t(STEP_KEYS[step])}
             </div>
           ))}
         </div>
-        <div className="h-2 bg-gray-200 rounded-full">
+        <div className="h-2 bg-muted rounded-full">
           <div
-            className="h-full bg-blue-600 transition-all duration-300"
+            className="h-full bg-primary transition-all duration-300 rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -249,14 +259,14 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
       {(isProcessing || isLoading) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8">
+          <div className="bg-card rounded-lg p-8 shadow-xl">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 text-center">{T('loading', locale)}</p>
+            <p className="mt-4 text-center text-foreground">{t('loading')}</p>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div className="bg-card rounded-lg shadow-lg p-6 mb-6 border border-border">
         {currentStep === 'dates' && (
           <>
             <GenderSelector value={gender} onChange={setGender} locale={locale} className="mb-6" />
@@ -299,64 +309,18 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         <button
           onClick={handleBack}
           disabled={isProcessing || currentStep === 'dates'}
-          className="px-6 py-3 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="px-6 py-3 border border-border rounded-lg hover:bg-muted disabled:opacity-50 transition-colors"
         >
-          {T('buttons.back', locale)}
+          {tc('back')}
         </button>
         <button
           onClick={currentStep === 'summary' ? handleConfirm : handleNext}
           disabled={isProcessing}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity font-semibold"
         >
-          {T(currentStep === 'summary' ? 'buttons.confirm' : 'buttons.next', locale)}
+          {currentStep === 'summary' ? tc('confirm') : tc('next')}
         </button>
       </div>
     </div>
   );
 };
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: {
-      'steps.dates': 'Datas', 'steps.rooms': 'Quartos', 'steps.guest': 'Hóspede', 'steps.summary': 'Resumo',
-      'buttons.back': 'Voltar', 'buttons.next': 'Próximo', 'buttons.confirm': 'Confirmar',
-      'errors.datesRequired': 'Selecione as datas', 'errors.invalidDates': 'Datas inválidas',
-      'errors.roomRequired': 'Selecione um quarto', 'errors.bedsRequired': 'Selecione camas',
-      'errors.guestRequired': 'Preencha os dados', 'errors.availabilityCheck': 'Erro na disponibilidade',
-      'errors.bookingFailed': 'Erro ao processar', 'loading': 'Processando...'
-    },
-    es: {
-      'steps.dates': 'Fechas', 'steps.rooms': 'Habitaciones', 'steps.guest': 'Huésped', 'steps.summary': 'Resumen',
-      'buttons.back': 'Volver', 'buttons.next': 'Siguiente', 'buttons.confirm': 'Confirmar',
-      'errors.datesRequired': 'Seleccione fechas', 'errors.invalidDates': 'Fechas inválidas',
-      'errors.roomRequired': 'Seleccione habitación', 'errors.bedsRequired': 'Seleccione camas',
-      'errors.guestRequired': 'Complete los datos', 'errors.availabilityCheck': 'Error en disponibilidad',
-      'errors.bookingFailed': 'Error al procesar', 'loading': 'Procesando...'
-    },
-    en: {
-      'steps.dates': 'Dates', 'steps.rooms': 'Rooms', 'steps.guest': 'Guest', 'steps.summary': 'Summary',
-      'buttons.back': 'Back', 'buttons.next': 'Next', 'buttons.confirm': 'Confirm',
-      'errors.datesRequired': 'Select dates', 'errors.invalidDates': 'Invalid dates',
-      'errors.roomRequired': 'Select room', 'errors.bedsRequired': 'Select beds',
-      'errors.guestRequired': 'Fill details', 'errors.availabilityCheck': 'Availability error',
-      'errors.bookingFailed': 'Booking failed', 'loading': 'Processing...'
-    },
-    fr: {
-      'steps.dates': 'Dates', 'steps.rooms': 'Chambres', 'steps.guest': 'Client', 'steps.summary': 'Résumé',
-      'buttons.back': 'Retour', 'buttons.next': 'Suivant', 'buttons.confirm': 'Confirmer',
-      'errors.datesRequired': 'Sélectionnez les dates', 'errors.invalidDates': 'Dates invalides',
-      'errors.roomRequired': 'Sélectionnez une chambre', 'errors.bedsRequired': 'Sélectionnez les lits',
-      'errors.guestRequired': 'Complétez les données', 'errors.availabilityCheck': 'Erreur de disponibilité',
-      'errors.bookingFailed': 'Échec du traitement', 'loading': 'Traitement en cours...'
-    },
-    de: {
-      'steps.dates': 'Daten', 'steps.rooms': 'Zimmer', 'steps.guest': 'Gast', 'steps.summary': 'Übersicht',
-      'buttons.back': 'Zurück', 'buttons.next': 'Weiter', 'buttons.confirm': 'Bestätigen',
-      'errors.datesRequired': 'Daten auswählen', 'errors.invalidDates': 'Ungültige Daten',
-      'errors.roomRequired': 'Zimmer auswählen', 'errors.bedsRequired': 'Betten auswählen',
-      'errors.guestRequired': 'Angaben ausfüllen', 'errors.availabilityCheck': 'Fehler bei der Verfügbarkeit',
-      'errors.bookingFailed': 'Verarbeitung fehlgeschlagen', 'loading': 'Wird verarbeitet...'
-    }
-  };
-  return t[locale]?.[key] || key;
-}

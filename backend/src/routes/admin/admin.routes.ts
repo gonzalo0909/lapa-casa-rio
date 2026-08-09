@@ -137,6 +137,113 @@ router.get('/bookings', async (req, res, next) => {
 });
 
 /**
+ * GET /admin/bookings/today — check-ins y check-outs del día actual
+ */
+router.get('/bookings/today', async (_req, res, next) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const [checkIns, checkOuts, occ] = await Promise.all([
+      query<{
+        id: string; confirmationNumber: string; guestName: string;
+        checkIn: string; checkOut: string; bedsCount: number; status: string; nights: number;
+      }>(
+        `SELECT r.id,
+                r.reservation_number AS "confirmationNumber",
+                g.full_name AS "guestName",
+                r.check_in_date::text AS "checkIn",
+                r.check_out_date::text AS "checkOut",
+                r.beds_count AS "bedsCount",
+                r.status,
+                (r.check_out_date - r.check_in_date)::int AS nights
+         FROM reservations r JOIN guests g ON g.id = r.guest_id
+         WHERE r.check_in_date = $1::date
+           AND r.status IN ('confirmed', 'pending', 'checked-in')
+         ORDER BY r.reservation_number ASC`,
+        [today]
+      ),
+      query<{
+        id: string; confirmationNumber: string; guestName: string;
+        checkIn: string; checkOut: string; bedsCount: number; status: string; nights: number;
+      }>(
+        `SELECT r.id,
+                r.reservation_number AS "confirmationNumber",
+                g.full_name AS "guestName",
+                r.check_in_date::text AS "checkIn",
+                r.check_out_date::text AS "checkOut",
+                r.beds_count AS "bedsCount",
+                r.status,
+                (r.check_out_date - r.check_in_date)::int AS nights
+         FROM reservations r JOIN guests g ON g.id = r.guest_id
+         WHERE r.check_out_date = $1::date
+           AND r.status IN ('confirmed', 'checked-in', 'checked-out')
+         ORDER BY r.reservation_number ASC`,
+        [today]
+      ),
+      query<{ occupied: number; total: number }>(
+        `SELECT
+           (SELECT COUNT(rb.id)::int FROM reservation_beds rb
+            JOIN reservations r ON r.id = rb.reservation_id
+            WHERE r.status IN ('confirmed', 'checked-in')
+              AND r.check_in_date <= $1::date AND r.check_out_date > $1::date
+           ) AS occupied,
+           (SELECT COUNT(*)::int FROM beds) AS total`,
+        [today]
+      )
+    ]);
+
+    const toBooking = (r: Record<string, any>) => ({ ...r, roomNames: [] as string[] });
+    const occRow = occ.rows[0];
+
+    res.status(200).json(ApiResponse.success({
+      checkIns: checkIns.rows.map(toBooking),
+      checkOuts: checkOuts.rows.map(toBooking),
+      occupancyToday: occRow?.occupied ?? 0,
+      totalBeds: occRow?.total ?? 45,
+    }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /admin/bookings/upcoming?days=N — próximas reservas (default: 7 días)
+ */
+router.get('/bookings/upcoming', async (req, res, next) => {
+  try {
+    const days = Math.max(1, Math.min(30, parseInt((req.query.days as string) || '7', 10) || 7));
+    const today = new Date().toISOString().slice(0, 10);
+    const until = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+
+    const result = await query<{
+      id: string; confirmationNumber: string; guestName: string;
+      checkIn: string; checkOut: string; bedsCount: number; status: string; nights: number;
+    }>(
+      `SELECT r.id,
+              r.reservation_number AS "confirmationNumber",
+              g.full_name AS "guestName",
+              r.check_in_date::text AS "checkIn",
+              r.check_out_date::text AS "checkOut",
+              r.beds_count AS "bedsCount",
+              r.status,
+              (r.check_out_date - r.check_in_date)::int AS nights
+       FROM reservations r JOIN guests g ON g.id = r.guest_id
+       WHERE r.check_in_date >= $1::date AND r.check_in_date <= $2::date
+         AND r.status IN ('confirmed', 'pending')
+       ORDER BY r.check_in_date ASC
+       LIMIT 50`,
+      [today, until]
+    );
+
+    res.status(200).json(ApiResponse.success({
+      bookings: result.rows.map((r) => ({ ...r, roomNames: [] as string[] })),
+    }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * PUT /admin/bookings/:id — corrección manual (no toca fechas/habitaciones/status, ver nota arriba)
  */
 router.put('/bookings/:id', async (req, res, next) => {

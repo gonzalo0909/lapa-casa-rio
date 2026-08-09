@@ -166,11 +166,6 @@ export function PaymentProcessor({
         {!isCreating && method === 'card' && intent?.clientSecret && (
           stripePromise ? (
             <>
-              {intent.cardSurchargePercent > 0 && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  {T('surchargeNote', locale).replace('{pct}', intent.cardSurchargePercent.toString())}
-                </p>
-              )}
               <Elements stripe={stripePromise} options={{ clientSecret: intent.clientSecret }}>
                 <CardPayment
                   paymentId={intent.paymentId}

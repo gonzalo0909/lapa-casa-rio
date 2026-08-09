@@ -50,15 +50,8 @@
     "manageBooking": "Gerenciar Reserva"
   },
   "footer": {
-    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro - RJ",
-    "phone": "+55 21 98765-4321",
-    "email": "contato@lapacasahostel.com",
-    "followUs": "Siga-nos",
-    "newsletter": "Assine nossa newsletter",
-    "copyright": "© 2025 Lapa Casa Hostel. Todos os direitos reservados.",
-    "privacyPolicy": "Política de Privacidade",
-    "termsOfService": "Termos de Serviço",
-    "cancellationPolicy": "Política de Cancelamento"
+    "since": "Desde 2018",
+    "gallery": "Bitácora de Viajantes"
   },
   "hero": {
     "title": "Seu Lar no Coração de Santa Teresa",
@@ -360,5 +353,73 @@
     "previousImage": "Imagem anterior",
     "increaseQuantity": "Aumentar quantidade",
     "decreaseQuantity": "Diminuir quantidade"
+  },
+  "bookingEngine": {
+    "stepDates": "Datas",
+    "stepRooms": "Quartos",
+    "stepGuest": "Hóspede",
+    "stepSummary": "Resumo",
+    "errorDatesRequired": "Selecione as datas",
+    "errorInvalidDates": "Datas inválidas",
+    "errorRoomRequired": "Selecione um quarto",
+    "errorBedsRequired": "Selecione camas",
+    "errorGuestRequired": "Preencha os dados",
+    "errorAvailabilityCheck": "Erro na disponibilidade",
+    "errorBookingFailed": "Erro ao processar",
+    "loading": "Processando..."
+  },
+  "dateSelector": {
+    "title": "Escolha suas Datas",
+    "subtitle": "Selecione o período da sua estadia",
+    "calendarMode": "Calendário",
+    "manualMode": "Manual",
+    "selectedDates": "Datas selecionadas",
+    "night": "noite",
+    "nights": "noites",
+    "clear": "Limpar",
+    "clearDates": "Limpar datas",
+    "importantInfo": "Informações Importantes",
+    "checkInTime": "Check-in",
+    "checkOutTime": "Check-out",
+    "minStay": "Estadia mínima",
+    "carnivalNote": "Carnaval: mínimo 5 noites",
+    "minNightsError": "Mínimo {n} noites",
+    "maxNightsError": "Máximo {n} noites",
+    "pastDateError": "Data inválida"
+  },
+  "roomCard": {
+    "bed": "cama",
+    "beds": "camas",
+    "mixed": "Misto",
+    "female": "Feminino",
+    "male": "Masculino",
+    "flexible": "Flexível",
+    "available": "Disponível",
+    "fewBedsLeft": "Poucas camas restantes",
+    "selectBeds": "Selecionar camas",
+    "chooseSpecific": "Escolher camas específicas",
+    "loadingBeds": "Carregando camas...",
+    "backToQuick": "Voltar à seleção rápida",
+    "selectedBed": "Selecionada",
+    "decrease": "Diminuir",
+    "increase": "Aumentar",
+    "fullyBooked": "Esgotado",
+    "tryOtherDates": "Tente outras datas",
+    "pricePerNight": "Preço por noite",
+    "viewDetails": "Ver detalhes"
+  },
+  "paymentPage": {
+    "title": "Confirme sua Reserva",
+    "confirmationNumber": "Número de confirmação",
+    "guest": "Hóspede",
+    "notFound": "Não encontramos essa reserva.",
+    "depositSuccessTitle": "Depósito recebido! Sua reserva está confirmada.",
+    "depositSuccessNote": "Enviamos os detalhes por email e WhatsApp. Pago no hostel na chegada, salvo se preferir cartão.",
+    "cancelledNote": "Esta reserva não está mais disponível para pagamento."
+  },
+  "gallery": {
+    "title": "Bitácora de Viajantes",
+    "subtitle": "Momentos de quem já se hospedou no Lapa Casa Hostel",
+    "empty": "Em breve, fotos dos nossos hóspedes por aqui."
   }
 }

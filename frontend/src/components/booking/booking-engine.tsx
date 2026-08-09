@@ -9,7 +9,6 @@ import { useTranslations } from 'next-intl';
 import { DateSelector } from './date-selector';
 import { GenderSelector } from './gender-selector';
 import { RoomSelector } from './room-selector';
-import { PropertyManagementBanner } from './property-management-banner';
 import { PricingCalculator } from './pricing-calculator';
 import { GuestForm } from './guest-form';
 import { BookingSummary } from './booking-summary';
@@ -278,18 +277,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
           </>
         )}
         {currentStep === 'rooms' && (
-          <>
-            <RoomSelector
-              dateRange={dateRange!}
-              gender={gender}
-              availableRooms={availableRooms}
-              groupDiscountTiers={groupDiscountTiers}
-              selectedRooms={selectedRooms}
-              onChange={handleRoomSelection}
-              locale={locale}
-            />
-            <PropertyManagementBanner locale={locale} className="mt-6" />
-          </>
+          <RoomSelector
+            dateRange={dateRange!}
+            gender={gender}
+            availableRooms={availableRooms}
+            groupDiscountTiers={groupDiscountTiers}
+            selectedRooms={selectedRooms}
+            onChange={handleRoomSelection}
+            locale={locale}
+          />
         )}
         {currentStep === 'guest' && (
           <GuestForm value={guestDetails} onSubmit={setGuestDetails} locale={locale} />

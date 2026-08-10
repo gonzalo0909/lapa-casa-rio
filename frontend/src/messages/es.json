@@ -50,8 +50,15 @@
     "manageBooking": "Gestionar Reserva"
   },
   "footer": {
-    "since": "Desde 2018",
-    "gallery": "Bitácora de Viajantes"
+    "address": "Rua Silvio Romero 22, Santa Teresa, Río de Janeiro - RJ",
+    "phone": "+55 21 98765-4321",
+    "email": "contato@lapacasahostel.com",
+    "followUs": "Síguenos",
+    "newsletter": "Suscríbete a nuestro boletín",
+    "copyright": "© 2025 Lapa Casa Hostel. Todos los derechos reservados.",
+    "privacyPolicy": "Política de Privacidad",
+    "termsOfService": "Términos de Servicio",
+    "cancellationPolicy": "Política de Cancelación"
   },
   "hero": {
     "title": "Tu Hogar en el Corazón de Santa Teresa",
@@ -362,7 +369,6 @@
     "errorDatesRequired": "Seleccione fechas",
     "errorInvalidDates": "Fechas inválidas",
     "errorRoomRequired": "Seleccione habitación",
-    "errorArrivalRequired": "El horario de llegada es obligatorio",
     "errorBedsRequired": "Seleccione camas",
     "errorGuestRequired": "Complete los datos",
     "errorAvailabilityCheck": "Error en disponibilidad",
@@ -415,13 +421,17 @@
     "guest": "Huésped",
     "notFound": "No encontramos esa reserva.",
     "depositSuccessTitle": "¡Depósito recibido! Tu reserva está confirmada.",
-    "depositSuccessNote": "Te enviamos los detalles por email y WhatsApp. Se paga en el hostel al llegar, salvo que prefieras tarjeta.",
+    "depositSuccessNote": "Te enviamos los detalles por email. Te vamos a recordar que pagues el saldo restante 7 días antes del check-in.",
     "cancelledNote": "Esta reserva ya no está disponible para pagar."
   },
   "gallery": {
     "title": "Bitácora de Viajantes",
     "subtitle": "Momentos de quienes ya se hospedaron en Lapa Casa Hostel",
     "empty": "Pronto vas a ver acá fotos de nuestros huéspedes."
+  },
+  "footer": {
+    "since": "Desde 2018",
+    "gallery": "Bitácora de Viajantes"
   },
   "landing": {
     "heroTitle": "Hospedaje para grupos en Santa Teresa",
@@ -441,5 +451,38 @@
     "whatsapp": "Hablar por WhatsApp",
     "otaPlatforms": "Reservá en las plataformas asociadas",
     "bookingOnline": "Reservá ahora con nuestro motor de reservas:"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "pricing": "Precios",
+    "dateBlocking": "Bloqueos",
+    "ical": "iCal",
+    "todayCheckins": "Check-ins hoy",
+    "todayCheckouts": "Check-outs hoy",
+    "upcomingBookings": "Próximas reservas",
+    "occupancyRate": "Ocupación",
+    "noBookings": "Ninguna reserva",
+    "guest": "Huésped",
+    "beds": "Camas",
+    "room": "Habitación",
+    "status": "Estado",
+    "seasonPricing": "Precios por Temporada",
+    "seasonPricingDesc": "Multiplicadores de precio base por temporada (definidos en el backend)",
+    "highSeason": "Temporada Alta (Dic–Mar)",
+    "lowSeason": "Temporada Baja (Jun–Sep)",
+    "mediumSeason": "Temporada Media (Abr–May, Oct–Nov)",
+    "carnival": "Carnaval (Feb)",
+    "multiplier": "Multiplicador",
+    "saveChanges": "Guardar cambios",
+    "blockDates": "Bloquear Fechas",
+    "blockDatesDesc": "Bloqueá fechas para mantenimiento o eventos privados",
+    "blockDate": "Bloquear fecha",
+    "unblockDate": "Desbloquear",
+    "reason": "Motivo",
+    "blockedDates": "Fechas bloqueadas",
+    "noBlockedDates": "Ninguna fecha bloqueada",
+    "maintenance": "Mantenimiento",
+    "privateEvent": "Evento privado",
+    "other": "Otro"
   }
 }

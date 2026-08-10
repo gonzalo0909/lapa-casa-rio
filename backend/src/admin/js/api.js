@@ -44,13 +44,19 @@ async function apiFetch(path, options = {}) {
     credentials: 'include', // M-02: la cookie httpOnly se envía automáticamente
   });
 
+  const body = await res.json().catch(() => ({}));
+
   if (res.status === 401) {
     _sessionActive = false;
-    if (!isLoginPage()) window.location.href = '/admin/index.html';
-    throw new Error('Sesión expirada');
+    // En la página de login un 401 significa contraseña incorrecta — no redirigir.
+    // En cualquier otra página significa sesión vencida — redirigir al login.
+    if (!isLoginPage()) {
+      window.location.href = '/admin/index.html';
+      throw new Error('Sesión expirada');
+    }
+    throw new Error(body.error || 'Credenciales inválidas');
   }
 
-  const body = await res.json().catch(() => ({}));
   if (!res.ok || body.success === false) {
     throw new Error(body.error || `Error ${res.status}`);
   }

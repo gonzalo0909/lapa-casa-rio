@@ -134,7 +134,7 @@ function T(key: string, locale: string): string {
       totalSavings: 'Économies totales',
       off: 'DE RÉDUCTION',
       originalPrice: 'Prix sans remise',
-      message: 'Réservation intelligente = plus d’économies',
+      message: 'Réservation intelligente = plus d"économies',
       benefit1: 'Meilleur prix',
       benefit2: 'Groupe idéal',
       benefit3: 'Valeur garantie'

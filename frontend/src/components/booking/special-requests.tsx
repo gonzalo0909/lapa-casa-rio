@@ -66,9 +66,9 @@ function T(key: string, locale: string): string {
       arrivalHelp: 'Check-in from 14:00 to 22:00'
     },
     fr: {
-      title: 'Heure d’Arrivée',
-      arrivalTime: 'Heure d’Arrivée Prévue',
-      selectTime: 'Sélectionnez l’heure',
+      title: "Heure d'Arrivée",
+      arrivalTime: "Heure d'Arrivée Prévue",
+      selectTime: "Sélectionnez l'heure",
       arrivalHelp: 'Arrivée de 14h00 à 22h00'
     },
     de: {

@@ -136,7 +136,7 @@ function T(key: string, locale: string): string {
       urgentTitle: 'Chambre Flexible - Conversion Imminente',
       infoTitle: 'Chambre Flexible Disponible',
       roomName: 'Chambre',
-      description: 'Cette chambre est réservée aux femmes pour une durée limitée avant l’arrivée.',
+      description: 'Cette chambre est réservée aux femmes pour une durée limitée avant l"arrivée.',
       timeRemaining: 'Temps avant conversion',
       conversionSoon: 'Conversion imminente ! Réservez vite si vous préférez une chambre féminine',
       day: 'jour',
@@ -146,7 +146,7 @@ function T(key: string, locale: string): string {
       and: 'et',
       benefit1: 'Garantissez votre préférence en réservant maintenant',
       benefit2: 'Même prix pour tous les types de chambre',
-      benefit3: 'La conversion automatique maximise l’occupation'
+      benefit3: 'La conversion automatique maximise l"occupation'
     },
     de: {
       urgentTitle: 'Flexibles Zimmer - Umwandlung bald',

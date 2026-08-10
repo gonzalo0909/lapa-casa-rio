@@ -34,6 +34,7 @@ interface CreateBookingRequest {
     document?: string;
   };
   specialRequests?: string;
+  arrivalTime?: string;
   language?: 'pt' | 'en' | 'es';
   source?: string;
   guestGender?: 'mixed' | 'female' | 'male';
@@ -149,7 +150,10 @@ export const createBookingHandler = async (
       nights,
       totalBeds: totalBedsRequested,
       pricing: pricingDetails,
-      specialRequests: bookingData.specialRequests,
+      specialRequests: [
+        bookingData.arrivalTime ? `Horario de llegada: ${bookingData.arrivalTime.replace('-', ':00 – ')}:00` : null,
+        bookingData.specialRequests || null,
+      ].filter(Boolean).join('\n') || undefined,
       source: bookingData.source || 'website',
       language: bookingData.language || 'pt',
       status: 'pending_payment',

@@ -190,14 +190,14 @@ function T(key: string, locale: string): string {
       carnival: 'Carnaval',
       highSeason: 'Haute Saison',
       mediumSeason: 'Saison Moyenne',
-      lowSeason: 'Offre d’Hiver',
+      lowSeason: 'Offre d"Hiver',
       increase: 'Majoration',
       discount: 'Remise',
       carnivalSpecial: 'Spécial Carnaval',
       carnivalInfo: 'Période de forte demande. Minimum 5 nuits obligatoire.',
       summerPeak: 'Été à Rio',
       summerInfo: 'Haute saison : décembre à mars. Plages bondées !',
-      winterDeal: 'Offre d’Hiver',
+      winterDeal: 'Offre d"Hiver',
       winterInfo: 'Juin à septembre. Meilleurs prix !'
     },
     de: {

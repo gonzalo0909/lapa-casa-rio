@@ -287,7 +287,7 @@ function T(key: string, locale: string): string {
       policies: 'Politiques',
       policy1: 'Draps inclus',
       policy2: 'Petit-déjeuner non inclus (disponible en option)',
-      policy3: 'Acompte non remboursable en cas d’annulation',
+      policy3: 'Acompte non remboursable en cas d"annulation',
       policy4: 'Acompte de 30% à la réservation',
       policy5: 'Animaux non autorisés',
       policy6: 'Interdiction de fumer',
@@ -296,7 +296,7 @@ function T(key: string, locale: string): string {
       checkOut: 'Départ',
       minAge: 'Âge minimum',
       years: 'ans',
-      idRequired: 'Pièce d’identité requise'
+      idRequired: "Pièce d'identité requise"
     },
     de: {
       bed: 'Bett',

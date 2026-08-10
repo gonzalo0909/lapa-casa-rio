@@ -215,6 +215,7 @@ export const bookingAPI = {
       document?: string;
     };
     specialRequests?: string;
+    arrivalTime?: string;
     language?: 'pt' | 'es' | 'en' | 'fr' | 'de';
     source?: string;
     guestGender?: 'mixed' | 'female';

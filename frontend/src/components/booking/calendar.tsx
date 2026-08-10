@@ -257,7 +257,7 @@ function T(key: string, locale: string): string {
     fr: {
       prevMonth: 'Mois précédent',
       nextMonth: 'Mois suivant',
-      today: 'Aujourd’hui',
+      today: 'Aujourd"hui',
       selected: 'Sélectionné',
       range: 'Période'
     },

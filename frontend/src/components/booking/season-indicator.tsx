@@ -192,7 +192,7 @@ function getSeasonDescription(season: Season, locale: string): string {
       high: 'Haute saison - Été à Rio de Janeiro',
       medium: 'Saison moyenne - Climat doux',
       low: 'Hiver, meilleurs prix',
-      carnival: 'Carnaval - Plus grand événement de l’année'
+      carnival: 'Carnaval - Plus grand événement de l"année'
     },
     de: {
       high: 'Hochsaison - Sommer in Rio de Janeiro',
@@ -233,7 +233,7 @@ function T(key: string, locale: string): string {
     fr: {
       seasonHigh: 'Haute Saison',
       seasonMedium: 'Saison Moyenne',
-      seasonLow: 'Offre d’Hiver',
+      seasonLow: 'Offre d"Hiver',
       seasonCarnival: 'Carnaval',
       carnival: 'Carnaval',
       carnivalMinimum: 'Le Carnaval exige un minimum de 5 nuits'

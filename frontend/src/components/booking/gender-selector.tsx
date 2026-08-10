@@ -67,34 +67,34 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
-      title: ‘Quem vai se hospedar?’,
-      mixed: ‘So homens’,
-      female: ‘Mulheres / Grupo misto’,
-      hint: ‘Escolha "Mulheres / Grupo misto" se alguem do grupo precisar do quarto feminino exclusivo.’
+      title: 'Quem vai se hospedar?',
+      mixed: 'So homens',
+      female: 'Mulheres / Grupo misto',
+      hint: 'Escolha "Mulheres / Grupo misto" se alguem do grupo precisar do quarto feminino exclusivo.'
     },
     es: {
-      title: ‘¿Quién se va a hospedar?’,
-      mixed: ‘Solo hombres’,
-      female: ‘Mujeres / Grupo mixto’,
-      hint: ‘Elegí "Mujeres / Grupo mixto" si alguien del grupo necesita el cuarto solo-mujeres.’
+      title: '¿Quién se va a hospedar?',
+      mixed: 'Solo hombres',
+      female: 'Mujeres / Grupo mixto',
+      hint: 'Elegí "Mujeres / Grupo mixto" si alguien del grupo necesita el cuarto solo-mujeres.'
     },
     en: {
-      title: ‘Who is staying?’,
-      mixed: ‘Men only’,
-      female: ‘Women / Mixed group’,
-      hint: ‘Choose "Women / Mixed group" if anyone in the group needs the female-only room.’
+      title: 'Who is staying?',
+      mixed: 'Men only',
+      female: 'Women / Mixed group',
+      hint: 'Choose "Women / Mixed group" if anyone in the group needs the female-only room.'
     },
     fr: {
-      title: ‘Qui va séjourner ?’,
-      mixed: ‘Hommes seulement’,
-      female: ‘Femmes / Groupe mixte’,
-      hint: ‘Choisissez "Femmes / Groupe mixte" si quelqu\’un du groupe a besoin de la chambre réservée aux femmes.’
+      title: 'Qui va séjourner ?',
+      mixed: 'Hommes seulement',
+      female: 'Femmes / Groupe mixte',
+      hint: "Choisissez \"Femmes / Groupe mixte\" si quelqu'un du groupe a besoin de la chambre réservée aux femmes."
     },
     de: {
-      title: ‘Wer übernachtet?’,
-      mixed: ‘Nur Männer’,
-      female: ‘Frauen / Gemischte Gruppe’,
-      hint: ‘Wählen Sie "Frauen / Gemischte Gruppe", wenn jemand aus der Gruppe das Frauenzimmer benötigt.’
+      title: 'Wer übernachtet?',
+      mixed: 'Nur Männer',
+      female: 'Frauen / Gemischte Gruppe',
+      hint: 'Wählen Sie "Frauen / Gemischte Gruppe", wenn jemand aus der Gruppe das Frauenzimmer benötigt.'
     }
   };
   return t[locale]?.[key] || key;

@@ -190,7 +190,7 @@ function T(key: string, locale: string): string {
       depositNow: 'Acompte Maintenant',
       payNow: 'maintenant',
       remaining: 'Solde Restant',
-      payLater: 'à l’arrivée',
+      payLater: 'à l"arrivée',
       paymentInfo: 'La confirmation de votre réservation vous est envoyée par e-mail et WhatsApp'
     },
     de: {

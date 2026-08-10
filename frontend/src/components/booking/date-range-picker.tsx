@@ -293,12 +293,12 @@ function T(key: string, locale: string): string {
       nights: 'nuits',
       clear: 'Effacer',
       dateFormat: 'Format : JJ/MM/AAAA',
-      invalidCheckIn: 'Date d’arrivée invalide',
+      invalidCheckIn: "Date d'arrivée invalide",
       invalidCheckOut: 'Date de départ invalide',
       invalidDates: 'Dates invalides',
-      checkInRequired: 'Sélectionnez d’abord la date d’arrivée',
-      checkOutAfterCheckIn: 'Le départ doit être après l’arrivée',
-      checkInTooEarly: 'L’arrivée ne peut pas être dans le passé',
+      checkInRequired: "Sélectionnez d'abord la date d'arrivée",
+      checkOutAfterCheckIn: 'Le départ doit être après l"arrivée',
+      checkInTooEarly: 'L"arrivée ne peut pas être dans le passé',
       checkOutTooLate: 'Départ trop éloigné'
     },
     de: {

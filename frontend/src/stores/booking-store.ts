@@ -78,6 +78,7 @@ export const useBookingStore = create<BookingState>((set) => ({
         document: guestDetails.documentNumber,
       },
       specialRequests: guestDetails.specialRequests,
+      arrivalTime: guestDetails.arrivalTime,
       language: locale,
       source: 'direct',
       guestGender: gender,

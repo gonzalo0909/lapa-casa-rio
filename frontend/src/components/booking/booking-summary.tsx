@@ -230,7 +230,7 @@ function T(key: string, locale: string): string {
       email: 'E-mail',
       phone: 'Téléphone',
       country: 'Pays',
-      arrivalTime: 'Heure d'arrivée',
+      arrivalTime: "Heure d'arrivée",
       specialRequests: 'Demandes spéciales',
       confirmation: 'La confirmation vous sera envoyée par e-mail et WhatsApp'
     },

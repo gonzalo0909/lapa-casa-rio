@@ -4,12 +4,14 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import path from 'path';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { logger } from '@/utils/logger';
 import { environment } from '@/config/environment';
 import { corsOptions } from '@/config/cors';
 import { errorHandler } from '@/middleware/error-handler';
 import { generalRateLimiter } from '@/middleware/rate-limiter';
 import { sanitizeInput } from '@/middleware/validation';
+import { authenticateToken, requireRole } from '@/middleware/auth';
 import { getSystemHealth } from '@/monitoring/health';
 import { metricsMiddleware, getMetricsSnapshot } from '@/monitoring/metrics';
 import routes from '@/routes';
@@ -37,6 +39,8 @@ app.use(helmet({
 }));
 
 app.use(cors(corsOptions));
+// M-02: parsear cookies para leer el httpOnly JWT del panel admin
+app.use(cookieParser());
 
 // ventana6: limite de tamano de payload por endpoint (entregable 6). Se
 // chequea el header Content-Length ANTES de dejar que express.json() lea
@@ -126,11 +130,10 @@ app.get('/health', async (req: Request, res: Response) => {
   }
 });
 
-// ventana6: health check extendido (DB, Redis, colas, Stripe, MP, email)
-// -- distinto de /health de arriba, que Render usa como healthCheckPath
-// y por eso se mantiene minimo y rapido (solo DB). Este es para
-// diagnostico manual o un dashboard interno.
-app.get('/api/health', async (req: Request, res: Response) => {
+// L-03: health check extendido protegido con auth admin — expone topología
+// interna (Redis, colas, Stripe, MP, email). El /health público de arriba
+// (solo DB) se mantiene sin auth porque Render lo usa como healthCheckPath.
+app.get('/api/health', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const health = await getSystemHealth();
     const httpStatus = health.status === 'unhealthy' ? 503 : 200;
@@ -141,7 +144,8 @@ app.get('/api/health', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/metrics', (req: Request, res: Response) => {
+// M-01: métricas internas solo para admin — filtraban actividad de endpoints
+app.get('/api/metrics', authenticateToken, requireRole(['admin']), (req: Request, res: Response) => {
   res.status(200).json(getMetricsSnapshot());
 });
 

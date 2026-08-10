@@ -63,20 +63,34 @@ export const generateRefreshToken = (payload: JWTPayload): string =>
 export const encryptData = (data: string, key?: string): string => {
   const encryptionKey = key || process.env.ENCRYPTION_KEY;
   if (!encryptionKey) throw new Error('ENCRYPTION_KEY not configured');
-  const derivedKey = crypto.scryptSync(encryptionKey, 'salt', ENCRYPTION_CONFIG.keyLength);
+  // M-04: salt aleatorio de 16 bytes por cifrado — evita rainbow tables
+  // si la ENCRYPTION_KEY es débil o se filtra.
+  const salt = crypto.randomBytes(16);
+  const derivedKey = crypto.scryptSync(encryptionKey, salt, ENCRYPTION_CONFIG.keyLength);
   const iv = crypto.randomBytes(ENCRYPTION_CONFIG.ivLength);
   const cipher = crypto.createCipheriv(ENCRYPTION_CONFIG.algorithm, derivedKey, iv);
   let encrypted = cipher.update(data, 'utf8', 'hex');
   encrypted += cipher.final('hex');
   const authTag = cipher.getAuthTag();
-  return Buffer.from(JSON.stringify({ iv: iv.toString('hex'), data: encrypted, tag: authTag.toString('hex') })).toString('base64');
+  return Buffer.from(JSON.stringify({
+    v: 2,                          // versión del formato para migración futura
+    salt: salt.toString('hex'),
+    iv: iv.toString('hex'),
+    data: encrypted,
+    tag: authTag.toString('hex'),
+  })).toString('base64');
 };
 
 export const decryptData = (encryptedData: string, key?: string): string => {
   const encryptionKey = key || process.env.ENCRYPTION_KEY;
   if (!encryptionKey) throw new Error('ENCRYPTION_KEY not configured');
   const parsed = JSON.parse(Buffer.from(encryptedData, 'base64').toString('utf8'));
-  const derivedKey = crypto.scryptSync(encryptionKey, 'salt', ENCRYPTION_CONFIG.keyLength);
+  // M-04: backward-compat — registros sin campo 'salt' (v1) usaban el
+  // literal 'salt'; los nuevos (v2) incluyen el salt en el JSON.
+  const saltBuf = parsed.salt
+    ? Buffer.from(parsed.salt, 'hex')
+    : Buffer.from('salt');
+  const derivedKey = crypto.scryptSync(encryptionKey, saltBuf, ENCRYPTION_CONFIG.keyLength);
   const decipher = crypto.createDecipheriv(ENCRYPTION_CONFIG.algorithm, derivedKey, Buffer.from(parsed.iv, 'hex'));
   decipher.setAuthTag(Buffer.from(parsed.tag, 'hex'));
   let decrypted = decipher.update(parsed.data, 'hex', 'utf8');

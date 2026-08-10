@@ -2,7 +2,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { redisCache } from '@/config/redis';
 import { logger } from '@/utils/logger';
+
+const REVOKED_PREFIX = 'revoked_token:';
 
 export interface AuthPayload {
   userId: string;
@@ -18,13 +21,16 @@ declare global {
   }
 }
 
-export const authenticateToken = (
+export const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
+  // M-02: leer token desde httpOnly cookie (panel admin) o header Bearer (API/scripts)
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token =
+    (authHeader && authHeader.split(' ')[1]) ||
+    (req.cookies as Record<string, string> | undefined)?.['lch_admin'];
 
   if (!token) {
     res.status(401).json({
@@ -47,7 +53,24 @@ export const authenticateToken = (
   }
 
   try {
-    const decoded = jwt.verify(token, secret) as AuthPayload;
+    // H-02: verificar issuer y audience para que tokens de otros servicios
+    // (misma secret, distinto iss/aud) sean rechazados explícitamente.
+    const decoded = jwt.verify(token, secret, {
+      issuer: 'lapa-casa-hostel',
+      audience: 'lapa-casa-hostel-api',
+    }) as AuthPayload;
+
+    // M-03: rechazar tokens revocados (logout explícito)
+    const isRevoked = await redisCache.get(`${REVOKED_PREFIX}${token}`);
+    if (isRevoked) {
+      res.status(401).json({
+        success: false,
+        error: 'Token revocado',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     req.user = decoded;
     next();
   } catch (err) {

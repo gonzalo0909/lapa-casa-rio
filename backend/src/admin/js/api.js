@@ -1,41 +1,51 @@
 // lapa-casa-hostel/backend/src/admin/js/api.js
-// ventana4 (bloque 2)
+// M-02: JWT migrado de localStorage a httpOnly cookie.
+// El servidor emite la cookie en el login (Set-Cookie: lch_admin=...; HttpOnly; SameSite=Strict)
+// y todas las rutas de admin la leen automáticamente — el JS nunca
+// puede acceder al token, lo que elimina el vector XSS de robo de JWT.
 
 const API_BASE = '/api/v1';
-const TOKEN_KEY = 'lch_admin_token';
 
-function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+// M-02: ya no usamos localStorage para el token.
+// La presencia de sesión se detecta consultando un endpoint ligero.
+let _sessionActive = null; // null = desconocido, true/false = verificado
+
+async function checkSession() {
+  if (_sessionActive !== null) return _sessionActive;
+  try {
+    const res = await fetch(`${API_BASE}/admin/me`, {
+      credentials: 'include', // envía la cookie httpOnly
+    });
+    _sessionActive = res.ok;
+  } catch {
+    _sessionActive = false;
+  }
+  return _sessionActive;
 }
 
-function setToken(token) {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
+/** Redirige a login si no hay sesión activa. Llamar al cargar cualquier página que no sea el login. */
+async function requireAuth() {
+  const active = await checkSession();
+  if (!active) {
+    window.location.href = '/admin/index.html';
+  }
 }
 
 function isLoginPage() {
   return window.location.pathname.endsWith('/admin/') || window.location.pathname.endsWith('/admin/index.html');
 }
 
-/** Redirige a login si no hay token. Llamar al cargar cualquier página que no sea el login. */
-function requireAuth() {
-  if (!getToken()) {
-    window.location.href = '/admin/index.html';
-  }
-}
-
 async function apiFetch(path, options = {}) {
-  const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include', // M-02: la cookie httpOnly se envía automáticamente
+  });
 
   if (res.status === 401) {
-    clearToken();
+    _sessionActive = false;
     if (!isLoginPage()) window.location.href = '/admin/index.html';
     throw new Error('Sesión expirada');
   }
@@ -47,8 +57,18 @@ async function apiFetch(path, options = {}) {
   return body.data;
 }
 
-function logout() {
-  clearToken();
+async function logout() {
+  try {
+    // M-03: revoca el token en el servidor antes de limpiar la sesión
+    await fetch(`${API_BASE}/admin/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    // continuar con el redirect aunque falle la revocación
+  }
+  _sessionActive = false;
   window.location.href = '/admin/index.html';
 }
 
@@ -71,14 +91,20 @@ function statusLabel(status) {
 
 /**
  * Escapa HTML antes de interpolar en innerHTML. Obligatorio para
- * cualquier campo que haya sido escrito por un huesped (guest_name,
- * guest_email, etc. vienen de POST /api/v1/bookings, publico y sin
- * autenticacion) -- sin esto, un nombre de huesped como
- * "<img src=x onerror=...>" ejecuta en la sesion del admin (que tiene el
- * JWT en localStorage) la primera vez que alguien abre esta pantalla.
+ * cualquier campo que haya sido escrito por un huésped.
  */
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[ch]));
+}
+
+function copyToClipboard(text, btn) {
+  navigator.clipboard?.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  }).catch(() => {
+    prompt('Copiá esta URL:', text);
+  });
 }

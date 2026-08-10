@@ -444,13 +444,17 @@ export const detectSuspiciousActivity = async (
   req: Request
 ): Promise<boolean> => {
   const ip = req.ip || 'unknown';
+  // L-01: removido el patrón /\${.*}/ — causaba falsos positivos con texto
+  // libre de huéspedes (ej. "Llegamos entre ${18 o 19}hs") baneando IPs
+  // legítimas por 60 minutos. La inyección de template solo es peligrosa
+  // en contextos de sistema (headers, paths), no en campos de texto libre.
+  // Los demás patrones se mantienen porque tienen muy pocos falsos positivos.
   const suspiciousPatterns = [
     /\.\.\//, // Path traversal
     /<script/i, // XSS attempt
     /union.*select/i, // SQL injection
     /exec\s*\(/i, // Code execution
     /system\s*\(/i, // System command
-    /\${.*}/, // Template injection
     /\beval\b/i // Eval injection
   ];
 

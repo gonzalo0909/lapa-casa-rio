@@ -7,6 +7,7 @@
 // dev/tests sin cuenta de Resend todavia).
 
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { query } from '../config/database';
 import { renderEmailTemplate } from '../templates/render';
 import { logger } from '../utils/logger';
@@ -28,6 +29,22 @@ const WHATSAPP_CONTACT_URL = 'https://wa.me/5521977157530';
 let resendClient: Resend | null = null;
 let warnedNoApiKey = false;
 
+// Gmail SMTP transporter (creado una sola vez si las variables están presentes)
+let gmailTransporter: nodemailer.Transporter | null = null;
+
+function getGmailTransporter(): nodemailer.Transporter | null {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  if (!gmailTransporter) {
+    gmailTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass }
+    });
+  }
+  return gmailTransporter;
+}
+
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -46,9 +63,23 @@ interface SendResult {
 }
 
 async function dispatch(to: string, subject: string, html: string): Promise<SendResult> {
+  // Gmail tiene prioridad si está configurado (no requiere dominio verificado)
+  const gmail = getGmailTransporter();
+  if (gmail) {
+    const info = await gmail.sendMail({
+      from: `${FROM_NAME} <${process.env.GMAIL_USER}>`,
+      to,
+      subject,
+      html
+    });
+    logger.info('Email enviado vía Gmail', { to, subject, messageId: info.messageId });
+    return { id: info.messageId ?? `gmail-${Date.now()}` };
+  }
+
+  // Fallback: Resend
   const client = getResendClient();
   if (!client) {
-    logger.info('EMAIL (sin enviar — falta RESEND_API_KEY)', { to, subject });
+    logger.info('EMAIL (sin enviar — falta RESEND_API_KEY y GMAIL_USER)', { to, subject });
     return { id: `stub-${Date.now()}` };
   }
   const { data, error } = await client.emails.send({
@@ -61,7 +92,7 @@ async function dispatch(to: string, subject: string, html: string): Promise<Send
     logger.error('Resend rechazó el envío', { to, subject, error });
     throw new Error(`Email send failed: ${error.message}`);
   }
-  logger.info('Email enviado', { to, subject, messageId: data?.id });
+  logger.info('Email enviado vía Resend', { to, subject, messageId: data?.id });
   return { id: data?.id ?? '' };
 }
 

@@ -75,11 +75,15 @@ router.post('/', async (req, res, next) => {
 });
 
 // M-03: logout — revoca el token actual y el refreshToken si se envía.
+// M-02: también limpia la cookie httpOnly (el token puede venir de ahí).
 // El token queda en lista negra en Redis hasta que expire naturalmente.
 router.post('/logout', authenticateToken, async (req, res, next) => {
   try {
+    // El token puede llegar como Bearer header (scripts/API) o como cookie httpOnly (panel admin)
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const cookieToken = (req.cookies as Record<string, string> | undefined)?.['lch_admin'];
+    const token = (authHeader && authHeader.split(' ')[1]) || cookieToken;
+
     if (token) {
       // TTL = 24h (access token) — suficiente para que expire y la entrada se limpie sola
       await redisCache.set(`${REVOKED_PREFIX}${token}`, '1', 86400);
@@ -90,6 +94,9 @@ router.post('/logout', authenticateToken, async (req, res, next) => {
       // TTL = 7d (refresh token)
       await redisCache.set(`${REVOKED_PREFIX}${refreshToken}`, '1', 7 * 86400);
     }
+
+    // M-02: eliminar la cookie httpOnly del navegador
+    res.clearCookie('lch_admin', { httpOnly: true, sameSite: 'strict', path: '/' });
 
     logger.info('Logout admin — token revocado');
     res.status(200).json(ApiResponse.success(null, 'Sesión cerrada correctamente'));

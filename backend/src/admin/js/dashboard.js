@@ -25,8 +25,10 @@ async function handleLogin(event) {
   event.preventDefault();
   const password = document.getElementById('password').value;
   try {
-    const data = await apiFetch('/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
-    setToken(data.token);
+    // M-02: el servidor emite la cookie httpOnly en la respuesta — no hay
+    // token en el body, la sesión queda activa automáticamente.
+    await apiFetch('/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
+    _sessionActive = true;
     initDashboard();
   } catch (err) {
     showMsg('login-msg', err.message, 'error');
@@ -105,8 +107,13 @@ function initDashboard() {
   loadTodayCheckIns();
 }
 
-if (getToken()) {
-  initDashboard();
-} else {
-  document.getElementById('login-form').addEventListener('submit', handleLogin);
-}
+// M-02: ya no hay token en localStorage — verificamos la sesión consultando
+// el endpoint /admin/me (la cookie httpOnly se envía automáticamente).
+(async () => {
+  const active = await checkSession();
+  if (active) {
+    initDashboard();
+  } else {
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+  }
+})();

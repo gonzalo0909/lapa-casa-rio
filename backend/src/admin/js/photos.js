@@ -102,9 +102,11 @@ document.getElementById('upload-form').addEventListener('submit', async (event) 
     // No usa apiFetch: esa función fuerza Content-Type: application/json,
     // que rompe un multipart/form-data (el boundary lo tiene que poner
     // el propio browser).
+    // M-02: credentials:'include' envía la cookie httpOnly — no se construye
+    // el header Authorization manualmente (getToken() ya no existe).
     const res = await fetch('/api/v1/admin/photos', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: 'include',
       body: formData
     });
     const body = await res.json().catch(() => ({}));

@@ -31,6 +31,19 @@ import type { BookingWithGuest } from '../../services/email-service';
 const router = Router();
 
 /**
+ * GET /admin/me — endpoint liviano para que el JS del panel verifique
+ * si la sesión httpOnly sigue activa (ver api.js checkSession()).
+ * authenticateToken ya corrió en routes/index.ts, req.user está poblado.
+ */
+router.get('/me', (req, res) => {
+  res.status(200).json(ApiResponse.success({
+    userId: req.user?.userId,
+    email: req.user?.email,
+    role: req.user?.role,
+  }));
+});
+
+/**
  * /admin/conflicts — detalle + resolucion manual agregados en Ventana 5
  * (conflict-service.ts). Reemplaza el listado inline que vivia aca desde
  * Ventana 4 (ver mas abajo, ahora removido para no duplicar la ruta).

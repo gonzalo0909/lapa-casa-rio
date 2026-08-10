@@ -14,18 +14,26 @@ function showMsg(elId, text, type) {
   document.getElementById(elId).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : '';
 }
 
-// ── Cargar habitaciones para el select ──────────────────────────────────────
+// ── Habitaciones: caché compartida entre select y renderFeeds ────────────────
+
+let roomsCache = []; // [{ id, name }]
 
 async function loadRoomOptions() {
   try {
     const data = await apiFetch('/rooms');
+    roomsCache = data.rooms ?? [];
     const select = document.getElementById('feed-room');
-    select.innerHTML = (data.rooms ?? []).map(
+    select.innerHTML = roomsCache.map(
       (r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`
     ).join('');
   } catch {
     document.getElementById('feed-room').innerHTML = '<option value="">Error al cargar habitaciones</option>';
   }
+}
+
+function roomName(roomTypeId) {
+  const r = roomsCache.find((r) => r.id === roomTypeId);
+  return r ? r.name : roomTypeId;
 }
 
 // ── Feeds ────────────────────────────────────────────────────────────────────
@@ -48,7 +56,7 @@ function renderFeeds(feeds) {
   tbody.innerHTML = feeds.map((f) => `
     <tr data-id="${f.id}">
       <td>${escapeHtml(PLATFORM_LABELS[f.channelCode] ?? f.channelCode)}</td>
-      <td>${escapeHtml(f.roomName ?? f.roomTypeId)}</td>
+      <td>${escapeHtml(roomName(f.roomTypeId))}</td>
       <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(f.url)}">${escapeHtml(f.url)}</td>
       <td><span class="badge ${f.isActive ? 'confirmed' : 'cancelled'}">${f.isActive ? 'Activo' : 'Inactivo'}</span></td>
       <td><button data-action="delete-feed">Quitar</button></td>
@@ -99,14 +107,25 @@ document.getElementById('add-form').addEventListener('submit', async (event) => 
 
 async function loadSyncStatus() {
   try {
+    // response.data = { feeds: [...], syncStatus: { airbnb: { lastSyncAt, success, ... }, ... } }
     const data = await apiFetch('/ical/status');
     const el = document.getElementById('sync-status');
-    if (data) {
-      el.textContent = [
-        data.lastSync   ? `Última sync: ${fmtDate(data.lastSync)}` : null,
-        data.totalFeeds !== undefined ? `Feeds activos: ${data.totalFeeds}` : null,
-      ].filter(Boolean).join(' · ');
-    }
+    if (!data) return;
+
+    const totalFeeds = (data.feeds ?? []).length;
+
+    // Encontrar la sync más reciente entre todos los canales
+    const syncEntries = Object.values(data.syncStatus ?? {});
+    const lastSyncAt = syncEntries
+      .map((s) => s.lastSyncAt)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+
+    el.textContent = [
+      lastSyncAt ? `Última sync: ${fmtDate(lastSyncAt)}` : 'Sin sincronizaciones aún',
+      `Feeds configurados: ${totalFeeds}`,
+    ].join(' · ');
   } catch {
     // No bloquea la página si el status falla
   }

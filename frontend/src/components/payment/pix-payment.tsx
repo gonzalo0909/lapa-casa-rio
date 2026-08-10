@@ -39,7 +39,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
   const successFiredRef = useRef(false);
 
   const handleSuccess = useCallback(() => {
-    if (successFiredRef.current) return;
+    if (successFiredRef.current) { return; }
     successFiredRef.current = true;
     onSuccess({ paymentId, amount });
   }, [paymentId, amount, onSuccess]);

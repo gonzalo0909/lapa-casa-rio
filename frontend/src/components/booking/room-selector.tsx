@@ -117,7 +117,6 @@ function groupDiscountFor(beds: number, tiers: GroupDiscountTier[]): number {
 
 export const RoomSelector: React.FC<RoomSelectorProps> = ({
   dateRange,
-  gender,
   availableRooms,
   groupDiscountTiers,
   selectedRooms,
@@ -202,7 +201,7 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
   );
 
   const handleFemaleConfirm = useCallback(() => {
-    if (!pendingFemale) return;
+    if (!pendingFemale) { return; }
     applyFamilySelection('female', pendingFemale.beds, pendingFemale.bedIds);
     setPendingFemale(null);
   }, [pendingFemale, applyFamilySelection]);

@@ -30,7 +30,7 @@ interface CheckInDetails {
 export class MessageTemplates {
   private readonly HOSTEL_NAME = 'Lapa Casa Hostel';
   private readonly HOSTEL_ADDRESS = 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro';
-  private readonly HOSTEL_PHONE = '+55 21 XXXX-XXXX';
+  private readonly HOSTEL_PHONE = '+55 21 97715-7530';
   private readonly CHECKIN_TIME = '14:00';
   private readonly CHECKOUT_TIME = '11:00';
 

@@ -30,7 +30,7 @@ export const OrganizationSchema = {
   url: 'https://lapacasahostel.com',
   logo: 'https://lapacasahostel.com/images/logo.png',
   image: 'https://lapacasahostel.com/images/hostel-exterior.jpg',
-  telephone: '+55-21-XXXX-XXXX',
+  telephone: '+55-21-97715-7530',
   email: 'info@lapacasahostel.com',
   address: {
     '@type': 'PostalAddress',
@@ -115,7 +115,7 @@ export const LocalBusinessSchema = {
     postalCode: '20241-120',
     addressCountry: 'BR'
   },
-  telephone: '+55-21-XXXX-XXXX',
+  telephone: '+55-21-97715-7530',
   priceRange: 'R$ 60-100',
   aggregateRating: {
     '@type': 'AggregateRating',

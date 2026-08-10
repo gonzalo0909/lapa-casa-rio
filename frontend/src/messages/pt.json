@@ -422,5 +422,24 @@
     "title": "Bitácora de Viajantes",
     "subtitle": "Momentos de quem já se hospedou no Lapa Casa Hostel",
     "empty": "Em breve, fotos dos nossos hóspedes por aqui."
+  },
+  "landing": {
+    "heroTitle": "Hospedagem para grupos em Santa Teresa",
+    "heroSubtitle": "45 camas · 5 quartos · a poucos passos dos Arcos da Lapa",
+    "stats45": "45",
+    "statsLabel45": "camas no total",
+    "stats5": "5",
+    "statsLabel5": "quartos (4 mistos + 1 flexível)",
+    "statsGroup": "7+",
+    "statsLabelGroup": "pessoas — nosso foco: grupos",
+    "sectionAbout": "O hostel",
+    "sectionBook": "Como reservar",
+    "sectionContact": "Contato e localização",
+    "bookNow": "Reserve agora online",
+    "orContact": "ou fale direto com a gente",
+    "address": "Rua Silvio Romero, 22 — Santa Teresa, Rio de Janeiro, RJ",
+    "whatsapp": "Falar no WhatsApp",
+    "otaPlatforms": "Reserve nas plataformas parceiras",
+    "bookingOnline": "Reserve agora pelo nosso motor de reservas:"
   }
 }

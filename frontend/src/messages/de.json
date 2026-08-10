@@ -422,5 +422,24 @@
     "title": "Reisetagebuch",
     "subtitle": "Momente von Gästen, die im Lapa Casa Hostel übernachtet haben",
     "empty": "Bald gibt es hier Fotos unserer Gäste."
+  },
+  "landing": {
+    "heroTitle": "Gruppenunterkunft in Santa Teresa",
+    "heroSubtitle": "45 Betten · 5 Zimmer · wenige Schritte von den Lapa-Bögen",
+    "stats45": "45",
+    "statsLabel45": "Betten insgesamt",
+    "stats5": "5",
+    "statsLabel5": "Zimmer (4 gemischt + 1 flexibel)",
+    "statsGroup": "7+",
+    "statsLabelGroup": "Personen — unser Fokus: Gruppen",
+    "sectionAbout": "Das Hostel",
+    "sectionBook": "Wie man bucht",
+    "sectionContact": "Kontakt und Standort",
+    "bookNow": "Jetzt online buchen",
+    "orContact": "oder kontaktieren Sie uns direkt",
+    "address": "Rua Silvio Romero, 22 — Santa Teresa, Rio de Janeiro, RJ",
+    "whatsapp": "Per WhatsApp schreiben",
+    "otaPlatforms": "Auf Partnerplattformen buchen",
+    "bookingOnline": "Jetzt mit unserem Buchungsmodul buchen:"
   }
 }

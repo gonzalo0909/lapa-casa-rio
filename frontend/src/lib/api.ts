@@ -270,7 +270,13 @@ export const availabilityAPI = {
    * navegador) para los cuartos/camas que el huésped ya eligió.
    */
   quote: (data: { checkIn: string; checkOut: string; rooms: Array<{ roomId: string; bedsCount: number }> }) =>
-    api.post('/availability/quote', data)
+    api.post('/availability/quote', data),
+
+  /**
+   * Disponibilidad de los 10 apartamentos para el rango de fechas indicado.
+   */
+  checkApartments: (params: { checkIn: string; checkOut: string }) =>
+    api.get(`/availability/apartments?checkIn=${params.checkIn}&checkOut=${params.checkOut}`),
 };
 
 /**

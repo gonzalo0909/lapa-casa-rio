@@ -17,6 +17,9 @@ async function loadPricing() {
     renderCarnival(data.carnivalDates);
     renderDiscountTiers(data.groupDiscountTiers);
     document.getElementById('surcharge-pct').value = data.cardSurchargePercent;
+    const pixPct = data.pixDiscountPercent ?? 0;
+    document.getElementById('pix-pct').value = pixPct;
+    updatePixPreview(pixPct);
   } catch (err) {
     showMsg('seasons-msg', err.message, 'error');
   }
@@ -116,6 +119,41 @@ document.getElementById('carnival-form').addEventListener('submit', async (event
     loadPricing();
   } catch (err) {
     showMsg('carnival-msg', err.message, 'error');
+  }
+});
+
+// ── PIX discount ─────────────────────────────────────────────────────────────
+
+function updatePixPreview(pct) {
+  const preview = document.getElementById('pix-preview');
+  const headline = document.getElementById('pix-preview-headline');
+  const sub = document.getElementById('pix-preview-sub');
+  if (!pct || pct <= 0) {
+    preview.style.display = 'none';
+    return;
+  }
+  preview.style.display = 'block';
+  headline.textContent = `${pct}% de desconto pagando com PIX!`;
+  // Usa R$300 de depósito como ejemplo ilustrativo
+  const exampleDeposit = 300;
+  const saving = Math.round(exampleDeposit * pct / 100);
+  sub.textContent = `Exemplo: economize R$ ${saving} num depósito de R$ ${exampleDeposit} — confirmação imediata, sem taxas`;
+}
+
+document.getElementById('pix-pct').addEventListener('input', function() {
+  updatePixPreview(Number(this.value));
+});
+
+document.getElementById('pix-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const pixDiscountPercent = Number(document.getElementById('pix-pct').value);
+  try {
+    await apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ pixDiscountPercent }) });
+    showMsg('pix-msg', pixDiscountPercent > 0
+      ? `Descuento PIX de ${pixDiscountPercent}% guardado. El banner se mostrará en el resumen de reserva.`
+      : 'Descuento PIX desactivado. El banner no se mostrará.', 'success');
+  } catch (err) {
+    showMsg('pix-msg', err.message, 'error');
   }
 });
 

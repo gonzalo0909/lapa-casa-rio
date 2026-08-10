@@ -302,18 +302,20 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge] = await Promise.all([
+    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge, pixDiscount] = await Promise.all([
       query(`SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`),
       query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`),
       query(`SELECT id, min_beds, percentage FROM group_discount_tiers ORDER BY min_beds`),
-      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`)
+      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`),
+      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'pix_discount_percent'`)
     ]);
     res.status(200).json(
       ApiResponse.success({
         ratePlans: ratePlans.rows,
         carnivalDates: carnivalConfig.rows[0]?.value ?? [],
         groupDiscountTiers: groupDiscountTiers.rows,
-        cardSurchargePercent: cardSurcharge.rows[0]?.value ?? 10
+        cardSurchargePercent: cardSurcharge.rows[0]?.value ?? 10,
+        pixDiscountPercent: pixDiscount.rows[0]?.value ?? 10
       })
     );
   } catch (error) {
@@ -326,7 +328,7 @@ router.get('/pricing', async (req, res, next) => {
  */
 router.put('/pricing', async (req, res, next) => {
   try {
-    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent } = req.body as {
+    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent, pixDiscountPercent } = req.body as {
       seasonType?: 'alta' | 'media' | 'baja' | 'carnaval';
       multiplier?: number;
       minNights?: number;
@@ -336,6 +338,9 @@ router.put('/pricing', async (req, res, next) => {
       // array buscando en qué rango cae la fecha) -- no un mapa por año.
       carnival?: { year: number; startDate: string; endDate: string };
       cardSurchargePercent?: number;
+      // Descuento (%) aplicado al depósito cuando el huésped paga con PIX.
+      // 0 = sin descuento (banner oculto). Ver 0017_pix_discount_config.sql.
+      pixDiscountPercent?: number;
     };
 
     const updated: Record<string, any> = {};
@@ -387,8 +392,20 @@ router.put('/pricing', async (req, res, next) => {
       updated.cardSurchargePercent = rows[0];
     }
 
+    if (pixDiscountPercent !== undefined) {
+      if (pixDiscountPercent < 0 || pixDiscountPercent > 100) {
+        res.status(400).json(ApiResponse.error('pixDiscountPercent debe estar entre 0 y 100'));
+        return;
+      }
+      const { rows } = await query(
+        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'pix_discount_percent' RETURNING *`,
+        [JSON.stringify(pixDiscountPercent)]
+      );
+      updated.pixDiscountPercent = rows[0];
+    }
+
     if (Object.keys(updated).length === 0) {
-      res.status(400).json(ApiResponse.error('Nada para actualizar: seasonType+multiplier/minNights, carnival, o cardSurchargePercent'));
+      res.status(400).json(ApiResponse.error('Nada para actualizar: seasonType+multiplier/minNights, carnival, cardSurchargePercent o pixDiscountPercent'));
       return;
     }
 

@@ -50,15 +50,8 @@
     "manageBooking": "Buchung Verwalten"
   },
   "footer": {
-    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro - RJ",
-    "phone": "+55 21 98765-4321",
-    "email": "contato@lapacasahostel.com",
-    "followUs": "Folgen Sie uns",
-    "newsletter": "Abonnieren Sie unseren Newsletter",
-    "copyright": "© 2025 Lapa Casa Hostel. Alle Rechte vorbehalten.",
-    "privacyPolicy": "Datenschutzrichtlinie",
-    "termsOfService": "Nutzungsbedingungen",
-    "cancellationPolicy": "Stornierungsrichtlinie"
+    "since": "Seit 2018",
+    "gallery": "Reisetagebuch"
   },
   "hero": {
     "title": "Ihr Zuhause im Herzen von Santa Teresa",
@@ -429,10 +422,6 @@
     "subtitle": "Momente von Gästen, die im Lapa Casa Hostel übernachtet haben",
     "empty": "Bald gibt es hier Fotos unserer Gäste."
   },
-  "footer": {
-    "since": "Seit 2018",
-    "gallery": "Reisetagebuch"
-  },
   "landing": {
     "heroTitle": "Gruppenunterkunft in Santa Teresa",
     "heroSubtitle": "45 Betten · 5 Zimmer · wenige Schritte von den Lapa-Bögen",
@@ -484,5 +473,34 @@
     "maintenance": "Wartung",
     "privateEvent": "Privatveranstaltung",
     "other": "Sonstiges"
+  },
+  "propertyTabs": {
+    "hostel": "Hostel",
+    "apartments": "Apartments"
+  },
+  "apartments": {
+    "stepDates": "Daten",
+    "stepApartment": "Apartment",
+    "stepSummary": "Übersicht",
+    "selectDatesFirst": "Bitte wählen Sie Ihr Ankunfts- und Abreisedatum.",
+    "selectApartmentFirst": "Bitte wählen Sie ein Apartment, um fortzufahren.",
+    "chooseApartment": "Wählen Sie Ihr Apartment",
+    "night": "Nacht",
+    "nights": "Nächte",
+    "perNight": "pro Nacht",
+    "available": "Verfügbar",
+    "unavailable": "Nicht verfügbar",
+    "select": "Auswählen",
+    "selected": "Ausgewählt",
+    "upToGuests": "{count} Gast/Gäste",
+    "bookingSummary": "Buchungsübersicht",
+    "apartment": "Apartment",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights2": "Nächte",
+    "total": "Gesamt",
+    "processing": "Wird verarbeitet...",
+    "errorLoading": "Fehler beim Laden der Apartments. Bitte erneut versuchen.",
+    "errorCreating": "Fehler beim Erstellen der Buchung. Bitte erneut versuchen."
   }
 }

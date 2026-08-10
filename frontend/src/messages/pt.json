@@ -473,5 +473,34 @@
     "maintenance": "Manutenção",
     "privateEvent": "Evento privado",
     "other": "Outro"
+  },
+  "propertyTabs": {
+    "hostel": "Hostel",
+    "apartments": "Apartamentos"
+  },
+  "apartments": {
+    "stepDates": "Datas",
+    "stepApartment": "Apartamento",
+    "stepSummary": "Resumo",
+    "selectDatesFirst": "Selecione as datas de entrada e saída.",
+    "selectApartmentFirst": "Selecione um apartamento para continuar.",
+    "chooseApartment": "Escolha seu apartamento",
+    "night": "noite",
+    "nights": "noites",
+    "perNight": "por noite",
+    "available": "Disponível",
+    "unavailable": "Indisponível",
+    "select": "Selecionar",
+    "selected": "Selecionado",
+    "upToGuests": "{count} hóspede(s)",
+    "bookingSummary": "Resumo da reserva",
+    "apartment": "Apartamento",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights2": "Noites",
+    "total": "Total",
+    "processing": "Processando...",
+    "errorLoading": "Erro ao carregar apartamentos. Tente novamente.",
+    "errorCreating": "Erro ao criar reserva. Tente novamente."
   }
 }

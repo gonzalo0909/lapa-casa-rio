@@ -72,9 +72,9 @@ function T(key: string, locale: string): string {
     },
     fr: {
       title: 'Votre appartement génère des revenus à Rio de Janeiro, sans que vous ayez à vous en occuper.',
-      subtitle: 'On s"occupe de tout : gestion de la location saisonnière, voyageurs et ménage. Vous n"avez qu"à encaisser.',
+      subtitle: 'On s’occupe de tout : gestion de la location saisonnière, voyageurs et ménage. Vous n’avez qu’à encaisser.',
       cta: 'En savoir plus',
-      whatsappMessage: 'Bonjour ! J"ai un appartement à Rio de Janeiro et je voudrais en savoir plus sur votre gestion de location saisonnière.'
+      whatsappMessage: 'Bonjour ! J’ai un appartement à Rio de Janeiro et je voudrais en savoir plus sur votre gestion de location saisonnière.'
     },
     de: {
       title: 'Ihre Wohnung in Rio de Janeiro bringt Einnahmen, ohne dass Sie etwas tun müssen.',

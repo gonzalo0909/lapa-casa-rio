@@ -50,15 +50,8 @@
     "manageBooking": "Gestionar Reserva"
   },
   "footer": {
-    "address": "Rua Silvio Romero 22, Santa Teresa, Río de Janeiro - RJ",
-    "phone": "+55 21 98765-4321",
-    "email": "contato@lapacasahostel.com",
-    "followUs": "Síguenos",
-    "newsletter": "Suscríbete a nuestro boletín",
-    "copyright": "© 2025 Lapa Casa Hostel. Todos los derechos reservados.",
-    "privacyPolicy": "Política de Privacidad",
-    "termsOfService": "Términos de Servicio",
-    "cancellationPolicy": "Política de Cancelación"
+    "since": "Desde 2018",
+    "gallery": "Bitácora de Viajantes"
   },
   "hero": {
     "title": "Tu Hogar en el Corazón de Santa Teresa",
@@ -429,10 +422,6 @@
     "subtitle": "Momentos de quienes ya se hospedaron en Lapa Casa Hostel",
     "empty": "Pronto vas a ver acá fotos de nuestros huéspedes."
   },
-  "footer": {
-    "since": "Desde 2018",
-    "gallery": "Bitácora de Viajantes"
-  },
   "landing": {
     "heroTitle": "Hospedaje para grupos en Santa Teresa",
     "heroSubtitle": "45 camas · 5 habitaciones · a pasos de los Arcos de la Lapa",
@@ -484,5 +473,34 @@
     "maintenance": "Mantenimiento",
     "privateEvent": "Evento privado",
     "other": "Otro"
+  },
+  "propertyTabs": {
+    "hostel": "Hostel",
+    "apartments": "Apartamentos"
+  },
+  "apartments": {
+    "stepDates": "Fechas",
+    "stepApartment": "Apartamento",
+    "stepSummary": "Resumen",
+    "selectDatesFirst": "Seleccioná las fechas de entrada y salida.",
+    "selectApartmentFirst": "Seleccioná un apartamento para continuar.",
+    "chooseApartment": "Elegí tu apartamento",
+    "night": "noche",
+    "nights": "noches",
+    "perNight": "por noche",
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "select": "Seleccionar",
+    "selected": "Seleccionado",
+    "upToGuests": "{count} huésped(es)",
+    "bookingSummary": "Resumen de la reserva",
+    "apartment": "Apartamento",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights2": "Noches",
+    "total": "Total",
+    "processing": "Procesando...",
+    "errorLoading": "Error al cargar apartamentos. Intentá de nuevo.",
+    "errorCreating": "Error al crear la reserva. Intentá de nuevo."
   }
 }

@@ -72,3 +72,16 @@ export interface GuestDetails {
   specialRequests?: string;
   arrivalTime: string;
 }
+
+/** Apartamento tal como lo devuelve GET /api/v1/availability/apartments */
+export interface ApartmentAvailability {
+  id: string;
+  code: string;
+  name: string;
+  capacity: number;
+  basePrice: number;
+  priceTotal: number;
+  available: boolean;
+}
+
+export type ApartmentStep = 'dates' | 'apartment' | 'summary';

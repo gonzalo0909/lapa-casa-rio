@@ -50,15 +50,8 @@
     "manageBooking": "Manage Booking"
   },
   "footer": {
-    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro - RJ",
-    "phone": "+55 21 98765-4321",
-    "email": "contato@lapacasahostel.com",
-    "followUs": "Follow us",
-    "newsletter": "Subscribe to our newsletter",
-    "copyright": "© 2025 Lapa Casa Hostel. All rights reserved.",
-    "privacyPolicy": "Privacy Policy",
-    "termsOfService": "Terms of Service",
-    "cancellationPolicy": "Cancellation Policy"
+    "since": "Since 2018",
+    "gallery": "Travelers' Logbook"
   },
   "hero": {
     "title": "Your Home in the Heart of Santa Teresa",
@@ -429,10 +422,6 @@
     "subtitle": "Moments from guests who've stayed at Lapa Casa Hostel",
     "empty": "Guest photos coming soon."
   },
-  "footer": {
-    "since": "Since 2018",
-    "gallery": "Travelers' Logbook"
-  },
   "landing": {
     "heroTitle": "Group accommodation in Santa Teresa",
     "heroSubtitle": "45 beds · 5 rooms · steps away from the Lapa Arches",
@@ -484,5 +473,34 @@
     "maintenance": "Maintenance",
     "privateEvent": "Private event",
     "other": "Other"
+  },
+  "propertyTabs": {
+    "hostel": "Hostel",
+    "apartments": "Apartments"
+  },
+  "apartments": {
+    "stepDates": "Dates",
+    "stepApartment": "Apartment",
+    "stepSummary": "Summary",
+    "selectDatesFirst": "Please select your check-in and check-out dates.",
+    "selectApartmentFirst": "Please select an apartment to continue.",
+    "chooseApartment": "Choose your apartment",
+    "night": "night",
+    "nights": "nights",
+    "perNight": "per night",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "select": "Select",
+    "selected": "Selected",
+    "upToGuests": "{count} guest(s)",
+    "bookingSummary": "Booking summary",
+    "apartment": "Apartment",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights2": "Nights",
+    "total": "Total",
+    "processing": "Processing...",
+    "errorLoading": "Error loading apartments. Please try again.",
+    "errorCreating": "Error creating booking. Please try again."
   }
 }

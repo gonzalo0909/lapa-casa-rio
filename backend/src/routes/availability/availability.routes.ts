@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { checkAvailabilityHandler } from './check-availability';
 import { roomAvailabilityHandler } from './room-availability';
+import { checkApartmentAvailabilityHandler } from './apartment-availability';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 import { availabilityService } from '../../services/availability-service';
@@ -12,6 +13,9 @@ import { pricingService } from '../../services/pricing-service';
 const router = Router();
 
 router.get('/check', checkAvailabilityHandler);
+
+/** GET /availability/apartments — disponibilidad de los 10 apartamentos para un rango de fechas. */
+router.get('/apartments', checkApartmentAvailabilityHandler);
 
 router.get('/room/:roomId', roomAvailabilityHandler);
 

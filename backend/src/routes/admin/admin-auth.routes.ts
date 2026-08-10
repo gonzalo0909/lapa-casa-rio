@@ -8,8 +8,13 @@
 
 import { Router } from 'express';
 import { verifyPassword, generateToken } from '../../utils/encryption';
+import { authenticateToken } from '../../middleware/auth';
+import { redisCache } from '../../config/redis';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
+
+// M-03: prefijo para tokens revocados en Redis (TTL = expiración del token)
+const REVOKED_PREFIX = 'revoked_token:';
 
 const router = Router();
 
@@ -46,9 +51,21 @@ router.post('/', async (req, res, next) => {
     const refreshToken = generateToken(payload, process.env.REFRESH_TOKEN_EXPIRES_IN || '7d');
 
     logger.info('Login admin exitoso');
+
+    // M-02: emitir el JWT como httpOnly cookie — inaccesible desde JS,
+    // elimina el vector XSS de robo de token desde localStorage.
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('lch_admin', token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24h en ms
+      path: '/',
+    });
+
     res.status(200).json(
       ApiResponse.success(
-        { token, refreshToken, expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
+        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
         'Login exitoso'
       )
     );
@@ -57,4 +74,29 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+// M-03: logout — revoca el token actual y el refreshToken si se envía.
+// El token queda en lista negra en Redis hasta que expire naturalmente.
+router.post('/logout', authenticateToken, async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      // TTL = 24h (access token) — suficiente para que expire y la entrada se limpie sola
+      await redisCache.set(`${REVOKED_PREFIX}${token}`, '1', 86400);
+    }
+
+    const { refreshToken } = req.body as { refreshToken?: string };
+    if (refreshToken) {
+      // TTL = 7d (refresh token)
+      await redisCache.set(`${REVOKED_PREFIX}${refreshToken}`, '1', 7 * 86400);
+    }
+
+    logger.info('Logout admin — token revocado');
+    res.status(200).json(ApiResponse.success(null, 'Sesión cerrada correctamente'));
+  } catch (error) {
+    next(error);
+  }
+});
+
 export const adminAuthRouter = router;
+export { REVOKED_PREFIX };

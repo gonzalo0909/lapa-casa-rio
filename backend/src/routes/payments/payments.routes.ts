@@ -44,12 +44,61 @@ router.post(
 );
 
 // POST /payments/webhook/mercadopago
+// C-01: verificar firma HMAC-SHA256 del header X-Signature antes de procesar.
+// Activar "Firma de notificaciones" en el dashboard de MP y configurar
+// MP_WEBHOOK_SECRET en las variables de entorno de Render.
 router.post(
   '/webhook/mercadopago',
-  express.json(),
   async (req, res, next) => {
     try {
-      logger.info('Webhook MercadoPago recibido', { body: req.body });
+      const secret = process.env.MP_WEBHOOK_SECRET;
+      if (!secret) {
+        // Sin secret configurado: rechazar en lugar de aceptar sin verificar
+        logger.error('MP_WEBHOOK_SECRET no configurado — webhook rechazado');
+        res.status(500).json({ error: 'Webhook not configured' });
+        return;
+      }
+
+      // MP envía: X-Signature: ts=<timestamp>,v1=<hmac>
+      const signatureHeader = req.headers['x-signature'] as string | undefined;
+      if (!signatureHeader) {
+        logger.warn('Webhook MP sin header X-Signature');
+        res.status(401).json({ error: 'Missing signature' });
+        return;
+      }
+
+      const tsMatch = signatureHeader.match(/ts=(\d+)/);
+      const v1Match = signatureHeader.match(/v1=([a-f0-9]+)/);
+      if (!tsMatch || !v1Match) {
+        logger.warn('Webhook MP: formato de X-Signature inválido', { signatureHeader });
+        res.status(401).json({ error: 'Invalid signature format' });
+        return;
+      }
+
+      const ts = tsMatch[1];
+      const receivedHmac = v1Match[1];
+      const xRequestId = req.headers['x-request-id'] as string | undefined ?? '';
+
+      // Según documentación MP: signed_template = "id:<id>;request-id:<req-id>;ts:<ts>;"
+      const dataId = (req.body as any)?.data?.id ?? '';
+      const signedPayload = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+      const expectedHmac = require('crypto')
+        .createHmac('sha256', secret)
+        .update(signedPayload)
+        .digest('hex');
+
+      const sigOk = require('crypto').timingSafeEqual(
+        Buffer.from(receivedHmac),
+        Buffer.from(expectedHmac),
+      );
+
+      if (!sigOk) {
+        logger.warn('Webhook MP: firma inválida');
+        res.status(401).json({ error: 'Invalid signature' });
+        return;
+      }
+
+      logger.info('Webhook MercadoPago recibido y verificado', { body: req.body });
       await paymentService.handleMercadoPagoWebhook(req.body);
       res.status(200).json({ received: true });
     } catch (error) {

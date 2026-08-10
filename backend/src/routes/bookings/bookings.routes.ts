@@ -11,11 +11,13 @@
  */
 
 import { Router } from 'express';
+import QRCode from 'qrcode';
 import { createBookingHandler } from './create-booking';
 import { getBookingHandler } from './get-booking';
 import { updateBookingHandler } from './update-booking';
 import { cancelBookingHandler } from './cancel-booking';
-import { validationMiddleware } from '../../middleware/validation';
+import { validate, bookingSchemas } from '../../middleware/validation';
+import { authenticateToken, requireRole } from '../../middleware/auth';
 import { logger } from '../../utils/logger';
 import { bookingService } from '../../services/booking-service';
 import type { BookingStatus } from '../../types/database';
@@ -34,7 +36,8 @@ const router = Router();
  */
 router.post(
   '/',
-  validationMiddleware('createBooking'),
+  // H-01: usar el middleware real con el schema Zod — validationMiddleware era no-op
+  validate(bookingSchemas.create),
   createBookingHandler
 );
 
@@ -49,42 +52,24 @@ router.post(
  */
 router.get(
   '/:id',
-  validationMiddleware('getBooking'),
   getBookingHandler
 );
 
 /**
  * Update Booking
  * @route PATCH /bookings/:id
- * @group Bookings - Booking management operations
- * @param {string} id.path.required - Booking ID
- * @param {BookingUpdateRequest.model} booking.body.required - Updated booking details
- * @returns {Booking.model} 200 - Updated booking
- * @returns {Error} 400 - Validation error
- * @returns {Error} 404 - Booking not found
- * @returns {Error} 409 - Update conflict
- * @returns {Error} 500 - Server error
  */
 router.patch(
   '/:id',
-  validationMiddleware('updateBooking'),
   updateBookingHandler
 );
 
 /**
  * Cancel Booking
  * @route DELETE /bookings/:id
- * @group Bookings - Booking management operations
- * @param {string} id.path.required - Booking ID
- * @param {string} reason.query - Cancellation reason
- * @returns {object} 200 - Cancellation confirmation
- * @returns {Error} 404 - Booking not found
- * @returns {Error} 409 - Cannot cancel (payment issues)
- * @returns {Error} 500 - Server error
  */
 router.delete(
   '/:id',
-  validationMiddleware('cancelBooking'),
   cancelBookingHandler
 );
 
@@ -102,7 +87,9 @@ router.delete(
  */
 router.get(
   '/',
-  validationMiddleware('listBookings'),
+  // H-03: el listado completo incluye PII — solo accesible con token admin
+  authenticateToken,
+  requireRole(['admin']),
   async (req, res, next) => {
     try {
       logger.info('List bookings request', { query: req.query });
@@ -142,7 +129,6 @@ router.get(
  */
 router.get(
   '/:id/confirmation',
-  validationMiddleware('getBooking'),
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -153,13 +139,17 @@ router.get(
         return res.status(404).json({ error: 'Booking not found' });
       }
 
+      // L-02: QR generado localmente como data URI PNG — sin dependencia
+      // externa ni envío del número de reserva a api.qrserver.com.
+      const qrCode = await QRCode.toDataURL(booking.reservation_number, { width: 200 });
+
       res.status(200).json({
         bookingId: booking.id,
         confirmationNumber: booking.reservation_number,
         status: booking.status,
         checkInDate: booking.check_in_date,
         checkOutDate: booking.check_out_date,
-        qrCode: `https://api.qrserver.com/v1/create-qr-code/?data=${booking.reservation_number}`,
+        qrCode,
         checkInInstructions: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro'
       });
     } catch (error) {

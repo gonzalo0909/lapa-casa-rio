@@ -66,8 +66,11 @@ export class PaymentService {
     if (!reservation) throw new AppError('Reserva no encontrada', 404);
 
     const currency = data.currency || 'BRL';
-    const provider: PaymentProvider = data.provider ||
-      (this.isInternationalEmail(data.guest_email) ? 'stripe' : 'mercadopago');
+    // L-04: el proveedor viene siempre en el payload (provider: 'stripe' | 'mercadopago').
+    // Se eliminó la heurística por dominio de email — asignaba Stripe a
+    // brasileños con Gmail/Outlook, causando fricción innecesaria y
+    // comisiones más altas. Si no viene provider, default a mercadopago (Brasil).
+    const provider: PaymentProvider = data.provider ?? 'mercadopago';
     const preferredMethod = data.payment_method || (provider === 'mercadopago' ? 'pix' : 'card');
 
     let providerPaymentId: string;
@@ -286,9 +289,7 @@ export class PaymentService {
     return this.paymentRepo.getStatistics();
   }
 
-  private isInternationalEmail(email: string): boolean {
-    return !['br', 'uol.com', 'bol.com.br', 'terra.com.br'].some(d => email.includes(d));
-  }
+  // L-04: isInternationalEmail eliminada — ver comentario en createPaymentIntent
 }
 
 export const paymentService = new PaymentService();

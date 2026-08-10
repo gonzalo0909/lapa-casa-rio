@@ -3,6 +3,20 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// C-02: en producción, los secretos críticos son obligatorios — la app
+// no debe arrancar con valores por defecto conocidos públicamente.
+const isProd = process.env.NODE_ENV === 'production';
+
+function requireSecret(name: string, fallback?: string): string {
+  const val = process.env[name] || fallback;
+  if (!val) {
+    if (isProd) throw new Error(`[ENV] ${name} es obligatorio en producción`);
+    console.warn(`[ENV] ${name} no configurado — usando valor de desarrollo`);
+    return '';
+  }
+  return val;
+}
+
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '3001', 10),
@@ -12,11 +26,13 @@ const env = {
   DATABASE_URL: process.env.DATABASE_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
 
-  JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-in-production',
+  // C-02: sin fallback hardcodeado en producción
+  JWT_SECRET: requireSecret('JWT_SECRET', isProd ? undefined : 'dev-secret-change-in-production'),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
   REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
 
-  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || 'dev-encryption-key-32-chars-long!',
+  // C-02: sin fallback hardcodeado en producción
+  ENCRYPTION_KEY: requireSecret('ENCRYPTION_KEY', isProd ? undefined : 'dev-encryption-key-32-chars-long!'),
 
   WHATSAPP_ENABLED: process.env.WHATSAPP_ENABLED === 'true',
   WHATSAPP_API_URL: process.env.WHATSAPP_API_URL || '',
@@ -39,10 +55,18 @@ const env = {
   EXPEDIA_WEBHOOK_SECRET: process.env.EXPEDIA_WEBHOOK_SECRET || '',
   EXPEDIA_WEBHOOK_API_KEY: process.env.EXPEDIA_WEBHOOK_API_KEY || '',
   EXPEDIA_WEBHOOK_IPS: process.env.EXPEDIA_WEBHOOK_IPS || '',
+
+  // C-01: secret para verificar firma HMAC-SHA256 de notificaciones MP.
+  // Activar en el dashboard de MercadoPago → Webhooks → Firma de notificaciones.
+  MP_WEBHOOK_SECRET: process.env.MP_WEBHOOK_SECRET || '',
 };
 
 if (!env.DATABASE_URL) {
   console.warn('[ENV] DATABASE_URL not set — database connections will fail');
+}
+// C-02: verificar ADMIN_PASSWORD_HASH también
+if (isProd && !process.env.ADMIN_PASSWORD_HASH) {
+  throw new Error('[ENV] ADMIN_PASSWORD_HASH es obligatorio en producción');
 }
 
 const allowedOrigins = env.CORS_ORIGINS === '*'

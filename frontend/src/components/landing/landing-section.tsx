@@ -10,7 +10,8 @@ import type { Locale } from '@/i18n';
  * LandingSection
  *
  * Seção de apresentação do hostel exibida acima do motor de reservas.
- * Inclui hero, estatísticas, links OTA e seção de contato.
+ * Substitui o public/landing/index.html (HTML estático) integrando o
+ * conteúdo diretamente no Next.js com i18n e design system unificado.
  *
  * @component
  */
@@ -25,14 +26,14 @@ const OTA_LINKS = [
   { name: 'Expedia', href: 'https://www.expedia.com', color: '#00355F' },
 ] as const;
 
-export const LandingSection: React.FC<LandingSectionProps> = () => {
+export const LandingSection: React.FC<LandingSectionProps> = ({ locale }) => {
   const t = useTranslations('landing');
 
   const whatsappUrl = `https://wa.me/5521982779553`;
 
   const handleBookNow = () => {
     const el = document.getElementById('reservar');
-    if (el) { el.scrollIntoView({ behavior: 'smooth' }); }
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (

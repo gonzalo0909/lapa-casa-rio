@@ -50,8 +50,15 @@
     "manageBooking": "Gérer ma Réservation"
   },
   "footer": {
-    "since": "Depuis 2018",
-    "gallery": "Carnet de Voyageurs"
+    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro - RJ",
+    "phone": "+55 21 98765-4321",
+    "email": "contato@lapacasahostel.com",
+    "followUs": "Suivez-nous",
+    "newsletter": "Abonnez-vous à notre newsletter",
+    "copyright": "© 2025 Lapa Casa Hostel. Tous droits réservés.",
+    "privacyPolicy": "Politique de Confidentialité",
+    "termsOfService": "Conditions d’Utilisation",
+    "cancellationPolicy": "Politique d’Annulation"
   },
   "hero": {
     "title": "Votre Maison au Cœur de Santa Teresa",
@@ -362,7 +369,6 @@
     "errorDatesRequired": "Sélectionnez les dates",
     "errorInvalidDates": "Dates invalides",
     "errorRoomRequired": "Sélectionnez une chambre",
-    "errorArrivalRequired": "L'heure d'arrivée est requise",
     "errorBedsRequired": "Sélectionnez les lits",
     "errorGuestRequired": "Complétez les données",
     "errorAvailabilityCheck": "Erreur de disponibilité",
@@ -415,13 +421,17 @@
     "guest": "Client",
     "notFound": "Nous n'avons pas trouvé cette réservation.",
     "depositSuccessTitle": "Acompte reçu ! Votre réservation est confirmée.",
-    "depositSuccessNote": "Nous avons envoyé les détails par e-mail et WhatsApp. Payé à l'auberge à l'arrivée, sauf si vous préférez la carte.",
+    "depositSuccessNote": "Nous avons envoyé les détails par e-mail. Nous vous rappellerons de payer le solde 7 jours avant l'arrivée.",
     "cancelledNote": "Cette réservation n'est plus disponible pour le paiement."
   },
   "gallery": {
     "title": "Carnet de Voyageurs",
     "subtitle": "Des moments partagés par nos hôtes au Lapa Casa Hostel",
     "empty": "Bientôt, des photos de nos hôtes ici."
+  },
+  "footer": {
+    "since": "Depuis 2018",
+    "gallery": "Carnet de Voyageurs"
   },
   "landing": {
     "heroTitle": "Hébergement pour groupes à Santa Teresa",
@@ -441,5 +451,38 @@
     "whatsapp": "Écrire sur WhatsApp",
     "otaPlatforms": "Réservez sur nos plateformes partenaires",
     "bookingOnline": "Réservez maintenant avec notre moteur de réservation :"
+  },
+  "admin": {
+    "dashboard": "Tableau de bord",
+    "pricing": "Tarifs",
+    "dateBlocking": "Blocage de dates",
+    "ical": "iCal",
+    "todayCheckins": "Arrivées aujourd'hui",
+    "todayCheckouts": "Départs aujourd'hui",
+    "upcomingBookings": "Réservations à venir",
+    "occupancyRate": "Occupation",
+    "noBookings": "Aucune réservation",
+    "guest": "Client",
+    "beds": "Lits",
+    "room": "Chambre",
+    "status": "Statut",
+    "seasonPricing": "Tarifs par Saison",
+    "seasonPricingDesc": "Multiplicateurs de prix de base par saison (définis dans le backend)",
+    "highSeason": "Haute Saison (Déc–Mar)",
+    "lowSeason": "Basse Saison (Juin–Sep)",
+    "mediumSeason": "Saison Intermédiaire (Avr–Mai, Oct–Nov)",
+    "carnival": "Carnaval (Fév)",
+    "multiplier": "Multiplicateur",
+    "saveChanges": "Enregistrer les modifications",
+    "blockDates": "Bloquer des Dates",
+    "blockDatesDesc": "Bloquez des dates pour la maintenance ou des événements privés",
+    "blockDate": "Bloquer une date",
+    "unblockDate": "Débloquer",
+    "reason": "Motif",
+    "blockedDates": "Dates bloquées",
+    "noBlockedDates": "Aucune date bloquée",
+    "maintenance": "Maintenance",
+    "privateEvent": "Événement privé",
+    "other": "Autre"
   }
 }

@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { DateSelector } from './date-selector';
+import { GenderSelector } from './gender-selector';
 import { RoomSelector } from './room-selector';
+import { PropertyManagementBanner } from './property-management-banner';
 import { PricingCalculator } from './pricing-calculator';
 import { GuestForm } from './guest-form';
 import { BookingSummary } from './booking-summary';
@@ -35,14 +37,12 @@ interface BookingEngineProps {
   className?: string;
 }
 
-// El paso 'guest' se fusionó con 'summary': el formulario de datos
-// personales y el resumen de la reserva aparecen juntos en la última
-// pantalla para evitar el scroll innecesario entre pasos consecutivos.
-const STEPS: BookingStep[] = ['dates', 'rooms', 'summary'];
+const STEPS: BookingStep[] = ['dates', 'rooms', 'guest', 'summary'];
 
 const STEP_KEYS: Record<BookingStep, string> = {
   dates: 'stepDates',
   rooms: 'stepRooms',
+  guest: 'stepGuest',
   summary: 'stepSummary',
 };
 
@@ -123,15 +123,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       }
     }
 
-    // 'summary' ahora incluye el formulario de datos del huésped;
-    // validamos todos los campos requeridos antes de confirmar.
-    if (step === 'summary') {
+    if (step === 'guest') {
       if (!guestDetails?.fullName || !guestDetails?.email || !guestDetails?.phone) {
         setError(t('errorGuestRequired'));
-        return false;
-      }
-      if (!guestDetails?.arrivalTime) {
-        setError(t('errorArrivalRequired'));
         return false;
       }
     }
@@ -140,9 +134,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [dateRange, selectedRooms, guestDetails, t]);
 
   const handleNext = useCallback(async () => {
-    if (!validateStep(currentStep)) {
-      return;
-    }
+    if (!validateStep(currentStep)) return;
 
     const idx = STEPS.indexOf(currentStep);
     if (idx < STEPS.length - 1) {
@@ -189,10 +181,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const handleRoomSelection = useCallback(async (rooms: Room[]) => {
     setSelectedRooms(rooms);
     setError(null);
-    // Inferir género desde los cuartos elegidos: si hay algún cuarto
-    // solo-mujeres (isFlexible), se registra 'female'; si no, 'mixed'.
-    // El usuario ya confirmó explícitamente en el modal del room-selector.
-    setGender(rooms.some((r) => r.isFlexible) ? 'female' : 'mixed');
 
     if (dateRange?.checkIn && dateRange?.checkOut && rooms.length > 0) {
       try {
@@ -211,9 +199,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [dateRange, setSelectedRooms, setTotalPrice]);
 
   const handleConfirm = useCallback(async () => {
-    if (!validateStep('summary')) {
-      return;
-    }
+    if (!validateStep('summary')) return;
 
     setIsProcessing(true);
     setError(null);
@@ -282,32 +268,36 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
       <div className="bg-card rounded-lg shadow-lg p-6 mb-6 border border-border">
         {currentStep === 'dates' && (
-          <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
+          <>
+            <GenderSelector value={gender} onChange={setGender} locale={locale} className="mb-6" />
+            <DateSelector value={dateRange} onChange={handleDateChange} locale={locale} />
+          </>
         )}
         {currentStep === 'rooms' && (
-          <RoomSelector
-            dateRange={dateRange!}
-            gender={gender}
-            availableRooms={availableRooms}
-            groupDiscountTiers={groupDiscountTiers}
-            selectedRooms={selectedRooms}
-            onChange={handleRoomSelection}
-            locale={locale}
-          />
+          <>
+            <RoomSelector
+              dateRange={dateRange!}
+              gender={gender}
+              availableRooms={availableRooms}
+              groupDiscountTiers={groupDiscountTiers}
+              selectedRooms={selectedRooms}
+              onChange={handleRoomSelection}
+              locale={locale}
+            />
+            <PropertyManagementBanner locale={locale} className="mt-6" />
+          </>
+        )}
+        {currentStep === 'guest' && (
+          <GuestForm value={guestDetails} onSubmit={setGuestDetails} locale={locale} />
         )}
         {currentStep === 'summary' && (
-          <>
-            <GuestForm value={guestDetails} onSubmit={setGuestDetails} locale={locale} className="mb-8" />
-            {selectedRooms && selectedRooms.length > 0 && dateRange?.checkIn && dateRange?.checkOut && (
-              <BookingSummary
-                dateRange={dateRange}
-                rooms={selectedRooms}
-                guestDetails={guestDetails}
-                totalPrice={totalPrice ?? 0}
-                locale={locale}
-              />
-            )}
-          </>
+          <BookingSummary
+            dateRange={dateRange!}
+            rooms={selectedRooms!}
+            guestDetails={guestDetails!}
+            totalPrice={totalPrice!}
+            locale={locale}
+          />
         )}
       </div>
 

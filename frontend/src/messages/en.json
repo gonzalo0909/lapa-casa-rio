@@ -50,8 +50,15 @@
     "manageBooking": "Manage Booking"
   },
   "footer": {
-    "since": "Since 2018",
-    "gallery": "Travelers' Logbook"
+    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro - RJ",
+    "phone": "+55 21 98765-4321",
+    "email": "contato@lapacasahostel.com",
+    "followUs": "Follow us",
+    "newsletter": "Subscribe to our newsletter",
+    "copyright": "© 2025 Lapa Casa Hostel. All rights reserved.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "cancellationPolicy": "Cancellation Policy"
   },
   "hero": {
     "title": "Your Home in the Heart of Santa Teresa",
@@ -362,7 +369,6 @@
     "errorDatesRequired": "Select dates",
     "errorInvalidDates": "Invalid dates",
     "errorRoomRequired": "Select room",
-    "errorArrivalRequired": "Arrival time is required",
     "errorBedsRequired": "Select beds",
     "errorGuestRequired": "Fill in details",
     "errorAvailabilityCheck": "Availability error",
@@ -415,7 +421,7 @@
     "guest": "Guest",
     "notFound": "We couldn't find that booking.",
     "depositSuccessTitle": "Deposit received! Your booking is confirmed.",
-    "depositSuccessNote": "We sent the details by email and WhatsApp. Paid at the hostel on arrival, unless you'd rather pay by card.",
+    "depositSuccessNote": "We sent the details by email. We'll remind you to pay the remaining balance 7 days before check-in.",
     "cancelledNote": "This booking is no longer available for payment."
   },
   "gallery": {
@@ -423,9 +429,13 @@
     "subtitle": "Moments from guests who've stayed at Lapa Casa Hostel",
     "empty": "Guest photos coming soon."
   },
+  "footer": {
+    "since": "Since 2018",
+    "gallery": "Travelers' Logbook"
+  },
   "landing": {
     "heroTitle": "Group accommodation in Santa Teresa",
-    "heroSubtitle": "45 beds · 5 rooms · steps from the Lapa Arches",
+    "heroSubtitle": "45 beds · 5 rooms · steps away from the Lapa Arches",
     "stats45": "45",
     "statsLabel45": "beds in total",
     "stats5": "5",
@@ -435,11 +445,44 @@
     "sectionAbout": "The hostel",
     "sectionBook": "How to book",
     "sectionContact": "Contact & location",
-    "bookNow": "Book now online",
-    "orContact": "or talk directly with us",
+    "bookNow": "Book online now",
+    "orContact": "or contact us directly",
     "address": "Rua Silvio Romero, 22 — Santa Teresa, Rio de Janeiro, RJ",
     "whatsapp": "Chat on WhatsApp",
     "otaPlatforms": "Book on partner platforms",
-    "bookingOnline": "Book now with our booking engine:"
+    "bookingOnline": "Book now using our booking engine:"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "pricing": "Pricing",
+    "dateBlocking": "Date Blocking",
+    "ical": "iCal",
+    "todayCheckins": "Today's check-ins",
+    "todayCheckouts": "Today's check-outs",
+    "upcomingBookings": "Upcoming bookings",
+    "occupancyRate": "Occupancy",
+    "noBookings": "No bookings",
+    "guest": "Guest",
+    "beds": "Beds",
+    "room": "Room",
+    "status": "Status",
+    "seasonPricing": "Season Pricing",
+    "seasonPricingDesc": "Base price multipliers per season (set in the backend)",
+    "highSeason": "High Season (Dec–Mar)",
+    "lowSeason": "Low Season (Jun–Sep)",
+    "mediumSeason": "Medium Season (Apr–May, Oct–Nov)",
+    "carnival": "Carnival (Feb)",
+    "multiplier": "Multiplier",
+    "saveChanges": "Save changes",
+    "blockDates": "Block Dates",
+    "blockDatesDesc": "Block dates for maintenance or private events",
+    "blockDate": "Block date",
+    "unblockDate": "Unblock",
+    "reason": "Reason",
+    "blockedDates": "Blocked dates",
+    "noBlockedDates": "No blocked dates",
+    "maintenance": "Maintenance",
+    "privateEvent": "Private event",
+    "other": "Other"
   }
 }

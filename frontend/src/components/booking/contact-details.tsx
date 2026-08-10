@@ -2,10 +2,39 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import type { GuestDetails } from '@/types/global';
+
+// ── CPF helpers ──────────────────────────────────────────────────────────────
+function validateCPF(cpf: string): boolean {
+  const n = cpf.replace(/\D/g, '');
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += parseInt(n[i]) * (10 - i);
+  let d = (s * 10) % 11; if (d >= 10) d = 0;
+  if (d !== parseInt(n[9])) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += parseInt(n[i]) * (11 - i);
+  d = (s * 10) % 11; if (d >= 10) d = 0;
+  return d === parseInt(n[10]);
+}
+
+function formatCPF(v: string): string {
+  const n = v.replace(/\D/g, '').slice(0, 11);
+  if (n.length > 9) return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`;
+  if (n.length > 6) return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6)}`;
+  if (n.length > 3) return `${n.slice(0,3)}.${n.slice(3)}`;
+  return n;
+}
+
+// ── Arrival time options: 14:00–22:00 every 30 min ──────────────────────────
+const ARRIVAL_TIMES: string[] = [];
+for (let h = 14; h <= 22; h++) {
+  ARRIVAL_TIMES.push(`${String(h).padStart(2, '0')}:00`);
+  if (h < 22) ARRIVAL_TIMES.push(`${String(h).padStart(2, '0')}:30`);
+}
 
 /**
  * ContactDetails Component
@@ -25,6 +54,8 @@ interface ContactDetailsProps {
   className?: string;
 }
 
+type CpfStatus = 'idle' | 'valid' | 'invalid' | 'passport';
+
 export const ContactDetails: React.FC<ContactDetailsProps> = ({
   formData,
   errors,
@@ -34,6 +65,31 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
   locale = 'pt',
   className = ''
 }) => {
+  const [cpfStatus, setCpfStatus] = useState<CpfStatus>('idle');
+  const [cpfMsg, setCpfMsg] = useState('');
+
+  const handleDocumentChange = useCallback((value: string) => {
+    const hasLetter = /[a-zA-Z]/.test(value);
+    let formatted = value;
+    if (!hasLetter) {
+      formatted = formatCPF(value);
+    }
+    onChange('documentNumber', formatted);
+
+    const raw = formatted.replace(/\D/g, '');
+    if (!value.trim()) {
+      setCpfStatus('idle'); setCpfMsg('');
+    } else if (hasLetter) {
+      setCpfStatus('passport'); setCpfMsg(T('cpfPassport', locale));
+    } else if (raw.length === 11) {
+      const ok = validateCPF(raw);
+      setCpfStatus(ok ? 'valid' : 'invalid');
+      setCpfMsg(ok ? T('cpfValid', locale) : T('cpfInvalid', locale));
+    } else {
+      setCpfStatus('idle'); setCpfMsg('');
+    }
+  }, [onChange, locale]);
+
   const countries = [
     { code: 'BR', name: 'Brasil' },
     { code: 'AR', name: 'Argentina' },
@@ -163,20 +219,59 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
             id="documentNumber"
             type="text"
             value={formData.documentNumber || ''}
-            onChange={(e) => onChange('documentNumber', e.target.value)}
+            onChange={(e) => handleDocumentChange(e.target.value)}
             onBlur={() => onBlur('documentNumber')}
             placeholder={T('documentPlaceholder', locale)}
-            className={touched.documentNumber && errors.documentNumber ? 'border-red-500' : ''}
+            maxLength={14}
+            className={[
+              touched.documentNumber && errors.documentNumber ? 'border-red-500' : '',
+              cpfStatus === 'valid' || cpfStatus === 'passport' ? 'border-green-400' : '',
+              cpfStatus === 'invalid' ? 'border-red-400' : '',
+            ].filter(Boolean).join(' ')}
             aria-invalid={touched.documentNumber && !!errors.documentNumber}
-            aria-describedby={errors.documentNumber ? 'documentNumber-error' : undefined}
+            aria-describedby="documentNumber-feedback"
           />
-          {touched.documentNumber && errors.documentNumber && (
-            <p id="documentNumber-error" className="text-sm text-red-600 mt-1">
+          {touched.documentNumber && errors.documentNumber ? (
+            <p id="documentNumber-feedback" className="text-sm text-red-600 mt-1">
               {errors.documentNumber}
             </p>
+          ) : cpfMsg ? (
+            <p id="documentNumber-feedback" className={`text-xs mt-1 ${cpfStatus === 'invalid' ? 'text-red-600' : 'text-green-600'}`}>
+              {cpfMsg}
+            </p>
+          ) : (
+            <p id="documentNumber-feedback" className="text-xs text-gray-500 mt-1">
+              {T('documentHelp', locale)}
+            </p>
           )}
-          <p className="text-xs text-gray-500 mt-1">{T('documentHelp', locale)}</p>
         </div>
+      </div>
+
+      {/* Horário de chegada */}
+      <div>
+        <label htmlFor="arrivalTime" className="block text-sm font-medium text-gray-700 mb-2">
+          {T('arrivalTime', locale)} <span className="text-red-500">*</span>
+        </label>
+        <Select
+          id="arrivalTime"
+          value={formData.arrivalTime || ''}
+          onChange={(e) => onChange('arrivalTime', e.target.value)}
+          onBlur={() => onBlur('arrivalTime')}
+          className={touched.arrivalTime && errors.arrivalTime ? 'border-red-500' : ''}
+          aria-invalid={touched.arrivalTime && !!errors.arrivalTime}
+          aria-describedby={errors.arrivalTime ? 'arrivalTime-error' : 'arrivalTime-hint'}
+          placeholder={T('selectArrivalTime', locale)}
+          options={ARRIVAL_TIMES.map((t) => ({ value: t, label: t }))}
+        />
+        {touched.arrivalTime && errors.arrivalTime ? (
+          <p id="arrivalTime-error" className="text-sm text-red-600 mt-1">
+            {errors.arrivalTime}
+          </p>
+        ) : (
+          <p id="arrivalTime-hint" className="text-xs text-gray-500 mt-1">
+            {T('arrivalTimeHint', locale)}
+          </p>
+        )}
       </div>
 
       <div className="p-3 bg-gray-50 rounded-lg">

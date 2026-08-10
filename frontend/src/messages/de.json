@@ -50,8 +50,15 @@
     "manageBooking": "Buchung Verwalten"
   },
   "footer": {
-    "since": "Seit 2018",
-    "gallery": "Reisetagebuch"
+    "address": "Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro - RJ",
+    "phone": "+55 21 98765-4321",
+    "email": "contato@lapacasahostel.com",
+    "followUs": "Folgen Sie uns",
+    "newsletter": "Abonnieren Sie unseren Newsletter",
+    "copyright": "© 2025 Lapa Casa Hostel. Alle Rechte vorbehalten.",
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "termsOfService": "Nutzungsbedingungen",
+    "cancellationPolicy": "Stornierungsrichtlinie"
   },
   "hero": {
     "title": "Ihr Zuhause im Herzen von Santa Teresa",
@@ -362,7 +369,6 @@
     "errorDatesRequired": "Daten auswählen",
     "errorInvalidDates": "Ungültige Daten",
     "errorRoomRequired": "Zimmer auswählen",
-    "errorArrivalRequired": "Ankunftszeit ist erforderlich",
     "errorBedsRequired": "Betten auswählen",
     "errorGuestRequired": "Angaben ausfüllen",
     "errorAvailabilityCheck": "Fehler bei der Verfügbarkeit",
@@ -415,13 +421,17 @@
     "guest": "Gast",
     "notFound": "Wir konnten diese Buchung nicht finden.",
     "depositSuccessTitle": "Anzahlung erhalten! Ihre Buchung ist bestätigt.",
-    "depositSuccessNote": "Wir haben Ihnen die Details per E-Mail und WhatsApp gesendet. Zahlung im Hostel bei Ankunft, außer Sie zahlen lieber mit Karte.",
+    "depositSuccessNote": "Wir haben Ihnen die Details per E-Mail gesendet. Wir erinnern Sie daran, den Restbetrag 7 Tage vor Check-in zu zahlen.",
     "cancelledNote": "Diese Buchung ist nicht mehr für die Zahlung verfügbar."
   },
   "gallery": {
     "title": "Reisetagebuch",
     "subtitle": "Momente von Gästen, die im Lapa Casa Hostel übernachtet haben",
     "empty": "Bald gibt es hier Fotos unserer Gäste."
+  },
+  "footer": {
+    "since": "Seit 2018",
+    "gallery": "Reisetagebuch"
   },
   "landing": {
     "heroTitle": "Gruppenunterkunft in Santa Teresa",
@@ -441,5 +451,38 @@
     "whatsapp": "Per WhatsApp schreiben",
     "otaPlatforms": "Auf Partnerplattformen buchen",
     "bookingOnline": "Jetzt mit unserem Buchungsmodul buchen:"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "pricing": "Preise",
+    "dateBlocking": "Datumssperrung",
+    "ical": "iCal",
+    "todayCheckins": "Heutige Check-ins",
+    "todayCheckouts": "Heutige Check-outs",
+    "upcomingBookings": "Kommende Buchungen",
+    "occupancyRate": "Auslastung",
+    "noBookings": "Keine Buchungen",
+    "guest": "Gast",
+    "beds": "Betten",
+    "room": "Zimmer",
+    "status": "Status",
+    "seasonPricing": "Saisonpreise",
+    "seasonPricingDesc": "Basispreismultiplikatoren pro Saison (im Backend festgelegt)",
+    "highSeason": "Hochsaison (Dez–Mär)",
+    "lowSeason": "Nebensaison (Jun–Sep)",
+    "mediumSeason": "Mittelsaison (Apr–Mai, Okt–Nov)",
+    "carnival": "Karneval (Feb)",
+    "multiplier": "Multiplikator",
+    "saveChanges": "Änderungen speichern",
+    "blockDates": "Daten sperren",
+    "blockDatesDesc": "Sperren Sie Daten für Wartung oder private Veranstaltungen",
+    "blockDate": "Datum sperren",
+    "unblockDate": "Entsperren",
+    "reason": "Grund",
+    "blockedDates": "Gesperrte Daten",
+    "noBlockedDates": "Keine gesperrten Daten",
+    "maintenance": "Wartung",
+    "privateEvent": "Privatveranstaltung",
+    "other": "Sonstiges"
   }
 }

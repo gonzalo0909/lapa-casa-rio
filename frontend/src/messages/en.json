@@ -441,5 +441,34 @@
     "whatsapp": "Chat on WhatsApp",
     "otaPlatforms": "Book on partner platforms",
     "bookingOnline": "Book now with our booking engine:"
+  },
+  "propertyTabs": {
+    "hostel": "Hostel",
+    "apartments": "Apartments"
+  },
+  "apartments": {
+    "stepDates": "Dates",
+    "stepApartment": "Apartment",
+    "stepSummary": "Summary",
+    "selectDatesFirst": "Please select your check-in and check-out dates.",
+    "selectApartmentFirst": "Please select an apartment to continue.",
+    "chooseApartment": "Choose your apartment",
+    "night": "night",
+    "nights": "nights",
+    "perNight": "per night",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "select": "Select",
+    "selected": "Selected",
+    "upToGuests": "{count} guest(s)",
+    "bookingSummary": "Booking summary",
+    "apartment": "Apartment",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights2": "Nights",
+    "total": "Total",
+    "processing": "Processing...",
+    "errorLoading": "Error loading apartments. Please try again.",
+    "errorCreating": "Error creating booking. Please try again."
   }
 }

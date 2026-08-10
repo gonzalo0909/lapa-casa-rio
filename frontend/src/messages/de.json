@@ -441,5 +441,34 @@
     "whatsapp": "Per WhatsApp schreiben",
     "otaPlatforms": "Auf Partnerplattformen buchen",
     "bookingOnline": "Jetzt mit unserem Buchungsmodul buchen:"
+  },
+  "propertyTabs": {
+    "hostel": "Hostel",
+    "apartments": "Apartments"
+  },
+  "apartments": {
+    "stepDates": "Daten",
+    "stepApartment": "Apartment",
+    "stepSummary": "Übersicht",
+    "selectDatesFirst": "Bitte wählen Sie Ihr Ankunfts- und Abreisedatum.",
+    "selectApartmentFirst": "Bitte wählen Sie ein Apartment, um fortzufahren.",
+    "chooseApartment": "Wählen Sie Ihr Apartment",
+    "night": "Nacht",
+    "nights": "Nächte",
+    "perNight": "pro Nacht",
+    "available": "Verfügbar",
+    "unavailable": "Nicht verfügbar",
+    "select": "Auswählen",
+    "selected": "Ausgewählt",
+    "upToGuests": "{count} Gast/Gäste",
+    "bookingSummary": "Buchungsübersicht",
+    "apartment": "Apartment",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights2": "Nächte",
+    "total": "Gesamt",
+    "processing": "Wird verarbeitet...",
+    "errorLoading": "Fehler beim Laden der Apartments. Bitte erneut versuchen.",
+    "errorCreating": "Fehler beim Erstellen der Buchung. Bitte erneut versuchen."
   }
 }

@@ -441,5 +441,34 @@
     "whatsapp": "Écrire sur WhatsApp",
     "otaPlatforms": "Réservez sur nos plateformes partenaires",
     "bookingOnline": "Réservez maintenant avec notre moteur de réservation :"
+  },
+  "propertyTabs": {
+    "hostel": "Auberge",
+    "apartments": "Appartements"
+  },
+  "apartments": {
+    "stepDates": "Dates",
+    "stepApartment": "Appartement",
+    "stepSummary": "Récapitulatif",
+    "selectDatesFirst": "Veuillez sélectionner vos dates d'arrivée et de départ.",
+    "selectApartmentFirst": "Veuillez sélectionner un appartement pour continuer.",
+    "chooseApartment": "Choisissez votre appartement",
+    "night": "nuit",
+    "nights": "nuits",
+    "perNight": "par nuit",
+    "available": "Disponible",
+    "unavailable": "Indisponible",
+    "select": "Choisir",
+    "selected": "Sélectionné",
+    "upToGuests": "{count} voyageur(s)",
+    "bookingSummary": "Récapitulatif de la réservation",
+    "apartment": "Appartement",
+    "checkIn": "Arrivée",
+    "checkOut": "Départ",
+    "nights2": "Nuits",
+    "total": "Total",
+    "processing": "En cours...",
+    "errorLoading": "Erreur lors du chargement des appartements. Réessayez.",
+    "errorCreating": "Erreur lors de la création de la réservation. Réessayez."
   }
 }

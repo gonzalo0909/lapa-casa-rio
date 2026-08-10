@@ -3,7 +3,7 @@
 requireAuth();
 renderNav('blocking');
 
-const REASON_LABELS = { maintenance: 'Mantenimiento', owner: 'Evento privado', other: 'Otro' };
+const REASON_LABELS = { maintenance: 'Mantenimiento', owner: 'Reserva del propietario', seasonal: 'Sazonalidade', other: 'Otro' };
 
 function showMsg(elId, text, type) {
   document.getElementById(elId).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : '';

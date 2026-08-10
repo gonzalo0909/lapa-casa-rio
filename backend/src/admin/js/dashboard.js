@@ -65,11 +65,34 @@ async function loadDashboard() {
         <td>${escapeHtml(b.reservation_number)}</td>
         <td>${escapeHtml(b.guest_name)}</td>
         <td>${fmtDate(b.check_in_date)}</td>
+        <td>${fmtDate(b.check_out_date)}</td>
         <td>${b.beds_count}</td>
+        <td><span class="badge ${b.status}">${statusLabel(b.status)}</span></td>
       </tr>
-    `).join('') || '<tr><td colspan="4" style="color:#888;">Sin check-ins próximos</td></tr>';
+    `).join('') || '<tr><td colspan="6" style="color:#888;">Sin check-ins próximos</td></tr>';
   } catch (err) {
     showMsg('dashboard-msg', err.message, 'error');
+  }
+}
+
+async function loadTodayCheckIns() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const data = await apiFetch(`/admin/bookings?from=${today}&to=${today}&limit=50`);
+    const tbody = document.querySelector('#today-checkins-table tbody');
+    const rows = data.bookings ?? [];
+    tbody.innerHTML = rows.map(b => `
+      <tr>
+        <td>${escapeHtml(b.reservation_number)}</td>
+        <td>${escapeHtml(b.guest_name)}</td>
+        <td style="font-size:12px;color:#888;">${escapeHtml(b.guest_email)}</td>
+        <td>${b.beds_count}</td>
+        <td>${fmtDate(b.check_out_date)}</td>
+        <td><span class="badge ${b.status}">${statusLabel(b.status)}</span></td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="color:#888;">Sin check-ins hoy</td></tr>';
+  } catch (err) {
+    showMsg('today-checkins-msg', err.message, 'error');
   }
 }
 
@@ -79,6 +102,7 @@ function initDashboard() {
   document.getElementById('dashboard-screen').classList.remove('hidden');
   renderNav('dashboard');
   loadDashboard();
+  loadTodayCheckIns();
 }
 
 if (getToken()) {

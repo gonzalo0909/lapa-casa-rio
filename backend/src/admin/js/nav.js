@@ -12,7 +12,8 @@ function renderNav(activePage) {
     { href: '/admin/pricing.html', label: 'Precios', page: 'pricing' },
     { href: '/admin/conflicts.html', label: 'Conflictos', page: 'conflicts' },
     { href: '/admin/photos.html', label: 'Fotos', page: 'photos' },
-    { href: '/admin/blocking.html', label: 'Bloqueos', page: 'blocking' }
+    { href: '/admin/blocking.html', label: 'Bloqueos', page: 'blocking' },
+    { href: '/admin/ical.html', label: 'iCal / OTAs', page: 'ical' }
   ];
 
   const linksHtml = links.map(l =>

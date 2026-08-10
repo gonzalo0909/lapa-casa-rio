@@ -1,0 +1,81 @@
+<!-- lapa-casa-hostel/backend/src/admin/ical.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iCal / OTAs — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+
+  <div class="card">
+    <h2>Feeds de importação — OTAs</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">
+      Cada feed importa as reservas externas (Airbnb, Booking.com, Hostelworld, Expedia)
+      como bloqueios automáticos. A sincronização ocorre a cada 5 minutos via BullMQ.
+    </p>
+    <div id="feeds-msg"></div>
+    <table id="feeds-table">
+      <thead>
+        <tr>
+          <th>Plataforma</th>
+          <th>Habitação</th>
+          <th>URL do feed</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Agregar feed</h2>
+    <div id="add-msg"></div>
+    <form class="stack" id="add-form">
+      <label>Plataforma
+        <select id="feed-channel" required>
+          <option value="airbnb">Airbnb</option>
+          <option value="booking">Booking.com</option>
+          <option value="hostelworld">Hostelworld</option>
+          <option value="expedia">Expedia</option>
+        </select>
+      </label>
+      <label>Habitação
+        <select id="feed-room" required>
+          <option value="">Cargando...</option>
+        </select>
+      </label>
+      <label>URL del feed .ics
+        <input type="url" id="feed-url" required placeholder="https://www.airbnb.com/calendar/ical/...">
+      </label>
+      <button type="submit">Agregar feed</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Sincronização manual</h2>
+    <div id="sync-msg"></div>
+    <div id="sync-status" style="font-size:13px;color:#888;margin-bottom:12px;"></div>
+    <button id="sync-btn">⟳ Sincronizar agora todos os feeds</button>
+  </div>
+
+  <div class="card">
+    <h2>URLs de exportação</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">
+      Copie e cole estas URLs nas plataformas externas para que importem as reservas do Lapa Casa automaticamente.
+    </p>
+    <div id="export-list"></div>
+  </div>
+
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/ical.js"></script>
+</body>
+</html>

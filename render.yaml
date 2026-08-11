@@ -36,13 +36,12 @@ services:
         generateValue: true
       - key: PORT
         value: 10000
-      # Landing estatica + frontend real de Next.js (motor de reservas),
-      # los dos sirviendo distintos subdominios *.onrender.com por ahora.
-      # Actualizar a los dominios custom (https://lapacasahostel.com /
-      # https://api.lapacasahostel.com) una vez esten atados en el
-      # dashboard de Render (Settings -> Custom Domains, ver docs/DEPLOY.md).
+      # Todos los orígenes autorizados: el frontend principal (channel1008/channelbackend),
+      # el frontend solo-hostel (channelhostel) y el frontend solo-apartamentos
+      # (channelapartamentos). Todos comparten ESTE mismo backend.
+      # Actualizar a dominios custom cuando estén configurados en Render.
       - key: CORS_ORIGINS
-        value: https://lapa-casa-hostel-landing.onrender.com,https://lapa-casa-hostel-frontend.onrender.com
+        value: https://lapa-casa-hostel-landing.onrender.com,https://lapa-casa-hostel-frontend.onrender.com,https://lapa-casa-hostel-frontend-hostel.onrender.com,https://lapa-casa-hostel-frontend-apartamentos.onrender.com
       - key: APP_URL
         value: https://lapa-casa-hostel-api.onrender.com
       # Sigue apuntando a la landing (no al frontend real) porque el link

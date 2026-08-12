@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { ContactDetails } from './contact-details';
 import { SpecialRequests } from './special-requests';
 import { Alert } from '@/components/ui/alert';
@@ -10,10 +11,10 @@ import type { GuestDetails } from '@/types/global';
 
 /**
  * GuestForm Component
- * 
+ *
  * Multi-section form for guest information
  * Validates required fields and special requests
- * 
+ *
  * @component
  */
 interface GuestFormProps {
@@ -24,6 +25,15 @@ interface GuestFormProps {
   className?: string;
 }
 
+const REQUIRED_FIELDS: (keyof GuestDetails)[] = [
+  'fullName',
+  'email',
+  'phone',
+  'country',
+  'documentNumber',
+  'arrivalTime'
+];
+
 export const GuestForm: React.FC<GuestFormProps> = ({
   value,
   onSubmit,
@@ -31,6 +41,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
   error,
   className = ''
 }) => {
+  const t = useTranslations('guestForm');
   const [formData, setFormData] = useState<Partial<GuestDetails>>(
     value || {
       fullName: '',
@@ -51,47 +62,47 @@ export const GuestForm: React.FC<GuestFormProps> = ({
       switch (field) {
         case 'fullName':
           if (!value || value.trim().length < 3) {
-            return T('errorFullName', locale);
+            return t('errorFullName');
           }
           if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value)) {
-            return T('errorFullNameFormat', locale);
+            return t('errorFullNameFormat');
           }
           return null;
 
         case 'email':
           if (!value) {
-            return T('errorEmail', locale);
+            return t('errorEmail');
           }
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-            return T('errorEmailFormat', locale);
+            return t('errorEmailFormat');
           }
           return null;
 
         case 'phone':
           if (!value) {
-            return T('errorPhone', locale);
+            return t('errorPhone');
           }
           const phoneDigits = value.replace(/\D/g, '');
           if (phoneDigits.length < 10) {
-            return T('errorPhoneFormat', locale);
+            return t('errorPhoneFormat');
           }
           return null;
 
         case 'country':
           if (!value) {
-            return T('errorCountry', locale);
+            return t('errorCountry');
           }
           return null;
 
         case 'documentNumber':
           if (!value || value.trim().length < 5) {
-            return T('errorDocument', locale);
+            return t('errorDocument');
           }
           return null;
 
         case 'arrivalTime':
           if (!value) {
-            return T('errorArrivalTime', locale);
+            return t('errorArrivalTime');
           }
           return null;
 
@@ -99,7 +110,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
           return null;
       }
     },
-    [locale]
+    [t]
   );
 
   const handleFieldChange = useCallback(
@@ -132,27 +143,25 @@ export const GuestForm: React.FC<GuestFormProps> = ({
 
   // El formulario no tiene botón propio de envío -- el paso completo se
   // avanza con el botón "Siguiente" compartido de BookingEngine, así que
-  // los datos se sincronizan al padre en cada cambio (mismo patrón que el
-  // resto de los pasos del wizard) en vez de esperar un submit que nunca
-  // ocurre.
+  // los datos se sincronizan al padre (mismo patrón que el resto de los
+  // pasos del wizard) en vez de esperar un submit que nunca ocurre. Pero
+  // solo cuando el formulario está completo y válido -- antes se llamaba
+  // a onSubmit en cada tecla, con datos parciales/inválidos a medio
+  // escribir, contaminando el guestDetails del store.
   useEffect(() => {
-    onSubmit(formData as GuestDetails);
-  }, [formData, onSubmit]);
+    const isComplete = REQUIRED_FIELDS.every(
+      (field) => !validateField(field, (formData[field] as string) || '')
+    );
+    if (isComplete) {
+      onSubmit(formData as GuestDetails);
+    }
+  }, [formData, onSubmit, validateField]);
 
   const validateForm = useCallback((): boolean => {
-    const requiredFields: (keyof GuestDetails)[] = [
-      'fullName',
-      'email',
-      'phone',
-      'country',
-      'documentNumber',
-      'arrivalTime'
-    ];
-
     const newErrors: Record<string, string> = {};
     let isValid = true;
 
-    requiredFields.forEach((field) => {
+    REQUIRED_FIELDS.forEach((field) => {
       const error = validateField(field, formData[field] as string);
       if (error) {
         newErrors[field] = error;
@@ -184,10 +193,10 @@ export const GuestForm: React.FC<GuestFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className={`guest-form ${className}`}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {T('title', locale)}
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {t('title')}
         </h2>
-        <p className="text-gray-600">{T('subtitle', locale)}</p>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -213,144 +222,33 @@ export const GuestForm: React.FC<GuestFormProps> = ({
         className="mb-6"
       />
 
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-semibold text-blue-900 mb-2">
-          {T('importantInfo', locale)}
+      <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">
+          {t('importantInfo')}
         </h4>
-        <ul className="space-y-1 text-sm text-blue-800">
-          <li>• {T('info1', locale)}</li>
-          <li>• {T('info2', locale)}</li>
-          <li>• {T('info3', locale)}</li>
-          <li>• {T('info4', locale)}</li>
-          <li>• {T('info5', locale)}</li>
+        <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-300">
+          <li>• {t('info1')}</li>
+          <li>• {t('info2')}</li>
+          <li>• {t('info3')}</li>
+          <li>• {t('info4')}</li>
+          <li>• {t('info5')}</li>
         </ul>
       </div>
 
-      <div className="mt-6 flex items-center gap-2 text-sm text-gray-600">
+      <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
         <input
           type="checkbox"
           id="terms"
           required
-          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+          className="w-4 h-4 text-primary rounded border-border focus:ring-primary"
         />
         <label htmlFor="terms">
-          {T('acceptTerms', locale)}{' '}
-          <a href="/terms" className="text-blue-600 hover:underline" target="_blank">
-            {T('termsLink', locale)}
+          {t('acceptTerms')}{' '}
+          <a href="/terms" className="text-primary hover:underline" target="_blank">
+            {t('termsLink')}
           </a>
         </label>
       </div>
     </form>
   );
 };
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: {
-      title: 'Informações do Hóspede',
-      subtitle: 'Preencha seus dados para finalizar a reserva',
-      errorFullName: 'Nome completo é obrigatório',
-      errorFullNameFormat: 'Nome deve conter apenas letras',
-      errorEmail: 'Email é obrigatório',
-      errorEmailFormat: 'Email inválido',
-      errorPhone: 'Telefone é obrigatório',
-      errorPhoneFormat: 'Telefone inválido',
-      errorCountry: 'País é obrigatório',
-      errorDocument: 'Documento é obrigatório',
-      errorArrivalTime: 'Horário de chegada é obrigatório',
-      importantInfo: 'Informações Importantes',
-      info1: 'Check-in: 14:00 - Check-out: 12:00',
-      info2: 'Documento de identidade obrigatório',
-      info3: 'Idade mínima: 18 anos',
-      info4: 'Confirmação enviada por email e WhatsApp',
-      info5: 'Não aceitamos crianças nem animais de estimação',
-      acceptTerms: 'Aceito os',
-      termsLink: 'termos e condições'
-    },
-    es: {
-      title: 'Información del Huésped',
-      subtitle: 'Complete sus datos para finalizar la reserva',
-      errorFullName: 'Nombre completo es obligatorio',
-      errorFullNameFormat: 'Nombre debe contener solo letras',
-      errorEmail: 'Email es obligatorio',
-      errorEmailFormat: 'Email inválido',
-      errorPhone: 'Teléfono es obligatorio',
-      errorPhoneFormat: 'Teléfono inválido',
-      errorCountry: 'País es obligatorio',
-      errorDocument: 'Documento es obligatorio',
-      errorArrivalTime: 'El horario de llegada es obligatorio',
-      importantInfo: 'Información Importante',
-      info1: 'Check-in: 14:00 - Check-out: 12:00',
-      info2: 'Documento de identidad obligatorio',
-      info3: 'Edad mínima: 18 años',
-      info4: 'Confirmación enviada por email y WhatsApp',
-      info5: 'No aceptamos niños ni mascotas',
-      acceptTerms: 'Acepto los',
-      termsLink: 'términos y condiciones'
-    },
-    en: {
-      title: 'Guest Information',
-      subtitle: 'Fill in your details to complete the booking',
-      errorFullName: 'Full name is required',
-      errorFullNameFormat: 'Name must contain only letters',
-      errorEmail: 'Email is required',
-      errorEmailFormat: 'Invalid email',
-      errorPhone: 'Phone is required',
-      errorPhoneFormat: 'Invalid phone',
-      errorCountry: 'Country is required',
-      errorDocument: 'Document is required',
-      errorArrivalTime: 'Arrival time is required',
-      importantInfo: 'Important Information',
-      info1: 'Check-in: 14:00 - Check-out: 12:00',
-      info2: 'ID document required',
-      info3: 'Minimum age: 18 years',
-      info4: 'Confirmation sent by email and WhatsApp',
-      info5: 'We do not accept children or pets',
-      acceptTerms: 'I accept the',
-      termsLink: 'terms and conditions'
-    },
-    fr: {
-      title: "Informations du Client",
-      subtitle: "Complétez vos données pour finaliser la réservation",
-      errorFullName: "Le nom complet est requis",
-      errorFullNameFormat: "Le nom ne doit contenir que des lettres",
-      errorEmail: "L'e-mail est requis",
-      errorEmailFormat: "E-mail invalide",
-      errorPhone: "Le téléphone est requis",
-      errorPhoneFormat: "Téléphone invalide",
-      errorCountry: "Le pays est requis",
-      errorDocument: "Le document est requis",
-      errorArrivalTime: "L'heure d'arrivée est requise",
-      importantInfo: 'Informations Importantes',
-      info1: 'Arrivée : 14h00 - Départ : 12h00',
-      info2: "Pièce d'identité obligatoire",
-      info3: 'Âge minimum : 18 ans',
-      info4: 'Confirmation envoyée par e-mail et WhatsApp',
-      info5: "Nous n'acceptons ni enfants ni animaux",
-      acceptTerms: 'J"accepte les',
-      termsLink: 'termes et conditions'
-    },
-    de: {
-      title: 'Gastinformationen',
-      subtitle: 'Füllen Sie Ihre Daten aus, um die Buchung abzuschließen',
-      errorFullName: 'Vollständiger Name ist erforderlich',
-      errorFullNameFormat: 'Name darf nur Buchstaben enthalten',
-      errorEmail: 'E-Mail ist erforderlich',
-      errorEmailFormat: 'Ungültige E-Mail',
-      errorPhone: 'Telefon ist erforderlich',
-      errorPhoneFormat: 'Ungültiges Telefon',
-      errorCountry: 'Land ist erforderlich',
-      errorDocument: 'Dokument ist erforderlich',
-      errorArrivalTime: 'Ankunftszeit ist erforderlich',
-      importantInfo: 'Wichtige Informationen',
-      info1: 'Check-in: 14:00 - Check-out: 12:00',
-      info2: 'Ausweisdokument erforderlich',
-      info3: 'Mindestalter: 18 Jahre',
-      info4: 'Bestätigung per E-Mail und WhatsApp gesendet',
-      info5: 'Wir akzeptieren keine Kinder oder Haustiere',
-      acceptTerms: 'Ich akzeptiere die',
-      termsLink: 'Allgemeinen Geschäftsbedingungen'
-    }
-  };
-  return t[locale]?.[key] || key;
-}

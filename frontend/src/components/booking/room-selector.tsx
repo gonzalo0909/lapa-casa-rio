@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { RoomCard } from './room-card';
 import { FlexibleRoomNotice } from './flexible-room-notice';
 import { Alert } from '@/components/ui/alert';
@@ -42,7 +43,14 @@ interface Family {
   members: RoomAvailability[];
 }
 
-function buildFamilies(rooms: RoomAvailability[]): Family[] {
+/**
+ * `gender` filtra qué familias son elegibles (ver comentario en el tipo
+ * `BookingGender`, types/global.ts): un huésped mixto solo debe ver los
+ * cuartos mixtos; una huésped que eligió "female" ve los mixtos MÁS el
+ * cuarto solo-mujeres. Sin este filtro, un grupo mixto podía terminar
+ * viendo (y seleccionando) el cuarto solo-mujeres.
+ */
+function buildFamilies(rooms: RoomAvailability[], gender: BookingGender): Family[] {
   const byName = (a: RoomAvailability, b: RoomAvailability) => a.name.localeCompare(b.name);
   const twelve = rooms.filter((r) => r.capacity === 12).sort(byName);
   const seven = rooms.filter((r) => r.capacity === 7 && !r.isFlexible).sort(byName);
@@ -55,15 +63,16 @@ function buildFamilies(rooms: RoomAvailability[]): Family[] {
   if (seven.length > 0) {
     families.push({ key: 'seven', labelKey: 'familySeven', members: seven });
   }
-  // El cuarto solo-mujeres siempre aparece cuando hay disponibilidad.
-  // La traba es el modal de confirmación que se muestra al seleccionarlo.
-  if (female.length > 0) {
+  // El cuarto solo-mujeres aparece cuando hay disponibilidad Y el género
+  // elegido es "female". La traba adicional es el modal de confirmación
+  // que se muestra al seleccionarlo.
+  if (female.length > 0 && gender === 'female') {
     families.push({ key: 'female', labelKey: 'familyFemale', members: female });
   }
   return families;
 }
 
-function familyToCard(family: Family, locale: string): RoomAvailability {
+function familyToCard(family: Family, t: (key: string) => string): RoomAvailability {
   const totalAvailable = family.members.reduce((s, m) => s + m.availableBeds, 0);
   const primary = family.members[0]!;
   // El nombre de la familia ("hasta 12"/"hasta 7") describe la capacidad
@@ -76,7 +85,7 @@ function familyToCard(family: Family, locale: string): RoomAvailability {
   return {
     id: family.key,
     code: family.key,
-    name: T(family.labelKey, locale),
+    name: t(family.labelKey),
     type: family.key === 'female' ? 'female' : 'mixed',
     capacity: primary.capacity,
     availableBeds: Math.min(totalAvailable, primary.capacity),
@@ -117,6 +126,7 @@ function groupDiscountFor(beds: number, tiers: GroupDiscountTier[]): number {
 
 export const RoomSelector: React.FC<RoomSelectorProps> = ({
   dateRange,
+  gender,
   availableRooms,
   groupDiscountTiers,
   selectedRooms,
@@ -125,7 +135,8 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
   error,
   className = ''
 }) => {
-  const families = useMemo(() => buildFamilies(availableRooms), [availableRooms]);
+  const t = useTranslations('roomSelector');
+  const families = useMemo(() => buildFamilies(availableRooms, gender), [availableRooms, gender]);
 
   const initialFamily = useMemo(() => {
     if (!selectedRooms || selectedRooms.length === 0) {
@@ -179,13 +190,13 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
         // Se reemplaza por el nombre localizado para que en el resumen y el
         // correo de confirmación nunca aparezca terminología interna.
         if (familyKey === 'female') {
-          const displayName = T('familyFemale', locale);
+          const displayName = t('familyFemale');
           rooms = rooms.map((r) => ({ ...r, name: displayName, type: 'female' as const }));
         }
       }
       onChange(rooms);
     },
-    [families, locale, onChange]
+    [families, t, onChange]
   );
 
   const handleFamilySelection = useCallback(
@@ -219,8 +230,8 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
   return (
     <div className={`room-selector ${className}`}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{T('title', locale)}</h2>
-        <p className="text-gray-600">{T('subtitle', locale)}</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">{t('title')}</h2>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -243,20 +254,20 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎉</span>
             <div>
-              <p className="font-semibold">{T('groupDiscountTitle', locale)}</p>
-              <p className="text-sm">{Math.round(groupDiscount * 100)}% {T('off', locale)}</p>
+              <p className="font-semibold">{t('groupDiscountTitle')}</p>
+              <p className="text-sm">{Math.round(groupDiscount * 100)}% {t('off')}</p>
             </div>
           </div>
         </Alert>
       )}
 
-      <p className="text-sm text-gray-600 mb-3">{T('oneFamilyOnly', locale)}</p>
+      <p className="text-sm text-muted-foreground mb-3">{t('oneFamilyOnly')}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {families.map((family) => (
           <RoomCard
             key={family.key}
-            room={familyToCard(family, locale)}
+            room={familyToCard(family, t)}
             realRoomId={family.members[0]!.id}
             dateRange={dateRange}
             selectedBeds={selectedFamilyKey === family.key ? bedsCount : 0}
@@ -269,32 +280,32 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
       {families.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">😔</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {T('noAvailability', locale)}
+          <h3 className="text-xl font-semibold text-foreground mb-2">
+            {t('noAvailability')}
           </h3>
-          <p className="text-gray-600">{T('tryOtherDates', locale)}</p>
+          <p className="text-muted-foreground">{t('tryOtherDates')}</p>
         </div>
       )}
 
       {totalSelectedBeds > 0 && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold text-gray-900">
-                {T('totalSelected', locale)}: {totalSelectedBeds}{' '}
-                {totalSelectedBeds === 1 ? T('bed', locale) : T('beds', locale)}
+              <p className="font-semibold text-foreground">
+                {t('totalSelected')}: {totalSelectedBeds}{' '}
+                {totalSelectedBeds === 1 ? t('bed') : t('beds')}
               </p>
               {hasGroupDiscount && (
-                <p className="text-sm text-green-700 font-medium mt-1">
-                  ✓ {T('discountApplied', locale)}
+                <p className="text-sm text-green-700 dark:text-green-400 font-medium mt-1">
+                  ✓ {t('discountApplied')}
                 </p>
               )}
             </div>
             <button
               onClick={() => handleFamilySelection(selectedFamilyKey ?? '', 0)}
-              className="text-sm text-red-600 hover:text-red-800 font-medium"
+              className="text-sm text-destructive hover:opacity-80 font-medium"
             >
-              {T('clearSelection', locale)}
+              {t('clearSelection')}
             </button>
           </div>
         </div>
@@ -310,27 +321,27 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
         size="sm"
       >
         <ModalHeader>
-          <ModalTitle>{T('femaleConfirmTitle', locale)}</ModalTitle>
+          <ModalTitle>{t('femaleConfirmTitle')}</ModalTitle>
         </ModalHeader>
         <ModalBody>
-          <p className="text-gray-700 text-sm leading-relaxed">
-            {T('femaleConfirmBody', locale)}
+          <p className="text-foreground text-sm leading-relaxed">
+            {t('femaleConfirmBody')}
           </p>
         </ModalBody>
         <ModalFooter>
           <button
             type="button"
             onClick={handleFemaleCancel}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
           >
-            {T('femaleConfirmCancel', locale)}
+            {t('femaleConfirmCancel')}
           </button>
           <button
             type="button"
             onClick={handleFemaleConfirm}
             className="px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-medium hover:bg-pink-700 transition-colors"
           >
-            {T('femaleConfirmYes', locale)}
+            {t('femaleConfirmYes')}
           </button>
         </ModalFooter>
       </Modal>
@@ -338,124 +349,3 @@ export const RoomSelector: React.FC<RoomSelectorProps> = ({
     </div>
   );
 };
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: {
-      title: "Escolha seu Quarto",
-      subtitle: "Selecione um tipo de quarto e a quantidade de pessoas",
-      familyTwelve: "Misto (até 12)",
-      familySeven: "Misto (até 7)",
-      familyFemale: "Só Mulheres",
-      oneFamilyOnly: "Só se pode escolher um tipo de quarto por reserva.",
-      totalSelected: "Total selecionado",
-      bed: "pessoa",
-      beds: "pessoas",
-      off: "de desconto",
-      clearSelection: "Limpar seleção",
-      groupDiscountTitle: "Desconto para Grupos Ativo!",
-      discountApplied: "Desconto aplicado",
-      discountFrom: "desconto a partir de",
-      noAvailability: "Sem Disponibilidade",
-      tryOtherDates: "Tente outras datas",
-      importantInfo: "Informações Importantes",
-      femaleConfirmTitle: "Quarto exclusivo para mulheres",
-      femaleConfirmBody: "Este quarto só pode ser ocupado por mulheres. Ao confirmar, você declara que todos os hóspedes deste quarto são mulheres.",
-      femaleConfirmYes: "Sim, confirmo",
-      femaleConfirmCancel: "Cancelar",
-    },
-    es: {
-      title: "Elige tu Habitación",
-      subtitle: "Selecciona un tipo de habitación y la cantidad de personas",
-      familyTwelve: "Mixto (hasta 12)",
-      familySeven: "Mixto (hasta 7)",
-      familyFemale: "Solo Mujeres",
-      oneFamilyOnly: "Solo se puede elegir un tipo de habitación por reserva.",
-      totalSelected: "Total seleccionado",
-      bed: "persona",
-      beds: "personas",
-      off: "de descuento",
-      clearSelection: "Limpiar selección",
-      groupDiscountTitle: "¡Descuento para Grupos Activo!",
-      discountApplied: "Descuento aplicado",
-      discountFrom: "descuento desde",
-      noAvailability: "Sin Disponibilidad",
-      tryOtherDates: "Prueba otras fechas",
-      importantInfo: "Información Importante",
-      femaleConfirmTitle: "Cuarto exclusivo para mujeres",
-      femaleConfirmBody: "Este cuarto solo puede ser ocupado por mujeres. Al confirmar, declarás que todos los huéspedes de este cuarto son mujeres.",
-      femaleConfirmYes: "Sí, confirmo",
-      femaleConfirmCancel: "Cancelar",
-    },
-    en: {
-      title: "Choose your Room",
-      subtitle: "Select a room type and number of people",
-      familyTwelve: "Mixed (up to 12)",
-      familySeven: "Mixed (up to 7)",
-      familyFemale: "Women Only",
-      oneFamilyOnly: "Only one room type can be chosen per booking.",
-      totalSelected: "Total selected",
-      bed: "person",
-      beds: "people",
-      off: "off",
-      clearSelection: "Clear selection",
-      groupDiscountTitle: "Group Discount Active!",
-      discountApplied: "Discount applied",
-      discountFrom: "discount from",
-      noAvailability: "No Availability",
-      tryOtherDates: "Try other dates",
-      importantInfo: "Important Information",
-      femaleConfirmTitle: "Women-only room",
-      femaleConfirmBody: "This room is exclusively for women. By confirming, you declare that all guests staying in this room are women.",
-      femaleConfirmYes: "Yes, I confirm",
-      femaleConfirmCancel: "Cancel",
-    },
-    fr: {
-      title: "Choisissez votre Chambre",
-      subtitle: "Sélectionnez un type de chambre et le nombre de personnes",
-      familyTwelve: "Mixte (jusqu'à 12)",
-      familySeven: "Mixte (jusqu'à 7)",
-      familyFemale: "Femmes Uniquement",
-      oneFamilyOnly: "Un seul type de chambre peut être choisi par réservation.",
-      totalSelected: "Total sélectionné",
-      bed: "personne",
-      beds: "personnes",
-      off: "de réduction",
-      clearSelection: "Effacer la sélection",
-      groupDiscountTitle: "Remise de Groupe Active !",
-      discountApplied: "Remise appliquée",
-      discountFrom: "remise à partir de",
-      noAvailability: "Aucune Disponibilité",
-      tryOtherDates: "Essayez d'autres dates",
-      importantInfo: "Informations Importantes",
-      femaleConfirmTitle: "Chambre réservée aux femmes",
-      femaleConfirmBody: "Cette chambre est exclusivement réservée aux femmes. En confirmant, vous déclarez que tous les hébergés de cette chambre sont des femmes.",
-      femaleConfirmYes: "Oui, je confirme",
-      femaleConfirmCancel: "Annuler",
-    },
-    de: {
-      title: "Wählen Sie Ihr Zimmer",
-      subtitle: "Wählen Sie einen Zimmertyp und die Personenanzahl",
-      familyTwelve: "Gemischt (bis 12)",
-      familySeven: "Gemischt (bis 7)",
-      familyFemale: "Nur Frauen",
-      oneFamilyOnly: "Pro Buchung kann nur ein Zimmertyp gewählt werden.",
-      totalSelected: "Insgesamt ausgewählt",
-      bed: "Person",
-      beds: "Personen",
-      off: "Rabatt",
-      clearSelection: "Auswahl löschen",
-      groupDiscountTitle: "Gruppenrabatt Aktiv!",
-      discountApplied: "Rabatt angewendet",
-      discountFrom: "Rabatt ab",
-      noAvailability: "Keine Verfügbarkeit",
-      tryOtherDates: "Andere Daten versuchen",
-      importantInfo: "Wichtige Informationen",
-      femaleConfirmTitle: "Zimmer nur für Frauen",
-      femaleConfirmBody: "Dieses Zimmer ist ausschließlich für Frauen. Mit der Bestätigung erklären Sie, dass alle Gäste in diesem Zimmer Frauen sind.",
-      femaleConfirmYes: "Ja, ich bestätige",
-      femaleConfirmCancel: "Abbrechen",
-    }
-  };
-  return t[locale]?.[key] || key;
-}

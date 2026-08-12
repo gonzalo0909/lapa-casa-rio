@@ -84,6 +84,10 @@ export const useBookingStore = create<BookingState>((set) => ({
       guestGender: gender,
     });
 
-    return response.data.booking.id as string;
+    const bookingId = response.data?.booking?.id;
+    if (!bookingId) {
+      throw new Error('Booking created but the server response did not include a booking id');
+    }
+    return bookingId as string;
   },
 }));

@@ -97,7 +97,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           checkIn: dateRange.checkIn!.toISOString().slice(0, 10),
           checkOut: dateRange.checkOut!.toISOString().slice(0, 10)
         });
-        const roomBeds: RoomBed[] = response.data.beds;
+        const roomBeds: RoomBed[] = response.data?.beds ?? [];
+        if (roomBeds.length === 0) {
+          setBedsError(t('bedsUnavailable'));
+        }
         setBeds(roomBeds);
         const autoIds = roomBeds
           .filter((b) => b.isAvailable)
@@ -111,7 +114,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       }
     }
     setMode('manual');
-  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds, locale]);
+  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds, locale, t]);
 
   const closeManualMode = useCallback(() => setMode('quick'), []);
 

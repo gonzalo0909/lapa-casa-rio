@@ -2,7 +2,8 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { DateRange } from '@/types/global';
 
 /**
@@ -20,6 +21,8 @@ interface CalendarProps {
   minDate?: Date;
   maxDate?: Date;
   disabledDates?: Date[];
+  /** Avisa al padre cuando cambia el mes visible, para que pueda recargar disabledDates de ese mes (ver date-selector.tsx). */
+  onMonthChange?: (month: Date) => void;
   className?: string;
 }
 
@@ -30,10 +33,20 @@ export const Calendar: React.FC<CalendarProps> = ({
   minDate,
   maxDate,
   disabledDates = [],
+  onMonthChange,
   className = ''
 }) => {
+  const t = useTranslations('bookingCalendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingEnd, setSelectingEnd] = useState(false);
+
+  // Avisa al padre del mes inicial y de cada cambio de mes -- así puede
+  // mantener disabledDates sincronizado con el mes que el huésped está
+  // mirando en vez de solo el mes en que se montó el calendario.
+  useEffect(() => {
+    onMonthChange?.(currentMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe reaccionar al cambio de mes, no a cambios de identidad de la callback del padre.
+  }, [currentMonth]);
 
   const monthDays = useMemo(() => {
     const year = currentMonth.getFullYear();
@@ -116,8 +129,8 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="flex items-center justify-between mb-2">
         <button
           onClick={prevMonth}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          aria-label={T('prevMonth', locale)}
+          className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+          aria-label={t('prevMonth')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -126,8 +139,8 @@ export const Calendar: React.FC<CalendarProps> = ({
         <h3 className="font-semibold text-sm capitalize">{monthName}</h3>
         <button
           onClick={nextMonth}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          aria-label={T('nextMonth', locale)}
+          className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+          aria-label={t('nextMonth')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -137,7 +150,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
       <div className="grid grid-cols-7 gap-0.5">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-[10px] font-semibold text-gray-600 py-1">
+          <div key={day} className="text-center text-[10px] font-semibold text-muted-foreground py-1">
             {day}
           </div>
         ))}
@@ -158,14 +171,14 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={disabled}
               className={`aspect-square flex items-center justify-center text-xs rounded-md transition-colors ${
                 disabled
-                  ? 'text-gray-300 cursor-not-allowed'
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
                   : selected
-                  ? 'bg-blue-600 text-white font-semibold'
+                  ? 'bg-primary text-primary-foreground font-semibold'
                   : inRange
-                  ? 'bg-blue-100 text-blue-900'
+                  ? 'bg-primary/10 text-primary'
                   : isToday
-                  ? 'border-2 border-blue-600 text-blue-600 font-semibold'
-                  : 'hover:bg-gray-100 text-gray-900'
+                  ? 'border-2 border-primary text-primary font-semibold'
+                  : 'hover:bg-muted text-foreground'
               }`}
               aria-label={formatDate(date, locale)}
               aria-pressed={selected}
@@ -176,18 +189,18 @@ export const Calendar: React.FC<CalendarProps> = ({
         })}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-gray-600">
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 border-2 border-blue-600 rounded" />
-          <span>{T('today', locale)}</span>
+          <div className="w-3 h-3 border-2 border-primary rounded" />
+          <span>{t('today')}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-600 rounded" />
-          <span>{T('selected', locale)}</span>
+          <div className="w-3 h-3 bg-primary rounded" />
+          <span>{t('selected')}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-100 rounded" />
-          <span>{T('range', locale)}</span>
+          <div className="w-3 h-3 bg-primary/10 rounded" />
+          <span>{t('range')}</span>
         </div>
       </div>
     </div>
@@ -229,45 +242,4 @@ function formatDate(date: Date, locale: string): string {
     month: 'long',
     year: 'numeric'
   });
-}
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: {
-      prevMonth: 'Mês anterior',
-      nextMonth: 'Próximo mês',
-      today: 'Hoje',
-      selected: 'Selecionado',
-      range: 'Período'
-    },
-    es: {
-      prevMonth: 'Mes anterior',
-      nextMonth: 'Próximo mes',
-      today: 'Hoy',
-      selected: 'Seleccionado',
-      range: 'Período'
-    },
-    en: {
-      prevMonth: 'Previous month',
-      nextMonth: 'Next month',
-      today: 'Today',
-      selected: 'Selected',
-      range: 'Range'
-    },
-    fr: {
-      prevMonth: 'Mois précédent',
-      nextMonth: 'Mois suivant',
-      today: 'Aujourd"hui',
-      selected: 'Sélectionné',
-      range: 'Période'
-    },
-    de: {
-      prevMonth: 'Vorheriger Monat',
-      nextMonth: 'Nächster Monat',
-      today: 'Heute',
-      selected: 'Ausgewählt',
-      range: 'Zeitraum'
-    }
-  };
-  return t[locale]?.[key] || key;
 }

@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { bookingAPI } from '@/lib/api';
+import { toDateOnly, splitFullName } from '@/lib/utils';
 import type { DateRange, ApartmentAvailability, GuestDetails } from '@/types/global';
 
 interface CreateApartmentBookingParams {
@@ -25,18 +26,6 @@ interface ApartmentState {
 
   /** Crea la reserva de apartamento contra el backend y devuelve el ID. */
   createBooking: (params: CreateApartmentBookingParams) => Promise<string>;
-}
-
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function splitFullName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/);
-  return {
-    firstName: parts[0] || fullName,
-    lastName: parts.slice(1).join(' ') || parts[0] || fullName,
-  };
 }
 
 export const useApartmentStore = create<ApartmentState>((set) => ({
@@ -73,7 +62,7 @@ export const useApartmentStore = create<ApartmentState>((set) => ({
         document: guestDetails.documentNumber,
       },
       specialRequests: guestDetails.specialRequests || '',
-      arrivalTime: guestDetails.arrivalTime || '15:00',
+      arrivalTime: guestDetails.arrivalTime,
       language: locale,
       source: 'web',
       guestGender: 'mixed' as const,

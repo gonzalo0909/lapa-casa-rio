@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { bookingAPI } from '@/lib/api';
+import { toDateOnly, splitFullName } from '@/lib/utils';
 import type { DateRange, Room, GuestDetails, BookingGender } from '@/types/global';
 
 interface CreateBookingParams {
@@ -29,18 +30,6 @@ interface BookingState {
 
   /** Crea la reserva real contra el backend y devuelve el ID. */
   createBooking: (params: CreateBookingParams) => Promise<string>;
-}
-
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function splitFullName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/);
-  return {
-    firstName: parts[0] || fullName,
-    lastName: parts.slice(1).join(' ') || parts[0] || fullName,
-  };
 }
 
 export const useBookingStore = create<BookingState>((set) => ({

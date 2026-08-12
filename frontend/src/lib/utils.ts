@@ -441,6 +441,41 @@ export function formatPhone(phone: string): string {
 }
 
 /**
+ * Format date as YYYY-MM-DD (date-only, no time component)
+ *
+ * @param date - Date object
+ * @returns ISO date string truncated to the date part
+ *
+ * @example
+ * ```ts
+ * toDateOnly(new Date('2025-01-15T10:00:00Z')) // Returns: '2025-01-15'
+ * ```
+ */
+export function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Split a full name into first and last name
+ *
+ * @param fullName - Full name string
+ * @returns Object with firstName and lastName
+ *
+ * @example
+ * ```ts
+ * splitFullName('João da Silva') // Returns: { firstName: 'João', lastName: 'da Silva' }
+ * splitFullName('Madonna') // Returns: { firstName: 'Madonna', lastName: 'Madonna' }
+ * ```
+ */
+export function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/);
+  return {
+    firstName: parts[0] || fullName,
+    lastName: parts.slice(1).join(' ') || parts[0] || fullName,
+  };
+}
+
+/**
  * Safely access nested object properties
  * 
  * @param obj - Object to access

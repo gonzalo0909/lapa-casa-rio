@@ -45,6 +45,19 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const confirmedRef = useRef(false);
+  const bookingSucceededRef = useRef(false);
+
+  // Limpia el store solo al desmontar (navegación real fuera del wizard).
+  // Limpiar antes dejaba el paso "summary" renderizando con dateRange/
+  // selectedApartment/guestDetails en null mientras router.push todavía
+  // no terminaba, pudiendo crashear la página de pago.
+  useEffect(() => {
+    return () => {
+      if (bookingSucceededRef.current) {
+        clearBooking();
+      }
+    };
+  }, [clearBooking]);
 
   const nights =
     dateRange?.checkIn && dateRange?.checkOut
@@ -63,8 +76,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       const checkIn = range.checkIn.toISOString().slice(0, 10);
       const checkOut = range.checkOut.toISOString().slice(0, 10);
       const res = await availabilityAPI.checkApartments({ checkIn, checkOut });
-      const data = res?.data ?? res;
-      setApartments(data?.apartments ?? []);
+      setApartments(res?.data?.apartments ?? []);
     } catch (err: any) {
       setError(err?.message ?? t('errorLoading'));
     } finally {
@@ -72,12 +84,16 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     }
   }, [t]);
 
-  // Actualiza precio total cuando cambia el apartamento o las fechas
+  // Actualiza precio total cuando cambia el apartamento seleccionado.
+  // Usa priceTotal directo del backend (ya viene calculado para el rango
+  // de fechas consultado) en vez de recalcular basePrice * nights en el
+  // frontend, que podía desincronizarse si el backend aplica multiplicador
+  // de temporada.
   useEffect(() => {
-    if (selectedApartment && nights > 0) {
-      setTotalPrice(selectedApartment.basePrice * nights);
+    if (selectedApartment) {
+      setTotalPrice(selectedApartment.priceTotal);
     }
-  }, [selectedApartment, nights, setTotalPrice]);
+  }, [selectedApartment, setTotalPrice]);
 
   // — Handlers de navegación —
 
@@ -124,7 +140,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         guestDetails,
         locale,
       });
-      clearBooking();
+      bookingSucceededRef.current = true;
       router.push(`/${locale}/payment/${reservationId}`);
     } catch (err: any) {
       confirmedRef.current = false;
@@ -132,7 +148,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     } finally {
       setIsProcessing(false);
     }
-  }, [dateRange, selectedApartment, guestDetails, createBooking, clearBooking, locale, router, t]);
+  }, [dateRange, selectedApartment, guestDetails, createBooking, locale, router, t]);
 
   const goBack = useCallback(() => {
     setError(null);
@@ -183,7 +199,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       </div>
 
       {error && (
-        <Alert variant="error" className="mb-4">
+        <Alert variant="danger" className="mb-4">
           {error}
         </Alert>
       )}

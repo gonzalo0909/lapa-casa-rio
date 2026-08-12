@@ -82,7 +82,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
                 {nights} {nights === 1 ? t('night') : t('nights')}
               </span>
               <span className="font-bold text-primary text-lg">
-                R$ {apartment.priceTotal.toFixed(0)}
+                R$ {(apartment.priceTotal ?? apartment.basePrice * nights).toFixed(0)}
               </span>
             </div>
           )}

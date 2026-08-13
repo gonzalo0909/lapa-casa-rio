@@ -10,30 +10,44 @@ import type { GuestDetails } from '@/types/global';
 // ── CPF helpers ──────────────────────────────────────────────────────────────
 function validateCPF(cpf: string): boolean {
   const n = cpf.replace(/\D/g, '');
-  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) {return false;}
   let s = 0;
-  for (let i = 0; i < 9; i++) s += parseInt(n[i]) * (10 - i);
-  let d = (s * 10) % 11; if (d >= 10) d = 0;
-  if (d !== parseInt(n[9])) return false;
+  for (let i = 0; i < 9; i++) {s += parseInt(n.charAt(i), 10) * (10 - i);}
+  let d = (s * 10) % 11; if (d >= 10) {d = 0;}
+  if (d !== parseInt(n.charAt(9), 10)) {return false;}
   s = 0;
-  for (let i = 0; i < 10; i++) s += parseInt(n[i]) * (11 - i);
-  d = (s * 10) % 11; if (d >= 10) d = 0;
-  return d === parseInt(n[10]);
+  for (let i = 0; i < 10; i++) {s += parseInt(n.charAt(i), 10) * (11 - i);}
+  d = (s * 10) % 11; if (d >= 10) {d = 0;}
+  return d === parseInt(n.charAt(10), 10);
 }
 
 function formatCPF(v: string): string {
   const n = v.replace(/\D/g, '').slice(0, 11);
-  if (n.length > 9) return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`;
-  if (n.length > 6) return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6)}`;
-  if (n.length > 3) return `${n.slice(0,3)}.${n.slice(3)}`;
+  if (n.length > 9) {return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`;}
+  if (n.length > 6) {return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6)}`;}
+  if (n.length > 3) {return `${n.slice(0,3)}.${n.slice(3)}`;}
   return n;
+}
+
+// ── Formato de teléfono (modo strict) ───────────────────────────────────────
+// +55 (21) 9 9999-9999 -- puerto del auto-formato de LCACOPIA. Si el
+// huésped tipea letras (número internacional sin DDI brasileño) se deja
+// tal cual, sin forzar el formato BR.
+function formatPhoneStrict(v: string): string {
+  if (/[a-zA-Z]/.test(v)) {return v;}
+  const n = v.replace(/\D/g, '').slice(0, 13);
+  if (n.length <= 2) {return n ? `+${n}` : '';}
+  if (n.length <= 4) {return `+${n.slice(0, 2)} (${n.slice(2)}`;}
+  if (n.length <= 5) {return `+${n.slice(0, 2)} (${n.slice(2, 4)}) ${n.slice(4)}`;}
+  if (n.length <= 9) {return `+${n.slice(0, 2)} (${n.slice(2, 4)}) ${n.slice(4, 5)} ${n.slice(5)}`;}
+  return `+${n.slice(0, 2)} (${n.slice(2, 4)}) ${n.slice(4, 5)} ${n.slice(5, 9)}-${n.slice(9, 13)}`;
 }
 
 // ── Arrival time options: 14:00–22:00 every 30 min ──────────────────────────
 const ARRIVAL_TIMES: string[] = [];
 for (let h = 14; h <= 22; h++) {
   ARRIVAL_TIMES.push(`${String(h).padStart(2, '0')}:00`);
-  if (h < 22) ARRIVAL_TIMES.push(`${String(h).padStart(2, '0')}:30`);
+  if (h < 22) {ARRIVAL_TIMES.push(`${String(h).padStart(2, '0')}:30`);}
 }
 
 /**
@@ -52,6 +66,16 @@ interface ContactDetailsProps {
   onBlur: (field: keyof GuestDetails) => void;
   locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   className?: string;
+  /** Doble campo de email (sin copiar/pegar) + aviso de teléfono más
+   * detallado. Puerto de LCACOPIA, hoy solo para Apartamentos. */
+  strict?: boolean;
+}
+
+/** Bloquea pegar/cortar -- el huésped tiene que tipear el email a mano en
+ * los dos campos, así un typo en el primero no se repite invisible en el
+ * segundo. */
+function blockPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+  e.preventDefault();
 }
 
 type CpfStatus = 'idle' | 'valid' | 'invalid' | 'passport';
@@ -63,7 +87,8 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
   onChange,
   onBlur,
   locale = 'pt',
-  className = ''
+  className = '',
+  strict = false
 }) => {
   const [cpfStatus, setCpfStatus] = useState<CpfStatus>('idle');
   const [cpfMsg, setCpfMsg] = useState('');
@@ -149,6 +174,8 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
             value={formData.email || ''}
             onChange={(e) => onChange('email', e.target.value)}
             onBlur={() => onBlur('email')}
+            onPaste={strict ? blockPaste : undefined}
+            onCut={strict ? blockPaste : undefined}
             placeholder={T('emailPlaceholder', locale)}
             className={touched.email && errors.email ? 'border-red-500' : ''}
             aria-invalid={touched.email && !!errors.email}
@@ -161,6 +188,33 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
           )}
         </div>
 
+        {strict && (
+          <div>
+            <label htmlFor="confirmEmail" className="block text-sm font-medium text-gray-700 mb-2">
+              {T('confirmEmail', locale)} <span className="text-red-500">*</span>{' '}
+              <span className="font-normal text-gray-500">({T('typeManually', locale)})</span>
+            </label>
+            <Input
+              id="confirmEmail"
+              type="email"
+              value={formData.confirmEmail || ''}
+              onChange={(e) => onChange('confirmEmail', e.target.value)}
+              onBlur={() => onBlur('confirmEmail')}
+              onPaste={blockPaste}
+              onCut={blockPaste}
+              placeholder={T('emailPlaceholder', locale)}
+              className={touched.confirmEmail && errors.confirmEmail ? 'border-red-500' : ''}
+              aria-invalid={touched.confirmEmail && !!errors.confirmEmail}
+              aria-describedby={errors.confirmEmail ? 'confirmEmail-error' : undefined}
+            />
+            {touched.confirmEmail && errors.confirmEmail && (
+              <p id="confirmEmail-error" className="text-sm text-red-600 mt-1">
+                {errors.confirmEmail}
+              </p>
+            )}
+          </div>
+        )}
+
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
             {T('phone', locale)} <span className="text-red-500">*</span>
@@ -169,7 +223,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
             id="phone"
             type="tel"
             value={formData.phone || ''}
-            onChange={(e) => onChange('phone', e.target.value)}
+            onChange={(e) => onChange('phone', strict ? formatPhoneStrict(e.target.value) : e.target.value)}
             onBlur={() => onBlur('phone')}
             placeholder={T('phonePlaceholder', locale)}
             className={touched.phone && errors.phone ? 'border-red-500' : ''}
@@ -291,6 +345,8 @@ function T(key: string, locale: string): string {
       fullNamePlaceholder: 'João da Silva',
       email: 'Email',
       emailPlaceholder: 'joao@email.com',
+      confirmEmail: 'Confirmar email',
+      typeManually: 'digite manualmente',
       phone: 'Telefone (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
       phoneHint: 'Use o número do seu WhatsApp, mesmo morando fora do Brasil -- é assim que vamos te contatar se precisarmos, sem custo de ligação internacional.',
@@ -308,6 +364,8 @@ function T(key: string, locale: string): string {
       fullNamePlaceholder: 'Juan da Silva',
       email: 'Email',
       emailPlaceholder: 'juan@email.com',
+      confirmEmail: 'Confirmar email',
+      typeManually: 'escribilo manualmente',
       phone: 'Teléfono (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
       phoneHint: 'Poné el número de tu WhatsApp, aunque vivas fuera de Brasil -- así te contactamos si hace falta, sin costo de llamada internacional.',
@@ -325,6 +383,8 @@ function T(key: string, locale: string): string {
       fullNamePlaceholder: 'John Smith',
       email: 'Email',
       emailPlaceholder: 'john@email.com',
+      confirmEmail: 'Confirm email',
+      typeManually: 'type manually',
       phone: 'Phone (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
       phoneHint: 'Enter your WhatsApp number, even if you live abroad -- that\'s how we\'ll reach you if needed, with no international call cost.',
@@ -342,6 +402,8 @@ function T(key: string, locale: string): string {
       fullNamePlaceholder: 'Jean Dupont',
       email: 'E-mail',
       emailPlaceholder: 'jean@email.com',
+      confirmEmail: "Confirmer l'e-mail",
+      typeManually: 'à saisir manuellement',
       phone: 'Téléphone (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
       phoneHint: 'Indiquez votre numéro WhatsApp, même si vous vivez hors du Brésil -- c"est ainsi que nous vous contacterons si besoin, sans frais d"appel international.',
@@ -359,6 +421,8 @@ function T(key: string, locale: string): string {
       fullNamePlaceholder: 'Max Mustermann',
       email: 'E-Mail',
       emailPlaceholder: 'max@email.com',
+      confirmEmail: 'E-Mail bestätigen',
+      typeManually: 'manuell eingeben',
       phone: 'Telefon (WhatsApp)',
       phonePlaceholder: '+55 21 99999-9999',
       phoneHint: 'Geben Sie Ihre WhatsApp-Nummer an, auch wenn Sie außerhalb Brasiliens leben -- so erreichen wir Sie bei Bedarf ohne Kosten für internationale Anrufe.',

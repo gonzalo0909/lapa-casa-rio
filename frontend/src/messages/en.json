@@ -501,6 +501,16 @@
     "total": "Total",
     "processing": "Processing...",
     "errorLoading": "Error loading apartments. Please try again.",
-    "errorCreating": "Error creating booking. Please try again."
+    "errorCreating": "Error creating booking. Please try again.",
+    "guestCount": "{count} guest(s)",
+    "guestCountHint": "Filters apartments by capacity",
+    "decreaseGuests": "Decrease guests",
+    "increaseGuests": "Increase guests",
+    "maxCapacity": "Max capacity: {count} guests",
+    "adjustDates": "Adjust dates / check availability",
+    "seasonCarnaval": "Carnival",
+    "seasonAlta": "High season",
+    "seasonBaja": "Low season",
+    "seasonMedia": "Mid season"
   }
 }

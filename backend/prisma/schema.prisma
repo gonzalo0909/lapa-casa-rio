@@ -294,6 +294,7 @@ model room_types {
   default_gender       bed_gender             @default(mixed)
   is_flexible          Boolean                @default(false)
   base_price           Decimal                @db.Decimal(10, 2)
+  property_type        property_type          @default(hostel)
   created_at           DateTime               @default(now()) @db.Timestamptz(6)
   updated_at           DateTime               @default(now()) @db.Timestamptz(6)
   availability_cache   availability_cache[]
@@ -313,6 +314,11 @@ enum bed_gender {
   male
   female
   mixed
+}
+
+enum property_type {
+  hostel
+  apartment
 }
 
 enum booking_status {

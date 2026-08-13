@@ -68,7 +68,7 @@ router.get('/calendar', async (req, res, next) => {
 
     logger.info('Calendar availability request', { month, from, to, roomId });
 
-    const days = await availabilityService.getDailyOccupancy(from, to);
+    const days = await availabilityService.getDailyOccupancy(from, to, roomId);
 
     res.status(200).json(ApiResponse.success({
       month,

@@ -501,6 +501,16 @@
     "total": "Total",
     "processing": "Procesando...",
     "errorLoading": "Error al cargar apartamentos. Intentá de nuevo.",
-    "errorCreating": "Error al crear la reserva. Intentá de nuevo."
+    "errorCreating": "Error al crear la reserva. Intentá de nuevo.",
+    "guestCount": "{count} huésped(es)",
+    "guestCountHint": "Filtra apartamentos por capacidad",
+    "decreaseGuests": "Disminuir huéspedes",
+    "increaseGuests": "Aumentar huéspedes",
+    "maxCapacity": "Capacidad máx: {count} huéspedes",
+    "adjustDates": "Ajustar fechas / ver disponibilidad",
+    "seasonCarnaval": "Carnaval",
+    "seasonAlta": "Temporada alta",
+    "seasonBaja": "Temporada baja",
+    "seasonMedia": "Temporada media"
   }
 }

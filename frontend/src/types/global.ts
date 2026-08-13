@@ -6,7 +6,7 @@
  * — ver backend/database/migrations/0002_tables.sql.
  */
 
-export type BookingStep = 'dates' | 'rooms' | 'summary';
+export type BookingStep = 'dates' | 'rooms' | 'guest' | 'summary';
 
 /** Género elegido por el huésped junto con las fechas -- filtra qué cuartos son elegibles (mixto ve solo mixtos; mujeres ven mixtos + el cuarto solo-mujeres). */
 export type BookingGender = 'mixed' | 'female';
@@ -66,6 +66,8 @@ export interface GuestPhoto {
 export interface GuestDetails {
   fullName: string;
   email: string;
+  /** Solo se usa cuando el formulario corre en modo `strict` (Apartamentos). */
+  confirmEmail?: string;
   phone: string;
   country: string;
   documentNumber: string;
@@ -81,6 +83,9 @@ export interface ApartmentAvailability {
   capacity: number;
   basePrice: number;
   priceTotal: number;
+  seasonMultiplier: number;
+  seasonType: 'alta' | 'media' | 'baja' | 'carnaval';
+  depositAmount: number;
   available: boolean;
 }
 

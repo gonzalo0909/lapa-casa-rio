@@ -47,14 +47,14 @@ export const checkAvailabilityHandler = async (
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Solo habitaciones del hostel (category='hostel') — los apartamentos
+    // Solo habitaciones del hostel (property_type='hostel') — los apartamentos
     // tienen su propio endpoint: GET /availability/apartments
     const { rows: roomTypes } = await query<{
       id: string; code: string; name: string; capacity: number;
       default_gender: string; is_flexible: boolean; base_price: string;
     }>(
       `SELECT id, code, name, capacity, default_gender, is_flexible, base_price
-       FROM room_types WHERE category = 'hostel' ORDER BY base_price, code`
+       FROM room_types WHERE property_type = 'hostel' ORDER BY base_price, code`
     );
 
     const { rows: discountTiers } = await query<{ min_beds: number; percentage: string }>(

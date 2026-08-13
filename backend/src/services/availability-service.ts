@@ -190,25 +190,38 @@ export class AvailabilityService {
     };
   }
 
-  async getDailyOccupancy(from: string, to: string): Promise<Array<{
+  /**
+   * roomTypeId opcional: sin el, agrega TODAS las camas activas (uso
+   * original, calendario global). Con el, restringe tanto el conteo de
+   * ocupadas como el total a las camas de ese room_type -- necesario
+   * para el mini-calendario por apartamento (cada apartamento tiene 1
+   * sola cama, asi que total siempre da 1 y occupied 0 o 1 por dia).
+   */
+  async getDailyOccupancy(from: string, to: string, roomTypeId?: string): Promise<Array<{
     date: string; occupied: number; available: number; total: number;
   }>> {
     const { rows } = await query(
       `WITH dates AS (
          SELECT generate_series($1::date, $2::date - 1, '1 day')::date AS date
        ),
+       scoped_beds AS (
+         SELECT id FROM beds
+         WHERE is_active = true
+           AND ($3::uuid IS NULL OR room_type_id = $3::uuid)
+       ),
        daily AS (
          SELECT d.date, COUNT(DISTINCT rb.bed_id)::int AS occupied
          FROM dates d
          LEFT JOIN reservation_beds rb
            ON daterange(rb.check_in, rb.check_out, '[)') @> d.date
+          AND rb.bed_id IN (SELECT id FROM scoped_beds)
          GROUP BY d.date
        ),
-       total_beds AS (SELECT COUNT(*)::int AS total FROM beds WHERE is_active = true)
+       total_beds AS (SELECT COUNT(*)::int AS total FROM scoped_beds)
        SELECT daily.date::text, daily.occupied, total_beds.total
        FROM daily CROSS JOIN total_beds
        ORDER BY daily.date`,
-      [from, to]
+      [from, to, roomTypeId ?? null]
     );
     return rows.map((r: any) => ({
       date: r.date,

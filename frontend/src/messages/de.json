@@ -501,6 +501,16 @@
     "total": "Gesamt",
     "processing": "Wird verarbeitet...",
     "errorLoading": "Fehler beim Laden der Apartments. Bitte erneut versuchen.",
-    "errorCreating": "Fehler beim Erstellen der Buchung. Bitte erneut versuchen."
+    "errorCreating": "Fehler beim Erstellen der Buchung. Bitte erneut versuchen.",
+    "guestCount": "{count} Gast/Gäste",
+    "guestCountHint": "Filtert Apartments nach Kapazität",
+    "decreaseGuests": "Gäste verringern",
+    "increaseGuests": "Gäste erhöhen",
+    "maxCapacity": "Max. Kapazität: {count} Gäste",
+    "adjustDates": "Daten anpassen / Verfügbarkeit prüfen",
+    "seasonCarnaval": "Karneval",
+    "seasonAlta": "Hochsaison",
+    "seasonBaja": "Nebensaison",
+    "seasonMedia": "Zwischensaison"
   }
 }

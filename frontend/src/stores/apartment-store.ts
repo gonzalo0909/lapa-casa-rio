@@ -17,27 +17,36 @@ interface ApartmentState {
   selectedApartment: ApartmentAvailability | null;
   guestDetails: GuestDetails | null;
   totalPrice: number | null;
+  /** Filtra/ordena la grilla de apartamentos por capacidad. 1-4, default 2. */
+  guestCount: number;
 
   setDateRange: (range: DateRange) => void;
   setSelectedApartment: (apt: ApartmentAvailability | null) => void;
   setGuestDetails: (details: GuestDetails) => void;
   setTotalPrice: (price: number) => void;
+  setGuestCount: (count: number) => void;
   clearBooking: () => void;
 
   /** Crea la reserva de apartamento contra el backend y devuelve el ID. */
   createBooking: (params: CreateApartmentBookingParams) => Promise<string>;
 }
 
+const GUEST_COUNT_MIN = 1;
+const GUEST_COUNT_MAX = 4;
+
 export const useApartmentStore = create<ApartmentState>((set) => ({
   dateRange: null,
   selectedApartment: null,
   guestDetails: null,
   totalPrice: null,
+  guestCount: 2,
 
   setDateRange: (range) => set({ dateRange: range, selectedApartment: null }),
   setSelectedApartment: (apt) => set({ selectedApartment: apt }),
   setGuestDetails: (details) => set({ guestDetails: details }),
   setTotalPrice: (price) => set({ totalPrice: price }),
+  setGuestCount: (count) =>
+    set({ guestCount: Math.min(GUEST_COUNT_MAX, Math.max(GUEST_COUNT_MIN, count)) }),
   clearBooking: () =>
     set({ dateRange: null, selectedApartment: null, guestDetails: null, totalPrice: null }),
 
@@ -71,7 +80,7 @@ export const useApartmentStore = create<ApartmentState>((set) => ({
     const response = await bookingAPI.create(payload);
     const data = response?.data ?? response;
     const reservationId = data?.id ?? data?.reservationId ?? data?.booking?.id;
-    if (!reservationId) throw new Error('No se recibió ID de reserva del servidor');
+    if (!reservationId) {throw new Error('No se recibió ID de reserva del servidor');}
 
     return reservationId;
   },

@@ -22,6 +22,10 @@ interface GuestFormProps {
   locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
   error?: string;
   className?: string;
+  /** Validación más estricta (doble email sin copiar/pegar, teléfono BR
+   * formateado). Hoy solo la usa Apartamentos -- el hostel sigue con el
+   * comportamiento de siempre para no cambiarle la validación sin pedirlo. */
+  strict?: boolean;
 }
 
 export const GuestForm: React.FC<GuestFormProps> = ({
@@ -29,12 +33,14 @@ export const GuestForm: React.FC<GuestFormProps> = ({
   onSubmit,
   locale = 'pt',
   error,
-  className = ''
+  className = '',
+  strict = false
 }) => {
   const [formData, setFormData] = useState<Partial<GuestDetails>>(
     value || {
       fullName: '',
       email: '',
+      confirmEmail: '',
       phone: '',
       country: '',
       documentNumber: '',
@@ -64,6 +70,19 @@ export const GuestForm: React.FC<GuestFormProps> = ({
           }
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
             return T('errorEmailFormat', locale);
+          }
+          if (strict && formData.confirmEmail && value !== formData.confirmEmail) {
+            return T('errorEmailMismatch', locale);
+          }
+          return null;
+
+        case 'confirmEmail':
+          if (!strict) {return null;}
+          if (!value) {
+            return T('errorConfirmEmail', locale);
+          }
+          if (value !== formData.email) {
+            return T('errorEmailMismatch', locale);
           }
           return null;
 
@@ -99,7 +118,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
           return null;
       }
     },
-    [locale]
+    [locale, strict, formData.email, formData.confirmEmail]
   );
 
   const handleFieldChange = useCallback(
@@ -143,6 +162,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
     const requiredFields: (keyof GuestDetails)[] = [
       'fullName',
       'email',
+      ...(strict ? (['confirmEmail'] as const) : []),
       'phone',
       'country',
       'documentNumber',
@@ -162,7 +182,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
 
     setErrors(newErrors);
     return isValid;
-  }, [formData, validateField]);
+  }, [formData, validateField, strict]);
 
   const handleSubmit = useCallback(
     (e?: React.FormEvent) => {
@@ -204,6 +224,7 @@ export const GuestForm: React.FC<GuestFormProps> = ({
         onBlur={handleFieldBlur}
         locale={locale}
         className="mb-6"
+        strict={strict}
       />
 
       <SpecialRequests
@@ -253,6 +274,8 @@ function T(key: string, locale: string): string {
       errorFullNameFormat: 'Nome deve conter apenas letras',
       errorEmail: 'Email é obrigatório',
       errorEmailFormat: 'Email inválido',
+      errorConfirmEmail: 'Confirme seu email',
+      errorEmailMismatch: 'Os emails não coincidem',
       errorPhone: 'Telefone é obrigatório',
       errorPhoneFormat: 'Telefone inválido',
       errorCountry: 'País é obrigatório',
@@ -274,6 +297,8 @@ function T(key: string, locale: string): string {
       errorFullNameFormat: 'Nombre debe contener solo letras',
       errorEmail: 'Email es obligatorio',
       errorEmailFormat: 'Email inválido',
+      errorConfirmEmail: 'Confirmá tu email',
+      errorEmailMismatch: 'Los emails no coinciden',
       errorPhone: 'Teléfono es obligatorio',
       errorPhoneFormat: 'Teléfono inválido',
       errorCountry: 'País es obligatorio',
@@ -295,6 +320,8 @@ function T(key: string, locale: string): string {
       errorFullNameFormat: 'Name must contain only letters',
       errorEmail: 'Email is required',
       errorEmailFormat: 'Invalid email',
+      errorConfirmEmail: 'Please confirm your email',
+      errorEmailMismatch: 'Emails do not match',
       errorPhone: 'Phone is required',
       errorPhoneFormat: 'Invalid phone',
       errorCountry: 'Country is required',
@@ -316,6 +343,8 @@ function T(key: string, locale: string): string {
       errorFullNameFormat: "Le nom ne doit contenir que des lettres",
       errorEmail: "L'e-mail est requis",
       errorEmailFormat: "E-mail invalide",
+      errorConfirmEmail: "Veuillez confirmer votre e-mail",
+      errorEmailMismatch: "Les e-mails ne correspondent pas",
       errorPhone: "Le téléphone est requis",
       errorPhoneFormat: "Téléphone invalide",
       errorCountry: "Le pays est requis",
@@ -337,6 +366,8 @@ function T(key: string, locale: string): string {
       errorFullNameFormat: 'Name darf nur Buchstaben enthalten',
       errorEmail: 'E-Mail ist erforderlich',
       errorEmailFormat: 'Ungültige E-Mail',
+      errorConfirmEmail: 'Bitte bestätigen Sie Ihre E-Mail',
+      errorEmailMismatch: 'E-Mails stimmen nicht überein',
       errorPhone: 'Telefon ist erforderlich',
       errorPhoneFormat: 'Ungültiges Telefon',
       errorCountry: 'Land ist erforderlich',

@@ -422,16 +422,6 @@
     "subtitle": "Moments from guests who've stayed at Lapa Casa Hostel",
     "empty": "Guest photos coming soon."
   },
-  "landing": {
-    "sectionBook": "How to book",
-    "sectionContact": "Contact & location",
-    "bookNow": "Book online now",
-    "orContact": "or contact us directly",
-    "address": "Rua Silvio Romero, 22 — Santa Teresa, Rio de Janeiro, RJ",
-    "whatsapp": "Chat on WhatsApp",
-    "otaPlatforms": "Book on partner platforms",
-    "bookingOnline": "Book now using our booking engine:"
-  },
   "admin": {
     "dashboard": "Dashboard",
     "pricing": "Pricing",

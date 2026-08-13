@@ -319,8 +319,8 @@
     "parking": "Tem estacionamento?"
   },
   "seo": {
-    "homeTitle": "Lapa Casa Hostel - Santa Teresa, Rio de Janeiro",
-    "homeDescription": "Hostel boutique em Santa Teresa especializado em grupos e viajantes internacionais. Reserve sua estadia no Rio de Janeiro.",
+    "homeTitle": "Lapa Casa - Apartamentos em Santa Teresa, Rio de Janeiro",
+    "homeDescription": "Apartamentos completos em Santa Teresa, Rio de Janeiro. Privacidade, conforto e a melhor localização perto dos Arcos da Lapa. Reserve sua estadia.",
     "bookingTitle": "Reservar - Lapa Casa Hostel",
     "bookingDescription": "Reserve seu quarto no Lapa Casa Hostel. Descontos especiais para grupos. Melhor localização em Santa Teresa.",
     "roomsTitle": "Quartos - Lapa Casa Hostel",
@@ -423,15 +423,6 @@
     "empty": "Em breve, fotos dos nossos hóspedes por aqui."
   },
   "landing": {
-    "heroTitle": "Hospedagem para grupos em Santa Teresa",
-    "heroSubtitle": "45 camas · 5 quartos · a poucos passos dos Arcos da Lapa",
-    "stats45": "45",
-    "statsLabel45": "camas no total",
-    "stats5": "5",
-    "statsLabel5": "quartos (4 mistos + 1 flexível)",
-    "statsGroup": "7+",
-    "statsLabelGroup": "pessoas — nosso foco: grupos",
-    "sectionAbout": "O hostel",
     "sectionBook": "Como reservar",
     "sectionContact": "Contato e localização",
     "bookNow": "Reserve agora online",
@@ -474,19 +465,13 @@
     "privateEvent": "Evento privado",
     "other": "Outro"
   },
-  "propertyTabs": {
-    "hostel": "Hostel",
-    "apartments": "Apartamentos"
-  },
   "propertySelector": {
-    "title": "Como você quer se hospedar?",
-    "hostelTitle": "Hostel",
-    "hostelDesc": "Camas em dormitório compartilhado — grupos, mochileiros, ambiente social.",
-    "hostelCta": "Ver dormitórios",
+    "eyebrow": "Estadias completas em Santa Teresa",
+    "title": "Seu apartamento no Rio de Janeiro",
+    "subtitle": "Unidades completas — privacidade, casais, estadias longas.",
     "apartmentsTitle": "Apartamentos",
-    "apartmentsDesc": "Unidades completas — privacidade, casais, estadias longas.",
-    "apartmentsCta": "Ver apartamentos",
-    "note": "Mesmo site, mesmo motor de reservas — a diferença é o que você está alugando."
+    "cta": "Ver apartamentos",
+    "navCta": "Reservar"
   },
   "apartments": {
     "stepDates": "Datas",

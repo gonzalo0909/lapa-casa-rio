@@ -9,7 +9,7 @@ import type { Locale } from '@/i18n';
 /**
  * LandingSection
  *
- * Seção de apresentação do hostel exibida acima do motor de reservas.
+ * Seção de links para as OTAs e contato, exibida acima do motor de reservas.
  * Substitui o public/landing/index.html (HTML estático) integrando o
  * conteúdo diretamente no Next.js com i18n e design system unificado.
  *
@@ -33,20 +33,6 @@ export const LandingSection: React.FC<LandingSectionProps> = ({ locale: _locale 
 
   return (
     <div className="border-b border-border bg-background">
-      {/* ── Stats ────────────────────────────────────────────── */}
-      <div className="border-t border-border bg-muted/30">
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-5">
-            {t('sectionAbout')}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard num={t('stats45')} label={t('statsLabel45')} />
-            <StatCard num={t('stats5')} label={t('statsLabel5')} />
-            <StatCard num={t('statsGroup')} label={t('statsLabelGroup')} />
-          </div>
-        </div>
-      </div>
-
       {/* ── OTA links ────────────────────────────────────────── */}
       <div className="border-t border-border">
         <div className="max-w-5xl mx-auto px-4 py-8">
@@ -102,15 +88,6 @@ export const LandingSection: React.FC<LandingSectionProps> = ({ locale: _locale 
 };
 
 /* ── helpers ─────────────────────────────────────────────────── */
-
-function StatCard({ num, label }: { num: string; label: string }) {
-  return (
-    <div className="bg-card border border-border rounded-xl p-5">
-      <p className="text-3xl font-display font-bold text-primary">{num}</p>
-      <p className="text-sm text-muted-foreground mt-1">{label}</p>
-    </div>
-  );
-}
 
 function WhatsAppIcon() {
   return (

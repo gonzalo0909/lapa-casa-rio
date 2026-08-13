@@ -319,8 +319,8 @@
     "parking": "Is there parking?"
   },
   "seo": {
-    "homeTitle": "Lapa Casa Hostel - Santa Teresa, Rio de Janeiro",
-    "homeDescription": "Boutique hostel in Santa Teresa specialized in groups and international travelers. Book your stay in Rio de Janeiro.",
+    "homeTitle": "Lapa Casa - Apartments in Santa Teresa, Rio de Janeiro",
+    "homeDescription": "Full private apartments in Santa Teresa, Rio de Janeiro. Privacy, comfort, and the best location near the Lapa Arches. Book your stay.",
     "bookingTitle": "Book - Lapa Casa Hostel",
     "bookingDescription": "Book your room at Lapa Casa Hostel. Special group discounts. Best location in Santa Teresa.",
     "roomsTitle": "Rooms - Lapa Casa Hostel",
@@ -423,15 +423,6 @@
     "empty": "Guest photos coming soon."
   },
   "landing": {
-    "heroTitle": "Group accommodation in Santa Teresa",
-    "heroSubtitle": "45 beds · 5 rooms · steps away from the Lapa Arches",
-    "stats45": "45",
-    "statsLabel45": "beds in total",
-    "stats5": "5",
-    "statsLabel5": "rooms (4 mixed + 1 flexible)",
-    "statsGroup": "7+",
-    "statsLabelGroup": "people — our focus: groups",
-    "sectionAbout": "The hostel",
     "sectionBook": "How to book",
     "sectionContact": "Contact & location",
     "bookNow": "Book online now",
@@ -474,19 +465,13 @@
     "privateEvent": "Private event",
     "other": "Other"
   },
-  "propertyTabs": {
-    "hostel": "Hostel",
-    "apartments": "Apartments"
-  },
   "propertySelector": {
-    "title": "How would you like to stay?",
-    "hostelTitle": "Hostel",
-    "hostelDesc": "Beds in shared dorms — groups, backpackers, social vibe.",
-    "hostelCta": "View dorms",
+    "eyebrow": "Full apartments in Santa Teresa",
+    "title": "Your apartment in Rio de Janeiro",
+    "subtitle": "Full private units — couples, privacy, longer stays.",
     "apartmentsTitle": "Apartments",
-    "apartmentsDesc": "Full private units — couples, privacy, longer stays.",
-    "apartmentsCta": "View apartments",
-    "note": "Same site, same booking engine — the difference is what you're renting."
+    "cta": "View apartments",
+    "navCta": "Book now"
   },
   "apartments": {
     "stepDates": "Dates",

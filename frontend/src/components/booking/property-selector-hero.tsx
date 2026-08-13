@@ -6,8 +6,7 @@ import React from 'react';
 import { useTranslations } from 'next-intl';
 
 interface PropertySelectorHeroProps {
-  activeTab: 0 | 1;
-  onSelect: (tab: 0 | 1) => void;
+  onSelectApartments: () => void;
 }
 
 const serif = { fontFamily: 'Georgia, "Times New Roman", serif' } as const;
@@ -30,13 +29,12 @@ const COLORS = {
 /**
  * PropertySelectorHero
  *
- * Primer paso de "convertir la maqueta en real": el nav + hero con los dos
- * paneles Hostel/Apartamentos, calcado del artefacto de referencia. Elegir
- * un panel (o un pill del nav) mueve la pestaña activa de PropertyTabs y
- * scrollea al motor de reservas real -- todavía no trae la agenda de
- * eventos ni el mapa de la maqueta, eso queda para una próxima pasada.
+ * Nav + hero calcados de la maqueta de referencia. El panel/pill de
+ * "Hostel" queda visible por fidelidad al diseño, pero sin acción: el
+ * motor de reservas del hostel no vive en esta rama (ver mrh1308) -- acá
+ * solo hay motor de apartamentos, así que solo ese panel navega.
  */
-export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ activeTab, onSelect }) => {
+export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ onSelectApartments }) => {
   const t = useTranslations('propertySelector');
 
   return (
@@ -48,8 +46,8 @@ export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ acti
       >
         <span style={{ ...serif, fontSize: '1.15rem' }}>Lapa Casa</span>
         <nav className="flex gap-2">
-          <NavPill label={t('hostelTitle')} active={activeTab === 0} activeColor={COLORS.foliage} onClick={() => onSelect(0)} />
-          <NavPill label={t('apartmentsTitle')} active={activeTab === 1} activeColor={COLORS.azulejo2} onClick={() => onSelect(1)} />
+          <NavPill label={t('hostelTitle')} />
+          <NavPill label={t('apartmentsTitle')} onClick={onSelectApartments} />
         </nav>
       </div>
 
@@ -69,7 +67,6 @@ export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ acti
             cta={t('hostelCta')}
             gradient={`linear-gradient(155deg, ${COLORS.foliage} 0%, ${COLORS.foliage2} 100%)`}
             pattern="beds"
-            onClick={() => onSelect(0)}
           />
           <PropertyPanel
             title={t('apartmentsTitle')}
@@ -77,7 +74,7 @@ export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ acti
             cta={t('apartmentsCta')}
             gradient={`linear-gradient(155deg, ${COLORS.azulejo} 0%, ${COLORS.azulejo2} 100%)`}
             pattern="windows"
-            onClick={() => onSelect(1)}
+            onClick={onSelectApartments}
           />
         </div>
 
@@ -91,28 +88,24 @@ export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ acti
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
-function NavPill({
-  label,
-  active,
-  activeColor,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  activeColor: string;
-  onClick: () => void;
-}) {
+function NavPill({ label, onClick }: { label: string; onClick?: () => void }) {
+  const className = 'px-4 py-2 rounded-full text-sm font-semibold transition-colors';
+  const style = {
+    border: `1px solid ${COLORS.line}`,
+    background: COLORS.surface,
+    color: COLORS.inkSoft,
+  };
+
+  if (!onClick) {
+    return (
+      <span className={className} style={style}>
+        {label}
+      </span>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-4 py-2 rounded-full text-sm font-semibold transition-colors"
-      style={{
-        border: `1px solid ${active ? 'transparent' : COLORS.line}`,
-        background: active ? activeColor : COLORS.surface,
-        color: active ? COLORS.cream : COLORS.inkSoft,
-      }}
-    >
+    <button type="button" onClick={onClick} className={className} style={style}>
       {label}
     </button>
   );
@@ -131,15 +124,13 @@ function PropertyPanel({
   cta: string;
   gradient: string;
   pattern: 'beds' | 'windows';
-  onClick: () => void;
+  onClick?: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl text-left flex-1 min-w-0 flex items-end p-6 transition-transform hover:-translate-y-1"
-      style={{ background: gradient, color: COLORS.cream, minHeight: '340px' }}
-    >
+  const className = 'group relative overflow-hidden rounded-2xl text-left flex-1 min-w-0 flex items-end p-6 transition-transform';
+  const style = { background: gradient, color: COLORS.cream, minHeight: '340px' } as const;
+
+  const content = (
+    <>
       <span className="absolute inset-0 opacity-50 group-hover:opacity-75 transition-opacity pointer-events-none">
         {pattern === 'beds' ? <BedsPattern /> : <WindowsPattern />}
       </span>
@@ -150,6 +141,20 @@ function PropertyPanel({
           {cta} →
         </span>
       </span>
+    </>
+  );
+
+  if (!onClick) {
+    return (
+      <div className={className} style={style}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={`${className} hover:-translate-y-1`} style={style}>
+      {content}
     </button>
   );
 }

@@ -2,56 +2,38 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PropertySelectorHero } from './property-selector-hero';
 import { PropertyManagementBanner } from './property-management-banner';
-import { PropertyTabs } from './property-tabs';
 import { LandingSection } from '@/components/landing/landing-section';
 import type { Locale } from '@/i18n';
 
 interface PropertyExperienceProps {
   locale: Locale;
-  hostelLabel: string;
-  apartmentsLabel: string;
-  children: [React.ReactNode, React.ReactNode];
+  children: React.ReactNode;
 }
 
 /**
  * PropertyExperience
  *
- * Junta el hero selector (Hostel/Apartamentos) con el motor de reservas
- * real: mantiene el estado de qué pestaña está activa para que elegir un
- * panel del hero mueva PropertyTabs y haga scroll hasta ahí.
+ * Home real: hero selector (Hostel/Apartamentos) + motor de reservas de
+ * apartamentos. El motor de reservas del hostel vive aparte, en la rama
+ * mrh1308 -- acá no queda nada de esa interfaz. El panel "Hostel" del hero
+ * se mantiene visible (fiel a la maqueta) pero sin acción: no hay motor
+ * al que llevarlo en esta rama.
  */
-export const PropertyExperience: React.FC<PropertyExperienceProps> = ({
-  locale,
-  hostelLabel,
-  apartmentsLabel,
-  children,
-}) => {
-  const [activeTab, setActiveTab] = useState<0 | 1>(0);
-
-  const handleSelect = (tab: 0 | 1) => {
-    setActiveTab(tab);
+export const PropertyExperience: React.FC<PropertyExperienceProps> = ({ locale, children }) => {
+  const handleSelectApartments = () => {
     document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <>
-      <PropertySelectorHero activeTab={activeTab} onSelect={handleSelect} />
+      <PropertySelectorHero onSelectApartments={handleSelectApartments} />
       <LandingSection locale={locale} />
       <PropertyManagementBanner locale={locale} />
-      <div id="reservar" className="scroll-mt-4">
-        <PropertyTabs
-          locale={locale}
-          hostelLabel={hostelLabel}
-          apartmentsLabel={apartmentsLabel}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        >
-          {children[0]}
-          {children[1]}
-        </PropertyTabs>
+      <div id="reservar" className="scroll-mt-4 w-full max-w-5xl mx-auto px-4 py-8">
+        {children}
       </div>
     </>
   );

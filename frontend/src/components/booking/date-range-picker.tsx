@@ -136,7 +136,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <div className={`date-range-picker ${className}`}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="check-in" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="check-in" className="block text-sm font-medium text-foreground mb-2">
             {T('checkIn', locale)}
           </label>
           <Input
@@ -151,11 +151,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             aria-label={T('checkIn', locale)}
             aria-describedby={error ? 'date-error' : undefined}
           />
-          <p className="text-xs text-gray-500 mt-1">{T('checkInTime', locale)}: 14:00</p>
+          <p className="text-xs text-muted-foreground mt-1">{T('checkInTime', locale)}: 14:00</p>
         </div>
 
         <div>
-          <label htmlFor="check-out" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="check-out" className="block text-sm font-medium text-foreground mb-2">
             {T('checkOut', locale)}
           </label>
           <Input
@@ -170,7 +170,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             aria-label={T('checkOut', locale)}
             aria-describedby={error ? 'date-error' : undefined}
           />
-          <p className="text-xs text-gray-500 mt-1">{T('checkOutTime', locale)}: 12:00</p>
+          <p className="text-xs text-muted-foreground mt-1">{T('checkOutTime', locale)}: 12:00</p>
         </div>
       </div>
 
@@ -181,12 +181,12 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       )}
 
       {value?.checkIn && value?.checkOut && (
-        <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+        <div className="mt-4 flex items-center justify-between p-3 bg-primary/10 rounded-lg">
           <div>
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-foreground">
               {formatDateDisplay(value.checkIn, locale)} → {formatDateDisplay(value.checkOut, locale)}
             </p>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {calculateNights(value.checkIn, value.checkOut)}{' '}
               {calculateNights(value.checkIn, value.checkOut) === 1
                 ? T('night', locale)
@@ -195,7 +195,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           </div>
           <button
             onClick={handleClear}
-            className="text-sm text-red-600 hover:text-red-800 font-medium"
+            className="text-sm text-destructive hover:text-destructive/80 font-medium"
             aria-label={T('clear', locale)}
           >
             {T('clear', locale)}
@@ -203,8 +203,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         </div>
       )}
 
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-        <p className="text-xs text-gray-600">{T('dateFormat', locale)}</p>
+      <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+        <p className="text-xs text-muted-foreground">{T('dateFormat', locale)}</p>
       </div>
     </div>
   );

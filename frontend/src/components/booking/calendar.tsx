@@ -116,17 +116,17 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="flex items-center justify-between mb-2">
         <button
           onClick={prevMonth}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-muted rounded-lg transition-colors text-foreground"
           aria-label={T('prevMonth', locale)}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h3 className="font-semibold text-sm capitalize">{monthName}</h3>
+        <h3 className="font-semibold text-sm capitalize text-foreground">{monthName}</h3>
         <button
           onClick={nextMonth}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-muted rounded-lg transition-colors text-foreground"
           aria-label={T('nextMonth', locale)}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +137,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
       <div className="grid grid-cols-7 gap-0.5">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-[10px] font-semibold text-gray-600 py-1">
+          <div key={day} className="text-center text-[10px] font-semibold text-muted-foreground py-1">
             {day}
           </div>
         ))}
@@ -158,14 +158,14 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={disabled}
               className={`aspect-square flex items-center justify-center text-xs rounded-md transition-colors ${
                 disabled
-                  ? 'text-gray-300 cursor-not-allowed'
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
                   : selected
-                  ? 'bg-blue-600 text-white font-semibold'
+                  ? 'bg-primary text-primary-foreground font-semibold'
                   : inRange
-                  ? 'bg-blue-100 text-blue-900'
+                  ? 'bg-primary/10 text-primary'
                   : isToday
-                  ? 'border-2 border-blue-600 text-blue-600 font-semibold'
-                  : 'hover:bg-gray-100 text-gray-900'
+                  ? 'border-2 border-primary text-primary font-semibold'
+                  : 'hover:bg-muted text-foreground'
               }`}
               aria-label={formatDate(date, locale)}
               aria-pressed={selected}
@@ -176,17 +176,17 @@ export const Calendar: React.FC<CalendarProps> = ({
         })}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-gray-600">
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 border-2 border-blue-600 rounded" />
+          <div className="w-3 h-3 border-2 border-primary rounded" />
           <span>{T('today', locale)}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-600 rounded" />
+          <div className="w-3 h-3 bg-primary rounded" />
           <span>{T('selected', locale)}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-100 rounded" />
+          <div className="w-3 h-3 bg-primary/10 rounded" />
           <span>{T('range', locale)}</span>
         </div>
       </div>

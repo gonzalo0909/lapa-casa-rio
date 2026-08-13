@@ -1,7 +1,6 @@
 // lapa-casa-hostel/frontend/src/app/[locale]/page.tsx
 
-import { setRequestLocale } from 'next-intl/server';
-import { getTranslations } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { BookingEngine } from '@/components/booking/booking-engine';
 import { ApartmentEngine } from '@/components/booking/apartment-engine';
 import { LandingSection } from '@/components/landing/landing-section';

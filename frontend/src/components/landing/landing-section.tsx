@@ -26,14 +26,14 @@ const OTA_LINKS = [
   { name: 'Expedia', href: 'https://www.expedia.com', color: '#00355F' },
 ] as const;
 
-export const LandingSection: React.FC<LandingSectionProps> = ({ locale }) => {
+export const LandingSection: React.FC<LandingSectionProps> = ({ locale: _locale }) => {
   const t = useTranslations('landing');
 
   const whatsappUrl = `https://wa.me/5521982779553`;
 
   const handleBookNow = () => {
     const el = document.getElementById('reservar');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (el) {el.scrollIntoView({ behavior: 'smooth' });}
   };
 
   return (

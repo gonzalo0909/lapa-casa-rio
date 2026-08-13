@@ -31,31 +31,8 @@ export const LandingSection: React.FC<LandingSectionProps> = ({ locale: _locale 
 
   const whatsappUrl = `https://wa.me/5521982779553`;
 
-  const handleBookNow = () => {
-    const el = document.getElementById('reservar');
-    if (el) {el.scrollIntoView({ behavior: 'smooth' });}
-  };
-
   return (
     <div className="border-b border-border bg-background">
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4 py-14 text-center">
-        <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
-          Lapa Casa Hostel
-        </p>
-        <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-3 leading-tight">
-          {t('heroTitle')}
-        </h1>
-        <p className="text-muted-foreground text-lg mb-8">{t('heroSubtitle')}</p>
-
-        <button
-          onClick={handleBookNow}
-          className="inline-flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity text-base shadow-md"
-        >
-          {t('bookNow')} ↓
-        </button>
-      </div>
-
       {/* ── Stats ────────────────────────────────────────────── */}
       <div className="border-t border-border bg-muted/30">
         <div className="max-w-5xl mx-auto px-4 py-8">

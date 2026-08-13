@@ -478,6 +478,16 @@
     "hostel": "Hostel",
     "apartments": "Apartments"
   },
+  "propertySelector": {
+    "title": "Wie möchtest du übernachten?",
+    "hostelTitle": "Hostel",
+    "hostelDesc": "Betten im Gemeinschaftsschlafsaal — Gruppen, Rucksacktouristen, gesellige Atmosphäre.",
+    "hostelCta": "Schlafsäle ansehen",
+    "apartmentsTitle": "Apartments",
+    "apartmentsDesc": "Komplette private Einheiten — Paare, Privatsphäre, längere Aufenthalte.",
+    "apartmentsCta": "Apartments ansehen",
+    "note": "Gleiche Website, gleiches Buchungssystem — der Unterschied ist, was du mietest."
+  },
   "apartments": {
     "stepDates": "Daten",
     "stepApartment": "Apartment",

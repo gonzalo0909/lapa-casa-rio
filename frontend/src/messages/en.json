@@ -478,6 +478,16 @@
     "hostel": "Hostel",
     "apartments": "Apartments"
   },
+  "propertySelector": {
+    "title": "How would you like to stay?",
+    "hostelTitle": "Hostel",
+    "hostelDesc": "Beds in shared dorms — groups, backpackers, social vibe.",
+    "hostelCta": "View dorms",
+    "apartmentsTitle": "Apartments",
+    "apartmentsDesc": "Full private units — couples, privacy, longer stays.",
+    "apartmentsCta": "View apartments",
+    "note": "Same site, same booking engine — the difference is what you're renting."
+  },
   "apartments": {
     "stepDates": "Dates",
     "stepApartment": "Apartment",

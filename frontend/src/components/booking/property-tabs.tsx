@@ -9,14 +9,24 @@ interface PropertyTabsProps {
   hostelLabel: string;
   apartmentsLabel: string;
   children: [React.ReactNode, React.ReactNode];
+  /** Pestaña activa controlada desde afuera (ej. PropertySelectorHero). Si no se pasa, el componente maneja su propio estado. */
+  activeTab?: 0 | 1;
+  onTabChange?: (tab: 0 | 1) => void;
 }
 
 export const PropertyTabs: React.FC<PropertyTabsProps> = ({
   hostelLabel,
   apartmentsLabel,
   children,
+  activeTab: controlledTab,
+  onTabChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<0 | 1>(0);
+  const [internalTab, setInternalTab] = useState<0 | 1>(0);
+  const activeTab = controlledTab ?? internalTab;
+  const setActiveTab = (tab: 0 | 1) => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
 
   const tabs = [
     { label: hostelLabel, icon: '🛏️' },

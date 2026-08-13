@@ -478,6 +478,16 @@
     "hostel": "Auberge",
     "apartments": "Appartements"
   },
+  "propertySelector": {
+    "title": "Comment souhaitez-vous séjourner ?",
+    "hostelTitle": "Auberge",
+    "hostelDesc": "Lits en dortoir partagé — groupes, routards, ambiance conviviale.",
+    "hostelCta": "Voir les dortoirs",
+    "apartmentsTitle": "Appartements",
+    "apartmentsDesc": "Unités privées complètes — couples, intimité, longs séjours.",
+    "apartmentsCta": "Voir les appartements",
+    "note": "Même site, même moteur de réservation — la différence, c'est ce que vous louez."
+  },
   "apartments": {
     "stepDates": "Dates",
     "stepApartment": "Appartement",

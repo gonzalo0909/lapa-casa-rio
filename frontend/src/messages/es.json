@@ -478,6 +478,16 @@
     "hostel": "Hostel",
     "apartments": "Apartamentos"
   },
+  "propertySelector": {
+    "title": "¿Cómo querés hospedarte?",
+    "hostelTitle": "Hostel",
+    "hostelDesc": "Camas en dormitorio compartido — grupos, mochileros, ambiente social.",
+    "hostelCta": "Ver dormitorios",
+    "apartmentsTitle": "Apartamentos",
+    "apartmentsDesc": "Unidades completas — privacidad, parejas, estadías largas.",
+    "apartmentsCta": "Ver apartamentos",
+    "note": "Mismo sitio, mismo motor de reservas — la diferencia es qué estás alquilando."
+  },
   "apartments": {
     "stepDates": "Fechas",
     "stepApartment": "Apartamento",

@@ -466,12 +466,14 @@
     "other": "Other"
   },
   "propertySelector": {
-    "eyebrow": "Full apartments in Santa Teresa",
-    "title": "Your apartment in Rio de Janeiro",
-    "subtitle": "Full private units — couples, privacy, longer stays.",
+    "title": "How would you like to stay?",
+    "hostelTitle": "Hostel",
+    "hostelDesc": "Beds in shared dorms — groups, backpackers, social vibe.",
+    "hostelCta": "View dorms",
     "apartmentsTitle": "Apartments",
-    "cta": "View apartments",
-    "navCta": "Book now"
+    "apartmentsDesc": "Full private units — couples, privacy, longer stays.",
+    "apartmentsCta": "View apartments",
+    "note": "Same site, same booking engine — the difference is what you're renting."
   },
   "apartments": {
     "stepDates": "Dates",

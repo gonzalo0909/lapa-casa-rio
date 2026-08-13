@@ -16,9 +16,11 @@ interface PropertyExperienceProps {
 /**
  * PropertyExperience
  *
- * Home real: hero de apartamentos + motor de reservas de apartamentos. El
- * motor de reservas del hostel vive aparte, en la rama mrh1308 -- acá no
- * queda ninguna referencia a "Hostel" en la interfaz.
+ * Home real: hero selector (Hostel/Apartamentos) + motor de reservas de
+ * apartamentos. El motor de reservas del hostel vive aparte, en la rama
+ * mrh1308 -- acá no queda nada de esa interfaz. El panel "Hostel" del hero
+ * se mantiene visible (fiel a la maqueta) pero sin acción: no hay motor
+ * al que llevarlo en esta rama.
  */
 export const PropertyExperience: React.FC<PropertyExperienceProps> = ({ locale, children }) => {
   const handleSelectApartments = () => {

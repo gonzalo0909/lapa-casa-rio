@@ -4,7 +4,6 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { notFound } from 'next/navigation';
 import { Inter, Poppins } from 'next/font/google';
 import { locales, type Locale } from '@/i18n';
-import { SiteFooter } from '@/components/layout/site-footer';
 import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -48,7 +47,6 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
-          <SiteFooter locale={locale as Locale} />
         </NextIntlClientProvider>
       </body>
     </html>

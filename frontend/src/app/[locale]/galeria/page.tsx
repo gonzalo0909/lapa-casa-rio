@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { GuestGallery } from '@/components/gallery/guest-gallery';
+import { SiteFooter } from '@/components/layout/site-footer';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 export default function GalleryPage({ params }: { params: { locale: string } }) {
@@ -9,6 +10,7 @@ export default function GalleryPage({ params }: { params: { locale: string } }) 
   return (
     <main className="min-h-screen bg-background">
       <GuestGallery locale={locale} />
+      <SiteFooter locale={locale} />
     </main>
   );
 }

@@ -466,12 +466,14 @@
     "other": "Autre"
   },
   "propertySelector": {
-    "eyebrow": "Appartements complets à Santa Teresa",
-    "title": "Votre appartement à Rio de Janeiro",
-    "subtitle": "Unités privées complètes — couples, intimité, longs séjours.",
+    "title": "Comment souhaitez-vous séjourner ?",
+    "hostelTitle": "Auberge",
+    "hostelDesc": "Lits en dortoir partagé — groupes, routards, ambiance conviviale.",
+    "hostelCta": "Voir les dortoirs",
     "apartmentsTitle": "Appartements",
-    "cta": "Voir les appartements",
-    "navCta": "Réserver"
+    "apartmentsDesc": "Unités privées complètes — couples, intimité, longs séjours.",
+    "apartmentsCta": "Voir les appartements",
+    "note": "Même site, même moteur de réservation — la différence, c'est ce que vous louez."
   },
   "apartments": {
     "stepDates": "Dates",

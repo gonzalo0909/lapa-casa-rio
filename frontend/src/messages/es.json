@@ -466,12 +466,14 @@
     "other": "Otro"
   },
   "propertySelector": {
-    "eyebrow": "Estadías completas en Santa Teresa",
-    "title": "Tu apartamento en Río de Janeiro",
-    "subtitle": "Unidades completas — privacidad, parejas, estadías largas.",
+    "title": "¿Cómo querés hospedarte?",
+    "hostelTitle": "Hostel",
+    "hostelDesc": "Camas en dormitorio compartido — grupos, mochileros, ambiente social.",
+    "hostelCta": "Ver dormitorios",
     "apartmentsTitle": "Apartamentos",
-    "cta": "Ver apartamentos",
-    "navCta": "Reservar"
+    "apartmentsDesc": "Unidades completas — privacidad, parejas, estadías largas.",
+    "apartmentsCta": "Ver apartamentos",
+    "note": "Mismo sitio, mismo motor de reservas — la diferencia es qué estás alquilando."
   },
   "apartments": {
     "stepDates": "Fechas",

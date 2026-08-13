@@ -11,16 +11,17 @@ Supabase nuevo**.
 
 ## 1. Servicios
 
-`render.yaml` (raíz del repo) define dos servicios Render:
+`render.yaml` (raíz del repo) define tres servicios Render:
 
 | Servicio | Tipo | Sirve |
 |---|---|---|
 | `lapa-casa-hostel-api` | `web` (Node) | Backend — API + panel admin en `/admin` |
 | `lapa-casa-hostel-landing` | `web` (static) | Landing estática de `public/landing/` en el dominio raíz |
+| `lapa-casa-hostel-frontend` | `web` (Node, Next.js) | Motor de reservas real (Hostel + Apartamentos vía `PropertyTabs`), conectado a la API con `NEXT_PUBLIC_API_URL` |
 
-El frontend de reservas en Next.js (`frontend/`) es trabajo de **Fase 2** — hoy no
-tiene páginas (`app/`/`pages/`), no compila, y no está en `render.yaml`. No intentar
-desplegarlo hasta que esa carpeta tenga un `app/` real.
+El frontend de reservas en Next.js (`frontend/`) ya tiene `app/` (App Router,
+rutas `/[locale]/...`), compila y está en `render.yaml` como servicio propio
+(`autoDeploy: true`, igual que los otros dos).
 
 ## 2. Primer deploy — backend
 
@@ -126,7 +127,7 @@ elegir un deploy anterior → **Rollback to this deploy**.
 
 Ver `scripts/` en la raíz del repo:
 
-- `deploy.sh <backend|landing>` — dispara un deploy vía Deploy Hook
+- `deploy.sh <backend|landing|frontend>` — dispara un deploy vía Deploy Hook
 - `rollback.sh` — vuelve al deploy anterior vía API de Render
 - `backup-db.sh` — `pg_dump` contra el Supabase real
 - `restore-db.sh` — restaura un backup (destructivo, pide confirmación)

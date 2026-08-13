@@ -267,7 +267,7 @@ export class EmailService {
       depositAmountFormatted: formatCurrency(booking.deposit_amount, language),
       depositPercent: Math.round(booking.deposit_percent * 100),
       remainingAmountFormatted: formatCurrency(booking.remaining_amount, language),
-      paymentButtonHtml: paymentButtonHtml(`${FRONTEND_URL}/bookings/${booking.id}/pay`, t.payNow)
+      paymentButtonHtml: paymentButtonHtml(`${FRONTEND_URL}/${language}/payment/${booking.id}`, t.payNow)
     });
 
     return dispatch(booking.guest.email, `${t.bookingConfirmationTitle} #${booking.reservation_number}`, html);
@@ -294,7 +294,7 @@ export class EmailService {
       remainingAmountFormatted: formatCurrency(booking.remaining_amount, language),
       dueDateFormatted: formatDate(checkIn, language),
       daysUntilCheckIn,
-      paymentButtonHtml: paymentButtonHtml(`${FRONTEND_URL}/bookings/${booking.id}/pay`, t.payNow)
+      paymentButtonHtml: paymentButtonHtml(`${FRONTEND_URL}/${language}/payment/${booking.id}`, t.payNow)
     });
 
     return dispatch(booking.guest.email, `${t.paymentReminderTitle} #${booking.reservation_number}`, html);

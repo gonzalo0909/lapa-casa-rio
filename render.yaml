@@ -44,13 +44,11 @@ services:
         value: https://lapa-casa-hostel-landing.onrender.com,https://lapa-casa-hostel-frontend.onrender.com,https://lapa-casa-hostel-frontend-hostel.onrender.com,https://lapa-casa-hostel-frontend-apartamentos.onrender.com
       - key: APP_URL
         value: https://lapa-casa-hostel-api.onrender.com
-      # Sigue apuntando a la landing (no al frontend real) porque el link
-      # de pago de los emails de confirmacion es /bookings/:id/pay, una
-      # pagina que el frontend real todavia no tiene (pendiente: "Pagina
-      # de confirmacion/pago"). Cambiar a lapa-casa-hostel-frontend cuando
-      # esa pagina exista, si no el link del email queda roto.
+      # Apunta al frontend real: frontend/src/app/[locale]/payment/[id]/
+      # (PaymentConfirmationPage, con countdown) ya existe y es donde el
+      # link de pago de los emails de confirmacion tiene que aterrizar.
       - key: FRONTEND_URL
-        value: https://lapa-casa-hostel-landing.onrender.com
+        value: https://lapa-casa-hostel-frontend.onrender.com
       - key: TIMEZONE
         value: America/Sao_Paulo
       - key: STRIPE_SECRET_KEY

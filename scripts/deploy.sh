@@ -15,6 +15,9 @@
 #   RENDER_DEPLOY_HOOK_LANDING=https://api.render.com/deploy/srv-zzz?key=www \
 #     ./scripts/deploy.sh landing
 #
+#   RENDER_DEPLOY_HOOK_FRONTEND=https://api.render.com/deploy/srv-www?key=vvv \
+#     ./scripts/deploy.sh frontend
+#
 # El Deploy Hook URL se genera en el dashboard de Render:
 # Servicio -> Settings -> Deploy Hook. Es secreto -- no commitear el
 # valor real, pasarlo siempre por variable de entorno.
@@ -23,15 +26,17 @@ set -euo pipefail
 
 TARGET="${1:-}"
 
-if [[ "$TARGET" != "backend" && "$TARGET" != "landing" ]]; then
-  echo "Uso: $0 <backend|landing>" >&2
+if [[ "$TARGET" != "backend" && "$TARGET" != "landing" && "$TARGET" != "frontend" ]]; then
+  echo "Uso: $0 <backend|landing|frontend>" >&2
   exit 1
 fi
 
 if [[ "$TARGET" == "backend" ]]; then
   HOOK_URL="${RENDER_DEPLOY_HOOK_BACKEND:-}"
-else
+elif [[ "$TARGET" == "landing" ]]; then
   HOOK_URL="${RENDER_DEPLOY_HOOK_LANDING:-}"
+else
+  HOOK_URL="${RENDER_DEPLOY_HOOK_FRONTEND:-}"
 fi
 
 if [[ -z "$HOOK_URL" ]]; then

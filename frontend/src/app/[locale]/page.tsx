@@ -2,6 +2,7 @@
 
 import { setRequestLocale } from 'next-intl/server';
 import { ApartmentEngine } from '@/components/booking/apartment-engine';
+import { PropertyExperience } from '@/components/booking/property-experience';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
@@ -10,7 +11,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
 
   return (
     <main className="min-h-screen bg-background">
-      <ApartmentEngine locale={locale} />
+      <PropertyExperience locale={locale}>
+        <ApartmentEngine locale={locale} />
+      </PropertyExperience>
     </main>
   );
 }

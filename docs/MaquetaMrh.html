@@ -1,0 +1,1266 @@
+<title>Lapa Casa Hostel</title>
+<style>
+/* ── Tokens ── */
+:root {
+  --navy:       #1E3A5F;
+  --navy-lt:    #2A5282;
+  --gold:       #C8870A;
+  --gold-soft:  #F5E6BE;
+  --gold-pale:  #FBF4E3;
+  --sand:       #F7F4EF;
+  --surface:    #FFFFFF;
+  --border:     #E2DDD4;
+  --text:       #1C1814;
+  --muted:      #7A6E64;
+  --green:      #1D8A55;
+  --red:        #C0393B;
+  --shadow: 0 2px 4px rgba(30,58,95,.06), 0 8px 24px rgba(30,58,95,.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sand:      #0E1825;
+    --surface:   #172234;
+    --border:    #253650;
+    --text:      #E8E0D4;
+    --muted:     #8A9BB4;
+    --gold-soft: #3A2B08;
+    --gold-pale: #2A2008;
+    --shadow: 0 2px 4px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --sand:      #0E1825;
+  --surface:   #172234;
+  --border:    #253650;
+  --text:      #E8E0D4;
+  --muted:     #8A9BB4;
+  --gold-soft: #3A2B08;
+  --gold-pale: #2A2008;
+  --shadow: 0 2px 4px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+}
+
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-text-size-adjust:100%}
+body{
+  background:var(--sand);
+  color:var(--text);
+  font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;
+  line-height:1.5;
+  min-height:100vh;
+}
+button{cursor:pointer;border:none;background:none;font:inherit}
+input,select,textarea{font:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ── Page layout ── */
+.page{
+  display:flex;flex-direction:column;
+  min-height:100vh;
+  padding-bottom:3rem;
+}
+
+/* ── Site header ── */
+.site-header{
+  background:var(--navy);
+  color:#fff;
+  padding:1.25rem 1.5rem 1.1rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:.25rem;
+}
+.brand-name{
+  font-family:'Georgia','Times New Roman',serif;
+  font-size:1.45rem;
+  font-weight:400;
+  letter-spacing:.04em;
+  color:#fff;
+}
+.brand-sub{
+  font-size:.72rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.55);
+}
+
+/* ── Booking wrap ── */
+.booking-wrap{
+  flex:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:2rem 1rem;
+}
+.booking-card{
+  background:var(--surface);
+  border-radius:8px;
+  box-shadow:var(--shadow);
+  width:100%;
+  max-width:500px;
+  overflow:hidden;
+}
+
+/* ── Step track ── */
+.step-track{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  background:var(--navy);
+  position:relative;
+}
+.step-tab{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.15rem;
+  padding:.7rem .25rem .55rem;
+  color:rgba(255,255,255,.45);
+  position:relative;
+  transition:color .2s;
+}
+.step-tab.active{color:#fff}
+.step-tab.done{color:rgba(255,255,255,.7)}
+.step-num{
+  font-size:.6rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  width:18px;height:18px;
+  border-radius:50%;
+  border:1.5px solid currentColor;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,border-color .2s;
+}
+.step-tab.active .step-num{
+  background:var(--gold);
+  border-color:var(--gold);
+  color:#fff;
+}
+.step-tab.done .step-num{
+  background:rgba(255,255,255,.2);
+}
+.step-label{
+  font-size:.65rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.step-bar{
+  position:absolute;
+  bottom:0; left:0;
+  height:2px;
+  background:var(--gold);
+  width:25%;
+  transition:left .3s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Panel ── */
+.panel{padding:1.5rem 1.5rem 1rem;display:none}
+.panel.active{display:block}
+
+.panel-title{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--text);
+  margin-bottom:.2rem;
+}
+.panel-sub{
+  font-size:.78rem;
+  color:var(--muted);
+  margin-bottom:1.25rem;
+}
+
+/* ── Calendar ── */
+.cal-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.75rem;
+}
+.cal-month-label{
+  font-size:.9rem;
+  font-weight:700;
+  color:var(--text);
+  letter-spacing:.02em;
+  text-transform:capitalize;
+}
+.cal-nav-btn{
+  width:30px;height:30px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);
+  transition:background .15s,color .15s;
+}
+.cal-nav-btn:hover{background:var(--border);color:var(--text)}
+.cal-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:0;
+}
+.cal-day-label{
+  font-size:.62rem;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  text-align:center;
+  padding:.3rem 0 .5rem;
+}
+.cal-cell{
+  text-align:center;
+  padding:.1rem 0;
+  position:relative;
+}
+.cal-day-btn{
+  width:34px;height:34px;
+  border-radius:50%;
+  margin:auto;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;
+  color:var(--text);
+  transition:background .12s,color .12s;
+  position:relative;
+  z-index:1;
+}
+.cal-day-btn:hover:not(:disabled){background:var(--gold-soft);color:var(--navy)}
+.cal-day-btn:disabled{color:var(--border);cursor:not-allowed}
+.cal-cell.in-range::before{
+  content:'';
+  position:absolute;
+  inset:0 0 0 0;
+  background:var(--gold-soft);
+  top:50%;transform:translateY(-50%);
+  height:34px;
+  z-index:0;
+}
+.cal-cell.range-start::before{left:50%}
+.cal-cell.range-end::before{right:50%}
+.cal-cell.range-start.range-end::before{display:none}
+.cal-cell.range-start .cal-day-btn,
+.cal-cell.range-end .cal-day-btn{
+  background:var(--navy);
+  color:#fff;
+}
+.cal-cell.is-today .cal-day-btn:not(.sel-active){
+  border:1.5px solid var(--gold);
+  color:var(--gold);
+}
+.cal-cell.is-today.in-range .cal-day-btn:not(.sel-active){
+  border-color:var(--gold);
+  color:var(--navy);
+}
+
+/* season bar below calendar */
+.season-info{
+  display:flex;gap:.5rem;flex-wrap:wrap;
+  margin-top:.85rem;
+  padding-top:.85rem;
+  border-top:1px solid var(--border);
+}
+.season-chip{
+  font-size:.68rem;
+  padding:.2em .55em;
+  border-radius:3px;
+  font-weight:600;
+}
+.season-chip.media{background:#EBF4EC;color:#1D6B34}
+.season-chip.alta{background:#FEF3E2;color:#B45309}
+.season-chip.carnaval{background:#FEE2E2;color:#B91C1C}
+.season-chip.baixa{background:#EFF6FF;color:#1D4ED8}
+
+.dates-selected{
+  display:flex;gap:1rem;margin-top:1rem;
+  padding:.75rem 1rem;
+  background:var(--gold-pale);
+  border-radius:6px;
+  border:1px solid var(--gold-soft);
+}
+.date-box{flex:1}
+.date-box-label{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.15rem}
+.date-box-val{font-size:.88rem;font-weight:700;color:var(--navy)}
+.date-box-nights{
+  text-align:center;
+  font-size:.72rem;
+  color:var(--gold);
+  font-weight:700;
+  align-self:center;
+  white-space:nowrap;
+}
+
+/* ── Gender selector ── */
+.gender-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:.75rem;
+  margin-bottom:1.25rem;
+}
+.gender-btn{
+  border:2px solid var(--border);
+  border-radius:6px;
+  padding:1rem .75rem;
+  text-align:center;
+  background:var(--surface);
+  transition:border-color .15s,background .15s;
+}
+.gender-btn:hover{border-color:var(--navy)}
+.gender-btn.selected{
+  border-color:var(--navy);
+  background:color-mix(in srgb,var(--navy) 5%,var(--surface));
+}
+.gender-icon{font-size:1.5rem;margin-bottom:.35rem;display:block}
+.gender-title{font-size:.82rem;font-weight:700;color:var(--text)}
+.gender-desc{font-size:.68rem;color:var(--muted);margin-top:.2rem;line-height:1.4}
+
+/* ── Room cards ── */
+.rooms-list{display:flex;flex-direction:column;gap:.65rem}
+.room-card{
+  border:1.5px solid var(--border);
+  border-radius:6px;
+  padding:.75rem 1rem;
+  display:flex;align-items:center;gap:.75rem;
+  transition:border-color .15s;
+}
+.room-card.has-beds{border-color:var(--gold)}
+.room-stripe{
+  width:3px;border-radius:2px;align-self:stretch;flex-shrink:0;
+}
+.stripe-mixed{background:#4A90D9}
+.stripe-female{background:#E87AA8}
+.room-info{flex:1;min-width:0}
+.room-name{font-size:.85rem;font-weight:700;color:var(--text)}
+.room-meta{display:flex;gap:.5rem;align-items:center;margin-top:.15rem;flex-wrap:wrap}
+.room-badge{
+  font-size:.6rem;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;
+  padding:.15em .5em;border-radius:3px;
+}
+.badge-mixed{background:#EBF4FF;color:#1D4ED8}
+.badge-female{background:#FEF0F8;color:#9D174D}
+.badge-flexible{background:#FEF9E7;color:#92400E}
+.room-avail{font-size:.68rem;color:var(--muted)}
+.room-price{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+.room-price strong{color:var(--text);font-size:.82rem}
+.room-stepper{
+  display:flex;align-items:center;gap:.5rem;flex-shrink:0;
+}
+.stepper-btn{
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;
+  font-weight:400;
+  line-height:1;
+  transition:background .12s,border-color .12s,color .12s;
+}
+.stepper-btn:hover:not(:disabled){border-color:var(--navy);background:var(--navy);color:#fff}
+.stepper-btn:disabled{color:var(--border);cursor:not-allowed}
+.stepper-count{
+  font-size:.95rem;font-weight:700;
+  min-width:1.25rem;text-align:center;
+  color:var(--text);
+}
+
+.flexible-notice{
+  background:var(--gold-pale);
+  border:1px solid var(--gold-soft);
+  border-radius:5px;
+  padding:.6rem .8rem;
+  font-size:.72rem;
+  color:var(--navy);
+  margin-top:.5rem;
+  display:none;
+}
+.flexible-notice.visible{display:block}
+
+.discount-strip{
+  display:none;
+  align-items:center;gap:.5rem;
+  padding:.55rem .8rem;
+  background:#EBF7EF;
+  border:1px solid #A7DFB8;
+  border-radius:5px;
+  font-size:.73rem;
+  color:#145727;
+  font-weight:600;
+  margin-top:.75rem;
+}
+.discount-strip.visible{display:flex}
+
+/* ── Guest form ── */
+.form-row{margin-bottom:.85rem}
+.form-label{
+  display:block;
+  font-size:.7rem;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:.3rem;
+}
+.form-label .req{color:var(--gold)}
+.form-input{
+  width:100%;
+  border:1.5px solid var(--border);
+  border-radius:5px;
+  padding:.55rem .75rem;
+  background:var(--surface);
+  color:var(--text);
+  font-size:.85rem;
+  transition:border-color .15s;
+}
+.form-input:focus{border-color:var(--navy);outline:none}
+.form-input.error{border-color:var(--red)}
+.form-input.valid{border-color:var(--green)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.85rem}
+.form-error{font-size:.68rem;color:var(--red);margin-top:.25rem;display:none}
+.form-error.visible{display:block}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A6E64' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;padding-right:2rem}
+textarea.form-input{resize:vertical;min-height:64px}
+
+/* ── Summary ── */
+.summary-section{
+  border:1px solid var(--border);
+  border-radius:6px;
+  overflow:hidden;
+  margin-bottom:.75rem;
+}
+.summary-section-head{
+  background:var(--sand);
+  padding:.5rem .9rem;
+  font-size:.65rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--muted);
+}
+.summary-rows{padding:.5rem .9rem}
+.summary-row{
+  display:flex;justify-content:space-between;
+  align-items:baseline;
+  padding:.4rem 0;
+  font-size:.82rem;
+  border-bottom:1px solid var(--border);
+}
+.summary-row:last-child{border-bottom:none}
+.summary-row.total{
+  font-weight:700;font-size:.9rem;
+  color:var(--navy);
+  border-top:2px solid var(--border);
+  padding-top:.55rem;margin-top:.1rem;
+}
+.summary-row.discount{color:var(--green)}
+.summary-row span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+
+.deposit-box{
+  background:var(--gold-pale);
+  border:1.5px solid var(--gold-soft);
+  border-radius:6px;
+  padding:.85rem 1rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:.5rem;
+  margin-bottom:.75rem;
+}
+.deposit-half{text-align:center}
+.deposit-label{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem}
+.deposit-amount{font-size:1.05rem;font-weight:800;color:var(--navy)}
+.deposit-note{font-size:.65rem;color:var(--muted);margin-top:.1rem}
+
+/* ── Booking footer ── */
+.booking-foot{
+  padding:1rem 1.5rem;
+  border-top:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  background:var(--surface);
+}
+.price-running{flex:1;min-width:0}
+.price-running-main{
+  font-size:.95rem;font-weight:800;color:var(--navy);
+  font-variant-numeric:tabular-nums;
+}
+.price-running-sub{font-size:.68rem;color:var(--muted)}
+.foot-btns{display:flex;gap:.5rem;flex-shrink:0}
+.btn-back{
+  padding:.55rem 1rem;
+  border-radius:5px;
+  font-size:.8rem;font-weight:600;
+  color:var(--muted);
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  transition:border-color .12s,color .12s;
+}
+.btn-back:hover{border-color:var(--navy);color:var(--navy)}
+.btn-next{
+  padding:.55rem 1.25rem;
+  border-radius:5px;
+  font-size:.8rem;font-weight:700;
+  background:var(--navy);
+  color:#fff;
+  transition:background .12s;
+}
+.btn-next:hover{background:var(--navy-lt)}
+.btn-next:disabled{background:var(--muted);cursor:not-allowed}
+.btn-confirm{
+  padding:.7rem 1.5rem;
+  border-radius:5px;
+  font-size:.85rem;font-weight:700;
+  background:var(--gold);
+  color:#fff;
+  transition:background .12s;
+  width:100%;
+  display:block;
+  text-align:center;
+  letter-spacing:.02em;
+}
+.btn-confirm:hover{background:#A36E07}
+
+/* ── Error toast ── */
+.toast{
+  margin:.75rem 1.5rem 0;
+  padding:.55rem .85rem;
+  background:#FEE2E2;
+  border:1px solid #FCA5A5;
+  border-radius:5px;
+  font-size:.75rem;
+  color:#991B1B;
+  display:none;
+}
+.toast.visible{display:block}
+
+/* ── Success state ── */
+.success-panel{
+  padding:2rem 1.5rem;
+  text-align:center;
+  display:none;
+}
+.success-panel.active{display:block}
+.success-check{
+  width:56px;height:56px;
+  border-radius:50%;
+  background:#EBF7EF;
+  border:2px solid #A7DFB8;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1rem;
+  font-size:1.5rem;
+}
+.success-title{font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:.3rem}
+.success-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.25rem}
+.booking-code{
+  font-family:ui-monospace,'Cascadia Code',monospace;
+  font-size:1.1rem;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:var(--navy);
+  background:var(--gold-pale);
+  border:1.5px solid var(--gold-soft);
+  border-radius:6px;
+  padding:.6rem 1.25rem;
+  display:inline-block;
+  margin-bottom:1.25rem;
+}
+.pix-box{
+  border:1.5px solid var(--border);
+  border-radius:6px;
+  padding:1rem;
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.5rem;
+}
+.pix-qr{
+  width:96px;height:96px;
+  background:var(--text);
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--surface);
+  font-size:.55rem;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  padding:.5rem;
+}
+.pix-label{font-size:.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.pix-amount{font-size:.95rem;font-weight:800;color:var(--navy)}
+.success-note{font-size:.72rem;color:var(--muted);margin-top:.75rem;line-height:1.5}
+
+/* ── Responsive ── */
+@media(max-width:400px){
+  .form-row-2{grid-template-columns:1fr}
+  .dates-selected{flex-direction:column}
+  .deposit-box{grid-template-columns:1fr}
+}
+</style>
+
+<div class="page">
+
+  <header class="site-header">
+    <div class="brand-name">Lapa Casa Hostel</div>
+    <div class="brand-sub">Santa Teresa · Rio de Janeiro</div>
+  </header>
+
+  <div class="booking-wrap">
+    <div class="booking-card" id="booking-card">
+
+      <!-- Step track -->
+      <div class="step-track" id="step-track">
+        <div class="step-tab active" data-s="1"><span class="step-num">1</span><span class="step-label">Datas</span></div>
+        <div class="step-tab" data-s="2"><span class="step-num">2</span><span class="step-label">Quartos</span></div>
+        <div class="step-tab" data-s="3"><span class="step-num">3</span><span class="step-label">Hóspede</span></div>
+        <div class="step-tab" data-s="4"><span class="step-num">4</span><span class="step-label">Resumo</span></div>
+        <div class="step-bar" id="step-bar"></div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+      <!-- ── Panel 1: Datas ── -->
+      <div class="panel active" id="panel-1">
+        <div class="panel-title">Escolha suas datas</div>
+        <div class="panel-sub">Selecione entrada e saída</div>
+
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="cal-prev" aria-label="Mês anterior">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="cal-month-label" id="cal-month-label"></div>
+          <button class="cal-nav-btn" id="cal-next" aria-label="Próximo mês">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+
+        <div class="dates-selected" id="dates-selected" style="display:none">
+          <div class="date-box">
+            <div class="date-box-label">Check-in</div>
+            <div class="date-box-val" id="checkin-display">—</div>
+          </div>
+          <div class="date-box-nights" id="nights-display"></div>
+          <div class="date-box">
+            <div class="date-box-label">Check-out</div>
+            <div class="date-box-val" id="checkout-display">—</div>
+          </div>
+        </div>
+
+        <div class="season-info">
+          <div class="season-chip media">⛅ Média: ×1.0</div>
+          <div class="season-chip alta">☀️ Alta (Dez–Mar, Jul–Ago): ×1.5</div>
+          <div class="season-chip carnaval">🎉 Carnaval (mín. 5 noites): ×2.0</div>
+          <div class="season-chip baixa">🌧 Baixa (Jun, Set): ×0.8</div>
+        </div>
+      </div>
+
+      <!-- ── Panel 2: Quartos ── -->
+      <div class="panel" id="panel-2">
+        <div class="panel-title">Selecione os quartos</div>
+        <div class="panel-sub" id="p2-sub">Quantas camas você precisa?</div>
+
+        <div class="gender-grid" id="gender-grid">
+          <button class="gender-btn" data-g="mixed" onclick="selectGender('mixed')">
+            <span class="gender-icon">👥</span>
+            <div class="gender-title">Grupo Misto</div>
+            <div class="gender-desc">Homens e mulheres — dormitórios mistos</div>
+          </button>
+          <button class="gender-btn" data-g="female" onclick="selectGender('female')">
+            <span class="gender-icon">👩</span>
+            <div class="gender-title">Só Mulheres</div>
+            <div class="gender-desc">Inclui acesso ao quarto feminino flexível</div>
+          </button>
+        </div>
+
+        <div id="rooms-area" style="display:none">
+          <div class="rooms-list" id="rooms-list"></div>
+          <div class="flexible-notice" id="flexible-notice">
+            🔄 <strong>Quarto Flexível 7</strong>: quarto padrão feminino. Se não houver reservas femininas 48h antes do check-in, converte automaticamente para misto.
+          </div>
+          <div class="discount-strip" id="discount-strip">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="discount-text">Desconto de grupo ativo!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Panel 3: Hóspede ── -->
+      <div class="panel" id="panel-3">
+        <div class="panel-title">Dados do hóspede</div>
+        <div class="panel-sub">Responsável pela reserva</div>
+
+        <div class="form-row">
+          <label class="form-label" for="f-name">Nome completo <span class="req">*</span></label>
+          <input class="form-input" id="f-name" type="text" placeholder="Seu nome completo" autocomplete="name">
+          <div class="form-error" id="err-name">Nome completo é obrigatório</div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="form-label" for="f-email">E-mail <span class="req">*</span></label>
+            <input class="form-input" id="f-email" type="email" placeholder="seu@email.com" autocomplete="email">
+            <div class="form-error" id="err-email">E-mail inválido</div>
+          </div>
+          <div>
+            <label class="form-label" for="f-phone">WhatsApp <span class="req">*</span></label>
+            <input class="form-input" id="f-phone" type="tel" placeholder="+55 21 9 9999-9999" autocomplete="tel">
+            <div class="form-error" id="err-phone">Telefone obrigatório</div>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="form-label" for="f-country">País <span class="req">*</span></label>
+            <select class="form-input" id="f-country">
+              <option value="">Selecione</option>
+              <option value="BR" selected>Brasil</option>
+              <option value="AR">Argentina</option>
+              <option value="CO">Colômbia</option>
+              <option value="CL">Chile</option>
+              <option value="US">Estados Unidos</option>
+              <option value="DE">Alemanha</option>
+              <option value="FR">França</option>
+              <option value="GB">Reino Unido</option>
+              <option value="PT">Portugal</option>
+              <option value="ES">Espanha</option>
+              <option value="IT">Itália</option>
+              <option value="OTHER">Outro</option>
+            </select>
+            <div class="form-error" id="err-country">País obrigatório</div>
+          </div>
+          <div>
+            <label class="form-label" for="f-doc">CPF / Passaporte <span class="req">*</span></label>
+            <input class="form-input" id="f-doc" type="text" placeholder="000.000.000-00">
+            <div class="form-error" id="err-doc">Documento obrigatório</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="f-arrival">Horário de chegada <span class="req">*</span></label>
+          <select class="form-input" id="f-arrival">
+            <option value="">Selecione (14h–22h)</option>
+            <option>14h00</option><option>15h00</option><option>16h00</option>
+            <option>17h00</option><option>18h00</option><option>19h00</option>
+            <option>20h00</option><option>21h00</option><option>22h00</option>
+          </select>
+          <div class="form-error" id="err-arrival">Horário de chegada obrigatório</div>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="f-requests">Solicitações especiais <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <textarea class="form-input" id="f-requests" placeholder="Alguma preferência ou necessidade especial?"></textarea>
+        </div>
+      </div>
+
+      <!-- ── Panel 4: Resumo ── -->
+      <div class="panel" id="panel-4">
+        <div class="panel-title">Resumo da reserva</div>
+        <div class="panel-sub">Revise antes de confirmar</div>
+
+        <div class="summary-section">
+          <div class="summary-section-head">Datas e Quartos</div>
+          <div class="summary-rows" id="summary-dates"></div>
+        </div>
+
+        <div class="summary-section">
+          <div class="summary-section-head">Preço</div>
+          <div class="summary-rows" id="summary-price"></div>
+        </div>
+
+        <div class="deposit-box" id="deposit-box"></div>
+
+        <div class="summary-section">
+          <div class="summary-section-head">Hóspede</div>
+          <div class="summary-rows" id="summary-guest"></div>
+        </div>
+
+        <button class="btn-confirm" onclick="confirmBooking()">Confirmar reserva — PIX / Cartão</button>
+      </div>
+
+      <!-- ── Success ── -->
+      <div class="success-panel" id="success-panel">
+        <div class="success-check">✓</div>
+        <div class="success-title">Reserva confirmada!</div>
+        <div class="success-sub">Enviamos os detalhes por e-mail e WhatsApp</div>
+        <div class="booking-code" id="booking-code"></div>
+        <div class="pix-box">
+          <div class="pix-label">Depósito PIX</div>
+          <div class="pix-qr" id="pix-qr-block">
+            <div style="display:grid;grid-template-columns:repeat(7,8px);grid-template-rows:repeat(7,8px);gap:1px" id="qr-grid"></div>
+          </div>
+          <div class="pix-amount" id="pix-amount"></div>
+          <div class="pix-label">Vence em 30 minutos</div>
+        </div>
+        <div class="success-note">
+          Chave PIX: <strong>lapacasa@gmail.com</strong><br>
+          O restante (70%) é pago no check-in, em dinheiro ou cartão.
+        </div>
+        <button class="btn-confirm" style="margin-top:1.25rem;background:var(--navy)" onclick="location.reload()">Nova reserva</button>
+      </div>
+
+      <!-- ── Footer ── -->
+      <div class="booking-foot" id="booking-foot">
+        <div class="price-running">
+          <div class="price-running-main" id="price-main">R$ 85 / cama</div>
+          <div class="price-running-sub" id="price-sub">Base por noite</div>
+        </div>
+        <div class="foot-btns">
+          <button class="btn-back" id="btn-back" onclick="goBack()" style="display:none">Voltar</button>
+          <button class="btn-next" id="btn-next" onclick="goNext()">Próximo</button>
+        </div>
+      </div>
+
+    </div><!-- /booking-card -->
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+const state = {
+  step: 1,
+  calMonth: new Date(2026, 7, 1), // Aug 2026
+  checkIn: null,
+  checkOut: null,
+  hoverDate: null,
+  selectingEnd: false,
+  gender: null,
+  beds: { mixto12a: 0, mixto12b: 0, mixto7: 0, flexible7: 0 },
+};
+
+const TODAY = new Date(2026, 7, 14); // Aug 14 2026
+
+const ROOMS = [
+  { id:'mixto12a',   name:'Mixto 12A',     type:'mixed',  capacity:12, available:10, price:85, isFlexible:false },
+  { id:'mixto12b',   name:'Mixto 12B',     type:'mixed',  capacity:12, available:8,  price:85, isFlexible:false },
+  { id:'mixto7',     name:'Mixto 7',       type:'mixed',  capacity:7,  available:5,  price:85, isFlexible:false },
+  { id:'flexible7',  name:'Flexível 7',    type:'female', capacity:7,  available:7,  price:85, isFlexible:true  },
+];
+
+// ── Pricing ────────────────────────────────────────────
+function getSeason(date) {
+  const m = date.getMonth(), d = date.getDate(), y = date.getFullYear();
+  // Carnaval 2027: Feb 13-16
+  if (m===1 && ((y===2027 && d>=13 && d<=17) || (y===2026 && d>=28)))
+    return { mult:2.0, label:'Carnaval', minNights:5 };
+  if (m===11||m===0||m===6||m===7) return { mult:1.5, label:'Alta Temporada', minNights:1 };
+  if (m===5||m===8)                 return { mult:0.8, label:'Baixa Temporada', minNights:1 };
+  return { mult:1.0, label:'Média Temporada', minNights:1 };
+}
+
+function totalBeds() {
+  return Object.values(state.beds).reduce((s,n)=>s+n, 0);
+}
+
+function groupDiscount(beds) {
+  if (beds>=13) return 0.15;
+  if (beds>=3)  return 0.10;
+  return 0;
+}
+
+function calcPrice() {
+  if (!state.checkIn || !state.checkOut) return null;
+  const nights = Math.round((state.checkOut - state.checkIn)/86400000);
+  const beds = totalBeds();
+  if (nights<=0 || beds===0) return null;
+
+  const season = getSeason(state.checkIn);
+  const pbn = 85 * season.mult; // price per bed per night
+  const subtotal = pbn * beds * nights;
+  const disc = groupDiscount(beds);
+  const discAmt = subtotal * disc;
+  const total = subtotal - discAmt;
+  const deposit = total * 0.3;
+
+  return { nights, beds, season, pbn, subtotal, disc, discAmt, total, deposit };
+}
+
+// ── Calendar ───────────────────────────────────────────
+const DAY_LABELS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function dateOnly(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function sameDay(a,b){ return a && b && a.toDateString()===b.toDateString() }
+function isBefore(a,b){ return dateOnly(a)<dateOnly(b) }
+function inRange(d,a,b){
+  if(!a||!b) return false;
+  const [s,e]= isBefore(a,b)?[a,b]:[b,a];
+  return dateOnly(d)>dateOnly(s) && dateOnly(d)<dateOnly(e);
+}
+
+function renderCalendar() {
+  const m = state.calMonth;
+  document.getElementById('cal-month-label').textContent =
+    MONTH_NAMES[m.getMonth()] + ' ' + m.getFullYear();
+
+  const firstDay = new Date(m.getFullYear(), m.getMonth(), 1).getDay();
+  const daysInMonth = new Date(m.getFullYear(), m.getMonth()+1, 0).getDate();
+
+  // Build entire HTML in one pass — never use innerHTML+= inside a loop
+  // because each += destroys & recreates the DOM, breaking mousedown/click pairs
+  const parts = [];
+
+  // Day-of-week labels
+  DAY_LABELS.forEach(l => parts.push(`<div class="cal-day-label">${l}</div>`));
+
+  // Empty leading cells
+  for(let i=0;i<firstDay;i++) parts.push('<div class="cal-cell"></div>');
+
+  for(let d=1;d<=daysInMonth;d++){
+    const date   = new Date(m.getFullYear(), m.getMonth(), d);
+    const ts     = date.getTime();
+    const isPast = isBefore(date, TODAY) && !sameDay(date, TODAY);
+    const isToday  = sameDay(date, TODAY);
+    const isStart  = sameDay(date, state.checkIn);
+    const isEnd    = sameDay(date, state.checkOut);
+    const hover    = state.hoverDate;
+    const isHover  = state.selectingEnd && sameDay(date, hover);
+    const refEnd   = state.selectingEnd && hover ? hover : state.checkOut;
+    const inRng    = inRange(date, state.checkIn, refEnd);
+
+    let cellClass = 'cal-cell';
+    if(isStart)        cellClass += ' in-range range-start';
+    if(isEnd)          cellClass += ' in-range range-end';
+    if(isHover && !isStart) cellClass += ' in-range range-end';  // hover shows as potential checkout
+    if(inRng)          cellClass += ' in-range';
+    if(isToday)        cellClass += ' is-today';
+
+    parts.push(
+      `<div class="${cellClass}">` +
+      `<button class="cal-day-btn" ${isPast?'disabled':''} data-ts="${ts}">` +
+      d +
+      `</button></div>`
+    );
+  }
+
+  // Single assignment — grid is never destroyed during a render cycle
+  document.getElementById('cal-grid').innerHTML = parts.join('');
+}
+
+function _calGridClick(e) {
+  const btn = e.target.closest('button.cal-day-btn');
+  if(!btn || btn.disabled) return;
+  const ts = parseInt(btn.dataset.ts, 10);
+  const d = new Date(ts);
+  // Reset selection if: no checkIn, OR both already set, OR clicked before checkIn, OR same day as checkIn
+  if(!state.checkIn || (state.checkIn && state.checkOut) ||
+     isBefore(d, state.checkIn) || sameDay(d, state.checkIn)) {
+    state.checkIn = d;
+    state.checkOut = null;
+    state.selectingEnd = true;
+  } else {
+    state.checkOut = d;
+    state.selectingEnd = false;
+    state.hoverDate = null;
+  }
+  updateDateDisplay();
+  renderCalendar();
+}
+
+function _calGridOver(e) {
+  if(!state.selectingEnd) return;
+  const btn = e.target.closest('button.cal-day-btn');
+  if(!btn || btn.disabled) return;
+  const ts = parseInt(btn.dataset.ts, 10);
+  const d = new Date(ts);
+  if(!sameDay(d, state.hoverDate)) {
+    state.hoverDate = d;
+    renderCalendar();
+  }
+}
+
+function _calGridOut(e) {
+  if(!state.selectingEnd) return;
+  // Only clear hover when leaving the grid entirely
+  const to = e.relatedTarget;
+  if(to && document.getElementById('cal-grid').contains(to)) return;
+  if(state.hoverDate) {
+    state.hoverDate = null;
+    renderCalendar();
+  }
+}
+
+function updateDateDisplay() {
+  const datesBox = document.getElementById('dates-selected');
+  const ci = document.getElementById('checkin-display');
+  const co = document.getElementById('checkout-display');
+  const ni = document.getElementById('nights-display');
+
+  if(state.checkIn) {
+    datesBox.style.display = 'flex';
+    ci.textContent = fmtDate(state.checkIn);
+  }
+  if(state.checkOut) {
+    co.textContent = fmtDate(state.checkOut);
+    const nights = Math.round((state.checkOut-state.checkIn)/86400000);
+    ni.textContent = nights + (nights===1?' noite':' noites');
+  } else {
+    co.textContent = '—';
+    ni.textContent = '';
+  }
+
+  updateFooterPrice();
+}
+
+function fmtDate(d) {
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','');
+}
+function fmtMoney(v) {
+  return 'R$ ' + v.toFixed(2).replace('.',',');
+}
+
+document.getElementById('cal-prev').onclick = ()=>{
+  state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth()-1, 1);
+  renderCalendar();
+};
+document.getElementById('cal-next').onclick = ()=>{
+  state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth()+1, 1);
+  renderCalendar();
+};
+
+// ── Rooms ──────────────────────────────────────────────
+function selectGender(g) {
+  state.gender = g;
+  document.querySelectorAll('.gender-btn').forEach(b=>b.classList.toggle('selected', b.dataset.g===g));
+  renderRooms();
+  document.getElementById('rooms-area').style.display = 'block';
+}
+
+function renderRooms() {
+  const visibleRooms = ROOMS.filter(r => state.gender==='female' || r.type==='mixed');
+  const p = calcPrice();
+  const season = p ? p.season : getSeason(state.checkIn || TODAY);
+
+  document.getElementById('rooms-list').innerHTML = visibleRooms.map(r=>{
+    const cnt = state.beds[r.id];
+    const pbn = (r.price * season.mult).toFixed(2).replace('.',',');
+    let badgeClass = 'badge-mixed', badgeLabel = 'Misto';
+    if(r.isFlexible) { badgeClass='badge-flexible'; badgeLabel='Flexível'; }
+    else if(r.type==='female') { badgeClass='badge-female'; badgeLabel='Feminino'; }
+    const stripeClass = r.type==='female' ? 'stripe-female' : 'stripe-mixed';
+
+    return `<div class="room-card${cnt>0?' has-beds':''}" id="card-${r.id}">
+      <div class="room-stripe ${stripeClass}"></div>
+      <div class="room-info">
+        <div class="room-name">${r.name}</div>
+        <div class="room-meta">
+          <span class="room-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="room-avail">${r.available} de ${r.capacity} disponíveis</span>
+        </div>
+        <div class="room-price">R$ <strong>${pbn}</strong>/cama/noite</div>
+      </div>
+      <div class="room-stepper">
+        <button class="stepper-btn" onclick="changeBeds('${r.id}',-1)" ${cnt===0?'disabled':''}
+          aria-label="Diminuir camas em ${r.name}">−</button>
+        <span class="stepper-count" id="cnt-${r.id}">${cnt}</span>
+        <button class="stepper-btn" onclick="changeBeds('${r.id}',1)" ${cnt>=r.available?'disabled':''}
+          aria-label="Aumentar camas em ${r.name}">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // flexible notice
+  const showFlex = state.gender==='female' && state.beds['flexible7']>0;
+  document.getElementById('flexible-notice').classList.toggle('visible', showFlex);
+
+  // discount strip
+  const beds = totalBeds();
+  const disc = groupDiscount(beds);
+  const discStrip = document.getElementById('discount-strip');
+  discStrip.classList.toggle('visible', disc>0);
+  if(disc>0) {
+    const pct = (disc*100)+'%';
+    document.getElementById('discount-text').textContent =
+      `${pct} de desconto para grupos — ${beds} camas selecionadas`;
+  }
+
+  updateFooterPrice();
+}
+
+function changeBeds(id, delta) {
+  const room = ROOMS.find(r=>r.id===id);
+  const cur = state.beds[id];
+  const next = Math.max(0, Math.min(room.available, cur+delta));
+  state.beds[id] = next;
+  renderRooms();
+}
+
+// ── Footer price ───────────────────────────────────────
+function updateFooterPrice() {
+  const p = calcPrice();
+  const main = document.getElementById('price-main');
+  const sub  = document.getElementById('price-sub');
+
+  if(p) {
+    main.textContent = fmtMoney(p.total);
+    const discTxt = p.disc>0 ? ` (${p.disc*100}% desc.)` : '';
+    sub.textContent = `${p.beds} cama${p.beds>1?'s':''} · ${p.nights} noite${p.nights>1?'s':''} · ${p.season.label}${discTxt}`;
+  } else if(state.checkIn && !state.checkOut) {
+    main.textContent = 'Selecione check-out';
+    sub.textContent = 'Clique em uma data de saída';
+  } else {
+    const season = getSeason(TODAY);
+    main.textContent = fmtMoney(85 * season.mult) + '/cama/noite';
+    sub.textContent = `${season.label} em curso`;
+  }
+}
+
+// ── Navigation ─────────────────────────────────────────
+function goNext() {
+  clearToast();
+  if(state.step===1) {
+    if(!state.checkIn)  return showToast('Selecione a data de check-in.');
+    if(!state.checkOut) return showToast('Selecione a data de check-out.');
+    const nights = Math.round((state.checkOut-state.checkIn)/86400000);
+    const s = getSeason(state.checkIn);
+    if(s.minNights>1 && nights<s.minNights)
+      return showToast(`${s.label}: estadia mínima de ${s.minNights} noites.`);
+    advanceTo(2);
+  } else if(state.step===2) {
+    if(!state.gender)    return showToast('Selecione o tipo de grupo.');
+    if(totalBeds()===0)  return showToast('Selecione pelo menos 1 cama.');
+    advanceTo(3);
+  } else if(state.step===3) {
+    if(!validateForm()) return;
+    buildSummary();
+    advanceTo(4);
+  }
+}
+
+function goBack() {
+  if(state.step>1) advanceTo(state.step-1);
+}
+
+function advanceTo(n) {
+  document.getElementById(`panel-${state.step}`).classList.remove('active');
+  state.step = n;
+  document.getElementById(`panel-${n}`).classList.add('active');
+  updateStepUI();
+  clearToast();
+}
+
+function updateStepUI() {
+  const s = state.step;
+  document.querySelectorAll('.step-tab').forEach(t=>{
+    const ts = +t.dataset.s;
+    t.classList.toggle('active', ts===s);
+    t.classList.toggle('done',   ts<s);
+  });
+  document.getElementById('step-bar').style.left = ((s-1)*25)+'%';
+  document.getElementById('btn-back').style.display = s>1 ? '' : 'none';
+  document.getElementById('btn-next').textContent  = s===4 ? 'Confirmar' : 'Próximo';
+  document.getElementById('btn-next').style.display = s===4 ? 'none' : '';
+  if(s===4) document.getElementById('booking-foot').style.display='none';
+  else      document.getElementById('booking-foot').style.display='';
+}
+
+// ── Form validation ────────────────────────────────────
+function validateForm() {
+  let ok = true;
+  const checks = [
+    ['f-name',    'err-name',    v=>v.trim().length>2],
+    ['f-email',   'err-email',   v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
+    ['f-phone',   'err-phone',   v=>v.replace(/\D/g,'').length>=8],
+    ['f-country', 'err-country', v=>v!==''],
+    ['f-doc',     'err-doc',     v=>v.trim().length>3],
+    ['f-arrival', 'err-arrival', v=>v!==''],
+  ];
+  checks.forEach(([fid,eid,fn])=>{
+    const inp = document.getElementById(fid);
+    const err = document.getElementById(eid);
+    const valid = fn(inp.value);
+    inp.classList.toggle('error', !valid);
+    inp.classList.toggle('valid', valid);
+    err.classList.toggle('visible', !valid);
+    if(!valid) ok = false;
+  });
+  return ok;
+}
+
+// ── Summary ────────────────────────────────────────────
+function buildSummary() {
+  const p = calcPrice();
+  const selRooms = ROOMS.filter(r=>state.beds[r.id]>0);
+
+  // dates section
+  document.getElementById('summary-dates').innerHTML =
+    row('Check-in', fmtDate(state.checkIn)) +
+    row('Check-out', fmtDate(state.checkOut)) +
+    row('Noites', p.nights) +
+    selRooms.map(r=>`<div class="summary-row"><span>${r.name}</span><span>${state.beds[r.id]} cama${state.beds[r.id]>1?'s':''}</span></div>`).join('') +
+    row('Total de camas', p.beds);
+
+  // price section
+  let priceRows =
+    row('R$ 85/cama × '+p.season.mult+'x ('+p.season.label+')', fmtMoney(p.pbn)+'/cama/nt') +
+    row('Subtotal ('+p.beds+' camas × '+p.nights+' noites)', fmtMoney(p.subtotal));
+  if(p.disc>0) priceRows +=
+    `<div class="summary-row discount"><span>Desconto de grupo (${p.disc*100}%)</span><span>− ${fmtMoney(p.discAmt)}</span></div>`;
+  priceRows += `<div class="summary-row total"><span>Total</span><span>${fmtMoney(p.total)}</span></div>`;
+  document.getElementById('summary-price').innerHTML = priceRows;
+
+  // deposit
+  document.getElementById('deposit-box').innerHTML = `
+    <div class="deposit-half">
+      <div class="deposit-label">Depósito agora (PIX/Cartão)</div>
+      <div class="deposit-amount">${fmtMoney(p.deposit)}</div>
+      <div class="deposit-note">30% — confirmação imediata</div>
+    </div>
+    <div class="deposit-half">
+      <div class="deposit-label">Pagar no check-in</div>
+      <div class="deposit-amount">${fmtMoney(p.total-p.deposit)}</div>
+      <div class="deposit-note">70% — dinheiro ou cartão</div>
+    </div>`;
+
+  // guest section
+  document.getElementById('summary-guest').innerHTML =
+    row('Nome', document.getElementById('f-name').value) +
+    row('E-mail', document.getElementById('f-email').value) +
+    row('WhatsApp', document.getElementById('f-phone').value) +
+    row('País', document.getElementById('f-country').options[document.getElementById('f-country').selectedIndex].text) +
+    row('Chegada', document.getElementById('f-arrival').value);
+}
+
+function row(label, val) {
+  return `<div class="summary-row"><span>${label}</span><span>${val}</span></div>`;
+}
+
+// ── Confirm booking ────────────────────────────────────
+function confirmBooking() {
+  const p = calcPrice();
+  const code = 'LCH-' + Math.random().toString(36).substring(2,6).toUpperCase() +
+    Math.random().toString(36).substring(2,6).toUpperCase();
+
+  document.getElementById('booking-code').textContent = code;
+  document.getElementById('pix-amount').textContent = fmtMoney(p.deposit);
+
+  // Simple QR-code-like pattern
+  const qg = document.getElementById('qr-grid');
+  const pat = [0,1,1,0,1,0,1,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,1,1,0,1,0,0,1,1,0,1,1,0,0,1,0,1,0,1,0,1,0,1,1];
+  qg.innerHTML = pat.map(b=>`<div style="background:${b?'#fff':'transparent'};width:8px;height:8px"></div>`).join('');
+
+  // Hide step track and footer
+  document.getElementById('step-track').style.display = 'none';
+  document.getElementById('booking-foot').style.display = 'none';
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('success-panel').classList.add('active');
+}
+
+// ── Toast ──────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+}
+function clearToast() {
+  document.getElementById('toast').classList.remove('visible');
+}
+
+// ── Init ───────────────────────────────────────────────
+// Attach calendar event delegation ONCE to the stable container
+const _calGrid = document.getElementById('cal-grid');
+_calGrid.addEventListener('click',    _calGridClick);
+_calGrid.addEventListener('mouseover', _calGridOver);
+_calGrid.addEventListener('mouseout',  _calGridOut);
+
+renderCalendar();
+updateFooterPrice();
+updateStepUI();
+
+// Live validate form fields
+['f-name','f-email','f-phone','f-country','f-doc','f-arrival'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('blur',()=>{ if(el.value) validateForm(); });
+});
+</script>

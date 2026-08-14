@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
@@ -46,7 +46,7 @@ function todayDs(): string {
   return toDs(new Date());
 }
 
-function monthCells(y: number, m: number, cin: string | null, cout: string | null, onDayClick: (ds: string) => void): React.ReactNode {
+function monthCells(y: number, m: number, cin: string | null, cout: string | null, blocked: Set<string>, onDayClick: (ds: string) => void): React.ReactNode {
   const dim = new Date(y, m + 1, 0).getDate();
   const fdow = new Date(y, m, 1).getDay();
   const today = todayDs();
@@ -61,10 +61,12 @@ function monthCells(y: number, m: number, cin: string | null, cout: string | nul
     const isCin = s === cin;
     const isCout = s === cout;
     const inRng = hasEnd && s > (cin as string) && s < (cout as string);
+    const isBlocked = blocked.has(s);
     let cls = styles.miniDay;
     if (past) { cls += ` ${styles.miniDayPast}`; }
     else if (isCin || isCout) { cls += ` ${isCin ? styles.miniDayCheckin : styles.miniDayCheckout}`; }
     else if (inRng) { cls += ` ${styles.miniDayInrange}`; }
+    else if (isBlocked) { cls += ` ${styles.miniDayBlocked}`; }
     else { cls += ` ${styles.miniDayAvail}`; }
     cells.push(
       <button
@@ -95,6 +97,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [cout, setCout] = useState<string | null>(toDs(globalCheckOut));
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<{ available: boolean } | null>(null);
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
 
   const baseMonth = useMemo(() => {
     const ref = cin ? parseDs(cin) : new Date();
@@ -106,6 +109,37 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     if (m > 11) { m = 0; y += 1; }
     return { y, m };
   }, [baseMonth]);
+
+  /** Carga la ocupación diaria de este apartamento (1 cama por apartamento,
+   * ver availability-service.ts getDailyOccupancy) para pintar de rojo los
+   * días bloqueados en cuanto se abre el mini-calendario, sin esperar a
+   * que el huésped intente seleccionarlos. */
+  useEffect(() => {
+    let cancelled = false;
+    const months = [
+      `${baseMonth.y}-${String(baseMonth.m + 1).padStart(2, '0')}`,
+      `${nextMonth.y}-${String(nextMonth.m + 1).padStart(2, '0')}`,
+    ];
+    (async () => {
+      try {
+        const responses = await Promise.all(
+          months.map((month) => availabilityAPI.getCalendar({ month, roomId: apartmentId }))
+        );
+        if (cancelled) { return; }
+        const blocked = new Set<string>();
+        for (const res of responses) {
+          const days = res?.data?.days ?? [];
+          for (const d of days as Array<{ date: string; availableBeds: number }>) {
+            if (d.availableBeds <= 0) { blocked.add(d.date); }
+          }
+        }
+        setBlockedDates(blocked);
+      } catch {
+        if (!cancelled) { setBlockedDates(new Set()); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [apartmentId, baseMonth.y, baseMonth.m, nextMonth.y, nextMonth.m]);
 
   const handleDayClick = (ds: string) => {
     setResult(null);
@@ -157,7 +191,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
             {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
           </div>
           <div className={styles.miniDayCells}>
-            {monthCells(baseMonth.y, baseMonth.m, cin, cout, handleDayClick)}
+            {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick)}
           </div>
         </div>
         <div>
@@ -166,7 +200,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
             {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
           </div>
           <div className={styles.miniDayCells}>
-            {monthCells(nextMonth.y, nextMonth.m, cin, cout, handleDayClick)}
+            {monthCells(nextMonth.y, nextMonth.m, cin, cout, blockedDates, handleDayClick)}
           </div>
         </div>
       </div>

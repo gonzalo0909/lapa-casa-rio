@@ -9,10 +9,34 @@ import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 import { availabilityService } from '../../services/availability-service';
 import { pricingService } from '../../services/pricing-service';
+import { query } from '../../config/database';
 
 const router = Router();
 
 router.get('/check', checkAvailabilityHandler);
+
+/**
+ * GET /availability/carnival-dates — fechas de Carnaval (system_config.carnival_dates),
+ * expuesto público para que el calendario del motor de Apartamentos pueda pintar los
+ * días de Carnaval antes de que el huésped elija fechas (ver frontend/src/lib/apartment-seasons.ts).
+ */
+router.get('/carnival-dates', async (req, res, next) => {
+  try {
+    const { rows } = await query<{ value: Array<{ year: number; start_date: string; end_date: string }> }>(
+      `SELECT value FROM system_config WHERE key = 'carnival_dates'`
+    );
+    const dates = rows[0]?.value ?? [];
+
+    res.status(200).json(ApiResponse.success({
+      dates: dates.map(d => ({ year: d.year, startDate: d.start_date, endDate: d.end_date }))
+    }, 'Carnival dates retrieved'));
+  } catch (error) {
+    logger.error('Error getting carnival dates', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
+  }
+});
 
 /** GET /availability/apartments — disponibilidad de los 10 apartamentos para un rango de fechas. */
 router.get('/apartments', checkApartmentAvailabilityHandler);

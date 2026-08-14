@@ -319,8 +319,8 @@
     "parking": "Tem estacionamento?"
   },
   "seo": {
-    "homeTitle": "Lapa Casa - Apartamentos em Santa Teresa, Rio de Janeiro",
-    "homeDescription": "Apartamentos completos em Santa Teresa, Rio de Janeiro. Privacidade, conforto e a melhor localização perto dos Arcos da Lapa. Reserve sua estadia.",
+    "homeTitle": "Lapa Casa Hostel - Santa Teresa, Rio de Janeiro",
+    "homeDescription": "Hostel boutique em Santa Teresa especializado em grupos e viajantes internacionais. Reserve sua estadia no Rio de Janeiro.",
     "bookingTitle": "Reservar - Lapa Casa Hostel",
     "bookingDescription": "Reserve seu quarto no Lapa Casa Hostel. Descontos especiais para grupos. Melhor localização em Santa Teresa.",
     "roomsTitle": "Quartos - Lapa Casa Hostel",
@@ -406,7 +406,8 @@
     "fullyBooked": "Esgotado",
     "tryOtherDates": "Tente outras datas",
     "pricePerNight": "Preço por noite",
-    "viewDetails": "Ver detalhes"
+    "viewDetails": "Ver detalhes",
+    "bedsUnavailable": "Não foi possível carregar as camas disponíveis. Tente novamente."
   },
   "paymentPage": {
     "title": "Confirme sua Reserva",

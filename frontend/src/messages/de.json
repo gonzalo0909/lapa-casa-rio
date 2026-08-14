@@ -319,8 +319,8 @@
     "parking": "Gibt es Parkplätze?"
   },
   "seo": {
-    "homeTitle": "Lapa Casa - Apartments in Santa Teresa, Rio de Janeiro",
-    "homeDescription": "Komplette private Apartments in Santa Teresa, Rio de Janeiro. Privatsphäre, Komfort und die beste Lage nahe den Lapa-Bögen. Buchen Sie Ihren Aufenthalt.",
+    "homeTitle": "Lapa Casa Hostel - Santa Teresa, Rio de Janeiro",
+    "homeDescription": "Boutique-Hostel in Santa Teresa, spezialisiert auf Gruppen und internationale Reisende. Buchen Sie Ihren Aufenthalt in Rio de Janeiro.",
     "bookingTitle": "Buchen - Lapa Casa Hostel",
     "bookingDescription": "Buchen Sie Ihr Zimmer im Lapa Casa Hostel. Besondere Gruppenrabatte. Beste Lage in Santa Teresa.",
     "roomsTitle": "Zimmer - Lapa Casa Hostel",
@@ -406,7 +406,8 @@
     "fullyBooked": "Ausgebucht",
     "tryOtherDates": "Andere Daten versuchen",
     "pricePerNight": "Preis pro Nacht",
-    "viewDetails": "Details ansehen"
+    "viewDetails": "Details ansehen",
+    "bedsUnavailable": "Die verfügbaren Betten konnten nicht geladen werden. Bitte versuchen Sie es erneut."
   },
   "paymentPage": {
     "title": "Bestätigen Sie Ihre Buchung",

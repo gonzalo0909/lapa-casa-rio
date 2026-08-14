@@ -339,8 +339,19 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           country: guestForm.country,
           document: guestForm.document,
         },
-        specialRequests: guestForm.specialRequests || undefined,
-        arrivalTime: guestForm.arrivalTime,
+        // NOTA: no mandamos `arrivalTime` al backend. create-booking.ts (código
+        // compartido con el hostel) arma el texto de esa nota con
+        // `arrivalTime.replace('-', ':00 – ') + ':00'`, formato pensado para
+        // rangos tipo "14-16" (motor viejo del hostel) → "14:00 – 16:00". Los
+        // horarios de este selector son puntuales de 30 min (ej. "14:30"), sin
+        // guión, así que esa transformación no tiene nada que reemplazar y
+        // termina pegando ":00" igual, produciendo "14:30:00" (roto). En vez de
+        // depender de esa transformación, armamos la nota nosotros mismos y la
+        // sumamos a `specialRequests`, que el backend concatena tal cual.
+        specialRequests: [
+          guestForm.arrivalTime ? `Horário de chegada: ${guestForm.arrivalTime}` : null,
+          guestForm.specialRequests.trim() || null,
+        ].filter(Boolean).join('\n') || undefined,
         language: locale === 'de' || locale === 'fr' ? 'en' : locale,
         source: 'web',
         guestGender: 'mixed',

@@ -73,12 +73,25 @@ function formatBRPhone(raw: string): string {
   const clean = raw.replace(/[^\d+]/g, '');
   const digits = clean.replace(/\D/g, '');
   if (digits.length <= 2) { return clean; }
-  if (digits.startsWith('55') || clean.startsWith('+55')) {
-    const d = digits.startsWith('55') ? digits.slice(2) : digits;
+  // Só tratamos como "já tem código de país" quando o usuário digitou "+55" de fato --
+  // "55" sozinho também é um DDD válido (Rio Grande do Sul), então não pode ser usado
+  // como sinal de código de país por coincidência de dígitos.
+  if (clean.startsWith('+55')) {
+    const d = digits.slice(2);
     let fmt = '+55 ';
     if (d.length > 0) { fmt += '(' + d.slice(0, 2) + ')'; }
     if (d.length > 2) { fmt += ' ' + d.slice(2, 7); }
     if (d.length > 7) { fmt += '-' + d.slice(7, 11); }
+    return fmt;
+  }
+  if (!clean.startsWith('+')) {
+    // Número local (sem código de país): DDD de 2 dígitos + número de 8 ou 9 dígitos.
+    const local = digits.slice(2, 11);
+    const isNineDigit = local.length > 8;
+    const splitAt = isNineDigit ? 5 : 4;
+    let fmt = '(' + digits.slice(0, 2) + ')';
+    if (local.length > 0) { fmt += ' ' + local.slice(0, splitAt); }
+    if (local.length > splitAt) { fmt += '-' + local.slice(splitAt); }
     return fmt;
   }
   return clean.slice(0, 18);

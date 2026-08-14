@@ -415,7 +415,7 @@
     "guest": "Huésped",
     "notFound": "No encontramos esa reserva.",
     "depositSuccessTitle": "¡Depósito recibido! Tu reserva está confirmada.",
-    "depositSuccessNote": "Te enviamos los detalles por email. Te vamos a recordar que pagues el saldo restante 7 días antes del check-in.",
+    "depositSuccessNote": "Te enviamos los detalles por email y WhatsApp. Se paga en el hostel al llegar, salvo que prefieras tarjeta.",
     "cancelledNote": "Esta reserva ya no está disponible para pagar."
   },
   "gallery": {

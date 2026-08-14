@@ -81,11 +81,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const roomImage = getRoomImage(room.type, room.isFlexible);
 
   const handleIncrement = useCallback(() => {
-    if (selectedBeds < room.availableBeds) { onSelectBeds(selectedBeds + 1); }
+    if (selectedBeds < room.availableBeds) onSelectBeds(selectedBeds + 1);
   }, [selectedBeds, room.availableBeds, onSelectBeds]);
 
   const handleDecrement = useCallback(() => {
-    if (selectedBeds > 0) { onSelectBeds(selectedBeds - 1); }
+    if (selectedBeds > 0) onSelectBeds(selectedBeds - 1);
   }, [selectedBeds, onSelectBeds]);
 
   const openManualMode = useCallback(async () => {
@@ -97,10 +97,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           checkIn: dateRange.checkIn!.toISOString().slice(0, 10),
           checkOut: dateRange.checkOut!.toISOString().slice(0, 10)
         });
-        const roomBeds: RoomBed[] = response.data?.beds ?? [];
-        if (roomBeds.length === 0) {
-          setBedsError(t('bedsUnavailable'));
-        }
+        const roomBeds: RoomBed[] = response.data.beds;
         setBeds(roomBeds);
         const autoIds = roomBeds
           .filter((b) => b.isAvailable)
@@ -114,7 +111,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       }
     }
     setMode('manual');
-  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds, locale, t]);
+  }, [beds, realRoomId, dateRange.checkIn, dateRange.checkOut, selectedBeds, locale]);
 
   const closeManualMode = useCallback(() => setMode('quick'), []);
 
@@ -127,16 +124,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   }, [onSelectBeds]);
 
   const getRoomIcon = (type: string, isFlexible: boolean) => {
-    if (isFlexible) { return '🔄'; }
-    if (type === 'female') { return '👩'; }
-    if (type === 'male') { return '👨'; }
+    if (isFlexible) return '🔄';
+    if (type === 'female') return '👩';
+    if (type === 'male') return '👨';
     return '👥';
   };
 
   const getRoomTypeLabel = (type: string, isFlexible: boolean) => {
-    if (isFlexible) { return t('flexible'); }
-    if (type === 'female') { return t('female'); }
-    if (type === 'male') { return t('male'); }
+    if (isFlexible) return t('flexible');
+    if (type === 'female') return t('female');
+    if (type === 'male') return t('male');
     return t('mixed');
   };
 

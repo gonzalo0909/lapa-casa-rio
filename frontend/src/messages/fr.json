@@ -415,7 +415,7 @@
     "guest": "Client",
     "notFound": "Nous n'avons pas trouvé cette réservation.",
     "depositSuccessTitle": "Acompte reçu ! Votre réservation est confirmée.",
-    "depositSuccessNote": "Nous avons envoyé les détails par e-mail. Nous vous rappellerons de payer le solde 7 jours avant l'arrivée.",
+    "depositSuccessNote": "Nous avons envoyé les détails par e-mail et WhatsApp. Payé à l'auberge à l'arrivée, sauf si vous préférez la carte.",
     "cancelledNote": "Cette réservation n'est plus disponible pour le paiement."
   },
   "gallery": {

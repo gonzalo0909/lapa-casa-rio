@@ -415,7 +415,7 @@
     "guest": "Gast",
     "notFound": "Wir konnten diese Buchung nicht finden.",
     "depositSuccessTitle": "Anzahlung erhalten! Ihre Buchung ist bestätigt.",
-    "depositSuccessNote": "Wir haben Ihnen die Details per E-Mail gesendet. Wir erinnern Sie daran, den Restbetrag 7 Tage vor Check-in zu zahlen.",
+    "depositSuccessNote": "Wir haben Ihnen die Details per E-Mail und WhatsApp gesendet. Zahlung im Hostel bei Ankunft, außer Sie zahlen lieber mit Karte.",
     "cancelledNote": "Diese Buchung ist nicht mehr für die Zahlung verfügbar."
   },
   "gallery": {

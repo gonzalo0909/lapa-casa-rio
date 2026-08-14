@@ -1,21 +1,21 @@
-// lapa-casa-hostel/tests/frontend/jest.config.js
+// lapa-casa-hostel/frontend/jest.config.js
 
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  rootDir: '../../',
-  testMatch: [
-    '<rootDir>/tests/frontend/**/*.test.{ts,tsx}'
-  ],
-  
+  rootDir: '.',
+  testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  modulePathIgnorePatterns: ['<rootDir>/.next/'],
+
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/frontend/src/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/tests/frontend/__mocks__/fileMock.js'
+    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/test/__mocks__/fileMock.js'
   },
 
   setupFilesAfterEnv: [
-    '<rootDir>/tests/frontend/test-setup.ts',
+    '<rootDir>/test/test-setup.ts',
     '@testing-library/jest-dom'
   ],
 
@@ -30,11 +30,11 @@ module.exports = {
   },
 
   collectCoverageFrom: [
-    'frontend/src/**/*.{ts,tsx}',
-    '!frontend/src/**/*.d.ts',
-    '!frontend/src/**/*.stories.{ts,tsx}',
-    '!frontend/src/app/**',
-    '!frontend/src/types/**'
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.{ts,tsx}',
+    '!src/app/**',
+    '!src/types/**'
   ],
 
   coverageThreshold: {

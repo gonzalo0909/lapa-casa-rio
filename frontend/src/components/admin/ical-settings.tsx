@@ -14,7 +14,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Plus, Trash2, RefreshCw, Download, Calendar, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Plus, Trash2, RefreshCw, Download, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
 
 // ─── Tipos internos ────────────────────────────────────────────────────────────
 

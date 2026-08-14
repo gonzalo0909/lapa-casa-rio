@@ -1,270 +1,189 @@
 // lapa-casa-hostel/frontend/src/components/booking/apartment-mini-calendar.tsx
 
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
+import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
+const MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const WDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 interface ApartmentMiniCalendarProps {
   apartmentId: string;
-  globalCheckIn: Date | null;
-  globalCheckOut: Date | null;
+  globalCheckIn: Date;
+  globalCheckOut: Date;
   onApply: (range: { checkIn: Date; checkOut: Date }) => void;
-  locale?: 'pt' | 'es' | 'en' | 'fr' | 'de';
 }
 
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+function toDs(d: Date): string {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function parseDs(s: string): Date {
+  const [y, m, d] = s.split('-') as [string, string, string];
+  return new Date(Number(y), Number(m) - 1, Number(d));
+}
+function fmtShort(ds: string | null): string {
+  if (!ds) { return ''; }
+  const d = parseDs(ds);
+  return String(d.getDate()).padStart(2, '0') + ' ' + MONTHS_SHORT[d.getMonth()];
+}
+function todayDs(): string {
+  return toDs(new Date());
 }
 
-function toDateOnly(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function monthCells(y: number, m: number, cin: string | null, cout: string | null, onDayClick: (ds: string) => void): React.ReactNode {
+  const dim = new Date(y, m + 1, 0).getDate();
+  const fdow = new Date(y, m, 1).getDay();
+  const today = todayDs();
+  const hasEnd = !!(cin && cout);
+  const cells: React.ReactNode[] = [];
+  for (let i = 0; i < fdow; i++) {
+    cells.push(<span key={'e' + i} className={`${styles.miniDay} ${styles.miniDayPast}`} />);
+  }
+  for (let d = 1; d <= dim; d++) {
+    const s = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const past = s < today;
+    const isCin = s === cin;
+    const isCout = s === cout;
+    const inRng = hasEnd && s > (cin as string) && s < (cout as string);
+    let cls = styles.miniDay;
+    if (past) { cls += ` ${styles.miniDayPast}`; }
+    else if (isCin || isCout) { cls += ` ${isCin ? styles.miniDayCheckin : styles.miniDayCheckout}`; }
+    else if (inRng) { cls += ` ${styles.miniDayInrange}`; }
+    else { cls += ` ${styles.miniDayAvail}`; }
+    cells.push(
+      <button
+        key={s}
+        type="button"
+        className={cls}
+        disabled={past}
+        onClick={() => onDayClick(s)}
+      >
+        {d}
+      </button>
+    );
+  }
+  return cells;
 }
 
-function monthKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-/**
- * Mini-calendario interactivo por apartamento -- puerto de LCACOPIA
- * (miniCalState / renderInteractiveMiniCal), pero sin el objeto BLOCKED[]
- * hardcodeado de la maqueta: el estado de cada día sale de
- * GET /availability/calendar?roomId=, que ahora respeta roomId (antes lo
- * ignoraba, ver availability-service.ts).
- *
- * "Aplicar" no dispara ningún fetch propio -- delega en onApply, que en
- * ApartmentEngine es el mismo handleDateChange que ya usa el DateSelector
- * principal, así que aplicar acá re-consulta y re-renderiza toda la
- * grilla de apartamentos exactamente como en LCACOPIA.
- */
 export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   apartmentId,
   globalCheckIn,
   globalCheckOut,
   onApply,
-  locale = 'pt',
 }) => {
-  const [baseMonth, setBaseMonth] = useState(() => globalCheckIn ?? new Date());
-  const [days, setDays] = useState<Record<string, boolean>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [cin, setCin] = useState<Date | null>(globalCheckIn);
-  const [cout, setCout] = useState<Date | null>(globalCheckOut);
+  const [cin, setCin] = useState<string | null>(toDs(globalCheckIn));
+  const [cout, setCout] = useState<string | null>(toDs(globalCheckOut));
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<{ available: boolean } | null>(null);
 
-  const nextMonth = useMemo(
-    () => new Date(baseMonth.getFullYear(), baseMonth.getMonth() + 1, 1),
-    [baseMonth]
-  );
+  const baseMonth = useMemo(() => {
+    const ref = cin ? parseDs(cin) : new Date();
+    return { y: ref.getFullYear(), m: ref.getMonth() };
+  }, [cin]);
+  const nextMonth = useMemo(() => {
+    let { y, m } = baseMonth;
+    m += 1;
+    if (m > 11) { m = 0; y += 1; }
+    return { y, m };
+  }, [baseMonth]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    Promise.all([
-      availabilityAPI.getCalendar({ month: monthKey(baseMonth), roomId: apartmentId }),
-      availabilityAPI.getCalendar({ month: monthKey(nextMonth), roomId: apartmentId }),
-    ])
-      .then(([a, b]) => {
-        if (cancelled) {return;}
-        const map: Record<string, boolean> = {};
-        for (const res of [a, b]) {
-          const dayList = (res?.data?.days ?? []) as Array<{ date: string; availableBeds: number }>;
-          for (const d of dayList) {
-            map[d.date] = d.availableBeds <= 0;
-          }
-        }
-        setDays(map);
-      })
-      .catch(() => {
-        if (!cancelled) {setDays({});}
-      })
-      .finally(() => {
-        if (!cancelled) {setIsLoading(false);}
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [apartmentId, baseMonth, nextMonth]);
-
-  const buildMonthCells = useCallback(
-    (month: Date): (Date | null)[] => {
-      const year = month.getFullYear();
-      const mIdx = month.getMonth();
-      const firstDay = new Date(year, mIdx, 1);
-      const daysInMonth = new Date(year, mIdx + 1, 0).getDate();
-      const cells: (Date | null)[] = [];
-      for (let i = 0; i < firstDay.getDay(); i++) {cells.push(null);}
-      for (let d = 1; d <= daysInMonth; d++) {cells.push(new Date(year, mIdx, d));}
-      return cells;
-    },
-    []
-  );
-
-  const isBlocked = useCallback(
-    (date: Date) => days[toDateOnly(date)] === true,
-    [days]
-  );
-
-  const isPast = useCallback((date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
-  }, []);
-
-  const handleDayClick = useCallback(
-    (date: Date) => {
-      if (isPast(date) || isBlocked(date)) {return;}
-      if (!cin || (cin && cout)) {
-        setCin(date);
-        setCout(null);
-      } else if (date > cin) {
-        setCout(date);
-      } else {
-        setCin(date);
-        setCout(null);
-      }
-    },
-    [cin, cout, isPast, isBlocked]
-  );
-
-  const rangeHasBlockedDay = useMemo(() => {
-    if (!cin || !cout) {return false;}
-    const d = new Date(cin);
-    while (d < cout) {
-      if (isBlocked(d)) {return true;}
-      d.setDate(d.getDate() + 1);
+  const handleDayClick = (ds: string) => {
+    setResult(null);
+    if (!cin || cout) {
+      setCin(ds);
+      setCout(null);
+    } else if (ds <= cin) {
+      setCin(ds);
+    } else {
+      setCout(ds);
     }
-    return false;
-  }, [cin, cout, isBlocked]);
+  };
 
-  const canApply = !!cin && !!cout && !rangeHasBlockedDay;
-  const hasChanged =
-    cin && cout && globalCheckIn && globalCheckOut &&
-    (!isSameDay(cin, globalCheckIn) || !isSameDay(cout, globalCheckOut));
+  const handleReset = () => {
+    setCin(toDs(globalCheckIn));
+    setCout(toDs(globalCheckOut));
+    setResult(null);
+  };
 
-  const weekDays = getWeekDays(locale);
+  const nights = cin && cout ? Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000) : 0;
+  const changed = cin !== toDs(globalCheckIn) || cout !== toDs(globalCheckOut);
 
-  const renderMonth = (month: Date) => (
-    <div>
-      <p className="text-center text-xs font-semibold text-foreground mb-1 capitalize">
-        {month.toLocaleDateString(localeString(locale), { month: 'long', year: 'numeric' })}
-      </p>
-      <div className="grid grid-cols-7 gap-px">
-        {weekDays.map((w) => (
-          <div key={w} className="text-center text-[9px] font-semibold text-muted-foreground py-0.5">
-            {w}
-          </div>
-        ))}
-        {buildMonthCells(month).map((date, idx) => {
-          if (!date) {return <div key={`e${idx}`} />;}
-          const blocked = isBlocked(date);
-          const past = isPast(date);
-          const selStart = cin && isSameDay(date, cin);
-          const selEnd = cout && isSameDay(date, cout);
-          const inRange = cin && cout && date > cin && date < cout;
-          const disabled = past || blocked;
-          return (
-            <button
-              key={idx}
-              type="button"
-              disabled={disabled}
-              onClick={() => handleDayClick(date)}
-              className={`aspect-square text-[10px] rounded flex items-center justify-center transition-colors ${
-                disabled
-                  ? blocked
-                    ? 'bg-red-100 text-red-700 cursor-not-allowed'
-                    : 'text-muted-foreground/30 cursor-not-allowed'
-                  : selStart || selEnd
-                  ? 'bg-primary text-primary-foreground font-bold'
-                  : inRange
-                  ? 'bg-primary/15 text-primary'
-                  : 'hover:bg-muted text-foreground'
-              }`}
-            >
-              {date.getDate()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  const handleApply = async () => {
+    if (!cin || !cout) { return; }
+    setChecking(true);
+    setResult(null);
+    try {
+      const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout });
+      const apartments = res?.data?.apartments ?? [];
+      const found = apartments.find((a: { id: string }) => a.id === apartmentId);
+      const available = !!found?.available;
+      setResult({ available });
+      if (available) {
+        onApply({ checkIn: parseDs(cin), checkOut: parseDs(cout) });
+      }
+    } catch {
+      setResult({ available: false });
+    } finally {
+      setChecking(false);
+    }
+  };
 
   return (
-    <div className="bg-muted/40 rounded-lg p-3 text-xs">
-      {isLoading ? (
-        <div className="flex justify-center py-6">
-          <LoadingSpinner size="sm" />
+    <div className={styles.aptMiniCal}>
+      <div className={styles.calMonths} style={{ gap: '1rem' }}>
+        <div>
+          <div className={styles.miniMonthTitle}>{MONTHS_SHORT[baseMonth.m]} {baseMonth.y}</div>
+          <div className={styles.miniWdayHeaders}>
+            {WDAYS.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
+          </div>
+          <div className={styles.miniDayCells}>
+            {monthCells(baseMonth.y, baseMonth.m, cin, cout, handleDayClick)}
+          </div>
+        </div>
+        <div>
+          <div className={styles.miniMonthTitle}>{MONTHS_SHORT[nextMonth.m]} {nextMonth.y}</div>
+          <div className={styles.miniWdayHeaders}>
+            {WDAYS.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
+          </div>
+          <div className={styles.miniDayCells}>
+            {monthCells(nextMonth.y, nextMonth.m, cin, cout, handleDayClick)}
+          </div>
+        </div>
+      </div>
+
+      {cin && cout ? (
+        <div className={styles.miniApplyBar}>
+          <span>{fmtShort(cin)} → {fmtShort(cout)} · {nights} noite{nights !== 1 ? 's' : ''}</span>
+          <button type="button" className={styles.miniApplyBtn} onClick={handleApply} disabled={checking}>
+            {checking ? 'Verificando…' : '✓ Aplicar'}
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {renderMonth(baseMonth)}
-          {renderMonth(nextMonth)}
+        <div className={`${styles.miniApplyBar} ${styles.miniApplyHint}`}>
+          {cin ? 'Selecione a data de saída' : 'Selecione a data de entrada'}
         </div>
       )}
 
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-sm bg-red-100 inline-block" /> {T('blocked', locale)}
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-sm bg-primary inline-block" /> {T('chosen', locale)}
-        </span>
-      </div>
+      {result && !result.available && (
+        <div style={{ fontSize: '.68rem', color: '#991B1B', textAlign: 'center', marginTop: '.35rem' }}>
+          ⚠️ Este apartamento está ocupado nessas datas — outros podem estar disponíveis
+        </div>
+      )}
 
-      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border">
-        <button
-          type="button"
-          disabled={!canApply}
-          onClick={() => cin && cout && onApply({ checkIn: cin, checkOut: cout })}
-          className="text-[11px] font-bold bg-primary text-primary-foreground rounded-md px-2.5 py-1 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          {T('apply', locale)}
+      {changed && (
+        <button type="button" className={styles.miniResetLink} onClick={handleReset}>
+          ↩ Voltar às datas originais ({fmtShort(toDs(globalCheckIn))} → {fmtShort(toDs(globalCheckOut))})
         </button>
-        {hasChanged && (
-          <button
-            type="button"
-            onClick={() => {
-              setCin(globalCheckIn);
-              setCout(globalCheckOut);
-              setBaseMonth(globalCheckIn ?? new Date());
-            }}
-            className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-          >
-            {T('reset', locale)}
-          </button>
-        )}
+      )}
+
+      <div className={styles.miniCalLegend}>
+        <span className={styles.miniLegendDot} style={{ background: 'var(--primary)' }} />
+        <span>Entrada/Saída</span>
+        <span className={styles.miniLegendDot} style={{ background: 'var(--primary-soft)', border: '1px solid var(--primary)' }} />
+        <span>Período</span>
       </div>
     </div>
   );
 };
-
-function localeString(locale: string): string {
-  switch (locale) {
-    case 'pt': return 'pt-BR';
-    case 'es': return 'es-ES';
-    case 'fr': return 'fr-FR';
-    case 'de': return 'de-DE';
-    default: return 'en-US';
-  }
-}
-
-function getWeekDays(locale: string): string[] {
-  const days: Record<string, string[]> = {
-    pt: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
-    es: ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
-    en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-    fr: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
-    de: ['S', 'M', 'D', 'M', 'D', 'F', 'S'],
-  };
-  return days[locale] || days.en!;
-}
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: { blocked: 'Ocupado', chosen: 'Escolhido', apply: '✓ Aplicar', reset: '↩ Voltar às datas originais' },
-    es: { blocked: 'Ocupado', chosen: 'Elegido', apply: '✓ Aplicar', reset: '↩ Volver a las fechas originales' },
-    en: { blocked: 'Booked', chosen: 'Chosen', apply: '✓ Apply', reset: '↩ Back to original dates' },
-    fr: { blocked: 'Occupé', chosen: 'Choisi', apply: '✓ Appliquer', reset: '↩ Revenir aux dates initiales' },
-    de: { blocked: 'Belegt', chosen: 'Gewählt', apply: '✓ Anwenden', reset: '↩ Zu ursprünglichen Daten zurück' },
-  };
-  return t[locale]?.[key] || key;
-}

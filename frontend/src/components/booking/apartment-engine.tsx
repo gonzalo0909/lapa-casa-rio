@@ -16,9 +16,10 @@
 
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import styles from './apartment-engine.module.css';
+import { Modal, ModalBody } from '../ui/modal';
 import { ApartmentCard } from './apartment-card';
 import { PaymentCountdown } from '../payment/payment-countdown';
 import { PaymentProcessor } from '../payment/payment-processor';
@@ -39,6 +40,10 @@ function toDs(d: Date): string {
 function parseDs(s: string): Date {
   const [y, m, d] = s.split('-') as [string, string, string];
   return new Date(Number(y), Number(m) - 1, Number(d));
+}
+/** ds está en formato YYYY-MM-DD, comparable lexicográficamente como fecha. */
+function isCarnivalDs(ds: string, ranges: Array<{ startDate: string; endDate: string }>): boolean {
+  return ranges.some((r) => ds >= r.startDate && ds <= r.endDate);
 }
 function fmtDate(ds: string | null, locale: string): string {
   if (!ds) { return ''; }
@@ -163,6 +168,21 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [carnivalRanges, setCarnivalRanges] = useState<Array<{ startDate: string; endDate: string }>>([]);
+
+  // Fechas de Carnaval (system_config.carnival_dates vía GET /availability/carnival-dates)
+  // para pintar las celdas del calendario -- falla en silencio: es un tinte
+  // anticipado, no bloquea la reserva (el multiplicador real de Carnaval sigue
+  // llegando correcto desde GET /availability/apartments una vez elegidas las fechas).
+  useEffect(() => {
+    let cancelled = false;
+    availabilityAPI.getCarnivalDates()
+      .then((res) => {
+        if (!cancelled) { setCarnivalRanges(res?.data?.dates ?? []); }
+      })
+      .catch(() => { /* tinte opcional, sin efecto sobre el precio real */ });
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Step 2: apartamentos ─────────────────────────────────────────
   const [apartments, setApartments] = useState<ApartmentAvailability[]>([]);
@@ -178,6 +198,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   // ── Step 4: pagamento ─────────────────────────────────────────────
   const [booking, setBooking] = useState<CreatedBooking | null>(null);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [paySuccessOpen, setPaySuccessOpen] = useState(true);
   const [isExpired, setIsExpired] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -250,8 +271,10 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       const inRng = hasEnd && s > (startDs as string) && s < (endDs as string);
       const isHov = !!(!checkOut && checkIn && hoverDs && s === hoverDs && hoverDs > checkIn);
       const season = !past ? seasonForDateStr(s) : null;
+      const isCarnival = !past && isCarnivalDs(s, carnivalRanges);
       let cls = styles.dayCell;
       if (past) { cls += ` ${styles.dayCellPast}`; }
+      else if (isCarnival) { cls += ` ${styles.dayCellCarnival}`; }
       else if (season?.name === 'alta') { cls += ` ${styles.dayCellAlta}`; }
       else if (season?.name === 'baixa') { cls += ` ${styles.dayCellBaixa}`; }
       if (isCin) { cls += ` ${styles.dayCellSelStart}${hasEnd ? ` ${styles.dayCellHasEnd}` : ''}`; }
@@ -799,15 +822,19 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         {step === 4 && booking && (
           <div>
             {paymentDone ? (
-              <div className={styles.paySuccess}>
-                <div className={styles.paySuccessIcon}>✅</div>
-                <div className={styles.paySuccessTitle}>{t('paymentReceived')}</div>
-                <div className={styles.paySuccessRef}>{booking.confirmationNumber}</div>
-                <div className={styles.paySuccessMsg}>
-                  {t('paymentSuccessLine1')}<br />{t('paymentSuccessLine2')}
-                  <br />📩 {t('paymentSuccessLine3')}
-                </div>
-              </div>
+              <Modal open={paySuccessOpen} onClose={() => setPaySuccessOpen(false)} size="sm" disableBackdropClick>
+                <ModalBody>
+                  <div className={styles.paySuccess}>
+                    <div className={styles.paySuccessIcon}>✅</div>
+                    <div className={styles.paySuccessTitle}>{t('paymentReceived')}</div>
+                    <div className={styles.paySuccessRef}>{booking.confirmationNumber}</div>
+                    <div className={styles.paySuccessMsg}>
+                      {t('paymentSuccessLine1')}<br />{t('paymentSuccessLine2')}
+                      <br />📩 {t('paymentSuccessLine3')}
+                    </div>
+                  </div>
+                </ModalBody>
+              </Modal>
             ) : isExpired ? (
               <div className={styles.errorBanner}>
                 A reserva expirou — as datas não estão mais retidas. Volte a tentar a reserva.

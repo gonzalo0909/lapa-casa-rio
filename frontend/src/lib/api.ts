@@ -277,6 +277,12 @@ export const availabilityAPI = {
    */
   checkApartments: (params: { checkIn: string; checkOut: string }) =>
     api.get(`/availability/apartments?checkIn=${params.checkIn}&checkOut=${params.checkOut}`),
+
+  /**
+   * Fechas de Carnaval (system_config.carnival_dates), públicas, para pintar
+   * el calendario del motor de Apartamentos antes de elegir fechas.
+   */
+  getCarnivalDates: () => api.get('/availability/carnival-dates'),
 };
 
 /**

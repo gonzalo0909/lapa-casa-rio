@@ -7,11 +7,13 @@
  * -- multiplicador y meses reales, no los del prototipo LCACOPIA (que usaba
  * fechas ficticias).
  *
- * Carnaval no se puede pintar acá: sus fechas viven en system_config
- * (moviles, cargadas en runtime) y no hay endpoint que las exponga al
- * frontend todavia. El multiplicador/temporada real de Carnaval sigue
+ * Carnaval no se pinta acá: sus fechas viven en system_config (moviles,
+ * cargadas en runtime), expuestas al frontend via
+ * GET /availability/carnival-dates. apartment-engine.tsx consulta ese
+ * endpoint aparte y aplica el tinte de Carnaval (dayCellCarnival) sobre las
+ * celdas del calendario. El multiplicador/temporada real de Carnaval sigue
  * llegando correcto desde GET /availability/apartments una vez elegidas
- * las fechas -- solo falta el tinte anticipado en el calendario.
+ * las fechas.
  */
 export type SeasonName = 'alta' | 'media' | 'baixa';
 

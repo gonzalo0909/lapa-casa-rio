@@ -17,6 +17,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import styles from './apartment-engine.module.css';
 import { ApartmentCard } from './apartment-card';
 import { PaymentCountdown } from '../payment/payment-countdown';
@@ -25,8 +26,9 @@ import { availabilityAPI, bookingAPI, handleAPIError } from '@/lib/api';
 import { seasonForDateStr, SEASONS, CARNAVAL_MULTIPLIER, CARNAVAL_MIN_NIGHTS } from '@/lib/apartment-seasons';
 import type { ApartmentAvailability } from '@/types/global';
 
-const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-const WDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+/** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
+ * mapeamento que o resto do site (ver date-selector.tsx). */
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
 const CHECKIN_TIMES = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'];
 
 type Step = 1 | 2 | 3 | 4;
@@ -38,10 +40,23 @@ function parseDs(s: string): Date {
   const [y, m, d] = s.split('-') as [string, string, string];
   return new Date(Number(y), Number(m) - 1, Number(d));
 }
-function fmtDate(ds: string | null): string {
+function fmtDate(ds: string | null, locale: string): string {
   if (!ds) { return ''; }
   const d = parseDs(ds);
-  return String(d.getDate()).padStart(2, '0') + ' ' + (MONTHS[d.getMonth()] ?? '').slice(0, 3) + ' ' + d.getFullYear();
+  const month = d.toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'short' });
+  return String(d.getDate()).padStart(2, '0') + ' ' + month + ' ' + d.getFullYear();
+}
+function monthYearLabel(y: number, m: number, locale: string): string {
+  const label = new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+function weekdayLabels(locale: string): string[] {
+  const bcp = BCP47[locale] ?? 'pt-BR';
+  const labels: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    labels.push(new Date(2023, 0, 1 + i).toLocaleDateString(bcp, { weekday: 'short' }));
+  }
+  return labels;
 }
 function todayDs(): string {
   return toDs(new Date());
@@ -134,6 +149,10 @@ interface ApartmentEngineProps {
 }
 
 export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' }) => {
+  const t = useTranslations('apartments');
+  const tc = useTranslations('common');
+  const wdays = useMemo(() => weekdayLabels(locale), [locale]);
+
   const [step, setStep] = useState<Step>(1);
 
   // ── Step 1: fechas ──────────────────────────────────────────────
@@ -151,7 +170,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [selectedApartment, setSelectedApartment] = useState<ApartmentAvailability | null>(null);
 
   // ── Step 3: resumo + huésped ──────────────────────────────────────
-  const [guestForm, setGuestForm] = useState<GuestForm>(EMPTY_FORM);
+  const [guestForm, setGuestForm] = useState<GuestForm>(() => ({ ...EMPTY_FORM, country: t('defaultCountry') }));
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [cancelOpen, setCancelOpen] = useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
@@ -255,8 +274,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     }
     return (
       <div className={styles.calMonth}>
-        <div className={styles.monthTitle}>{MONTHS[m]} {y}</div>
-        <div className={styles.wdayHeaders}>{WDAYS.map((w) => <span key={w} className={styles.wday}>{w}</span>)}</div>
+        <div className={styles.monthTitle}>{monthYearLabel(y, m, locale)}</div>
+        <div className={styles.wdayHeaders}>{wdays.map((w, i) => <span key={i} className={styles.wday}>{w}</span>)}</div>
         <div className={styles.dayCells} onMouseLeave={() => setHoverDs(null)}>{cells}</div>
       </div>
     );
@@ -316,7 +335,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
   const whatsappMsg = selectedApartment
-    ? encodeURIComponent(`Olá! Gostaria de reservar:\n• Apartamento: ${selectedApartment.name}\n• Check-in: ${fmtDate(checkIn)}\n• Check-out: ${fmtDate(checkOut)}\n• ${nights} noites\n• Total: R$ ${totalPrice.toLocaleString('pt-BR')}`)
+    ? encodeURIComponent(t('whatsappMessage', {
+        name: selectedApartment.name,
+        checkin: fmtDate(checkIn, locale),
+        checkout: fmtDate(checkOut, locale),
+        nights,
+        total: totalPrice.toLocaleString('pt-BR'),
+      }))
     : '';
 
   const handleReserve = async () => {
@@ -386,21 +411,31 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   };
 
   const STEP_LABELS: { n: Step; label: string }[] = [
-    { n: 1, label: 'Datas' }, { n: 2, label: 'Apartamento' }, { n: 3, label: 'Resumo' }, { n: 4, label: 'Pagamento' },
+    { n: 1, label: t('stepDates') }, { n: 2, label: t('stepApartment') }, { n: 3, label: t('stepSummary') }, { n: 4, label: t('stepPayment') },
   ];
+
+  function seasonShortLabel(seasonType: ApartmentAvailability['seasonType'] | undefined): string {
+    switch (seasonType) {
+      case 'carnaval': return t('seasonCarnaval');
+      case 'alta': return t('seasonAltaShort');
+      case 'baja': return t('seasonBaixaShort');
+      case 'media': return t('seasonMediaShort');
+      default: return '';
+    }
+  }
 
   return (
     <div className={styles.root}>
       {/* Hero */}
       <div className={styles.hero}>
-        <div className={styles.heroLocation}>Santa Teresa · Rio de Janeiro</div>
-        <div className={styles.heroBrand}>LAPA CASA <span>Apartamentos</span></div>
-        <p className={styles.heroSub}>Unidades privativas no coração do Rio — reserve direto, sem intermediários</p>
+        <div className={styles.heroLocation}>{t('heroLocation')}</div>
+        <div className={styles.heroBrand}>LAPA CASA <span>{t('heroApartmentsWord')}</span></div>
+        <p className={styles.heroSub}>{t('heroSubtitle')}</p>
       </div>
 
       <div className={styles.section}>
         {step > 1 && (
-          <button type="button" className={styles.backTop} onClick={goBack}>← Voltar</button>
+          <button type="button" className={styles.backTop} onClick={goBack}>← {tc('back')}</button>
         )}
 
         {/* Steps */}
@@ -422,13 +457,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
         {/* Notices */}
         <div className={styles.notices}>
-          <div className={styles.noticesTitle}>⚠️ Informações importantes</div>
+          <div className={styles.noticesTitle}>⚠️ {t('noticesTitle')}</div>
           <div className={styles.noticesGrid}>
-            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🔑</span><span>Check-in (entrada): <strong>14h às 22h</strong> — para chegar antes, reserve também o dia anterior</span></div>
-            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🚪</span><span>Check-out (saída): até as <strong>12h</strong> — para sair mais tarde, prefira reservar mais um dia</span></div>
-            <div className={styles.noticeItem}><span className={styles.noticeIcon}>📄</span><span>Envio de foto do documento <strong>obrigatório</strong>, sem exceção</span></div>
-            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🔞</span><span>Somente para <strong>maiores de 18 anos</strong></span></div>
-            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🚭</span><span><strong>Proibido fumar</strong> no apartamento e nas dependências do prédio</span></div>
+            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🔑</span><span>{t.rich('noticeCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🚪</span><span>{t.rich('noticeCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+            <div className={styles.noticeItem}><span className={styles.noticeIcon}>📄</span><span>{t.rich('noticeDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🔞</span><span>{t.rich('noticeAge', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+            <div className={styles.noticeItem}><span className={styles.noticeIcon}>🚭</span><span>{t.rich('noticeSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
           </div>
         </div>
 
@@ -437,8 +472,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           <div>
             <div className={styles.guestCounterWrap}>
               <div className={styles.guestCounterLabel}>
-                {guestCount} hóspede{guestCount !== 1 ? 's' : ''}
-                <small>Filtra apartamentos por capacidade</small>
+                {t('guestCount', { count: guestCount })}
+                <small>{t('guestCountHint')}</small>
               </div>
               <div className={styles.guestCounterBtns}>
                 <button type="button" className={styles.gcntBtn} disabled={guestCount <= 1} onClick={() => setGuestCount((c) => Math.max(1, c - 1))}>−</button>
@@ -448,10 +483,10 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             </div>
 
             <div className={styles.seasonLegend}>
-              <span className={`${styles.seasonChip} ${styles.seasonChipCarnaval}`}>🎊 Carnaval ×{CARNAVAL_MULTIPLIER.toFixed(1)}</span>
-              <span className={`${styles.seasonChip} ${styles.seasonChipAlta}`}>☀️ Alta ×{SEASONS.alta.multiplier.toFixed(1)}</span>
-              <span className={`${styles.seasonChip} ${styles.seasonChipMedia}`}>— Média ×{SEASONS.media.multiplier.toFixed(1)}</span>
-              <span className={`${styles.seasonChip} ${styles.seasonChipBaixa}`}>🌿 Baixa ×{SEASONS.baixa.multiplier.toFixed(1)}</span>
+              <span className={`${styles.seasonChip} ${styles.seasonChipCarnaval}`}>🎊 {t('seasonCarnaval')} ×{CARNAVAL_MULTIPLIER.toFixed(1)}</span>
+              <span className={`${styles.seasonChip} ${styles.seasonChipAlta}`}>☀️ {t('seasonAltaShort')} ×{SEASONS.alta.multiplier.toFixed(1)}</span>
+              <span className={`${styles.seasonChip} ${styles.seasonChipMedia}`}>— {t('seasonMediaShort')} ×{SEASONS.media.multiplier.toFixed(1)}</span>
+              <span className={`${styles.seasonChip} ${styles.seasonChipBaixa}`}>🌿 {t('seasonBaixaShort')} ×{SEASONS.baixa.multiplier.toFixed(1)}</span>
             </div>
 
             <div className={styles.calWrapper}>
@@ -465,16 +500,21 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
             {minNightsWarn && seasonHint && (
               <div className={styles.carnivalWarn}>
-                📅 <strong>{seasonHint.label}:</strong> estadia mínima de <strong>{seasonHint.minNights} noites</strong>. O Carnaval (temporada dinâmica) pode exigir {CARNAVAL_MIN_NIGHTS} noites — a disponibilidade real se confirma no próximo passo.
+                📅 {t.rich('minNightsWarning', {
+                  b: (chunks) => <strong>{chunks}</strong>,
+                  seasonLabel: seasonHint.name === 'alta' ? t('seasonAlta') : seasonHint.name === 'baixa' ? t('seasonBaja') : t('seasonMedia'),
+                  nights: seasonHint.minNights,
+                  carnavalNights: CARNAVAL_MIN_NIGHTS,
+                })}
               </div>
             )}
 
             <div className={styles.actions} style={{ marginTop: '1.25rem' }}>
               <div className={`${styles.dateInfo} ${!checkIn ? styles.dateInfoHint : ''}`}>
-                {!checkIn ? 'Selecione a data de entrada' : !checkOut ? (
-                  <><strong>Entrada:</strong> {fmtDate(checkIn)} — selecione a saída</>
+                {!checkIn ? t('selectCheckinDate') : !checkOut ? (
+                  t.rich('checkinSelectedHint', { b: (chunks) => <strong>{chunks}</strong>, date: fmtDate(checkIn, locale) })
                 ) : (
-                  <><strong>{fmtDate(checkIn)}</strong> → <strong>{fmtDate(checkOut)}</strong> · <strong>{nights}</strong> noite{nights !== 1 ? 's' : ''}</>
+                  <><strong>{fmtDate(checkIn, locale)}</strong> → <strong>{fmtDate(checkOut, locale)}</strong> · <strong>{nights}</strong> {nights !== 1 ? t('nights') : t('night')}</>
                 )}
               </div>
               <button
@@ -483,7 +523,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                 onClick={handleDatesContinue}
                 disabled={!checkIn || !checkOut}
               >
-                Continuar →
+                {tc('continue')} →
               </button>
             </div>
           </div>
@@ -493,20 +533,20 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         {step === 2 && (
           <div>
             {isLoadingApartments ? (
-              <div className={styles.spinnerWrap}>Carregando…</div>
+              <div className={styles.spinnerWrap}>{tc('loading')}</div>
             ) : (
               <>
                 <div className={styles.aptHeader}>
                   <div className={styles.datePill}>
-                    <strong>{fmtDate(checkIn)}</strong> → <strong>{fmtDate(checkOut)}</strong> · {nights} noite{nights !== 1 ? 's' : ''}
+                    <strong>{fmtDate(checkIn, locale)}</strong> → <strong>{fmtDate(checkOut, locale)}</strong> · {nights} {nights !== 1 ? t('nights') : t('night')}
                     {gridSeasonType && gridSeasonType !== 'media' && gridSeasonMultiplier !== 1 && (
                       <span className={`${styles.cardSeasonBadge} ${gridSeasonType === 'carnaval' ? styles.badgeCarnaval : gridSeasonType === 'alta' ? styles.badgeAlta : styles.badgeBaixa}`}>
-                        {gridSeasonType === 'carnaval' ? '🎊 Carnaval' : gridSeasonType === 'alta' ? '☀️ Alta' : '🌿 Baixa'}
+                        {gridSeasonType === 'carnaval' ? '🎊 ' : gridSeasonType === 'alta' ? '☀️ ' : '🌿 '}{seasonShortLabel(gridSeasonType)}
                       </span>
                     )}
                   </div>
-                  <h2>Escolha seu apartamento</h2>
-                  <p>{availableCount} apartamento{availableCount !== 1 ? 's' : ''} disponíve{availableCount !== 1 ? 'is' : 'l'} para {guestCount} hóspede{guestCount !== 1 ? 's' : ''}</p>
+                  <h2>{t('chooseApartment')}</h2>
+                  <p>{t('availableForGuests', { count: availableCount, guests: guestCount })}</p>
                 </div>
 
                 <div className={styles.aptGrid}>
@@ -526,7 +566,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                 </div>
 
                 <div className={styles.actions}>
-                  <button type="button" className={styles.btnBack} onClick={goBack}>← Voltar</button>
+                  <button type="button" className={styles.btnBack} onClick={goBack}>← {tc('back')}</button>
                 </div>
               </>
             )}
@@ -537,7 +577,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                   <strong>{selectedApartment.name}</strong> · R$ <strong style={{ color: 'var(--accent)' }}>{selectedApartment.priceTotal.toLocaleString('pt-BR')}</strong>
                 </div>
                 <button type="button" className={styles.stickyBarBtn} onClick={() => { setStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-                  Continuar →
+                  {tc('continue')} →
                 </button>
               </div>
             )}
@@ -548,142 +588,142 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         {step === 3 && selectedApartment && (
           <div>
             <div className={styles.otaBanner}>
-              🏷️ Reservando direto você paga <strong>R$ {otaSaving.toLocaleString('pt-BR')} a menos</strong> do que pelo Booking.com ou Airbnb — sem taxas de intermediário.
+              🏷️ {t.rich('otaBanner', { b: (chunks) => <strong>{chunks}</strong>, saving: otaSaving.toLocaleString('pt-BR') })}
             </div>
 
             <div className={styles.summaryCard}>
-              <h3>Resumo da reserva</h3>
+              <h3>{t('bookingSummary')}</h3>
               <div className={styles.summaryRows}>
-                <div className={styles.summaryRow}><span>Apartamento</span><span className={styles.summaryRowBold}>{selectedApartment.name}</span></div>
-                <div className={styles.summaryRow}><span>Hóspedes</span><span>{guestCount} hóspede{guestCount !== 1 ? 's' : ''}</span></div>
-                <div className={styles.summaryRow}><span>Check-in</span><span>{fmtDate(checkIn)}</span></div>
-                <div className={styles.summaryRow}><span>Check-out</span><span>{fmtDate(checkOut)}</span></div>
-                <div className={styles.summaryRow}><span>Noites</span><span>{nights}</span></div>
+                <div className={styles.summaryRow}><span>{t('apartment')}</span><span className={styles.summaryRowBold}>{selectedApartment.name}</span></div>
+                <div className={styles.summaryRow}><span>{t('guests')}</span><span>{t('guestCount', { count: guestCount })}</span></div>
+                <div className={styles.summaryRow}><span>{t('checkIn')}</span><span>{fmtDate(checkIn, locale)}</span></div>
+                <div className={styles.summaryRow}><span>{t('checkOut')}</span><span>{fmtDate(checkOut, locale)}</span></div>
+                <div className={styles.summaryRow}><span>{t('nights2')}</span><span>{nights}</span></div>
                 {selectedApartment.seasonType !== 'media' && (
                   <div className={styles.summaryRow}>
-                    <span>Temporada</span>
+                    <span>{t('season')}</span>
                     <span className={styles.summaryRowBold}>
-                      {selectedApartment.seasonType === 'carnaval' ? '🎊 Carnaval' : selectedApartment.seasonType === 'alta' ? '☀️ Alta' : '🌿 Baixa'} ×{selectedApartment.seasonMultiplier}
+                      {selectedApartment.seasonType === 'carnaval' ? '🎊 ' : selectedApartment.seasonType === 'alta' ? '☀️ ' : '🌿 '}{seasonShortLabel(selectedApartment.seasonType)} ×{selectedApartment.seasonMultiplier}
                     </span>
                   </div>
                 )}
-                <div className={`${styles.summaryRow} ${styles.totalRow}`}><span>Total</span><span className={styles.totalPrice}>R$ {totalPrice.toLocaleString('pt-BR')}</span></div>
+                <div className={`${styles.summaryRow} ${styles.totalRow}`}><span>{t('total')}</span><span className={styles.totalPrice}>R$ {totalPrice.toLocaleString('pt-BR')}</span></div>
               </div>
             </div>
 
             <div className={styles.addrTeaser}>
               <div className={styles.addrIcon}>📍</div>
               <div>
-                <div className={styles.addrLabel}>Localização</div>
-                <div className={styles.addrNeighborhood}>Rio de Janeiro, Brasil</div>
-                <div className={styles.addrNote}>O endereço exato é enviado por e-mail após a confirmação do pagamento</div>
+                <div className={styles.addrLabel}>{t('location')}</div>
+                <div className={styles.addrNeighborhood}>{t('locationValue')}</div>
+                <div className={styles.addrNote}>{t('addressNote')}</div>
               </div>
             </div>
 
             <div className={styles.guestForm}>
-              <h3>Dados do hóspede</h3>
+              <h3>{t('guestDataTitle')}</h3>
               <div className={styles.formGrid}>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-name">Nome completo <span className={styles.req}>*</span></label>
+                  <label htmlFor="apt-guest-name">{t('fullNameLabel')} <span className={styles.req}>*</span></label>
                   <input
                     id="apt-guest-name"
-                    type="text" placeholder="Seu nome completo" value={guestForm.fullName}
+                    type="text" placeholder={t('fullNamePlaceholder')} value={guestForm.fullName}
                     onChange={(e) => updateField('fullName', e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, fullName: true }))}
+                    onBlur={() => setTouched((tt) => ({ ...tt, fullName: true }))}
                     className={touched.fullName && !guestForm.fullName.trim() ? styles.inputInvalid : ''}
                   />
                 </div>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-email">E-mail <span className={styles.req}>*</span></label>
+                  <label htmlFor="apt-guest-email">{t('emailLabel')} <span className={styles.req}>*</span></label>
                   <input
                     id="apt-guest-email"
-                    type="email" placeholder="seu@email.com" autoComplete="off" value={guestForm.email}
+                    type="email" placeholder={t('emailPlaceholder')} autoComplete="off" value={guestForm.email}
                     onChange={(e) => updateField('email', e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                    onBlur={() => setTouched((tt) => ({ ...tt, email: true }))}
                     onPaste={(e) => e.preventDefault()}
                     onCut={(e) => e.preventDefault()}
                     className={emailOk === true ? styles.inputValid : touched.email && emailOk === false ? styles.inputInvalid : ''}
                   />
                   {touched.email && guestForm.email && (
                     <span className={`${styles.feedback} ${emailOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                      {emailOk ? '✓ E-mail válido' : '✗ Formato inválido — ex: nome@dominio.com'}
+                      {emailOk ? `✓ ${t('emailValid')}` : `✗ ${t('emailInvalid')}`}
                     </span>
                   )}
                 </div>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-email-confirm">Confirmar e-mail <span className={styles.req}>*</span> <span style={{ fontSize: '.65rem', fontWeight: 400, color: 'var(--fg-muted)' }}>(digite manualmente)</span></label>
+                  <label htmlFor="apt-guest-email-confirm">{t('confirmEmailLabel')} <span className={styles.req}>*</span> <span style={{ fontSize: '.65rem', fontWeight: 400, color: 'var(--fg-muted)' }}>{t('confirmEmailHint')}</span></label>
                   <input
                     id="apt-guest-email-confirm"
-                    type="email" placeholder="Repita o e-mail" autoComplete="off" value={guestForm.confirmEmail}
+                    type="email" placeholder={t('confirmEmailPlaceholder')} autoComplete="off" value={guestForm.confirmEmail}
                     onChange={(e) => updateField('confirmEmail', e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, confirmEmail: true }))}
+                    onBlur={() => setTouched((tt) => ({ ...tt, confirmEmail: true }))}
                     onPaste={(e) => e.preventDefault()}
                     onCut={(e) => e.preventDefault()}
                     className={confirmEmailOk === true ? styles.inputValid : touched.confirmEmail && confirmEmailOk === false ? styles.inputInvalid : ''}
                   />
                   {touched.confirmEmail && guestForm.confirmEmail && (
                     <span className={`${styles.feedback} ${confirmEmailOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                      {confirmEmailOk ? '✓ E-mails coincidem' : '✗ E-mails não coincidem'}
+                      {confirmEmailOk ? `✓ ${t('emailsMatch')}` : `✗ ${t('emailsMismatch')}`}
                     </span>
                   )}
                 </div>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-phone">Telefone / WhatsApp <span className={styles.req}>*</span></label>
+                  <label htmlFor="apt-guest-phone">{t('phoneLabel')} <span className={styles.req}>*</span></label>
                   <input
                     id="apt-guest-phone"
-                    type="tel" placeholder="+55 21 9 9999-9999" autoComplete="tel" maxLength={20} inputMode="numeric"
+                    type="tel" placeholder={t('phonePlaceholder')} autoComplete="tel" maxLength={20} inputMode="numeric"
                     value={guestForm.phone}
                     onChange={(e) => updateField('phone', formatBRPhone(e.target.value))}
-                    onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+                    onBlur={() => setTouched((tt) => ({ ...tt, phone: true }))}
                     className={phoneOk === true ? styles.inputValid : touched.phone && phoneOk === false ? styles.inputInvalid : ''}
                   />
                   {touched.phone && guestForm.phone && (
                     <span className={`${styles.feedback} ${phoneOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                      {phoneOk ? '✓ Telefone válido' : '✗ Número muito curto — inclua DDD e número completo'}
+                      {phoneOk ? `✓ ${t('phoneValid')}` : `✗ ${t('phoneInvalid')}`}
                     </span>
                   )}
                 </div>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-country">País <span className={styles.req}>*</span></label>
-                  <input id="apt-guest-country" type="text" placeholder="Brasil" value={guestForm.country} onChange={(e) => updateField('country', e.target.value)} />
+                  <label htmlFor="apt-guest-country">{t('countryLabel')} <span className={styles.req}>*</span></label>
+                  <input id="apt-guest-country" type="text" placeholder={t('defaultCountry')} value={guestForm.country} onChange={(e) => updateField('country', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-document">Documento (CPF / Passaporte) <span className={styles.req}>*</span></label>
+                  <label htmlFor="apt-guest-document">{t('documentLabel')} <span className={styles.req}>*</span></label>
                   <input
                     id="apt-guest-document"
                     type="text" placeholder="000.000.000-00" maxLength={14} autoComplete="off"
                     value={guestForm.document}
                     onChange={(e) => updateField('document', /[a-zA-Z]/.test(e.target.value) ? e.target.value : formatCPF(e.target.value))}
-                    onBlur={() => setTouched((t) => ({ ...t, document: true }))}
+                    onBlur={() => setTouched((tt) => ({ ...tt, document: true }))}
                     className={cpfOk === true ? styles.inputValid : touched.document && cpfOk === false ? styles.inputInvalid : ''}
                   />
                   {touched.document && guestForm.document && (
                     <span className={`${styles.feedback} ${cpfOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                      {cpfHasLetter ? '✓ Passaporte aceito' : cpfDigits.length === 11 ? (cpfOk ? '✓ CPF válido' : '✗ CPF inválido — verifique o número') : ''}
+                      {cpfHasLetter ? `✓ ${t('passportAccepted')}` : cpfDigits.length === 11 ? (cpfOk ? `✓ ${t('cpfValid')}` : `✗ ${t('cpfInvalid')}`) : ''}
                     </span>
                   )}
                 </div>
                 <div className={styles.formField}>
-                  <label htmlFor="apt-guest-arrival">Horário de chegada <span className={styles.req}>*</span></label>
+                  <label htmlFor="apt-guest-arrival">{t('arrivalTimeLabel')} <span className={styles.req}>*</span></label>
                   <select
                     id="apt-guest-arrival"
                     value={guestForm.arrivalTime}
                     onChange={(e) => updateField('arrivalTime', e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, arrivalTime: true }))}
+                    onBlur={() => setTouched((tt) => ({ ...tt, arrivalTime: true }))}
                     className={touched.arrivalTime && !guestForm.arrivalTime ? styles.inputInvalid : ''}
                   >
-                    <option value="" disabled>Selecione (14h–22h)</option>
-                    {CHECKIN_TIMES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    <option value="" disabled>{t('arrivalTimeSelectPlaceholder')}</option>
+                    {CHECKIN_TIMES.map((ct) => <option key={ct} value={ct}>{ct}</option>)}
                   </select>
                   {touched.arrivalTime && guestForm.arrivalTime && (
-                    <span className={`${styles.feedback} ${styles.feedbackOk}`}>✓ Horário selecionado</span>
+                    <span className={`${styles.feedback} ${styles.feedbackOk}`}>✓ {t('arrivalTimeSelected')}</span>
                   )}
                 </div>
                 <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                  <label htmlFor="apt-guest-requests">Solicitações especiais <span className={styles.opt}>(opcional)</span></label>
+                  <label htmlFor="apt-guest-requests">{t('specialRequestsLabel')} <span className={styles.opt}>{t('optionalHint')}</span></label>
                   <textarea
                     id="apt-guest-requests"
-                    placeholder="Alguma preferência ou necessidade especial?"
+                    placeholder={t('specialRequestsPlaceholder')}
                     value={guestForm.specialRequests}
                     onChange={(e) => updateField('specialRequests', e.target.value)}
                   />
@@ -691,33 +731,33 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
               </div>
 
               <div className={styles.rulesConfirm}>
-                <div className={styles.rulesConfirmTitle}>⚠️ Ao confirmar, você declara estar ciente de que:</div>
+                <div className={styles.rulesConfirmTitle}>⚠️ {t('rulesConfirmTitle')}</div>
                 <div className={styles.rulesConfirmList}>
-                  <div className={styles.rulesConfirmItem}><span>🔑</span><span>Check-in (entrada): das <strong>14h às 22h</strong>. Se precisar chegar mais cedo, o ideal é reservar também o dia anterior.</span></div>
-                  <div className={styles.rulesConfirmItem}><span>🚪</span><span>Check-out (saída): até as <strong>12h</strong>. Para sair mais tarde, prefira reservar mais um dia.</span></div>
-                  <div className={styles.rulesConfirmItem}><span>📄</span><span>O envio de foto do documento de identificação é <strong>obrigatório</strong> antes do check-in, sem exceção.</span></div>
-                  <div className={styles.rulesConfirmItem}><span>🔞</span><span>As unidades são destinadas exclusivamente a <strong>maiores de 18 anos</strong>.</span></div>
-                  <div className={styles.rulesConfirmItem}><span>🚭</span><span>É <strong>proibido fumar</strong> no apartamento e em qualquer dependência do prédio.</span></div>
+                  <div className={styles.rulesConfirmItem}><span>🔑</span><span>{t.rich('ruleCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+                  <div className={styles.rulesConfirmItem}><span>🚪</span><span>{t.rich('ruleCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+                  <div className={styles.rulesConfirmItem}><span>📄</span><span>{t.rich('ruleDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+                  <div className={styles.rulesConfirmItem}><span>🔞</span><span>{t.rich('ruleAge', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+                  <div className={styles.rulesConfirmItem}><span>🚭</span><span>{t.rich('ruleSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
                 </div>
               </div>
 
               <div className={styles.paymentNote}>
-                <div className={styles.paymentNoteTitle}>💳 Para confirmar sua reserva</div>
-                <div className={styles.depositPill}>🔒 Depósito de {depositPct}%{isCarnaval ? ' (Carnaval)' : ''} — restante pago no check-in</div>
+                <div className={styles.paymentNoteTitle}>💳 {t('paymentNoteTitle')}</div>
+                <div className={styles.depositPill}>🔒 {isCarnaval ? t('depositPillCarnaval', { pct: depositPct }) : t('depositPill', { pct: depositPct })}</div>
                 <div className={styles.paymentMethods}>
                   <div className={`${styles.paymentMethod} ${styles.paymentMethodPix}`}>
                     <span className={styles.pmIcon}>⚡</span>
                     <div>
                       <div className={styles.pmName}>PIX</div>
-                      <div className={styles.pmDetail}>Depósito: <strong>R$ {depositAmount.toLocaleString('pt-BR')}</strong> · confirmação imediata</div>
+                      <div className={styles.pmDetail}>{t.rich('pixDepositDetail', { b: (chunks) => <strong>{chunks}</strong>, amount: depositAmount.toLocaleString('pt-BR') })}</div>
                     </div>
-                    <span className={`${styles.pmTag} ${styles.pmTagRecommended}`}>⚡ Aprovação imediata</span>
+                    <span className={`${styles.pmTag} ${styles.pmTagRecommended}`}>⚡ {t('instantApproval')}</span>
                   </div>
                   <div className={`${styles.paymentMethod} ${styles.paymentMethodCard}`}>
                     <span className={styles.pmIcon}>💳</span>
                     <div>
-                      <div className={styles.pmName}>Cartão de crédito</div>
-                      <div className={styles.pmDetail}>Depósito: R$ {depositAmount.toLocaleString('pt-BR')}</div>
+                      <div className={styles.pmName}>{t('creditCard')}</div>
+                      <div className={styles.pmDetail}>{t('cardDepositDetail', { amount: depositAmount.toLocaleString('pt-BR') })}</div>
                     </div>
                   </div>
                 </div>
@@ -725,32 +765,32 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
               <div className={styles.cancelPolicy}>
                 <button type="button" className={styles.cancelPolicyHeader} onClick={() => setCancelOpen((v) => !v)}>
-                  <span className={styles.cancelPolicyTitle}>🔄 Política de cancelamento</span>
+                  <span className={styles.cancelPolicyTitle}>🔄 {t('cancelPolicyTitle')}</span>
                   <span className={`${styles.cancelPolicyChevron} ${cancelOpen ? styles.cancelPolicyChevronOpen : ''}`}>▼</span>
                 </button>
                 {cancelOpen && (
                   <div className={styles.cancelPolicyBody}>
                     <div className={styles.cancelRows}>
-                      <div className={styles.cancelRow}><span className={`${styles.cancelBadge} ${styles.cancelBadgeGreen}`}>✓ Gratuito</span><span>Cancelamento com mais de <strong>7 dias</strong> de antecedência — reembolso integral</span></div>
-                      <div className={styles.cancelRow}><span className={`${styles.cancelBadge} ${styles.cancelBadgeAmber}`}>50%</span><span>Cancelamento entre <strong>2 e 7 dias</strong> antes do check-in — reembolso de 50%</span></div>
-                      <div className={styles.cancelRow}><span className={`${styles.cancelBadge} ${styles.cancelBadgeRed}`}>✗ Sem reembolso</span><span>Cancelamento com menos de <strong>48h</strong> ou no-show</span></div>
+                      <div className={styles.cancelRow}><span className={`${styles.cancelBadge} ${styles.cancelBadgeGreen}`}>✓ {t('cancelFullBadge')}</span><span>{t.rich('cancelFull', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+                      <div className={styles.cancelRow}><span className={`${styles.cancelBadge} ${styles.cancelBadgeAmber}`}>50%</span><span>{t.rich('cancelPartial', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
+                      <div className={styles.cancelRow}><span className={`${styles.cancelBadge} ${styles.cancelBadgeRed}`}>✗ {t('cancelNoneBadge')}</span><span>{t.rich('cancelNone', { b: (chunks) => <strong>{chunks}</strong> })}</span></div>
                     </div>
                   </div>
                 )}
               </div>
 
               <button type="button" className={styles.btnReserve} onClick={handleReserve} disabled={isCreatingBooking}>
-                {isCreatingBooking ? 'Criando reserva…' : 'Confirmar e ir para pagamento →'}
+                {isCreatingBooking ? t('creatingBooking') : `${t('confirmAndPay')} →`}
               </button>
               {whatsappNumber && (
                 <a className={styles.btnWhatsapp} href={`https://wa.me/${whatsappNumber}?text=${whatsappMsg}`} target="_blank" rel="noopener noreferrer">
-                  💬 Confirmar via WhatsApp
+                  💬 {t('confirmViaWhatsapp')}
                 </a>
               )}
             </div>
 
             <div className={styles.actions}>
-              <button type="button" className={styles.btnBack} onClick={goBack}>← Voltar ao passo 2 (Apartamentos)</button>
+              <button type="button" className={styles.btnBack} onClick={goBack}>← {t('backToStep', { n: 2, label: t('stepApartment') })}</button>
             </div>
           </div>
         )}
@@ -761,11 +801,11 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             {paymentDone ? (
               <div className={styles.paySuccess}>
                 <div className={styles.paySuccessIcon}>✅</div>
-                <div className={styles.paySuccessTitle}>Pagamento recebido!</div>
+                <div className={styles.paySuccessTitle}>{t('paymentReceived')}</div>
                 <div className={styles.paySuccessRef}>{booking.confirmationNumber}</div>
                 <div className={styles.paySuccessMsg}>
-                  Sua reserva está confirmada.<br />Você receberá a confirmação por e-mail em breve.
-                  <br />📩 Verifique sua caixa de entrada — incluindo spam
+                  {t('paymentSuccessLine1')}<br />{t('paymentSuccessLine2')}
+                  <br />📩 {t('paymentSuccessLine3')}
                 </div>
               </div>
             ) : isExpired ? (
@@ -787,7 +827,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                   onSuccess={() => setPaymentDone(true)}
                 />
                 <div className={styles.actions} style={{ marginTop: '1.5rem' }}>
-                  <button type="button" className={styles.btnBack} onClick={goBack}>← Voltar ao passo 3 (Resumo)</button>
+                  <button type="button" className={styles.btnBack} onClick={goBack}>← {t('backToStep', { n: 3, label: t('stepSummary') })}</button>
                 </div>
               </>
             )}

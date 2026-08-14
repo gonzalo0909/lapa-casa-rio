@@ -82,7 +82,7 @@ export const useApartmentStore = create<ApartmentState>((set) => ({
     const response = await bookingAPI.create(payload);
     const data = response?.data ?? response;
     const reservationId = data?.id ?? data?.reservationId ?? data?.booking?.id;
-    if (!reservationId) throw new Error('No se recibió ID de reserva del servidor');
+    if (!reservationId) { throw new Error('No se recibió ID de reserva del servidor'); }
 
     return reservationId;
   },

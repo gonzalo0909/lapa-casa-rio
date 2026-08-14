@@ -81,11 +81,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const roomImage = getRoomImage(room.type, room.isFlexible);
 
   const handleIncrement = useCallback(() => {
-    if (selectedBeds < room.availableBeds) onSelectBeds(selectedBeds + 1);
+    if (selectedBeds < room.availableBeds) { onSelectBeds(selectedBeds + 1); }
   }, [selectedBeds, room.availableBeds, onSelectBeds]);
 
   const handleDecrement = useCallback(() => {
-    if (selectedBeds > 0) onSelectBeds(selectedBeds - 1);
+    if (selectedBeds > 0) { onSelectBeds(selectedBeds - 1); }
   }, [selectedBeds, onSelectBeds]);
 
   const openManualMode = useCallback(async () => {
@@ -127,16 +127,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   }, [onSelectBeds]);
 
   const getRoomIcon = (type: string, isFlexible: boolean) => {
-    if (isFlexible) return '🔄';
-    if (type === 'female') return '👩';
-    if (type === 'male') return '👨';
+    if (isFlexible) { return '🔄'; }
+    if (type === 'female') { return '👩'; }
+    if (type === 'male') { return '👨'; }
     return '👥';
   };
 
   const getRoomTypeLabel = (type: string, isFlexible: boolean) => {
-    if (isFlexible) return t('flexible');
-    if (type === 'female') return t('female');
-    if (type === 'male') return t('male');
+    if (isFlexible) { return t('flexible'); }
+    if (type === 'female') { return t('female'); }
+    if (type === 'male') { return t('male'); }
     return t('mixed');
   };
 

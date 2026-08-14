@@ -2,14 +2,20 @@
 
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Calendar } from './calendar';
 import { DateRangePicker } from './date-range-picker';
 import { SeasonIndicator } from './season-indicator';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
+import { availabilityAPI } from '@/lib/api';
 import type { DateRange } from '@/types/global';
+
+interface CalendarDay {
+  date: string;
+  availableBeds: number;
+}
 
 /**
  * DateSelector Component
@@ -60,6 +66,41 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   const t = useTranslations('dateSelector');
   const [mode, setMode] = useState<'calendar' | 'manual'>('calendar');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [disabledDates, setDisabledDates] = useState<Date[]>([]);
+  const loadedMonthsRef = useRef<Set<string>>(new Set());
+
+  // Fuente real de fechas bloqueadas: GET /availability/calendar trae la
+  // ocupación diaria del mes -- un día sin camas libres se deshabilita en
+  // el calendario. Se cachea por mes (loadedMonthsRef) para no repetir la
+  // consulta cada vez que el huésped vuelve a un mes ya visto.
+  const handleMonthChange = useCallback((month: Date) => {
+    const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+    if (loadedMonthsRef.current.has(monthKey)) {
+      return;
+    }
+    loadedMonthsRef.current.add(monthKey);
+
+    availabilityAPI
+      .getCalendar({ month: monthKey })
+      .then((response) => {
+        const days: CalendarDay[] = response.data?.days ?? [];
+        const fullyBooked = days
+          .filter((d) => d.availableBeds <= 0)
+          .map((d) => {
+            const [y, m, dd] = d.date.split('-').map(Number);
+            return new Date(y!, m! - 1, dd!);
+          });
+        if (fullyBooked.length > 0) {
+          setDisabledDates((prev) => [...prev, ...fullyBooked]);
+        }
+      })
+      .catch(() => {
+        // Si falla, el calendario simplemente no marca ese mes como
+        // bloqueado -- la disponibilidad real igual se valida en el
+        // siguiente paso (checkAvailability), así que no es bloqueante.
+        loadedMonthsRef.current.delete(monthKey);
+      });
+  }, []);
 
   const handleDateChange = useCallback((newRange: DateRange) => {
     setLocalError(null);
@@ -149,6 +190,8 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
           locale={locale}
           minDate={tomorrowAtMidnight()}
           maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
+          disabledDates={disabledDates}
+          onMonthChange={handleMonthChange}
         />
       ) : (
         <DateRangePicker

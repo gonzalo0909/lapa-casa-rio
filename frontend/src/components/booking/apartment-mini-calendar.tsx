@@ -3,11 +3,25 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
 
-const MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-const WDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+/** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
+ * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+
+function monthShortLabel(y: number, m: number, locale: string): string {
+  return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'short' });
+}
+function weekdayNarrowLabels(locale: string): string[] {
+  const bcp = BCP47[locale] ?? 'pt-BR';
+  const labels: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    labels.push(new Date(2023, 0, 1 + i).toLocaleDateString(bcp, { weekday: 'narrow' }));
+  }
+  return labels;
+}
 
 interface ApartmentMiniCalendarProps {
   apartmentId: string;
@@ -23,10 +37,10 @@ function parseDs(s: string): Date {
   const [y, m, d] = s.split('-') as [string, string, string];
   return new Date(Number(y), Number(m) - 1, Number(d));
 }
-function fmtShort(ds: string | null): string {
+function fmtShort(ds: string | null, locale: string): string {
   if (!ds) { return ''; }
   const d = parseDs(ds);
-  return String(d.getDate()).padStart(2, '0') + ' ' + MONTHS_SHORT[d.getMonth()];
+  return String(d.getDate()).padStart(2, '0') + ' ' + monthShortLabel(d.getFullYear(), d.getMonth(), locale);
 }
 function todayDs(): string {
   return toDs(new Date());
@@ -73,6 +87,10 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   globalCheckOut,
   onApply,
 }) => {
+  const t = useTranslations('apartments');
+  const tc = useTranslations('common');
+  const locale = useLocale();
+  const wdays = useMemo(() => weekdayNarrowLabels(locale), [locale]);
   const [cin, setCin] = useState<string | null>(toDs(globalCheckIn));
   const [cout, setCout] = useState<string | null>(toDs(globalCheckOut));
   const [checking, setChecking] = useState(false);
@@ -134,18 +152,18 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     <div className={styles.aptMiniCal}>
       <div className={styles.calMonths} style={{ gap: '1rem' }}>
         <div>
-          <div className={styles.miniMonthTitle}>{MONTHS_SHORT[baseMonth.m]} {baseMonth.y}</div>
+          <div className={styles.miniMonthTitle}>{monthShortLabel(baseMonth.y, baseMonth.m, locale)} {baseMonth.y}</div>
           <div className={styles.miniWdayHeaders}>
-            {WDAYS.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
+            {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
           </div>
           <div className={styles.miniDayCells}>
             {monthCells(baseMonth.y, baseMonth.m, cin, cout, handleDayClick)}
           </div>
         </div>
         <div>
-          <div className={styles.miniMonthTitle}>{MONTHS_SHORT[nextMonth.m]} {nextMonth.y}</div>
+          <div className={styles.miniMonthTitle}>{monthShortLabel(nextMonth.y, nextMonth.m, locale)} {nextMonth.y}</div>
           <div className={styles.miniWdayHeaders}>
-            {WDAYS.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
+            {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
           </div>
           <div className={styles.miniDayCells}>
             {monthCells(nextMonth.y, nextMonth.m, cin, cout, handleDayClick)}
@@ -155,34 +173,34 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
       {cin && cout ? (
         <div className={styles.miniApplyBar}>
-          <span>{fmtShort(cin)} → {fmtShort(cout)} · {nights} noite{nights !== 1 ? 's' : ''}</span>
+          <span>{fmtShort(cin, locale)} → {fmtShort(cout, locale)} · {nights} {nights !== 1 ? t('nights') : t('night')}</span>
           <button type="button" className={styles.miniApplyBtn} onClick={handleApply} disabled={checking}>
-            {checking ? 'Verificando…' : '✓ Aplicar'}
+            {checking ? t('checking') : `✓ ${tc('apply')}`}
           </button>
         </div>
       ) : (
         <div className={`${styles.miniApplyBar} ${styles.miniApplyHint}`}>
-          {cin ? 'Selecione a data de saída' : 'Selecione a data de entrada'}
+          {cin ? t('selectCheckoutDate') : t('selectCheckinDate')}
         </div>
       )}
 
       {result && !result.available && (
         <div style={{ fontSize: '.68rem', color: '#991B1B', textAlign: 'center', marginTop: '.35rem' }}>
-          ⚠️ Este apartamento está ocupado nessas datas — outros podem estar disponíveis
+          ⚠️ {t('apartmentOccupied')}
         </div>
       )}
 
       {changed && (
         <button type="button" className={styles.miniResetLink} onClick={handleReset}>
-          ↩ Voltar às datas originais ({fmtShort(toDs(globalCheckIn))} → {fmtShort(toDs(globalCheckOut))})
+          ↩ {t('backToOriginalDates', { from: fmtShort(toDs(globalCheckIn), locale), to: fmtShort(toDs(globalCheckOut), locale) })}
         </button>
       )}
 
       <div className={styles.miniCalLegend}>
         <span className={styles.miniLegendDot} style={{ background: 'var(--primary)' }} />
-        <span>Entrada/Saída</span>
+        <span>{t('checkinCheckoutLegend')}</span>
         <span className={styles.miniLegendDot} style={{ background: 'var(--primary-soft)', border: '1px solid var(--primary)' }} />
-        <span>Período</span>
+        <span>{t('periodLegend')}</span>
       </div>
     </div>
   );

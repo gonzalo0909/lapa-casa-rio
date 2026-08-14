@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import styles from './apartment-engine.module.css';
 import { ApartmentMiniCalendar } from './apartment-mini-calendar';
 import type { ApartmentAvailability } from '@/types/global';
@@ -41,11 +42,11 @@ function seasonBadgeClass(seasonType: ApartmentAvailability['seasonType']): stri
     default: return '';
   }
 }
-function seasonLabel(seasonType: ApartmentAvailability['seasonType']): string {
+function seasonLabel(seasonType: ApartmentAvailability['seasonType'], t: ReturnType<typeof useTranslations>): string {
   switch (seasonType) {
-    case 'carnaval': return '🎊 Carnaval';
-    case 'alta': return '☀️ Alta';
-    case 'baja': return '🌿 Baixa';
+    case 'carnaval': return `🎊 ${t('seasonCarnaval')}`;
+    case 'alta': return `☀️ ${t('seasonAltaShort')}`;
+    case 'baja': return `🌿 ${t('seasonBaixaShort')}`;
     default: return '';
   }
 }
@@ -71,10 +72,11 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   globalCheckOut,
   onApplyDates,
 }) => {
+  const t = useTranslations('apartments');
   const [calOpen, setCalOpen] = useState(false);
   const isSelectable = !disabledReason;
   const seasonBadge = apartment.seasonType !== 'media'
-    ? <span className={`${styles.cardSeasonBadge} ${seasonBadgeClass(apartment.seasonType)}`}>{seasonLabel(apartment.seasonType)}</span>
+    ? <span className={`${styles.cardSeasonBadge} ${seasonBadgeClass(apartment.seasonType)}`}>{seasonLabel(apartment.seasonType, t)}</span>
     : null;
   const mulBadge = apartment.seasonMultiplier !== 1
     ? <span className={`${styles.priceMultiplier} ${seasonBadgeClass(apartment.seasonType)}`}>×{apartment.seasonMultiplier}</span>
@@ -90,9 +92,9 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
     >
       <div className={styles.aptPhoto} style={{ background: gradientFor(apartment.code) }}>
         <span className={styles.aptPhotoIcon}>{APT_ICONS[apartment.code] ?? '🏠'}</span>
-        <span className={styles.aptPhotoLabel}>📷 Foto ilustrativa</span>
+        <span className={styles.aptPhotoLabel}>📷 {t('illustrativePhoto')}</span>
         <span className={`${styles.availStripe} ${apartment.available ? styles.availStripeAvail : styles.availStripeUnavail}`}>
-          {apartment.available ? 'Disponível' : 'Indisponível'}
+          {apartment.available ? t('available') : t('unavailable')}
         </span>
       </div>
 
@@ -100,23 +102,23 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
         <div className={styles.cardHead}>
           <div>
             <div className={styles.cardName}>{apartment.name}</div>
-            <div className={styles.cardCapacity}>até {apartment.capacity} hóspede{apartment.capacity !== 1 ? 's' : ''}</div>
+            <div className={styles.cardCapacity}>{t('cardCapacity', { count: apartment.capacity })}</div>
             {disabledReason === 'too-small' && (
-              <div className={styles.cardCapacityWarn}>⚠️ Capacidade máx: {apartment.capacity} hóspedes</div>
+              <div className={styles.cardCapacityWarn}>⚠️ {t('maxCapacity', { count: apartment.capacity })}</div>
             )}
           </div>
         </div>
 
         <div className={styles.cardPriceBox}>
           <div className={styles.priceRow}>
-            <span className={styles.priceLabel}>por noite</span>
+            <span className={styles.priceLabel}>{t('perNight')}</span>
             <span className={styles.pricePerNight}>{baseNote}R$ {nightPrice}{mulBadge}</span>
           </div>
           {nights > 0 && (
             <>
               <div className={styles.priceDivider} />
               <div className={styles.priceRow}>
-                <span className={styles.nightsLabel}>{nights} noite{nights !== 1 ? 's' : ''}</span>
+                <span className={styles.nightsLabel}>{nights} {nights !== 1 ? t('nights') : t('night')}</span>
                 <span className={styles.priceTotal}>R$ {apartment.priceTotal.toLocaleString('pt-BR')}</span>
               </div>
             </>
@@ -130,7 +132,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
             className={styles.aptCalToggle}
             onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
           >
-            📅 Ajustar datas / ver disponibilidade
+            📅 {t('adjustDates')}
           </button>
         )}
         {calOpen && (
@@ -148,7 +150,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
           disabled={!isSelectable}
           onClick={() => isSelectable && onSelect(apartment)}
         >
-          {selected ? '✓ Selecionado' : !apartment.available ? 'Indisponível' : disabledReason === 'too-small' ? 'Capacidade insuficiente' : 'Selecionar'}
+          {selected ? `✓ ${t('selected')}` : !apartment.available ? t('unavailable') : disabledReason === 'too-small' ? t('insufficientCapacity') : t('select')}
         </button>
       </div>
     </div>

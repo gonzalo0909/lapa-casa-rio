@@ -28,15 +28,24 @@ export const checkApartmentAvailabilityHandler = async (
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
 
     if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
       res.status(400).json(ApiResponse.error('Fechas inválidas'));
       return;
     }
 
-    if (checkInDate < now) {
+    // Comparar por fecha de calendario en America/Sao_Paulo (zona horaria
+    // operativa unica del sistema, ver create-booking.ts), no por
+    // "checkInDate < medianoche local del servidor". Esta ruta comparaba
+    // contra `now.setHours(0,0,0,0)`, que usa la TZ del proceso Node --
+    // tipicamente UTC en un contenedor sin TZ seteada (no hay ninguna en
+    // Dockerfile/.env.example). Brasil es UTC-3: durante la noche (21h-
+    // 23h59 BRT), el dia calendario en UTC ya avanzo al dia siguiente, asi
+    // que un check-in de HOY (valido, seleccionable en el calendario del
+    // paso 1) llegaba aca como "en el pasado" -- 400, el fetch fallaba, y
+    // el paso 2 quedaba con la grilla de apartamentos vacia.
+    const todayInSaoPaulo = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+    if (checkIn < todayInSaoPaulo) {
       res.status(400).json(ApiResponse.error('La fecha de check-in no puede ser en el pasado'));
       return;
     }

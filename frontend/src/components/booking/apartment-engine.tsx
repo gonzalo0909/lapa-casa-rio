@@ -159,6 +159,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   // ── Step 4: pagamento ─────────────────────────────────────────────
   const [booking, setBooking] = useState<CreatedBooking | null>(null);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -767,10 +768,14 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                   <br />📩 Verifique sua caixa de entrada — incluindo spam
                 </div>
               </div>
+            ) : isExpired ? (
+              <div className={styles.errorBanner}>
+                A reserva expirou — as datas não estão mais retidas. Volte a tentar a reserva.
+              </div>
             ) : (
               <>
                 {booking.pendingExpiresAt && (
-                  <PaymentCountdown expiresAt={booking.pendingExpiresAt} locale={locale} className={styles.carnivalWarn} />
+                  <PaymentCountdown expiresAt={booking.pendingExpiresAt} onExpire={() => setIsExpired(true)} locale={locale} className={styles.carnivalWarn} />
                 )}
                 <PaymentProcessor
                   reservationId={booking.id}

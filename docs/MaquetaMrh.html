@@ -586,6 +586,105 @@ textarea.form-input{resize:vertical;min-height:64px}
   .dates-selected{flex-direction:column}
   .deposit-box{grid-template-columns:1fr}
 }
+
+/* ── Season calendar cell colors ── */
+.cal-cell.season-alta .cal-day-btn:not(:disabled){color:#B45309}
+.cal-cell.season-carnaval .cal-day-btn:not(:disabled){color:#9333EA}
+.cal-cell.season-baixa .cal-day-btn:not(:disabled){color:#1D4ED8}
+.cal-cell.season-alta::after,
+.cal-cell.season-carnaval::after,
+.cal-cell.season-baixa::after{
+  content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;
+}
+.cal-cell.season-alta::after    {background:#F59E0B}
+.cal-cell.season-carnaval::after{background:#A855F7}
+.cal-cell.season-baixa::after   {background:#60A5FA}
+
+/* ── Min nights warning ── */
+.min-nights-warn{
+  background:#FEF3E2;border:1px solid #FCD34D;border-radius:5px;
+  padding:.55rem .85rem;font-size:.75rem;color:#92400E;
+  margin-top:.6rem;display:none;
+}
+.min-nights-warn.visible{display:block}
+
+/* ── Inline form feedback ── */
+.field-feedback{font-size:.68rem;margin-top:.2rem;display:none}
+.field-feedback.ok {display:block;color:var(--green)}
+.field-feedback.err{display:block;color:var(--red)}
+
+/* ── House rules ── */
+.house-rules{
+  border:1px solid var(--border);border-radius:6px;
+  padding:.75rem .9rem;margin-bottom:.85rem;background:var(--sand);
+}
+.house-rules-title{
+  font-size:.68rem;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:.45rem;
+}
+.house-rule-item{font-size:.75rem;color:var(--text);display:flex;gap:.45rem;padding:.2rem 0}
+
+/* ── Cancel policy ── */
+.cancel-policy{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.85rem}
+.cancel-policy-btn{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:.65rem .9rem;font-size:.78rem;font-weight:600;
+  color:var(--text);background:var(--surface);text-align:left;
+}
+.cancel-policy-btn:hover{background:var(--sand)}
+.cancel-chevron{font-size:.7rem;color:var(--muted);transition:transform .2s;display:inline-block}
+.cancel-chevron.open{transform:rotate(180deg)}
+.cancel-policy-body{border-top:1px solid var(--border);padding:.65rem .9rem;display:none}
+.cancel-policy-body.open{display:block}
+.cancel-row{
+  display:flex;gap:.6rem;align-items:flex-start;
+  font-size:.75rem;color:var(--text);
+  padding:.3rem 0;border-bottom:1px solid var(--border);
+}
+.cancel-row:last-child{border-bottom:none}
+.cancel-badge{
+  font-size:.62rem;font-weight:700;padding:.15em .55em;
+  border-radius:3px;white-space:nowrap;flex-shrink:0;margin-top:.1rem;
+}
+.badge-green-c{background:#EBF7EF;color:#145727}
+.badge-amber-c{background:#FEF3E2;color:#92400E}
+.badge-red-c  {background:#FEE2E2;color:#991B1B}
+
+/* ── OTA banner ── */
+.ota-banner{
+  background:var(--gold-pale);border:1px solid var(--gold-soft);
+  border-radius:5px;padding:.6rem .85rem;font-size:.75rem;
+  color:var(--navy);margin-bottom:.85rem;display:none;
+}
+.ota-banner.visible{display:block}
+
+/* ── Payment methods ── */
+.pay-methods{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.85rem}
+.pay-method{
+  display:flex;align-items:center;gap:.75rem;
+  border:1.5px solid var(--border);border-radius:6px;
+  padding:.65rem .9rem;cursor:pointer;
+  transition:border-color .15s;background:var(--surface);
+}
+.pay-method.selected{border-color:var(--navy)}
+.pay-method input[type="radio"]{flex-shrink:0;accent-color:var(--navy)}
+.pm-info{flex:1;min-width:0}
+.pm-name{font-size:.82rem;font-weight:700;color:var(--text)}
+.pm-detail{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+.pm-instant{
+  font-size:.62rem;font-weight:700;padding:.15em .5em;
+  border-radius:3px;background:#EBF7EF;color:#145727;white-space:nowrap;flex-shrink:0;
+}
+
+/* ── WhatsApp ── */
+.btn-whatsapp{
+  display:block;width:100%;text-align:center;
+  padding:.6rem;border-radius:5px;font-size:.8rem;font-weight:600;
+  color:#fff;background:#25D366;text-decoration:none;
+  margin-top:.5rem;transition:background .12s;
+}
+.btn-whatsapp:hover{background:#1DAE55}
 </style>
 
 <div class="page">
@@ -637,6 +736,7 @@ textarea.form-input{resize:vertical;min-height:64px}
           </div>
         </div>
 
+        <div class="min-nights-warn" id="min-nights-warn"></div>
         <div class="season-info">
           <div class="season-chip media">⛅ Média: ×1.0</div>
           <div class="season-chip alta">☀️ Alta (Dez–Mar, Jul–Ago): ×1.5</div>
@@ -670,19 +770,25 @@ textarea.form-input{resize:vertical;min-height:64px}
           <input class="form-input" id="f-name" type="text" placeholder="Seu nome completo" autocomplete="name">
           <div class="form-error" id="err-name">Nome completo é obrigatório</div>
         </div>
-        <div class="form-row-2">
-          <div>
-            <label class="form-label" for="f-email">E-mail <span class="req">*</span></label>
-            <input class="form-input" id="f-email" type="email" placeholder="seu@email.com" autocomplete="email">
-            <div class="form-error" id="err-email">E-mail inválido</div>
-          </div>
-          <div>
-            <label class="form-label" for="f-phone">WhatsApp <span class="req">*</span></label>
-            <input class="form-input" id="f-phone" type="tel" placeholder="+55 21 9 9999-9999" autocomplete="tel">
-            <div class="form-error" id="err-phone">Telefone obrigatório</div>
-          </div>
+        <div class="form-row">
+          <label class="form-label" for="f-email">E-mail <span class="req">*</span></label>
+          <input class="form-input" id="f-email" type="email" placeholder="seu@email.com" autocomplete="off" onpaste="return false">
+          <div class="form-error" id="err-email">E-mail inválido</div>
+          <div class="field-feedback" id="fb-email"></div>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="f-email2">Confirmar e-mail <span class="req">*</span> <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.65rem">(não colar)</span></label>
+          <input class="form-input" id="f-email2" type="email" placeholder="seu@email.com" autocomplete="off" onpaste="return false" oncut="return false">
+          <div class="form-error" id="err-email2">E-mails não coincidem</div>
+          <div class="field-feedback" id="fb-email2"></div>
         </div>
         <div class="form-row-2">
+          <div>
+            <label class="form-label" for="f-phone">WhatsApp <span class="req">*</span></label>
+            <input class="form-input" id="f-phone" type="tel" placeholder="+55 21 9 9999-9999" autocomplete="tel" inputmode="numeric" maxlength="20">
+            <div class="form-error" id="err-phone">Telefone obrigatório</div>
+            <div class="field-feedback" id="fb-phone"></div>
+          </div>
           <div>
             <label class="form-label" for="f-country">País <span class="req">*</span></label>
             <select class="form-input" id="f-country">
@@ -702,25 +808,52 @@ textarea.form-input{resize:vertical;min-height:64px}
             </select>
             <div class="form-error" id="err-country">País obrigatório</div>
           </div>
+        </div>
+        <div class="form-row-2">
           <div>
             <label class="form-label" for="f-doc">CPF / Passaporte <span class="req">*</span></label>
-            <input class="form-input" id="f-doc" type="text" placeholder="000.000.000-00">
-            <div class="form-error" id="err-doc">Documento obrigatório</div>
+            <input class="form-input" id="f-doc" type="text" placeholder="000.000.000-00" maxlength="18" autocomplete="off">
+            <div class="form-error" id="err-doc">Documento inválido</div>
+            <div class="field-feedback" id="fb-doc"></div>
           </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="f-arrival">Horário de chegada <span class="req">*</span></label>
-          <select class="form-input" id="f-arrival">
-            <option value="">Selecione (14h–22h)</option>
-            <option>14h00</option><option>15h00</option><option>16h00</option>
-            <option>17h00</option><option>18h00</option><option>19h00</option>
-            <option>20h00</option><option>21h00</option><option>22h00</option>
-          </select>
-          <div class="form-error" id="err-arrival">Horário de chegada obrigatório</div>
+          <div>
+            <label class="form-label" for="f-arrival">Horário de chegada <span class="req">*</span></label>
+            <select class="form-input" id="f-arrival">
+              <option value="">Selecione (14h–22h)</option>
+              <option>14:00</option><option>14:30</option><option>15:00</option>
+              <option>15:30</option><option>16:00</option><option>16:30</option>
+              <option>17:00</option><option>17:30</option><option>18:00</option>
+              <option>18:30</option><option>19:00</option><option>19:30</option>
+              <option>20:00</option><option>20:30</option><option>21:00</option>
+              <option>21:30</option><option>22:00</option>
+            </select>
+            <div class="form-error" id="err-arrival">Horário de chegada obrigatório</div>
+          </div>
         </div>
         <div class="form-row">
           <label class="form-label" for="f-requests">Solicitações especiais <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
           <textarea class="form-input" id="f-requests" placeholder="Alguma preferência ou necessidade especial?"></textarea>
+        </div>
+
+        <div class="house-rules">
+          <div class="house-rules-title">⚠️ Regras da casa</div>
+          <div class="house-rule-item"><span>🔑</span><span>Check-in: <strong>14h–22h</strong>. Fora do horário, avisar com antecedência.</span></div>
+          <div class="house-rule-item"><span>🚪</span><span>Check-out: até <strong>11h</strong>. Late check-out sujeito à disponibilidade.</span></div>
+          <div class="house-rule-item"><span>📄</span><span>Documento de identidade obrigatório no check-in.</span></div>
+          <div class="house-rule-item"><span>🔞</span><span>Hospedagem permitida a partir de <strong>18 anos</strong>.</span></div>
+          <div class="house-rule-item"><span>🚭</span><span>Proibido fumar dentro do hostel.</span></div>
+        </div>
+
+        <div class="cancel-policy">
+          <button class="cancel-policy-btn" onclick="toggleCancelPolicy(this)" type="button">
+            <span>🔄 Política de cancelamento</span>
+            <span class="cancel-chevron">▼</span>
+          </button>
+          <div class="cancel-policy-body" id="cancel-body">
+            <div class="cancel-row"><span class="cancel-badge badge-green-c">✓ Total</span><span>Cancelamento com mais de <strong>7 dias</strong> de antecedência — reembolso integral.</span></div>
+            <div class="cancel-row"><span class="cancel-badge badge-amber-c">50%</span><span>Cancelamento entre <strong>3 e 7 dias</strong> antes do check-in.</span></div>
+            <div class="cancel-row"><span class="cancel-badge badge-red-c">✗ Nenhum</span><span>Cancelamento com menos de <strong>3 dias</strong> ou no-show.</span></div>
+          </div>
         </div>
       </div>
 
@@ -746,7 +879,28 @@ textarea.form-input{resize:vertical;min-height:64px}
           <div class="summary-rows" id="summary-guest"></div>
         </div>
 
-        <button class="btn-confirm" onclick="confirmBooking()">Confirmar reserva — PIX / Cartão</button>
+        <div class="ota-banner" id="ota-banner"></div>
+
+        <div class="pay-methods">
+          <div class="pay-method selected" onclick="selectPayMethod(this,'pix')">
+            <input type="radio" name="pay-method" value="pix" checked>
+            <div class="pm-info">
+              <div class="pm-name">⚡ PIX</div>
+              <div class="pm-detail" id="pm-pix-detail">Depósito agora</div>
+            </div>
+            <span class="pm-instant">Aprovação imediata</span>
+          </div>
+          <div class="pay-method" onclick="selectPayMethod(this,'card')">
+            <input type="radio" name="pay-method" value="card">
+            <div class="pm-info">
+              <div class="pm-name">💳 Cartão de crédito</div>
+              <div class="pm-detail" id="pm-card-detail">Depósito agora</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-confirm" onclick="confirmBooking()">Confirmar reserva</button>
+        <a class="btn-whatsapp" id="btn-whatsapp" href="#" target="_blank" rel="noopener noreferrer">💬 Confirmar por WhatsApp</a>
       </div>
 
       <!-- ── Success ── -->
@@ -904,6 +1058,12 @@ function renderCalendar() {
     if(isHover && !isStart) cellClass += ' in-range range-end';  // hover shows as potential checkout
     if(inRng)          cellClass += ' in-range';
     if(isToday)        cellClass += ' is-today';
+    if(!isPast) {
+      const si = getSeason(date);
+      if(si.label==='Carnaval')         cellClass += ' season-carnaval';
+      else if(si.label==='Alta Temporada')  cellClass += ' season-alta';
+      else if(si.label==='Baixa Temporada') cellClass += ' season-baixa';
+    }
 
     parts.push(
       `<div class="${cellClass}">` +
@@ -980,6 +1140,20 @@ function updateDateDisplay() {
   }
 
   updateFooterPrice();
+  updateMinNightsWarn();
+}
+
+function updateMinNightsWarn() {
+  const warn = document.getElementById('min-nights-warn');
+  if(!state.checkIn || !state.checkOut) { warn.classList.remove('visible'); return; }
+  const nights = Math.round((state.checkOut - state.checkIn) / 86400000);
+  const s = getSeason(state.checkIn);
+  if(s.minNights > 1 && nights < s.minNights) {
+    warn.textContent = `📅 ${s.label}: estadia mínima de ${s.minNights} noites. Selecione ao menos ${s.minNights} noites.`;
+    warn.classList.add('visible');
+  } else {
+    warn.classList.remove('visible');
+  }
 }
 
 function fmtDate(d) {
@@ -1157,15 +1331,82 @@ function updateStepUI() {
   else      document.getElementById('booking-foot').style.display='';
 }
 
+// ── CPF / phone helpers ────────────────────────────────
+function validateCPF(raw) {
+  const cpf = raw.replace(/\D/g,'');
+  if(cpf.length!==11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i],10)*(10-i);
+  let d=(s*10)%11; if(d>=10) d=0;
+  if(d!==parseInt(cpf[9],10)) return false;
+  s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i],10)*(11-i);
+  d=(s*10)%11; if(d>=10) d=0;
+  return d===parseInt(cpf[10],10);
+}
+
+function formatCPF(v) {
+  const digits = v.replace(/\D/g,'').slice(0,11);
+  if(digits.length>9) return `${digits.slice(0,3)}.${digits.slice(3,6)}.${digits.slice(6,9)}-${digits.slice(9)}`;
+  if(digits.length>6) return `${digits.slice(0,3)}.${digits.slice(3,6)}.${digits.slice(6)}`;
+  if(digits.length>3) return `${digits.slice(0,3)}.${digits.slice(3)}`;
+  return digits;
+}
+
+function formatPhone(raw) {
+  const clean = raw.replace(/[^\d+]/g,'');
+  const digits = clean.replace(/\D/g,'');
+  if(digits.length<=2) return clean;
+  if(clean.startsWith('+55')) {
+    const d=digits.slice(2);
+    let fmt='+55 ';
+    if(d.length>0) fmt+='('+d.slice(0,2)+')';
+    if(d.length>2) fmt+=' '+d.slice(2,7);
+    if(d.length>7) fmt+='-'+d.slice(7,11);
+    return fmt;
+  }
+  if(!clean.startsWith('+')) {
+    const local=digits.slice(2,11);
+    const nine=local.length>8;
+    const sp=nine?5:4;
+    let fmt='('+digits.slice(0,2)+')';
+    if(local.length>0) fmt+=' '+local.slice(0,sp);
+    if(local.length>sp) fmt+='-'+local.slice(sp);
+    return fmt;
+  }
+  return clean.slice(0,18);
+}
+
+// ── Cancel policy toggle ───────────────────────────────
+function toggleCancelPolicy(btn) {
+  document.getElementById('cancel-body').classList.toggle('open');
+  btn.querySelector('.cancel-chevron').classList.toggle('open');
+}
+
+// ── Payment method selection ───────────────────────────
+function selectPayMethod(el, val) {
+  document.querySelectorAll('.pay-method').forEach(m=>m.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
+}
+
 // ── Form validation ────────────────────────────────────
 function validateForm() {
   let ok = true;
+  const emailVal  = document.getElementById('f-email').value;
+  const emailOk   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  const email2Val = document.getElementById('f-email2').value;
+  const email2Ok  = emailOk && email2Val === emailVal;
+  const docVal    = document.getElementById('f-doc').value;
+  const docLetter = /[a-zA-Z]/.test(docVal);
+  const cpfDigits = docVal.replace(/\D/g,'');
+  const docOk     = docLetter ? docVal.trim().length>4 : (cpfDigits.length===11 && validateCPF(cpfDigits));
+
   const checks = [
     ['f-name',    'err-name',    v=>v.trim().length>2],
-    ['f-email',   'err-email',   v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
+    ['f-email',   'err-email',   ()=>emailOk],
+    ['f-email2',  'err-email2',  ()=>email2Ok],
     ['f-phone',   'err-phone',   v=>v.replace(/\D/g,'').length>=10],
     ['f-country', 'err-country', v=>v!==''],
-    ['f-doc',     'err-doc',     v=>v.trim().length>4],
+    ['f-doc',     'err-doc',     ()=>docOk],
     ['f-arrival', 'err-arrival', v=>v!==''],
   ];
   checks.forEach(([fid,eid,fn])=>{
@@ -1222,6 +1463,32 @@ function buildSummary() {
     row('WhatsApp', document.getElementById('f-phone').value) +
     row('País', document.getElementById('f-country').options[document.getElementById('f-country').selectedIndex].text) +
     row('Chegada', document.getElementById('f-arrival').value);
+
+  // OTA banner
+  const otaSaving = Math.round(p.total * 0.15);
+  const banner = document.getElementById('ota-banner');
+  if(banner) {
+    banner.innerHTML = `🏷️ Reservar direto economiza <strong>R$ ${otaSaving.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace('.',',')}</strong> em relação ao Airbnb/Booking.`;
+    banner.classList.add('visible');
+  }
+
+  // Payment methods deposit amounts
+  const depStr = fmtMoney(p.deposit);
+  const remStr = fmtMoney(p.total - p.deposit);
+  const pdet = document.getElementById('pm-pix-detail');
+  const cdet = document.getElementById('pm-card-detail');
+  if(pdet) pdet.textContent = `${depStr} agora · ${remStr} no check-in`;
+  if(cdet) cdet.textContent = `${depStr} agora · ${remStr} no check-in`;
+
+  // WhatsApp link
+  const wa = document.getElementById('btn-whatsapp');
+  if(wa) {
+    const selRoomNames = selRooms.map(r=>`${r.name}: ${state.beds[r.id]} cama${state.beds[r.id]>1?'s':''}`).join(', ');
+    const msg = encodeURIComponent(
+      `Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(state.checkIn)}\nCheck-out: ${fmtDate(state.checkOut)}\nNoites: ${p.nights}\nQuartos: ${selRoomNames}\nTotal: ${fmtMoney(p.total)}`
+    );
+    wa.href = `https://wa.me/5521999999999?text=${msg}`;
+  }
 }
 
 function row(label, val) {
@@ -1270,24 +1537,103 @@ renderCalendar();
 updateFooterPrice();
 updateStepUI();
 
-// Live validate — only the field being left (not all fields)
-const _FIELD_RULES = {
-  'f-name':    ['err-name',    v=>v.trim().length>2],
-  'f-email':   ['err-email',   v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
-  'f-phone':   ['err-phone',   v=>v.replace(/\D/g,'').length>=10],
-  'f-country': ['err-country', v=>v!==''],
-  'f-doc':     ['err-doc',     v=>v.trim().length>4],
-  'f-arrival': ['err-arrival', v=>v!==''],
-};
-Object.entries(_FIELD_RULES).forEach(([id,[eid,fn]])=>{
-  const el = document.getElementById(id);
+// ── Live field handlers ────────────────────────────────
+
+// Name
+(()=>{
+  const el=document.getElementById('f-name');
   if(!el) return;
   el.addEventListener('blur',()=>{
-    if(!el.value) return; // leave pristine fields untouched
-    const valid = fn(el.value);
-    el.classList.toggle('error', !valid);
-    el.classList.toggle('valid', valid);
-    document.getElementById(eid).classList.toggle('visible', !valid);
+    if(!el.value) return;
+    const v=el.value.trim().length>2;
+    el.classList.toggle('error',!v); el.classList.toggle('valid',v);
+    document.getElementById('err-name').classList.toggle('visible',!v);
   });
-});
+})();
+
+// Email + confirm email
+(()=>{
+  const e1=document.getElementById('f-email');
+  const e2=document.getElementById('f-email2');
+  const fb1=document.getElementById('fb-email');
+  const fb2=document.getElementById('fb-email2');
+  function chkE1(){
+    if(!e1.value) return;
+    const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e1.value);
+    e1.classList.toggle('error',!ok); e1.classList.toggle('valid',ok);
+    document.getElementById('err-email').classList.toggle('visible',!ok);
+    if(fb1){fb1.textContent=ok?'✓ E-mail válido':'✗ E-mail inválido';fb1.className='field-feedback '+(ok?'ok':'err');}
+    if(e2&&e2.value) chkE2();
+  }
+  function chkE2(){
+    if(!e2.value) return;
+    const ok1=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e1.value);
+    const ok=ok1&&e2.value===e1.value;
+    e2.classList.toggle('error',!ok); e2.classList.toggle('valid',ok);
+    document.getElementById('err-email2').classList.toggle('visible',!ok);
+    if(fb2){fb2.textContent=ok?'✓ E-mails coincidem':'✗ E-mails não coincidem';fb2.className='field-feedback '+(ok?'ok':'err');}
+  }
+  if(e1) e1.addEventListener('blur',chkE1);
+  if(e2) e2.addEventListener('blur',chkE2);
+})();
+
+// Phone: auto-format + blur validation
+(()=>{
+  const el=document.getElementById('f-phone');
+  const fb=document.getElementById('fb-phone');
+  if(!el) return;
+  el.addEventListener('input',()=>{ el.value=formatPhone(el.value); });
+  el.addEventListener('blur',()=>{
+    if(!el.value) return;
+    const ok=el.value.replace(/\D/g,'').length>=10;
+    el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
+    document.getElementById('err-phone').classList.toggle('visible',!ok);
+    if(fb){fb.textContent=ok?'✓ Telefone válido':'✗ Mínimo 10 dígitos';fb.className='field-feedback '+(ok?'ok':'err');}
+  });
+})();
+
+// Country
+(()=>{
+  const el=document.getElementById('f-country');
+  if(!el) return;
+  el.addEventListener('change',()=>{
+    const ok=el.value!=='';
+    el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
+    document.getElementById('err-country').classList.toggle('visible',!ok);
+  });
+})();
+
+// CPF/Passport: auto-format + blur validation
+(()=>{
+  const el=document.getElementById('f-doc');
+  const fb=document.getElementById('fb-doc');
+  if(!el) return;
+  el.addEventListener('input',()=>{
+    if(!/[a-zA-Z]/.test(el.value)) el.value=formatCPF(el.value);
+  });
+  el.addEventListener('blur',()=>{
+    if(!el.value) return;
+    const hasLetter=/[a-zA-Z]/.test(el.value);
+    const digits=el.value.replace(/\D/g,'');
+    const ok=hasLetter?el.value.trim().length>4:(digits.length===11&&validateCPF(digits));
+    el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
+    document.getElementById('err-doc').classList.toggle('visible',!ok);
+    if(fb){
+      if(hasLetter){fb.textContent='✓ Passaporte aceito';fb.className='field-feedback ok';}
+      else if(digits.length===11){fb.textContent=ok?'✓ CPF válido':'✗ CPF inválido';fb.className='field-feedback '+(ok?'ok':'err');}
+      else{fb.textContent='';fb.className='field-feedback';}
+    }
+  });
+})();
+
+// Arrival
+(()=>{
+  const el=document.getElementById('f-arrival');
+  if(!el) return;
+  el.addEventListener('change',()=>{
+    const ok=el.value!=='';
+    el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
+    document.getElementById('err-arrival').classList.toggle('visible',!ok);
+  });
+})();
 </script>

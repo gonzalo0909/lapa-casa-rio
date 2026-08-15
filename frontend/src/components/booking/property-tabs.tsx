@@ -66,7 +66,9 @@ export function PropertyTabs({
 }: PropertyTabsProps) {
   const [active, setActive] = useState<0 | 1>(defaultTab);
 
-  const lang  = LABELS[locale] ?? LABELS.pt;
+  // LABELS[locale] puede ser undefined con noUncheckedIndexedAccess;
+  // fallback con objeto literal para que lang sea siempre non-nullable.
+  const lang = LABELS[locale] ?? { hostel: 'Hostel', apartments: 'Apartamentos' };
   const tabs  = [
     { icon: '🛏️', label: lang.hostel      },
     { icon: '🏠', label: lang.apartments  },

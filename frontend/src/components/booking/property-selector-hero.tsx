@@ -6,6 +6,7 @@ import React from 'react';
 import { useTranslations } from 'next-intl';
 
 interface PropertySelectorHeroProps {
+  onSelectHostel: () => void;
   onSelectApartments: () => void;
 }
 
@@ -29,12 +30,10 @@ const COLORS = {
 /**
  * PropertySelectorHero
  *
- * Nav + hero calcados de la maqueta de referencia. El panel/pill de
- * "Hostel" queda visible por fidelidad al diseño, pero sin acción: el
- * motor de reservas del hostel no vive en esta rama (ver mrh1308) -- acá
- * solo hay motor de apartamentos, así que solo ese panel navega.
+ * Nav + hero: ambos paneles (Hostel y Apartamentos) son interactivos.
+ * Hostel → /hostel (BookingEngine), Apartamentos → /apartamentos (ApartmentEngine).
  */
-export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ onSelectApartments }) => {
+export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ onSelectHostel, onSelectApartments }) => {
   const t = useTranslations('propertySelector');
 
   return (
@@ -46,7 +45,7 @@ export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ onSe
       >
         <span style={{ ...serif, fontSize: '1.15rem' }}>Lapa Casa</span>
         <nav className="flex gap-2">
-          <NavPill label={t('hostelTitle')} />
+          <NavPill label={t('hostelTitle')} onClick={onSelectHostel} />
           <NavPill label={t('apartmentsTitle')} onClick={onSelectApartments} />
         </nav>
       </div>
@@ -67,6 +66,7 @@ export const PropertySelectorHero: React.FC<PropertySelectorHeroProps> = ({ onSe
             cta={t('hostelCta')}
             gradient={`linear-gradient(155deg, ${COLORS.foliage} 0%, ${COLORS.foliage2} 100%)`}
             pattern="beds"
+            onClick={onSelectHostel}
           />
           <PropertyPanel
             title={t('apartmentsTitle')}

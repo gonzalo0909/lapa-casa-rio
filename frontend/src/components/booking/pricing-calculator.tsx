@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PriceBreakdown } from './price-breakdown';
 import { GroupDiscountDisplay } from './group-discount-display';
 import { SeasonMultiplierDisplay } from './season-multiplier-display';
@@ -50,17 +51,44 @@ function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Chequeo mínimo de forma antes de aceptar la respuesta como QuoteResponse -- evita mostrar precios inventados por un `as` sin validar si el backend cambia de forma. */
+function isQuoteResponse(data: unknown): data is QuoteResponse {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.totalPrice === 'number' &&
+    typeof d.basePrice === 'number' &&
+    typeof d.depositAmount === 'number' &&
+    typeof d.remainingAmount === 'number' &&
+    typeof d.nights === 'number' &&
+    typeof d.pricePerBed === 'number' &&
+    !!d.breakdown &&
+    typeof (d.breakdown as Record<string, unknown>).bedBasePrice === 'number' &&
+    typeof (d.breakdown as Record<string, unknown>).seasonAdjustment === 'number'
+  );
+}
+
 export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   dateRange,
   rooms,
   locale = 'pt',
   className = ''
 }) => {
+  const t = useTranslations('pricingCalculator');
   const [pricing, setPricing] = useState<QuoteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const totalBeds = rooms.reduce((sum, room) => sum + room.bedsCount, 0);
+
+  // El padre puede recrear el array `rooms` en cada render (nueva
+  // referencia con el mismo contenido) -- dependemos de esta huella
+  // derivada (solo los campos que realmente afectan la cotización) en
+  // vez de `rooms` directamente, para no disparar POST /availability/quote
+  // en loop cuando el contenido no cambió.
+  const roomsKey = rooms.map((r) => `${r.id}:${r.bedsCount}`).join('|');
 
   useEffect(() => {
     if (!dateRange.checkIn || !dateRange.checkOut || rooms.length === 0) {
@@ -85,8 +113,14 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
           rooms: rooms.map((r) => ({ roomId: r.id, bedsCount: r.bedsCount })),
         })
         .then((response) => {
-          if (!cancelled) {
-            setPricing(response.data as QuoteResponse);
+          if (cancelled) {
+            return;
+          }
+          if (isQuoteResponse(response.data)) {
+            setPricing(response.data);
+          } else {
+            setPricing(null);
+            setError(t('invalidQuote'));
           }
         })
         .catch((err) => {
@@ -105,7 +139,12 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [dateRange.checkIn, dateRange.checkOut, rooms]);
+    // `rooms`, `locale` y `t` se omiten a propósito: `rooms` ya está
+    // representado por `roomsKey` (ver comentario arriba) y a `locale`/`t`
+    // no hace falta reaccionar (solo se leen para traducir el mensaje de
+    // error, no para decidir si hay que volver a pedir la cotización).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange.checkIn, dateRange.checkOut, roomsKey]);
 
   if (isLoading && !pricing) {
     return (
@@ -118,7 +157,7 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   if (error) {
     return (
       <Card className={`pricing-calculator p-6 ${className}`}>
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       </Card>
     );
   }
@@ -129,26 +168,26 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
 
   return (
     <Card className={`pricing-calculator p-6 ${className}`}>
-      <h3 className="text-xl font-bold text-gray-900 mb-4">{T('title', locale)}</h3>
+      <h3 className="text-xl font-bold text-foreground mb-4">{t('title')}</h3>
 
       <div className="space-y-4">
-        <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="p-4 bg-muted rounded-lg">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-gray-600">{T('nights', locale)}:</p>
-              <p className="font-semibold text-gray-900">{pricing.nights}</p>
+              <p className="text-muted-foreground">{t('nights')}:</p>
+              <p className="font-semibold text-foreground">{pricing.nights}</p>
             </div>
             <div>
-              <p className="text-gray-600">{T('beds', locale)}:</p>
-              <p className="font-semibold text-gray-900">{totalBeds}</p>
+              <p className="text-muted-foreground">{t('beds')}:</p>
+              <p className="font-semibold text-foreground">{totalBeds}</p>
             </div>
             <div>
-              <p className="text-gray-600">{T('basePrice', locale)}:</p>
-              <p className="font-semibold text-gray-900">R$ {pricing.breakdown.bedBasePrice.toFixed(2)}</p>
+              <p className="text-muted-foreground">{t('basePrice')}:</p>
+              <p className="font-semibold text-foreground">R$ {pricing.breakdown.bedBasePrice.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-600">{T('subtotal', locale)}:</p>
-              <p className="font-semibold text-gray-900">R$ {pricing.basePrice.toFixed(2)}</p>
+              <p className="text-muted-foreground">{t('subtotal')}:</p>
+              <p className="font-semibold text-foreground">R$ {pricing.basePrice.toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -190,99 +229,33 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
           locale={locale}
         />
 
-        <div className="pt-4 border-t-2 border-gray-300">
+        <div className="pt-4 border-t-2 border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-lg font-bold text-gray-900">{T('totalPrice', locale)}:</span>
-            <span className="text-2xl font-bold text-blue-600">
+            <span className="text-lg font-bold text-foreground">{t('totalPrice')}:</span>
+            <span className="text-2xl font-bold text-primary">
               R$ {pricing.totalPrice.toFixed(2)}
             </span>
           </div>
-          <p className="text-xs text-gray-600 text-right">
-            {T('pricePerBed', locale)}: R$ {pricing.pricePerBed.toFixed(2)}
+          <p className="text-xs text-muted-foreground text-right">
+            {t('pricePerBed')}: R$ {pricing.pricePerBed.toFixed(2)}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200">
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-1">{T('depositNow', locale)} (30%):</p>
-            <p className="text-lg font-bold text-blue-600">R$ {pricing.depositAmount.toFixed(2)}</p>
+        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg">
+            <p className="text-xs text-muted-foreground mb-1">{t('depositNow')} (30%):</p>
+            <p className="text-lg font-bold text-primary">R$ {pricing.depositAmount.toFixed(2)}</p>
           </div>
-          <div className="p-3 bg-gray-100 rounded-lg">
-            <p className="text-xs text-gray-600 mb-1">{T('payLater', locale)} (70%):</p>
-            <p className="text-lg font-bold text-gray-900">R$ {pricing.remainingAmount.toFixed(2)}</p>
+          <div className="p-3 bg-muted rounded-lg">
+            <p className="text-xs text-muted-foreground mb-1">{t('payLater')} (70%):</p>
+            <p className="text-lg font-bold text-foreground">R$ {pricing.remainingAmount.toFixed(2)}</p>
           </div>
         </div>
 
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 text-center">
-          ✉️ {T('paymentInfo', locale)}
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-200 text-center">
+          ✉️ {t('paymentInfo')}
         </div>
       </div>
     </Card>
   );
 };
-
-function T(key: string, locale: string): string {
-  const t: Record<string, Record<string, string>> = {
-    pt: {
-      title: 'Resumo de Preços',
-      nights: 'Noites',
-      beds: 'Camas',
-      basePrice: 'Preço base',
-      subtotal: 'Subtotal',
-      totalPrice: 'Preço Total',
-      pricePerBed: 'Por cama',
-      depositNow: 'Depósito agora',
-      payLater: 'Pagar depois',
-      paymentInfo: 'A confirmação da sua reserva chega por email e WhatsApp'
-    },
-    es: {
-      title: 'Resumen de Precios',
-      nights: 'Noches',
-      beds: 'Camas',
-      basePrice: 'Precio base',
-      subtotal: 'Subtotal',
-      totalPrice: 'Precio Total',
-      pricePerBed: 'Por cama',
-      depositNow: 'Depósito ahora',
-      payLater: 'Pagar después',
-      paymentInfo: 'La confirmación de tu reserva te llega por email y WhatsApp'
-    },
-    en: {
-      title: 'Price Summary',
-      nights: 'Nights',
-      beds: 'Beds',
-      basePrice: 'Base price',
-      subtotal: 'Subtotal',
-      totalPrice: 'Total Price',
-      pricePerBed: 'Per bed',
-      depositNow: 'Deposit now',
-      payLater: 'Pay later',
-      paymentInfo: 'Your booking confirmation is sent by email and WhatsApp'
-    },
-    fr: {
-      title: 'Résumé des Prix',
-      nights: 'Nuits',
-      beds: 'Lits',
-      basePrice: 'Prix de base',
-      subtotal: 'Sous-total',
-      totalPrice: 'Prix Total',
-      pricePerBed: 'Par lit',
-      depositNow: 'Acompte maintenant',
-      payLater: 'Payer plus tard',
-      paymentInfo: 'La confirmation de votre réservation vous est envoyée par e-mail et WhatsApp'
-    },
-    de: {
-      title: 'Preisübersicht',
-      nights: 'Nächte',
-      beds: 'Betten',
-      basePrice: 'Grundpreis',
-      subtotal: 'Zwischensumme',
-      totalPrice: 'Gesamtpreis',
-      pricePerBed: 'Pro Bett',
-      depositNow: 'Anzahlung jetzt',
-      payLater: 'Später bezahlen',
-      paymentInfo: 'Die Bestätigung Ihrer Buchung erhalten Sie per E-Mail und WhatsApp'
-    }
-  };
-  return t[locale]?.[key] || key;
-}

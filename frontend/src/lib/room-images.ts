@@ -28,6 +28,6 @@ export const ROOM_IMAGES: Record<string, string> = {
  * Se `isFlexible` for true, sempre usa a imagem "flexible".
  */
 export function getRoomImage(type: string, isFlexible: boolean): string {
-  if (isFlexible) {return ROOM_IMAGES.flexible!;}
+  if (isFlexible) { return ROOM_IMAGES.flexible!; }
   return ROOM_IMAGES[type] ?? ROOM_IMAGES.mixed!;
 }

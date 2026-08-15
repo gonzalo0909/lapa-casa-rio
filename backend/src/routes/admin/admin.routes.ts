@@ -31,19 +31,6 @@ import type { BookingWithGuest } from '../../services/email-service';
 const router = Router();
 
 /**
- * GET /admin/me — endpoint liviano para que el JS del panel verifique
- * si la sesión httpOnly sigue activa (ver api.js checkSession()).
- * authenticateToken ya corrió en routes/index.ts, req.user está poblado.
- */
-router.get('/me', (req, res) => {
-  res.status(200).json(ApiResponse.success({
-    userId: req.user?.userId,
-    email: req.user?.email,
-    role: req.user?.role,
-  }));
-});
-
-/**
  * /admin/conflicts — detalle + resolucion manual agregados en Ventana 5
  * (conflict-service.ts). Reemplaza el listado inline que vivia aca desde
  * Ventana 4 (ver mas abajo, ahora removido para no duplicar la ruta).
@@ -202,14 +189,17 @@ router.get('/bookings/today', async (_req, res, next) => {
            ) AS occupied,
            (SELECT COUNT(*)::int FROM beds) AS total`,
         [today]
-      ),
+      )
     ]);
 
+    const toBooking = (r: Record<string, any>) => ({ ...r, roomNames: [] as string[] });
+    const occRow = occ.rows[0];
+
     res.status(200).json(ApiResponse.success({
-      checkIns: checkIns.rows,
-      checkOuts: checkOuts.rows,
-      occupancyToday: occ.rows[0]?.occupied ?? 0,
-      totalBeds: occ.rows[0]?.total ?? 45,
+      checkIns: checkIns.rows.map(toBooking),
+      checkOuts: checkOuts.rows.map(toBooking),
+      occupancyToday: occRow?.occupied ?? 0,
+      totalBeds: occRow?.total ?? 45,
     }));
   } catch (error) {
     next(error);
@@ -217,7 +207,7 @@ router.get('/bookings/today', async (_req, res, next) => {
 });
 
 /**
- * GET /admin/bookings/upcoming — reservas próximas (default: 7 días)
+ * GET /admin/bookings/upcoming?days=N — próximas reservas (default: 7 días)
  */
 router.get('/bookings/upcoming', async (req, res, next) => {
   try {
@@ -406,20 +396,18 @@ router.put('/rooms/:id/settings', async (req, res, next) => {
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge, pixDiscount] = await Promise.all([
+    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge] = await Promise.all([
       query(`SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`),
       query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`),
       query(`SELECT id, min_beds, percentage FROM group_discount_tiers ORDER BY min_beds`),
-      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`),
-      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'pix_discount_percent'`)
+      query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`)
     ]);
     res.status(200).json(
       ApiResponse.success({
         ratePlans: ratePlans.rows,
         carnivalDates: carnivalConfig.rows[0]?.value ?? [],
         groupDiscountTiers: groupDiscountTiers.rows,
-        cardSurchargePercent: cardSurcharge.rows[0]?.value ?? 10,
-        pixDiscountPercent: pixDiscount.rows[0]?.value ?? 10
+        cardSurchargePercent: cardSurcharge.rows[0]?.value ?? 10
       })
     );
   } catch (error) {
@@ -432,7 +420,7 @@ router.get('/pricing', async (req, res, next) => {
  */
 router.put('/pricing', async (req, res, next) => {
   try {
-    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent, pixDiscountPercent } = req.body as {
+    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent } = req.body as {
       seasonType?: 'alta' | 'media' | 'baja' | 'carnaval';
       multiplier?: number;
       minNights?: number;
@@ -442,9 +430,6 @@ router.put('/pricing', async (req, res, next) => {
       // array buscando en qué rango cae la fecha) -- no un mapa por año.
       carnival?: { year: number; startDate: string; endDate: string };
       cardSurchargePercent?: number;
-      // Descuento (%) aplicado al depósito cuando el huésped paga con PIX.
-      // 0 = sin descuento (banner oculto). Ver 0017_pix_discount_config.sql.
-      pixDiscountPercent?: number;
     };
 
     const updated: Record<string, any> = {};
@@ -496,20 +481,8 @@ router.put('/pricing', async (req, res, next) => {
       updated.cardSurchargePercent = rows[0];
     }
 
-    if (pixDiscountPercent !== undefined) {
-      if (pixDiscountPercent < 0 || pixDiscountPercent > 100) {
-        res.status(400).json(ApiResponse.error('pixDiscountPercent debe estar entre 0 y 100'));
-        return;
-      }
-      const { rows } = await query(
-        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'pix_discount_percent' RETURNING *`,
-        [JSON.stringify(pixDiscountPercent)]
-      );
-      updated.pixDiscountPercent = rows[0];
-    }
-
     if (Object.keys(updated).length === 0) {
-      res.status(400).json(ApiResponse.error('Nada para actualizar: seasonType+multiplier/minNights, carnival, cardSurchargePercent o pixDiscountPercent'));
+      res.status(400).json(ApiResponse.error('Nada para actualizar: seasonType+multiplier/minNights, carnival, o cardSurchargePercent'));
       return;
     }
 

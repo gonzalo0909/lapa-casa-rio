@@ -55,7 +55,7 @@ export default function AdminPage({
       // POST /api/v1/admin/login → {success, data: {token, refreshToken, expiresIn}}
       const res = await api.post('/admin/login', { password });
       const token = res.data?.token as string | undefined;
-      if (!token) {throw new Error('Token não recebido');}
+      if (!token) { throw new Error('Token não recebido'); }
       localStorage.setItem('token', token);
       setPassword('');
       setIsLoggedIn(true);
@@ -105,6 +105,7 @@ export default function AdminPage({
             )}
 
             <div>
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label htmlFor="admin-password" className="block text-sm font-medium text-foreground mb-1.5">
                 Senha
               </label>
@@ -115,6 +116,8 @@ export default function AdminPage({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
                 className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>

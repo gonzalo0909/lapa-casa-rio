@@ -580,6 +580,18 @@ textarea.form-input{resize:vertical;min-height:64px}
 .pix-amount{font-size:.95rem;font-weight:800;color:var(--navy)}
 .success-note{font-size:.72rem;color:var(--muted);margin-top:.75rem;line-height:1.5}
 
+/* ── Language switcher ── */
+.lang-switch{display:flex;gap:.3rem;margin-top:.45rem;justify-content:center}
+.lang-btn{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.18em .5em;border-radius:3px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .12s}
+.lang-btn:hover{border-color:var(--navy);color:var(--navy)}
+.lang-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── Expired panel ── */
+.expired-panel{display:none;flex-direction:column;align-items:center;text-align:center;padding:2.5rem 1rem;gap:.7rem}
+.expired-icon{font-size:2.75rem}
+.expired-title{font-size:1.15rem;font-weight:800;color:var(--navy)}
+.expired-sub{font-size:.8rem;color:var(--muted);max-width:22rem;line-height:1.5}
+
 /* ── Responsive ── */
 @media(max-width:400px){
   .form-row-2{grid-template-columns:1fr}
@@ -692,6 +704,11 @@ textarea.form-input{resize:vertical;min-height:64px}
   <header class="site-header">
     <div class="brand-name">Lapa Casa Hostel</div>
     <div class="brand-sub">Santa Teresa · Rio de Janeiro</div>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="pt" onclick="applyLang('pt')">PT</button>
+      <button class="lang-btn" data-lang="es" onclick="applyLang('es')">ES</button>
+      <button class="lang-btn" data-lang="en" onclick="applyLang('en')">EN</button>
+    </div>
   </header>
 
   <div class="booking-wrap">
@@ -699,10 +716,10 @@ textarea.form-input{resize:vertical;min-height:64px}
 
       <!-- Step track -->
       <div class="step-track" id="step-track">
-        <div class="step-tab active" data-s="1"><span class="step-num">1</span><span class="step-label">Datas</span></div>
-        <div class="step-tab" data-s="2"><span class="step-num">2</span><span class="step-label">Quartos</span></div>
-        <div class="step-tab" data-s="3"><span class="step-num">3</span><span class="step-label">Hóspede</span></div>
-        <div class="step-tab" data-s="4"><span class="step-num">4</span><span class="step-label">Resumo</span></div>
+        <div class="step-tab active" data-s="1"><span class="step-num">1</span><span class="step-label" data-i18n="step1">Datas</span></div>
+        <div class="step-tab" data-s="2"><span class="step-num">2</span><span class="step-label" data-i18n="step2">Quartos</span></div>
+        <div class="step-tab" data-s="3"><span class="step-num">3</span><span class="step-label" data-i18n="step3">Hóspede</span></div>
+        <div class="step-tab" data-s="4"><span class="step-num">4</span><span class="step-label" data-i18n="step4">Resumo</span></div>
         <div class="step-bar" id="step-bar"></div>
       </div>
 
@@ -710,15 +727,15 @@ textarea.form-input{resize:vertical;min-height:64px}
 
       <!-- ── Panel 1: Datas ── -->
       <div class="panel active" id="panel-1">
-        <div class="panel-title">Escolha suas datas</div>
-        <div class="panel-sub">Selecione entrada e saída</div>
+        <div class="panel-title" data-i18n="p1title">Escolha suas datas</div>
+        <div class="panel-sub" data-i18n="p1sub">Selecione entrada e saída</div>
 
         <div class="cal-nav">
-          <button class="cal-nav-btn" id="cal-prev" aria-label="Mês anterior">
+          <button class="cal-nav-btn" id="cal-prev" data-i18n-aria="calPrev" aria-label="Mês anterior">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
           <div class="cal-month-label" id="cal-month-label"></div>
-          <button class="cal-nav-btn" id="cal-next" aria-label="Próximo mês">
+          <button class="cal-nav-btn" id="cal-next" data-i18n-aria="calNext" aria-label="Próximo mês">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -726,87 +743,87 @@ textarea.form-input{resize:vertical;min-height:64px}
 
         <div class="dates-selected" id="dates-selected" style="display:none">
           <div class="date-box">
-            <div class="date-box-label">Check-in</div>
+            <div class="date-box-label" data-i18n="checkin">Check-in</div>
             <div class="date-box-val" id="checkin-display">—</div>
           </div>
           <div class="date-box-nights" id="nights-display"></div>
           <div class="date-box">
-            <div class="date-box-label">Check-out</div>
+            <div class="date-box-label" data-i18n="checkout">Check-out</div>
             <div class="date-box-val" id="checkout-display">—</div>
           </div>
         </div>
 
         <div class="min-nights-warn" id="min-nights-warn"></div>
         <div class="season-info">
-          <div class="season-chip media">⛅ Média: ×1.0</div>
-          <div class="season-chip alta">☀️ Alta (Dez–Mar, Jul–Ago): ×1.5</div>
-          <div class="season-chip carnaval">🎉 Carnaval (mín. 5 noites): ×2.0</div>
-          <div class="season-chip baixa">🌧 Baixa (Jun, Set): ×0.8</div>
+          <div class="season-chip media" data-i18n="seasonMedia">⛅ Média: ×1.0</div>
+          <div class="season-chip alta" data-i18n="seasonAlta">☀️ Alta (Dez–Mar, Jul–Ago): ×1.5</div>
+          <div class="season-chip carnaval" data-i18n="seasonCarnaval">🎉 Carnaval (mín. 5 noites): ×2.0</div>
+          <div class="season-chip baixa" data-i18n="seasonBaixa">🌧 Baixa (Jun, Set): ×0.8</div>
         </div>
       </div>
 
       <!-- ── Panel 2: Quartos ── -->
       <div class="panel" id="panel-2">
-        <div class="panel-title">Selecione os quartos</div>
-        <div class="panel-sub">Quantas camas você precisa?</div>
+        <div class="panel-title" data-i18n="p2title">Selecione os quartos</div>
+        <div class="panel-sub" data-i18n="p2sub">Quantas camas você precisa?</div>
 
         <div class="rooms-list" id="rooms-list"></div>
-        <div class="flexible-notice" id="flexible-notice">
+        <div class="flexible-notice" id="flexible-notice" data-i18n-html="flexibleNotice">
           🔄 <strong>Cuarto 6 — Solo Mujeres</strong>: quarto feminino por padrão. Se o grupo precisar das 45 camas, converte automaticamente para misto 48h antes do check-in.
         </div>
         <div class="discount-strip" id="discount-strip">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span id="discount-text">Desconto de grupo ativo!</span>
+          <span id="discount-text" data-i18n="discountActive">Desconto de grupo ativo!</span>
         </div>
       </div>
 
       <!-- ── Panel 3: Hóspede ── -->
       <div class="panel" id="panel-3">
-        <div class="panel-title">Dados do hóspede</div>
-        <div class="panel-sub">Responsável pela reserva</div>
+        <div class="panel-title" data-i18n="p3title">Dados do hóspede</div>
+        <div class="panel-sub" data-i18n="p3sub">Responsável pela reserva</div>
 
         <div class="form-row">
-          <label class="form-label" for="f-name">Nome completo <span class="req">*</span></label>
+          <label class="form-label" for="f-name"><span data-i18n="lblName">Nome completo</span> <span class="req">*</span></label>
           <input class="form-input" id="f-name" type="text" placeholder="Seu nome completo" autocomplete="name">
-          <div class="form-error" id="err-name">Nome completo é obrigatório</div>
+          <div class="form-error" id="err-name" data-i18n="errName">Nome completo é obrigatório</div>
         </div>
         <div class="form-row">
-          <label class="form-label" for="f-email">E-mail <span class="req">*</span></label>
+          <label class="form-label" for="f-email"><span data-i18n="lblEmail">E-mail</span> <span class="req">*</span></label>
           <input class="form-input" id="f-email" type="email" placeholder="seu@email.com" autocomplete="off" onpaste="return false">
-          <div class="form-error" id="err-email">E-mail inválido</div>
+          <div class="form-error" id="err-email" data-i18n="errEmail">E-mail inválido</div>
           <div class="field-feedback" id="fb-email"></div>
         </div>
         <div class="form-row">
-          <label class="form-label" for="f-email2">Confirmar e-mail <span class="req">*</span> <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.65rem">(não colar)</span></label>
+          <label class="form-label" for="f-email2"><span data-i18n="lblEmail2">Confirmar e-mail</span> <span class="req">*</span> <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.65rem" data-i18n="noPaste">(não colar)</span></label>
           <input class="form-input" id="f-email2" type="email" placeholder="seu@email.com" autocomplete="off" onpaste="return false" oncut="return false">
-          <div class="form-error" id="err-email2">E-mails não coincidem</div>
+          <div class="form-error" id="err-email2" data-i18n="errEmail2">E-mails não coincidem</div>
           <div class="field-feedback" id="fb-email2"></div>
         </div>
         <div class="form-row-2">
           <div>
-            <label class="form-label" for="f-phone">WhatsApp <span class="req">*</span></label>
+            <label class="form-label" for="f-phone"><span data-i18n="lblPhone">WhatsApp</span> <span class="req">*</span></label>
             <input class="form-input" id="f-phone" type="tel" placeholder="+55 21 9 9999-9999" autocomplete="tel" inputmode="numeric" maxlength="20">
-            <div class="form-error" id="err-phone">Telefone obrigatório</div>
+            <div class="form-error" id="err-phone" data-i18n="errPhone">Telefone obrigatório</div>
             <div class="field-feedback" id="fb-phone"></div>
           </div>
           <div>
-            <label class="form-label" for="f-country">País <span class="req">*</span></label>
+            <label class="form-label" for="f-country"><span data-i18n="lblCountry">País</span> <span class="req">*</span></label>
             <select class="form-input" id="f-country">
-              <option value="">Selecione</option>
+              <option value="" data-i18n="selectPlaceholder">Selecione</option>
               <option value="BR" selected>Brasil</option>
               <option value="AR">Argentina</option>
-              <option value="CO">Colômbia</option>
+              <option value="CO">Colombia</option>
               <option value="CL">Chile</option>
-              <option value="US">Estados Unidos</option>
-              <option value="DE">Alemanha</option>
-              <option value="FR">França</option>
-              <option value="GB">Reino Unido</option>
+              <option value="US">Estados Unidos / United States</option>
+              <option value="DE">Alemanha / Germany</option>
+              <option value="FR">França / France</option>
+              <option value="GB">Reino Unido / United Kingdom</option>
               <option value="PT">Portugal</option>
-              <option value="ES">Espanha</option>
-              <option value="IT">Itália</option>
-              <option value="OTHER">Outro</option>
+              <option value="ES">España / Espanha</option>
+              <option value="IT">Italia / Itália</option>
+              <option value="OTHER" data-i18n="optOther">Outro / Other</option>
             </select>
-            <div class="form-error" id="err-country">País obrigatório</div>
+            <div class="form-error" id="err-country" data-i18n="errCountry">País obrigatório</div>
           </div>
         </div>
         <div class="form-row-2">
@@ -817,9 +834,9 @@ textarea.form-input{resize:vertical;min-height:64px}
             <div class="field-feedback" id="fb-doc"></div>
           </div>
           <div>
-            <label class="form-label" for="f-arrival">Horário de chegada <span class="req">*</span></label>
+            <label class="form-label" for="f-arrival"><span data-i18n="lblArrival">Horário de chegada</span> <span class="req">*</span></label>
             <select class="form-input" id="f-arrival">
-              <option value="">Selecione (14h–22h)</option>
+              <option value="" data-i18n="arrivalPlaceholder">Selecione (14h–22h)</option>
               <option>14:00</option><option>14:30</option><option>15:00</option>
               <option>15:30</option><option>16:00</option><option>16:30</option>
               <option>17:00</option><option>17:30</option><option>18:00</option>
@@ -827,54 +844,54 @@ textarea.form-input{resize:vertical;min-height:64px}
               <option>20:00</option><option>20:30</option><option>21:00</option>
               <option>21:30</option><option>22:00</option>
             </select>
-            <div class="form-error" id="err-arrival">Horário de chegada obrigatório</div>
+            <div class="form-error" id="err-arrival" data-i18n="errArrival">Horário de chegada obrigatório</div>
           </div>
         </div>
         <div class="form-row">
-          <label class="form-label" for="f-requests">Solicitações especiais <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <label class="form-label" for="f-requests"><span data-i18n="lblRequests">Solicitações especiais</span> <span style="font-weight:400;text-transform:none;letter-spacing:0" data-i18n="optional">(opcional)</span></label>
           <textarea class="form-input" id="f-requests" placeholder="Alguma preferência ou necessidade especial?"></textarea>
         </div>
 
         <div class="house-rules">
-          <div class="house-rules-title">⚠️ Regras da casa</div>
-          <div class="house-rule-item"><span>🔑</span><span>Check-in: <strong>14h–22h</strong>. Fora do horário, avisar com antecedência.</span></div>
-          <div class="house-rule-item"><span>🚪</span><span>Check-out: até <strong>11h</strong>. Late check-out sujeito à disponibilidade.</span></div>
-          <div class="house-rule-item"><span>📄</span><span>Documento de identidade obrigatório no check-in.</span></div>
-          <div class="house-rule-item"><span>🔞</span><span>Hospedagem permitida a partir de <strong>18 anos</strong>.</span></div>
-          <div class="house-rule-item"><span>🚭</span><span>Proibido fumar dentro do hostel.</span></div>
+          <div class="house-rules-title" data-i18n="rulesTitle">⚠️ Regras da casa</div>
+          <div class="house-rule-item"><span>🔑</span><span data-i18n-html="rule1">Check-in: <strong>14h–22h</strong>. Fora do horário, avisar com antecedência.</span></div>
+          <div class="house-rule-item"><span>🚪</span><span data-i18n-html="rule2">Check-out: até <strong>11h</strong>. Late check-out sujeito à disponibilidade.</span></div>
+          <div class="house-rule-item"><span>📄</span><span data-i18n="rule3">Documento de identidade obrigatório no check-in.</span></div>
+          <div class="house-rule-item"><span>🔞</span><span data-i18n-html="rule4">Hospedagem permitida a partir de <strong>18 anos</strong>.</span></div>
+          <div class="house-rule-item"><span>🚭</span><span data-i18n="rule5">Proibido fumar dentro do hostel.</span></div>
         </div>
 
         <div class="cancel-policy">
           <button class="cancel-policy-btn" onclick="toggleCancelPolicy(this)" type="button">
-            <span>🔄 Política de cancelamento</span>
+            <span data-i18n="cancelBtn">🔄 Política de cancelamento</span>
             <span class="cancel-chevron">▼</span>
           </button>
           <div class="cancel-policy-body" id="cancel-body">
-            <div class="cancel-row"><span class="cancel-badge badge-green-c">✓ Grátis</span><span>Cancele até <strong>48 horas antes</strong> do check-in — reembolso integral do depósito.</span></div>
-            <div class="cancel-row"><span class="cancel-badge badge-red-c">✗ Não reembolsável</span><span>Cancelamento nas <strong>últimas 48 horas</strong> ou no-show — depósito retido.</span></div>
+            <div class="cancel-row"><span class="cancel-badge badge-green-c" data-i18n="cancelFree">✓ Grátis</span><span data-i18n-html="cancelFreeText">Cancele até <strong>48 horas antes</strong> do check-in — reembolso integral do depósito.</span></div>
+            <div class="cancel-row"><span class="cancel-badge badge-red-c" data-i18n="cancelNo">✗ Não reembolsável</span><span data-i18n-html="cancelNoText">Cancelamento nas <strong>últimas 48 horas</strong> ou no-show — depósito retido.</span></div>
           </div>
         </div>
       </div>
 
       <!-- ── Panel 4: Resumo ── -->
       <div class="panel" id="panel-4">
-        <div class="panel-title">Resumo da reserva</div>
-        <div class="panel-sub">Revise antes de confirmar</div>
+        <div class="panel-title" data-i18n="p4title">Resumo da reserva</div>
+        <div class="panel-sub" data-i18n="p4sub">Revise antes de confirmar</div>
 
         <div class="summary-section">
-          <div class="summary-section-head">Datas e Quartos</div>
+          <div class="summary-section-head" data-i18n="sumDatesHead">Datas e Quartos</div>
           <div class="summary-rows" id="summary-dates"></div>
         </div>
 
         <div class="summary-section">
-          <div class="summary-section-head">Preço</div>
+          <div class="summary-section-head" data-i18n="sumPriceHead">Preço</div>
           <div class="summary-rows" id="summary-price"></div>
         </div>
 
         <div class="deposit-box" id="deposit-box"></div>
 
         <div class="summary-section">
-          <div class="summary-section-head">Hóspede</div>
+          <div class="summary-section-head" data-i18n="sumGuestHead">Hóspede</div>
           <div class="summary-rows" id="summary-guest"></div>
         </div>
 
@@ -884,54 +901,52 @@ textarea.form-input{resize:vertical;min-height:64px}
           <div class="pay-method selected" onclick="selectPayMethod(this,'pix')">
             <input type="radio" name="pay-method" value="pix" checked>
             <div class="pm-info">
-              <div class="pm-name">⚡ PIX</div>
+              <div class="pm-name" data-i18n="pmPix">⚡ PIX</div>
               <div class="pm-detail" id="pm-pix-detail">Depósito agora</div>
             </div>
-            <span class="pm-instant">Aprovação imediata</span>
+            <span class="pm-instant" data-i18n="pmPixApproval">Aprovação imediata</span>
           </div>
           <div class="pay-method" onclick="selectPayMethod(this,'card')">
             <input type="radio" name="pay-method" value="card">
             <div class="pm-info">
-              <div class="pm-name">💳 Cartão de crédito</div>
+              <div class="pm-name" data-i18n="pmCard">💳 Cartão de crédito</div>
               <div class="pm-detail" id="pm-card-detail">Depósito agora</div>
             </div>
           </div>
         </div>
 
-        <button class="btn-confirm" onclick="confirmBooking()">Confirmar reserva</button>
-        <a class="btn-whatsapp" id="btn-whatsapp" href="#" target="_blank" rel="noopener noreferrer">💬 Confirmar por WhatsApp</a>
+        <button class="btn-confirm" onclick="confirmBooking()" data-i18n="btnConfirm">Confirmar reserva</button>
+        <a class="btn-whatsapp" id="btn-whatsapp" href="#" target="_blank" rel="noopener noreferrer" data-i18n="btnWhatsApp">💬 Confirmar por WhatsApp</a>
       </div>
 
       <!-- ── Success ── -->
       <div class="success-panel" id="success-panel">
         <div class="success-check">✓</div>
-        <div class="success-title">Reserva confirmada!</div>
-        <div class="success-sub">Enviamos os detalhes por e-mail e WhatsApp</div>
+        <div class="success-title" data-i18n="successTitle">Reserva confirmada!</div>
+        <div class="success-sub" data-i18n="successSub">Enviamos os detalhes por e-mail e WhatsApp</div>
         <div class="booking-code" id="booking-code"></div>
-        <div class="pix-box">
-          <div class="pix-label">Depósito PIX</div>
-          <div class="pix-qr" id="pix-qr-block">
-            <div style="display:grid;grid-template-columns:repeat(7,8px);grid-template-rows:repeat(7,8px);gap:1px" id="qr-grid"></div>
-          </div>
-          <div class="pix-amount" id="pix-amount"></div>
-          <div class="pix-label">Vence em 5 minutos</div>
-        </div>
-        <div class="success-note">
-          Chave PIX: <strong>lapacasa@gmail.com</strong><br>
-          O restante (70%) é pago no check-in, em dinheiro ou cartão.
-        </div>
-        <button class="btn-confirm" style="margin-top:1.25rem;background:var(--navy)" onclick="location.reload()">Nova reserva</button>
+        <div class="pix-box" id="payment-box"><!-- filled by confirmBooking() --></div>
+        <div class="success-note" id="success-note"></div>
+        <button class="btn-confirm" style="margin-top:1.25rem;background:var(--navy)" onclick="location.reload()" data-i18n="btnNewBooking">Nova reserva</button>
+      </div>
+
+      <!-- ── Expired ── -->
+      <div class="expired-panel" id="expired-panel">
+        <div class="expired-icon">⏰</div>
+        <div class="expired-title" data-i18n="expiredTitle">Reserva não concluída</div>
+        <div class="expired-sub" data-i18n="expiredSub">O tempo expirou. As vagas foram liberadas.</div>
+        <button class="btn-confirm" style="margin-top:.5rem" onclick="location.reload()" data-i18n="btnTryAgain">Tentar novamente</button>
       </div>
 
       <!-- ── Footer ── -->
       <div class="booking-foot" id="booking-foot">
         <div class="price-running">
           <div class="price-running-main" id="price-main">R$ 85 / cama</div>
-          <div class="price-running-sub" id="price-sub">Base por noite</div>
+          <div class="price-running-sub" id="price-sub" data-i18n="priceBase">Base por noite</div>
         </div>
         <div class="foot-btns">
-          <button class="btn-back" id="btn-back" onclick="goBack()" style="display:none">Voltar</button>
-          <button class="btn-next" id="btn-next" onclick="goNext()">Próximo</button>
+          <button class="btn-back" id="btn-back" onclick="goBack()" style="display:none" data-i18n="btnBack">Voltar</button>
+          <button class="btn-next" id="btn-next" onclick="goNext()" data-i18n="btnNext">Próximo</button>
         </div>
       </div>
 
@@ -941,6 +956,202 @@ textarea.form-input{resize:vertical;min-height:64px}
 </div>
 
 <script>
+// ── Translations ───────────────────────────────────────
+const LANG = { current: 'pt' };
+const T = {
+  pt: {
+    step1:'Datas', step2:'Quartos', step3:'Hóspede', step4:'Resumo',
+    p1title:'Escolha suas datas', p1sub:'Selecione entrada e saída',
+    checkin:'Check-in', checkout:'Check-out',
+    calPrev:'Mês anterior', calNext:'Próximo mês',
+    seasonMedia:'⛅ Média: ×1.0', seasonAlta:'☀️ Alta (Dez–Mar, Jul–Ago): ×1.5',
+    seasonCarnaval:'🎉 Carnaval (mín. 5 noites): ×2.0', seasonBaixa:'🌧 Baixa (Jun, Set): ×0.8',
+    p2title:'Selecione os quartos', p2sub:'Quantas camas você precisa?',
+    flexibleNotice:'🔄 <strong>Cuarto 6 — Solo Mujeres</strong>: quarto feminino por padrão. Se o grupo precisar das 45 camas, converte automaticamente para misto 48h antes do check-in.',
+    discountActive:'Desconto de grupo ativo!',
+    p3title:'Dados do hóspede', p3sub:'Responsável pela reserva',
+    lblName:'Nome completo', errName:'Nome completo é obrigatório',
+    lblEmail:'E-mail', errEmail:'E-mail inválido',
+    lblEmail2:'Confirmar e-mail', errEmail2:'E-mails não coincidem', noPaste:'(não colar)',
+    lblPhone:'WhatsApp', errPhone:'Telefone obrigatório',
+    lblCountry:'País', errCountry:'País obrigatório',
+    selectPlaceholder:'Selecione', optOther:'Outro',
+    lblCPF:'CPF', lblPassport:'Passaporte / Documento',
+    errCPF:'CPF inválido', errDocForeign:'Documento inválido (mín. 5 caracteres)',
+    phCPF:'000.000.000-00', phPassport:'Número do passaporte',
+    fbCPFok:'✓ CPF válido', fbCPFerr:'✗ CPF inválido', fbDocOk:'✓ Documento aceito',
+    lblArrival:'Horário de chegada', errArrival:'Horário de chegada obrigatório',
+    arrivalPlaceholder:'Selecione (14h–22h)',
+    lblRequests:'Solicitações especiais', optional:'(opcional)',
+    rulesTitle:'⚠️ Regras da casa',
+    rule1:'Check-in: <strong>14h–22h</strong>. Fora do horário, avisar com antecedência.',
+    rule2:'Check-out: até <strong>11h</strong>. Late check-out sujeito à disponibilidade.',
+    rule3:'Documento de identidade obrigatório no check-in.',
+    rule4:'Hospedagem permitida a partir de <strong>18 anos</strong>.',
+    rule5:'Proibido fumar dentro do hostel.',
+    cancelBtn:'🔄 Política de cancelamento',
+    cancelFree:'✓ Grátis', cancelFreeText:'Cancele até <strong>48 horas antes</strong> do check-in — reembolso integral do depósito.',
+    cancelNo:'✗ Não reembolsável', cancelNoText:'Cancelamento nas <strong>últimas 48 horas</strong> ou no-show — depósito retido.',
+    p4title:'Resumo da reserva', p4sub:'Revise antes de confirmar',
+    sumDatesHead:'Datas e Quartos', sumPriceHead:'Preço', sumGuestHead:'Hóspede',
+    pmPix:'⚡ PIX', pmPixApproval:'Aprovação imediata', pmCard:'💳 Cartão de crédito',
+    btnConfirm:'Confirmar reserva', btnWhatsApp:'💬 Confirmar por WhatsApp',
+    successTitle:'Reserva confirmada!', successSub:'Enviamos os detalhes por e-mail e WhatsApp',
+    pixDepLabel:'Depósito PIX', cardDepLabel:'Pagamento com cartão',
+    cardInstruction:'Você receberá o link de pagamento por e-mail.',
+    timerLabel:'Expira em',
+    pixKey:'Chave PIX: <strong>lapacasa@gmail.com</strong>',
+    restNote:'O restante (70%) é pago no check-in, em dinheiro ou cartão.',
+    btnNewBooking:'Nova reserva',
+    expiredTitle:'Reserva não concluída', expiredSub:'O tempo expirou. As vagas foram liberadas.',
+    btnTryAgain:'Tentar novamente',
+    priceBase:'Base por noite', btnBack:'Voltar', btnNext:'Próximo',
+    // dynamic JS strings
+    tNights:'Noites', tTotalBeds:'Total de camas', tGroupDisc:'Desconto de grupo',
+    tTotal:'Total', tDepositNow:'Depósito agora (PIX/Cartão)', tAtCheckin:'no check-in',
+    tNight:'noite', tNights2:'noites', tBed:'cama', tBeds:'camas',
+    tSelectCheckout:'Selecione check-out', tClickCheckout:'Clique em uma data de saída',
+    tInProgress:'em curso', tCountryLabel:'País',
+    tToastCheckin:'Selecione a data de check-in.', tToastCheckout:'Selecione a data de check-out.',
+    tToastMinNights:'estadia mínima de', tToastNights:'noites.',
+    tToastBeds:'Selecione pelo menos 1 cama.',
+  },
+  es: {
+    step1:'Fechas', step2:'Cuartos', step3:'Huésped', step4:'Resumen',
+    p1title:'Elige tus fechas', p1sub:'Selecciona entrada y salida',
+    checkin:'Check-in', checkout:'Check-out',
+    calPrev:'Mes anterior', calNext:'Mes siguiente',
+    seasonMedia:'⛅ Media: ×1.0', seasonAlta:'☀️ Alta (Dic–Mar, Jul–Ago): ×1.5',
+    seasonCarnaval:'🎉 Carnaval (mín. 5 noches): ×2.0', seasonBaixa:'🌧 Baja (Jun, Sep): ×0.8',
+    p2title:'Selecciona los cuartos', p2sub:'¿Cuántas camas necesitas?',
+    flexibleNotice:'🔄 <strong>Cuarto 6 — Solo Mujeres</strong>: habitación femenina por defecto. Si el grupo necesita las 45 camas, se convierte automáticamente a mixto 48h antes del check-in.',
+    discountActive:'¡Descuento de grupo activo!',
+    p3title:'Datos del huésped', p3sub:'Responsable de la reserva',
+    lblName:'Nombre completo', errName:'Nombre completo es obligatorio',
+    lblEmail:'Correo electrónico', errEmail:'Correo inválido',
+    lblEmail2:'Confirmar correo', errEmail2:'Los correos no coinciden', noPaste:'(no pegar)',
+    lblPhone:'WhatsApp', errPhone:'Teléfono obligatorio',
+    lblCountry:'País', errCountry:'País obligatorio',
+    selectPlaceholder:'Seleccionar', optOther:'Otro',
+    lblCPF:'CPF', lblPassport:'Pasaporte / Documento',
+    errCPF:'CPF inválido', errDocForeign:'Documento inválido (mín. 5 caracteres)',
+    phCPF:'000.000.000-00', phPassport:'Número de pasaporte',
+    fbCPFok:'✓ CPF válido', fbCPFerr:'✗ CPF inválido', fbDocOk:'✓ Documento aceptado',
+    lblArrival:'Hora de llegada', errArrival:'Hora de llegada obligatoria',
+    arrivalPlaceholder:'Seleccionar (14h–22h)',
+    lblRequests:'Solicitudes especiales', optional:'(opcional)',
+    rulesTitle:'⚠️ Normas de la casa',
+    rule1:'Check-in: <strong>14h–22h</strong>. Fuera del horario, avisar con anticipación.',
+    rule2:'Check-out: hasta <strong>11h</strong>. Late check-out sujeto a disponibilidad.',
+    rule3:'Documento de identidad obligatorio en el check-in.',
+    rule4:'Hospedaje permitido a partir de <strong>18 años</strong>.',
+    rule5:'Prohibido fumar dentro del hostel.',
+    cancelBtn:'🔄 Política de cancelación',
+    cancelFree:'✓ Gratis', cancelFreeText:'Cancela hasta <strong>48 horas antes</strong> del check-in — reembolso total del depósito.',
+    cancelNo:'✗ No reembolsable', cancelNoText:'Cancelación en las <strong>últimas 48 horas</strong> o no-show — depósito retenido.',
+    p4title:'Resumen de la reserva', p4sub:'Revisa antes de confirmar',
+    sumDatesHead:'Fechas y Cuartos', sumPriceHead:'Precio', sumGuestHead:'Huésped',
+    pmPix:'⚡ PIX', pmPixApproval:'Aprobación inmediata', pmCard:'💳 Tarjeta de crédito',
+    btnConfirm:'Confirmar reserva', btnWhatsApp:'💬 Confirmar por WhatsApp',
+    successTitle:'¡Reserva confirmada!', successSub:'Te enviamos los detalles por e-mail y WhatsApp',
+    pixDepLabel:'Depósito PIX', cardDepLabel:'Pago con tarjeta',
+    cardInstruction:'Recibirás el enlace de pago por e-mail.',
+    timerLabel:'Expira en',
+    pixKey:'Clave PIX: <strong>lapacasa@gmail.com</strong>',
+    restNote:'El resto (70%) se paga en el check-in, en efectivo o tarjeta.',
+    btnNewBooking:'Nueva reserva',
+    expiredTitle:'Reserva no concretada', expiredSub:'El tiempo expiró. Los espacios fueron liberados.',
+    btnTryAgain:'Intentar de nuevo',
+    priceBase:'Base por noche', btnBack:'Volver', btnNext:'Siguiente',
+    tNights:'Noches', tTotalBeds:'Total de camas', tGroupDisc:'Descuento de grupo',
+    tTotal:'Total', tDepositNow:'Depósito ahora (PIX/Tarjeta)', tAtCheckin:'en el check-in',
+    tNight:'noche', tNights2:'noches', tBed:'cama', tBeds:'camas',
+    tSelectCheckout:'Seleccionar check-out', tClickCheckout:'Haz clic en una fecha de salida',
+    tInProgress:'en curso', tCountryLabel:'País',
+    tToastCheckin:'Selecciona la fecha de check-in.', tToastCheckout:'Selecciona la fecha de check-out.',
+    tToastMinNights:'estancia mínima de', tToastNights:'noches.',
+    tToastBeds:'Selecciona al menos 1 cama.',
+  },
+  en: {
+    step1:'Dates', step2:'Rooms', step3:'Guest', step4:'Summary',
+    p1title:'Choose your dates', p1sub:'Select check-in and check-out',
+    checkin:'Check-in', checkout:'Check-out',
+    calPrev:'Previous month', calNext:'Next month',
+    seasonMedia:'⛅ Mid season: ×1.0', seasonAlta:'☀️ High (Dec–Mar, Jul–Aug): ×1.5',
+    seasonCarnaval:'🎉 Carnival (min. 5 nights): ×2.0', seasonBaixa:'🌧 Low (Jun, Sep): ×0.8',
+    p2title:'Select your rooms', p2sub:'How many beds do you need?',
+    flexibleNotice:'🔄 <strong>Room 6 — Women Only</strong>: female dorm by default. If the group needs all 45 beds, it automatically converts to mixed 48h before check-in.',
+    discountActive:'Group discount active!',
+    p3title:'Guest details', p3sub:'Booking contact',
+    lblName:'Full name', errName:'Full name is required',
+    lblEmail:'Email', errEmail:'Invalid email',
+    lblEmail2:'Confirm email', errEmail2:'Emails do not match', noPaste:'(no paste)',
+    lblPhone:'WhatsApp', errPhone:'Phone number required',
+    lblCountry:'Country', errCountry:'Country required',
+    selectPlaceholder:'Select', optOther:'Other',
+    lblCPF:'CPF', lblPassport:'Passport / ID',
+    errCPF:'Invalid CPF', errDocForeign:'Invalid document (min. 5 characters)',
+    phCPF:'000.000.000-00', phPassport:'Passport number',
+    fbCPFok:'✓ Valid CPF', fbCPFerr:'✗ Invalid CPF', fbDocOk:'✓ Document accepted',
+    lblArrival:'Arrival time', errArrival:'Arrival time required',
+    arrivalPlaceholder:'Select (2 pm–10 pm)',
+    lblRequests:'Special requests', optional:'(optional)',
+    rulesTitle:'⚠️ House rules',
+    rule1:'Check-in: <strong>2 pm–10 pm</strong>. Outside these hours, notify in advance.',
+    rule2:'Check-out: by <strong>11 am</strong>. Late check-out subject to availability.',
+    rule3:'ID required at check-in.',
+    rule4:'Guests must be <strong>18 or older</strong>.',
+    rule5:'Smoking inside the hostel is not allowed.',
+    cancelBtn:'🔄 Cancellation policy',
+    cancelFree:'✓ Free', cancelFreeText:'Cancel up to <strong>48 hours before</strong> check-in — full deposit refund.',
+    cancelNo:'✗ Non-refundable', cancelNoText:'Cancellation within <strong>48 hours</strong> or no-show — deposit forfeited.',
+    p4title:'Booking summary', p4sub:'Review before confirming',
+    sumDatesHead:'Dates & Rooms', sumPriceHead:'Price', sumGuestHead:'Guest',
+    pmPix:'⚡ PIX', pmPixApproval:'Instant approval', pmCard:'💳 Credit card',
+    btnConfirm:'Confirm booking', btnWhatsApp:'💬 Confirm via WhatsApp',
+    successTitle:'Booking confirmed!', successSub:'We sent the details to your email and WhatsApp',
+    pixDepLabel:'PIX deposit', cardDepLabel:'Card payment',
+    cardInstruction:'You will receive the payment link by email.',
+    timerLabel:'Expires in',
+    pixKey:'PIX key: <strong>lapacasa@gmail.com</strong>',
+    restNote:'The remaining 70% is due at check-in, in cash or by card.',
+    btnNewBooking:'New booking',
+    expiredTitle:'Booking not completed', expiredSub:'Time expired. The beds have been released.',
+    btnTryAgain:'Try again',
+    priceBase:'Base per night', btnBack:'Back', btnNext:'Next',
+    tNights:'Nights', tTotalBeds:'Total beds', tGroupDisc:'Group discount',
+    tTotal:'Total', tDepositNow:'Deposit now (PIX/Card)', tAtCheckin:'at check-in',
+    tNight:'night', tNights2:'nights', tBed:'bed', tBeds:'beds',
+    tSelectCheckout:'Select check-out', tClickCheckout:'Click a check-out date',
+    tInProgress:'in progress', tCountryLabel:'Country',
+    tToastCheckin:'Select a check-in date.', tToastCheckout:'Select a check-out date.',
+    tToastMinNights:'minimum stay of', tToastNights:'nights.',
+    tToastBeds:'Select at least 1 bed.',
+  }
+};
+
+function applyLang(lang) {
+  LANG.current = lang;
+  const t = T[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if(t[k] !== undefined) el.textContent = t[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if(t[k] !== undefined) el.innerHTML = t[k];
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const k = el.dataset.i18nAria;
+    if(t[k] !== undefined) el.setAttribute('aria-label', t[k]);
+  });
+  document.querySelectorAll('.lang-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.lang === lang)
+  );
+  updateDocField();
+  updateFooterPrice();
+}
+
 // ── State ──────────────────────────────────────────────
 const TODAY = new Date(); // dynamic — always today
 TODAY.setHours(0,0,0,0);
@@ -1267,33 +1478,37 @@ function updateFooterPrice() {
   const main = document.getElementById('price-main');
   const sub  = document.getElementById('price-sub');
 
+  const t = T[LANG.current];
   if(p) {
     main.textContent = fmtMoney(p.total);
     const discTxt = p.disc>0 ? ` (${p.disc*100}% desc.)` : '';
-    sub.textContent = `${p.beds} cama${p.beds>1?'s':''} · ${p.nights} noite${p.nights>1?'s':''} · ${p.season.label}${discTxt}`;
+    const bedLbl = p.beds===1 ? t.tBed : t.tBeds;
+    const ntLbl  = p.nights===1 ? t.tNight : t.tNights2;
+    sub.textContent = `${p.beds} ${bedLbl} · ${p.nights} ${ntLbl} · ${p.season.label}${discTxt}`;
   } else if(state.checkIn && !state.checkOut) {
-    main.textContent = 'Selecione check-out';
-    sub.textContent = 'Clique em uma data de saída';
+    main.textContent = t.tSelectCheckout;
+    sub.textContent = t.tClickCheckout;
   } else {
     const season = getSeason(TODAY);
-    main.textContent = fmtMoney(85 * season.mult) + '/cama/noite';
-    sub.textContent = `${season.label} em curso`;
+    main.textContent = fmtMoney(85 * season.mult)+'/'+t.tBed+'/'+t.tNight;
+    sub.textContent = `${season.label} ${t.tInProgress}`;
   }
 }
 
 // ── Navigation ─────────────────────────────────────────
 function goNext() {
   clearToast();
+  const t = T[LANG.current];
   if(state.step===1) {
-    if(!state.checkIn)  return showToast('Selecione a data de check-in.');
-    if(!state.checkOut) return showToast('Selecione a data de check-out.');
+    if(!state.checkIn)  return showToast(t.tToastCheckin);
+    if(!state.checkOut) return showToast(t.tToastCheckout);
     const nights = Math.round((state.checkOut-state.checkIn)/86400000);
     const s = getSeason(state.checkIn);
     if(s.minNights>1 && nights<s.minNights)
-      return showToast(`${s.label}: estadia mínima de ${s.minNights} noites.`);
+      return showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
     advanceTo(2);
   } else if(state.step===2) {
-    if(totalBeds()===0) return showToast('Selecione pelo menos 1 cama.');
+    if(totalBeds()===0) return showToast(t.tToastBeds);
     advanceTo(3);
   } else if(state.step===3) {
     if(!validateForm()) return;
@@ -1406,7 +1621,8 @@ function validateForm() {
     : docVal.trim().length > 4;
 
   // set error message dynamically
-  document.getElementById('err-doc').textContent = isBR ? 'CPF inválido' : 'Documento inválido (mín. 5 caracteres)';
+  const t = T[LANG.current];
+  document.getElementById('err-doc').textContent = isBR ? t.errCPF : t.errDocForeign;
 
   const checks = [
     ['f-name',    'err-name',    v=>v.trim().length>2],
@@ -1441,51 +1657,54 @@ function validateForm() {
 // ── Summary ────────────────────────────────────────────
 function buildSummary() {
   const p = calcPrice();
+  const t = T[LANG.current];
   const selRooms = ROOMS.filter(r=>state.beds[r.id]>0);
 
   // dates section
   document.getElementById('summary-dates').innerHTML =
     row('Check-in', fmtDate(state.checkIn)) +
     row('Check-out', fmtDate(state.checkOut)) +
-    row('Noites', p.nights) +
-    selRooms.map(r=>`<div class="summary-row"><span>${r.name}</span><span>${state.beds[r.id]} cama${state.beds[r.id]>1?'s':''}</span></div>`).join('') +
-    row('Total de camas', p.beds);
+    row(t.tNights, p.nights) +
+    selRooms.map(r=>`<div class="summary-row"><span>${r.name}</span><span>${state.beds[r.id]} ${state.beds[r.id]>1?t.tBeds:t.tBed}</span></div>`).join('') +
+    row(t.tTotalBeds, p.beds);
 
   // price section
+  const bedLbl = t.tBed; const ntLbl = t.tNight;
   let priceRows =
-    row('R$ 85/cama × '+p.season.mult+'x ('+p.season.label+')', fmtMoney(p.pbn)+'/cama/nt') +
-    row('Subtotal ('+p.beds+' camas × '+p.nights+' noites)', fmtMoney(p.subtotal));
+    row(`R$ 85/${bedLbl} × ${p.season.mult}x (${p.season.label})`, `${fmtMoney(p.pbn)}/${bedLbl}/nt`) +
+    row(`Subtotal (${p.beds} ${p.beds>1?t.tBeds:t.tBed} × ${p.nights} ${p.nights>1?t.tNights2:t.tNight})`, fmtMoney(p.subtotal));
   if(p.disc>0) priceRows +=
-    `<div class="summary-row discount"><span>Desconto de grupo (${p.disc*100}%)</span><span>− ${fmtMoney(p.discAmt)}</span></div>`;
-  priceRows += `<div class="summary-row total"><span>Total</span><span>${fmtMoney(p.total)}</span></div>`;
+    `<div class="summary-row discount"><span>${t.tGroupDisc} (${p.disc*100}%)</span><span>− ${fmtMoney(p.discAmt)}</span></div>`;
+  priceRows += `<div class="summary-row total"><span>${t.tTotal}</span><span>${fmtMoney(p.total)}</span></div>`;
   document.getElementById('summary-price').innerHTML = priceRows;
 
   // deposit
   document.getElementById('deposit-box').innerHTML = `
     <div class="deposit-half">
-      <div class="deposit-label">Depósito agora (PIX/Cartão)</div>
+      <div class="deposit-label">${t.tDepositNow}</div>
       <div class="deposit-amount">${fmtMoney(p.deposit)}</div>
-      <div class="deposit-note">30% — confirmação imediata</div>
+      <div class="deposit-note">30%</div>
     </div>
     <div class="deposit-half">
-      <div class="deposit-label">Pagar no check-in</div>
+      <div class="deposit-label">70% ${t.tAtCheckin}</div>
       <div class="deposit-amount">${fmtMoney(p.total-p.deposit)}</div>
-      <div class="deposit-note">70% — dinheiro ou cartão</div>
+      <div class="deposit-note">Check-in</div>
     </div>`;
 
   // guest section
+  const csel = document.getElementById('f-country');
   document.getElementById('summary-guest').innerHTML =
-    row('Nome', document.getElementById('f-name').value) +
-    row('E-mail', document.getElementById('f-email').value) +
-    row('WhatsApp', document.getElementById('f-phone').value) +
-    row('País', document.getElementById('f-country').options[document.getElementById('f-country').selectedIndex].text) +
-    row('Chegada', document.getElementById('f-arrival').value);
+    row(t.lblName, document.getElementById('f-name').value) +
+    row(t.lblEmail, document.getElementById('f-email').value) +
+    row(t.lblPhone, document.getElementById('f-phone').value) +
+    row(t.tCountryLabel, csel.options[csel.selectedIndex].text) +
+    row(t.lblArrival, document.getElementById('f-arrival').value);
 
   // OTA banner
   const otaSaving = Math.round(p.total * 0.15);
   const banner = document.getElementById('ota-banner');
   if(banner) {
-    banner.innerHTML = `🏷️ Reservar direto economiza <strong>R$ ${otaSaving.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace('.',',')}</strong> em relação ao Airbnb/Booking.`;
+    banner.innerHTML = `🏷️ ${LANG.current==='en'?'Booking direct saves':'Reservar direto economiza'} <strong>R$ ${otaSaving.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace('.',',')}</strong> ${LANG.current==='en'?'vs Airbnb/Booking':'em relação ao Airbnb/Booking'}.`;
     banner.classList.add('visible');
   }
 
@@ -1494,15 +1713,15 @@ function buildSummary() {
   const remStr = fmtMoney(p.total - p.deposit);
   const pdet = document.getElementById('pm-pix-detail');
   const cdet = document.getElementById('pm-card-detail');
-  if(pdet) pdet.textContent = `${depStr} agora · ${remStr} no check-in`;
-  if(cdet) cdet.textContent = `${depStr} agora · ${remStr} no check-in`;
+  if(pdet) pdet.textContent = `${depStr} · ${remStr} ${t.tAtCheckin}`;
+  if(cdet) cdet.textContent = `${depStr} · ${remStr} ${t.tAtCheckin}`;
 
   // WhatsApp link
   const wa = document.getElementById('btn-whatsapp');
   if(wa) {
-    const selRoomNames = selRooms.map(r=>`${r.name}: ${state.beds[r.id]} cama${state.beds[r.id]>1?'s':''}`).join(', ');
+    const selRoomNames = selRooms.map(r=>`${r.name}: ${state.beds[r.id]} ${state.beds[r.id]>1?t.tBeds:t.tBed}`).join(', ');
     const msg = encodeURIComponent(
-      `Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(state.checkIn)}\nCheck-out: ${fmtDate(state.checkOut)}\nNoites: ${p.nights}\nQuartos: ${selRoomNames}\nTotal: ${fmtMoney(p.total)}`
+      `Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(state.checkIn)}\nCheck-out: ${fmtDate(state.checkOut)}\n${t.tNights}: ${p.nights}\n${t.step2}: ${selRoomNames}\nTotal: ${fmtMoney(p.total)}`
     );
     wa.href = `https://wa.me/5521999999999?text=${msg}`;
   }
@@ -1513,24 +1732,65 @@ function row(label, val) {
 }
 
 // ── Confirm booking ────────────────────────────────────
+let _timerInterval = null;
+
 function confirmBooking() {
   const p = calcPrice();
+  const t = T[LANG.current];
   const code = 'LCH-' + Math.random().toString(36).substring(2,6).toUpperCase() +
     Math.random().toString(36).substring(2,6).toUpperCase();
+  const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value || 'pix';
 
   document.getElementById('booking-code').textContent = code;
-  document.getElementById('pix-amount').textContent = fmtMoney(p.deposit);
 
-  // Simple QR-code-like pattern
-  const qg = document.getElementById('qr-grid');
-  const pat = [0,1,1,0,1,0,1,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,1,1,0,1,0,0,1,1,0,1,1,0,0,1,0,1,0,1,0,1,0,1,1];
-  qg.innerHTML = pat.map(b=>`<div style="background:${b?'#fff':'transparent'};width:8px;height:8px"></div>`).join('');
+  const box = document.getElementById('payment-box');
+  const timerHtml = `<div class="pix-label" style="margin-top:.4rem">${t.timerLabel}: <span id="pay-timer" style="font-weight:800;color:var(--navy);font-size:.85rem">5:00</span></div>`;
 
-  // Hide step track and footer
+  if(payMethod === 'pix') {
+    const pat = [0,1,1,0,1,0,1,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,1,1,0,1,0,0,1,1,0,1,1,0,0,1,0,1,0,1,0,1,0,1,1];
+    box.innerHTML = `
+      <div class="pix-label">${t.pixDepLabel}</div>
+      <div class="pix-qr"><div style="display:grid;grid-template-columns:repeat(7,8px);grid-template-rows:repeat(7,8px);gap:1px">
+        ${pat.map(b=>`<div style="background:${b?'#fff':'transparent'};width:8px;height:8px"></div>`).join('')}
+      </div></div>
+      <div class="pix-amount">${fmtMoney(p.deposit)}</div>
+      ${timerHtml}`;
+    document.getElementById('success-note').innerHTML = `${t.pixKey}<br>${t.restNote}`;
+  } else {
+    box.innerHTML = `
+      <div class="pix-label">${t.cardDepLabel}</div>
+      <div style="font-size:2.25rem;margin:.4rem 0">💳</div>
+      <div class="pix-amount">${fmtMoney(p.deposit)}</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem">${t.cardInstruction}</div>
+      ${timerHtml}`;
+    document.getElementById('success-note').innerHTML = t.restNote;
+  }
+
   document.getElementById('step-track').style.display = 'none';
   document.getElementById('booking-foot').style.display = 'none';
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('success-panel').classList.add('active');
+  startTimer();
+}
+
+function startTimer() {
+  let secs = 300;
+  clearInterval(_timerInterval);
+  _timerInterval = setInterval(() => {
+    secs--;
+    const el = document.getElementById('pay-timer');
+    if(el) el.textContent = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
+    if(secs <= 0) {
+      clearInterval(_timerInterval);
+      showExpiredPanel();
+    }
+  }, 1000);
+}
+
+function showExpiredPanel() {
+  document.getElementById('success-panel').style.display = 'none';
+  const ep = document.getElementById('expired-panel');
+  ep.style.display = 'flex';
 }
 
 // ── Toast ──────────────────────────────────────────────
@@ -1609,25 +1869,25 @@ updateStepUI();
   });
 })();
 
-// Update doc field label/placeholder based on selected country
+// Update doc field label/placeholder based on selected country + language
 function updateDocField() {
   const isBR = document.getElementById('f-country').value === 'BR';
   const lbl  = document.getElementById('lbl-doc');
   const inp  = document.getElementById('f-doc');
   const err  = document.getElementById('err-doc');
   const fb   = document.getElementById('fb-doc');
+  const t    = T[LANG.current];
   if(isBR){
-    lbl.innerHTML = 'CPF <span class="req">*</span>';
-    inp.placeholder = '000.000.000-00';
+    lbl.innerHTML = t.lblCPF + ' <span class="req">*</span>';
+    inp.placeholder = t.phCPF;
     inp.maxLength = 14;
-    err.textContent = 'CPF inválido';
+    err.textContent = t.errCPF;
   } else {
-    lbl.innerHTML = 'Passaporte / Documento <span class="req">*</span>';
-    inp.placeholder = 'Número do passaporte';
+    lbl.innerHTML = t.lblPassport + ' <span class="req">*</span>';
+    inp.placeholder = t.phPassport;
     inp.maxLength = 30;
-    err.textContent = 'Documento inválido (mín. 5 caracteres)';
+    err.textContent = t.errDocForeign;
   }
-  // clear doc field when country changes
   inp.value = '';
   inp.classList.remove('error','valid');
   err.classList.remove('visible');
@@ -1646,7 +1906,7 @@ function updateDocField() {
   });
 })();
 
-// CPF/Passport: auto-format + blur validation (country-aware)
+// CPF/Passport: auto-format + blur validation (country-aware + language-aware)
 (()=>{
   const el=document.getElementById('f-doc');
   const fb=document.getElementById('fb-doc');
@@ -1659,18 +1919,19 @@ function updateDocField() {
     if(!el.value) return;
     const isBR   = document.getElementById('f-country').value === 'BR';
     const digits = el.value.replace(/\D/g,'');
+    const t      = T[LANG.current];
     let ok;
     if(isBR){
       ok = digits.length===11 && validateCPF(digits);
-      document.getElementById('err-doc').textContent = 'CPF inválido';
+      document.getElementById('err-doc').textContent = t.errCPF;
       if(fb){
-        if(digits.length===11){fb.textContent=ok?'✓ CPF válido':'✗ CPF inválido';fb.className='field-feedback '+(ok?'ok':'err');}
+        if(digits.length===11){fb.textContent=ok?t.fbCPFok:t.fbCPFerr;fb.className='field-feedback '+(ok?'ok':'err');}
         else{fb.textContent='';fb.className='field-feedback';}
       }
     } else {
       ok = el.value.trim().length > 4;
-      document.getElementById('err-doc').textContent = 'Documento inválido (mín. 5 caracteres)';
-      if(fb){fb.textContent=ok?'✓ Documento aceito':'';fb.className='field-feedback '+(ok?'ok':'');}
+      document.getElementById('err-doc').textContent = t.errDocForeign;
+      if(fb){fb.textContent=ok?t.fbDocOk:'';fb.className='field-feedback '+(ok?'ok':'');}
     }
     el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
     document.getElementById('err-doc').classList.toggle('visible',!ok);

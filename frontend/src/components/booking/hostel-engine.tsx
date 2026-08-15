@@ -387,7 +387,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       const response = await bookingAPI.create({
         checkIn:  checkIn!.toISOString().slice(0, 10),
         checkOut: checkOut!.toISOString().slice(0, 10),
-        rooms: selectedRooms.map(r => ({ roomId: r.realId || r.id, bedsCount: beds[r.id] })),
+        rooms: selectedRooms.map(r => ({ roomId: r.realId || r.id, bedsCount: beds[r.id] ?? 0 })),
         guest: { firstName, lastName, email: form.email, phone: form.phone, country: form.country, document: form.doc },
         specialRequests: form.requests,
         arrivalTime: form.arrival,
@@ -441,7 +441,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const waLink = (() => {
     if (!checkIn || !checkOut || !price) return '#';
     const selR = rooms.filter(r => (beds[r.id] || 0) > 0);
-    const roomsStr = selR.map(r => `${r.name}: ${beds[r.id]} ${beds[r.id] > 1 ? t.tBeds : t.tBed}`).join(', ');
+    const roomsStr = selR.map(r => { const n = beds[r.id] ?? 0; return `${r.name}: ${n} ${n > 1 ? t.tBeds : t.tBed}`; }).join(', ');
     const msg = encodeURIComponent(
       `Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${t.tNights}: ${price.nights}\n${t.step2}: ${roomsStr}\nTotal: ${fmtMoney(price.total)}`
     );
@@ -456,7 +456,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       ['Check-in', fmtDate(checkIn)],
       ['Check-out', fmtDate(checkOut)],
       [t.tNights, String(price.nights)],
-      ...selR.map(r => [r.name, `${beds[r.id]} ${beds[r.id] > 1 ? t.tBeds : t.tBed}`]),
+      ...selR.map(r => { const n = beds[r.id] ?? 0; return [r.name, `${n} ${n > 1 ? t.tBeds : t.tBed}`]; }),
       [t.tTotalBeds, String(price.beds)],
     ];
   })();

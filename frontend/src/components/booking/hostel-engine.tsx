@@ -344,7 +344,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     setFormErrors(errs);
     if (Object.keys(errs).length > 0) {
       const fieldMap: Record<string, string> = { name:'he-f-name', email:'he-f-email', email2:'he-f-email2', phone:'he-f-phone', country:'he-f-country', doc:'he-f-doc', arrival:'he-f-arrival' };
-      const el = document.getElementById(fieldMap[Object.keys(errs)[0]] || '');
+      const firstKey = Object.keys(errs)[0] ?? '';
+      const el = document.getElementById(fieldMap[firstKey] || '');
       if (el) { el.scrollIntoView({ behavior:'smooth', block:'center' }); setTimeout(() => el.focus(), 300); }
       return false;
     }

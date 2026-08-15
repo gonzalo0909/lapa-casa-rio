@@ -232,7 +232,7 @@ export function HostelGuestForm({
         <div className="he-rules-title">{t.rulesTitle}</div>
         {[t.rule1, t.rule2, t.rule3, t.rule4, t.rule5].map((r, i) => (
           <div key={i} className="he-rule">
-            <span>{'🔑🚪📄🔞🚭'[i]}</span><span>{r}</span>
+            <span>{(['🔑','🚪','📄','🔞','🚭'] as const)[i] ?? ''}</span><span>{r}</span>
           </div>
         ))}
       </div>

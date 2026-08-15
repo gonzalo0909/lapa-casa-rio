@@ -38,16 +38,18 @@ export function calcPrice(
 }
 
 // ─── CPF validation ─────────────────────────────────────
+// Usa charCodeAt en vez de c[i] para evitar noUncheckedIndexedAccess.
 export function validateCPF(raw: string): boolean {
   const c = raw.replace(/\D/g, '');
   if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  const d0 = (i: number) => c.charCodeAt(i) - 48;
   let s = 0;
-  for (let i = 0; i < 9; i++) s += +c[i] * (10 - i);
-  let d = (s * 10) % 11; if (d >= 10) d = 0; if (d !== +c[9]) return false;
+  for (let i = 0; i < 9; i++) s += d0(i) * (10 - i);
+  let d = (s * 10) % 11; if (d >= 10) d = 0; if (d !== d0(9)) return false;
   s = 0;
-  for (let i = 0; i < 10; i++) s += +c[i] * (11 - i);
+  for (let i = 0; i < 10; i++) s += d0(i) * (11 - i);
   d = (s * 10) % 11; if (d >= 10) d = 0;
-  return d === +c[10];
+  return d === d0(10);
 }
 
 // ─── CPF formatter ──────────────────────────────────────

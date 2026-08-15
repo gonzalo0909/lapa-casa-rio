@@ -1082,6 +1082,8 @@ function changeBeds(id, delta) {
   const c4 = ROOMS.find(r=>r.id==='cuarto4');
   if (state.beds['cuarto1'] < c1.available) { state.revealed.cuarto3 = false; state.beds['cuarto3'] = 0; }
   if (state.beds['cuarto4'] < c4.available) { state.revealed.cuarto5 = false; state.beds['cuarto5'] = 0; }
+  // Also hide cuarto5 when its own counter returns to 0
+  if (state.beds['cuarto5'] === 0) state.revealed.cuarto5 = false;
 
   renderRooms();
 }

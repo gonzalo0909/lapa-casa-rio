@@ -804,9 +804,12 @@ textarea.form-input{resize:vertical;min-height:64px}
 
 <script>
 // ── State ──────────────────────────────────────────────
+const TODAY = new Date(); // dynamic — always today
+TODAY.setHours(0,0,0,0);
+
 const state = {
   step: 1,
-  calMonth: new Date(2026, 7, 1), // Aug 2026
+  calMonth: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1),
   checkIn: null,
   checkOut: null,
   hoverDate: null,
@@ -814,8 +817,6 @@ const state = {
   gender: null,
   beds: { mixto12a: 0, mixto12b: 0, mixto7: 0, flexible7: 0 },
 };
-
-const TODAY = new Date(2026, 7, 14); // Aug 14 2026
 
 const ROOMS = [
   { id:'mixto12a',   name:'Mixto 12A',     type:'mixed',  capacity:12, available:10, price:85, isFlexible:false },
@@ -1150,9 +1151,9 @@ function validateForm() {
   const checks = [
     ['f-name',    'err-name',    v=>v.trim().length>2],
     ['f-email',   'err-email',   v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
-    ['f-phone',   'err-phone',   v=>v.replace(/\D/g,'').length>=8],
+    ['f-phone',   'err-phone',   v=>v.replace(/\D/g,'').length>=10],
     ['f-country', 'err-country', v=>v!==''],
-    ['f-doc',     'err-doc',     v=>v.trim().length>3],
+    ['f-doc',     'err-doc',     v=>v.trim().length>4],
     ['f-arrival', 'err-arrival', v=>v!==''],
   ];
   checks.forEach(([fid,eid,fn])=>{
@@ -1257,10 +1258,24 @@ renderCalendar();
 updateFooterPrice();
 updateStepUI();
 
-// Live validate form fields
-['f-name','f-email','f-phone','f-country','f-doc','f-arrival'].forEach(id=>{
+// Live validate — only the field being left (not all fields)
+const _FIELD_RULES = {
+  'f-name':    ['err-name',    v=>v.trim().length>2],
+  'f-email':   ['err-email',   v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
+  'f-phone':   ['err-phone',   v=>v.replace(/\D/g,'').length>=10],
+  'f-country': ['err-country', v=>v!==''],
+  'f-doc':     ['err-doc',     v=>v.trim().length>4],
+  'f-arrival': ['err-arrival', v=>v!==''],
+};
+Object.entries(_FIELD_RULES).forEach(([id,[eid,fn]])=>{
   const el = document.getElementById(id);
   if(!el) return;
-  el.addEventListener('blur',()=>{ if(el.value) validateForm(); });
+  el.addEventListener('blur',()=>{
+    if(!el.value) return; // leave pristine fields untouched
+    const valid = fn(el.value);
+    el.classList.toggle('error', !valid);
+    el.classList.toggle('valid', valid);
+    document.getElementById(eid).classList.toggle('visible', !valid);
+  });
 });
 </script>

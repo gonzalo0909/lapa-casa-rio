@@ -1067,19 +1067,11 @@ function changeBeds(id, delta) {
   const room = ROOMS.find(r=>r.id===id);
   state.beds[id] = Math.max(0, Math.min(room.available, state.beds[id]+delta));
 
-  // Progressive down: clear beds from rooms that should now be hidden
+  // Progressive down: same triggers as getVisibleRooms — must stay in sync
   const c1 = ROOMS.find(r=>r.id==='cuarto1');
-  const show3 = state.beds['cuarto1'] >= c1.available;
-  if (!show3) state.beds['cuarto3'] = 0;
-
-  const c3 = ROOMS.find(r=>r.id==='cuarto3');
   const c4 = ROOMS.find(r=>r.id==='cuarto4');
-  const c6 = ROOMS.find(r=>r.id==='cuarto6');
-  const show5 = show3 &&
-    state.beds['cuarto3'] >= c3.available &&
-    state.beds['cuarto4'] >= c4.available &&
-    state.beds['cuarto6'] >= c6.available;
-  if (!show5) state.beds['cuarto5'] = 0;
+  if (state.beds['cuarto1'] < c1.available) state.beds['cuarto3'] = 0; // cuarto1 < 12 → hide cuarto3
+  if (state.beds['cuarto4'] < c4.available) state.beds['cuarto5'] = 0; // cuarto4 < 7  → hide cuarto5
 
   renderRooms();
 }

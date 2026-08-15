@@ -381,7 +381,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       const firstName   = nameParts[0] || form.name;
       const lastName    = nameParts.slice(1).join(' ') || nameParts[0] || form.name;
       const selectedRooms = rooms.filter(r => (beds[r.id] || 0) > 0);
-      const gender = beds['cuarto6'] > 0 && totalBeds === beds['cuarto6'] ? 'female' : 'mixed';
+      const c6beds = beds['cuarto6'] ?? 0;
+      const gender = c6beds > 0 && totalBeds === c6beds ? 'female' : 'mixed';
 
       const response = await bookingAPI.create({
         checkIn:  checkIn!.toISOString().slice(0, 10),

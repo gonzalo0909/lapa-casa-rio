@@ -799,7 +799,8 @@ const state = {
   checkOut: null,
   hoverDate: null,
   selectingEnd: false,
-  beds: { cuarto1:0, cuarto3:0, cuarto4:0, cuarto5:0, cuarto6:0 },
+  beds:     { cuarto1:0, cuarto3:0, cuarto4:0, cuarto5:0, cuarto6:0 },
+  revealed: { cuarto3: false, cuarto5: false }, // unlocked by the +1-beyond-max click
 };
 
 // Display order: 1, 3, 4, 5, 6
@@ -999,17 +1000,11 @@ document.getElementById('cal-next').onclick = ()=>{
 
 // ── Rooms ──────────────────────────────────────────────
 
-// Progressive reveal: returns which rooms are currently visible
-// Logic: 12+1 → cuarto3 appears when cuarto1 hits max
-//         7+1 → cuarto5 appears when cuarto4 hits max (independent)
+// Progressive reveal — driven by state.revealed (unlocked on the +1-beyond-max click)
 function getVisibleRooms() {
-  const c1 = ROOMS.find(r=>r.id==='cuarto1');
-  const c4 = ROOMS.find(r=>r.id==='cuarto4');
-  const show3 = state.beds['cuarto1'] >= c1.available; // cuarto1 at 12/12
-  const show5 = state.beds['cuarto4'] >= c4.available; // cuarto4 at 7/7  (independent of show3)
   return ROOMS.filter(r => {
-    if (r.id==='cuarto3') return show3;
-    if (r.id==='cuarto5') return show5;
+    if (r.id==='cuarto3') return state.revealed.cuarto3;
+    if (r.id==='cuarto5') return state.revealed.cuarto5;
     return true; // cuarto1, cuarto4, cuarto6 always visible
   });
 }
@@ -1042,7 +1037,11 @@ function renderRooms() {
         <button class="stepper-btn" onclick="changeBeds('${r.id}',-1)" ${cnt===0?'disabled':''}
           aria-label="Diminuir camas em ${r.name}">−</button>
         <span class="stepper-count" id="cnt-${r.id}">${cnt}</span>
-        <button class="stepper-btn" onclick="changeBeds('${r.id}',1)" ${cnt>=r.available?'disabled':''}
+        <button class="stepper-btn" onclick="changeBeds('${r.id}',1)" ${
+          r.id==='cuarto1' ? (cnt>=r.available && state.revealed.cuarto3 ? 'disabled' : '') :
+          r.id==='cuarto4' ? (cnt>=r.available && state.revealed.cuarto5 ? 'disabled' : '') :
+          cnt>=r.available ? 'disabled' : ''
+        }
           aria-label="Aumentar camas em ${r.name}">+</button>
       </div>
     </div>`;
@@ -1065,13 +1064,24 @@ function renderRooms() {
 
 function changeBeds(id, delta) {
   const room = ROOMS.find(r=>r.id===id);
-  state.beds[id] = Math.max(0, Math.min(room.available, state.beds[id]+delta));
 
-  // Progressive down: same triggers as getVisibleRooms — must stay in sync
+  if (delta > 0) {
+    if (state.beds[id] < room.available) {
+      state.beds[id]++;                                   // normal increment
+    } else if (id==='cuarto1' && !state.revealed.cuarto3) {
+      state.revealed.cuarto3 = true;                     // click 13 → reveal cuarto3
+    } else if (id==='cuarto4' && !state.revealed.cuarto5) {
+      state.revealed.cuarto5 = true;                     // click 8 → reveal cuarto5
+    }
+  } else {
+    state.beds[id] = Math.max(0, state.beds[id] - 1);
+  }
+
+  // Progressive down: unreveal + reset when primary room drops below max
   const c1 = ROOMS.find(r=>r.id==='cuarto1');
   const c4 = ROOMS.find(r=>r.id==='cuarto4');
-  if (state.beds['cuarto1'] < c1.available) state.beds['cuarto3'] = 0; // cuarto1 < 12 → hide cuarto3
-  if (state.beds['cuarto4'] < c4.available) state.beds['cuarto5'] = 0; // cuarto4 < 7  → hide cuarto5
+  if (state.beds['cuarto1'] < c1.available) { state.revealed.cuarto3 = false; state.beds['cuarto3'] = 0; }
+  if (state.beds['cuarto4'] < c4.available) { state.revealed.cuarto5 = false; state.beds['cuarto5'] = 0; }
 
   renderRooms();
 }

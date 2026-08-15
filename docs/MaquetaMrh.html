@@ -811,9 +811,9 @@ textarea.form-input{resize:vertical;min-height:64px}
         </div>
         <div class="form-row-2">
           <div>
-            <label class="form-label" for="f-doc">CPF / Passaporte <span class="req">*</span></label>
+            <label class="form-label" id="lbl-doc" for="f-doc">CPF <span class="req">*</span></label>
             <input class="form-input" id="f-doc" type="text" placeholder="000.000.000-00" maxlength="18" autocomplete="off">
-            <div class="form-error" id="err-doc">Documento inválido</div>
+            <div class="form-error" id="err-doc">CPF inválido</div>
             <div class="field-feedback" id="fb-doc"></div>
           </div>
           <div>
@@ -850,9 +850,8 @@ textarea.form-input{resize:vertical;min-height:64px}
             <span class="cancel-chevron">▼</span>
           </button>
           <div class="cancel-policy-body" id="cancel-body">
-            <div class="cancel-row"><span class="cancel-badge badge-green-c">✓ Total</span><span>Cancelamento com mais de <strong>7 dias</strong> de antecedência — reembolso integral.</span></div>
-            <div class="cancel-row"><span class="cancel-badge badge-amber-c">50%</span><span>Cancelamento entre <strong>3 e 7 dias</strong> antes do check-in.</span></div>
-            <div class="cancel-row"><span class="cancel-badge badge-red-c">✗ Nenhum</span><span>Cancelamento com menos de <strong>3 dias</strong> ou no-show.</span></div>
+            <div class="cancel-row"><span class="cancel-badge badge-green-c">✓ Grátis</span><span>Cancele até <strong>48 horas antes</strong> do check-in — reembolso integral do depósito.</span></div>
+            <div class="cancel-row"><span class="cancel-badge badge-red-c">✗ Não reembolsável</span><span>Cancelamento nas <strong>últimas 48 horas</strong> ou no-show — depósito retido.</span></div>
           </div>
         </div>
       </div>
@@ -915,7 +914,7 @@ textarea.form-input{resize:vertical;min-height:64px}
             <div style="display:grid;grid-template-columns:repeat(7,8px);grid-template-rows:repeat(7,8px);gap:1px" id="qr-grid"></div>
           </div>
           <div class="pix-amount" id="pix-amount"></div>
-          <div class="pix-label">Vence em 30 minutos</div>
+          <div class="pix-label">Vence em 5 minutos</div>
         </div>
         <div class="success-note">
           Chave PIX: <strong>lapacasa@gmail.com</strong><br>
@@ -1391,14 +1390,23 @@ function selectPayMethod(el, val) {
 // ── Form validation ────────────────────────────────────
 function validateForm() {
   let ok = true;
+  let firstInvalid = null;
+
   const emailVal  = document.getElementById('f-email').value;
   const emailOk   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
   const email2Val = document.getElementById('f-email2').value;
   const email2Ok  = emailOk && email2Val === emailVal;
+
+  const isBR  = document.getElementById('f-country').value === 'BR';
   const docVal    = document.getElementById('f-doc').value;
   const docLetter = /[a-zA-Z]/.test(docVal);
   const cpfDigits = docVal.replace(/\D/g,'');
-  const docOk     = docLetter ? docVal.trim().length>4 : (cpfDigits.length===11 && validateCPF(cpfDigits));
+  const docOk     = isBR
+    ? (cpfDigits.length===11 && validateCPF(cpfDigits))
+    : docVal.trim().length > 4;
+
+  // set error message dynamically
+  document.getElementById('err-doc').textContent = isBR ? 'CPF inválido' : 'Documento inválido (mín. 5 caracteres)';
 
   const checks = [
     ['f-name',    'err-name',    v=>v.trim().length>2],
@@ -1416,8 +1424,17 @@ function validateForm() {
     inp.classList.toggle('error', !valid);
     inp.classList.toggle('valid', valid);
     err.classList.toggle('visible', !valid);
-    if(!valid) ok = false;
+    if(!valid){
+      ok = false;
+      if(!firstInvalid) firstInvalid = inp;
+    }
   });
+
+  if(firstInvalid){
+    firstInvalid.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(()=>firstInvalid.focus(), 300);
+  }
+
   return ok;
 }
 
@@ -1592,6 +1609,31 @@ updateStepUI();
   });
 })();
 
+// Update doc field label/placeholder based on selected country
+function updateDocField() {
+  const isBR = document.getElementById('f-country').value === 'BR';
+  const lbl  = document.getElementById('lbl-doc');
+  const inp  = document.getElementById('f-doc');
+  const err  = document.getElementById('err-doc');
+  const fb   = document.getElementById('fb-doc');
+  if(isBR){
+    lbl.innerHTML = 'CPF <span class="req">*</span>';
+    inp.placeholder = '000.000.000-00';
+    inp.maxLength = 14;
+    err.textContent = 'CPF inválido';
+  } else {
+    lbl.innerHTML = 'Passaporte / Documento <span class="req">*</span>';
+    inp.placeholder = 'Número do passaporte';
+    inp.maxLength = 30;
+    err.textContent = 'Documento inválido (mín. 5 caracteres)';
+  }
+  // clear doc field when country changes
+  inp.value = '';
+  inp.classList.remove('error','valid');
+  err.classList.remove('visible');
+  if(fb){fb.textContent='';fb.className='field-feedback';}
+}
+
 // Country
 (()=>{
   const el=document.getElementById('f-country');
@@ -1600,29 +1642,38 @@ updateStepUI();
     const ok=el.value!=='';
     el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
     document.getElementById('err-country').classList.toggle('visible',!ok);
+    updateDocField();
   });
 })();
 
-// CPF/Passport: auto-format + blur validation
+// CPF/Passport: auto-format + blur validation (country-aware)
 (()=>{
   const el=document.getElementById('f-doc');
   const fb=document.getElementById('fb-doc');
   if(!el) return;
   el.addEventListener('input',()=>{
-    if(!/[a-zA-Z]/.test(el.value)) el.value=formatCPF(el.value);
+    const isBR = document.getElementById('f-country').value === 'BR';
+    if(isBR && !/[a-zA-Z]/.test(el.value)) el.value=formatCPF(el.value);
   });
   el.addEventListener('blur',()=>{
     if(!el.value) return;
-    const hasLetter=/[a-zA-Z]/.test(el.value);
-    const digits=el.value.replace(/\D/g,'');
-    const ok=hasLetter?el.value.trim().length>4:(digits.length===11&&validateCPF(digits));
+    const isBR   = document.getElementById('f-country').value === 'BR';
+    const digits = el.value.replace(/\D/g,'');
+    let ok;
+    if(isBR){
+      ok = digits.length===11 && validateCPF(digits);
+      document.getElementById('err-doc').textContent = 'CPF inválido';
+      if(fb){
+        if(digits.length===11){fb.textContent=ok?'✓ CPF válido':'✗ CPF inválido';fb.className='field-feedback '+(ok?'ok':'err');}
+        else{fb.textContent='';fb.className='field-feedback';}
+      }
+    } else {
+      ok = el.value.trim().length > 4;
+      document.getElementById('err-doc').textContent = 'Documento inválido (mín. 5 caracteres)';
+      if(fb){fb.textContent=ok?'✓ Documento aceito':'';fb.className='field-feedback '+(ok?'ok':'');}
+    }
     el.classList.toggle('error',!ok); el.classList.toggle('valid',ok);
     document.getElementById('err-doc').classList.toggle('visible',!ok);
-    if(fb){
-      if(hasLetter){fb.textContent='✓ Passaporte aceito';fb.className='field-feedback ok';}
-      else if(digits.length===11){fb.textContent=ok?'✓ CPF válido':'✗ CPF inválido';fb.className='field-feedback '+(ok?'ok':'err');}
-      else{fb.textContent='';fb.className='field-feedback';}
-    }
   });
 })();
 

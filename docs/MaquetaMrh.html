@@ -648,30 +648,15 @@ textarea.form-input{resize:vertical;min-height:64px}
       <!-- ── Panel 2: Quartos ── -->
       <div class="panel" id="panel-2">
         <div class="panel-title">Selecione os quartos</div>
-        <div class="panel-sub" id="p2-sub">Quantas camas você precisa?</div>
+        <div class="panel-sub">Quantas camas você precisa?</div>
 
-        <div class="gender-grid" id="gender-grid">
-          <button class="gender-btn" data-g="mixed" onclick="selectGender('mixed')">
-            <span class="gender-icon">👥</span>
-            <div class="gender-title">Grupo Misto</div>
-            <div class="gender-desc">Homens e mulheres — dormitórios mistos</div>
-          </button>
-          <button class="gender-btn" data-g="female" onclick="selectGender('female')">
-            <span class="gender-icon">👩</span>
-            <div class="gender-title">Só Mulheres</div>
-            <div class="gender-desc">Inclui acesso ao quarto feminino flexível</div>
-          </button>
+        <div class="rooms-list" id="rooms-list"></div>
+        <div class="flexible-notice" id="flexible-notice">
+          🔄 <strong>Cuarto 6 — Solo Mujeres</strong>: quarto feminino por padrão. Se o grupo precisar das 45 camas, converte automaticamente para misto 48h antes do check-in.
         </div>
-
-        <div id="rooms-area" style="display:none">
-          <div class="rooms-list" id="rooms-list"></div>
-          <div class="flexible-notice" id="flexible-notice">
-            🔄 <strong>Quarto Flexível 7</strong>: quarto padrão feminino. Se não houver reservas femininas 48h antes do check-in, converte automaticamente para misto.
-          </div>
-          <div class="discount-strip" id="discount-strip">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span id="discount-text">Desconto de grupo ativo!</span>
-          </div>
+        <div class="discount-strip" id="discount-strip">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span id="discount-text">Desconto de grupo ativo!</span>
         </div>
       </div>
 
@@ -814,15 +799,18 @@ const state = {
   checkOut: null,
   hoverDate: null,
   selectingEnd: false,
-  gender: null,
-  beds: { mixto12a: 0, mixto12b: 0, mixto7: 0, flexible7: 0 },
+  beds: { cuarto1:0, cuarto3:0, cuarto4:0, cuarto5:0, cuarto6:0 },
 };
 
+// Display order: 1, 3, 4, 5, 6
+// Always visible: cuarto1, cuarto4, cuarto6
+// Progressive: cuarto3 (when cuarto1 maxed), cuarto5 (when 1+3+4+6 all maxed)
 const ROOMS = [
-  { id:'mixto12a',   name:'Mixto 12A',     type:'mixed',  capacity:12, available:10, price:85, isFlexible:false },
-  { id:'mixto12b',   name:'Mixto 12B',     type:'mixed',  capacity:12, available:8,  price:85, isFlexible:false },
-  { id:'mixto7',     name:'Mixto 7',       type:'mixed',  capacity:7,  available:5,  price:85, isFlexible:false },
-  { id:'flexible7',  name:'Flexível 7',    type:'female', capacity:7,  available:7,  price:85, isFlexible:true  },
+  { id:'cuarto1', name:'Cuarto 1', type:'mixed',  capacity:12, available:12, price:85, isFlexible:false },
+  { id:'cuarto3', name:'Cuarto 3', type:'mixed',  capacity:12, available:12, price:85, isFlexible:false },
+  { id:'cuarto4', name:'Cuarto 4', type:'mixed',  capacity:7,  available:7,  price:85, isFlexible:false },
+  { id:'cuarto5', name:'Cuarto 5', type:'mixed',  capacity:7,  available:7,  price:85, isFlexible:false },
+  { id:'cuarto6', name:'Cuarto 6', type:'female', capacity:7,  available:7,  price:85, isFlexible:true  },
 ];
 
 // ── Pricing ────────────────────────────────────────────
@@ -1010,24 +998,39 @@ document.getElementById('cal-next').onclick = ()=>{
 };
 
 // ── Rooms ──────────────────────────────────────────────
-function selectGender(g) {
-  state.gender = g;
-  document.querySelectorAll('.gender-btn').forEach(b=>b.classList.toggle('selected', b.dataset.g===g));
-  renderRooms();
-  document.getElementById('rooms-area').style.display = 'block';
+
+// Progressive reveal: returns which rooms are currently visible
+function getVisibleRooms() {
+  const c1 = ROOMS.find(r=>r.id==='cuarto1');
+  const c3 = ROOMS.find(r=>r.id==='cuarto3');
+  const c4 = ROOMS.find(r=>r.id==='cuarto4');
+  const c6 = ROOMS.find(r=>r.id==='cuarto6');
+  // Cuarto 3 unlocks when cuarto 1 is fully booked
+  const show3 = state.beds['cuarto1'] >= c1.available;
+  // Cuarto 5 unlocks when cuartos 1+3+4+6 are all fully booked
+  const show5 = show3 &&
+    state.beds['cuarto3'] >= c3.available &&
+    state.beds['cuarto4'] >= c4.available &&
+    state.beds['cuarto6'] >= c6.available;
+  return ROOMS.filter(r => {
+    if (r.id==='cuarto3') return show3;
+    if (r.id==='cuarto5') return show5;
+    return true; // cuarto1, cuarto4, cuarto6 always visible
+  });
 }
 
 function renderRooms() {
-  const visibleRooms = ROOMS.filter(r => state.gender==='female' || r.type==='mixed');
+  const visibleRooms = getVisibleRooms();
   const p = calcPrice();
   const season = p ? p.season : getSeason(state.checkIn || TODAY);
 
   document.getElementById('rooms-list').innerHTML = visibleRooms.map(r=>{
     const cnt = state.beds[r.id];
     const pbn = (r.price * season.mult).toFixed(2).replace('.',',');
-    let badgeClass = 'badge-mixed', badgeLabel = 'Misto';
-    if(r.isFlexible) { badgeClass='badge-flexible'; badgeLabel='Flexível'; }
-    else if(r.type==='female') { badgeClass='badge-female'; badgeLabel='Feminino'; }
+    let badgeClass, badgeLabel;
+    if (r.id==='cuarto6') { badgeClass='badge-female'; badgeLabel='Solo Mujeres'; }
+    else if (r.type==='female') { badgeClass='badge-female'; badgeLabel='Feminino'; }
+    else { badgeClass='badge-mixed'; badgeLabel='Misto'; }
     const stripeClass = r.type==='female' ? 'stripe-female' : 'stripe-mixed';
 
     return `<div class="room-card${cnt>0?' has-beds':''}" id="card-${r.id}">
@@ -1050,19 +1053,16 @@ function renderRooms() {
     </div>`;
   }).join('');
 
-  // flexible notice
-  const showFlex = state.gender==='female' && state.beds['flexible7']>0;
-  document.getElementById('flexible-notice').classList.toggle('visible', showFlex);
+  // Flexible notice when cuarto6 has beds selected
+  document.getElementById('flexible-notice').classList.toggle('visible', state.beds['cuarto6']>0);
 
-  // discount strip
+  // Discount strip
   const beds = totalBeds();
   const disc = groupDiscount(beds);
-  const discStrip = document.getElementById('discount-strip');
-  discStrip.classList.toggle('visible', disc>0);
+  document.getElementById('discount-strip').classList.toggle('visible', disc>0);
   if(disc>0) {
-    const pct = (disc*100)+'%';
     document.getElementById('discount-text').textContent =
-      `${pct} de desconto para grupos — ${beds} camas selecionadas`;
+      `${disc*100}% de desconto para grupos — ${beds} camas selecionadas`;
   }
 
   updateFooterPrice();
@@ -1070,9 +1070,22 @@ function renderRooms() {
 
 function changeBeds(id, delta) {
   const room = ROOMS.find(r=>r.id===id);
-  const cur = state.beds[id];
-  const next = Math.max(0, Math.min(room.available, cur+delta));
-  state.beds[id] = next;
+  state.beds[id] = Math.max(0, Math.min(room.available, state.beds[id]+delta));
+
+  // Progressive down: clear beds from rooms that should now be hidden
+  const c1 = ROOMS.find(r=>r.id==='cuarto1');
+  const show3 = state.beds['cuarto1'] >= c1.available;
+  if (!show3) state.beds['cuarto3'] = 0;
+
+  const c3 = ROOMS.find(r=>r.id==='cuarto3');
+  const c4 = ROOMS.find(r=>r.id==='cuarto4');
+  const c6 = ROOMS.find(r=>r.id==='cuarto6');
+  const show5 = show3 &&
+    state.beds['cuarto3'] >= c3.available &&
+    state.beds['cuarto4'] >= c4.available &&
+    state.beds['cuarto6'] >= c6.available;
+  if (!show5) state.beds['cuarto5'] = 0;
+
   renderRooms();
 }
 
@@ -1108,8 +1121,7 @@ function goNext() {
       return showToast(`${s.label}: estadia mínima de ${s.minNights} noites.`);
     advanceTo(2);
   } else if(state.step===2) {
-    if(!state.gender)    return showToast('Selecione o tipo de grupo.');
-    if(totalBeds()===0)  return showToast('Selecione pelo menos 1 cama.');
+    if(totalBeds()===0) return showToast('Selecione pelo menos 1 cama.');
     advanceTo(3);
   } else if(state.step===3) {
     if(!validateForm()) return;
@@ -1126,6 +1138,7 @@ function advanceTo(n) {
   document.getElementById(`panel-${state.step}`).classList.remove('active');
   state.step = n;
   document.getElementById(`panel-${n}`).classList.add('active');
+  if (n===2) renderRooms(); // render rooms on entry (no gender selector gate)
   updateStepUI();
   clearToast();
 }

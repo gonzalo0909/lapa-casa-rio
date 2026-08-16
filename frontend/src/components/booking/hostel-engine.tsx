@@ -1,26 +1,21 @@
 'use client';
 // frontend/src/components/booking/hostel-engine.tsx
-// Orquestrador do motor de reservas de hostel.
-// Gerencia todo o estado, API e navegação; delega a renderização por etapa
-// para hostel-calendar, hostel-room-selector e hostel-guest-form.
+// Orquestador slim — estado global, API, navegación, Step 4, éxito, expirado, CSS, footer.
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { bookingAPI, availabilityAPI } from '@/lib/api';
-
 import {
   Lang, Phase, PayMethod, RoomDef, FormState, FormErrors,
   T, DEFAULT_ROOMS,
 } from './hostel-engine.types';
 import {
-  getSeason, calcPrice, validateCPF,
-  sameDay, dayBefore,
-  fmtDate, fmtMoney,
+  getSeason, calcPrice, validateCPF, fmtDate, fmtMoney,
 } from './hostel-engine.utils';
-import { HostelCalendar } from './hostel-calendar';
-import { HostelRoomSelector } from './hostel-room-selector';
-import { HostelGuestForm } from './hostel-guest-form';
+import { HostelCalendar }      from './hostel-calendar';
+import { HostelRoomSelector }  from './hostel-room-selector';
+import { HostelGuestForm }     from './hostel-guest-form';
 
-// ─── Inline CSS (.he-* classes shared by all sub-components) ───
+// ─── CSS global del motor ────────────────────────────────
 const CSS = `
 .he-wrap{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;background:#F7F4EF;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}
 .he-header{background:#1E3A5F;color:#fff;padding:1.25rem 1.5rem 1.1rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 8px 8px}
@@ -170,48 +165,47 @@ const CSS = `
 @media(max-width:400px){.he-form-row-2{grid-template-columns:1fr}.he-dates-sel{flex-direction:column}.he-dep-box{grid-template-columns:1fr}}
 `;
 
-// ─── PIX QR pattern (same as prototype) ─────────────────
+// ─── PIX QR pattern (igual que el prototipo) ──────────────
 const PIX_PAT = [0,1,1,0,1,0,1,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,1,1,0,1,0,0,1,1,0,1,1,0,0,1,0,1,0,1,0,1,0,1,1];
 
-// ─── Component ──────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────
 interface HostelEngineProps { locale?: string; }
 
+// ─── Component ────────────────────────────────────────────
 export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const initLang: Lang = locale === 'es' ? 'es' : locale === 'en' ? 'en' : 'pt';
-  const [lang, setLang] = useState<Lang>(initLang);
+  const [lang, setLang]       = useState<Lang>(initLang);
   const t = T[lang];
   const TODAY = useRef((() => { const d = new Date(); d.setHours(0,0,0,0); return d; })());
 
-  // ─ Wizard state ─
-  const [step, setStep] = useState(1);
-  const [calMonth, setCalMonth] = useState(() =>
-    new Date(TODAY.current.getFullYear(), TODAY.current.getMonth(), 1)
-  );
-  const [checkIn, setCheckIn]       = useState<Date | null>(null);
-  const [checkOut, setCheckOut]     = useState<Date | null>(null);
-  const [hoverDate, setHoverDate]   = useState<Date | null>(null);
+  // ─ Estado del wizard ─
+  const [step, setStep]               = useState(1);
+  const [calMonth, setCalMonth]       = useState(() => new Date(TODAY.current.getFullYear(), TODAY.current.getMonth(), 1));
+  const [checkIn, setCheckIn]         = useState<Date | null>(null);
+  const [checkOut, setCheckOut]       = useState<Date | null>(null);
+  const [hoverDate, setHoverDate]     = useState<Date | null>(null);
   const [selectingEnd, setSelectingEnd] = useState(false);
-  const [beds, setBeds]             = useState<Record<string, number>>({ cuarto1:0, cuarto3:0, cuarto4:0, cuarto5:0, cuarto6:0 });
-  const [revealed, setRevealed]     = useState({ cuarto3: false, cuarto5: false });
-  const [rooms, setRooms]           = useState<RoomDef[]>(DEFAULT_ROOMS);
-  const [toast, setToast]           = useState('');
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [payMethod, setPayMethod]   = useState<PayMethod>('pix');
-  const [phase, setPhase]           = useState<Phase>('wizard');
+  const [beds, setBeds]               = useState<Record<string, number>>({ cuarto1:0, cuarto3:0, cuarto4:0, cuarto5:0, cuarto6:0 });
+  const [revealed, setRevealed]       = useState({ cuarto3: false, cuarto5: false });
+  const [rooms, setRooms]             = useState<RoomDef[]>(DEFAULT_ROOMS);
+  const [toast, setToast]             = useState('');
+  const [cancelOpen, setCancelOpen]   = useState(false);
+  const [payMethod, setPayMethod]     = useState<PayMethod>('pix');
+  const [phase, setPhase]             = useState<Phase>('wizard');
   const [bookingCode, setBookingCode] = useState('');
-  const [timerSecs, setTimerSecs]   = useState(300);
+  const [timerSecs, setTimerSecs]     = useState(300);
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ─ Guest form state ─
-  const [form, setForm]             = useState<FormState>({ name:'', email:'', email2:'', phone:'', country:'BR', doc:'', arrival:'', requests:'' });
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  // ─ Estado del formulario ─
+  const [form, setForm]               = useState<FormState>({ name:'', email:'', email2:'', phone:'', country:'BR', doc:'', arrival:'', requests:'' });
+  const [formErrors, setFormErrors]   = useState<FormErrors>({});
   const [docFeedback, setDocFeedback] = useState('');
-  const [emailFb, setEmailFb]       = useState('');
-  const [phoneFb, setPhoneFb]       = useState('');
+  const [emailFb, setEmailFb]         = useState('');
+  const [phoneFb, setPhoneFb]         = useState('');
 
-  // ─ Fetch real rooms when dates change ─
+  // ─ Fetch cuartos reales cuando hay fechas ─
   useEffect(() => {
     if (!checkIn || !checkOut) return;
     const ci = checkIn.toISOString().slice(0, 10);
@@ -227,31 +221,35 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         if (!match) return dr;
         return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice || dr.price };
       }));
-    }).catch(() => { /* fall back to DEFAULT_ROOMS */ });
+    }).catch(() => { /* fallback a defaults */ });
   }, [checkIn, checkOut]);
 
-  // ─ Derived values ─
-  const price     = calcPrice(checkIn, checkOut, beds);
-  const totalBeds = Object.values(beds).reduce((s, n) => s + n, 0);
-  const season    = getSeason(checkIn || TODAY.current);
+  // ─ Valores derivados ─
+  const price      = calcPrice(checkIn, checkOut, beds);
+  const totalBeds  = Object.values(beds).reduce((s, n) => s + n, 0);
+  const season     = getSeason(checkIn ?? TODAY.current);
 
-  // Progressive room reveal (cuarto1 full → reveal cuarto3; cuarto4 full → reveal cuarto5)
+  // Cuartos visibles (reveal progresivo)
   const visibleRooms = rooms.filter(r => {
     if (r.id === 'cuarto3') return revealed.cuarto3;
     if (r.id === 'cuarto5') return revealed.cuarto5;
     return true;
   });
 
-  // ─ Calendar click ─
+  // ─ Calendario ─
   const handleCalClick = useCallback((date: Date) => {
-    if (!checkIn || (checkIn && checkOut) || dayBefore(date, checkIn) || sameDay(date, checkIn)) {
+    if (!checkIn || (checkIn && checkOut) || date < checkIn) {
       setCheckIn(date); setCheckOut(null); setSelectingEnd(true);
     } else {
       setCheckOut(date); setSelectingEnd(false); setHoverDate(null);
     }
   }, [checkIn, checkOut]);
 
-  // ─ Beds / progressive reveal ─
+  const handleMonthChange = useCallback((delta: number) => {
+    setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1));
+  }, []);
+
+  // ─ Camas / reveal ─
   const changeBeds = useCallback((id: string, delta: number) => {
     setRevealed(prev => {
       const r1 = rooms.find(r => r.id === 'cuarto1');
@@ -260,18 +258,18 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       setBeds(prevBeds => {
         const cur  = prevBeds[id] ?? 0;
         const room = rooms.find(r => r.id === id)!;
-        let next   = { ...prevBeds };
+        const next = { ...prevBeds };
         if (delta > 0) {
-          if (cur < room.available)               { next[id] = cur + 1; }
+          if (cur < room.available) { next[id] = cur + 1; }
           else if (id === 'cuarto1' && !newRev.cuarto3) { newRev.cuarto3 = true; }
           else if (id === 'cuarto4' && !newRev.cuarto5) { newRev.cuarto5 = true; }
         } else {
           next[id] = Math.max(0, cur - 1);
         }
-        // Collapse overflow rooms when primary drops below max
+        // Collapse progresivo: si el cuarto principal baja del máximo
         if ((next['cuarto1'] ?? 0) < (r1?.available ?? 12)) { newRev.cuarto3 = false; next['cuarto3'] = 0; }
         if ((next['cuarto4'] ?? 0) < (r4?.available ?? 7))  { newRev.cuarto5 = false; next['cuarto5'] = 0; }
-        if (id === 'cuarto5' && delta < 0 && next['cuarto5'] === 0) newRev.cuarto5 = false;
+        if (id === 'cuarto5' && delta < 0 && (next['cuarto5'] ?? 0) === 0) newRev.cuarto5 = false;
         return next;
       });
       return newRev;
@@ -284,78 +282,50 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     setTimeout(() => setToast(''), 3500);
   }, []);
 
-  // ─ Form field setters ─
-  const handleFieldChange = useCallback((field: keyof FormState, value: string) => {
-    setForm(f => ({ ...f, [field]: value }));
+  // ─ Formulario ─
+  const handleFormChange = useCallback((patch: Partial<FormState>) => {
+    setForm(f => ({ ...f, ...patch }));
   }, []);
 
-  const handleCountryChange = useCallback((country: string) => {
-    setForm(f => ({ ...f, country, doc: '' }));
-    setDocFeedback('');
-    setFormErrors(fe => ({ ...fe, doc: undefined }));
+  const handleFormErrors = useCallback((patch: Partial<FormErrors>) => {
+    setFormErrors(fe => ({ ...fe, ...patch }));
   }, []);
 
-  // ─ Blur handlers (inline feedback) ─
-  const handleEmailBlur = useCallback(() => {
-    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
-    setEmailFb(form.email ? (ok ? '✓ E-mail válido' : '✗ E-mail inválido') : '');
-    setFormErrors(fe => ({ ...fe, email: !ok ? t.errEmail : undefined }));
-  }, [form.email, t]);
-
-  const handlePhoneBlur = useCallback(() => {
-    const ok = form.phone.replace(/\D/g, '').length >= 10;
-    setPhoneFb(form.phone ? (ok ? '✓ Telefone válido' : '✗ Mínimo 10 dígitos') : '');
-    setFormErrors(fe => ({ ...fe, phone: !ok ? t.errPhone : undefined }));
-  }, [form.phone, t]);
-
-  const handleDocBlur = useCallback(() => {
-    const isBR = form.country === 'BR';
-    const digits = form.doc.replace(/\D/g, '');
-    if (isBR) {
-      const ok = digits.length === 11 && validateCPF(digits);
-      setDocFeedback(digits.length === 11 ? (ok ? t.fbCPFok : t.fbCPFerr) : '');
-      setFormErrors(fe => ({ ...fe, doc: !ok ? t.errCPF : undefined }));
-    } else {
-      const ok = form.doc.trim().length > 4;
-      setDocFeedback(ok ? t.fbDocOk : '');
-      setFormErrors(fe => ({ ...fe, doc: !ok ? t.errDocForeign : undefined }));
-    }
-  }, [form.country, form.doc, t]);
-
-  const handleNameBlur = useCallback(() => {
-    setFormErrors(fe => ({ ...fe, name: form.name.trim().length <= 2 ? t.errName : undefined }));
-  }, [form.name, t]);
-
-  // ─ Form validation (called from goNext on step 3) ─
+  // ─ Validación completa (Step 3 → Step 4) ─
   const validateForm = useCallback((): boolean => {
-    const isBR   = form.country === 'BR';
+    const isBR    = form.country === 'BR';
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
     const email2Ok = emailOk && form.email2 === form.email;
-    const cpfDigits = form.doc.replace(/\D/g, '');
-    const docOk = isBR ? (cpfDigits.length === 11 && validateCPF(cpfDigits)) : form.doc.trim().length > 4;
+    const digits   = form.doc.replace(/\D/g, '');
+    const docOk    = isBR ? (digits.length === 11 && validateCPF(digits)) : form.doc.trim().length > 4;
+
     const errs: FormErrors = {};
-    if (form.name.trim().length <= 2)          errs.name    = t.errName;
-    if (!emailOk)                              errs.email   = t.errEmail;
-    if (!email2Ok)                             errs.email2  = t.errEmail2;
-    if (form.phone.replace(/\D/g, '').length < 10) errs.phone = t.errPhone;
-    if (!form.country)                         errs.country = t.errCountry;
-    if (!docOk)                                errs.doc     = isBR ? t.errCPF : t.errDocForeign;
-    if (!form.arrival)                         errs.arrival = t.errArrival;
+    if (form.name.trim().length <= 2)                  errs.name    = t.errName;
+    if (!emailOk)                                      errs.email   = t.errEmail;
+    if (!email2Ok)                                     errs.email2  = t.errEmail2;
+    if (form.phone.replace(/\D/g, '').length < 10)     errs.phone   = t.errPhone;
+    if (!form.country)                                 errs.country = t.errCountry;
+    if (!docOk)                                        errs.doc     = isBR ? t.errCPF : t.errDocForeign;
+    if (!form.arrival)                                 errs.arrival = t.errArrival;
+
     setFormErrors(errs);
     if (Object.keys(errs).length > 0) {
-      const fieldMap: Record<string, string> = { name:'he-f-name', email:'he-f-email', email2:'he-f-email2', phone:'he-f-phone', country:'he-f-country', doc:'he-f-doc', arrival:'he-f-arrival' };
       const firstKey = Object.keys(errs)[0] ?? '';
-      const el = document.getElementById(fieldMap[firstKey] || '');
-      if (el) { el.scrollIntoView({ behavior:'smooth', block:'center' }); setTimeout(() => el.focus(), 300); }
+      const fieldMap: Record<string, string> = {
+        name:'he-f-name', email:'he-f-email', email2:'he-f-email2',
+        phone:'he-f-phone', country:'he-f-country', doc:'he-f-doc', arrival:'he-f-arrival',
+      };
+      const el = document.getElementById(fieldMap[firstKey] ?? '');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.focus(), 300); }
       return false;
     }
     return true;
   }, [form, t]);
 
-  // ─ Navigation ─
+  // ─ Navegación ─
   const goNext = useCallback(() => {
     if (step === 1) {
-      if (!checkIn) return showToast(t.tToastCheckin);
+      if (!checkIn)  return showToast(t.tToastCheckin);
       if (!checkOut) return showToast(t.tToastCheckout);
       const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000);
       const s = getSeason(checkIn);
@@ -372,17 +342,17 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step, checkIn, checkOut, totalBeds, t, showToast, validateForm]);
 
-  // ─ Confirm booking ─
+  // ─ Confirmar reserva ─
   const handleConfirm = useCallback(async () => {
     setIsProcessing(true);
     setBookingError('');
     try {
-      const nameParts   = form.name.trim().split(/\s+/);
-      const firstName   = nameParts[0] || form.name;
-      const lastName    = nameParts.slice(1).join(' ') || nameParts[0] || form.name;
-      const selectedRooms = rooms.filter(r => (beds[r.id] || 0) > 0);
-      const c6beds = beds['cuarto6'] ?? 0;
-      const gender = c6beds > 0 && totalBeds === c6beds ? 'female' : 'mixed';
+      const nameParts  = form.name.trim().split(/\s+/);
+      const firstName  = nameParts[0] ?? form.name;
+      const lastName   = nameParts.slice(1).join(' ') || firstName;
+      const selectedRooms = rooms.filter(r => (beds[r.id] ?? 0) > 0);
+      const c6    = beds['cuarto6'] ?? 0;
+      const gender = c6 > 0 && totalBeds === c6 ? 'female' : 'mixed';
 
       const response = await bookingAPI.create({
         checkIn:  checkIn!.toISOString().slice(0, 10),
@@ -395,8 +365,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         source: 'direct',
         guestGender: gender,
       });
-      const code = response.data?.booking?.id || response.data?.bookingId
-        || 'LCH-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      const code = response.data?.booking?.id || response.data?.bookingId || 'LCH-' + Math.random().toString(36).slice(2,8).toUpperCase();
       setBookingCode(code);
       setPhase('success');
       startTimer();
@@ -407,7 +376,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     }
   }, [form, beds, rooms, checkIn, checkOut, lang, t, totalBeds]);
 
-  // ─ 5-minute timer ─
+  // ─ Timer 5 minutos ─
   const startTimer = useCallback(() => {
     let secs = 300;
     setTimerSecs(300);
@@ -420,10 +389,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   }, []);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
-
   const timerStr = `${Math.floor(timerSecs / 60)}:${String(timerSecs % 60).padStart(2, '0')}`;
 
-  // ─ Footer price display ─
+  // ─ Precio en footer ─
   const footerPrice = (() => {
     if (price) {
       const disc = price.disc > 0 ? ` (${price.disc * 100}% desc.)` : '';
@@ -437,26 +405,30 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     return { main: fmtMoney(85 * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: `${s.label} ${t.tInProgress}` };
   })();
 
-  // ─ WhatsApp link ─
+  // ─ Link WhatsApp ─
   const waLink = (() => {
     if (!checkIn || !checkOut || !price) return '#';
-    const selR = rooms.filter(r => (beds[r.id] || 0) > 0);
-    const roomsStr = selR.map(r => { const n = beds[r.id] ?? 0; return `${r.name}: ${n} ${n > 1 ? t.tBeds : t.tBed}`; }).join(', ');
-    const msg = encodeURIComponent(
-      `Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${t.tNights}: ${price.nights}\n${t.step2}: ${roomsStr}\nTotal: ${fmtMoney(price.total)}`
-    );
+    const selR     = rooms.filter(r => (beds[r.id] ?? 0) > 0);
+    const roomsStr = selR.map(r => {
+      const cnt = beds[r.id] ?? 0;
+      return `${r.name}: ${cnt} ${cnt > 1 ? t.tBeds : t.tBed}`;
+    }).join(', ');
+    const msg = encodeURIComponent(`Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${t.tNights}: ${price.nights}\n${t.step2}: ${roomsStr}\nTotal: ${fmtMoney(price.total)}`);
     return `https://wa.me/5521999999999?text=${msg}`;
   })();
 
-  // ─ Step 4 summary rows ─
+  // ─ Datos del resumen (Step 4) ─
   const summaryDates = (() => {
     if (!checkIn || !checkOut || !price) return [];
-    const selR = rooms.filter(r => (beds[r.id] || 0) > 0);
+    const selR = rooms.filter(r => (beds[r.id] ?? 0) > 0);
     return [
-      ['Check-in', fmtDate(checkIn)],
+      ['Check-in',  fmtDate(checkIn)],
       ['Check-out', fmtDate(checkOut)],
-      [t.tNights, String(price.nights)],
-      ...selR.map(r => { const n = beds[r.id] ?? 0; return [r.name, `${n} ${n > 1 ? t.tBeds : t.tBed}`]; }),
+      [t.tNights,   String(price.nights)],
+      ...selR.map(r => {
+        const cnt = beds[r.id] ?? 0;
+        return [r.name, `${cnt} ${cnt > 1 ? t.tBeds : t.tBed}`];
+      }),
       [t.tTotalBeds, String(price.beds)],
     ];
   })();
@@ -480,14 +452,15 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
           </div>
         </div>
 
-        {/* ── Wizard ── */}
+        {/* ── Panel Wizard ── */}
         {phase === 'wizard' && (
           <div className="he-card">
+
             {/* Step tracker */}
             <div className="he-steps">
               {[t.step1, t.step2, t.step3, t.step4].map((lbl, i) => (
                 <div key={i} className={`he-step-tab${step === i+1 ? ' active' : step > i+1 ? ' done' : ''}`}>
-                  <span className="he-step-num">{i + 1}</span>
+                  <span className="he-step-num">{i+1}</span>
                   <span className="he-step-lbl">{lbl}</span>
                 </div>
               ))}
@@ -496,7 +469,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
 
             {toast && <div className="he-toast">{toast}</div>}
 
-            {/* Step 1 — Calendar */}
+            {/* Step 1 — Calendario */}
             {step === 1 && (
               <HostelCalendar
                 lang={lang}
@@ -507,12 +480,12 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 selectingEnd={selectingEnd}
                 today={TODAY.current}
                 onCalClick={handleCalClick}
-                onMonthChange={delta => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1))}
+                onMonthChange={handleMonthChange}
                 onHoverDate={setHoverDate}
               />
             )}
 
-            {/* Step 2 — Rooms */}
+            {/* Step 2 — Cuartos */}
             {step === 2 && (
               <HostelRoomSelector
                 lang={lang}
@@ -525,7 +498,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               />
             )}
 
-            {/* Step 3 — Guest form */}
+            {/* Step 3 — Formulario del huésped */}
             {step === 3 && (
               <HostelGuestForm
                 lang={lang}
@@ -535,17 +508,16 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 emailFb={emailFb}
                 phoneFb={phoneFb}
                 cancelOpen={cancelOpen}
-                onFieldChange={handleFieldChange}
-                onCountryChange={handleCountryChange}
-                onEmailBlur={handleEmailBlur}
-                onPhoneBlur={handlePhoneBlur}
-                onDocBlur={handleDocBlur}
-                onNameBlur={handleNameBlur}
+                onFormChange={handleFormChange}
+                onFormErrors={handleFormErrors}
+                onDocFeedback={setDocFeedback}
+                onEmailFb={setEmailFb}
+                onPhoneFb={setPhoneFb}
                 onCancelToggle={() => setCancelOpen(o => !o)}
               />
             )}
 
-            {/* Step 4 — Summary (inline: depends on many orchestrator values) */}
+            {/* Step 4 — Resumen */}
             {step === 4 && price && (
               <div className="he-panel">
                 <div className="he-panel-title">{t.p4title}</div>
@@ -613,12 +585,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
 
                 <div className="he-pay-methods">
                   {(['pix', 'card'] as PayMethod[]).map(m => (
-                    <button key={m} type="button"
-                      className={`he-pay-m${payMethod === m ? ' selected' : ''}`}
-                      onClick={() => setPayMethod(m)}
-                    >
-                      <input type="radio" name="he-pay" value={m} checked={payMethod === m} readOnly
-                        style={{ flexShrink:0, accentColor:'#1E3A5F' }} />
+                    <button key={m} type="button" className={`he-pay-m${payMethod === m ? ' selected' : ''}`} onClick={() => setPayMethod(m)}>
+                      <input type="radio" name="he-pay" value={m} checked={payMethod === m} readOnly style={{ flexShrink: 0, accentColor: '#1E3A5F' }} />
                       <div className="he-pm-info">
                         <div className="he-pm-name">{m === 'pix' ? t.pmPix : t.pmCard}</div>
                         <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
@@ -628,9 +596,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   ))}
                 </div>
 
-                {bookingError && (
-                  <div className="he-toast" style={{ margin:'0 0 .75rem' }}>{bookingError}</div>
-                )}
+                {bookingError && <div className="he-toast" style={{ margin: '0 0 .75rem' }}>{bookingError}</div>}
 
                 <button className="he-btn-confirm" onClick={handleConfirm} disabled={isProcessing}>
                   {isProcessing ? '...' : t.btnConfirm}
@@ -641,27 +607,21 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               </div>
             )}
 
-            {/* Footer nav */}
+            {/* Footer con precio y navegación */}
             <div className="he-foot">
               <div>
                 <div className="he-price-main">{footerPrice.main}</div>
                 <div className="he-price-sub">{footerPrice.sub}</div>
               </div>
               <div className="he-foot-btns">
-                {step > 1 && (
-                  <button className="he-btn-back" onClick={() => setStep(s => Math.max(1, s - 1))}>
-                    {t.btnBack}
-                  </button>
-                )}
-                {step < 4 && (
-                  <button className="he-btn-next" onClick={goNext}>{t.btnNext}</button>
-                )}
+                {step > 1 && <button className="he-btn-back" onClick={() => setStep(s => Math.max(1, s - 1))}>{t.btnBack}</button>}
+                {step < 4 && <button className="he-btn-next" onClick={goNext}>{t.btnNext}</button>}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Success panel ── */}
+        {/* ── Panel Éxito ── */}
         {phase === 'success' && (
           <div className="he-card">
             <div className="he-success-panel">
@@ -675,9 +635,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     <div className="he-pix-lbl">{t.pixDepLabel}</div>
                     <div className="he-pix-qr">
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,8px)', gridTemplateRows:'repeat(7,8px)', gap:'1px' }}>
-                        {PIX_PAT.map((b, i) => (
-                          <div key={i} style={{ background: b ? '#fff' : 'transparent', width:'8px', height:'8px' }} />
-                        ))}
+                        {PIX_PAT.map((b, i) => <div key={i} style={{ background: b ? '#fff' : 'transparent', width:'8px', height:'8px' }} />)}
                       </div>
                     </div>
                     <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
@@ -694,30 +652,23 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 )}
               </div>
               <div className="he-success-note">
-                {payMethod === 'pix' && <>{t.pixKey}<br /></>}
-                {t.restNote}
+                {payMethod === 'pix' && <>{t.pixKey}<br /></>}{t.restNote}
               </div>
-              <button
-                className="he-btn-confirm"
-                style={{ marginTop:'1.25rem', background:'#1E3A5F' }}
-                onClick={() => window.location.reload()}
-              >
+              <button className="he-btn-confirm" style={{ marginTop:'1.25rem', background:'#1E3A5F' }} onClick={() => window.location.reload()}>
                 {t.btnNewBooking}
               </button>
             </div>
           </div>
         )}
 
-        {/* ── Expired panel ── */}
+        {/* ── Panel Expirado ── */}
         {phase === 'expired' && (
           <div className="he-card">
             <div className="he-expired-panel">
               <div className="he-expired-icon">⏰</div>
               <div className="he-expired-title">{t.expiredTitle}</div>
               <div className="he-expired-sub">{t.expiredSub}</div>
-              <button className="he-btn-confirm" onClick={() => window.location.reload()}>
-                {t.btnTryAgain}
-              </button>
+              <button className="he-btn-confirm" onClick={() => window.location.reload()}>{t.btnTryAgain}</button>
             </div>
           </div>
         )}

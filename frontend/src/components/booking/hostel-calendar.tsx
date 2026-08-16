@@ -1,13 +1,13 @@
 'use client';
 // frontend/src/components/booking/hostel-calendar.tsx
-// Step 1 — Calendário de check-in/check-out.
-// Componente puro de apresentação: toda lógica de estado fica no orquestrador.
+// Step 1 — Calendario de check-in / check-out.
+// Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
 import { Lang, T, DAY_LBL, MON_LBL } from './hostel-engine.types';
 import { getSeason, fmtDate, sameDay, dayBefore, inRange } from './hostel-engine.utils';
 
-// ─── Props ──────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────
 interface HostelCalendarProps {
   lang: Lang;
   calMonth: Date;
@@ -21,18 +21,18 @@ interface HostelCalendarProps {
   onHoverDate: (date: Date | null) => void;
 }
 
-// ─── Component ──────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────
 export function HostelCalendar({
   lang, calMonth, checkIn, checkOut, hoverDate, selectingEnd,
   today, onCalClick, onMonthChange, onHoverDate,
 }: HostelCalendarProps) {
   const t = T[lang];
 
-  // Build calendar grid cells
+  // Celdas del grid
   const calCells = (() => {
-    const firstDay = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1).getDay();
+    const firstDay    = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1).getDay();
     const daysInMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate();
-    const cells: Array<{ day: number; date: Date; isEmpty?: false } | { isEmpty: true }> = [];
+    const cells: Array<{ day: number; date: Date; isEmpty: false } | { isEmpty: true }> = [];
     for (let i = 0; i < firstDay; i++) cells.push({ isEmpty: true });
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push({ day: d, date: new Date(calMonth.getFullYear(), calMonth.getMonth(), d), isEmpty: false });
@@ -40,7 +40,7 @@ export function HostelCalendar({
     return cells;
   })();
 
-  // Minimum nights warning
+  // Advertencia de noches mínimas
   const minNightsWarn = (() => {
     if (!checkIn || !checkOut) return null;
     const n = Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000);
@@ -50,12 +50,14 @@ export function HostelCalendar({
     return null;
   })();
 
+  const monthName = MON_LBL[lang][calMonth.getMonth()] ?? '';
+
   return (
     <div className="he-panel">
       <div className="he-panel-title">{t.p1title}</div>
       <div className="he-panel-sub">{t.p1sub}</div>
 
-      {/* Month navigation */}
+      {/* Navegación de mes */}
       <div className="he-cal-nav">
         <button
           className="he-cal-nav-btn"
@@ -67,7 +69,7 @@ export function HostelCalendar({
           </svg>
         </button>
         <div className="he-cal-month">
-          {MON_LBL[lang][calMonth.getMonth()]} {calMonth.getFullYear()}
+          {monthName} {calMonth.getFullYear()}
         </div>
         <button
           className="he-cal-nav-btn"
@@ -80,30 +82,30 @@ export function HostelCalendar({
         </button>
       </div>
 
-      {/* Day grid */}
+      {/* Grid de días */}
       <div className="he-cal-grid">
         {DAY_LBL[lang].map(d => <div key={d} className="he-cal-dlbl">{d}</div>)}
         {calCells.map((cell, i) => {
           if (cell.isEmpty) return <div key={i} className="he-cal-cell" />;
 
           const { date } = cell;
-          const isPast = dayBefore(date, today) && !sameDay(date, today);
+          const isPast  = dayBefore(date, today) && !sameDay(date, today);
           const isToday = sameDay(date, today);
           const isStart = sameDay(date, checkIn);
           const isEnd   = sameDay(date, checkOut);
           const refEnd  = selectingEnd && hoverDate ? hoverDate : checkOut;
           const inRng   = inRange(date, checkIn, refEnd);
           const isHover = selectingEnd && sameDay(date, hoverDate);
-          const s = !isPast ? getSeason(date) : null;
+          const s       = !isPast ? getSeason(date) : null;
 
           let cls = 'he-cal-cell';
-          if (isStart)                  cls += ' in-range range-start';
-          if (isEnd)                    cls += ' in-range range-end';
-          if (isHover && !isStart)      cls += ' in-range range-end';
-          if (inRng)                    cls += ' in-range';
-          if (isToday)                  cls += ' is-today';
-          if (s?.label === 'Alta Temporada')  cls += ' s-alta';
-          else if (s?.label === 'Carnaval')   cls += ' s-carnaval';
+          if (isStart)                          cls += ' in-range range-start';
+          if (isEnd)                            cls += ' in-range range-end';
+          if (isHover && !isStart)              cls += ' in-range range-end';
+          if (inRng)                            cls += ' in-range';
+          if (isToday)                          cls += ' is-today';
+          if (s?.label === 'Alta Temporada')    cls += ' s-alta';
+          else if (s?.label === 'Carnaval')     cls += ' s-carnaval';
           else if (s?.label === 'Baixa Temporada') cls += ' s-baixa';
 
           return (
@@ -122,7 +124,7 @@ export function HostelCalendar({
         })}
       </div>
 
-      {/* Selected dates bar */}
+      {/* Barra de fechas seleccionadas */}
       {checkIn && (
         <div className="he-dates-sel">
           <div className="he-date-col">
@@ -131,8 +133,8 @@ export function HostelCalendar({
           </div>
           <div className="he-nights-c">
             {checkOut
-              ? `${Math.round((checkOut.getTime()-checkIn.getTime())/86400000)} ${
-                  Math.round((checkOut.getTime()-checkIn.getTime())/86400000)===1
+              ? `${Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000)} ${
+                  Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000) === 1
                     ? t.tNight : t.tNights2}`
               : ''}
           </div>
@@ -143,10 +145,10 @@ export function HostelCalendar({
         </div>
       )}
 
-      {/* Minimum nights warning */}
+      {/* Advertencia noches mínimas */}
       {minNightsWarn && <div className="he-min-warn">{minNightsWarn}</div>}
 
-      {/* Season legend */}
+      {/* Leyenda de temporadas */}
       <div className="he-season-info">
         <span className="he-chip media">{t.seasonMedia}</span>
         <span className="he-chip alta">{t.seasonAlta}</span>

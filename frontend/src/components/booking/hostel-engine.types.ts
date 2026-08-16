@@ -1,7 +1,7 @@
 // frontend/src/components/booking/hostel-engine.types.ts
-// Tipos, constantes e traduções do motor de reservas de hostel.
+// Tipos TypeScript · Traducciones PT/ES/EN · DEFAULT_ROOMS · DAY_LBL · MON_LBL
 
-// ─── Types ─────────────────────────────────────────────
+// ─── Tipos base ─────────────────────────────────────────
 export type Lang = 'pt' | 'es' | 'en';
 export type Phase = 'wizard' | 'success' | 'expired';
 export type PayMethod = 'pix' | 'card';
@@ -18,16 +18,27 @@ export interface RoomDef {
 }
 
 export interface FormState {
-  name: string; email: string; email2: string; phone: string;
-  country: string; doc: string; arrival: string; requests: string;
+  name: string;
+  email: string;
+  email2: string;
+  phone: string;
+  country: string;
+  doc: string;
+  arrival: string;
+  requests: string;
 }
 
 export interface FormErrors {
-  name?: string; email?: string; email2?: string; phone?: string;
-  country?: string; doc?: string; arrival?: string;
+  name?: string;
+  email?: string;
+  email2?: string;
+  phone?: string;
+  country?: string;
+  doc?: string;
+  arrival?: string;
 }
 
-// ─── Translations ───────────────────────────────────────
+// ─── Traducciones ────────────────────────────────────────
 export const T = {
   pt: {
     step1:'Datas',step2:'Quartos',step3:'Hóspede',step4:'Resumo',
@@ -202,7 +213,9 @@ export const T = {
   },
 } as const;
 
-// ─── Default rooms (fallback si la API no responde) ─────
+export type Translations = typeof T[Lang];
+
+// ─── Cuartos por defecto (fallback si la API no responde) ─
 export const DEFAULT_ROOMS: RoomDef[] = [
   { id:'cuarto1', name:'Cuarto 1', type:'mixed',  capacity:12, available:12, price:85, isFlexible:false },
   { id:'cuarto3', name:'Cuarto 3', type:'mixed',  capacity:12, available:12, price:85, isFlexible:false },
@@ -211,7 +224,7 @@ export const DEFAULT_ROOMS: RoomDef[] = [
   { id:'cuarto6', name:'Cuarto 6', type:'female', capacity:7,  available:7,  price:85, isFlexible:true  },
 ];
 
-// ─── Calendar labels ────────────────────────────────────
+// ─── Labels de calendario ─────────────────────────────────
 export const DAY_LBL: Record<Lang, string[]> = {
   pt:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
   es:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],

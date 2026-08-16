@@ -1,15 +1,16 @@
 'use client';
 // frontend/src/components/booking/hostel-room-selector.tsx
-// Step 2 — Selector de quartos/camas con reveal progressivo e desconto de grupo.
+// Step 2 — Selección de cuartos con reveal progresivo y descuento de grupo.
+// Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
 import { Lang, RoomDef, T } from './hostel-engine.types';
 import { groupDisc } from './hostel-engine.utils';
 
-// ─── Props ──────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────
 interface HostelRoomSelectorProps {
   lang: Lang;
-  /** Rooms already filtered by progressive reveal (visibleRooms) */
+  /** Cuartos ya filtrados (visibleRooms del orquestador) */
   rooms: RoomDef[];
   beds: Record<string, number>;
   revealed: { cuarto3: boolean; cuarto5: boolean };
@@ -18,11 +19,12 @@ interface HostelRoomSelectorProps {
   onChangeBeds: (id: string, delta: number) => void;
 }
 
-// ─── Component ──────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────
 export function HostelRoomSelector({
   lang, rooms, beds, revealed, season, totalBeds, onChangeBeds,
 }: HostelRoomSelectorProps) {
   const t = T[lang];
+  const disc = groupDisc(totalBeds);
 
   return (
     <div className="he-panel">
@@ -31,10 +33,9 @@ export function HostelRoomSelector({
 
       <div className="he-rooms">
         {rooms.map(r => {
-          const cnt = beds[r.id] || 0;
+          const cnt = beds[r.id] ?? 0;
           const pbn = (r.price * season.mult).toFixed(2).replace('.', ',');
 
-          // Disable + when room is full AND the overflow room is already revealed
           const plusDisabled =
             r.id === 'cuarto1' ? (cnt >= r.available && revealed.cuarto3) :
             r.id === 'cuarto4' ? (cnt >= r.available && revealed.cuarto5) :
@@ -73,19 +74,18 @@ export function HostelRoomSelector({
         })}
       </div>
 
-      {/* Flexible room notice */}
-      {(beds['cuarto6'] || 0) > 0 && (
+      {/* Aviso cuarto flexible (Solo Mujeres) */}
+      {(beds['cuarto6'] ?? 0) > 0 && (
         <div className="he-flex-notice">{t.flexibleNotice}</div>
       )}
 
-      {/* Group discount strip */}
-      {totalBeds > 0 && groupDisc(totalBeds) > 0 && (
+      {/* Strip de descuento de grupo */}
+      {totalBeds > 0 && disc > 0 && (
         <div className="he-disc-strip">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          {groupDisc(totalBeds) * 100}% {t.discountActive} — {totalBeds} {t.tBeds}
+          {disc * 100}% {t.discountActive} — {totalBeds} {t.tBeds}
         </div>
       )}
     </div>

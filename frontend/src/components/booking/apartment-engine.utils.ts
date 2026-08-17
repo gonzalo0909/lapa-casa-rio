@@ -2,11 +2,7 @@
 // Funciones puras extraídas del motor de apartamentos — sin React, sin estado.
 
 import type { ApartmentAvailability } from '@/types/global';
-
-/** BCP-47 usado para nombres de mes/día localizados (Intl). */
-export const BCP47: Record<string, string> = {
-  pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE',
-};
+import { BCP47 } from './apartment-engine.types';
 
 /** Convierte un Date a string YYYY-MM-DD comparable lexicográficamente. */
 export function toDs(d: Date): string {
@@ -95,4 +91,66 @@ export function rankApartments(
       .filter((a) => !a.available)
       .map((apt) => ({ apt, disabledReason: 'unavailable' as const })),
   ];
+}
+
+// ─── Validadores y formateadores de datos del huésped ────────────────────────
+
+/** Valida un CPF brasileño (11 dígitos, dígitos verificadores). */
+export function validateCPF(raw: string): boolean {
+  const cpf = raw.replace(/\D/g, '');
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) { return false; }
+  let s = 0;
+  for (let i = 0; i < 9; i++) { s += parseInt(cpf[i] ?? '0', 10) * (10 - i); }
+  let d = (s * 10) % 11; if (d >= 10) { d = 0; }
+  if (d !== parseInt(cpf[9] ?? '0', 10)) { return false; }
+  s = 0;
+  for (let i = 0; i < 10; i++) { s += parseInt(cpf[i] ?? '0', 10) * (11 - i); }
+  d = (s * 10) % 11; if (d >= 10) { d = 0; }
+  return d === parseInt(cpf[10] ?? '0', 10);
+}
+
+/** Formatea una cadena de dígitos como CPF: 000.000.000-00. */
+export function formatCPF(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 11);
+  if (digits.length > 9) { return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`; }
+  if (digits.length > 6) { return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`; }
+  if (digits.length > 3) { return `${digits.slice(0, 3)}.${digits.slice(3)}`; }
+  return digits;
+}
+
+/** Devuelve true si el string tiene formato de e-mail válido. */
+export function isEmailFmt(v: string): boolean {
+  return (
+    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(v) &&
+    !v.includes('..') &&
+    v.indexOf('@') > 0
+  );
+}
+
+/**
+ * Formatea un número telefónico brasileño con máscara mientras el usuario escribe.
+ * Soporta formato local (DDD + número) y con código de país +55.
+ */
+export function formatBRPhone(raw: string): string {
+  const clean = raw.replace(/[^\d+]/g, '');
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length <= 2) { return clean; }
+  if (clean.startsWith('+55')) {
+    const d = digits.slice(2);
+    let fmt = '+55 ';
+    if (d.length > 0) { fmt += '(' + d.slice(0, 2) + ')'; }
+    if (d.length > 2) { fmt += ' ' + d.slice(2, 7); }
+    if (d.length > 7) { fmt += '-' + d.slice(7, 11); }
+    return fmt;
+  }
+  if (!clean.startsWith('+')) {
+    const local = digits.slice(2, 11);
+    const isNineDigit = local.length > 8;
+    const splitAt = isNineDigit ? 5 : 4;
+    let fmt = '(' + digits.slice(0, 2) + ')';
+    if (local.length > 0) { fmt += ' ' + local.slice(0, splitAt); }
+    if (local.length > splitAt) { fmt += '-' + local.slice(splitAt); }
+    return fmt;
+  }
+  return clean.slice(0, 18);
 }

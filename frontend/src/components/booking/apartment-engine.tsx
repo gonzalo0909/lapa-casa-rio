@@ -28,7 +28,6 @@ import { isEmailFmt, validateCPF } from './apartment-engine.utils';
 import type { ApartmentAvailability } from '@/types/global';
 import type {
   Step,
-  AptLocale,
   GuestForm,
   CreatedBooking,
   ApartmentEngineProps,

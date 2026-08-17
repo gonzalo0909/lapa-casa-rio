@@ -414,7 +414,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       return `${r.name}: ${cnt} ${cnt > 1 ? t.tBeds : t.tBed}`;
     }).join(', ');
     const msg = encodeURIComponent(`Olá! Quero reservar no Lapa Casa Hostel.\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${t.tNights}: ${price.nights}\n${t.step2}: ${roomsStr}\nTotal: ${fmtMoney(price.total)}`);
-    return `https://wa.me/5521999999999?text=${msg}`;
+    return `https://wa.me/5521977157530?text=${msg}`;
   })();
 
   // ─ Datos del resumen (Step 4) ─

@@ -1,110 +1,67 @@
-'use client';
-// frontend/src/components/booking/property-tabs.tsx
-//
-// Barra de tabs que monta AMBOS motores simultáneamente y los alterna con
-// display:none — estado de formulario preservado al cambiar de tab (Opción A).
-//
-// Uso en /hostel     → defaultTab=0 (Hostel activo)
-// Uso en /apartamentos → defaultTab=1 (Apartamentos activo)
+"use client"
 
-import React, { useState } from 'react';
-import { BedDouble, Home } from 'lucide-react';
+import React, { useState } from "react"
+import { BedDouble, Home } from "lucide-react"
 
-// ─── Labels por idioma ────────────────────────────────
-const LABELS: Record<string, { hostel: string; apartments: string }> = {
-  pt: { hostel: 'Hostel',      apartments: 'Apartamentos' },
-  es: { hostel: 'Hostel',      apartments: 'Apartamentos' },
-  en: { hostel: 'Hostel',      apartments: 'Apartments'   },
-};
+const TABS = [
+  { label: "Hostel", icon: BedDouble },
+  { label: "Apartamentos", icon: Home },
+]
 
-// ─── Inline CSS ───────────────────────────────────────
-const CSS = `
-.pt-bar{
-  display:flex;
-  background:#1E3A5F;
-  width:100%;
-  padding:0 1.5rem;
-  box-sizing:border-box;
-}
-.pt-tab{
-  display:flex;
-  align-items:center;
-  gap:.4rem;
-  padding:.75rem 1.25rem .7rem;
-  font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;
-  font-size:.78rem;
-  font-weight:700;
-  letter-spacing:.05em;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.5);
-  background:none;
-  border:none;
-  border-bottom:2px solid transparent;
-  cursor:pointer;
-  transition:color .15s, border-color .15s;
-  white-space:nowrap;
-}
-.pt-tab:hover{color:rgba(255,255,255,.8)}
-.pt-tab.active{color:#fff;border-bottom-color:#C8870A}
-`;
-
-// ─── Props ────────────────────────────────────────────
 interface PropertyTabsProps {
-  /** Locale para labels (pt | es | en). Default: 'pt'. */
-  locale?: string;
-  /** Tab activo al montar. 0 = Hostel, 1 = Apartamentos. Default: 0. */
-  defaultTab?: 0 | 1;
   /** Exactamente dos hijos: [<HostelEngine>, <ApartmentEngine>] */
-  children: [React.ReactNode, React.ReactNode];
+  children: [React.ReactNode, React.ReactNode]
+  /** Tab activo al montar. 0 = Hostel, 1 = Apartamentos. Default: 0. */
+  defaultTab?: 0 | 1
+  /** Locale (no usado en UI — reservado para compatibilidad con pages). */
+  locale?: string
 }
 
-// ─── Component ────────────────────────────────────────
-export function PropertyTabs({
-  locale = 'pt',
-  defaultTab = 0,
-  children,
-}: PropertyTabsProps) {
-  const [active, setActive] = useState<0 | 1>(defaultTab);
-
-  const lang = LABELS[locale] ?? { hostel: 'Hostel', apartments: 'Apartamentos' };
-  const tabs = [
-    { icon: <BedDouble size={16} />, label: lang.hostel     },
-    { icon: <Home      size={16} />, label: lang.apartments },
-  ];
+export function PropertyTabs({ children, defaultTab = 0, locale: _locale }: PropertyTabsProps) {
+  const [active, setActive] = useState<0 | 1>(defaultTab)
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-
-      {/* Barra de tabs */}
-      <nav className="pt-bar" role="tablist" aria-label="Motor de reservas">
-        {tabs.map((tab, i) => (
-          <button
-            key={i}
-            role="tab"
-            aria-selected={active === i}
-            aria-controls={`pt-panel-${i}`}
-            className={`pt-tab${active === i ? ' active' : ''}`}
-            onClick={() => setActive(i as 0 | 1)}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      <nav
+        role="tablist"
+        aria-label="Motor de reservas"
+        className="mx-auto flex max-w-md items-center gap-1 rounded-full border border-border bg-card p-1"
+      >
+        {TABS.map((tab, i) => {
+          const Icon = tab.icon
+          const isActive = active === i
+          return (
+            <button
+              key={tab.label}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`pt-panel-${i}`}
+              onClick={() => setActive(i as 0 | 1)}
+              className={[
+                "flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              ].join(" ")}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          )
+        })}
       </nav>
 
-      {/* Paneles — siempre montados; show/hide con display para no perder estado */}
       {children.map((child, i) => (
         <div
           key={i}
           id={`pt-panel-${i}`}
           role="tabpanel"
           aria-hidden={active !== i}
-          style={{ display: active === i ? 'block' : 'none' }}
+          style={{ display: active === i ? "block" : "none" }}
         >
           {child}
         </div>
       ))}
     </>
-  );
+  )
 }

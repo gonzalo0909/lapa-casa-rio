@@ -66,7 +66,7 @@ export function PropertyTabs({
 }: PropertyTabsProps) {
   const [active, setActive] = useState<0 | 1>(defaultTab);
 
-  const lang = LABELS[locale] ?? LABELS.pt;
+  const lang = LABELS[locale] ?? { hostel: 'Hostel', apartments: 'Apartamentos' };
   const tabs = [
     { icon: <BedDouble size={16} />, label: lang.hostel     },
     { icon: <Home      size={16} />, label: lang.apartments },

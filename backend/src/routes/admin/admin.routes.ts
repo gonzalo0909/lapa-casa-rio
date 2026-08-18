@@ -536,6 +536,167 @@ router.put('/group-discount-tiers/:id', async (req, res, next) => {
   }
 });
 
+// ─── Ofertas / Descuentos ────────────────────────────────────────────────────
+
+/**
+ * GET /admin/offers — lista todas las ofertas
+ */
+router.get('/offers', async (_req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, code, label, discount_percent, apartment_ids,
+              valid_from::text, valid_to::text, is_active, created_at, updated_at
+       FROM apartment_offers
+       ORDER BY created_at DESC`
+    );
+    res.status(200).json(ApiResponse.success(rows));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /admin/offers — crea una oferta
+ */
+router.post('/offers', async (req, res, next) => {
+  try {
+    const { code, label, discountPercent, apartmentIds, validFrom, validTo, isActive } = req.body as {
+      code: string;
+      label: string;
+      discountPercent: number;
+      apartmentIds?: string[] | null;
+      validFrom?: string | null;
+      validTo?: string | null;
+      isActive?: boolean;
+    };
+
+    if (!code || !label || discountPercent === undefined) {
+      res.status(400).json(ApiResponse.error('Campos requeridos: code, label, discountPercent'));
+      return;
+    }
+    if (discountPercent <= 0 || discountPercent > 100) {
+      res.status(400).json(ApiResponse.error('discountPercent debe estar entre 1 y 100'));
+      return;
+    }
+
+    const { rows } = await query(
+      `INSERT INTO apartment_offers (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active)
+       VALUES ($1, $2, $3, $4, $5::date, $6::date, $7)
+       RETURNING id, code, label, discount_percent, apartment_ids, valid_from::text, valid_to::text, is_active, created_at`,
+      [
+        code.trim(),
+        label.trim(),
+        discountPercent,
+        apartmentIds?.length ? apartmentIds : null,
+        validFrom ?? null,
+        validTo ?? null,
+        isActive ?? true,
+      ]
+    );
+
+    await auditLogService.log({
+      entity_type: 'apartment_offer', entity_id: rows[0].id, operation: 'ADMIN_CREATE_OFFER',
+      new_data: rows[0]
+    });
+
+    res.status(201).json(ApiResponse.success(rows[0], 'Oferta creada'));
+  } catch (error: any) {
+    if (error?.code === '23505') {
+      res.status(409).json(ApiResponse.error(`El código "${req.body.code}" ya existe`));
+      return;
+    }
+    next(error);
+  }
+});
+
+/**
+ * PUT /admin/offers/:id — edita una oferta existente
+ */
+router.put('/offers/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { label, discountPercent, apartmentIds, validFrom, validTo, isActive } = req.body as {
+      label?: string;
+      discountPercent?: number;
+      apartmentIds?: string[] | null;
+      validFrom?: string | null;
+      validTo?: string | null;
+      isActive?: boolean;
+    };
+
+    if (discountPercent !== undefined && (discountPercent <= 0 || discountPercent > 100)) {
+      res.status(400).json(ApiResponse.error('discountPercent debe estar entre 1 y 100'));
+      return;
+    }
+
+    const sets: string[] = [];
+    const params: any[] = [];
+
+    if (label !== undefined) { params.push(label.trim()); sets.push(`label = $${params.length}`); }
+    if (discountPercent !== undefined) { params.push(discountPercent); sets.push(`discount_percent = $${params.length}`); }
+    if (apartmentIds !== undefined) {
+      params.push(apartmentIds?.length ? apartmentIds : null);
+      sets.push(`apartment_ids = $${params.length}`);
+    }
+    if (validFrom !== undefined) { params.push(validFrom ?? null); sets.push(`valid_from = $${params.length}::date`); }
+    if (validTo !== undefined) { params.push(validTo ?? null); sets.push(`valid_to = $${params.length}::date`); }
+    if (isActive !== undefined) { params.push(isActive); sets.push(`is_active = $${params.length}`); }
+
+    if (sets.length === 0) {
+      res.status(400).json(ApiResponse.error('Nada para actualizar'));
+      return;
+    }
+
+    params.push(id);
+    const { rows } = await query(
+      `UPDATE apartment_offers SET ${sets.join(', ')}, updated_at = now()
+       WHERE id = $${params.length}
+       RETURNING id, code, label, discount_percent, apartment_ids, valid_from::text, valid_to::text, is_active, updated_at`,
+      params
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Oferta no encontrada'));
+      return;
+    }
+
+    await auditLogService.log({
+      entity_type: 'apartment_offer', entity_id: id, operation: 'ADMIN_UPDATE_OFFER',
+      new_data: rows[0]
+    });
+
+    res.status(200).json(ApiResponse.success(rows[0], 'Oferta actualizada'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /admin/offers/:id — elimina una oferta
+ */
+router.delete('/offers/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(
+      `DELETE FROM apartment_offers WHERE id = $1 RETURNING id, code`,
+      [id]
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Oferta no encontrada'));
+      return;
+    }
+    await auditLogService.log({
+      entity_type: 'apartment_offer', entity_id: id, operation: 'ADMIN_DELETE_OFFER',
+      old_data: rows[0]
+    });
+    res.status(200).json(ApiResponse.success({ deleted: rows[0] }, 'Oferta eliminada'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * GET /admin/audit-logs
  */

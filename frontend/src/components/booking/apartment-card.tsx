@@ -77,8 +77,8 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
       className={`${styles.aptCard} ${disabledReason ? styles.aptCardUnavailable : ''} ${selected ? styles.aptCardSelected : ''}`}
     >
       <div className={styles.aptPhoto} style={{ background: tintFor(apartment.code) }}>
-        <span className={styles.aptPhotoIcon}><PhotoIcon size={44} strokeWidth={1.25} /></span>
-        <span className={styles.aptPhotoLabel}><Camera size={11} /> {t('illustrativePhoto')}</span>
+        <span className={styles.aptPhotoIcon}><PhotoIcon size={24} strokeWidth={1.25} /></span>
+        <span className={styles.aptPhotoLabel}><Camera size={9} /> {t('illustrativePhoto')}</span>
         <span className={`${styles.availStripe} ${apartment.available ? styles.availStripeAvail : styles.availStripeUnavail}`}>
           {apartment.available ? t('available') : t('unavailable')}
         </span>

@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Building2, Landmark, Home, Palette, Mountain, Music, Leaf, Building,
-  Sparkles, Clapperboard, Camera, Calendar, AlertTriangle, Check,
+  Sparkles, Clapperboard, Camera, Calendar, AlertTriangle,
   MapPin, type LucideIcon,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';

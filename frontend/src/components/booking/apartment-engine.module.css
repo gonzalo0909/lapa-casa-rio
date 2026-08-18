@@ -5,14 +5,14 @@
  * resto del sitio (Hostel usa su propio tema).
  */
 .root {
-  --bg: #F5F2EA; --bg-subtle: #EAE5D8; --bg-card: #FCFAF4;
-  --fg: #142E2A; --fg-muted: #5A6B65; --border: #D9D2C3;
-  --primary: #0E5A4C; --primary-fg: #FFFFFF; --primary-soft: #D2E6DF;
-  --accent: #E2673F;
-  --success-bg: #D6EADF; --success-fg: #1E6B54;
-  --unavail-bg: #EAE5D8; --unavail-fg: #5A6B65;
+  --bg: #FAF7F0; --bg-subtle: #EEE9DC; --bg-card: #FFFDF8;
+  --fg: #1A1610; --fg-muted: #6A6058; --border: #D8D0BC;
+  --primary: #2C4A8C; --primary-fg: #FFFFFF; --primary-soft: #D5DFF5;
+  --accent: #F0B429;
+  --success-bg: #D5E8D4; --success-fg: #1E5E40;
+  --unavail-bg: #EEE9DC; --unavail-fg: #6A6058;
   --warn-bg: #FBE9DB; --warn-border: #E29B72; --warn-fg: #9A4A28;
-  --step-done: #0E5A4C; --step-active: #E2673F; --step-todo: #D9D2C3;
+  --step-done: #2C4A8C; --step-active: #F0B429; --step-todo: #D8D0BC;
 
   background: var(--bg);
   color: var(--fg);
@@ -22,21 +22,21 @@
 }
 @media (prefers-color-scheme: dark) {
   :global(:root:not([data-theme='light'])) .root {
-    --bg: #0E1F1B; --bg-subtle: #142823; --bg-card: #172C27; --fg: #EAF1EE;
-    --fg-muted: #8CA39B; --border: #274039; --primary: #3E9885; --primary-fg: #08130F;
-    --primary-soft: #1B3A33; --accent: #E88056; --success-bg: #10331F;
-    --success-fg: #7FD1A0; --unavail-bg: #142823; --unavail-fg: #8CA39B;
+    --bg: #0C1120; --bg-subtle: #111828; --bg-card: #141E2E; --fg: #E8ECF4;
+    --fg-muted: #8A96B0; --border: #243050; --primary: #5B7FD4; --primary-fg: #04080E;
+    --primary-soft: #1A2844; --accent: #F0B429; --success-bg: #0D2A1A;
+    --success-fg: #7FD1A0; --unavail-bg: #111828; --unavail-fg: #8A96B0;
     --warn-bg: #33220F; --warn-border: #8A5A32; --warn-fg: #E6B98A;
-    --step-done: #3E9885; --step-active: #E88056; --step-todo: #274039;
+    --step-done: #5B7FD4; --step-active: #F0B429; --step-todo: #243050;
   }
 }
 :global([data-theme='dark']) .root {
-  --bg: #0E1F1B; --bg-subtle: #142823; --bg-card: #172C27; --fg: #EAF1EE;
-  --fg-muted: #8CA39B; --border: #274039; --primary: #3E9885; --primary-fg: #08130F;
-  --primary-soft: #1B3A33; --accent: #E88056; --success-bg: #10331F;
-  --success-fg: #7FD1A0; --unavail-bg: #142823; --unavail-fg: #8CA39B;
+  --bg: #0C1120; --bg-subtle: #111828; --bg-card: #141E2E; --fg: #E8ECF4;
+  --fg-muted: #8A96B0; --border: #243050; --primary: #5B7FD4; --primary-fg: #04080E;
+  --primary-soft: #1A2844; --accent: #F0B429; --success-bg: #0D2A1A;
+  --success-fg: #7FD1A0; --unavail-bg: #111828; --unavail-fg: #8A96B0;
   --warn-bg: #33220F; --warn-border: #8A5A32; --warn-fg: #E6B98A;
-  --step-done: #3E9885; --step-active: #E88056; --step-todo: #274039;
+  --step-done: #5B7FD4; --step-active: #F0B429; --step-todo: #243050;
 }
 
 .root * { box-sizing: border-box; }
@@ -45,7 +45,7 @@
 
 /* ── Hero ────────────────────────────────────────────── */
 .hero {
-  background: #1AAD8D;
+  background: linear-gradient(160deg, #2C4A8C, #1E3578);
   color: #fff;
   padding: 3rem 2rem 3.4rem;
   text-align: center;
@@ -61,17 +61,17 @@
 }
 .heroLocation { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: .75rem; position: relative; z-index: 1; }
 .heroBrand {
-  font-family: var(--font-inter), -apple-system, system-ui, sans-serif;
-  font-size: clamp(2.1rem, 5.5vw, 3.4rem);
-  font-weight: 800;
-  letter-spacing: -.02em;
-  line-height: 1.05;
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1.0;
   margin-bottom: .55rem;
   position: relative;
   z-index: 1;
-  text-transform: uppercase;
+  text-transform: none;
 }
-.heroBrand span { font-family: var(--font-cormorant), Georgia, serif; font-weight: 400; text-transform: none; font-style: italic; color: #F9B78E; }
+.heroBrand span { font-family: var(--font-cormorant), Georgia, serif; font-weight: 300; font-style: italic; text-transform: none; color: #F0B429; display: block; font-size: .62em; letter-spacing: .06em; margin-top: .12em; opacity: .95; }
 .heroSub { font-size: .9rem; color: rgba(255,255,255,.75); margin-bottom: 0; max-width: 520px; margin-left: auto; margin-right: auto; position: relative; z-index: 1; line-height: 1.55; }
 .heroCta { display: inline-flex; align-items: center; gap: .5rem; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: .8rem 2.2rem; font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .15s; position: relative; z-index: 1; }
 .heroCta:hover { opacity: .88; }

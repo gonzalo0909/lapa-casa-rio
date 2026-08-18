@@ -233,7 +233,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       <div className={styles.hero}>
         <div className={styles.heroLocation}>{t('heroLocation')}</div>
         <div className={styles.heroBrand}>
-          LAPA CASA <span>{t('heroApartmentsWord')}</span>
+          Lapa Casa<span>{t('heroApartmentsWord')}</span>
         </div>
         <p className={styles.heroSub}>{t('heroSubtitle')}</p>
       </div>

@@ -53,8 +53,7 @@ function SeasonLabel({ seasonType, t }: { seasonType: ApartmentAvailability['sea
   switch (seasonType) {
     case 'carnaval': return <span className={styles.badgeInline}><PartyPopper size={12} /> {t('seasonCarnaval')}</span>;
     case 'alta': return <span className={styles.badgeInline}><Sun size={12} /> {t('seasonAltaShort')}</span>;
-    case 'baja': return <span className={styles.badgeInline}><Leaf size={12} /> {t('seasonBaixaShort')}</span>;
-    default: return '';
+    default: return null;
   }
 }
 
@@ -67,6 +66,7 @@ interface ApartmentCardProps {
   globalCheckIn: Date;
   globalCheckOut: Date;
   onApplyDates: (range: { checkIn: Date; checkOut: Date }) => void;
+  onContinue?: () => void;
 }
 
 export const ApartmentCard: React.FC<ApartmentCardProps> = ({
@@ -78,12 +78,14 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   globalCheckIn,
   globalCheckOut,
   onApplyDates,
+  onContinue,
 }) => {
   const t = useTranslations('apartments');
+  const tc = useTranslations('common');
   const [calOpen, setCalOpen] = useState(false);
   const isSelectable = !disabledReason;
   const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
-  const seasonBadge = apartment.seasonType !== 'media'
+  const seasonBadge = (apartment.seasonType === 'carnaval' || apartment.seasonType === 'alta')
     ? <span className={`${styles.cardSeasonBadge} ${seasonBadgeClass(apartment.seasonType)}`}><SeasonLabel seasonType={apartment.seasonType} t={t} /></span>
     : null;
   const mulBadge = apartment.seasonMultiplier !== 1
@@ -139,32 +141,54 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
         </div>
         {seasonBadge}
 
-        {isSelectable && (
-          <button
-            type="button"
-            className={styles.aptCalToggle}
-            onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
-          >
-            <Calendar size={13} /> {t('adjustDates')}
-          </button>
+        {/* Cuando está seleccionado: mini cal siempre visible + botón Continuar */}
+        {selected ? (
+          <>
+            <ApartmentMiniCalendar
+              apartmentId={apartment.id}
+              globalCheckIn={globalCheckIn}
+              globalCheckOut={globalCheckOut}
+              onApply={(range) => { onApplyDates(range); }}
+            />
+            {onContinue && (
+              <button
+                type="button"
+                className={styles.cardContinueBtn}
+                onClick={onContinue}
+              >
+                {tc('continue')} →
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            {isSelectable && (
+              <button
+                type="button"
+                className={styles.aptCalToggle}
+                onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
+              >
+                <Calendar size={13} /> {t('adjustDates')}
+              </button>
+            )}
+            {calOpen && (
+              <ApartmentMiniCalendar
+                apartmentId={apartment.id}
+                globalCheckIn={globalCheckIn}
+                globalCheckOut={globalCheckOut}
+                onApply={(range) => { onApplyDates(range); setCalOpen(false); }}
+              />
+            )}
+            <button
+              type="button"
+              className={`${styles.cardBtn} ${selected ? styles.cardBtnSelected : ''}`}
+              disabled={!isSelectable}
+              onClick={() => isSelectable && onSelect(apartment)}
+            >
+              {!apartment.available ? t('unavailable') : disabledReason === 'too-small' ? t('insufficientCapacity') : t('select')}
+            </button>
+          </>
         )}
-        {calOpen && (
-          <ApartmentMiniCalendar
-            apartmentId={apartment.id}
-            globalCheckIn={globalCheckIn}
-            globalCheckOut={globalCheckOut}
-            onApply={(range) => { onApplyDates(range); setCalOpen(false); }}
-          />
-        )}
-
-        <button
-          type="button"
-          className={`${styles.cardBtn} ${selected ? styles.cardBtnSelected : ''}`}
-          disabled={!isSelectable}
-          onClick={() => isSelectable && onSelect(apartment)}
-        >
-          {selected ? <span className={styles.inlineIconText}><Check size={15} /> {t('selected')}</span> : !apartment.available ? t('unavailable') : disabledReason === 'too-small' ? t('insufficientCapacity') : t('select')}
-        </button>
       </div>
     </div>
   );

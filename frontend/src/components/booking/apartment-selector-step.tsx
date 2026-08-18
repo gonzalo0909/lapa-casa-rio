@@ -1,7 +1,7 @@
 // frontend/src/components/booking/apartment-selector-step.tsx
 //
 // Paso 2 del motor de reservas de apartamentos: selector de apartamento.
-// Extraído de apartment-engine.tsx para su uso como componente independiente.
+// Flujo: grid → selección → apartamento expandido con mini cal + continuar.
 
 'use client';
 
@@ -23,6 +23,7 @@ interface ApartmentSelectorStepProps {
   isLoading: boolean;
   selectedApartment: ApartmentAvailability | null;
   onSelect: (apt: ApartmentAvailability) => void;
+  onDeselect: () => void;
   onApplyDates: (range: { checkIn: Date; checkOut: Date }) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -38,6 +39,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
   isLoading,
   selectedApartment,
   onSelect,
+  onDeselect,
   onApplyDates,
   onBack,
   onContinue,
@@ -49,29 +51,50 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
     () => rankApartments(apartments, guestCount),
     [apartments, guestCount],
   );
-  const availableCount = apartments.filter(
-    (a) => a.available && a.capacity >= guestCount,
-  ).length;
-  const gridSeasonType = apartments[0]?.seasonType;
-  const gridSeasonMultiplier = apartments[0]?.seasonMultiplier;
-
-  function seasonShortLabel(
-    seasonType: ApartmentAvailability['seasonType'] | undefined,
-  ): string {
-    switch (seasonType) {
-      case 'carnaval': return t('seasonCarnaval');
-      case 'alta': return t('seasonAltaShort');
-      case 'baja': return t('seasonBaixaShort');
-      case 'media': return t('seasonMediaShort');
-      default: return '';
-    }
-  }
 
   return (
     <div>
       {isLoading ? (
         <div className={styles.spinnerWrap}>{tc('loading')}</div>
+      ) : selectedApartment ? (
+        /* ── Apartamento seleccionado: vista expandida ─── */
+        <>
+          {/* Cabecera con fechas */}
+          <div className={styles.aptHeader}>
+            <div className={styles.datePill}>
+              <strong>{fmtDate(checkIn, locale)}</strong> →{' '}
+              <strong>{fmtDate(checkOut, locale)}</strong> · {nights}{' '}
+              {nights !== 1 ? t('nights') : t('night')}
+            </div>
+            <h2>{selectedApartment.name}</h2>
+          </div>
+
+          {/* Card expandida del apartamento seleccionado */}
+          <ApartmentCard
+            apartment={selectedApartment}
+            nights={nights}
+            selected={true}
+            onSelect={onSelect}
+            disabledReason={undefined}
+            globalCheckIn={parseDs(checkIn)}
+            globalCheckOut={parseDs(checkOut)}
+            onApplyDates={onApplyDates}
+            onContinue={onContinue}
+          />
+
+          {/* Volver al grid */}
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.cardChangeLink}
+              onClick={onDeselect}
+            >
+              ← {t('changeApartment')}
+            </button>
+          </div>
+        </>
       ) : (
+        /* ── Grid de apartamentos ────────────────────── */
         <>
           {/* Cabecera: datePill + título + subtítulo */}
           <div className={styles.aptHeader}>
@@ -79,26 +102,11 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
               <strong>{fmtDate(checkIn, locale)}</strong> →{' '}
               <strong>{fmtDate(checkOut, locale)}</strong> · {nights}{' '}
               {nights !== 1 ? t('nights') : t('night')}
-              {gridSeasonType &&
-                gridSeasonType !== 'media' &&
-                gridSeasonMultiplier !== 1 && (
-                  <span
-                    className={`${styles.cardSeasonBadge} ${
-                      gridSeasonType === 'carnaval'
-                        ? styles.badgeCarnaval
-                        : gridSeasonType === 'alta'
-                          ? styles.badgeAlta
-                          : styles.badgeBaixa
-                    }`}
-                  >
-                    {seasonShortLabel(gridSeasonType)}
-                  </span>
-                )}
             </div>
             <h2>{t('chooseApartment')}</h2>
             <p>
               {t('availableForGuests', {
-                count: availableCount,
+                count: rankedApartments.filter(({ apt, disabledReason }) => apt.available && !disabledReason).length,
                 guests: guestCount,
               })}
             </p>
@@ -111,7 +119,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
                 key={apt.id}
                 apartment={apt}
                 nights={nights}
-                selected={selectedApartment?.id === apt.id}
+                selected={false}
                 onSelect={onSelect}
                 disabledReason={disabledReason}
                 globalCheckIn={parseDs(checkIn)}
@@ -132,25 +140,6 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
             </button>
           </div>
         </>
-      )}
-
-      {/* Sticky bar inferior cuando hay apartamento seleccionado */}
-      {selectedApartment && (
-        <div className={styles.stickyBar}>
-          <div className={styles.stickyBarInfo}>
-            <strong>{selectedApartment.name}</strong> · R${' '}
-            <strong style={{ color: 'var(--accent)' }}>
-              {selectedApartment.priceTotal.toLocaleString('pt-BR')}
-            </strong>
-          </div>
-          <button
-            type="button"
-            className={styles.stickyBarBtn}
-            onClick={onContinue}
-          >
-            {tc('continue')} →
-          </button>
-        </div>
       )}
     </div>
   );

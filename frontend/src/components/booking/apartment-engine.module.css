@@ -187,27 +187,34 @@
 .badgeAlta { background: var(--primary-soft); color: var(--primary); }
 .badgeBaixa { background: #DBEBD9; color: #2C6E49; }
 
-/* ── Mini cal (interactive) ────────────────────────────��─ */
-.miniMonthTitle { font-weight: 700; color: var(--fg); text-align: center; margin-bottom: .4rem; font-size: .78rem; }
-.miniWdayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: .2rem; }
-.miniWday { text-align: center; font-size: .6rem; font-weight: 600; color: var(--fg-muted); }
-.miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
-.miniDay { text-align: center; padding: .2rem 0; border-radius: 3px; font-size: .68rem; color: var(--fg); background: none; border: none; }
+/* ── Mini cal (interactive) ──────────────────────────────── */
+.aptMiniCal { padding: 1rem; background: var(--bg-subtle); border-radius: 10px; margin-top: .75rem; }
+.miniMonthTitle { font-weight: 700; color: var(--fg); text-align: center; margin-bottom: .5rem; font-size: .88rem; }
+.miniWdayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: .3rem; }
+.miniWday { text-align: center; font-size: .72rem; font-weight: 600; color: var(--fg-muted); padding: .1rem 0; }
+.miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.miniDay { text-align: center; padding: .4rem .1rem; border-radius: 5px; font-size: .82rem; color: var(--fg); background: none; border: none; min-height: 2rem; display: flex; align-items: center; justify-content: center; }
 .miniDayBlocked { background: #FEE2E2; color: #991B1B; }
 .miniDayPast { opacity: .3; pointer-events: none; }
 .miniDayCheckin, .miniDayCheckout { background: var(--primary); color: #fff; font-weight: 700; }
 .miniDayInrange { background: var(--primary-soft); color: var(--primary); border-radius: 0; }
 .miniDayAvail { cursor: pointer; }
 .miniDayAvail:hover { background: var(--primary-soft); color: var(--primary); }
-.miniCalLegend { display: flex; gap: .75rem; margin-top: .5rem; font-size: .65rem; color: var(--fg-muted); align-items: center; flex-wrap: wrap; }
-.miniLegendDot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-.miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .6rem; padding: .45rem .6rem; background: var(--primary-soft); border-radius: 6px; gap: .5rem; font-size: .72rem; color: var(--primary); font-weight: 600; }
+.miniCalLegend { display: flex; gap: .75rem; margin-top: .65rem; font-size: .72rem; color: var(--fg-muted); align-items: center; flex-wrap: wrap; }
+.miniLegendDot { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+.miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .75rem; padding: .55rem .75rem; background: var(--primary-soft); border-radius: 8px; gap: .5rem; font-size: .8rem; color: var(--primary); font-weight: 600; }
 .miniApplyHint { justify-content: center; font-weight: 400; color: var(--fg-muted); background: var(--bg-subtle); font-style: italic; }
-.miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: .28rem .7rem; font-size: .72rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 7px; padding: .4rem .9rem; font-size: .8rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .miniApplyBtn:hover { opacity: .88; }
-.miniResetLink { font-size: .65rem; color: var(--fg-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: none; margin-top: .3rem; padding: 0; display: inline-flex; align-items: center; gap: .25rem; justify-content: center; text-align: center; width: 100%; }
+.miniResetLink { font-size: .72rem; color: var(--fg-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: none; margin-top: .4rem; padding: 0; display: inline-flex; align-items: center; gap: .25rem; justify-content: center; text-align: center; width: 100%; }
 .miniResetLink:hover { color: var(--primary); }
-.miniOccupiedNote { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .68rem; color: var(--warn-fg); text-align: center; margin-top: .35rem; }
+.miniOccupiedNote { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .75rem; color: var(--warn-fg); text-align: center; margin-top: .4rem; }
+
+/* ── Card continuar / cambiar ────────────────────────────── */
+.cardContinueBtn { width: 100%; background: var(--primary); color: var(--primary-fg); border: none; border-radius: 10px; padding: .85rem 1.5rem; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: .75rem; transition: opacity .15s; }
+.cardContinueBtn:hover { opacity: .88; }
+.cardChangeLink { display: inline-flex; align-items: center; gap: .35rem; margin-top: 1rem; color: var(--fg-muted); font-size: .82rem; background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
+.cardChangeLink:hover { color: var(--primary); }
 
 /* ── Sticky continue bar ───────────────────────────────── */
 .stickyBar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1.5px solid var(--border); padding: .85rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,.08); }

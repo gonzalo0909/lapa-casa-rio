@@ -52,7 +52,7 @@ export function PropertySelectorHero({ onSelectHostel, onSelectApartments }: Pro
         <div className="mx-auto mt-12 grid max-w-4xl gap-5 sm:grid-cols-2">
           <PropertyPanel
             title="Hostel"
-            location="Santa Teresa"
+            location="Rio de Janeiro"
             description="Camas en cuartos compartidos y privados. Ideal para grupos, mochileros y viajeros sociales."
             cta="Reservar cama"
             icon={<BedDouble className="h-6 w-6" />}

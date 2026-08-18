@@ -321,6 +321,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             isLoading={isLoadingApartments}
             selectedApartment={selectedApartment}
             onSelect={setSelectedApartment}
+            onDeselect={() => setSelectedApartment(null)}
             onApplyDates={handleMiniCalendarApply}
             onBack={goBack}
             onContinue={() => {

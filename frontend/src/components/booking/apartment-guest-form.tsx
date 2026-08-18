@@ -8,6 +8,10 @@
 
 import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import {
+  Tag, MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
+  Ban, CigaretteOff, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
+} from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { CHECKIN_TIMES } from './apartment-engine.types';
 import { validateCPF, formatCPF, isEmailFmt, formatBRPhone, fmtDate } from './apartment-engine.utils';
@@ -112,7 +116,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
     <div>
       {/* Banner OTA */}
       <div className={styles.otaBanner}>
-        🏷️ {t.rich('otaBanner', { b: (chunks) => <strong>{chunks}</strong>, saving: otaSaving.toLocaleString('pt-BR') })}
+        <Tag size={15} />
+        <span>{t.rich('otaBanner', { b: (chunks) => <strong>{chunks}</strong>, saving: otaSaving.toLocaleString('pt-BR') })}</span>
       </div>
 
       {/* Tarjeta de resumen */}
@@ -123,6 +128,12 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <span>{t('apartment')}</span>
             <span className={styles.summaryRowBold}>{selectedApartment.name}</span>
           </div>
+          {selectedApartment.neighborhood && (
+            <div className={styles.summaryRow}>
+              <span>{t('location')}</span>
+              <span className={styles.summaryRowBold}>{selectedApartment.neighborhood}</span>
+            </div>
+          )}
           <div className={styles.summaryRow}>
             <span>{t('guests')}</span>
             <span>{t('guestCount', { count: guestCount })}</span>
@@ -143,11 +154,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <div className={styles.summaryRow}>
               <span>{t('season')}</span>
               <span className={styles.summaryRowBold}>
-                {selectedApartment.seasonType === 'carnaval'
-                  ? '🎊 '
-                  : selectedApartment.seasonType === 'alta'
-                  ? '☀️ '
-                  : '🌿 '}
                 {seasonShortLabel(selectedApartment.seasonType)} ×{selectedApartment.seasonMultiplier}
               </span>
             </div>
@@ -161,7 +167,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
       {/* Teaser de ubicación */}
       <div className={styles.addrTeaser}>
-        <div className={styles.addrIcon}>📍</div>
+        <div className={styles.addrIcon}><MapPin size={20} /></div>
         <div>
           <div className={styles.addrLabel}>{t('location')}</div>
           <div className={styles.addrNeighborhood}>{t('locationValue')}</div>
@@ -217,7 +223,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             />
             {touched.email && guestForm.email && (
               <span className={`${styles.feedback} ${emailOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                {emailOk ? `✓ ${t('emailValid')}` : `✗ ${t('emailInvalid')}`}
+                {emailOk
+                  ? <><Check size={13} /> {t('emailValid')}</>
+                  : <><X size={13} /> {t('emailInvalid')}</>}
               </span>
             )}
           </div>
@@ -250,7 +258,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             />
             {touched.confirmEmail && guestForm.confirmEmail && (
               <span className={`${styles.feedback} ${confirmEmailOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                {confirmEmailOk ? `✓ ${t('emailsMatch')}` : `✗ ${t('emailsMismatch')}`}
+                {confirmEmailOk
+                  ? <><Check size={13} /> {t('emailsMatch')}</>
+                  : <><X size={13} /> {t('emailsMismatch')}</>}
               </span>
             )}
           </div>
@@ -280,7 +290,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             />
             {touched.phone && guestForm.phone && (
               <span className={`${styles.feedback} ${phoneOk ? styles.feedbackOk : styles.feedbackErr}`}>
-                {phoneOk ? `✓ ${t('phoneValid')}` : `✗ ${t('phoneInvalid')}`}
+                {phoneOk
+                  ? <><Check size={13} /> {t('phoneValid')}</>
+                  : <><X size={13} /> {t('phoneInvalid')}</>}
               </span>
             )}
           </div>
@@ -329,11 +341,11 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             {touched.document && guestForm.document && (
               <span className={`${styles.feedback} ${cpfOk ? styles.feedbackOk : styles.feedbackErr}`}>
                 {cpfHasLetter
-                  ? `✓ ${t('passportAccepted')}`
+                  ? <><Check size={13} /> {t('passportAccepted')}</>
                   : cpfDigits.length === 11
                   ? cpfOk
-                    ? `✓ ${t('cpfValid')}`
-                    : `✗ ${t('cpfInvalid')}`
+                    ? <><Check size={13} /> {t('cpfValid')}</>
+                    : <><X size={13} /> {t('cpfInvalid')}</>
                   : ''}
               </span>
             )}
@@ -358,7 +370,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             </select>
             {touched.arrivalTime && guestForm.arrivalTime && (
               <span className={`${styles.feedback} ${styles.feedbackOk}`}>
-                ✓ {t('arrivalTimeSelected')}
+                <Check size={13} /> {t('arrivalTimeSelected')}
               </span>
             )}
           </div>
@@ -379,26 +391,28 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
         {/* Reglas de la casa */}
         <div className={styles.rulesConfirm}>
-          <div className={styles.rulesConfirmTitle}>⚠️ {t('rulesConfirmTitle')}</div>
+          <div className={styles.rulesConfirmTitle}>
+            <AlertTriangle size={15} strokeWidth={2.2} /> {t('rulesConfirmTitle')}
+          </div>
           <div className={styles.rulesConfirmList}>
             <div className={styles.rulesConfirmItem}>
-              <span>🔑</span>
+              <KeyRound size={16} />
               <span>{t.rich('ruleCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.rulesConfirmItem}>
-              <span>🚪</span>
+              <DoorOpen size={16} />
               <span>{t.rich('ruleCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.rulesConfirmItem}>
-              <span>📄</span>
+              <FileText size={16} />
               <span>{t.rich('ruleDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.rulesConfirmItem}>
-              <span>🔞</span>
+              <Ban size={16} />
               <span>{t.rich('ruleAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.rulesConfirmItem}>
-              <span>🚭</span>
+              <CigaretteOff size={16} />
               <span>{t.rich('ruleSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
           </div>
@@ -406,15 +420,17 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
         {/* Nota de pago: depósito + métodos */}
         <div className={styles.paymentNote}>
-          <div className={styles.paymentNoteTitle}>💳 {t('paymentNoteTitle')}</div>
+          <div className={styles.paymentNoteTitle}>
+            <CreditCard size={15} /> {t('paymentNoteTitle')}
+          </div>
           <div className={styles.depositPill}>
-            🔒 {isCarnaval
+            <Lock size={13} /> {isCarnaval
               ? t('depositPillCarnaval', { pct: depositPct })
               : t('depositPill', { pct: depositPct })}
           </div>
           <div className={styles.paymentMethods}>
             <div className={`${styles.paymentMethod} ${styles.paymentMethodPix}`}>
-              <span className={styles.pmIcon}>⚡</span>
+              <span className={styles.pmIcon}><Zap size={18} /></span>
               <div>
                 <div className={styles.pmName}>PIX</div>
                 <div className={styles.pmDetail}>
@@ -425,11 +441,11 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                 </div>
               </div>
               <span className={`${styles.pmTag} ${styles.pmTagRecommended}`}>
-                ⚡ {t('instantApproval')}
+                <Zap size={12} /> {t('instantApproval')}
               </span>
             </div>
             <div className={`${styles.paymentMethod} ${styles.paymentMethodCard}`}>
-              <span className={styles.pmIcon}>💳</span>
+              <span className={styles.pmIcon}><CreditCard size={18} /></span>
               <div>
                 <div className={styles.pmName}>{t('creditCard')}</div>
                 <div className={styles.pmDetail}>
@@ -447,11 +463,13 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             className={styles.cancelPolicyHeader}
             onClick={() => setCancelOpen((v) => !v)}
           >
-            <span className={styles.cancelPolicyTitle}>🔄 {t('cancelPolicyTitle')}</span>
+            <span className={styles.cancelPolicyTitle}>
+              <RotateCcw size={14} /> {t('cancelPolicyTitle')}
+            </span>
             <span
               className={`${styles.cancelPolicyChevron} ${cancelOpen ? styles.cancelPolicyChevronOpen : ''}`}
             >
-              ▼
+              <ChevronDown size={16} />
             </span>
           </button>
           {cancelOpen && (
@@ -459,7 +477,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <div className={styles.cancelRows}>
                 <div className={styles.cancelRow}>
                   <span className={`${styles.cancelBadge} ${styles.cancelBadgeGreen}`}>
-                    ✓ {t('cancelFullBadge')}
+                    <Check size={12} /> {t('cancelFullBadge')}
                   </span>
                   <span>{t.rich('cancelFull', { b: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
@@ -469,7 +487,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                 </div>
                 <div className={styles.cancelRow}>
                   <span className={`${styles.cancelBadge} ${styles.cancelBadgeRed}`}>
-                    ✗ {t('cancelNoneBadge')}
+                    <X size={12} /> {t('cancelNoneBadge')}
                   </span>
                   <span>{t.rich('cancelNone', { b: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
@@ -496,7 +514,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             target="_blank"
             rel="noopener noreferrer"
           >
-            💬 {t('confirmViaWhatsapp')}
+            <MessageCircle size={16} /> {t('confirmViaWhatsapp')}
           </a>
         )}
       </div>

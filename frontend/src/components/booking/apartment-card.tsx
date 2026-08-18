@@ -4,34 +4,41 @@
 
 import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import {
+  Building2, Landmark, Home, Palette, Mountain, Music, Leaf, Building,
+  Sparkles, Clapperboard, Camera, Calendar, AlertTriangle, Check,
+  PartyPopper, Sun, MapPin, type LucideIcon,
+} from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { ApartmentMiniCalendar } from './apartment-mini-calendar';
 import type { ApartmentAvailability } from '@/types/global';
 
-/** Mismo orden/gradiente que LCACOPIA (APT_COLORS), por codigo apt-01..apt-10. */
-const APT_GRADIENTS = [
-  'linear-gradient(135deg,#1E3A5F,#2D5F8A)',
-  'linear-gradient(135deg,#2D5F4A,#1E3A2F)',
-  'linear-gradient(135deg,#5F3A1E,#8A5A2D)',
-  'linear-gradient(135deg,#3A1E5F,#5A2D8A)',
-  'linear-gradient(135deg,#1E4F5F,#2D7A8A)',
-  'linear-gradient(135deg,#5F4A1E,#8A6A2D)',
-  'linear-gradient(135deg,#1E5F3A,#2D8A5A)',
-  'linear-gradient(135deg,#5F1E3A,#8A2D5A)',
-  'linear-gradient(135deg,#3A3A1E,#5F5A2D)',
-  'linear-gradient(135deg,#1E3A5F,#5A2D2D)',
+/** Lavados tonales en la familia de marca (verde follaje · azulejo · terracota),
+ *  por código apt-01..apt-10. Reemplazan los gradientes LCACOPIA. */
+const APT_TINTS = [
+  'linear-gradient(135deg,#1E4A3A,#2C6E55)',
+  'linear-gradient(135deg,#245A54,#2B7E8C)',
+  'linear-gradient(135deg,#3A5A2C,#5B7E3A)',
+  'linear-gradient(135deg,#7A4A2C,#C2703D)',
+  'linear-gradient(135deg,#2C5545,#4E8A6F)',
+  'linear-gradient(135deg,#4A5A2C,#7E8A3A)',
+  'linear-gradient(135deg,#1E4A3A,#3A7E6A)',
+  'linear-gradient(135deg,#8A5A2A,#C2703D)',
+  'linear-gradient(135deg,#245A54,#3A8A7E)',
+  'linear-gradient(135deg,#2C4A5A,#3A6E8C)',
 ];
 
-const APT_ICONS: Record<string, string> = {
-  'apt-01': '🏙️', 'apt-02': '🌉', 'apt-03': '🏡', 'apt-04': '🎨', 'apt-05': '⛰️',
-  'apt-06': '🎶', 'apt-07': '🌿', 'apt-08': '🏢', 'apt-09': '✨', 'apt-10': '🎬',
+/** Ícono-motivo por apartamento (placeholder mientras no hay foto real). */
+const APT_ICONS: Record<string, LucideIcon> = {
+  'apt-01': Building2, 'apt-02': Landmark, 'apt-03': Home, 'apt-04': Palette, 'apt-05': Mountain,
+  'apt-06': Music, 'apt-07': Leaf, 'apt-08': Building, 'apt-09': Sparkles, 'apt-10': Clapperboard,
 };
 
-const FALLBACK_GRADIENT = 'linear-gradient(135deg,#1E3A5F,#2D5F8A)';
+const FALLBACK_TINT = 'linear-gradient(135deg,#1E4A3A,#2C6E55)';
 
-function gradientFor(code: string): string {
+function tintFor(code: string): string {
   const idx = parseInt(code.replace('apt-', ''), 10) - 1;
-  return APT_GRADIENTS[idx] ?? FALLBACK_GRADIENT;
+  return APT_TINTS[idx] ?? FALLBACK_TINT;
 }
 
 function seasonBadgeClass(seasonType: ApartmentAvailability['seasonType']): string {
@@ -42,11 +49,11 @@ function seasonBadgeClass(seasonType: ApartmentAvailability['seasonType']): stri
     default: return '';
   }
 }
-function seasonLabel(seasonType: ApartmentAvailability['seasonType'], t: ReturnType<typeof useTranslations>): string {
+function SeasonLabel({ seasonType, t }: { seasonType: ApartmentAvailability['seasonType']; t: ReturnType<typeof useTranslations> }): React.ReactNode {
   switch (seasonType) {
-    case 'carnaval': return `🎊 ${t('seasonCarnaval')}`;
-    case 'alta': return `☀️ ${t('seasonAltaShort')}`;
-    case 'baja': return `🌿 ${t('seasonBaixaShort')}`;
+    case 'carnaval': return <span className={styles.badgeInline}><PartyPopper size={12} /> {t('seasonCarnaval')}</span>;
+    case 'alta': return <span className={styles.badgeInline}><Sun size={12} /> {t('seasonAltaShort')}</span>;
+    case 'baja': return <span className={styles.badgeInline}><Leaf size={12} /> {t('seasonBaixaShort')}</span>;
     default: return '';
   }
 }
@@ -75,8 +82,9 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const t = useTranslations('apartments');
   const [calOpen, setCalOpen] = useState(false);
   const isSelectable = !disabledReason;
+  const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
   const seasonBadge = apartment.seasonType !== 'media'
-    ? <span className={`${styles.cardSeasonBadge} ${seasonBadgeClass(apartment.seasonType)}`}>{seasonLabel(apartment.seasonType, t)}</span>
+    ? <span className={`${styles.cardSeasonBadge} ${seasonBadgeClass(apartment.seasonType)}`}><SeasonLabel seasonType={apartment.seasonType} t={t} /></span>
     : null;
   const mulBadge = apartment.seasonMultiplier !== 1
     ? <span className={`${styles.priceMultiplier} ${seasonBadgeClass(apartment.seasonType)}`}>×{apartment.seasonMultiplier}</span>
@@ -90,9 +98,9 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
     <div
       className={`${styles.aptCard} ${disabledReason ? styles.aptCardUnavailable : ''} ${selected ? styles.aptCardSelected : ''}`}
     >
-      <div className={styles.aptPhoto} style={{ background: gradientFor(apartment.code) }}>
-        <span className={styles.aptPhotoIcon}>{APT_ICONS[apartment.code] ?? '🏠'}</span>
-        <span className={styles.aptPhotoLabel}>📷 {t('illustrativePhoto')}</span>
+      <div className={styles.aptPhoto} style={{ background: tintFor(apartment.code) }}>
+        <span className={styles.aptPhotoIcon}><PhotoIcon size={44} strokeWidth={1.25} /></span>
+        <span className={styles.aptPhotoLabel}><Camera size={11} /> {t('illustrativePhoto')}</span>
         <span className={`${styles.availStripe} ${apartment.available ? styles.availStripeAvail : styles.availStripeUnavail}`}>
           {apartment.available ? t('available') : t('unavailable')}
         </span>
@@ -102,9 +110,14 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
         <div className={styles.cardHead}>
           <div>
             <div className={styles.cardName}>{apartment.name}</div>
+            {apartment.neighborhood && (
+              <div className={styles.cardNeighborhood}>
+                <MapPin size={12} /> {apartment.neighborhood}
+              </div>
+            )}
             <div className={styles.cardCapacity}>{t('cardCapacity', { count: apartment.capacity })}</div>
             {disabledReason === 'too-small' && (
-              <div className={styles.cardCapacityWarn}>⚠️ {t('maxCapacity', { count: apartment.capacity })}</div>
+              <div className={styles.cardCapacityWarn}><AlertTriangle size={12} /> {t('maxCapacity', { count: apartment.capacity })}</div>
             )}
           </div>
         </div>
@@ -132,7 +145,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
             className={styles.aptCalToggle}
             onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
           >
-            📅 {t('adjustDates')}
+            <Calendar size={13} /> {t('adjustDates')}
           </button>
         )}
         {calOpen && (
@@ -150,7 +163,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
           disabled={!isSelectable}
           onClick={() => isSelectable && onSelect(apartment)}
         >
-          {selected ? `✓ ${t('selected')}` : !apartment.available ? t('unavailable') : disabledReason === 'too-small' ? t('insufficientCapacity') : t('select')}
+          {selected ? <span className={styles.inlineIconText}><Check size={15} /> {t('selected')}</span> : !apartment.available ? t('unavailable') : disabledReason === 'too-small' ? t('insufficientCapacity') : t('select')}
         </button>
       </div>
     </div>

@@ -11,8 +11,6 @@ import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
 import {
   seasonForDateStr,
-  SEASONS,
-  CARNAVAL_MULTIPLIER,
   CARNAVAL_MIN_NIGHTS,
 } from '@/lib/apartment-seasons';
 import type { AptLocale } from './apartment-engine.types';
@@ -234,22 +232,6 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
         </div>
       </div>
 
-      {/* Leyenda de temporadas */}
-      <div className={styles.seasonLegend}>
-        <span className={`${styles.seasonChip} ${styles.seasonChipCarnaval}`}>
-          🎊 {t('seasonCarnaval')} ×{CARNAVAL_MULTIPLIER.toFixed(1)}
-        </span>
-        <span className={`${styles.seasonChip} ${styles.seasonChipAlta}`}>
-          ☀️ {t('seasonAltaShort')} ×{SEASONS.alta.multiplier.toFixed(1)}
-        </span>
-        <span className={`${styles.seasonChip} ${styles.seasonChipMedia}`}>
-          — {t('seasonMediaShort')} ×{SEASONS.media.multiplier.toFixed(1)}
-        </span>
-        <span className={`${styles.seasonChip} ${styles.seasonChipBaixa}`}>
-          🌿 {t('seasonBaixaShort')} ×{SEASONS.baixa.multiplier.toFixed(1)}
-        </span>
-      </div>
-
       {/* Calendario de dos meses */}
       <div className={styles.calWrapper}>
         <button
@@ -272,7 +254,6 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
       {/* Advertencia de mínimo de noches */}
       {minNightsWarn && seasonHint && (
         <div className={styles.carnivalWarn}>
-          📅{' '}
           {t.rich('minNightsWarning', {
             b: (chunks) => <strong>{chunks}</strong>,
             seasonLabel:

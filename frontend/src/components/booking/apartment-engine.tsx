@@ -15,6 +15,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff, CheckCircle2, Mail } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { Modal, ModalBody } from '../ui/modal';
 import { PaymentCountdown } from '../payment/payment-countdown';
@@ -264,26 +265,28 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
         {/* Avisos generales */}
         <div className={styles.notices}>
-          <div className={styles.noticesTitle}>⚠️ {t('noticesTitle')}</div>
+          <div className={styles.noticesTitle}>
+            <AlertTriangle size={15} strokeWidth={2.2} /> {t('noticesTitle')}
+          </div>
           <div className={styles.noticesGrid}>
             <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>🔑</span>
+              <span className={styles.noticeIcon}><KeyRound size={16} /></span>
               <span>{t.rich('noticeCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>🚪</span>
+              <span className={styles.noticeIcon}><DoorOpen size={16} /></span>
               <span>{t.rich('noticeCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>📄</span>
+              <span className={styles.noticeIcon}><FileText size={16} /></span>
               <span>{t.rich('noticeDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>🔞</span>
+              <span className={styles.noticeIcon}><Ban size={16} /></span>
               <span>{t.rich('noticeAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
             <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>🚭</span>
+              <span className={styles.noticeIcon}><CigaretteOff size={16} /></span>
               <span>{t.rich('noticeSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
           </div>
@@ -363,7 +366,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
               >
                 <ModalBody>
                   <div className={styles.paySuccess}>
-                    <div className={styles.paySuccessIcon}>✅</div>
+                    <div className={styles.paySuccessIcon}>
+                      <CheckCircle2 size={48} strokeWidth={1.6} />
+                    </div>
                     <div className={styles.paySuccessTitle}>{t('paymentReceived')}</div>
                     <div className={styles.paySuccessRef}>{booking.confirmationNumber}</div>
                     <div className={styles.paySuccessMsg}>
@@ -371,7 +376,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                       <br />
                       {t('paymentSuccessLine2')}
                       <br />
-                      📩 {t('paymentSuccessLine3')}
+                      <span className={styles.inlineIconText}>
+                        <Mail size={14} /> {t('paymentSuccessLine3')}
+                      </span>
                     </div>
                   </div>
                 </ModalBody>

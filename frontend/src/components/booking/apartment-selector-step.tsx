@@ -91,11 +91,6 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
                           : styles.badgeBaixa
                     }`}
                   >
-                    {gridSeasonType === 'carnaval'
-                      ? '🎊 '
-                      : gridSeasonType === 'alta'
-                        ? '☀️ '
-                        : '🌿 '}
                     {seasonShortLabel(gridSeasonType)}
                   </span>
                 )}

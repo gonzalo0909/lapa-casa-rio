@@ -80,6 +80,7 @@ export interface ApartmentAvailability {
   id: string;
   code: string;
   name: string;
+  neighborhood?: string;
   capacity: number;
   basePrice: number;
   priceTotal: number;

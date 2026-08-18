@@ -4,6 +4,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { Check, AlertTriangle, Undo2 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
 
@@ -209,7 +210,9 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
         <div className={styles.miniApplyBar}>
           <span>{fmtShort(cin, locale)} → {fmtShort(cout, locale)} · {nights} {nights !== 1 ? t('nights') : t('night')}</span>
           <button type="button" className={styles.miniApplyBtn} onClick={handleApply} disabled={checking}>
-            {checking ? t('checking') : `✓ ${tc('apply')}`}
+            {checking ? t('checking') : (
+              <span className={styles.inlineIconText}><Check size={13} /> {tc('apply')}</span>
+            )}
           </button>
         </div>
       ) : (
@@ -219,14 +222,14 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       )}
 
       {result && !result.available && (
-        <div style={{ fontSize: '.68rem', color: '#991B1B', textAlign: 'center', marginTop: '.35rem' }}>
-          ⚠️ {t('apartmentOccupied')}
+        <div className={styles.miniOccupiedNote}>
+          <AlertTriangle size={13} /> {t('apartmentOccupied')}
         </div>
       )}
 
       {changed && (
         <button type="button" className={styles.miniResetLink} onClick={handleReset}>
-          ↩ {t('backToOriginalDates', { from: fmtShort(toDs(globalCheckIn), locale), to: fmtShort(toDs(globalCheckOut), locale) })}
+          <Undo2 size={12} /> {t('backToOriginalDates', { from: fmtShort(toDs(globalCheckIn), locale), to: fmtShort(toDs(globalCheckOut), locale) })}
         </button>
       )}
 

@@ -1,134 +1,58 @@
-// lapa-casa-hostel/frontend/src/components/ui/button.tsx
+import { Button as ButtonPrimitive } from '@base-ui/react/button'
+import { cva, type VariantProps } from 'class-variance-authority'
 
-'use client';
+import { cn } from '@/lib/utils'
 
-import * as React from 'react';
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
+        outline:
+          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+        secondary:
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
+        ghost:
+          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50',
+        destructive:
+          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
+        link: 'text-primary underline-offset-4 hover:underline',
+      },
+      size: {
+        default:
+          'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: 'h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+        icon: 'size-8',
+        'icon-xs':
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        'icon-sm':
+          'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
+        'icon-lg': 'size-9',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  },
+)
 
-/**
- * Button Component - Lapa Casa Hostel
- * 
- * Production-ready button with multiple variants, sizes, and states.
- * Optimized for booking flow and payment interactions.
- * 
- * @component
- * @example
- * <Button variant="primary" size="lg" onClick={handleBooking}>
- *   Reservar Agora
- * </Button>
- */
-
-type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'outline' | 'ghost' | 'link';
-type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'icon';
-
-const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-blue-600 text-white shadow-md hover:bg-blue-700 focus-visible:ring-blue-500 active:bg-blue-800',
-  secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-gray-500 active:bg-gray-300',
-  success: 'bg-green-600 text-white shadow-md hover:bg-green-700 focus-visible:ring-green-500 active:bg-green-800',
-  danger: 'bg-red-600 text-white shadow-md hover:bg-red-700 focus-visible:ring-red-500 active:bg-red-800',
-  warning: 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600 focus-visible:ring-yellow-500 active:bg-yellow-700',
-  outline: 'border-2 border-gray-300 bg-transparent hover:bg-gray-50 focus-visible:ring-gray-500 active:bg-gray-100',
-  ghost: 'bg-transparent hover:bg-gray-100 focus-visible:ring-gray-500 active:bg-gray-200',
-  link: 'bg-transparent text-blue-600 underline-offset-4 hover:underline focus-visible:ring-blue-500',
-};
-
-const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 py-2 text-sm',
-  md: 'h-11 px-4 py-2.5 text-base',
-  lg: 'h-12 px-6 py-3 text-lg',
-  xl: 'h-14 px-8 py-4 text-xl',
-  icon: 'h-10 w-10 p-0',
-};
-
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Button visual style variant */
-  variant?: ButtonVariant;
-  /** Button size */
-  size?: ButtonSize;
-  /** Full width button */
-  fullWidth?: boolean;
-  /** Loading state shows spinner */
-  isLoading?: boolean;
-  /** Icon to display before text */
-  leftIcon?: React.ReactNode;
-  /** Icon to display after text */
-  rightIcon?: React.ReactNode;
-  /** Accessible label for loading state */
-  loadingText?: string;
+function Button({
+  className,
+  variant = 'default',
+  size = 'default',
+  ...props
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  return (
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className = '',
-      variant = 'primary',
-      size = 'md',
-      fullWidth = false,
-      isLoading = false,
-      leftIcon,
-      rightIcon,
-      loadingText,
-      children,
-      disabled,
-      type = 'button',
-      ...props
-    },
-    ref
-  ) => {
-    const isDisabled = disabled || isLoading;
-
-    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95';
-    
-    const widthStyle = fullWidth ? 'w-full' : 'w-auto';
-    
-    const combinedClassName = `${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyle} ${className}`;
-
-    return (
-      <button
-        ref={ref}
-        type={type}
-        className={combinedClassName}
-        disabled={isDisabled}
-        aria-busy={isLoading}
-        aria-label={isLoading && loadingText ? loadingText : undefined}
-        {...props}
-      >
-        {isLoading ? (
-          <>
-            <svg
-              className="animate-spin h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            {loadingText && <span>{loadingText}</span>}
-          </>
-        ) : (
-          <>
-            {leftIcon && <span aria-hidden="true">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span aria-hidden="true">{rightIcon}</span>}
-          </>
-        )}
-      </button>
-    );
-  }
-);
-
-Button.displayName = 'Button';
-
-export { Button };
+export { Button, buttonVariants }

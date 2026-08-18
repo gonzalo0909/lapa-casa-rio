@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import {
   Building2, Landmark, Home, Palette, Mountain, Music, Leaf, Building,
   Sparkles, Clapperboard, Camera, Calendar, AlertTriangle, Check,
-  PartyPopper, Sun, MapPin, type LucideIcon,
+  MapPin, type LucideIcon,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { ApartmentMiniCalendar } from './apartment-mini-calendar';
@@ -41,21 +41,6 @@ function tintFor(code: string): string {
   return APT_TINTS[idx] ?? FALLBACK_TINT;
 }
 
-function seasonBadgeClass(seasonType: ApartmentAvailability['seasonType']): string {
-  switch (seasonType) {
-    case 'carnaval': return styles.badgeCarnaval ?? '';
-    case 'alta': return styles.badgeAlta ?? '';
-    case 'baja': return styles.badgeBaixa ?? '';
-    default: return '';
-  }
-}
-function SeasonLabel({ seasonType, t }: { seasonType: ApartmentAvailability['seasonType']; t: ReturnType<typeof useTranslations> }): React.ReactNode {
-  switch (seasonType) {
-    case 'carnaval': return <span className={styles.badgeInline}><PartyPopper size={12} /> {t('seasonCarnaval')}</span>;
-    case 'alta': return <span className={styles.badgeInline}><Sun size={12} /> {t('seasonAltaShort')}</span>;
-    default: return null;
-  }
-}
 
 interface ApartmentCardProps {
   apartment: ApartmentAvailability;
@@ -85,15 +70,6 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const [calOpen, setCalOpen] = useState(false);
   const isSelectable = !disabledReason;
   const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
-  const seasonBadge = (apartment.seasonType === 'carnaval' || apartment.seasonType === 'alta')
-    ? <span className={`${styles.cardSeasonBadge} ${seasonBadgeClass(apartment.seasonType)}`}><SeasonLabel seasonType={apartment.seasonType} t={t} /></span>
-    : null;
-  const mulBadge = apartment.seasonMultiplier !== 1
-    ? <span className={`${styles.priceMultiplier} ${seasonBadgeClass(apartment.seasonType)}`}>×{apartment.seasonMultiplier}</span>
-    : null;
-  const baseNote = apartment.seasonMultiplier !== 1
-    ? <span className={styles.priceBaseStrike}>R$ {apartment.basePrice.toFixed(0)}</span>
-    : null;
   const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round(apartment.basePrice * apartment.seasonMultiplier);
 
   return (
@@ -127,7 +103,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
         <div className={styles.cardPriceBox}>
           <div className={styles.priceRow}>
             <span className={styles.priceLabel}>{t('perNight')}</span>
-            <span className={styles.pricePerNight}>{baseNote}R$ {nightPrice}{mulBadge}</span>
+            <span className={styles.pricePerNight}>R$ {nightPrice}</span>
           </div>
           {nights > 0 && (
             <>
@@ -139,8 +115,6 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
             </>
           )}
         </div>
-        {seasonBadge}
-
         {/* Cuando está seleccionado: mini cal siempre visible + botón Continuar */}
         {selected ? (
           <>

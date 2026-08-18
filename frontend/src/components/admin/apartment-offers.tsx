@@ -200,7 +200,7 @@ export function ApartmentOffers({ locale }: ApartmentOffersProps) {
       </div>
 
       {/* Alerts */}
-      {error && <Alert variant="destructive">{error}</Alert>}
+      {error && <Alert variant="danger">{error}</Alert>}
       {success && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-sm rounded-lg px-4 py-3">
           {success}

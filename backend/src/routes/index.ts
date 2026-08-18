@@ -64,15 +64,13 @@ router.get('/info', (req: Request, res: Response) => {
 
 /**
  * Public Routes (No Authentication Required)
- * ventana6: limites por endpoint segun el checklist de seguridad
- * (disponibilidad 10 req/s, reservas 3 req/s, admin 5 req/s) -- se
- * implementan como windowMs:1000 en vez de convertir a un equivalente
- * por minuto, para que el numero en el codigo sea literalmente el del
- * checklist.
+ * Rate limits ampliados para soportar carga real de uso:
+ * - availability: 120 req/min (10 apts × varios refreshes simultáneos)
+ * - rooms/photos: 60 req/min
  */
-router.use('/availability', rateLimiter({ max: 10, windowMs: 1000 }), availabilityRouter);
-router.use('/rooms', rateLimiter({ max: 10, windowMs: 1000 }), roomsRouter);
-router.use('/photos', rateLimiter({ max: 10, windowMs: 1000 }), photosRouter);
+router.use('/availability', rateLimiter({ max: 120, windowMs: 60000 }), availabilityRouter);
+router.use('/rooms', rateLimiter({ max: 60, windowMs: 60000 }), roomsRouter);
+router.use('/photos', rateLimiter({ max: 60, windowMs: 60000 }), photosRouter);
 
 /**
  * iCal (ventana5): export publico de disponibilidad + config/sync de

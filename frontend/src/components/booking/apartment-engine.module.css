@@ -20,24 +20,7 @@
   line-height: 1.5;
   min-height: 100vh;
 }
-@media (prefers-color-scheme: dark) {
-  :global(:root:not([data-theme='light'])) .root {
-    --bg: #0C1120; --bg-subtle: #111828; --bg-card: #141E2E; --fg: #E8ECF4;
-    --fg-muted: #8A96B0; --border: #243050; --primary: #5B7FD4; --primary-fg: #04080E;
-    --primary-soft: #1A2844; --accent: #F0B429; --success-bg: #0D2A1A;
-    --success-fg: #7FD1A0; --unavail-bg: #111828; --unavail-fg: #8A96B0;
-    --warn-bg: #33220F; --warn-border: #8A5A32; --warn-fg: #E6B98A;
-    --step-done: #5B7FD4; --step-active: #F0B429; --step-todo: #243050;
-  }
-}
-:global([data-theme='dark']) .root {
-  --bg: #0C1120; --bg-subtle: #111828; --bg-card: #141E2E; --fg: #E8ECF4;
-  --fg-muted: #8A96B0; --border: #243050; --primary: #5B7FD4; --primary-fg: #04080E;
-  --primary-soft: #1A2844; --accent: #F0B429; --success-bg: #0D2A1A;
-  --success-fg: #7FD1A0; --unavail-bg: #111828; --unavail-fg: #8A96B0;
-  --warn-bg: #33220F; --warn-border: #8A5A32; --warn-fg: #E6B98A;
-  --step-done: #5B7FD4; --step-active: #F0B429; --step-todo: #243050;
-}
+/* Motor de reservas: siempre modo claro — los colores de marca no se invierten */
 
 .root * { box-sizing: border-box; }
 .root button { cursor: pointer; font-family: inherit; }

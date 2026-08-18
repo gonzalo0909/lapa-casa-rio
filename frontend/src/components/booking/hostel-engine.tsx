@@ -30,7 +30,7 @@ const fmtMoney = (n: number) =>
 const fmtDate = (d: Date) =>
   d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })
 
-export function HostelEngine() {
+export function HostelEngine({ locale: _locale }: { locale?: string } = {}) {
   const [step, setStep] = useState(1)
   const [checkIn, setCheckIn] = useState<Date | null>(null)
   const [checkOut, setCheckOut] = useState<Date | null>(null)

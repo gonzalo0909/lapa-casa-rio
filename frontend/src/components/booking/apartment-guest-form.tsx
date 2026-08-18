@@ -97,16 +97,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
     })
   );
 
-  // ── Helpers locales ────────────────────────────────────────────────────────
-  function seasonShortLabel(seasonType: ApartmentAvailability['seasonType'] | undefined): string {
-    switch (seasonType) {
-      case 'carnaval': return t('seasonCarnaval');
-      case 'alta':    return t('seasonAltaShort');
-      case 'baja':    return t('seasonBaixaShort');
-      case 'media':   return t('seasonMediaShort');
-      default:        return '';
-    }
-  }
 
   // canReserve is computed above and available for use; the actual gate lives in
   // the parent's onReserve handler, which calls setTouched before checking it.
@@ -150,14 +140,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <span>{t('nights2')}</span>
             <span>{nights}</span>
           </div>
-          {selectedApartment.seasonType !== 'media' && (
-            <div className={styles.summaryRow}>
-              <span>{t('season')}</span>
-              <span className={styles.summaryRowBold}>
-                {seasonShortLabel(selectedApartment.seasonType)} ×{selectedApartment.seasonMultiplier}
-              </span>
-            </div>
-          )}
+          {/* Season row removed: price already shows total, no need to expose internal multipliers */}
           <div className={`${styles.summaryRow} ${styles.totalRow}`}>
             <span>{t('total')}</span>
             <span className={styles.totalPrice}>R$ {totalPrice.toLocaleString('pt-BR')}</span>

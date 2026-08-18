@@ -54,7 +54,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
 
   return (
     <div>
-      {isLoading ? (
+      {isLoading && !selectedApartment ? (
         <div className={styles.spinnerWrap}>{tc('loading')}</div>
       ) : selectedApartment ? (
         /* ── Apartamento seleccionado: vista expandida ─── */

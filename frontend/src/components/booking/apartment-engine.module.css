@@ -44,18 +44,35 @@
 .root input, .root textarea, .root select { font-family: inherit; }
 
 /* ── Hero ────────────────────────────────────────────── */
-.hero { background: var(--primary); color: #fff; padding: 3rem 2rem 3.2rem; text-align: center; position: relative; overflow: hidden; }
+.hero {
+  background: #1AAD8D;
+  color: #fff;
+  padding: 3rem 2rem 3.4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
 .hero::before {
   content: ''; position: absolute; inset: 0;
   background:
-    repeating-linear-gradient(45deg, transparent, transparent 18px, rgba(255,255,255,.03) 18px, rgba(255,255,255,.03) 19px),
-    repeating-linear-gradient(-45deg, transparent, transparent 18px, rgba(255,255,255,.03) 18px, rgba(255,255,255,.03) 19px);
+    repeating-linear-gradient(45deg, transparent, transparent 22px, rgba(255,255,255,.04) 22px, rgba(255,255,255,.04) 23px),
+    repeating-linear-gradient(-45deg, transparent, transparent 22px, rgba(255,255,255,.04) 22px, rgba(255,255,255,.04) 23px);
   pointer-events: none;
 }
-.heroLocation { font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: .6rem; }
-.heroBrand { font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(2rem, 5.2vw, 3.15rem); font-weight: 400; letter-spacing: -.015em; line-height: 1.07; margin-bottom: .45rem; position: relative; z-index: 1; }
-.heroBrand span { color: var(--accent); font-style: italic; }
-.heroSub { font-size: .9rem; color: rgba(255,255,255,.6); margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; position: relative; z-index: 1; }
+.heroLocation { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: .75rem; position: relative; z-index: 1; }
+.heroBrand {
+  font-family: var(--font-inter), -apple-system, system-ui, sans-serif;
+  font-size: clamp(2.1rem, 5.5vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+  margin-bottom: .55rem;
+  position: relative;
+  z-index: 1;
+  text-transform: uppercase;
+}
+.heroBrand span { font-family: var(--font-cormorant), Georgia, serif; font-weight: 400; text-transform: none; font-style: italic; color: #F9B78E; }
+.heroSub { font-size: .9rem; color: rgba(255,255,255,.75); margin-bottom: 0; max-width: 520px; margin-left: auto; margin-right: auto; position: relative; z-index: 1; line-height: 1.55; }
 .heroCta { display: inline-flex; align-items: center; gap: .5rem; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: .8rem 2.2rem; font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .15s; position: relative; z-index: 1; }
 .heroCta:hover { opacity: .88; }
 

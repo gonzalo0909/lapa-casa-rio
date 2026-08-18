@@ -100,23 +100,34 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   };
 
   const handleMiniCalendarApply = useCallback(
-    (range: { checkIn: Date; checkOut: Date }) => {
-      const newCin = [
-        range.checkIn.getFullYear(),
-        String(range.checkIn.getMonth() + 1).padStart(2, '0'),
-        String(range.checkIn.getDate()).padStart(2, '0'),
-      ].join('-');
-      const newCout = [
-        range.checkOut.getFullYear(),
-        String(range.checkOut.getMonth() + 1).padStart(2, '0'),
-        String(range.checkOut.getDate()).padStart(2, '0'),
-      ].join('-');
+    async (range: { checkIn: Date; checkOut: Date }) => {
+      const ds = (d: Date) =>
+        [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+      const newCin = ds(range.checkIn);
+      const newCout = ds(range.checkOut);
       setCheckIn(newCin);
       setCheckOut(newCout);
-      setSelectedApartment(null);
-      loadApartments(newCin, newCout);
+      // No deseleccionamos: si el apartamento sigue disponible en las nuevas
+      // fechas lo mantenemos seleccionado para que "Continuar" siga visible.
+      setIsLoadingApartments(true);
+      setError(null);
+      try {
+        const res = await availabilityAPI.checkApartments({ checkIn: newCin, checkOut: newCout });
+        const apts: ApartmentAvailability[] = res?.data?.apartments ?? [];
+        setApartments(apts);
+        setSelectedApartment((prev) => {
+          if (!prev) return null;
+          const updated = apts.find((a) => a.id === prev.id);
+          return updated?.available ? updated : null;
+        });
+      } catch (err) {
+        setError(handleAPIError(err, locale));
+        setSelectedApartment(null);
+      } finally {
+        setIsLoadingApartments(false);
+      }
     },
-    [loadApartments],
+    [locale],
   );
 
   /** Valida el formulario y crea la reserva vía API. */

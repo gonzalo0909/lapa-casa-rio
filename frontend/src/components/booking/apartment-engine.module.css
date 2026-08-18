@@ -191,12 +191,12 @@
 .badgeBaixa { background: #DBEBD9; color: #2C6E49; }
 
 /* ── Mini cal (interactive) ──────────────────────────────── */
-.aptMiniCal { padding: 1rem; background: var(--bg-subtle); border-radius: 10px; margin-top: .75rem; }
-.miniMonthTitle { font-weight: 700; color: var(--fg); text-align: center; margin-bottom: .5rem; font-size: .88rem; }
-.miniWdayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: .3rem; }
-.miniWday { text-align: center; font-size: .72rem; font-weight: 600; color: var(--fg-muted); padding: .1rem 0; }
-.miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.miniDay { text-align: center; padding: .4rem .1rem; border-radius: 5px; font-size: .82rem; color: var(--fg); background: none; border: none; min-height: 2rem; display: flex; align-items: center; justify-content: center; }
+.aptMiniCal { padding: .6rem; background: var(--bg-subtle); border-radius: 10px; margin-top: .6rem; width: 100%; box-sizing: border-box; overflow: hidden; }
+.miniMonthTitle { font-weight: 700; color: var(--fg); text-align: center; margin-bottom: .4rem; font-size: .82rem; }
+.miniWdayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: .2rem; }
+.miniWday { text-align: center; font-size: .64rem; font-weight: 600; color: var(--fg-muted); padding: .08rem 0; }
+.miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+.miniDay { text-align: center; padding: .28rem .05rem; border-radius: 4px; font-size: .72rem; color: var(--fg); background: none; border: none; min-height: 1.6rem; display: flex; align-items: center; justify-content: center; }
 .miniDayBlocked { background: #FEE2E2; color: #991B1B; }
 .miniDayPast { opacity: .3; pointer-events: none; }
 .miniDayCheckin, .miniDayCheckout { background: var(--primary); color: #fff; font-weight: 700; }
@@ -205,9 +205,9 @@
 .miniDayAvail:hover { background: var(--primary-soft); color: var(--primary); }
 .miniCalLegend { display: flex; gap: .75rem; margin-top: .65rem; font-size: .72rem; color: var(--fg-muted); align-items: center; flex-wrap: wrap; }
 .miniLegendDot { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
-.miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .75rem; padding: .55rem .75rem; background: var(--primary-soft); border-radius: 8px; gap: .5rem; font-size: .8rem; color: var(--primary); font-weight: 600; }
+.miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; padding: .4rem .55rem; background: var(--primary-soft); border-radius: 7px; gap: .35rem; font-size: .72rem; color: var(--primary); font-weight: 600; }
 .miniApplyHint { justify-content: center; font-weight: 400; color: var(--fg-muted); background: var(--bg-subtle); font-style: italic; }
-.miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 7px; padding: .4rem .9rem; font-size: .8rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: .3rem .7rem; font-size: .72rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .miniApplyBtn:hover { opacity: .88; }
 .miniResetLink { font-size: .72rem; color: var(--fg-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: none; margin-top: .4rem; padding: 0; display: inline-flex; align-items: center; gap: .25rem; justify-content: center; text-align: center; width: 100%; }
 .miniResetLink:hover { color: var(--primary); }

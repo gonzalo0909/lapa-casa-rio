@@ -353,6 +353,45 @@
 
 .spinnerWrap { display: flex; justify-content: center; padding: 4rem 0; }
 
+/* ── Apt bloqueado (seleccionado sin disponibilidad) + alternativas ── */
+
+/* Cuando el card está a la vez seleccionado E indisponible: borde ámbar, no azul */
+.aptCardSelected.aptCardUnavailable {
+  border-color: var(--warn-border) !important;
+  box-shadow: 0 0 0 3px rgba(226,155,114,.18) !important;
+  opacity: .88;
+  cursor: default !important;
+}
+
+/* Banner de aviso "sin disponibilidad" */
+.unavailBanner {
+  display: flex; align-items: flex-start; gap: .55rem;
+  background: var(--warn-bg); border: 1.5px solid var(--warn-border);
+  border-radius: 10px; padding: .85rem 1.1rem; font-size: .84rem;
+  color: var(--warn-fg); margin-bottom: 1.1rem; line-height: 1.45;
+}
+
+/* Sección "Tu selección" bloqueada */
+.blockedSection { margin-bottom: .5rem; }
+.blockedSectionTitle {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--fg-muted); margin-bottom: .6rem;
+}
+
+/* Sección de alternativas disponibles */
+.alternativesSection { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1.5px solid var(--border); }
+.alternativesTitle {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 1.35rem; font-weight: 400; color: var(--fg); margin-bottom: 1rem;
+}
+
+/* Sin alternativas disponibles */
+.noAlternativesBanner {
+  background: var(--bg-subtle); border: 1px dashed var(--border);
+  border-radius: 10px; padding: 1.25rem; font-size: .84rem;
+  color: var(--fg-muted); text-align: center; margin-top: 1.5rem;
+}
+
 /* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   /* Hero */

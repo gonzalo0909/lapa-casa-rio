@@ -128,7 +128,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         setSelectedApartment((prev) => {
           if (!prev) return null;
           const updated = apts.find((a) => a.id === prev.id);
-          return updated?.available ? updated : null;
+          // Mantener el apt seleccionado aunque ya no esté disponible —
+          // el selector muestra la vista "bloqueado + alternativas".
+          return updated ?? null;
         });
       } catch (err) {
         setError(handleAPIError(err, locale));

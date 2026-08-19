@@ -66,19 +66,6 @@ export const checkApartmentAvailabilityHandler = async (
        FROM room_types WHERE property_type = 'apartment' ORDER BY base_price, name`
     );
 
-    // ── BLOQUEO DE DEMO ─────────────────────────────────────────────────────
-    // Chalé da Rua (apt-03) bloqueada en septiembre 2026 para que sea posible
-    // probar el flujo "apt sin disponibilidad + alternativas" en el frontend.
-    // Para activarlo: buscar fechas de agosto (disponible), seleccionar Chalé
-    // da Rua, luego cambiar el mini-cal a cualquier fecha de septiembre.
-    // ELIMINAR este bloque cuando ya no se necesite para demo/testing.
-    const DEMO_BLOCKS: { code: string; from: string; to: string }[] = [
-      { code: 'apt-03', from: '2026-09-01', to: '2026-09-30' },
-    ];
-    const isDemoBlocked = (code: string) =>
-      DEMO_BLOCKS.some(b => code === b.code && checkIn >= b.from && checkOut <= b.to);
-    // ────────────────────────────────────────────────────────────────────────
-
     const apartmentsWithAvailability = await Promise.all(
       apartments.map(async (apt) => {
         const avail = await availabilityService.checkRoomAvailability(apt.id, checkIn, checkOut);
@@ -105,7 +92,7 @@ export const checkApartmentAvailabilityHandler = async (
             seasonMultiplier: pricing.seasonMultiplier,
             seasonType: pricing.seasonType,
             depositAmount: pricing.depositAmount,
-            available: !isDemoBlocked(apt.code) && avail.availableBeds > 0,
+            available: avail.availableBeds > 0,
           };
         } catch (pricingError) {
           // p.ej. Carnaval con menos noches del minimo -- no tumbar todo

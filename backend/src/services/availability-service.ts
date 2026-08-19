@@ -210,7 +210,15 @@ export class AvailabilityService {
            AND ($3::uuid IS NULL OR room_type_id = $3::uuid)
        ),
        daily AS (
-         SELECT d.date, COUNT(DISTINCT rb.bed_id)::int AS occupied
+         SELECT d.date,
+           CASE
+             WHEN $3::uuid IS NOT NULL AND EXISTS (
+               SELECT 1 FROM room_blocks rbl
+               WHERE rbl.room_type_id = $3::uuid
+                 AND daterange(rbl.start_date, rbl.end_date, '[)') @> d.date
+             ) THEN (SELECT COUNT(*)::int FROM scoped_beds)
+             ELSE COUNT(DISTINCT rb.bed_id)::int
+           END AS occupied
          FROM dates d
          LEFT JOIN reservation_beds rb
            ON daterange(rb.check_in, rb.check_out, '[)') @> d.date

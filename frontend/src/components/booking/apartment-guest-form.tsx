@@ -71,13 +71,15 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const phoneOk = guestForm.phone ? guestForm.phone.replace(/\D/g, '').length >= 10 : null;
   const cpfHasLetter = /[a-zA-Z]/.test(guestForm.document);
   const cpfDigits = guestForm.document.replace(/\D/g, '');
+  // null = untouched/empty (no border), true = valid, false = invalid (red border)
+  // When touched and document is absent or partial (< 11 digits), show invalid.
   const cpfOk = !guestForm.document
     ? null
     : cpfHasLetter
     ? true
     : cpfDigits.length === 11
     ? validateCPF(cpfDigits)
-    : null;
+    : false;  // partial CPF: invalid once touched
 
   const canReserve = !!(
     guestForm.fullName.trim() &&

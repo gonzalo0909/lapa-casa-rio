@@ -153,7 +153,11 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         : false;
     const canReserve =
       !!(guestForm.fullName.trim() && emailOk && confirmEmailOk && phoneOk && cpfOk && guestForm.arrivalTime);
-    if (!canReserve) { return; }
+    if (!canReserve) {
+      setError(t('formIncomplete'));
+      return;
+    }
+    setError(null);
 
     setIsCreatingBooking(true);
     setError(null);

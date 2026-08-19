@@ -491,6 +491,7 @@
     "processing": "Wird verarbeitet...",
     "errorLoading": "Fehler beim Laden der Apartments. Bitte erneut versuchen.",
     "errorCreating": "Fehler beim Erstellen der Buchung. Bitte erneut versuchen.",
+    "formIncomplete": "Bitte korrigieren Sie die rot markierten Felder bevor Sie fortfahren.",
     "guestCount": "{count} Gast/Gäste",
     "guestCountHint": "Filtert Apartments nach Kapazität",
     "decreaseGuests": "Gäste verringern",

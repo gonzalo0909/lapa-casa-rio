@@ -491,6 +491,7 @@
     "processing": "Procesando...",
     "errorLoading": "Error al cargar apartamentos. Intentá de nuevo.",
     "errorCreating": "Error al crear la reserva. Intentá de nuevo.",
+    "formIncomplete": "Por favor, corrija los campos marcados en rojo antes de continuar.",
     "guestCount": "{count} huésped(es)",
     "guestCountHint": "Filtra apartamentos por capacidad",
     "decreaseGuests": "Disminuir huéspedes",

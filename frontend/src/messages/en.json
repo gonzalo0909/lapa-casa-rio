@@ -491,6 +491,7 @@
     "processing": "Processing...",
     "errorLoading": "Error loading apartments. Please try again.",
     "errorCreating": "Error creating booking. Please try again.",
+    "formIncomplete": "Please fix the fields marked in red before continuing.",
     "guestCount": "{count} guest(s)",
     "guestCountHint": "Filters apartments by capacity",
     "decreaseGuests": "Decrease guests",

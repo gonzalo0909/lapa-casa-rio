@@ -353,11 +353,65 @@
 
 .spinnerWrap { display: flex; justify-content: center; padding: 4rem 0; }
 
+/* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
+  /* Hero */
+  .hero { padding: 2rem 1.25rem 2.25rem; }
+
+  /* Section */
+  .section { padding: 1.5rem 1rem 4rem; }
+
+  /* Step bar: smaller labels so 4 steps fit */
+  .stepLabel { font-size: .7rem; }
+  .stepBadge { width: 22px; height: 22px; font-size: .62rem; }
+  .stepConnector { min-width: 1rem; margin: 0 .25rem; }
+
+  /* Calendar */
   .calMonths { gap: 1rem; }
+  /* Bigger touch targets for calendar day cells */
+  .dayNum { width: 36px; height: 36px; font-size: .8rem; }
+  .dayCell { height: 40px; }
+
+  /* Mini-cal touch targets */
+  .miniDay { min-height: 2.4rem; font-size: .78rem; }
+  .miniApplyBtn { padding: .45rem 1rem; font-size: .78rem; }
+
+  /* Apt grid: single column, bigger card content */
+  .aptGrid { grid-template-columns: 1fr; gap: .75rem; }
+  .aptPhoto { height: 100px; }
+  .cardBody { padding: .75rem .9rem; }
+  .cardName { font-size: 1rem; }
+  .cardCapacity { font-size: .72rem; }
+  .pricePerNight { font-size: .88rem; }
+  .priceTotal { font-size: .95rem; }
+  .priceLabel { font-size: .72rem; }
+  .nightsLabel { font-size: .72rem; }
+  .cardBtn { padding: .55rem; font-size: .82rem; }
+
+  /* Continuar / Reservar buttons: full-width, easy to tap */
+  .cardContinueBtn { padding: 1rem; font-size: 1rem; }
+  .btnReserve { padding: .9rem; font-size: 1rem; }
+  .btnContinue { padding: .75rem 1.5rem; }
+
+  /* Form */
   .formGrid { grid-template-columns: 1fr; }
-  .dayNum { width: 29px; height: 29px; font-size: .75rem; }
-  .dayCell { height: 33px; }
-  .aptGrid { grid-template-columns: 1fr; }
+  .formField label { font-size: .82rem; }
+  .formField input, .formField textarea, .formField select { padding: .6rem .75rem; font-size: .9rem; }
+
+  /* Summary card */
+  .summaryCard { padding: .85rem 1rem; }
+  .summaryRow { font-size: .82rem; }
+  .totalPrice { font-size: 1.1rem; }
+
+  /* Sticky bar */
   .stickyBar { padding: .7rem 1rem; }
+}
+
+/* Very small screens */
+@media (max-width: 380px) {
+  .heroBrand { font-size: 2rem; }
+  .heroSub { font-size: .8rem; }
+  .section { padding: 1.25rem .85rem 3.5rem; }
+  .stepLabel { display: none; } /* show only badge numbers on tiny screens */
+  .stepConnector { min-width: .5rem; margin: 0 .15rem; }
 }

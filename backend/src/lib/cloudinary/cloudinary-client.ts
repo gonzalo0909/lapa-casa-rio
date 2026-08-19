@@ -33,6 +33,37 @@ export interface UploadedPhoto {
   publicId: string;
 }
 
+/** Sube un buffer de imagen a la carpeta apartment-photos. */
+export async function uploadApartmentPhoto(buffer: Buffer): Promise<UploadedPhoto> {
+  if (!ensureConfigured()) {
+    throw new Error('Cloudinary no está configurado');
+  }
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'apartment-photos',
+        transformation: [{ width: 1600, crop: 'limit' }, { quality: 'auto' }, { fetch_format: 'auto' }],
+      },
+      (error, result) => {
+        if (error || !result) {
+          logger.error('Error subiendo foto de apartamento a Cloudinary', { error: error?.message });
+          reject(error ?? new Error('Upload failed'));
+          return;
+        }
+        resolve({ url: result.secure_url, publicId: result.public_id });
+      }
+    );
+    uploadStream.end(buffer);
+  });
+}
+
+export async function deleteApartmentPhoto(publicId: string): Promise<void> {
+  if (!ensureConfigured()) {
+    throw new Error('Cloudinary no está configurado');
+  }
+  await cloudinary.uploader.destroy(publicId);
+}
+
 /** Sube un buffer de imagen (JPEG/PNG) a la carpeta guest-photos. Redimensiona a 1600px de ancho máximo para no cargar fotos de celular a resolución completa. */
 export async function uploadGuestPhoto(buffer: Buffer): Promise<UploadedPhoto> {
   if (!ensureConfigured()) {

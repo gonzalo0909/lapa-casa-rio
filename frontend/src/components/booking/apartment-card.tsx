@@ -6,8 +6,8 @@ import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Building2, Landmark, Home, Palette, Mountain, Music, Leaf, Building,
-  Sparkles, Clapperboard, Camera, Calendar, AlertTriangle,
-  MapPin, type LucideIcon,
+  Sparkles, Clapperboard, Calendar, AlertTriangle,
+  MapPin, ChevronLeft, ChevronRight, type LucideIcon,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { ApartmentMiniCalendar } from './apartment-mini-calendar';
@@ -68,17 +68,63 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
   const [calOpen, setCalOpen] = useState(false);
+  const [photoIdx, setPhotoIdx] = useState(0);
   const isSelectable = !disabledReason;
   const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
   const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round(apartment.basePrice * apartment.seasonMultiplier);
+  const photos = apartment.photos ?? [];
+  const hasPhotos = photos.length > 0;
+  const currentPhoto = photos[photoIdx];
+
+  const prevPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPhotoIdx((i) => (i - 1 + photos.length) % photos.length);
+  };
+  const nextPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPhotoIdx((i) => (i + 1) % photos.length);
+  };
 
   return (
     <div
       className={`${styles.aptCard} ${disabledReason ? styles.aptCardUnavailable : ''} ${selected ? styles.aptCardSelected : ''}`}
     >
-      <div className={styles.aptPhoto} style={{ background: tintFor(apartment.code) }}>
-        <span className={styles.aptPhotoIcon}><PhotoIcon size={24} strokeWidth={1.25} /></span>
-        <span className={styles.aptPhotoLabel}><Camera size={9} /> {t('illustrativePhoto')}</span>
+      <div
+        className={styles.aptPhoto}
+        style={hasPhotos ? undefined : { background: tintFor(apartment.code) }}
+      >
+        {hasPhotos ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentPhoto!.url}
+              alt={currentPhoto!.altText ?? apartment.name}
+              className={styles.aptPhotoImg}
+              draggable={false}
+            />
+            {photos.length > 1 && (
+              <>
+                <button type="button" className={`${styles.photoNav} ${styles.photoNavPrev}`} onClick={prevPhoto} aria-label="Foto anterior">
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" className={`${styles.photoNav} ${styles.photoNavNext}`} onClick={nextPhoto} aria-label="Foto siguiente">
+                  <ChevronRight size={16} />
+                </button>
+                <div className={styles.photoDots}>
+                  {photos.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`${styles.photoDot} ${i === photoIdx ? styles.photoDotActive : ''}`}
+                      onClick={(e) => { e.stopPropagation(); setPhotoIdx(i); }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <span className={styles.aptPhotoIcon}><PhotoIcon size={24} strokeWidth={1.25} /></span>
+        )}
         <span className={`${styles.availStripe} ${apartment.available ? styles.availStripeAvail : styles.availStripeUnavail}`}>
           {apartment.available ? t('available') : t('unavailable')}
         </span>

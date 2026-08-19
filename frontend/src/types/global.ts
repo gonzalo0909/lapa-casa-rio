@@ -75,6 +75,13 @@ export interface GuestDetails {
   arrivalTime: string;
 }
 
+export interface ApartmentPhoto {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+  altText: string | null;
+}
+
 /** Apartamento tal como lo devuelve GET /api/v1/availability/apartments */
 export interface ApartmentAvailability {
   id: string;
@@ -88,6 +95,7 @@ export interface ApartmentAvailability {
   seasonType: 'alta' | 'media' | 'baja' | 'carnaval';
   depositAmount: number;
   available: boolean;
+  photos: ApartmentPhoto[];
 }
 
 export type ApartmentStep = 'dates' | 'apartment' | 'summary';

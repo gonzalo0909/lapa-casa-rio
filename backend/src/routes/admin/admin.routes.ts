@@ -26,6 +26,7 @@ import { ApiResponse } from '../../utils/responses';
 import { adminConflictsRouter } from './conflicts.routes';
 import { adminPhotosRouter } from './photos.routes';
 import { adminBlockedDatesRouter } from './blocked-dates.routes';
+import { roomTypePhotosRouter } from './room-type-photos.routes';
 import type { BookingWithGuest } from '../../services/email-service';
 
 const router = Router();
@@ -47,6 +48,11 @@ router.use('/photos', adminPhotosRouter);
  * (mantenimiento/evento privado), ver blocked-dates.routes.ts
  */
 router.use('/blocked-dates', adminBlockedDatesRouter);
+
+/**
+ * /admin/room-types — gestión de fotos por apartamento
+ */
+router.use('/room-types', roomTypePhotosRouter);
 
 /**
  * GET /admin/dashboard — KPIs del mes actual

@@ -66,6 +66,19 @@ export const checkApartmentAvailabilityHandler = async (
        FROM room_types WHERE property_type = 'apartment' ORDER BY base_price, name`
     );
 
+    // Fotos de todos los apartamentos en una sola query (evitar N+1)
+    const { rows: allPhotos } = await query<{
+      room_type_id: string; id: string; image_url: string; display_order: number; is_primary: boolean; alt_text: string | null;
+    }>(
+      `SELECT room_type_id, id, image_url, display_order, is_primary, alt_text
+       FROM room_type_photos
+       ORDER BY room_type_id, display_order ASC, created_at ASC`
+    );
+    const photosByApt = allPhotos.reduce<Record<string, typeof allPhotos>>((acc, p) => {
+      (acc[p.room_type_id] ??= []).push(p);
+      return acc;
+    }, {});
+
     const apartmentsWithAvailability = await Promise.all(
       apartments.map(async (apt) => {
         const avail = await availabilityService.checkRoomAvailability(apt.id, checkIn, checkOut);
@@ -93,6 +106,9 @@ export const checkApartmentAvailabilityHandler = async (
             seasonType: pricing.seasonType,
             depositAmount: pricing.depositAmount,
             available: avail.availableBeds > 0,
+            photos: (photosByApt[apt.id] ?? []).map(p => ({
+              id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
+            })),
           };
         } catch (pricingError) {
           // p.ej. Carnaval con menos noches del minimo -- no tumbar todo
@@ -113,6 +129,9 @@ export const checkApartmentAvailabilityHandler = async (
             seasonType: 'media' as const,
             depositAmount: 0,
             available: false,
+            photos: (photosByApt[apt.id] ?? []).map(p => ({
+              id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
+            })),
           };
         }
       })

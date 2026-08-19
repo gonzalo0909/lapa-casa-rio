@@ -9,6 +9,7 @@ import { SeasonPricing } from '@/components/admin/season-pricing';
 import { DateBlocking } from '@/components/admin/date-blocking';
 import ICalSettings from '@/components/admin/ical-settings';
 import { ApartmentOffers } from '@/components/admin/apartment-offers';
+import { ApartmentPhotos } from '@/components/admin/apartment-photos';
 import { api, handleAPIError } from '@/lib/api';
 
 /**
@@ -24,7 +25,7 @@ import { api, handleAPIError } from '@/lib/api';
  * Login vía POST /admin/login (admin-auth.routes.ts, requiere ADMIN_PASSWORD_HASH en backend).
  */
 
-type Tab = 'dashboard' | 'pricing' | 'blocking' | 'ical' | 'offers';
+type Tab = 'dashboard' | 'pricing' | 'blocking' | 'ical' | 'offers' | 'photos';
 
 export default function AdminPage({
   params,
@@ -79,6 +80,7 @@ export default function AdminPage({
     { id: 'offers', label: 'Ofertas', icon: '🏷️' },
     { id: 'blocking', label: t('dateBlocking'), icon: '🔒' },
     { id: 'ical', label: t('ical'), icon: '📅' },
+    { id: 'photos', label: 'Fotos', icon: '🖼️' },
   ];
 
   // ── Login screen ──────────────────────────────────────────────────────────
@@ -185,6 +187,7 @@ export default function AdminPage({
         {activeTab === 'offers' && <ApartmentOffers locale={locale} />}
         {activeTab === 'blocking' && <DateBlocking locale={locale} />}
         {activeTab === 'ical' && <ICalSettings />}
+        {activeTab === 'photos' && <ApartmentPhotos />}
       </div>
     </div>
   );

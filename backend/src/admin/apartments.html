@@ -1,0 +1,61 @@
+<!-- lapa-casa-hostel/backend/src/admin/apartments.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fotos de apartamentos — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .apt-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.5rem; }
+  .apt-btn { display: flex; justify-content: space-between; align-items: center; padding: .55rem .85rem;
+             border: 1.5px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer;
+             font-size: .88rem; text-align: left; }
+  .apt-btn.active { border-color: #2c5f8a; background: #eff6ff; }
+  .apt-btn .badge { font-size: .7rem; font-weight: 700; padding: .1rem .4rem; border-radius: 999px; }
+  .badge-ok { background: #dcfce7; color: #166534; }
+  .badge-empty { background: #f1f5f9; color: #64748b; }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .photo-card { border: 2px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+  .photo-card.primary { border-color: #2c5f8a; }
+  .photo-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
+  .photo-card .actions { padding: .45rem .6rem; display: flex; justify-content: space-between; font-size: .72rem; }
+  .photo-card .actions button { background: none; border: none; cursor: pointer; padding: 0; }
+  .btn-primary-label { color: #1d4ed8; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .btn-set-primary { color: #2c5f8a; font-weight: 600; }
+  .btn-delete { color: #dc2626; }
+
+  #upload-section { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  #upload-section input[type=file] { flex: 1; min-width: 180px; font-size: .88rem; }
+  #upload-section button { padding: .5rem 1.1rem; border-radius: 7px; border: none;
+                            background: #2c5f8a; color: #fff; font-size: .88rem; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Fotos de apartamentos</h2>
+    <div id="apt-msg"></div>
+    <div id="apt-list" class="apt-list">Cargando…</div>
+  </div>
+
+  <div class="card" id="photo-panel" style="display:none">
+    <h2 id="photo-panel-title">—</h2>
+    <div id="upload-section">
+      <input type="file" id="photo-file" accept="image/*">
+      <button type="button" id="upload-btn">+ Subir foto</button>
+    </div>
+    <div id="upload-msg"></div>
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script>renderNav('apartments');</script>
+<script src="/admin/js/apartments.js"></script>
+</body>
+</html>

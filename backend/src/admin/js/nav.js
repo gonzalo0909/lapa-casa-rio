@@ -11,7 +11,8 @@ function renderNav(activePage) {
     { href: '/admin/rooms.html', label: 'Habitaciones', page: 'rooms' },
     { href: '/admin/pricing.html', label: 'Precios', page: 'pricing' },
     { href: '/admin/conflicts.html', label: 'Conflictos', page: 'conflicts' },
-    { href: '/admin/photos.html', label: 'Fotos', page: 'photos' },
+    { href: '/admin/photos.html', label: 'Fotos huésp.', page: 'photos' },
+    { href: '/admin/apartments.html', label: 'Fotos apts.', page: 'apartments' },
     { href: '/admin/blocking.html', label: 'Bloqueos', page: 'blocking' },
     { href: '/admin/ical.html', label: 'iCal / OTAs', page: 'ical' }
   ];

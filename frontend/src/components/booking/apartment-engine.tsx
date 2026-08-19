@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff, CheckCircle2, Mail } from 'lucide-react';
 import styles from './apartment-engine.module.css';
@@ -66,6 +66,16 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [paymentDone, setPaymentDone] = useState(false);
   const [paySuccessOpen, setPaySuccessOpen] = useState(true);
   const [isExpired, setIsExpired] = useState(false);
+
+  // ── Ref para scroll suave al contenido del paso (evitar saltar al hero) ──
+  const stepContentRef = useRef<HTMLDivElement>(null);
+  /** Desplaza suavemente hasta el bloque de contenido del paso activo,
+   *  sin volver al hero. delay pequeño para que React haya renderizado. */
+  const scrollToContent = useCallback(() => {
+    setTimeout(() => {
+      stepContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  }, []);
 
   // ── Cálculos derivados ───────────────────────────────────────────────────
   const nights =
@@ -206,7 +216,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         checkIn,
       });
       setStep(4);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToContent();
     } catch (err) {
       setError(handleAPIError(err, locale));
     } finally {
@@ -219,7 +229,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     if (step === 2) { setStep(1); }
     else if (step === 3) { setStep(2); }
     else if (step === 4) { setStep(3); }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToContent();
   };
 
   // ── Indicador de pasos ───────────────────────────────────────────────────
@@ -307,6 +317,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           </div>
         </div>
 
+        {/* Anchor de scroll: scrollToContent() apunta aquí (no al hero) */}
+        <div ref={stepContentRef} style={{ scrollMarginTop: '1.5rem' }} />
+
         {/* ── Paso 1: Fechas ──────────────────────────────────────────────── */}
         {step === 1 && (
           <ApartmentDateStep
@@ -341,7 +354,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onBack={goBack}
             onContinue={() => {
               setStep(3);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              scrollToContent();
             }}
           />
         )}

@@ -143,7 +143,7 @@
 
 /* ── Apt grid ────────────────────────────────────────── */
 /* Cards reducidas ~50% — mini cal mantiene su tamaño original */
-.aptGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.aptGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; align-items: start; }
 .aptCard { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 11px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; }
 /* No-seleccionados: estáticos, sin hover ni animación */
 .aptCard:not(.aptCardUnavailable):not(.aptCardSelected) { transition: border-color .15s; }

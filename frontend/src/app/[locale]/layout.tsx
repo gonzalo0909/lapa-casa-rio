@@ -13,6 +13,8 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasahostel.com';
+
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
@@ -24,9 +26,52 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: 'seo' });
+  const title = t('homeTitle');
+  const description = t('homeDescription');
+
   return {
-    title: t('homeTitle'),
-    description: t('homeDescription'),
+    title: {
+      default: title,
+      template: '%s · Lapa Casa',
+    },
+    description,
+    metadataBase: new URL(SITE_URL),
+    alternates: {
+      canonical: `/${locale}`,
+      languages: Object.fromEntries(
+        locales.map((l) => [l, `/${l}`]),
+      ),
+    },
+    openGraph: {
+      title,
+      description,
+      siteName: 'Lapa Casa Hostel',
+      locale,
+      type: 'website',
+      images: [
+        {
+          url: '/og-image.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Lapa Casa Hostel — Santa Teresa, Rio de Janeiro',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-image.jpg'],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+    },
+    icons: {
+      icon: '/favicon.ico',
+      apple: '/apple-touch-icon.png',
+    },
   };
 }
 

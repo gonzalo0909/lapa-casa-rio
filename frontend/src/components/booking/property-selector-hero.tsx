@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { usePathname } from "next/navigation"
 import { BedDouble, Home, MapPin, ArrowRight } from "lucide-react"
 
 interface PropertySelectorHeroProps {
@@ -9,6 +10,11 @@ interface PropertySelectorHeroProps {
 }
 
 export function PropertySelectorHero({ onSelectHostel, onSelectApartments }: PropertySelectorHeroProps) {
+  const pathname = usePathname()
+  // Extract locale from path: /es, /pt, /en, /fr, /de
+  const localeMatch = pathname.match(/^\/([a-z]{2})\b/)
+  const locale = localeMatch ? localeMatch[1] : 'pt'
+
   return (
     <div className="min-h-screen bg-[#12160f] text-cream">
       {/* Nav */}
@@ -31,6 +37,12 @@ export function PropertySelectorHero({ onSelectHostel, onSelectApartments }: Pro
             >
               Apartamentos
             </button>
+            <a
+              href={`/${locale}/parceiros`}
+              className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
+            >
+              Parceiros
+            </a>
           </nav>
         </div>
       </header>

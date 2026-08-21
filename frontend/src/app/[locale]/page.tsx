@@ -39,7 +39,7 @@ export async function generateMetadata({
 }
 
 /** JSON-LD structured data — LodgingBusiness + two sub-properties */
-function JsonLd({ locale }: { locale: string }) {
+function JsonLd() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LodgingBusiness',
@@ -98,7 +98,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
 
   return (
     <main className="min-h-screen bg-background">
-      <JsonLd locale={locale} />
+      <JsonLd />
       <PropertyExperience locale={locale} />
     </main>
   );

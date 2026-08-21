@@ -4,7 +4,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Check, AlertTriangle, Undo2 } from 'lucide-react';
+import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
 
@@ -12,8 +12,8 @@ import { availabilityAPI } from '@/lib/api';
  * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
 const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
 
-function monthShortLabel(y: number, m: number, locale: string): string {
-  return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'short' });
+function monthLabel(y: number, m: number, locale: string): string {
+  return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'long', year: 'numeric' });
 }
 function weekdayNarrowLabels(locale: string): string[] {
   const bcp = BCP47[locale] ?? 'pt-BR';
@@ -22,6 +22,9 @@ function weekdayNarrowLabels(locale: string): string[] {
     labels.push(new Date(2023, 0, 1 + i).toLocaleDateString(bcp, { weekday: 'narrow' }));
   }
   return labels;
+}
+function monthShortLabel(y: number, m: number, locale: string): string {
+  return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'short' });
 }
 
 interface ApartmentMiniCalendarProps {
@@ -47,7 +50,14 @@ function todayDs(): string {
   return toDs(new Date());
 }
 
-function monthCells(y: number, m: number, cin: string | null, cout: string | null, blocked: Set<string>, onDayClick: (ds: string) => void): React.ReactNode {
+function monthCells(
+  y: number,
+  m: number,
+  cin: string | null,
+  cout: string | null,
+  blocked: Set<string>,
+  onDayClick: (ds: string) => void
+): React.ReactNode {
   const dim = new Date(y, m + 1, 0).getDate();
   const fdow = new Date(y, m, 1).getDay();
   const today = todayDs();
@@ -100,26 +110,33 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [result, setResult] = useState<{ available: boolean } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
 
+  // Single-month display: offset from the check-in month (0 = check-in month, 1 = next, etc.)
+  const [monthOffset, setMonthOffset] = useState(0);
+
   const baseMonth = useMemo(() => {
     const ref = cin ? parseDs(cin) : new Date();
-    return { y: ref.getFullYear(), m: ref.getMonth() };
-  }, [cin]);
-  const nextMonth = useMemo(() => {
+    let y = ref.getFullYear();
+    let m = ref.getMonth() + monthOffset;
+    while (m > 11) { m -= 12; y += 1; }
+    while (m < 0) { m += 12; y -= 1; }
+    return { y, m };
+  }, [cin, monthOffset]);
+
+  // For API: always fetch current + next month for smooth navigation
+  const nextApiMonth = useMemo(() => {
     let { y, m } = baseMonth;
     m += 1;
     if (m > 11) { m = 0; y += 1; }
     return { y, m };
   }, [baseMonth]);
 
-  /** Carga la ocupación diaria de este apartamento (1 cama por apartamento,
-   * ver availability-service.ts getDailyOccupancy) para pintar de rojo los
-   * días bloqueados en cuanto se abre el mini-calendario, sin esperar a
-   * que el huésped intente seleccionarlos. */
+  /** Carga la ocupación diaria de este apartamento para pintar de rojo los
+   * días bloqueados en cuanto se abre el mini-calendario. */
   useEffect(() => {
     let cancelled = false;
     const months = [
       `${baseMonth.y}-${String(baseMonth.m + 1).padStart(2, '0')}`,
-      `${nextMonth.y}-${String(nextMonth.m + 1).padStart(2, '0')}`,
+      `${nextApiMonth.y}-${String(nextApiMonth.m + 1).padStart(2, '0')}`,
     ];
     (async () => {
       try {
@@ -140,7 +157,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       }
     })();
     return () => { cancelled = true; };
-  }, [apartmentId, baseMonth.y, baseMonth.m, nextMonth.y, nextMonth.m]);
+  }, [apartmentId, baseMonth.y, baseMonth.m, nextApiMonth.y, nextApiMonth.m]);
 
   const handleDayClick = (ds: string) => {
     setResult(null);
@@ -158,10 +175,15 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     setCin(toDs(globalCheckIn));
     setCout(toDs(globalCheckOut));
     setResult(null);
+    setMonthOffset(0);
   };
 
   const nights = cin && cout ? Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000) : 0;
   const changed = cin !== toDs(globalCheckIn) || cout !== toDs(globalCheckOut);
+
+  // Disable prev if we're already at the current month
+  const today = new Date();
+  const isAtMinMonth = baseMonth.y === today.getFullYear() && baseMonth.m === today.getMonth();
 
   const handleApply = async () => {
     if (!cin || !cout) { return; }
@@ -185,27 +207,41 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   return (
     <div className={styles.aptMiniCal}>
-      <div className={styles.calMonths} style={{ gap: '1rem' }}>
-        <div>
-          <div className={styles.miniMonthTitle}>{monthShortLabel(baseMonth.y, baseMonth.m, locale)} {baseMonth.y}</div>
-          <div className={styles.miniWdayHeaders}>
-            {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
-          </div>
-          <div className={styles.miniDayCells}>
-            {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick)}
-          </div>
-        </div>
-        <div>
-          <div className={styles.miniMonthTitle}>{monthShortLabel(nextMonth.y, nextMonth.m, locale)} {nextMonth.y}</div>
-          <div className={styles.miniWdayHeaders}>
-            {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
-          </div>
-          <div className={styles.miniDayCells}>
-            {monthCells(nextMonth.y, nextMonth.m, cin, cout, blockedDates, handleDayClick)}
-          </div>
-        </div>
+      {/* Month header with prev/next navigation */}
+      <div className={styles.miniCalHeader}>
+        <button
+          type="button"
+          className={styles.miniNavBtn}
+          onClick={() => setMonthOffset((o) => o - 1)}
+          disabled={isAtMinMonth}
+          aria-label="Mês anterior"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <span className={styles.miniMonthTitle}>
+          {monthLabel(baseMonth.y, baseMonth.m, locale)}
+        </span>
+        <button
+          type="button"
+          className={styles.miniNavBtn}
+          onClick={() => setMonthOffset((o) => o + 1)}
+          aria-label="Próximo mês"
+        >
+          <ChevronRight size={14} />
+        </button>
       </div>
 
+      {/* Weekday headers */}
+      <div className={styles.miniWdayHeaders}>
+        {wdays.map((w, i) => <span key={i} className={styles.miniWday}>{w}</span>)}
+      </div>
+
+      {/* Day cells — single month */}
+      <div className={styles.miniDayCells}>
+        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick)}
+      </div>
+
+      {/* Apply / hint bar */}
       {cin && cout ? (
         <div className={styles.miniApplyBar}>
           <span>{fmtShort(cin, locale)} → {fmtShort(cout, locale)} · {nights} {nights !== 1 ? t('nights') : t('night')}</span>

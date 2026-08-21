@@ -11,12 +11,13 @@ import { useTranslations } from 'next-intl';
 import {
   Tag, MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
   Ban, CigaretteOff, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
+  Users, ShieldCheck, Trash2,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { CHECKIN_TIMES } from './apartment-engine.types';
 import { validateCPF, formatCPF, isEmailFmt, formatBRPhone, fmtDate } from './apartment-engine.utils';
 import type { ApartmentAvailability } from '@/types/global';
-import type { GuestForm, AptLocale } from './apartment-engine.types';
+import type { GuestForm, AptLocale, AdditionalGuest } from './apartment-engine.types';
 
 interface ApartmentGuestFormProps {
   locale: AptLocale;
@@ -33,6 +34,9 @@ interface ApartmentGuestFormProps {
   onFieldBlur: (field: string) => void;
   onReserve: () => void;
   onBack: () => void;
+  /** Acompañantes declarados (excluye al titular) */
+  additionalGuests: AdditionalGuest[];
+  onAdditionalGuestsChange: (guests: AdditionalGuest[]) => void;
 }
 
 export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
@@ -50,6 +54,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   onFieldBlur,
   onReserve,
   onBack,
+  additionalGuests,
+  onAdditionalGuestsChange,
 }) => {
   const t = useTranslations('apartments');
 
@@ -103,6 +109,38 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // canReserve is computed above and available for use; the actual gate lives in
   // the parent's onReserve handler, which calls setTouched before checking it.
   void canReserve;
+
+  // ── Acompañantes: helpers ──────────────────────────────────────────────────
+  /** Cuántos acompañantes puede declarar: guestCount - 1 (titular ya cuenta como 1) */
+  const maxAdditional = Math.max(0, guestCount - 1);
+
+  /** Valida el documento de un acompañante (misma lógica que el titular) */
+  function docOk(doc: string): boolean | null {
+    if (!doc) { return null; }
+    if (/[a-zA-Z]/.test(doc)) { return true; } // pasaporte — se acepta
+    const digits = doc.replace(/\D/g, '');
+    if (digits.length === 11) { return validateCPF(digits); }
+    return false; // incompleto
+  }
+
+  function updateAdditionalGuest(index: number, field: keyof AdditionalGuest, value: string) {
+    const updated = additionalGuests.map((g, i) =>
+      i === index ? { ...g, [field]: field === 'document' ? (/[a-zA-Z]/.test(value) ? value : formatCPF(value)) : value } : g
+    );
+    onAdditionalGuestsChange(updated);
+  }
+
+  function addGuest() {
+    if (additionalGuests.length >= maxAdditional) { return; }
+    onAdditionalGuestsChange([
+      ...additionalGuests,
+      { id: crypto.randomUUID(), fullName: '', document: '' },
+    ]);
+  }
+
+  function removeGuest(index: number) {
+    onAdditionalGuestsChange(additionalGuests.filter((_, i) => i !== index));
+  }
 
   return (
     <div>
@@ -373,6 +411,90 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             />
           </div>
         </div>
+
+        {/* ── Declaración de hóspedes ──────────────────────────────────── */}
+        {guestCount > 0 && (
+          <div className={styles.guestsDeclaration}>
+            <div className={styles.guestsDeclTitle}>
+              <Users size={15} /> {t('guestDeclarationTitle')}
+            </div>
+            <p className={styles.guestsDeclNote}>{t('guestDeclarationNote')}</p>
+
+            {/* Titular — solo lectura, datos del form principal */}
+            <div className={styles.guestDeclRow}>
+              <span className={styles.guestDeclBadge}>1</span>
+              <div className={styles.guestDeclFields}>
+                <span className={styles.guestDeclName}>
+                  {guestForm.fullName || <em style={{ color: 'var(--fg-muted)' }}>{t('fullNameLabel')}</em>}
+                  <span className={styles.guestDeclTitularTag}>{t('guestTitularTag')}</span>
+                </span>
+                <span className={styles.guestDeclDoc}>
+                  {guestForm.document || <em style={{ color: 'var(--fg-muted)' }}>{t('documentLabel')}</em>}
+                </span>
+              </div>
+            </div>
+
+            {/* Acompañantes */}
+            {additionalGuests.map((g, idx) => {
+              const ok = docOk(g.document);
+              return (
+                <div key={g.id} className={styles.guestDeclRow}>
+                  <span className={styles.guestDeclBadge}>{idx + 2}</span>
+                  <div className={styles.guestDeclFields}>
+                    <input
+                      type="text"
+                      placeholder={t('fullNamePlaceholder')}
+                      value={g.fullName}
+                      onChange={(e) => updateAdditionalGuest(idx, 'fullName', e.target.value)}
+                      className={`${styles.guestDeclInput} ${!g.fullName.trim() ? styles.inputInvalid : ''}`}
+                    />
+                    <div className={styles.guestDeclDocWrap}>
+                      <input
+                        type="text"
+                        placeholder="000.000.000-00"
+                        maxLength={14}
+                        value={g.document}
+                        onChange={(e) => updateAdditionalGuest(idx, 'document', e.target.value)}
+                        className={`${styles.guestDeclInput} ${
+                          ok === true ? styles.inputValid : ok === false ? styles.inputInvalid : ''
+                        }`}
+                      />
+                      {ok === true && (
+                        <span className={`${styles.feedback} ${styles.feedbackOk}`}>
+                          <Check size={12} /> {/[a-zA-Z]/.test(g.document) ? t('passportAccepted') : t('cpfValid')}
+                        </span>
+                      )}
+                      {ok === false && (
+                        <span className={`${styles.feedback} ${styles.feedbackErr}`}>
+                          <X size={12} /> {t('cpfInvalid')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.guestDeclRemove}
+                    onClick={() => removeGuest(idx)}
+                    aria-label={t('removeGuest')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
+
+            {additionalGuests.length < maxAdditional && (
+              <button type="button" className={styles.guestDeclAdd} onClick={addGuest}>
+                + {t('addGuest')}
+              </button>
+            )}
+
+            <div className={styles.guestsDeclAlert}>
+              <ShieldCheck size={14} />
+              <span>{t('guestDeclarationVerifyNote')}</span>
+            </div>
+          </div>
+        )}
 
         {/* Reglas de la casa */}
         <div className={styles.rulesConfirm}>

@@ -292,6 +292,26 @@
 :global([data-theme='dark']) .feedbackOk { color: #4ADE80; }
 :global([data-theme='dark']) .feedbackErr { color: #FCA5A5; }
 
+/* ── Declaración de hóspedes (booking_guests) ───────────────────────────── */
+.guestsDeclaration { background: var(--bg-subtle); border: 1.5px solid var(--border); border-radius: 10px; padding: .85rem 1rem; margin-top: 1.25rem; }
+.guestsDeclTitle { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--primary); margin-bottom: .35rem; }
+.guestsDeclNote { font-size: .75rem; color: var(--fg-muted); margin-bottom: .85rem; line-height: 1.45; }
+.guestDeclRow { display: flex; align-items: flex-start; gap: .55rem; margin-bottom: .65rem; }
+.guestDeclBadge { width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff; font-size: .7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: .15rem; }
+.guestDeclFields { flex: 1; display: flex; flex-direction: column; gap: .3rem; }
+.guestDeclName { font-size: .82rem; color: var(--fg); font-weight: 500; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.guestDeclDoc { font-size: .75rem; color: var(--fg-muted); font-family: SFMono-Regular, Consolas, monospace; }
+.guestDeclTitularTag { font-size: .62rem; font-weight: 700; background: var(--primary-soft); color: var(--primary); border-radius: 999px; padding: .1rem .45rem; white-space: nowrap; }
+.guestDeclInput { border: 1.5px solid var(--border); border-radius: 7px; padding: .35rem .55rem; font-size: .8rem; background: var(--bg-card); color: var(--fg); outline: none; width: 100%; transition: border-color .15s; font-family: inherit; }
+.guestDeclInput:focus { border-color: var(--primary); }
+.guestDeclDocWrap { display: flex; flex-direction: column; gap: .15rem; }
+.guestDeclRemove { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--fg-muted); cursor: pointer; padding: .3rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: .15rem; transition: color .15s, border-color .15s; }
+.guestDeclRemove:hover { color: #991B1B; border-color: #FCA5A5; }
+.guestDeclAdd { margin-top: .2rem; font-size: .75rem; color: var(--primary); background: none; border: 1.5px dashed var(--primary); border-radius: 7px; padding: .35rem .75rem; cursor: pointer; width: 100%; transition: background .15s; }
+.guestDeclAdd:hover { background: var(--primary-soft); }
+.guestsDeclAlert { display: flex; align-items: flex-start; gap: .4rem; margin-top: .75rem; padding: .5rem .65rem; background: var(--success-bg); border-radius: 7px; font-size: .72rem; color: var(--success-fg); line-height: 1.4; }
+.guestsDeclAlert svg { flex-shrink: 0; margin-top: .05rem; }
+
 .rulesConfirm { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1.25rem; }
 .rulesConfirmTitle { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--warn-fg); margin-bottom: .6rem; }
 .rulesConfirmList { display: flex; flex-direction: column; gap: .4rem; }

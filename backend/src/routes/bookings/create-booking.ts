@@ -9,6 +9,7 @@ import { notificationService } from '../../services/notification-service';
 import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
 import type { BookingWithGuest } from '../../services/email-service';
 import { InsufficientAvailabilityError } from '../../services/booking-service';
+import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -33,11 +34,74 @@ interface CreateBookingRequest {
     country: string;
     document?: string;
   };
+  /**
+   * Acompañantes declarados por el titular en el checkout (tabla booking_guests).
+   * Cada CPF es verificado contra guests.blocked antes de crear la reserva.
+   * El huésped bloqueado recibe un error genérico sin revelar el motivo.
+   */
+  additionalGuests?: Array<{
+    fullName: string;
+    document: string;
+    documentType?: string;  // 'CPF' | 'RG' | 'passaporte' — default 'CPF'
+  }>;
   specialRequests?: string;
   arrivalTime?: string;
   language?: 'pt' | 'en' | 'es';
   source?: string;
   guestGender?: 'mixed' | 'female' | 'male';
+}
+
+// ── Helpers de blocklist ──────────────────────────────────────────────────────
+
+/** Normaliza un CPF quitando puntos y guión → '00000000000' */
+function normalizeCPF(doc: string): string {
+  return doc.replace(/\D/g, '');
+}
+
+/** Verifica si alguno de los documentos está en la lista negra (guests.blocked = true).
+ *  Solo verifica CPFs de 11 dígitos — pasaportes y documentos con letras se saltan.
+ *  Devuelve true si alguno está bloqueado (no revela cuál para no ayudar a la evasión). */
+async function anyDocumentBlocked(documents: string[]): Promise<boolean> {
+  const cpfs = documents
+    .map(normalizeCPF)
+    .filter((d) => /^\d{11}$/.test(d)); // solo CPFs puros, no pasaportes
+  if (cpfs.length === 0) { return false; }
+  // Un solo query paramétrico para todos los CPFs
+  const placeholders = cpfs.map((_, i) => `$${i + 1}`).join(', ');
+  const result = await query<{ id: string }>(
+    `SELECT g.id FROM guests g
+     WHERE g.blocked = true
+       AND g.document_number = ANY(ARRAY[${placeholders}])
+     LIMIT 1`,
+    cpfs
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+/** Inserta todos los hóspedes declarados en booking_guests.
+ *  El titular va con is_titular = true; los acompañantes con false.
+ *  Fire-and-forget seguro: si falla, la reserva ya quedó guardada. */
+async function insertBookingGuests(
+  reservationId: string,
+  titular: { fullName: string; document: string; documentType: string },
+  additional: Array<{ fullName: string; document: string; documentType?: string }>
+): Promise<void> {
+  const guests = [
+    { ...titular, isTitular: true },
+    ...additional.map((g) => ({ ...g, documentType: g.documentType ?? 'CPF', isTitular: false })),
+  ];
+  // INSERT en batch usando unnest para evitar N queries individuales
+  const names   = guests.map((g) => g.fullName);
+  const docs    = guests.map((g) => g.document.replace(/\D/g, '') || g.document); // normaliza CPF
+  const types   = guests.map((g) => g.documentType);
+  const titular_flags = guests.map((g) => g.isTitular);
+  await query(
+    `INSERT INTO booking_guests (reservation_id, full_name, document_number, document_type, is_titular)
+     SELECT $1, name, doc, dtype, is_tit
+     FROM unnest($2::text[], $3::text[], $4::text[], $5::bool[])
+            AS t(name, doc, dtype, is_tit)`,
+    [reservationId, names, docs, types, titular_flags]
+  );
 }
 
 export const createBookingHandler = async (
@@ -81,6 +145,27 @@ export const createBookingHandler = async (
     );
 
     const totalBedsRequested = bookingData.rooms.reduce((sum, r) => sum + r.bedsCount, 0);
+
+    // ── Verificación de lista negra (blocklist) ───────────────────────────────
+    // Se chequean todos los CPFs: el titular + los acompañantes declarados.
+    // Si cualquiera está bloqueado → 409 genérico (sin revelar el motivo ni
+    // quién está bloqueado, para evitar que el huésped evada con otro email).
+    const allDocuments = [
+      bookingData.guest.document,
+      ...(bookingData.additionalGuests ?? []).map((g) => g.document),
+    ].filter(Boolean) as string[];
+
+    const hasBlocked = await anyDocumentBlocked(allDocuments);
+    if (hasBlocked) {
+      logger.warn('Booking blocked: CPF en lista negra', {
+        // No logueamos qué CPF para respetar la privacidad en los logs públicos
+        reservationEmail: bookingData.guest.email,
+      });
+      res.status(409).json(
+        ApiResponse.error('No hay disponibilidad para las fechas seleccionadas')
+      );
+      return;
+    }
 
     // Check overall availability
     const availability = await availabilityService.checkAvailability({
@@ -163,6 +248,24 @@ export const createBookingHandler = async (
     logger.info('Booking created successfully', {
       bookingId: booking.id,
       totalPrice: pricingDetails.totalPrice
+    });
+
+    // ── Registro de hóspedes declarados (booking_guests) ─────────────────────
+    // Fire-and-forget: si falla, la reserva ya quedó guardada correctamente.
+    // El admin puede completar el registro en el check-in físico.
+    insertBookingGuests(
+      booking.id,
+      {
+        fullName,
+        document: bookingData.guest.document ?? '',
+        documentType: /[a-zA-Z]/.test(bookingData.guest.document ?? '') ? 'passaporte' : 'CPF',
+      },
+      bookingData.additionalGuests ?? []
+    ).catch((err) => {
+      logger.error('No se pudo insertar booking_guests', {
+        bookingId: booking.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     });
 
     // Envio de confirmacion, no bloqueante -- se resuelve con los datos ya

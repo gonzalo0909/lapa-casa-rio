@@ -11,6 +11,15 @@ export type AptLocale = 'pt' | 'es' | 'en' | 'fr' | 'de';
 
 // ─── Formulario de huésped ───────────────────────────────────────────────────
 
+/** Un acompañante declarado en el checkout (puede ser pasaporte o CPF). */
+export interface AdditionalGuest {
+  /** ID local — solo para React key, nunca se envía al servidor */
+  id: string;
+  fullName: string;
+  /** CPF formateado (000.000.000-00) o número de pasaporte (letras aceptadas) */
+  document: string;
+}
+
 export interface GuestForm {
   fullName: string;
   email: string;
@@ -34,6 +43,7 @@ export const EMPTY_FORM: GuestForm = {
 };
 
 // ─── Reserva creada (respuesta del backend) ──────────────────────────────────
+// Re-exportado para que ApartmentGuestForm no importe de este archivo por separado
 
 export interface CreatedBooking {
   id: string;

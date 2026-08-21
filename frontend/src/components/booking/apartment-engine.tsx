@@ -32,6 +32,7 @@ import type {
   GuestForm,
   CreatedBooking,
   ApartmentEngineProps,
+  AdditionalGuest,
 } from './apartment-engine.types';
 import { EMPTY_FORM } from './apartment-engine.types';
 
@@ -60,6 +61,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   }));
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
+  const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([]);
 
   // ── Paso 4: pago ─────────────────────────────────────────────────────────
   const [booking, setBooking] = useState<CreatedBooking | null>(null);
@@ -189,6 +192,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           country: guestForm.country,
           document: guestForm.document,
         },
+        // Acompañantes declarados en el checkout (booking_guests)
+        additionalGuests: additionalGuests.map((g) => ({
+          fullName: g.fullName,
+          document: g.document,
+          documentType: /[a-zA-Z]/.test(g.document) ? 'passaporte' : 'CPF',
+        })),
         // NOTA: no mandamos `arrivalTime` al backend directamente.
         // create-booking.ts transforma el valor con replace('-', ':00 – ') + ':00',
         // pensado para rangos tipo "14-16" → "14:00 – 16:00". Los horarios de
@@ -382,6 +391,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             }
             onReserve={handleReserve}
             onBack={goBack}
+            additionalGuests={additionalGuests}
+            onAdditionalGuestsChange={setAdditionalGuests}
           />
         )}
 

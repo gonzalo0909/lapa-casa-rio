@@ -20,8 +20,9 @@ import { HostelGuestForm }     from './hostel-guest-form';
 const CSS = `
 .he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#FAF7F0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}
 .he-header{background:linear-gradient(160deg,#2C4A8C,#1E3578);color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 14px 14px}
-.he-brand{font-family:var(--font-cormorant),Georgia,serif;font-size:clamp(2.4rem,6vw,3.8rem);font-weight:600;letter-spacing:.02em}
-.he-brand-sub{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:.1rem}
+.he-brand-loc{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:.65rem;position:relative;z-index:1}
+.he-brand{font-family:var(--font-cormorant),Georgia,serif;font-size:clamp(2.4rem,6vw,3.8rem);font-weight:600;letter-spacing:.01em;line-height:1.0;margin-bottom:0;position:relative;z-index:1;text-transform:none}
+.he-brand span{font-family:var(--font-cormorant),Georgia,serif;font-weight:300;font-style:italic;text-transform:none;color:#F0B429;display:block;font-size:.62em;letter-spacing:.06em;margin-top:.12em;opacity:.95}
 .he-lang-sw{display:flex;gap:.3rem;margin-top:.45rem;justify-content:center}
 .he-lang-btn{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.18em .5em;border-radius:4px;border:1.5px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.6);cursor:pointer;transition:all .12s}
 .he-lang-btn.active{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.7)}
@@ -480,8 +481,11 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
 
         {/* Header */}
         <div className="he-header">
-          <div className="he-brand">Lapa Casa Hostel</div>
-          <div className="he-brand-sub">Santa Teresa · Rio de Janeiro</div>
+          <div className="he-brand-loc">Santa Teresa · Rio de Janeiro</div>
+          <div className="he-brand">
+            Lapa Casa
+            <span>Hostel</span>
+          </div>
           <div className="he-lang-sw">
             {(['pt','es','en'] as Lang[]).map(l => (
               <button key={l} className={`he-lang-btn${lang === l ? ' active' : ''}`} onClick={() => setLang(l)}>

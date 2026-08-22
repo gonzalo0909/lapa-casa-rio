@@ -110,14 +110,16 @@ function T(key: string, locale: string): string {
       checkIn:           'Check-in',
     },
   };
-  return dict[locale]?.[key] ?? dict['pt'][key] ?? key;
+  return dict[locale]?.[key] ?? dict['pt']?.[key] ?? key;
 }
 
 // ── Estilos inline con las CSS vars del apartment engine ────────────────────
 // Las vars --primary, --accent, --border, --bg-card, --fg, --primary-soft
 // están definidas en apartment-engine.module.css y se propagan globalmente.
 
-const S: Record<string, React.CSSProperties> = {
+// No se usa Record<string, CSSProperties> para evitar que noUncheckedIndexedAccess
+// haga que S.xxx sea CSSProperties | undefined cuando se usa como prop `style`.
+const S = {
   wrap: {
     border:       '1.5px solid var(--border, #ddd)',
     borderRadius: 12,

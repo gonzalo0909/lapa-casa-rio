@@ -117,9 +117,10 @@ function T(key: string, locale: string): string {
 // Las vars --primary, --accent, --border, --bg-card, --fg, --primary-soft
 // están definidas en apartment-engine.module.css y se propagan globalmente.
 
-// No se usa Record<string, CSSProperties> para evitar que noUncheckedIndexedAccess
-// haga que S.xxx sea CSSProperties | undefined cuando se usa como prop `style`.
-const S = {
+// Record<string, CSSProperties>: valida cada objeto contra los tipos CSS de React.
+// Con noUncheckedIndexedAccess, S.xxx es CSSProperties | undefined -- eso es
+// compatible con el prop style?: CSSProperties, así que no genera error en JSX.
+const S: Record<string, React.CSSProperties> = {
   wrap: {
     border:       '1.5px solid var(--border, #ddd)',
     borderRadius: 12,

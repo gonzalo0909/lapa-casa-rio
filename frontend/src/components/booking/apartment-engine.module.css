@@ -142,12 +142,12 @@
 .datePill strong { color: var(--fg); }
 
 /* ── Apt grid ────────────────────────────────────────── */
-/* Cards reducidas ~50% — mini cal mantiene su tamaño original */
-.aptGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; align-items: start; }
-.aptCard { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 11px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; }
+/* 2 columnas en desktop (min 300px); 1 columna en mobile */
+.aptGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; align-items: start; }
+.aptCard { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; }
 /* No-seleccionados: estáticos, sin hover ni animación */
 .aptCard:not(.aptCardUnavailable):not(.aptCardSelected) { transition: border-color .18s, filter .22s, opacity .22s, transform .18s, box-shadow .18s; }
-.aptCard:not(.aptCardUnavailable):not(.aptCardSelected):hover { border-color: var(--primary); transform: translateY(-3px) scale(1.015); box-shadow: 0 10px 28px rgba(0,0,0,.12); }
+.aptCard:not(.aptCardUnavailable):not(.aptCardSelected):hover { border-color: var(--primary); transform: translateY(-3px) scale(1.012); box-shadow: 0 10px 28px rgba(0,0,0,.12); }
 
 /* Blur + fade en los no-hovered cuando hay hover en el grid */
 .aptGrid:has(.aptCard:not(.aptCardSelected):hover) .aptCard:not(:hover):not(.aptCardSelected) {
@@ -157,84 +157,83 @@
 .aptCardSelected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(44,74,140,.18); }
 .aptCardUnavailable { opacity: .52; cursor: not-allowed; }
 
-.aptPhoto { height: 72px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; flex-shrink: 0; }
+.aptPhoto { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; flex-shrink: 0; }
 .aptPhotoImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .aptPhotoIcon { position: relative; z-index: 1; color: rgba(255,255,255,.9); display: inline-flex; filter: drop-shadow(0 2px 6px rgba(0,0,0,.22)); }
-.aptPhotoLabel { position: absolute; bottom: 5px; right: 7px; font-size: .58rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.75); z-index: 1; display: inline-flex; align-items: center; gap: .22rem; }
-.availStripe { position: absolute; top: 6px; left: 7px; font-size: .6rem; font-weight: 700; padding: .1rem .4rem; border-radius: 999px; z-index: 2; }
+.aptPhotoLabel { position: absolute; bottom: 8px; right: 10px; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.85); z-index: 1; display: inline-flex; align-items: center; gap: .3rem; }
+.availStripe { position: absolute; top: 8px; left: 10px; font-size: .72rem; font-weight: 700; padding: .2rem .55rem; border-radius: 999px; z-index: 2; }
 .availStripeAvail { background: rgba(21,128,61,.85); color: #fff; }
 .availStripeUnavail { background: rgba(80,80,80,.75); color: #fff; }
 
 /* ── Carrusel de fotos ──────────────────────────────────── */
-.photoNav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; background: rgba(0,0,0,.45); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; padding: 0; transition: background .15s; }
+.photoNav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; background: rgba(0,0,0,.45); border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; padding: 0; transition: background .15s; }
 .photoNav:hover { background: rgba(0,0,0,.7); }
-.photoNavPrev { left: 5px; }
-.photoNavNext { right: 5px; }
-.photoDots { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 3; }
-.photoDot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.5); cursor: pointer; transition: background .15s; }
+.photoNavPrev { left: 7px; }
+.photoNavNext { right: 7px; }
+.photoDots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 3; }
+.photoDot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); cursor: pointer; transition: background .15s; }
 .photoDotActive { background: #fff; }
 
-.cardBody { padding: .55rem .65rem; display: flex; flex-direction: column; flex: 1; }
-.cardHead { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: .3rem; gap: .4rem; }
-.cardName { font-family: var(--font-cormorant), Georgia, serif; font-size: .82rem; font-weight: bold; color: var(--fg); line-height: 1.2; }
-.cardNeighborhood { display: inline-flex; align-items: center; gap: .22rem; font-size: .62rem; font-weight: 600; color: var(--accent); margin-top: .12rem; }
+.cardBody { padding: .85rem 1rem; display: flex; flex-direction: column; flex: 1; }
+.cardHead { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: .4rem; gap: .5rem; }
+.cardName { font-family: var(--font-cormorant), Georgia, serif; font-size: 1.1rem; font-weight: bold; color: var(--fg); line-height: 1.2; }
+.cardNeighborhood { display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; font-weight: 600; color: var(--accent); margin-top: .15rem; }
 .cardNeighborhood svg { flex-shrink: 0; }
-.cardCapacity { font-size: .6rem; color: var(--fg-muted); margin-top: .1rem; }
-.cardPriceBox { background: var(--bg-subtle); border-radius: 6px; padding: .3rem .5rem; margin-bottom: .45rem; }
+.cardCapacity { font-size: .75rem; color: var(--fg-muted); margin-top: .15rem; }
+.cardPriceBox { background: var(--bg-subtle); border-radius: 8px; padding: .5rem .7rem; margin-bottom: .6rem; }
 .priceRow { display: flex; justify-content: space-between; align-items: center; }
-.priceLabel { font-size: .62rem; color: var(--fg-muted); }
-.pricePerNight { font-size: .74rem; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
-.priceDivider { height: 1px; background: var(--border); margin: .25rem 0; }
-.priceTotal { font-size: .82rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-.nightsLabel { font-size: .62rem; color: var(--fg-muted); }
+.priceLabel { font-size: .75rem; color: var(--fg-muted); }
+.pricePerNight { font-size: .9rem; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+.priceDivider { height: 1px; background: var(--border); margin: .3rem 0; }
+.priceTotal { font-size: 1rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.nightsLabel { font-size: .75rem; color: var(--fg-muted); }
 
-.aptCalToggle { font-size: .66rem; color: var(--primary); background: none; border: none; padding: .15rem 0; text-decoration: underline; text-underline-offset: 2px; text-align: left; margin-bottom: .3rem; display: inline-flex; align-items: center; gap: .25rem; }
+.aptCalToggle { font-size: .8rem; color: var(--primary); background: none; border: none; padding: .2rem 0; text-decoration: underline; text-underline-offset: 2px; text-align: left; margin-bottom: .4rem; display: inline-flex; align-items: center; gap: .3rem; }
 
-.cardBtn { width: 100%; border-radius: 7px; padding: .35rem; font-size: .7rem; font-weight: 600; border: 1.5px solid var(--border); background: transparent; color: var(--primary); transition: all .15s; margin-top: auto; }
+.cardBtn { width: 100%; border-radius: 8px; padding: .55rem; font-size: .85rem; font-weight: 600; border: 1.5px solid var(--border); background: transparent; color: var(--primary); transition: all .15s; margin-top: auto; }
 .cardBtn:hover:not(:disabled) { background: var(--primary-soft); border-color: var(--primary); }
 .cardBtnSelected { background: var(--primary); border-color: var(--primary); color: white; }
 .cardBtn:disabled { opacity: .5; cursor: not-allowed; }
 
-.cardCapacityWarn { font-size: .72rem; color: var(--warn-fg); background: var(--warn-bg); border-radius: 4px; padding: .15rem .45rem; margin-top: .2rem; display: inline-flex; align-items: center; gap: .3rem; }
-.cardSeasonBadge { font-size: .68rem; font-weight: 700; padding: .15rem .5rem; border-radius: 4px; white-space: nowrap; vertical-align: middle; margin-left: .3rem; display: inline-flex; align-items: center; }
-.badgeInline { display: inline-flex; align-items: center; gap: .25rem; }
+.cardCapacityWarn { font-size: .78rem; color: var(--warn-fg); background: var(--warn-bg); border-radius: 4px; padding: .2rem .5rem; margin-top: .25rem; display: inline-flex; align-items: center; gap: .35rem; }
+.cardSeasonBadge { font-size: .75rem; font-weight: 700; padding: .18rem .55rem; border-radius: 4px; white-space: nowrap; vertical-align: middle; margin-left: .3rem; display: inline-flex; align-items: center; }
+.badgeInline { display: inline-flex; align-items: center; gap: .3rem; }
 .inlineIconText { display: inline-flex; align-items: center; gap: .35rem; }
-.priceMultiplier { font-size: .7rem; font-weight: 600; padding: .1rem .4rem; border-radius: 3px; margin-left: .3rem; }
-.priceBaseStrike { font-size: .75rem; text-decoration: line-through; color: var(--fg-muted); margin-right: .3rem; }
+.priceMultiplier { font-size: .78rem; font-weight: 600; padding: .12rem .45rem; border-radius: 3px; margin-left: .3rem; }
+.priceBaseStrike { font-size: .85rem; text-decoration: line-through; color: var(--fg-muted); margin-right: .3rem; }
 .badgeCarnaval { background: #F5E3C4; color: #8A5A2A; }
 .badgeAlta { background: var(--primary-soft); color: var(--primary); }
 .badgeBaixa { background: #DBEBD9; color: #2C6E49; }
 
-/* ── Mini cal (interactive) ──────────────────────────────── */
-/* aptMiniCal: single-month, fits inside an apartment card (~190px+) */
-.aptMiniCal { padding: .5rem .45rem; background: var(--bg-subtle); border-radius: 10px; margin-top: .6rem; width: 100%; box-sizing: border-box; overflow: hidden; }
+/* ── Mini cal (interactive) — ocupa todo el ancho del card ── */
+.aptMiniCal { padding: .7rem .8rem; background: var(--bg-subtle); border-radius: 10px; margin-top: .65rem; width: 100%; box-sizing: border-box; overflow: hidden; }
 
 /* Month header: prev arrow — "Month Year" — next arrow */
-.miniCalHeader { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-bottom: .35rem; }
-.miniNavBtn { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1.5px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--fg-muted); flex-shrink: 0; cursor: pointer; transition: border-color .15s, color .15s; padding: 0; }
+.miniCalHeader { display: flex; align-items: center; justify-content: space-between; gap: .35rem; margin-bottom: .45rem; }
+.miniNavBtn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1.5px solid var(--border); border-radius: 7px; background: var(--bg-card); color: var(--fg-muted); flex-shrink: 0; cursor: pointer; transition: border-color .15s, color .15s; padding: 0; }
 .miniNavBtn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
 .miniNavBtn:disabled { opacity: .3; cursor: not-allowed; }
-.miniMonthTitle { font-weight: 700; color: var(--fg); text-align: center; font-size: .72rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.miniMonthTitle { font-weight: 700; color: var(--fg); text-align: center; font-size: .88rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.miniWdayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: .15rem; }
-.miniWday { text-align: center; font-size: .58rem; font-weight: 600; color: var(--fg-muted); padding: .05rem 0; }
-.miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
-.miniDay { text-align: center; padding: .18rem .02rem; border-radius: 3px; font-size: .66rem; color: var(--fg); background: none; border: none; min-height: 1.5rem; display: flex; align-items: center; justify-content: center; width: 100%; }
+.miniWdayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: .2rem; }
+.miniWday { text-align: center; font-size: .72rem; font-weight: 600; color: var(--fg-muted); padding: .08rem 0; }
+.miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.miniDay { text-align: center; padding: .22rem .04rem; border-radius: 4px; font-size: .82rem; color: var(--fg); background: none; border: none; min-height: 2rem; display: flex; align-items: center; justify-content: center; width: 100%; }
 .miniDayBlocked { background: #FEE2E2; color: #991B1B; }
 .miniDayPast { opacity: .3; pointer-events: none; }
 .miniDayCheckin, .miniDayCheckout { background: var(--primary); color: #fff; font-weight: 700; }
 .miniDayInrange { background: var(--primary-soft); color: var(--primary); border-radius: 0; }
 .miniDayAvail { cursor: pointer; }
 .miniDayAvail:hover { background: var(--primary-soft); color: var(--primary); }
-.miniCalLegend { display: flex; gap: .5rem; margin-top: .5rem; font-size: .65rem; color: var(--fg-muted); align-items: center; flex-wrap: wrap; }
-.miniLegendDot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
-.miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .4rem; padding: .35rem .45rem; background: var(--primary-soft); border-radius: 7px; gap: .3rem; font-size: .66rem; color: var(--primary); font-weight: 600; flex-wrap: wrap; }
+.miniCalLegend { display: flex; gap: .6rem; margin-top: .6rem; font-size: .75rem; color: var(--fg-muted); align-items: center; flex-wrap: wrap; }
+.miniLegendDot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; padding: .45rem .6rem; background: var(--primary-soft); border-radius: 8px; gap: .4rem; font-size: .78rem; color: var(--primary); font-weight: 600; flex-wrap: wrap; }
 .miniApplyHint { justify-content: center; font-weight: 400; color: var(--fg-muted); background: var(--bg-subtle); font-style: italic; }
-.miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 5px; padding: .25rem .55rem; font-size: .66rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: .35rem .75rem; font-size: .78rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .miniApplyBtn:hover { opacity: .88; }
-.miniResetLink { font-size: .66rem; color: var(--fg-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: none; margin-top: .3rem; padding: 0; display: inline-flex; align-items: center; gap: .22rem; justify-content: center; text-align: center; width: 100%; }
+.miniResetLink { font-size: .75rem; color: var(--fg-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: none; margin-top: .4rem; padding: 0; display: inline-flex; align-items: center; gap: .28rem; justify-content: center; text-align: center; width: 100%; }
 .miniResetLink:hover { color: var(--primary); }
-.miniOccupiedNote { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .7rem; color: var(--warn-fg); text-align: center; margin-top: .35rem; }
+.miniOccupiedNote { display: flex; align-items: center; justify-content: center; gap: .35rem; font-size: .8rem; color: var(--warn-fg); text-align: center; margin-top: .4rem; }
 
 /* ── Card continuar / cambiar ────────────────────────────── */
 .cardContinueBtn { width: 100%; background: var(--primary); color: var(--primary-fg); border: none; border-radius: 10px; padding: .85rem 1.5rem; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: .75rem; transition: opacity .15s; }

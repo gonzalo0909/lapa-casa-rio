@@ -316,6 +316,15 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     });
   }, [rooms]);
 
+  // ─ Scroll suave al tope de la card (step tracker) ─
+  const scrollToCard = useCallback(() => {
+    // Pequeño delay para que React renderice el nuevo step antes de animar
+    setTimeout(() => {
+      const el = document.querySelector('.he-steps') as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 40);
+  }, []);
+
   // ─ Toast ─
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -356,7 +365,12 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         phone:'he-f-phone', country:'he-f-country', doc:'he-f-doc', arrival:'he-f-arrival',
       };
       const el = document.getElementById(fieldMap[firstKey] ?? '');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.focus(), 300); }
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => el.focus(), 350);
+        }, 60);
+      }
       return false;
     }
     return true;
@@ -365,22 +379,26 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   // ─ Navegación ─
   const goNext = useCallback(() => {
     if (step === 1) {
-      if (!checkIn)  return showToast(t.tToastCheckin);
-      if (!checkOut) return showToast(t.tToastCheckout);
+      if (!checkIn)  { showToast(t.tToastCheckin);  scrollToCard(); return; }
+      if (!checkOut) { showToast(t.tToastCheckout); scrollToCard(); return; }
       const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000);
       const s = getSeason(checkIn);
-      if (s.minNights > 1 && nights < s.minNights)
-        return showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
+      if (s.minNights > 1 && nights < s.minNights) {
+        showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
+        scrollToCard();
+        return;
+      }
       setStep(2);
     } else if (step === 2) {
-      if (totalBeds === 0) return showToast(t.tToastBeds);
+      if (totalBeds === 0) { showToast(t.tToastBeds); scrollToCard(); return; }
       setStep(3);
     } else if (step === 3) {
-      if (!validateForm()) return;
+      if (!validateForm()) return; // validateForm ya hace scroll al primer campo con error
       setStep(4);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [step, checkIn, checkOut, totalBeds, t, showToast, validateForm]);
+    // Al avanzar: scroll suave al indicador de pasos, sin ir al tope de la página
+    scrollToCard();
+  }, [step, checkIn, checkOut, totalBeds, t, showToast, validateForm, scrollToCard]);
 
   // ─ Confirmar reserva ─
   const handleConfirm = useCallback(async () => {

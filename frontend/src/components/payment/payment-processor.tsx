@@ -120,11 +120,11 @@ function T(key: string, locale: string): string {
 // Record<string, CSSProperties>: valida cada objeto contra los tipos CSS de React.
 // Con noUncheckedIndexedAccess, S.xxx es CSSProperties | undefined -- eso es
 // compatible con el prop style?: CSSProperties, así que no genera error en JSX.
-// Valores alineados 1:1 con apartment-engine.module.css:
-//   .payTab        → font .85rem, padding .55rem, radius 8px
-//   .summaryRows   → font .84rem, gap .45rem
-//   .totalPrice    → font 1.05rem
-//   .summaryCard   → padding 1.2rem 1.4rem
+// Valores alineados 1:1 con apartment-engine.module.css (post-agrandar):
+//   .payTab        → font .95rem, padding .7rem, radius 8px
+//   .summaryRows   → font .93rem, gap .5rem
+//   .totalPrice    → font 1.15rem
+//   .summaryCard   → padding 1.35rem 1.55rem
 const S: Record<string, React.CSSProperties> = {
   wrap: {
     border:       '1.5px solid var(--border, #ddd)',
@@ -134,61 +134,61 @@ const S: Record<string, React.CSSProperties> = {
     overflow:     'hidden',
   },
   summary: {
-    padding:       '1.2rem 1.4rem',
+    padding:       '1.35rem 1.55rem',
     borderBottom:  '1px solid var(--border, #ddd)',
     display:       'flex',
     flexDirection: 'column',
-    gap:           '.45rem',
+    gap:           '.5rem',
   },
   row: {
     display:        'flex',
     justifyContent: 'space-between',
-    fontSize:       '.84rem',
+    fontSize:       '.93rem',
   },
   rowTotal: {
     display:        'flex',
     justifyContent: 'space-between',
     fontWeight:     700,
-    fontSize:       '1.05rem',
-    paddingTop:     '.55rem',
+    fontSize:       '1.15rem',
+    paddingTop:     '.6rem',
     borderTop:      '1px solid var(--border, #ddd)',
     marginTop:      '.2rem',
   },
   tabs: {
     display:  'flex',
     gap:      '.5rem',
-    padding:  '1rem 1.2rem .5rem',
+    padding:  '1.1rem 1.35rem .6rem',
   },
   body: {
-    padding: '1rem 1.2rem 1.2rem',
+    padding: '1.1rem 1.35rem 1.35rem',
   },
   loadingBox: {
-    padding:   '2rem',
+    padding:   '2.25rem',
     textAlign: 'center',
     color:     'var(--fg-muted, #666)',
-    fontSize:  '.85rem',
+    fontSize:  '.93rem',
   },
   errorBox: {
-    padding:      '.85rem 1.1rem',
+    padding:      '.9rem 1.15rem',
     borderRadius: 10,
     background:   '#FEE2E2',
     border:       '1.5px solid #FCA5A5',
     color:        '#991B1B',
-    fontSize:     '.85rem',
+    fontSize:     '.93rem',
     marginBottom: '1.25rem',
   },
   surchargeBadge: {
-    marginBottom: '.75rem',
-    padding:      '.55rem .85rem',
+    marginBottom: '.85rem',
+    padding:      '.65rem 1rem',
     borderRadius: 8,
     background:   'var(--warn-bg, #FBE9DB)',
     border:       '1px solid var(--warn-border, #E29B72)',
     color:        'var(--warn-fg, #9A4A28)',
-    fontSize:     '.82rem',
+    fontSize:     '.9rem',
   },
   pixBadge: {
     display:    'block',
-    fontSize:   '.72rem',
+    fontSize:   '.8rem',
     fontWeight: 400,
     color:      'var(--success-fg, #1E5E40)',
     marginTop:  '.15rem',
@@ -198,13 +198,13 @@ const S: Record<string, React.CSSProperties> = {
 function tabStyle(active: boolean): React.CSSProperties {
   return {
     flex:         1,
-    padding:      '.55rem',
+    padding:      '.7rem',
     borderRadius: 8,
     border:       `1.5px solid ${active ? 'var(--primary, #2C4A8C)' : 'var(--border, #ddd)'}`,
     background:   active ? 'var(--primary-soft, #D5DFF5)' : 'transparent',
     color:        active ? 'var(--primary, #2C4A8C)' : 'var(--fg-muted, #6A6058)',
     fontWeight:   600,
-    fontSize:     '.85rem',
+    fontSize:     '.95rem',
     cursor:       'pointer',
     textAlign:    'center',
     lineHeight:   1.3,

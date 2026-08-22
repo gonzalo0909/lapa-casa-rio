@@ -4,6 +4,7 @@
 // Incluye formateo CPF/phone inline, validación por campo y política de cancelación.
 
 import React from 'react';
+import { KeyRound, DoorOpen, FileText, Ban, CigaretteOff, AlertTriangle, ChevronDown } from 'lucide-react';
 import { Lang, FormState, FormErrors, T } from './hostel-engine.types';
 import { validateCPF, formatCPF, formatPhone } from './hostel-engine.utils';
 
@@ -24,8 +25,8 @@ interface HostelGuestFormProps {
   onCancelToggle: () => void;
 }
 
-// ─── Iconos de reglas de la casa ─────────────────────────
-const RULE_ICONS = ['🔑', '🚪', '📄', '🔞', '🚭'] as const;
+// ─── Iconos de reglas de la casa (Lucide) ────────────────
+const RULE_ICONS = [KeyRound, DoorOpen, FileText, Ban, CigaretteOff] as const;
 
 // ─── Component ────────────────────────────────────────────
 export function HostelGuestForm({
@@ -222,20 +223,28 @@ export function HostelGuestForm({
 
       {/* Reglas de la casa */}
       <div className="he-rules">
-        <div className="he-rules-title">{t.rulesTitle}</div>
-        {([t.rule1, t.rule2, t.rule3, t.rule4, t.rule5] as string[]).map((rule, i) => (
-          <div key={i} className="he-rule">
-            <span>{RULE_ICONS[i] ?? ''}</span>
-            <span>{rule}</span>
-          </div>
-        ))}
+        <div className="he-rules-title">
+          <AlertTriangle size={14} color="#6A6058" aria-hidden />
+          {t.rulesTitle}
+        </div>
+        {([t.rule1, t.rule2, t.rule3, t.rule4, t.rule5] as string[]).map((rule, i) => {
+          const Icon = RULE_ICONS[i];
+          return (
+            <div key={i} className="he-rule">
+              {Icon && <Icon size={15} color="#6A6058" aria-hidden />}
+              <span>{rule}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Política de cancelación */}
       <div className="he-cancel">
         <button className="he-cancel-btn" type="button" onClick={onCancelToggle}>
           <span>{t.cancelBtn}</span>
-          <span className={`he-chevron${cancelOpen ? ' open' : ''}`}>▼</span>
+          <span className={`he-chevron${cancelOpen ? ' open' : ''}`}>
+            <ChevronDown size={16} aria-hidden />
+          </span>
         </button>
         {cancelOpen && (
           <div className="he-cancel-body">

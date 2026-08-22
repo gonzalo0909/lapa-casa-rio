@@ -214,6 +214,12 @@ export const bookingAPI = {
       country: string;
       document?: string;
     };
+    /** Acompañantes declarados en el checkout (tabla booking_guests). */
+    additionalGuests?: Array<{
+      fullName: string;
+      document: string;
+      documentType?: string;
+    }>;
     specialRequests?: string;
     arrivalTime?: string;
     language?: 'pt' | 'es' | 'en' | 'fr' | 'de';

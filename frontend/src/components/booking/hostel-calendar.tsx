@@ -148,13 +148,6 @@ export function HostelCalendar({
       {/* Advertencia noches mínimas */}
       {minNightsWarn && <div className="he-min-warn">{minNightsWarn}</div>}
 
-      {/* Leyenda de temporadas */}
-      <div className="he-season-info">
-        <span className="he-chip media">{t.seasonMedia}</span>
-        <span className="he-chip alta">{t.seasonAlta}</span>
-        <span className="he-chip carnaval">{t.seasonCarnaval}</span>
-        <span className="he-chip baixa">{t.seasonBaixa}</span>
-      </div>
     </div>
   );
 }

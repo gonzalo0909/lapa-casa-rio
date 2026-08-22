@@ -3,7 +3,7 @@
 // Orquestador slim — estado global, API, navegación, Step 4, éxito, expirado, CSS, footer.
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CheckCircle2, CreditCard, Clock, Tag, Zap, MessageCircle } from 'lucide-react';
+import { CheckCircle2, CreditCard, Clock, Tag, Zap, MessageCircle, AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff } from 'lucide-react';
 import { bookingAPI, availabilityAPI } from '@/lib/api';
 import {
   Lang, Phase, PayMethod, RoomDef, FormState, FormErrors,
@@ -165,8 +165,44 @@ const CSS = `
 .he-expired-icon{display:flex;justify-content:center;margin-bottom:.5rem}
 .he-expired-title{font-size:1.15rem;font-weight:700;color:#2C4A8C;margin-bottom:.4rem}
 .he-expired-sub{font-size:.8rem;color:#6A6058;max-width:22rem;margin:0 auto .75rem;line-height:1.5}
-@media(max-width:400px){.he-form-row-2{grid-template-columns:1fr}.he-dates-sel{flex-direction:column}.he-dep-box{grid-template-columns:1fr}}
+.he-info-box{background:#FBE9DB;border:1.5px solid #E29B72;border-radius:12px;padding:1rem 1.25rem;width:100%;max-width:500px;margin-bottom:1rem;box-sizing:border-box}
+.he-info-title{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9A4A28;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem}
+.he-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem .9rem}
+.he-info-item{display:flex;align-items:flex-start;gap:.45rem;font-size:.78rem;color:#9A4A28;line-height:1.45}
+.he-info-item svg{flex-shrink:0;margin-top:.12rem;color:#C8682A}
+.he-info-item strong{font-weight:700;color:#7A3520}
+@media(max-width:400px){.he-form-row-2{grid-template-columns:1fr}.he-dates-sel{flex-direction:column}.he-dep-box{grid-template-columns:1fr}.he-info-grid{grid-template-columns:1fr}}
 `;
+
+// ─── Reglas de info (con JSX bold) por idioma ────────────
+const INFO_RULES: Record<string, Array<{ Icon: React.ElementType; text: React.ReactNode }>> = {
+  pt: [
+    { Icon: KeyRound,     text: <>Check-in (entrada): <strong>14h às 22h</strong> — para chegar antes, reserve também o dia anterior</> },
+    { Icon: DoorOpen,     text: <>Check-out (saída): até as <strong>12h</strong> — para sair mais tarde, reserve um dia a mais</> },
+    { Icon: FileText,     text: <>O envio da foto do documento é <strong>obrigatório</strong>, sem exceção</> },
+    { Icon: CigaretteOff, text: <>Proibido fumar no hostel e nas áreas comuns</> },
+    { Icon: Ban,          text: <>Somente para <strong>maiores de 18 anos</strong></> },
+  ],
+  es: [
+    { Icon: KeyRound,     text: <>Check-in (entrada): <strong>14h a 22h</strong> — para llegar antes, reservá también el día anterior</> },
+    { Icon: DoorOpen,     text: <>Check-out (salida): hasta las <strong>12h</strong> — para salir más tarde, mejor reservá un día más</> },
+    { Icon: FileText,     text: <>El envío de la foto del documento es <strong>obligatorio</strong>, sin excepción</> },
+    { Icon: CigaretteOff, text: <>Prohibido fumar en el hostel y en las áreas comunes</> },
+    { Icon: Ban,          text: <>Solo para <strong>mayores de 18 años</strong></> },
+  ],
+  en: [
+    { Icon: KeyRound,     text: <>Check-in: <strong>2 pm to 10 pm</strong> — arriving earlier? Book the previous night</> },
+    { Icon: DoorOpen,     text: <>Check-out: by <strong>12 pm</strong> — need more time? Book one extra night</> },
+    { Icon: FileText,     text: <>Sending a photo of your ID is <strong>mandatory</strong>, no exceptions</> },
+    { Icon: CigaretteOff, text: <>Smoking in the hostel and common areas is prohibited</> },
+    { Icon: Ban,          text: <>Guests must be <strong>18 or older</strong></> },
+  ],
+};
+const INFO_TITLE: Record<string, string> = {
+  pt: 'INFORMAÇÃO IMPORTANTE',
+  es: 'INFORMACIÓN IMPORTANTE',
+  en: 'IMPORTANT INFORMATION',
+};
 
 // ─── PIX QR pattern (igual que el prototipo) ──────────────
 const PIX_PAT = [0,1,1,0,1,0,1,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,1,1,0,1,0,0,1,1,0,1,1,0,0,1,0,1,0,1,0,1,0,1,1];
@@ -451,6 +487,22 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               <button key={l} className={`he-lang-btn${lang === l ? ' active' : ''}`} onClick={() => setLang(l)}>
                 {l.toUpperCase()}
               </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Info importante ── */}
+        <div className="he-info-box">
+          <div className="he-info-title">
+            <AlertTriangle size={13} aria-hidden />
+            {INFO_TITLE[lang]}
+          </div>
+          <div className="he-info-grid">
+            {(INFO_RULES[lang] ?? []).map(({ Icon, text }, i) => (
+              <div key={i} className="he-info-item">
+                <Icon size={14} aria-hidden />
+                <span>{text}</span>
+              </div>
             ))}
           </div>
         </div>

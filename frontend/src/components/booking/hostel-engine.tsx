@@ -19,9 +19,9 @@ import { HostelGuestForm }     from './hostel-guest-form';
 // ─── CSS global del motor ────────────────────────────────
 const CSS = `
 .he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#EDEAD8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem;position:relative;isolation:isolate}
-.he-wrap::before{content:'';position:absolute;inset:0;background:url('/img/adoquines.png') center/cover;opacity:.10;z-index:-1;pointer-events:none}
-.he-header{background:linear-gradient(160deg,#1A2E1E,#0D1C12);color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 14px 14px;position:relative;overflow:hidden}
-.he-header::before{content:'';position:absolute;inset:0;background:url('/img/arcos-lapa.png') center/cover;mix-blend-mode:soft-light;opacity:.40;z-index:0;pointer-events:none}
+.he-wrap::before{content:'';position:absolute;inset:0;background:url('/img/adoquines.png') center/cover;opacity:.22;z-index:-1;pointer-events:none}
+.he-header{background:url('/img/arcos-lapa.png') center/cover;color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 14px 14px;position:relative;overflow:hidden}
+.he-header::before{content:'';position:absolute;inset:0;background:linear-gradient(160deg,rgba(26,46,30,.65),rgba(13,28,18,.72));z-index:0;pointer-events:none}
 .he-brand-loc{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.48);margin-bottom:.65rem;position:relative;z-index:1}
 .he-brand{font-family:var(--font-cormorant),Georgia,serif;font-size:clamp(2.4rem,6vw,3.8rem);font-weight:600;letter-spacing:.01em;line-height:1.0;margin-bottom:0;position:relative;z-index:1;text-transform:none}
 .he-brand span{font-family:var(--font-cormorant),Georgia,serif;font-weight:300;font-style:italic;text-transform:none;color:#C8870A;display:block;font-size:.62em;letter-spacing:.06em;margin-top:.12em;opacity:.95}

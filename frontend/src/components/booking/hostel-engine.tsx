@@ -31,13 +31,13 @@ const CSS = `
 .he-steps{display:flex;align-items:flex-start;padding:1rem 1.25rem;background:#1A2E1E;gap:0}
 .he-step-item{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex-shrink:0}
 .he-step-item.active .he-step-lbl{color:#fff}
-.he-step-item.done .he-step-lbl{color:rgba(255,255,255,.7)}
-.he-step-conn{flex:1;height:2px;background:rgba(255,255,255,.18);margin-top:14px;transition:background .35s}
+.he-step-item.done .he-step-lbl{color:rgba(255,255,255,.85)}
+.he-step-conn{flex:1;height:2px;background:rgba(255,255,255,.45);margin-top:14px;transition:background .35s}
 .he-step-conn.done{background:#C8870A}
-.he-step-badge{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.28);background:transparent;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;transition:all .35s}
+.he-step-badge{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.65);background:rgba(255,255,255,.1);color:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;transition:all .35s}
 .he-step-badge.active{background:#C8870A;border-color:#C8870A;color:#fff}
-.he-step-badge.done{border-color:rgba(255,255,255,.55);color:#fff;background:rgba(255,255,255,.12)}
-.he-step-lbl{font-size:.75rem;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.45);text-align:center;white-space:nowrap;transition:color .35s}
+.he-step-badge.done{border-color:rgba(255,255,255,.8);color:#fff;background:rgba(255,255,255,.18)}
+.he-step-lbl{font-size:.75rem;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.80);text-align:center;white-space:nowrap;transition:color .35s}
 .he-toast{margin:.75rem 1.5rem 0;padding:.55rem .85rem;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;font-size:.75rem;color:#991B1B}
 .he-panel{padding:1.5rem 1.5rem 1rem}
 .he-panel-title{font-size:1rem;font-weight:700;color:#1A1C14;margin-bottom:.2rem}
@@ -118,7 +118,7 @@ const CSS = `
 .he-cbadge{font-size:.62rem;font-weight:700;padding:.15em .55em;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:.1rem}
 .he-cbadge-g{background:#D5E8D4;color:#1E5E40}.he-cbadge-r{background:#FEE2E2;color:#991B1B}
 .he-sum-sec{border:1px solid #C8C4AE;border-radius:12px;overflow:hidden;margin-bottom:.75rem}
-.he-sum-head{background:#E0DCC8;padding:.5rem .9rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:#5A5E50}
+.he-sum-head{background:#D4D0BA;padding:.5rem .9rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:#2A2C24}
 .he-sum-rows{padding:.5rem .9rem}
 .he-sum-row{display:flex;justify-content:space-between;align-items:baseline;padding:.4rem 0;font-size:.82rem;border-bottom:1px solid #C8C4AE}
 .he-sum-row:last-child{border-bottom:none}

@@ -18,12 +18,14 @@ import { HostelGuestForm }     from './hostel-guest-form';
 
 // ─── CSS global del motor ────────────────────────────────
 const CSS = `
-.he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#EDEAD8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}
-.he-header{background:linear-gradient(160deg,#1A2E1E,#0D1C12);color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 14px 14px}
+.he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#EDEAD8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem;position:relative;isolation:isolate}
+.he-wrap::before{content:'';position:absolute;inset:0;background:url('/img/adoquines.png') center/cover;opacity:.10;z-index:-1;pointer-events:none}
+.he-header{background:linear-gradient(160deg,#1A2E1E,#0D1C12);color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 14px 14px;position:relative;overflow:hidden}
+.he-header::before{content:'';position:absolute;inset:0;background:url('/img/arcos-lapa.png') center/cover;mix-blend-mode:soft-light;opacity:.40;z-index:0;pointer-events:none}
 .he-brand-loc{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.48);margin-bottom:.65rem;position:relative;z-index:1}
 .he-brand{font-family:var(--font-cormorant),Georgia,serif;font-size:clamp(2.4rem,6vw,3.8rem);font-weight:600;letter-spacing:.01em;line-height:1.0;margin-bottom:0;position:relative;z-index:1;text-transform:none}
 .he-brand span{font-family:var(--font-cormorant),Georgia,serif;font-weight:300;font-style:italic;text-transform:none;color:#C8870A;display:block;font-size:.62em;letter-spacing:.06em;margin-top:.12em;opacity:.95}
-.he-lang-sw{display:flex;gap:.3rem;margin-top:.45rem;justify-content:center}
+.he-lang-sw{display:flex;gap:.3rem;margin-top:.45rem;justify-content:center;position:relative;z-index:1}
 .he-lang-btn{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.18em .5em;border-radius:4px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.55);cursor:pointer;transition:all .12s}
 .he-lang-btn.active{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.6)}
 .he-card{background:#F7F4E8;border-radius:14px;box-shadow:0 2px 4px rgba(15,28,18,.08),0 8px 28px rgba(15,28,18,.14);width:100%;max-width:500px;overflow:hidden}

@@ -1,12 +1,12 @@
 // lapa-casa-hostel/frontend/src/app/[locale]/hostel/page.tsx
-// Página /hostel — muestra el motor de hostel como tab activo,
-// con el motor de apartamentos montado en segundo plano (Opción A).
+// Página /hostel — solo el motor de hostel, sin tab de apartamentos.
+// Ambos motores son independientes: el huésped de hostel no ve apartamentos
+// desde aquí, y el de apartamentos no ve el hostel desde /apartamentos.
+// Para pasar de uno a otro hay que volver al home (/).
 
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { HostelEngine }    from '@/components/booking/hostel-engine';
-import { ApartmentEngine } from '@/components/booking/apartment-engine';
-import { PropertyTabs }    from '@/components/booking/property-tabs';
+import { HostelEngine } from '@/components/booking/hostel-engine';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
@@ -48,12 +48,10 @@ export default async function HostelPage({ params }: { params: { locale: string 
     : defaultLocale) as Locale;
   setRequestLocale(locale);
 
+  // Sin PropertyTabs — el huésped de hostel no ve el tab de apartamentos
   return (
     <main>
-      <PropertyTabs locale={locale} defaultTab={0}>
-        <HostelEngine    locale={locale} />
-        <ApartmentEngine locale={locale as 'pt' | 'es' | 'en'} />
-      </PropertyTabs>
+      <HostelEngine locale={locale} />
     </main>
   );
 }

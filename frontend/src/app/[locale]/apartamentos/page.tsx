@@ -6,6 +6,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ApartmentEngine } from '@/components/booking/apartment-engine';
+import { StructuredData, ApartmentServiceSchema } from '@/components/seo/structured-data';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
@@ -52,6 +53,8 @@ export default async function ApartmentsPage({ params }: { params: { locale: str
   // Para ver el hostel debe volver al home (/)
   return (
     <main>
+      {/* JSON-LD: área de servicio Rio de Janeiro, sin dirección física */}
+      <StructuredData data={ApartmentServiceSchema} />
       <ApartmentEngine locale={locale as 'pt' | 'es' | 'en'} />
     </main>
   );

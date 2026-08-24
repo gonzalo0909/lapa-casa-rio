@@ -269,6 +269,33 @@ export function generateEventSchema(event: {
 }
 
 /**
+ * Schema para la página de Apartamentos.
+ * SIN dirección física — solo área de servicio "Rio de Janeiro".
+ * Las direcciones de cada apartamento nunca aparecen en la web.
+ */
+export const ApartmentServiceSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LodgingBusiness',
+  '@id': 'https://lapacasario.com/apartamentos#service',
+  name: 'Lapa Casa Apartamentos',
+  description: 'Apartamentos privados para aluguel temporário em diversas regiões do Rio de Janeiro',
+  url: 'https://lapacasario.com/apartamentos',
+  image: 'https://lapacasario.com/og-image.jpg',
+  telephone: '+55-21-97715-7530',
+  email: 'reservas@lapacasario.com',
+  // Área de servicio amplia — sin dirección específica de ningún apartamento
+  areaServed: {
+    '@type': 'City',
+    name: 'Rio de Janeiro',
+    addressCountry: 'BR',
+  },
+  priceRange: 'R$$ - R$$$',
+  sameAs: [
+    'https://www.instagram.com/lapacasa',
+  ],
+};
+
+/**
  * Generate WebSite schema with search action
  */
 export const WebSiteSchema = {

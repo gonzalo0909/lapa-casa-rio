@@ -4,7 +4,7 @@
 import type { MetadataRoute } from 'next';
 import { locales } from '@/i18n';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
 
 type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
 

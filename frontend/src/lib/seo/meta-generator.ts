@@ -32,7 +32,7 @@ const SITE_INFO = {
   name: 'Lapa Casa',
   tagline: 'Group Accommodation in Santa Teresa, Rio',
   description: 'Premium hostel in Santa Teresa specializing in group bookings. 45 beds, 4 rooms. Perfect for international groups and corporate events.',
-  baseUrl: 'https://lapacasa.com'
+  baseUrl: 'https://lapacasario.com'
 } as const;
 
 /**
@@ -114,7 +114,7 @@ export function generateKeywords(
  * @example
  * ```ts
  * generateOGImage('/images/room.jpg');
- * // Returns: "https://lapacasa.com/images/room.jpg"
+ * // Returns: "https://lapacasario.com/images/room.jpg"
  * ```
  */
 export function generateOGImage(imagePath?: string): string {
@@ -135,7 +135,7 @@ export function generateOGImage(imagePath?: string): string {
  * @example
  * ```ts
  * generateCanonicalURL('/booking');
- * // Returns: "https://lapacasa.com/booking"
+ * // Returns: "https://lapacasario.com/booking"
  * ```
  */
 export function generateCanonicalURL(path: string): string {

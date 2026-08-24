@@ -96,6 +96,10 @@ export interface ApartmentAvailability {
   depositAmount: number;
   available: boolean;
   photos: ApartmentPhoto[];
+  /** Puntuación externa (Airbnb / Booking) — null = no mostrar nada en la UI */
+  externalRating?: number | null;
+  externalReviewCount?: number | null;
+  externalRatingLabel?: string | null;
 }
 
 export type ApartmentStep = 'dates' | 'apartment' | 'summary';

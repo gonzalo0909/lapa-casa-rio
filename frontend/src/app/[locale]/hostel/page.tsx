@@ -9,7 +9,7 @@ import { ApartmentEngine } from '@/components/booking/apartment-engine';
 import { PropertyTabs }    from '@/components/booking/property-tabs';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
 
 export async function generateMetadata({
   params: { locale },

@@ -58,7 +58,7 @@ const DEFAULT_SEO = {
   siteName: 'Lapa Casa',
   defaultTitle: 'Lapa Casa - Group Accommodation in Santa Teresa, Rio',
   defaultDescription: 'Premium hostel in Santa Teresa, Rio de Janeiro. Specializing in group bookings with 45 beds across 4 rooms. Perfect for international groups, corporate events, and travelers.',
-  baseUrl: 'https://lapacasa.com',
+  baseUrl: 'https://lapacasario.com',
   defaultImage: '/images/og-default.jpg',
   twitterHandle: '@lapacasa',
   facebookAppId: '1234567890',

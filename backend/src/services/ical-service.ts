@@ -15,7 +15,7 @@
 // migraciones del Maestro, punto 7): system_config ya existe para datos
 // de configuracion dinamica.
 //
-// UID propio de exportacion: `lapacasa-{reservation_id}@lapacasa.com`
+// UID propio de exportacion: `lapacasa-{reservation_id}@lapacasario.com`
 // (pedido literalmente por el prompt de esta ventana). Al reimportar el
 // propio feed exportado, cualquier evento cuyo UID empiece con
 // "lapacasa-" se descarta -- evita el bucle "mi propia disponibilidad
@@ -38,7 +38,7 @@ import { logger } from '../utils/logger';
 import type { ChannelCode } from '../types/database';
 
 const OWN_UID_PREFIX = 'lapacasa-';
-const OWN_UID_SUFFIX = '@lapacasa.com';
+const OWN_UID_SUFFIX = '@lapacasario.com';
 const FEED_KEY_PREFIX = 'ical_feed:';
 const SYNC_STATUS_KEY_PREFIX = 'ical_sync_status:';
 
@@ -219,7 +219,7 @@ export async function generateICalFeed(roomTypeId: string): Promise<string> {
     name: `Lapa Casa - ${room.name}`,
     description: `Disponibilidad de ${room.name}`,
     timezone: 'America/Sao_Paulo',
-    url: `https://lapacasa.com/api/v1/ical/export/${roomTypeId}`,
+    url: `https://lapacasario.com/api/v1/ical/export/${roomTypeId}`,
     ttl: 3600,
   });
 
@@ -237,7 +237,7 @@ export async function generateAllFeeds(): Promise<string> {
     name: 'Lapa Casa - Todas las habitaciones',
     description: 'Disponibilidad combinada de las 5 habitaciones',
     timezone: 'America/Sao_Paulo',
-    url: 'https://lapacasa.com/api/v1/ical/export',
+    url: 'https://lapacasario.com/api/v1/ical/export',
     ttl: 3600,
   });
 

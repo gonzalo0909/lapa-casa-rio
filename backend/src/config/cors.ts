@@ -37,9 +37,9 @@ const getAllowedOrigins = (): string[] => {
   const origins = env.CORS_ORIGINS.split(',').map(origin => origin.trim());
 
   return [
-    'https://lapacasa.com',
-    'https://www.lapacasa.com',
-    'https://booking.lapacasa.com',
+    'https://lapacasario.com',
+    'https://www.lapacasario.com',
+    'https://booking.lapacasario.com',
     // El panel /admin se sirve desde el propio backend (mismo origen que
     // APP_URL) -- sin esto, fetch() desde /admin/index.html manda
     // Origin: <APP_URL> y el login queda bloqueado por CORS (ver login

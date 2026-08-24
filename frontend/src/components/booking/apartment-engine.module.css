@@ -180,6 +180,7 @@
 .cardNeighborhood { display: inline-flex; align-items: center; gap: .25rem; font-size: .86rem; font-weight: 600; color: var(--accent); margin-top: .15rem; }
 .cardNeighborhood svg { flex-shrink: 0; }
 .cardCapacity { font-size: .83rem; color: var(--fg-muted); margin-top: .15rem; }
+.cardExternalRating { font-size: .72rem; color: var(--fg-muted); margin-top: .2rem; }
 .cardPriceBox { background: var(--bg-subtle); border-radius: 8px; padding: .6rem .8rem; margin-bottom: .6rem; }
 .priceRow { display: flex; justify-content: space-between; align-items: center; }
 .priceLabel { font-size: .83rem; color: var(--fg-muted); }

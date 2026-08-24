@@ -5,7 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PropertyExperience } from '@/components/booking/property-experience';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
 
 export async function generateMetadata({
   params: { locale },

@@ -103,10 +103,10 @@ export const LandingSection: React.FC<LandingSectionProps> = ({ locale: _locale 
               {t('address')}
               <br />
               <a
-                href="mailto:reservas@lapacasa.com"
+                href="mailto:reservas@lapacasario.com"
                 className="text-primary hover:underline"
               >
-                reservas@lapacasa.com
+                reservas@lapacasario.com
               </a>
             </address>
           </div>

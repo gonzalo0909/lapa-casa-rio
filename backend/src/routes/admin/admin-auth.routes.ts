@@ -43,7 +43,7 @@ router.post('/', async (req, res, next) => {
 
     const payload = {
       userId: 'admin',
-      email: process.env.ADMIN_EMAIL || 'admin@lapacasa.com',
+      email: process.env.ADMIN_EMAIL || 'admin@lapacasario.com',
       role: 'admin' as const
     };
 

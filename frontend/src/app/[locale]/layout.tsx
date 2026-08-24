@@ -13,7 +13,7 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));

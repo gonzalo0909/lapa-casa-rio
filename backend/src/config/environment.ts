@@ -20,7 +20,7 @@ function requireSecret(name: string, fallback?: string): string {
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '3001', 10),
-  APP_URL: process.env.APP_URL || 'https://lapacasa.com',
+  APP_URL: process.env.APP_URL || 'https://lapacasario.com',
   API_VERSION: process.env.API_VERSION || 'v1',
 
   DATABASE_URL: process.env.DATABASE_URL || '',

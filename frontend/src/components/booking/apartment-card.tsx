@@ -140,6 +140,15 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
               </div>
             )}
             <div className={styles.cardCapacity}>{t('cardCapacity', { count: apartment.capacity })}</div>
+            {apartment.externalRating != null && (
+              <div className={styles.cardExternalRating}>
+                ⭐ {apartment.externalRating.toFixed(1)}
+                {apartment.externalReviewCount != null && (
+                  <span> · {apartment.externalReviewCount} reseñas</span>
+                )}
+                <span> · {apartment.externalRatingLabel ?? 'plataformas internacionales'}</span>
+              </div>
+            )}
             {disabledReason === 'too-small' && (
               <div className={styles.cardCapacityWarn}><AlertTriangle size={12} /> {t('maxCapacity', { count: apartment.capacity })}</div>
             )}

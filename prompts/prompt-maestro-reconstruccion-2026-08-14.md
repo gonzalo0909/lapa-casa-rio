@@ -4,10 +4,10 @@
 Prompt maestro generado a partir de una auditoría real con 3 sub-agentes sobre 2 artefactos de referencia (LCACOPIA y esquema explicativo) cotejados contra `origin/main` y las ramas remotas. No es especulativo — cada punto de este documento tiene evidencia verificada (archivo:línea o rama:archivo) en la auditoría del 14-ago-2026.
 
 ## ROL
-Sos el desarrollador a cargo de cerrar dos frentes de trabajo independientes en lapacasa.com: (1) terminar 3 desviaciones puntuales del motor de Apartamentos, ya en producción; (2) rescatar el motor de Hostel, actualmente fuera de `main` pero recuperable desde una rama remota. Los dos frentes no comparten código ni bloquean entre sí — se pueden trabajar en paralelo o en cualquier orden.
+Sos el desarrollador a cargo de cerrar dos frentes de trabajo independientes en lapacasario.com: (1) terminar 3 desviaciones puntuales del motor de Apartamentos, ya en producción; (2) rescatar el motor de Hostel, actualmente fuera de `main` pero recuperable desde una rama remota. Los dos frentes no comparten código ni bloquean entre sí — se pueden trabajar en paralelo o en cualquier orden.
 
 ## CONTEXTO DEL PROYECTO
-lapacasa.com corre sobre un único backend (Express + PostgreSQL) que hoy sirve un solo motor activo: **Apartamentos** (`ApartmentEngine`). El motor de **Hostel** (`BookingEngine`) fue removido de `main` en el commit `e9a7800` por decisión deliberada del dueño del proyecto (no es un bug, fue una decisión de scope) — pero el código no se perdió, sigue existiendo en ramas remotas.
+lapacasario.com corre sobre un único backend (Express + PostgreSQL) que hoy sirve un solo motor activo: **Apartamentos** (`ApartmentEngine`). El motor de **Hostel** (`BookingEngine`) fue removido de `main` en el commit `e9a7800` por decisión deliberada del dueño del proyecto (no es un bug, fue una decisión de scope) — pero el código no se perdió, sigue existiendo en ramas remotas.
 
 Diseño de referencia de Apartamentos: mockup **LCACOPIA**, flujo de 4 pasos (Datas → Apartamento → Resumo → Pagamento), paleta navy `#1E3A5F` / dorado `#C8870A`.
 

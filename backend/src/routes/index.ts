@@ -58,7 +58,7 @@ router.get('/info', (req: Request, res: Response) => {
       admin: '/api/v1/admin'
     },
     documentation: '/api/docs',
-    support: 'tech@lapacasa.com'
+    support: 'tech@lapacasario.com'
   });
 });
 

@@ -20,10 +20,10 @@ function resolveLanguage(raw: string | null | undefined): Language {
   return raw === 'en' || raw === 'es' ? raw : 'pt';
 }
 
-const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'reservas@lapacasa.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'reservas@lapacasario.com';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Lapa Casa';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lapacasa.com';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lapacasa.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lapacasario.com';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lapacasario.com';
 const WHATSAPP_CONTACT_URL = 'https://wa.me/5521977157530';
 
 let resendClient: Resend | null = null;

@@ -27,11 +27,11 @@ export const OrganizationSchema = {
   '@type': 'Hostel',
   name: 'Lapa Casa',
   description: 'Premium hostel in Santa Teresa, Rio de Janeiro specializing in group bookings',
-  url: 'https://lapacasa.com',
-  logo: 'https://lapacasa.com/images/logo.png',
-  image: 'https://lapacasa.com/images/hostel-exterior.jpg',
+  url: 'https://lapacasario.com',
+  logo: 'https://lapacasario.com/images/logo.png',
+  image: 'https://lapacasario.com/images/hostel-exterior.jpg',
   telephone: '+55-21-97715-7530',
-  email: 'info@lapacasa.com',
+  email: 'info@lapacasario.com',
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Rua Silvio Romero 22',
@@ -104,9 +104,9 @@ export const OrganizationSchema = {
 export const LocalBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'LodgingBusiness',
-  '@id': 'https://lapacasa.com/#organization',
+  '@id': 'https://lapacasario.com/#organization',
   name: 'Lapa Casa',
-  image: 'https://lapacasa.com/images/hostel-exterior.jpg',
+  image: 'https://lapacasario.com/images/hostel-exterior.jpg',
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Rua Silvio Romero 22',
@@ -141,7 +141,7 @@ export function generateRoomProductSchema(room: {
     '@type': 'Product',
     name: `${room.name} - Lapa Casa`,
     description: `${room.capacity}-bed ${room.type} dormitory in Santa Teresa, Rio de Janeiro`,
-    image: `https://lapacasa.com/images/rooms/${room.id}.jpg`,
+    image: `https://lapacasario.com/images/rooms/${room.id}.jpg`,
     brand: {
       '@type': 'Brand',
       name: 'Lapa Casa'
@@ -151,7 +151,7 @@ export function generateRoomProductSchema(room: {
       price: room.basePrice.toFixed(2),
       priceCurrency: 'BRL',
       availability: 'https://schema.org/InStock',
-      url: `https://lapacasa.com/rooms/${room.id}`,
+      url: `https://lapacasario.com/rooms/${room.id}`,
       priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     },
     aggregateRating: {
@@ -193,7 +193,7 @@ export function generateBreadcrumbSchema(breadcrumbs: Array<{ name: string; url:
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
-      item: `https://lapacasa.com${item.url}`
+      item: `https://lapacasario.com${item.url}`
     }))
   };
 }
@@ -263,7 +263,7 @@ export function generateEventSchema(event: {
       price: '60.00',
       priceCurrency: 'BRL',
       availability: 'https://schema.org/InStock',
-      url: 'https://lapacasa.com/booking'
+      url: 'https://lapacasario.com/booking'
     }
   };
 }
@@ -274,18 +274,18 @@ export function generateEventSchema(event: {
 export const WebSiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  '@id': 'https://lapacasa.com/#website',
-  url: 'https://lapacasa.com',
+  '@id': 'https://lapacasario.com/#website',
+  url: 'https://lapacasario.com',
   name: 'Lapa Casa',
   description: 'Premium hostel specializing in group bookings in Santa Teresa, Rio de Janeiro',
   publisher: {
-    '@id': 'https://lapacasa.com/#organization'
+    '@id': 'https://lapacasario.com/#organization'
   },
   potentialAction: {
     '@type': 'SearchAction',
     target: {
       '@type': 'EntryPoint',
-      urlTemplate: 'https://lapacasa.com/search?q={search_term_string}'
+      urlTemplate: 'https://lapacasario.com/search?q={search_term_string}'
     },
     'query-input': 'required name=search_term_string'
   }

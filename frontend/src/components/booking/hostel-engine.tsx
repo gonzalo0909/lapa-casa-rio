@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, CreditCard, Clock, Tag, Zap, MessageCircle, AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff } from 'lucide-react';
 import { bookingAPI, availabilityAPI } from '@/lib/api';
+import { useCurrency, convertBRL } from '@/hooks/use-currency';
 import {
   Lang, Phase, PayMethod, RoomDef, FormState, FormErrors,
   T, DEFAULT_ROOMS,
@@ -146,6 +147,8 @@ const CSS = `
 .he-foot{padding:1rem 1.5rem;border-top:1px solid rgba(255,255,255,.10);display:flex;align-items:center;gap:1rem;background:rgba(0,0,0,.28)}
 .he-price-main{font-size:.95rem;font-weight:800;color:#7BC47F;font-variant-numeric:tabular-nums}
 .he-price-sub{font-size:.68rem;color:rgba(255,255,255,.95)}
+.he-conv{font-size:.65rem;color:rgba(255,255,255,.60);font-weight:500;margin-top:.1rem;font-variant-numeric:tabular-nums}
+.he-conv-inline{font-size:.72rem;color:rgba(255,255,255,.55);font-weight:400;margin-left:.35rem;font-variant-numeric:tabular-nums}
 .he-foot-btns{display:flex;gap:.5rem;flex-shrink:0;margin-left:auto}
 .he-btn-back{padding:.55rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;color:rgba(255,255,255,.70);border:1.5px solid rgba(255,255,255,.20);background:rgba(255,255,255,.06);cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
 .he-btn-back:hover{border-color:#7BC47F;color:#7BC47F}
@@ -218,6 +221,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const initLang: Lang = locale === 'es' ? 'es' : locale === 'en' ? 'en' : 'pt';
   const [lang, setLang]       = useState<Lang>(initLang);
   const t = T[lang];
+  const currency = useCurrency();
   const TODAY = useRef((() => { const d = new Date(); d.setHours(0,0,0,0); return d; })());
 
   // ─ Estado del wizard ─
@@ -642,7 +646,11 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                       </div>
                     )}
                     <div className="he-sum-row total">
-                      <span>{t.tTotal}</span><span>{fmtMoney(price.total)}</span>
+                      <span>{t.tTotal}</span>
+                      <span>
+                        {fmtMoney(price.total)}
+                        {currency && <span className="he-conv-inline">{convertBRL(price.total, currency)}</span>}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -651,11 +659,13 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   <div className="he-dep-half">
                     <div className="he-dep-lbl">{t.tDepositNow}</div>
                     <div className="he-dep-amt">{fmtMoney(price.deposit)}</div>
+                    {currency && <div className="he-conv">{convertBRL(price.deposit, currency)}</div>}
                     <div className="he-dep-note">30%</div>
                   </div>
                   <div className="he-dep-half">
                     <div className="he-dep-lbl">70% {t.tAtCheckin}</div>
                     <div className="he-dep-amt">{fmtMoney(price.total - price.deposit)}</div>
+                    {currency && <div className="he-conv">{convertBRL(price.total - price.deposit, currency)}</div>}
                     <div className="he-dep-note">Check-in</div>
                   </div>
                 </div>
@@ -711,6 +721,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               <div>
                 <div className="he-price-main">{footerPrice.main}</div>
                 <div className="he-price-sub">{footerPrice.sub}</div>
+                {currency && price && <div className="he-conv">{convertBRL(price.total, currency)}</div>}
               </div>
               <div className="he-foot-btns">
                 {step > 1 && <button className="he-btn-back" onClick={() => setStep(s => Math.max(1, s - 1))}>{t.btnBack}</button>}

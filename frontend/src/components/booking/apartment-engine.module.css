@@ -190,6 +190,7 @@
 .pricePerNight { font-size: 1rem; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
 .priceDivider { height: 1px; background: var(--border); margin: .3rem 0; }
 .priceTotal { font-size: 1.1rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.priceConv { display: block; font-size: .68rem; font-weight: 400; color: var(--fg-muted); font-variant-numeric: tabular-nums; margin-top: .1rem; }
 .nightsLabel { font-size: .83rem; color: var(--fg-muted); }
 
 .aptCalToggle { font-size: .8rem; color: var(--primary); background: none; border: none; padding: .2rem 0; text-decoration: underline; text-underline-offset: 2px; text-align: left; margin-bottom: .4rem; display: inline-flex; align-items: center; gap: .3rem; }

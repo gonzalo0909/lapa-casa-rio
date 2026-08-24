@@ -14,6 +14,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff, CheckCircle2, Mail } from 'lucide-react';
 import styles from './apartment-engine.module.css';
@@ -256,6 +257,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     <div className={styles.root}>
       {/* Hero */}
       <div className={styles.hero}>
+        {/* Volver al home */}
+        <div className={styles.heroBackHome}>
+          <Link href="/" className={styles.heroBackLink}>
+            ← Home
+          </Link>
+        </div>
         <div className={styles.heroLocation}>{t('heroLocation')}</div>
         <div className={styles.heroBrand}>
           Lapa Casa<span>{t('heroApartmentsWord')}</span>

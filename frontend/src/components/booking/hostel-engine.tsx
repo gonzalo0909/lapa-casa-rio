@@ -3,6 +3,7 @@
 // Orquestador slim — estado global, API, navegación, Step 4, éxito, expirado, CSS, footer.
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { CheckCircle2, CreditCard, Clock, Tag, Zap, MessageCircle, AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff } from 'lucide-react';
 import { bookingAPI, availabilityAPI } from '@/lib/api';
 import {
@@ -497,6 +498,13 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="he-wrap">
+
+        {/* Volver al home */}
+        <div style={{ width: '100%', maxWidth: 500, padding: '.6rem 0 .1rem' }}>
+          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '.3rem', fontSize: '.75rem', color: 'rgba(255,255,255,.7)', textDecoration: 'none', fontWeight: 600, letterSpacing: '.04em' }}>
+            ← Home
+          </Link>
+        </div>
 
         {/* Header */}
         <div className="he-header">

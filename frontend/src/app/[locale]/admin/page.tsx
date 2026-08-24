@@ -150,7 +150,7 @@ export default function AdminPage({
       <div className="flex items-center justify-between mb-8">
         <div>
           <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-1">
-            Lapa Casa Hostel
+            Lapa Casa
           </p>
           <h1 className="text-2xl font-display font-bold text-foreground">Admin</h1>
         </div>

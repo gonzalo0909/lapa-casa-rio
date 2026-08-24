@@ -3,7 +3,7 @@
 import * as React from 'react';
 
 /**
- * Checkbox Component - Lapa Casa Hostel
+ * Checkbox Component - Lapa Casa
  *
  * Accessible checkbox with label and error state.
  * Used for consent/terms acceptance in the booking flow.

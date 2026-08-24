@@ -9,7 +9,7 @@ import { HostelEngine }    from '@/components/booking/hostel-engine';
 import { PropertyTabs }    from '@/components/booking/property-tabs';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasahostel.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
 
 export async function generateMetadata({
   params: { locale },
@@ -33,7 +33,7 @@ export async function generateMetadata({
       title,
       description,
       url: `${SITE_URL}/${locale}/apartamentos`,
-      siteName: 'Lapa Casa Hostel',
+      siteName: 'Lapa Casa',
       locale,
       type: 'website',
       images: [{ url: '/og-image.jpg', width: 1200, height: 630 }],

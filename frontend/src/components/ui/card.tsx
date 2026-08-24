@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Card Component - Lapa Casa Hostel
+ * Card Component - Lapa Casa
  * 
  * Flexible card container with header, body, and footer sections.
  * Optimized for room cards, booking summaries, and pricing displays.

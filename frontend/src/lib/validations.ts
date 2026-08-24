@@ -3,7 +3,7 @@
 /**
  * Validation Functions Library
  * 
- * Input validation utilities for Lapa Casa Hostel booking system.
+ * Input validation utilities for Lapa Casa booking system.
  * Includes email, phone, date, and form validation functions.
  * 
  * @module lib/validations

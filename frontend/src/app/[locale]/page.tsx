@@ -5,7 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PropertyExperience } from '@/components/booking/property-experience';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasahostel.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
 
 export async function generateMetadata({
   params: { locale },
@@ -29,10 +29,10 @@ export async function generateMetadata({
       title,
       description,
       url: `${SITE_URL}/${locale}`,
-      siteName: 'Lapa Casa Hostel',
+      siteName: 'Lapa Casa',
       locale,
       type: 'website',
-      images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Lapa Casa Hostel — Santa Teresa, Rio de Janeiro' }],
+      images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Lapa Casa — Santa Teresa, Rio de Janeiro' }],
     },
     twitter: { card: 'summary_large_image', title, description, images: ['/og-image.jpg'] },
   };
@@ -43,7 +43,7 @@ function JsonLd() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LodgingBusiness',
-    name: 'Lapa Casa Hostel',
+    name: 'Lapa Casa',
     url: SITE_URL,
     description:
       'Hostel boutique y apartamentos privados en Santa Teresa, Río de Janeiro. Reserva directa, mejor precio garantizado.',

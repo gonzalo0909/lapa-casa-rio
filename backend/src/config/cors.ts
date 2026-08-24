@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 
 /**
  * CORS Configuration
- * Cross-Origin Resource Sharing setup for Lapa Casa Hostel API
+ * Cross-Origin Resource Sharing setup for Lapa Casa API
  * 
  * Features:
  * - Environment-based origin whitelisting
@@ -37,9 +37,9 @@ const getAllowedOrigins = (): string[] => {
   const origins = env.CORS_ORIGINS.split(',').map(origin => origin.trim());
 
   return [
-    'https://lapacasahostel.com',
-    'https://www.lapacasahostel.com',
-    'https://booking.lapacasahostel.com',
+    'https://lapacasa.com',
+    'https://www.lapacasa.com',
+    'https://booking.lapacasa.com',
     // El panel /admin se sirve desde el propio backend (mismo origen que
     // APP_URL) -- sin esto, fetch() desde /admin/index.html manda
     // Origin: <APP_URL> y el login queda bloqueado por CORS (ver login

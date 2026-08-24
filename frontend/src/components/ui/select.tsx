@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Select Component - Lapa Casa Hostel
+ * Select Component - Lapa Casa
  * 
  * Accessible dropdown selector with validation states and custom styling.
  * Optimized for room selection, guest count, and date filtering.

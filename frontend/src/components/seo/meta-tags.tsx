@@ -3,7 +3,7 @@
 /**
  * Meta Tags Component
  * 
- * Comprehensive SEO meta tags generator for Lapa Casa Hostel.
+ * Comprehensive SEO meta tags generator for Lapa Casa.
  * Handles Open Graph, Twitter Cards, canonical URLs, and multi-language support.
  * 
  * @module components/seo/meta-tags
@@ -52,15 +52,15 @@ interface MetaTagsProps {
 }
 
 /**
- * Default SEO configuration for Lapa Casa Hostel
+ * Default SEO configuration for Lapa Casa
  */
 const DEFAULT_SEO = {
-  siteName: 'Lapa Casa Hostel',
-  defaultTitle: 'Lapa Casa Hostel - Group Accommodation in Santa Teresa, Rio',
+  siteName: 'Lapa Casa',
+  defaultTitle: 'Lapa Casa - Group Accommodation in Santa Teresa, Rio',
   defaultDescription: 'Premium hostel in Santa Teresa, Rio de Janeiro. Specializing in group bookings with 45 beds across 4 rooms. Perfect for international groups, corporate events, and travelers.',
-  baseUrl: 'https://lapacasahostel.com',
+  baseUrl: 'https://lapacasa.com',
   defaultImage: '/images/og-default.jpg',
-  twitterHandle: '@lapacasahostel',
+  twitterHandle: '@lapacasa',
   facebookAppId: '1234567890',
   locale: {
     pt: 'pt_BR',
@@ -70,7 +70,7 @@ const DEFAULT_SEO = {
 } as const;
 
 /**
- * Default keywords for Lapa Casa Hostel
+ * Default keywords for Lapa Casa
  */
 const DEFAULT_KEYWORDS = [
   'hostel rio de janeiro',
@@ -93,7 +93,7 @@ const DEFAULT_KEYWORDS = [
  * ```tsx
  * <MetaTags
  *   title="Book Your Stay"
- *   description="Reserve beds at Lapa Casa Hostel with instant confirmation"
+ *   description="Reserve beds at Lapa Casa with instant confirmation"
  *   canonicalUrl="/booking"
  *   ogImage="/images/booking-page.jpg"
  * />
@@ -283,7 +283,7 @@ export const PAGE_METAS = {
   },
   booking: {
     title: 'Book Your Group Stay',
-    description: 'Reserve beds at Lapa Casa Hostel with instant confirmation. Group discounts available. Flexible cancellation policy.',
+    description: 'Reserve beds at Lapa Casa with instant confirmation. Group discounts available. Flexible cancellation policy.',
     keywords: ['hostel booking', 'group reservation', 'book hostel rio']
   },
   rooms: {
@@ -292,13 +292,13 @@ export const PAGE_METAS = {
     keywords: ['hostel rooms', 'dormitory', 'shared accommodation']
   },
   about: {
-    title: 'About Lapa Casa Hostel',
+    title: 'About Lapa Casa',
     description: 'Learn about our hostel in the heart of Santa Teresa. Family-run business focused on creating memorable experiences for groups.',
     keywords: ['about hostel', 'santa teresa', 'hostel history']
   },
   contact: {
     title: 'Contact Us',
-    description: 'Get in touch with Lapa Casa Hostel. Located at Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Quick response guaranteed.',
+    description: 'Get in touch with Lapa Casa. Located at Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Quick response guaranteed.',
     keywords: ['contact hostel', 'hostel address', 'hostel phone']
   }
 } as const;

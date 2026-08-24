@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Tooltip Component - Lapa Casa Hostel
+ * Tooltip Component - Lapa Casa
  * 
  * Accessible tooltip with multiple positions and trigger modes.
  * Optimized for pricing explanations, feature descriptions, and help text.

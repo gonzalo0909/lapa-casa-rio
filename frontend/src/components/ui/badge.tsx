@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Badge Component - Lapa Casa Hostel
+ * Badge Component - Lapa Casa
  * 
  * Status indicator and label component with multiple variants.
  * Optimized for availability status, discounts, and notifications.

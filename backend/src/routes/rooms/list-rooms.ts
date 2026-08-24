@@ -1,7 +1,7 @@
 /**
  * File: lapa-casa-hostel/backend/src/routes/rooms/list-rooms.ts
  * List Rooms Handler
- * Lapa Casa Hostel Channel Manager
+ * Lapa Casa Channel Manager
  *
  * Delegado a room-service.ts (Ventana 2, entregable 5) -- esta ruta
  * solo arma el envelope de respuesta con contenido estatico (amenities
@@ -39,7 +39,7 @@ export const listRoomsHandler = async (
     res.status(200).json(
       ApiResponse.success({
         hostel: {
-          name: 'Lapa Casa Hostel',
+          name: 'Lapa Casa',
           location: 'Santa Teresa, Rio de Janeiro',
           totalRooms,
           totalCapacity

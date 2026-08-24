@@ -3,7 +3,7 @@
 /**
  * Utility Functions Library
  * 
- * Common utility functions for Lapa Casa Hostel application.
+ * Common utility functions for Lapa Casa application.
  * Includes string manipulation, date handling, formatting, and class name management.
  * 
  * @module lib/utils

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * LoadingSpinner Component - Lapa Casa Hostel
+ * LoadingSpinner Component - Lapa Casa
  * 
  * Animated loading indicator with multiple sizes and variants.
  * Optimized for async operations, payment processing, and data fetching.

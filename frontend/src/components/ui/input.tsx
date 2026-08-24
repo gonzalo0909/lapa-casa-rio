@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Input Component - Lapa Casa Hostel
+ * Input Component - Lapa Casa
  * 
  * Accessible form input with validation states, icons, and helper text.
  * Optimized for guest information and booking forms.

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Textarea Component - Lapa Casa Hostel
+ * Textarea Component - Lapa Casa
  * 
  * Multi-line text input with auto-resize, character counter, and validation.
  * Optimized for special requests and additional notes in booking forms.

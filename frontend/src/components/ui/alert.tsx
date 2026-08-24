@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Alert Component - Lapa Casa Hostel
+ * Alert Component - Lapa Casa
  * 
  * Feedback component for displaying important messages to users.
  * Optimized for booking confirmations, errors, and system notifications.

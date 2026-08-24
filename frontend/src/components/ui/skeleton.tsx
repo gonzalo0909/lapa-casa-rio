@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Skeleton Component - Lapa Casa Hostel
+ * Skeleton Component - Lapa Casa
  * 
  * Loading placeholder with shimmer animation for content that is being loaded.
  * Optimized for room cards, pricing displays, and booking summaries.

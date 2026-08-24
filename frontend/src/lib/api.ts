@@ -3,7 +3,7 @@
 /**
  * API Client Library
  * 
- * HTTP client for Lapa Casa Hostel backend API.
+ * HTTP client for Lapa Casa backend API.
  * Handles requests, responses, errors, and authentication.
  * 
  * @module lib/api

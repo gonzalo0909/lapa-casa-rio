@@ -7,7 +7,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 import { PartnerContractPage } from '@/components/partners/partner-contract-page';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasahostel.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
 
 export async function generateMetadata({
   params: { locale },
@@ -29,7 +29,7 @@ export async function generateMetadata({
       title,
       description,
       url: `${SITE_URL}/${locale}/parceiros`,
-      siteName: 'Lapa Casa Hostel',
+      siteName: 'Lapa Casa',
       locale,
       type: 'website',
     },

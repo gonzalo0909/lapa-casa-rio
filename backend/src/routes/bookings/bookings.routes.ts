@@ -1,7 +1,7 @@
 /**
  * File: lapa-casa-hostel/backend/src/routes/bookings/bookings.routes.ts
  * Bookings Routes Module
- * Lapa Casa Hostel Channel Manager
+ * Lapa Casa Channel Manager
  * 
  * Handles all booking-related endpoints including CRUD operations
  * Implements validation, error handling, and business logic routing

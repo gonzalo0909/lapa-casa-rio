@@ -1,7 +1,7 @@
 /**
  * File: lapa-casa-hostel/backend/src/routes/rooms/get-room.ts
  * Get Room Handler
- * Lapa Casa Hostel Channel Manager
+ * Lapa Casa Channel Manager
  *
  * Delegado a room-service.ts (Ventana 2, entregable 5). Antes usaba
  * `getRoomConfig()` local con 4 habitaciones hardcodeadas e IDs

@@ -3,7 +3,7 @@
 /**
  * SEO Meta Generator Library
  * 
- * Dynamic SEO meta tag generation for Lapa Casa Hostel pages.
+ * Dynamic SEO meta tag generation for Lapa Casa pages.
  * Creates optimized titles, descriptions, and structured data.
  * 
  * @module lib/seo/meta-generator
@@ -29,10 +29,10 @@ type PageType = 'home' | 'booking' | 'room' | 'about' | 'contact' | 'confirmatio
  * Base site information
  */
 const SITE_INFO = {
-  name: 'Lapa Casa Hostel',
+  name: 'Lapa Casa',
   tagline: 'Group Accommodation in Santa Teresa, Rio',
   description: 'Premium hostel in Santa Teresa specializing in group bookings. 45 beds, 4 rooms. Perfect for international groups and corporate events.',
-  baseUrl: 'https://lapacasahostel.com'
+  baseUrl: 'https://lapacasa.com'
 } as const;
 
 /**
@@ -44,8 +44,8 @@ const SITE_INFO = {
  * 
  * @example
  * ```ts
- * generateTitle('Book Your Stay') // Returns: "Book Your Stay | Lapa Casa Hostel"
- * generateTitle('Home', false) // Returns: "Lapa Casa Hostel - Group Accommodation"
+ * generateTitle('Book Your Stay') // Returns: "Book Your Stay | Lapa Casa"
+ * generateTitle('Home', false) // Returns: "Lapa Casa - Group Accommodation"
  * ```
  */
 export function generateTitle(pageTitle?: string, includeSiteName: boolean = true): string {
@@ -114,7 +114,7 @@ export function generateKeywords(
  * @example
  * ```ts
  * generateOGImage('/images/room.jpg');
- * // Returns: "https://lapacasahostel.com/images/room.jpg"
+ * // Returns: "https://lapacasa.com/images/room.jpg"
  * ```
  */
 export function generateOGImage(imagePath?: string): string {
@@ -135,7 +135,7 @@ export function generateOGImage(imagePath?: string): string {
  * @example
  * ```ts
  * generateCanonicalURL('/booking');
- * // Returns: "https://lapacasahostel.com/booking"
+ * // Returns: "https://lapacasa.com/booking"
  * ```
  */
 export function generateCanonicalURL(path: string): string {
@@ -189,7 +189,7 @@ function getBaseMetaForPageType(pageType: PageType): MetaData {
     },
     booking: {
       title: 'Book Your Group Stay',
-      description: 'Reserve beds at Lapa Casa Hostel with instant confirmation. Group discounts up to 15%. Flexible cancellation policy. Best rates guaranteed.',
+      description: 'Reserve beds at Lapa Casa with instant confirmation. Group discounts up to 15%. Flexible cancellation policy. Best rates guaranteed.',
       keywords: ['hostel booking', 'group reservation', 'book hostel rio', 'instant confirmation'],
       ogImage: '/images/booking-page.jpg',
       canonical: '/booking'
@@ -202,7 +202,7 @@ function getBaseMetaForPageType(pageType: PageType): MetaData {
       canonical: '/rooms'
     },
     about: {
-      title: 'About Lapa Casa Hostel',
+      title: 'About Lapa Casa',
       description: 'Learn about our family-run hostel in Santa Teresa. Since 2010, we specialize in creating memorable experiences for group travelers in Rio de Janeiro.',
       keywords: ['about hostel', 'hostel history', 'family hostel', 'santa teresa history'],
       ogImage: '/images/about-us.jpg',
@@ -210,14 +210,14 @@ function getBaseMetaForPageType(pageType: PageType): MetaData {
     },
     contact: {
       title: 'Contact Us',
-      description: 'Get in touch with Lapa Casa Hostel. Located at Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Quick response guaranteed within 24 hours.',
+      description: 'Get in touch with Lapa Casa. Located at Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Quick response guaranteed within 24 hours.',
       keywords: ['contact hostel', 'hostel address', 'hostel phone', 'hostel email'],
       ogImage: '/images/location.jpg',
       canonical: '/contact'
     },
     confirmation: {
       title: 'Booking Confirmed',
-      description: 'Your booking at Lapa Casa Hostel has been confirmed. Check your email for booking details and check-in information.',
+      description: 'Your booking at Lapa Casa has been confirmed. Check your email for booking details and check-in information.',
       keywords: ['booking confirmation', 'reservation confirmed'],
       ogImage: '/images/confirmation.jpg',
       canonical: '/confirmation'
@@ -256,7 +256,7 @@ export function generateRoomMeta(
 
   return {
     title: `${roomName} - ${capacity} Bed ${type === 'mixed' ? 'Mixed' : 'Female'} Dormitory`,
-    description: `Book ${roomName} at Lapa Casa Hostel. ${capacity}-bed ${type} dormitory from R$${price}/night. ${amenities.length > 0 ? `Amenities: ${amenities.join(', ')}.` : ''} Group discounts available.`,
+    description: `Book ${roomName} at Lapa Casa. ${capacity}-bed ${type} dormitory from R$${price}/night. ${amenities.length > 0 ? `Amenities: ${amenities.join(', ')}.` : ''} Group discounts available.`,
     keywords: [
       roomName.toLowerCase(),
       `${capacity} bed dormitory`,
@@ -281,7 +281,7 @@ export function generateConfirmationMeta(
 ): MetaData {
   return {
     title: 'Booking Confirmed - Thank You!',
-    description: `Thank you ${guestName}! Your booking (ID: ${bookingId}) at Lapa Casa Hostel has been confirmed. Check your email for details.`,
+    description: `Thank you ${guestName}! Your booking (ID: ${bookingId}) at Lapa Casa has been confirmed. Check your email for details.`,
     keywords: ['booking confirmed', 'reservation success'],
     ogImage: '/images/confirmation-success.jpg',
     canonical: `/confirmation/${bookingId}`

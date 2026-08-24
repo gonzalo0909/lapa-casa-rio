@@ -8,7 +8,7 @@ import React from 'react';
  * PropertyManagementBanner Component
  *
  * Aviso comercial en la home, arriba del motor de reservas: invita a
- * dueños de apartamentos a asociarse para que Lapa Casa Hostel administre
+ * dueños de apartamentos a asociarse para que Lapa Casa administre
  * el alquiler por temporada y la limpieza. No forma parte del flujo de
  * reserva de huéspedes.
  *

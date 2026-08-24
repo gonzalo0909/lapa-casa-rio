@@ -10,7 +10,7 @@ import { redisCache as cache } from './redis';
 
 /**
  * Security Configuration
- * Comprehensive security setup for Lapa Casa Hostel API
+ * Comprehensive security setup for Lapa Casa API
  * 
  * Features:
  * - Helmet security headers

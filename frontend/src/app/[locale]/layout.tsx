@@ -13,7 +13,7 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasahostel.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasa.com';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -45,7 +45,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      siteName: 'Lapa Casa Hostel',
+      siteName: 'Lapa Casa',
       locale,
       type: 'website',
       images: [
@@ -53,7 +53,7 @@ export async function generateMetadata({
           url: '/og-image.jpg',
           width: 1200,
           height: 630,
-          alt: 'Lapa Casa Hostel — Santa Teresa, Rio de Janeiro',
+          alt: 'Lapa Casa — Santa Teresa, Rio de Janeiro',
         },
       ],
     },

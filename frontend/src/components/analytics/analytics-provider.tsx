@@ -3,7 +3,7 @@
 /**
  * Analytics Provider Component
  * 
- * Comprehensive analytics tracking for Lapa Casa Hostel.
+ * Comprehensive analytics tracking for Lapa Casa.
  * Integrates Google Analytics 4, Facebook Pixel, and custom events.
  * 
  * @module components/analytics/analytics-provider

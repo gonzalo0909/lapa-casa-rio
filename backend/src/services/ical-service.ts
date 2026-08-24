@@ -15,7 +15,7 @@
 // migraciones del Maestro, punto 7): system_config ya existe para datos
 // de configuracion dinamica.
 //
-// UID propio de exportacion: `lapacasa-{reservation_id}@lapacasahostel.com`
+// UID propio de exportacion: `lapacasa-{reservation_id}@lapacasa.com`
 // (pedido literalmente por el prompt de esta ventana). Al reimportar el
 // propio feed exportado, cualquier evento cuyo UID empiece con
 // "lapacasa-" se descarta -- evita el bucle "mi propia disponibilidad
@@ -38,7 +38,7 @@ import { logger } from '../utils/logger';
 import type { ChannelCode } from '../types/database';
 
 const OWN_UID_PREFIX = 'lapacasa-';
-const OWN_UID_SUFFIX = '@lapacasahostel.com';
+const OWN_UID_SUFFIX = '@lapacasa.com';
 const FEED_KEY_PREFIX = 'ical_feed:';
 const SYNC_STATUS_KEY_PREFIX = 'ical_sync_status:';
 
@@ -216,10 +216,10 @@ export async function generateICalFeed(roomTypeId: string): Promise<string> {
   const room = rows[0];
 
   const calendar = ical({
-    name: `Lapa Casa Hostel - ${room.name}`,
+    name: `Lapa Casa - ${room.name}`,
     description: `Disponibilidad de ${room.name}`,
     timezone: 'America/Sao_Paulo',
-    url: `https://lapacasahostel.com/api/v1/ical/export/${roomTypeId}`,
+    url: `https://lapacasa.com/api/v1/ical/export/${roomTypeId}`,
     ttl: 3600,
   });
 
@@ -234,10 +234,10 @@ export async function generateAllFeeds(): Promise<string> {
   const { rows: rooms } = await query<RoomTypeRow>(`SELECT id, code, name FROM room_types ORDER BY code`);
 
   const calendar = ical({
-    name: 'Lapa Casa Hostel - Todas las habitaciones',
+    name: 'Lapa Casa - Todas las habitaciones',
     description: 'Disponibilidad combinada de las 5 habitaciones',
     timezone: 'America/Sao_Paulo',
-    url: 'https://lapacasahostel.com/api/v1/ical/export',
+    url: 'https://lapacasa.com/api/v1/ical/export',
     ttl: 3600,
   });
 

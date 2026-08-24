@@ -16,7 +16,7 @@ const server = http.createServer(app);
 
 async function startServer(): Promise<void> {
   try {
-    logger.info('Starting Lapa Casa Hostel Backend Server...');
+    logger.info('Starting Lapa Casa Backend Server...');
     logger.info(`Environment: ${NODE_ENV}`);
     logger.info(`Port: ${PORT}`);
 
@@ -33,7 +33,7 @@ async function startServer(): Promise<void> {
         logger.info(`API Docs: ${environment.APP_URL}/api-docs`);
       }
 
-      logger.info('Lapa Casa Hostel Channel Manager is ready!');
+      logger.info('Lapa Casa Channel Manager is ready!');
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

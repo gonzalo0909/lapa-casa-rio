@@ -1,7 +1,7 @@
 /**
  * File: lapa-casa-hostel/backend/src/routes/index.ts
  * Main API Routes Index
- * Lapa Casa Hostel Channel Manager
+ * Lapa Casa Channel Manager
  * 
  * Centralizes all API route modules and applies global middleware
  * Implements versioning, rate limiting, and security headers
@@ -47,7 +47,7 @@ router.get('/health', (req: Request, res: Response) => {
  */
 router.get('/info', (req: Request, res: Response) => {
   res.status(200).json({
-    name: 'Lapa Casa Hostel API',
+    name: 'Lapa Casa API',
     version: '1.0.0',
     description: 'Channel Manager & Booking Engine API',
     endpoints: {
@@ -58,7 +58,7 @@ router.get('/info', (req: Request, res: Response) => {
       admin: '/api/v1/admin'
     },
     documentation: '/api/docs',
-    support: 'tech@lapacasahostel.com'
+    support: 'tech@lapacasa.com'
   });
 });
 

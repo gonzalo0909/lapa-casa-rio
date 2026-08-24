@@ -176,7 +176,7 @@ app.get('/ready', async (req: Request, res: Response) => {
 
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    name: 'Lapa Casa Hostel API',
+    name: 'Lapa Casa API',
     version: environment.API_VERSION,
     description: 'Channel Manager Backend',
     documentation: environment.NODE_ENV === 'development'

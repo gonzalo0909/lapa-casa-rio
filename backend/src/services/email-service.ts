@@ -21,7 +21,7 @@ function resolveLanguage(raw: string | null | undefined): Language {
 }
 
 const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'reservas@lapacasahostel.com';
-const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Lapa Casa Hostel';
+const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Lapa Casa';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lapacasahostel.com';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lapacasahostel.com';
 const WHATSAPP_CONTACT_URL = 'https://wa.me/5521977157530';
@@ -111,7 +111,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     amountPaid: 'Valor recebido', thanks: 'Obrigado! Nos vemos em breve.',
     remainingStillDue: 'Saldo restante ainda pendente',
     fullyPaid: 'Sua reserva está totalmente paga.',
-    welcomeTitle: 'Bem-vindo ao Lapa Casa Hostel!', welcomeIntro: 'Estamos ansiosos para recebê-lo. Aqui vão algumas informações úteis:',
+    welcomeTitle: 'Bem-vindo ao Lapa Casa!', welcomeIntro: 'Estamos ansiosos para recebê-lo. Aqui vão algumas informações úteis:',
     address: 'Endereço', wifiNetwork: 'Rede', wifiPassword: 'Senha',
     tipsTitle: 'Dicas locais',
     tip1: 'Bondinho de Santa Teresa: passeio histórico a poucos minutos a pé.',
@@ -124,7 +124,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     chargeApplied: 'Cobrança aplicada',
     policyNote: 'De acordo com nossa política de cancelamento, o valor total da reserva é cobrado em caso de não comparecimento (no-show).',
     bookingExpiredTitle: 'Sua reserva não foi concluída',
-    bookingExpiredIntro: 'Vimos que você começou uma reserva no Lapa Casa Hostel, mas o pagamento do depósito não foi concluído a tempo, então as camas foram liberadas.',
+    bookingExpiredIntro: 'Vimos que você começou uma reserva no Lapa Casa, mas o pagamento do depósito não foi concluído a tempo, então as camas foram liberadas.',
     bookingExpiredCta: 'Se ainda quiser se hospedar, você pode iniciar uma nova reserva quando quiser.',
     bookingExpiredHelp: 'Se teve algum problema no pagamento ou precisa de ajuda, é só responder este email ou nos chamar no WhatsApp.',
     tryAgain: 'Reservar novamente'
@@ -142,7 +142,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     amountPaid: 'Amount received', thanks: 'Thank you! See you soon.',
     remainingStillDue: 'Remaining balance still due',
     fullyPaid: 'Your booking is fully paid.',
-    welcomeTitle: 'Welcome to Lapa Casa Hostel!', welcomeIntro: "We're looking forward to hosting you. Some useful info:",
+    welcomeTitle: 'Welcome to Lapa Casa!', welcomeIntro: "We're looking forward to hosting you. Some useful info:",
     address: 'Address', wifiNetwork: 'Network', wifiPassword: 'Password',
     tipsTitle: 'Local tips',
     tip1: 'Santa Teresa tram: a historic ride just a short walk away.',
@@ -155,7 +155,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     chargeApplied: 'Charge applied',
     policyNote: 'Per our cancellation policy, the full booking amount is charged in case of no-show.',
     bookingExpiredTitle: 'Your booking wasn\'t completed',
-    bookingExpiredIntro: 'We saw you started a booking at Lapa Casa Hostel, but the deposit payment wasn\'t completed in time, so the beds were released.',
+    bookingExpiredIntro: 'We saw you started a booking at Lapa Casa, but the deposit payment wasn\'t completed in time, so the beds were released.',
     bookingExpiredCta: 'If you\'d still like to stay with us, you can start a new booking whenever you\'re ready.',
     bookingExpiredHelp: 'If something went wrong with the payment or you need help, just reply to this email or message us on WhatsApp.',
     tryAgain: 'Book again'
@@ -173,7 +173,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     amountPaid: 'Monto recibido', thanks: '¡Gracias! Nos vemos pronto.',
     remainingStillDue: 'Saldo restante aún pendiente',
     fullyPaid: 'Tu reserva está totalmente pagada.',
-    welcomeTitle: '¡Bienvenido a Lapa Casa Hostel!', welcomeIntro: 'Estamos ansiosos por recibirte. Aquí va información útil:',
+    welcomeTitle: '¡Bienvenido a Lapa Casa!', welcomeIntro: 'Estamos ansiosos por recibirte. Aquí va información útil:',
     address: 'Dirección', wifiNetwork: 'Red', wifiPassword: 'Contraseña',
     tipsTitle: 'Tips locales',
     tip1: 'Tranvía de Santa Teresa: paseo histórico a pocos minutos caminando.',
@@ -186,7 +186,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     chargeApplied: 'Cargo aplicado',
     policyNote: 'Según nuestra política de cancelación, se cobra el monto total de la reserva en caso de no presentación (no-show).',
     bookingExpiredTitle: 'Tu reserva no se completó',
-    bookingExpiredIntro: 'Vimos que empezaste una reserva en Lapa Casa Hostel, pero el pago del depósito no se completó a tiempo, así que las camas quedaron liberadas.',
+    bookingExpiredIntro: 'Vimos que empezaste una reserva en Lapa Casa, pero el pago del depósito no se completó a tiempo, así que las camas quedaron liberadas.',
     bookingExpiredCta: 'Si todavía querés hospedarte, podés iniciar una nueva reserva cuando quieras.',
     bookingExpiredHelp: 'Si tuviste algún problema con el pago o necesitás ayuda, respondé este email o escribinos por WhatsApp.',
     tryAgain: 'Reservar de nuevo'

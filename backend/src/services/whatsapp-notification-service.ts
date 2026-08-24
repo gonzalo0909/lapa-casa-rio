@@ -132,9 +132,9 @@ export class NotificationService {
 
       const amountStr = this.formatCurrency(amount, language);
       const messages = {
-        pt: `✅ *Pagamento Confirmado - Lapa Casa Hostel*\n\nReserva: ${bookingId}\nValor recebido: ${amountStr}\n\nObrigado! 🙏`,
-        en: `✅ *Payment Confirmed - Lapa Casa Hostel*\n\nBooking: ${bookingId}\nAmount received: ${amountStr}\n\nThank you! 🙏`,
-        es: `✅ *Pago Confirmado - Lapa Casa Hostel*\n\nReserva: ${bookingId}\nMonto recibido: ${amountStr}\n\n¡Gracias! 🙏`
+        pt: `✅ *Pagamento Confirmado - Lapa Casa*\n\nReserva: ${bookingId}\nValor recebido: ${amountStr}\n\nObrigado! 🙏`,
+        en: `✅ *Payment Confirmed - Lapa Casa*\n\nBooking: ${bookingId}\nAmount received: ${amountStr}\n\nThank you! 🙏`,
+        es: `✅ *Pago Confirmado - Lapa Casa*\n\nReserva: ${bookingId}\nMonto recibido: ${amountStr}\n\n¡Gracias! 🙏`
       };
 
       const client = this.getWhatsAppClient();
@@ -218,9 +218,9 @@ export class NotificationService {
   private buildBookingMessage(data: BookingNotificationData): string {
     const checkInStr = this.formatDate(data.checkIn);
     const msgs = {
-      pt: `🎉 *Reserva Confirmada - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nCheck-in: ${checkInStr}\n\nObrigado pela sua reserva! 🏠`,
-      en: `🎉 *Booking Confirmed - Lapa Casa Hostel*\n\nBooking: ${data.bookingId}\nCheck-in: ${checkInStr}\n\nThank you for your booking! 🏠`,
-      es: `🎉 *Reserva Confirmada - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nCheck-in: ${checkInStr}\n\n¡Gracias por tu reserva! 🏠`
+      pt: `🎉 *Reserva Confirmada - Lapa Casa*\n\nReserva: ${data.bookingId}\nCheck-in: ${checkInStr}\n\nObrigado pela sua reserva! 🏠`,
+      en: `🎉 *Booking Confirmed - Lapa Casa*\n\nBooking: ${data.bookingId}\nCheck-in: ${checkInStr}\n\nThank you for your booking! 🏠`,
+      es: `🎉 *Reserva Confirmada - Lapa Casa*\n\nReserva: ${data.bookingId}\nCheck-in: ${checkInStr}\n\n¡Gracias por tu reserva! 🏠`
     };
     return msgs[data.language];
   }
@@ -229,9 +229,9 @@ export class NotificationService {
     const amountStr = this.formatCurrency(data.amount, data.language);
     const dueDateStr = this.formatDate(data.dueDate);
     const msgs = {
-      pt: `💳 *Lembrete de Pagamento - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nValor: ${amountStr}\nVencimento: ${dueDateStr}\n\nEfetue o pagamento para garantir sua reserva.`,
-      en: `💳 *Payment Reminder - Lapa Casa Hostel*\n\nBooking: ${data.bookingId}\nAmount: ${amountStr}\nDue date: ${dueDateStr}\n\nPlease pay to secure your booking.`,
-      es: `💳 *Recordatorio de Pago - Lapa Casa Hostel*\n\nReserva: ${data.bookingId}\nMonto: ${amountStr}\nVencimiento: ${dueDateStr}\n\nPor favor paga para asegurar tu reserva.`
+      pt: `💳 *Lembrete de Pagamento - Lapa Casa*\n\nReserva: ${data.bookingId}\nValor: ${amountStr}\nVencimento: ${dueDateStr}\n\nEfetue o pagamento para garantir sua reserva.`,
+      en: `💳 *Payment Reminder - Lapa Casa*\n\nBooking: ${data.bookingId}\nAmount: ${amountStr}\nDue date: ${dueDateStr}\n\nPlease pay to secure your booking.`,
+      es: `💳 *Recordatorio de Pago - Lapa Casa*\n\nReserva: ${data.bookingId}\nMonto: ${amountStr}\nVencimiento: ${dueDateStr}\n\nPor favor paga para asegurar tu reserva.`
     };
     return msgs[data.language];
   }
@@ -239,9 +239,9 @@ export class NotificationService {
   private buildCheckInMessage(data: CheckInNotificationData): string {
     const dateStr = this.formatDate(data.checkInDate);
     const msgs = {
-      pt: `🏠 *Check-in Amanhã - Lapa Casa Hostel*\n\nOlá ${data.guestName}!\n\nCheck-in: ${dateStr} às ${data.checkInTime}\nEndereço: Rua Silvio Romero 22, Santa Teresa\n\nAté amanhã! 👋`,
-      en: `🏠 *Check-in Tomorrow - Lapa Casa Hostel*\n\nHello ${data.guestName}!\n\nCheck-in: ${dateStr} at ${data.checkInTime}\nAddress: Rua Silvio Romero 22, Santa Teresa\n\nSee you tomorrow! 👋`,
-      es: `🏠 *Check-in Mañana - Lapa Casa Hostel*\n\nHola ${data.guestName}!\n\nCheck-in: ${dateStr} a las ${data.checkInTime}\nDirección: Rua Silvio Romero 22, Santa Teresa\n\n¡Hasta mañana! 👋`
+      pt: `🏠 *Check-in Amanhã - Lapa Casa*\n\nOlá ${data.guestName}!\n\nCheck-in: ${dateStr} às ${data.checkInTime}\nEndereço: Rua Silvio Romero 22, Santa Teresa\n\nAté amanhã! 👋`,
+      en: `🏠 *Check-in Tomorrow - Lapa Casa*\n\nHello ${data.guestName}!\n\nCheck-in: ${dateStr} at ${data.checkInTime}\nAddress: Rua Silvio Romero 22, Santa Teresa\n\nSee you tomorrow! 👋`,
+      es: `🏠 *Check-in Mañana - Lapa Casa*\n\nHola ${data.guestName}!\n\nCheck-in: ${dateStr} a las ${data.checkInTime}\nDirección: Rua Silvio Romero 22, Santa Teresa\n\n¡Hasta mañana! 👋`
     };
     return msgs[data.language];
   }

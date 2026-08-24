@@ -90,8 +90,8 @@ export default function AdminPage({
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
             <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-2">
-              Lapa Casa Hostel
-            </p>
+              Lapa Casa
+</p>
             <h1 className="text-2xl font-display font-bold text-foreground">Admin</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Acesso restrito — insira a senha de administrador

@@ -184,7 +184,7 @@ export function PaymentSchedule({
               {formatDate(checkInDate)}
             </p>
             <p className="text-sm text-gray-600">
-              Lapa Casa Hostel • Santa Teresa, Rio de Janeiro
+              Lapa Casa • Santa Teresa, Rio de Janeiro
             </p>
           </div>
         </div>

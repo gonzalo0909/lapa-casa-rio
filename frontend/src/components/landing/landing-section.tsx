@@ -41,7 +41,7 @@ export const LandingSection: React.FC<LandingSectionProps> = ({ locale: _locale 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-4 py-14 text-center">
         <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
-          Lapa Casa Hostel
+          Lapa Casa
         </p>
         <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-3 leading-tight">
           {t('heroTitle')}

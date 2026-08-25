@@ -103,7 +103,7 @@ export const T = {
     pmPixRec:'Recomendado',
     pmPixOffer:'Sem comissão · Preço direto',
     pmCardFee:'+10% taxa de processamento',
-    pmCardNote:'Para pagamentos internacionais',
+    pmCardNote:'Nacional ou internacional · sujeito a taxa',
     pmCardTotal:'Total com taxa',
   },
   es: {
@@ -169,7 +169,7 @@ export const T = {
     pmPixRec:'Recomendado',
     pmPixOffer:'Sin comisión · Precio directo',
     pmCardFee:'+10% cargo de servicio',
-    pmCardNote:'Para pagos internacionales',
+    pmCardNote:'Nacional o internacional · sujeto a cargo',
     pmCardTotal:'Total con cargo',
   },
   en: {
@@ -235,7 +235,7 @@ export const T = {
     pmPixRec:'Recommended',
     pmPixOffer:'No fees · Direct price',
     pmCardFee:'+10% processing fee',
-    pmCardNote:'For international payments',
+    pmCardNote:'Domestic or international · fee applies',
     pmCardTotal:'Total with fee',
   },
   fr: {
@@ -301,7 +301,7 @@ export const T = {
     pmPixRec:'Recommandé',
     pmPixOffer:'Sans frais · Prix direct',
     pmCardFee:'+10% frais de traitement',
-    pmCardNote:'Pour les paiements internationaux',
+    pmCardNote:'Nationale ou internationale · frais appliqués',
     pmCardTotal:'Total avec frais',
   },
   de: {
@@ -367,7 +367,7 @@ export const T = {
     pmPixRec:'Empfohlen',
     pmPixOffer:'Keine Gebühren · Direktpreis',
     pmCardFee:'+10% Bearbeitungsgebühr',
-    pmCardNote:'Für internationale Zahlungen',
+    pmCardNote:'In- oder ausländisch · Gebühr wird erhoben',
     pmCardTotal:'Gesamtbetrag mit Gebühr',
   },
   it: {
@@ -433,7 +433,7 @@ export const T = {
     pmPixRec:'Consigliato',
     pmPixOffer:'Senza commissioni · Prezzo diretto',
     pmCardFee:'+10% commissione di servizio',
-    pmCardNote:'Per pagamenti internazionali',
+    pmCardNote:'Nazionale o internazionale · tariffa applicata',
     pmCardTotal:'Totale con commissione',
   },
 } as const;

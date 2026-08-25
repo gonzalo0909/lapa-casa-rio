@@ -149,6 +149,7 @@ const CSS = `
 .he-price-sub{font-size:.68rem;color:rgba(255,255,255,.95)}
 .he-conv{font-size:.65rem;color:rgba(255,255,255,.60);font-weight:500;margin-top:.1rem;font-variant-numeric:tabular-nums}
 .he-conv-inline{font-size:.72rem;color:rgba(255,255,255,.55);font-weight:400;margin-left:.35rem;font-variant-numeric:tabular-nums}
+.he-direct-banner{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem .85rem;background:rgba(42,82,52,.35);border-bottom:1px solid rgba(123,196,127,.2);font-size:.72rem;font-weight:600;color:#A7DFB8;letter-spacing:.02em;text-align:center}
 .he-foot-btns{display:flex;gap:.5rem;flex-shrink:0;margin-left:auto}
 .he-btn-back{padding:.55rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;color:rgba(255,255,255,.70);border:1.5px solid rgba(255,255,255,.20);background:rgba(255,255,255,.06);cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
 .he-btn-back:hover{border-color:#7BC47F;color:#7BC47F}
@@ -561,6 +562,12 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   </div>
                 </React.Fragment>
               ))}
+            </div>
+
+            {/* Banner precio directo */}
+            <div className="he-direct-banner">
+              <Tag size={12} aria-hidden />
+              {t.directBanner}
             </div>
 
             {toast && <div className="he-toast">{toast}</div>}

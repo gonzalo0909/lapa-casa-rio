@@ -95,6 +95,7 @@ export const T = {
     tToastMinNights:'estadia mínima de',tToastNights:'noites.',
     tToastBeds:'Selecione pelo menos 1 cama.',
     otaDirect:'Reservar direto economiza',otaVs:'em relação ao Airbnb/Booking',
+    directBanner:'Preço direto garantido · Sem comissões · Confirmação imediata',
     errorBooking:'Erro ao criar reserva. Tente novamente.',
   },
   es: {
@@ -152,6 +153,7 @@ export const T = {
     tToastMinNights:'estancia mínima de',tToastNights:'noches.',
     tToastBeds:'Selecciona al menos 1 cama.',
     otaDirect:'Reservar directo ahorra',otaVs:'vs Airbnb/Booking',
+    directBanner:'Precio directo garantizado · Sin comisiones · Confirmación inmediata',
     errorBooking:'Error al crear la reserva. Inténtalo de nuevo.',
   },
   en: {
@@ -209,6 +211,7 @@ export const T = {
     tToastMinNights:'minimum stay of',tToastNights:'nights.',
     tToastBeds:'Select at least 1 bed.',
     otaDirect:'Booking direct saves you',otaVs:'vs Airbnb/Booking',
+    directBanner:'Best rate guaranteed · No platform fees · Instant confirmation',
     errorBooking:'Error creating booking. Please try again.',
   },
 } as const;

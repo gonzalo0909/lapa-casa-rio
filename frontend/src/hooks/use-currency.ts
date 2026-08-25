@@ -119,8 +119,5 @@ export function useCurrency(): CurrencyInfo | null {
 /** Convierte un monto en BRL y devuelve el string formateado en la moneda local */
 export function convertBRL(amountBRL: number, info: CurrencyInfo): string {
   const converted = amountBRL * info.rate;
-  // Monedas sin decimales (CLP, PYG, JPY, COP, IDR…)
-  const noDecimals = ['CLP', 'PYG', 'JPY', 'COP', 'IDR', 'KRW'];
-  const decimals = noDecimals.includes(info.code) ? 0 : 0; // siempre entero — más limpio visualmente
   return `≈ ${info.symbol} ${Math.round(converted).toLocaleString('es-AR')}`;
 }

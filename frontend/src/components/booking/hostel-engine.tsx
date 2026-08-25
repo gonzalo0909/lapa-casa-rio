@@ -21,37 +21,38 @@ import { HostelGuestForm }     from './hostel-guest-form';
 // ─── CSS global del motor ────────────────────────────────
 const CSS = `
 .he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:url('/img/adoquines.png') center/cover;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}
-.he-header{background:url('/img/arcos-lapa.png') center/cover;color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 14px 14px;position:relative;overflow:hidden}
+.he-header{background:url('/img/arcos-lapa.png') center/cover;color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 18px 18px;position:relative;overflow:hidden}
 .he-header::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.18),rgba(0,0,0,.32));z-index:0;pointer-events:none}
 .he-brand-loc{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-bottom:.65rem;position:relative;z-index:1;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .he-brand{font-family:var(--font-cormorant),Georgia,serif;font-size:clamp(2.4rem,6vw,3.8rem);font-weight:600;letter-spacing:.01em;line-height:1.0;margin-bottom:0;position:relative;z-index:1;text-transform:none;text-shadow:0 2px 12px rgba(0,0,0,.8)}
 .he-brand span{font-family:var(--font-cormorant),Georgia,serif;font-weight:300;font-style:italic;text-transform:none;color:#C8870A;display:block;font-size:.62em;letter-spacing:.06em;margin-top:.12em;opacity:.95}
 .he-lang-sw{display:flex;gap:.3rem;margin-top:.45rem;justify-content:center;position:relative;z-index:1}
-.he-lang-btn{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.18em .5em;border-radius:4px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.95);cursor:pointer;transition:all .12s}
+.he-lang-btn{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.18em .5em;border-radius:4px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.95);cursor:pointer;transition:all .2s ease}
 .he-lang-btn.active{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.6)}
-.he-card{background:rgba(14,24,16,.88);border-radius:14px;box-shadow:0 2px 4px rgba(0,0,0,.25),0 8px 32px rgba(0,0,0,.45);width:100%;max-width:500px;overflow:hidden;backdrop-filter:blur(6px)}
+@keyframes he-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.he-card{background:rgba(14,24,16,.90);border-radius:16px;box-shadow:0 2px 4px rgba(0,0,0,.2),0 8px 24px rgba(0,0,0,.38),0 28px 72px rgba(0,0,0,.28);width:100%;max-width:500px;overflow:hidden;backdrop-filter:blur(9px);animation:he-rise .32s ease-out}
 .he-steps{display:flex;align-items:flex-start;padding:1rem 1.25rem;background:#1A2E1E;gap:0}
 .he-step-item{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex-shrink:0}
 .he-step-item.active .he-step-lbl{color:#fff}
 .he-step-item.done .he-step-lbl{color:rgba(255,255,255,.85)}
-.he-step-conn{flex:1;height:2px;background:rgba(255,255,255,.45);margin-top:14px;transition:background .35s}
+.he-step-conn{flex:1;height:2px;background:rgba(255,255,255,.3);margin-top:14px;transition:background .4s ease}
 .he-step-conn.done{background:#C8870A}
-.he-step-badge{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.65);background:rgba(255,255,255,.1);color:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;transition:all .35s}
-.he-step-badge.active{background:#C8870A;border-color:#C8870A;color:#fff}
-.he-step-badge.done{border-color:rgba(255,255,255,.8);color:#fff;background:rgba(255,255,255,.18)}
+.he-step-badge{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.55);background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;transition:all .4s ease}
+.he-step-badge.active{background:#C8870A;border-color:#C8870A;color:#fff;box-shadow:0 0 0 4px rgba(200,135,10,.22)}
+.he-step-badge.done{border-color:rgba(255,255,255,.7);color:#fff;background:rgba(255,255,255,.15)}
 .he-step-lbl{font-size:.75rem;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.95);text-align:center;white-space:nowrap;transition:color .35s}
 .he-toast{margin:.75rem 1.5rem 0;padding:.55rem .85rem;background:rgba(200,50,50,.18);border:1px solid rgba(252,165,165,.4);border-radius:8px;font-size:.75rem;color:#FCA5A5}
-.he-panel{padding:1.5rem 1.5rem 1rem}
+.he-panel{padding:1.75rem 1.5rem 1.1rem}
 .he-panel-title{font-size:1rem;font-weight:700;color:#F0EDE0;margin-bottom:.2rem}
 .he-panel-sub{font-size:.78rem;color:rgba(255,255,255,.95);margin-bottom:1.25rem}
 .he-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
 .he-cal-month{font-size:.9rem;font-weight:700;color:#F0EDE0;text-transform:capitalize}
-.he-cal-nav-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.95);cursor:pointer;background:none;border:none;transition:background .15s,color .15s}
+.he-cal-nav-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.95);cursor:pointer;background:none;border:none;transition:background .2s ease,color .2s ease}
 .he-cal-nav-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 .he-cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
 .he-cal-dlbl{font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.95);text-align:center;padding:.3rem 0 .5rem}
 .he-cal-cell{text-align:center;padding:.1rem 0;position:relative}
-.he-cal-day{width:34px;height:34px;border-radius:50%;margin:auto;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#F0EDE0;position:relative;z-index:1;cursor:pointer;background:none;border:none;font-family:inherit;transition:background .12s,color .12s}
+.he-cal-day{width:34px;height:34px;border-radius:50%;margin:auto;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#F0EDE0;position:relative;z-index:1;cursor:pointer;background:none;border:none;font-family:inherit;transition:background .18s ease,color .18s ease}
 .he-cal-day:hover:not(:disabled){background:rgba(255,255,255,.14);color:#fff}
 .he-cal-day:disabled{color:rgba(255,255,255,.22);cursor:not-allowed}
 .he-cal-cell.in-range::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,.09);top:50%;transform:translateY(-50%);height:34px;z-index:0}
@@ -71,12 +72,12 @@ const CSS = `
 .he-nights-c{text-align:center;font-size:.72rem;color:#C8870A;font-weight:700;align-self:center;white-space:nowrap}
 .he-min-warn{background:rgba(200,100,40,.15);border:1px solid rgba(226,155,114,.35);border-radius:8px;padding:.55rem .85rem;font-size:.75rem;color:#E29B72;margin-top:.6rem}
 .he-season-info{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.85rem;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.12)}
-.he-chip{font-size:.68rem;padding:.2em .55em;border-radius:4px;font-weight:600}
+.he-chip{font-size:.68rem;padding:.25em .65em;border-radius:6px;font-weight:600}
 .he-chip.media{background:#EBF4EC;color:#1D6B34}.he-chip.alta{background:#FEF3E2;color:#B45309}
 .he-chip.carnaval{background:#FEE2E2;color:#B91C1C}.he-chip.baixa{background:#EFF6FF;color:#1D4ED8}
 .he-rooms{display:flex;flex-direction:column;gap:.65rem}
-.he-room{border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;transition:border-color .15s}
-.he-room.has-beds{border-color:#C8870A}
+.he-room{border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;transition:border-color .22s ease,background .22s ease,box-shadow .22s ease}
+.he-room.has-beds{border-color:#C8870A;background:rgba(200,135,10,.04);box-shadow:0 0 0 1px rgba(200,135,10,.15)}
 .he-stripe{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0}
 .he-stripe-mixed{background:#4A90D9}.he-stripe-female{background:#E87AA8}
 .he-ri{flex:1;min-width:0}
@@ -88,8 +89,8 @@ const CSS = `
 .he-rprice{font-size:.72rem;color:rgba(255,255,255,.95);margin-top:.2rem}
 .he-rprice strong{color:#F0EDE0;font-size:.82rem}
 .he-stepper{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
-.he-sbtn{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#F0EDE0;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
-.he-sbtn:hover:not(:disabled){border-color:#2A5234;background:#2A5234;color:#fff}
+.he-sbtn{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#F0EDE0;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:background .2s ease,border-color .2s ease,color .2s ease,transform .15s ease}
+.he-sbtn:hover:not(:disabled){border-color:#2A5234;background:#2A5234;color:#fff;transform:scale(1.1)}
 .he-sbtn:disabled{color:rgba(255,255,255,.2);cursor:not-allowed}
 .he-scnt{font-size:.95rem;font-weight:700;min-width:1.25rem;text-align:center;color:#F0EDE0}
 .he-flex-notice{background:rgba(42,82,52,.25);border:1px solid rgba(123,196,127,.25);border-radius:8px;padding:.6rem .8rem;font-size:.72rem;color:#A7DFB8;margin-top:.5rem}
@@ -98,8 +99,8 @@ const CSS = `
 .he-form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.85rem}
 .he-label{display:block;font-size:.83rem;font-weight:600;color:rgba(255,255,255,.95);margin-bottom:.3rem}
 .he-req{color:#C8870A}
-.he-inp{width:100%;border:1.5px solid rgba(255,255,255,.15);border-radius:8px;padding:.6rem .85rem;background:rgba(255,255,255,.07);color:#F0EDE0;font-size:.95rem;transition:border-color .15s;font-family:inherit}
-.he-inp:focus{border-color:#7BC47F;outline:none}
+.he-inp{width:100%;border:1.5px solid rgba(255,255,255,.17);border-radius:10px;padding:.65rem .9rem;background:rgba(255,255,255,.09);color:#F0EDE0;font-size:.95rem;transition:border-color .2s ease,box-shadow .2s ease;font-family:inherit}
+.he-inp:focus{border-color:#7BC47F;outline:none;box-shadow:0 0 0 3px rgba(123,196,127,.13)}
 .he-inp.err{border-color:#F87171}.he-inp.ok{border-color:#4ADE80}
 .he-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235A5E50' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;padding-right:2rem}
 .he-textarea{resize:vertical;min-height:64px}
@@ -133,8 +134,8 @@ const CSS = `
 .he-dep-note{font-size:.65rem;color:rgba(255,255,255,.95);margin-top:.1rem}
 .he-ota{background:rgba(42,82,52,.3);border:1px solid rgba(123,196,127,.25);border-radius:8px;padding:.6rem .85rem;font-size:.75rem;color:#A7DFB8;margin-bottom:.85rem;display:flex;align-items:center;gap:.45rem}
 .he-pay-methods{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.85rem}
-.he-pay-m{display:flex;align-items:center;gap:.75rem;border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:.65rem .9rem;cursor:pointer;transition:border-color .15s;background:rgba(255,255,255,.06);width:100%;text-align:left;font-family:inherit}
-.he-pay-m.selected{border-color:#7BC47F}
+.he-pay-m{display:flex;align-items:center;gap:.75rem;border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.65rem .9rem;cursor:pointer;transition:border-color .22s ease,background .22s ease,box-shadow .22s ease;background:rgba(255,255,255,.06);width:100%;text-align:left;font-family:inherit}
+.he-pay-m.selected{border-color:#7BC47F;background:rgba(123,196,127,.06);box-shadow:0 0 0 2px rgba(123,196,127,.12)}
 .he-pm-info{flex:1;min-width:0}
 .he-pm-name{font-size:.82rem;font-weight:700;color:#F0EDE0;display:flex;align-items:center;gap:.35rem}
 .he-pm-detail{font-size:.72rem;color:rgba(255,255,255,.95);margin-top:.1rem}
@@ -142,11 +143,12 @@ const CSS = `
 .he-pm-offer{font-size:.68rem;color:#7BC47F;margin-top:.1rem;font-weight:500}
 .he-pm-rec-badge{font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#2A5234;color:#A7DFB8;padding:.1em .4em;border-radius:4px;border:1px solid #7BC47F;flex-shrink:0}
 .he-pm-fee-badge{font-size:.58rem;font-weight:700;letter-spacing:.04em;background:rgba(200,135,10,.15);color:#C8870A;padding:.1em .4em;border-radius:4px;border:1px solid rgba(200,135,10,.35);flex-shrink:0;white-space:nowrap}
-.he-btn-confirm{padding:.75rem 1.5rem;border-radius:8px;font-size:1.05rem;font-weight:700;background:#2A5234;color:#fff;width:100%;display:block;text-align:center;letter-spacing:.02em;cursor:pointer;border:none;font-family:inherit;transition:background .15s}
-.he-btn-confirm:hover:not(:disabled){background:#3A6844}
-.he-btn-confirm:disabled{background:#5A5E50;cursor:not-allowed}
-.he-btn-wa{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;text-align:center;padding:.65rem;border-radius:8px;font-size:.85rem;font-weight:600;color:#fff;background:#25D366;text-decoration:none;margin-top:.5rem;transition:background .12s;cursor:pointer;border:none;font-family:inherit}
-.he-btn-wa:hover{background:#1DAE55}
+.he-btn-confirm{padding:.78rem 1.5rem;border-radius:10px;font-size:1.05rem;font-weight:700;background:linear-gradient(135deg,#2A5234 0%,#35673F 100%);color:#fff;width:100%;display:block;text-align:center;letter-spacing:.02em;cursor:pointer;border:none;font-family:inherit;transition:background .22s ease,transform .15s ease,box-shadow .22s ease}
+.he-btn-confirm:hover:not(:disabled){background:linear-gradient(135deg,#33623E 0%,#3E7448 100%);transform:translateY(-1px);box-shadow:0 6px 20px rgba(42,82,52,.45)}
+.he-btn-confirm:active:not(:disabled){transform:translateY(0)}
+.he-btn-confirm:disabled{background:#4A5248;cursor:not-allowed}
+.he-btn-wa{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;text-align:center;padding:.65rem;border-radius:10px;font-size:.85rem;font-weight:600;color:#fff;background:#25D366;text-decoration:none;margin-top:.5rem;transition:background .2s ease,transform .15s ease;cursor:pointer;border:none;font-family:inherit}
+.he-btn-wa:hover{background:#1DAE55;transform:translateY(-1px)}
 .he-foot{padding:1rem 1.5rem;border-top:1px solid rgba(255,255,255,.10);display:flex;align-items:center;gap:1rem;background:rgba(0,0,0,.28)}
 .he-price-main{font-size:.95rem;font-weight:800;color:#7BC47F;font-variant-numeric:tabular-nums}
 .he-price-sub{font-size:.68rem;color:rgba(255,255,255,.95)}
@@ -498,6 +500,12 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   }, []);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  // ─ PIX solo disponible para residentes brasileros ─
+  // Si el huésped eligió un país distinto de BR, forzamos 'card' automáticamente
+  useEffect(() => {
+    if (form.country !== 'BR') setPayMethod('card');
+  }, [form.country]);
   const timerStr = `${Math.floor(timerSecs / 60)}:${String(timerSecs % 60).padStart(2, '0')}`;
 
   // ─ Precio en footer ─
@@ -713,7 +721,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   return (
                     <div className="he-dep-box">
                       <div className="he-dep-half">
-                        <div className="he-dep-lbl">{t.tDepositNow}</div>
+                        <div className="he-dep-lbl">{form.country === 'BR' ? t.tDepositNow : t.cardDepLabel}</div>
                         <div className="he-dep-amt">{fmtMoney(depositAmt)}</div>
                         {currency && <div className="he-conv">{convertBRL(depositAmt, currency)}</div>}
                         <div className="he-dep-note">
@@ -747,8 +755,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 </div>
 
                 <div className="he-pay-methods">
-                  {/* ── PIX ── */}
-                  <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => setPayMethod('pix')}>
+                  {/* ── PIX — solo para huéspedes con CPF brasilero ── */}
+                  {form.country === 'BR' && <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => setPayMethod('pix')}>
                     <input type="radio" name="he-pay" value="pix" checked={payMethod === 'pix'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
                     <div className="he-pm-info">
                       <div className="he-pm-name">
@@ -759,7 +767,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                       <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
                     </div>
                     <span className="he-pm-instant">{t.pmPixApproval}</span>
-                  </button>
+                  </button>}
                   {/* ── Tarjeta ── */}
                   <button type="button" className={`he-pay-m${payMethod === 'card' ? ' selected' : ''}`} onClick={() => setPayMethod('card')}>
                     <input type="radio" name="he-pay" value="card" checked={payMethod === 'card'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />

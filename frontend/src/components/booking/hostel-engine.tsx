@@ -219,7 +219,7 @@ interface HostelEngineProps { locale?: string; }
 
 // ─── Component ────────────────────────────────────────────
 export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
-  const initLang: Lang = locale === 'es' ? 'es' : locale === 'en' ? 'en' : 'pt';
+  const initLang: Lang = (['pt','es','en','fr','de','it'] as Lang[]).includes(locale as Lang) ? locale as Lang : 'pt';
   const [lang, setLang]       = useState<Lang>(initLang);
   const t = T[lang];
   const currency = useCurrency();
@@ -519,7 +519,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
             <span>Hostel</span>
           </div>
           <div className="he-lang-sw">
-            {(['pt','es','en'] as Lang[]).map(l => (
+            {(['pt','es','en','fr','de','it'] as Lang[]).map(l => (
               <button key={l} className={`he-lang-btn${lang === l ? ' active' : ''}`} onClick={() => setLang(l)}>
                 {l.toUpperCase()}
               </button>

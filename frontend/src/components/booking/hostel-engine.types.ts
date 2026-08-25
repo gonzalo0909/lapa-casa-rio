@@ -105,6 +105,8 @@ export const T = {
     pmCardFee:'10% acréscimo com cartão',
     pmCardNote:'Nacional ou internacional',
     pmCardTotal:'Total com cartão',
+    pmNote:'PIX: sem acréscimo. Cartão: 10% adicional.',
+    pmPixUnavailable:'Disponível apenas no Brasil',
   },
   es: {
     step1:'Fechas',step2:'Cuartos',step3:'Huésped',step4:'Resumen',
@@ -171,6 +173,8 @@ export const T = {
     pmCardFee:'10% adicional con tarjeta',
     pmCardNote:'Nacional o internacional',
     pmCardTotal:'Total con tarjeta',
+    pmNote:'PIX: sin cargo. Tarjeta: 10% adicional.',
+    pmPixUnavailable:'Disponible solo en Brasil',
   },
   en: {
     step1:'Dates',step2:'Rooms',step3:'Guest',step4:'Summary',
@@ -237,6 +241,8 @@ export const T = {
     pmCardFee:'10% added for card',
     pmCardNote:'Domestic or international',
     pmCardTotal:'Total with card',
+    pmNote:'PIX: no surcharge. Card: 10% added.',
+    pmPixUnavailable:'Available in Brazil only',
   },
   fr: {
     step1:'Dates',step2:'Chambres',step3:'Voyageur',step4:'Récapitulatif',
@@ -303,6 +309,8 @@ export const T = {
     pmCardFee:'10% supplément carte',
     pmCardNote:'Nationale ou internationale',
     pmCardTotal:'Total avec carte',
+    pmNote:'PIX: sans frais. Carte: +10%.',
+    pmPixUnavailable:'Disponible au Brésil uniquement',
   },
   de: {
     step1:'Daten',step2:'Zimmer',step3:'Gast',step4:'Übersicht',
@@ -369,6 +377,8 @@ export const T = {
     pmCardFee:'10% Aufpreis Karte',
     pmCardNote:'Inland oder Ausland',
     pmCardTotal:'Gesamt mit Karte',
+    pmNote:'PIX: ohne Aufpreis. Karte: +10%.',
+    pmPixUnavailable:'Nur in Brasilien verfügbar',
   },
   it: {
     step1:'Date',step2:'Camere',step3:'Ospite',step4:'Riepilogo',
@@ -435,6 +445,8 @@ export const T = {
     pmCardFee:'10% in più con carta',
     pmCardNote:'Nazionale o internazionale',
     pmCardTotal:'Totale con carta',
+    pmNote:'PIX: senza costi. Carta: +10%.',
+    pmPixUnavailable:'Disponibile solo in Brasile',
   },
 } as const;
 

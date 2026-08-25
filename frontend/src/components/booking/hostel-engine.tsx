@@ -132,9 +132,12 @@ const CSS = `
 .he-dep-lbl{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.95);margin-bottom:.2rem}
 .he-dep-amt{font-size:1.05rem;font-weight:800;color:#7BC47F}
 .he-dep-note{font-size:.65rem;color:rgba(255,255,255,.95);margin-top:.1rem}
-.he-pay-methods{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.85rem}
+.he-pay-methods{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.5rem}
 .he-pay-m{display:flex;align-items:center;gap:.75rem;border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.65rem .9rem;cursor:pointer;transition:border-color .22s ease,background .22s ease,box-shadow .22s ease;background:rgba(255,255,255,.06);width:100%;text-align:left;font-family:inherit}
 .he-pay-m.selected{border-color:#7BC47F;background:rgba(123,196,127,.06);box-shadow:0 0 0 2px rgba(123,196,127,.12)}
+.he-pay-m-disabled{opacity:.45;cursor:not-allowed}
+.he-pm-unavail{font-size:.63rem;color:rgba(255,255,255,.4);margin-top:.15rem;font-style:italic}
+.he-pm-note{font-size:.68rem;color:rgba(255,255,255,.4);margin-bottom:.85rem;padding:0 .1rem}
 .he-pm-info{flex:1;min-width:0}
 .he-pm-name{font-size:.82rem;font-weight:700;color:#F0EDE0;display:flex;align-items:center;gap:.35rem}
 .he-pm-detail{font-size:.72rem;color:rgba(255,255,255,.95);margin-top:.1rem}
@@ -738,16 +741,17 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 </div>
 
                 <div className="he-pay-methods">
-                  {/* ── PIX — solo para huéspedes con CPF brasilero ── */}
-                  {form.country === 'BR' && <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => setPayMethod('pix')}>
+                  {/* ── PIX — visible a todos, seleccionable solo para BR ── */}
+                  <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}${form.country !== 'BR' ? ' he-pay-m-disabled' : ''}`} onClick={() => form.country === 'BR' && setPayMethod('pix')} disabled={form.country !== 'BR'}>
                     <input type="radio" name="he-pay" value="pix" checked={payMethod === 'pix'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
                     <div className="he-pm-info">
                       <div className="he-pm-name">
                         <Zap size={13} aria-hidden />{t.pmPix}
                       </div>
                       <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
+                      {form.country !== 'BR' && <div className="he-pm-unavail">{t.pmPixUnavailable}</div>}
                     </div>
-                  </button>}
+                  </button>
                   {/* ── Tarjeta ── */}
                   <button type="button" className={`he-pay-m${payMethod === 'card' ? ' selected' : ''}`} onClick={() => setPayMethod('card')}>
                     <input type="radio" name="he-pay" value="card" checked={payMethod === 'card'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
@@ -761,6 +765,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     </div>
                   </button>
                 </div>
+                <div className="he-pm-note">{t.pmNote}</div>
 
                 {bookingError && <div className="he-toast" style={{ margin: '0 0 .75rem' }}>{bookingError}</div>}
 

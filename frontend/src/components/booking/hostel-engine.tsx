@@ -527,13 +527,13 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       const cnt = beds[r.id] ?? 0;
       return `${r.name}: ${cnt} ${cnt > 1 ? t.tBeds : t.tBed}`;
     }).join(', ');
-    const mult       = payMethod === 'card' ? 1.10 : 1;
-    const depositAmt = Math.round(price.deposit * mult);
-    const remaining  = Math.round((price.total - price.deposit) * mult);
-    const payInfo = payMethod === 'pix'
-      ? `\n\nMétodo de pago: PIX\nDepositar R$ ${depositAmt} a la clave PIX: lapalandiarj@gmail.com\nRestante R$ ${remaining} se abona en check-in.`
-      : `\n\nMétodo de pago: Tarjeta de crédito\nDepositar R$ ${depositAmt} — espero el link de pago.\nRestante R$ ${remaining} se abona en check-in.`;
-    const msg = encodeURIComponent(`${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\nTotal: R$ ${price.total}${payInfo}\n\n${t.waAwait}`);
+    const depPix  = Math.round(price.deposit);
+    const depCard = Math.round(price.deposit * 1.10);
+    const remPix  = Math.round(price.total - price.deposit);
+    const remCard = Math.round((price.total - price.deposit) * 1.10);
+    const msg = encodeURIComponent(
+      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\nDepósito (30%):\n• PIX: ${fmtMoney(depPix)} → lapalandiarj@gmail.com\n• Tarjeta (+10%): ${fmtMoney(depCard)}\n\nRestante en check-in:\n• PIX: ${fmtMoney(remPix)}\n• Tarjeta (+10%): ${fmtMoney(remCard)}\n\n${t.waAwait}`
+    );
     return `https://wa.me/5521999999999?text=${msg}`;
   })();
 

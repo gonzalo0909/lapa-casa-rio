@@ -707,8 +707,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 </div>
 
                 {(() => {
-                  const depositAmt = payMethod === 'card' ? Math.round(price.deposit * 1.10) : price.deposit;
-                  const remaining  = price.total - price.deposit; // 70% siempre sin cargo
+                  const mult       = payMethod === 'card' ? 1.10 : 1;
+                  const depositAmt = Math.round(price.deposit * mult);
+                  const remaining  = Math.round((price.total - price.deposit) * mult);
                   return (
                     <div className="he-dep-box">
                       <div className="he-dep-half">
@@ -769,7 +770,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                       </div>
                       <div className="he-pm-offer" style={{ color:'rgba(255,255,255,.5)' }}>{t.pmCardNote}</div>
                       <div className="he-pm-detail">
-                        {fmtMoney(Math.round(price.deposit * 1.10))} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}
+                        {fmtMoney(Math.round(price.deposit * 1.10))} · {fmtMoney(Math.round((price.total - price.deposit) * 1.10))} {t.tAtCheckin}
                       </div>
                     </div>
                   </button>

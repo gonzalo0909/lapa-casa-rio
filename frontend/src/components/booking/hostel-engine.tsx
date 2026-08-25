@@ -139,6 +139,9 @@ const CSS = `
 .he-pm-name{font-size:.82rem;font-weight:700;color:#F0EDE0;display:flex;align-items:center;gap:.35rem}
 .he-pm-detail{font-size:.72rem;color:rgba(255,255,255,.95);margin-top:.1rem}
 .he-pm-instant{font-size:.62rem;font-weight:700;padding:.15em .5em;border-radius:4px;background:#D5E8D4;color:#1E5E40;white-space:nowrap;flex-shrink:0}
+.he-pm-offer{font-size:.68rem;color:#7BC47F;margin-top:.1rem;font-weight:500}
+.he-pm-rec-badge{font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#2A5234;color:#A7DFB8;padding:.1em .4em;border-radius:4px;border:1px solid #7BC47F;flex-shrink:0}
+.he-pm-fee-badge{font-size:.58rem;font-weight:700;letter-spacing:.04em;background:rgba(200,135,10,.15);color:#C8870A;padding:.1em .4em;border-radius:4px;border:1px solid rgba(200,135,10,.35);flex-shrink:0;white-space:nowrap}
 .he-btn-confirm{padding:.75rem 1.5rem;border-radius:8px;font-size:1.05rem;font-weight:700;background:#2A5234;color:#fff;width:100%;display:block;text-align:center;letter-spacing:.02em;cursor:pointer;border:none;font-family:inherit;transition:background .15s}
 .he-btn-confirm:hover:not(:disabled){background:#3A6844}
 .he-btn-confirm:disabled{background:#5A5E50;cursor:not-allowed}
@@ -703,20 +706,28 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   </div>
                 </div>
 
-                <div className="he-dep-box">
-                  <div className="he-dep-half">
-                    <div className="he-dep-lbl">{t.tDepositNow}</div>
-                    <div className="he-dep-amt">{fmtMoney(price.deposit)}</div>
-                    {currency && <div className="he-conv">{convertBRL(price.deposit, currency)}</div>}
-                    <div className="he-dep-note">30%</div>
-                  </div>
-                  <div className="he-dep-half">
-                    <div className="he-dep-lbl">70% {t.tAtCheckin}</div>
-                    <div className="he-dep-amt">{fmtMoney(price.total - price.deposit)}</div>
-                    {currency && <div className="he-conv">{convertBRL(price.total - price.deposit, currency)}</div>}
-                    <div className="he-dep-note">Check-in</div>
-                  </div>
-                </div>
+                {(() => {
+                  const depositAmt = payMethod === 'card' ? Math.round(price.deposit * 1.10) : price.deposit;
+                  const remaining  = price.total - price.deposit; // 70% siempre sin cargo
+                  return (
+                    <div className="he-dep-box">
+                      <div className="he-dep-half">
+                        <div className="he-dep-lbl">{t.tDepositNow}</div>
+                        <div className="he-dep-amt">{fmtMoney(depositAmt)}</div>
+                        {currency && <div className="he-conv">{convertBRL(depositAmt, currency)}</div>}
+                        <div className="he-dep-note">
+                          {payMethod === 'card' ? t.pmCardTotal : '30% PIX'}
+                        </div>
+                      </div>
+                      <div className="he-dep-half">
+                        <div className="he-dep-lbl">70% {t.tAtCheckin}</div>
+                        <div className="he-dep-amt">{fmtMoney(remaining)}</div>
+                        {currency && <div className="he-conv">{convertBRL(remaining, currency)}</div>}
+                        <div className="he-dep-note">Check-in</div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="he-sum-sec">
                   <div className="he-sum-head">{t.sumGuestHead}</div>
@@ -735,21 +746,33 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 </div>
 
                 <div className="he-pay-methods">
-                  {(['pix', 'card'] as PayMethod[]).map(m => (
-                    <button key={m} type="button" className={`he-pay-m${payMethod === m ? ' selected' : ''}`} onClick={() => setPayMethod(m)}>
-                      <input type="radio" name="he-pay" value={m} checked={payMethod === m} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
-                      <div className="he-pm-info">
-                        <div className="he-pm-name">
-                          {m === 'pix'
-                            ? <><Zap size={13} aria-hidden />{t.pmPix}</>
-                            : <><CreditCard size={13} aria-hidden />{t.pmCard}</>
-                          }
-                        </div>
-                        <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
+                  {/* ── PIX ── */}
+                  <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => setPayMethod('pix')}>
+                    <input type="radio" name="he-pay" value="pix" checked={payMethod === 'pix'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
+                    <div className="he-pm-info">
+                      <div className="he-pm-name">
+                        <Zap size={13} aria-hidden />{t.pmPix}
+                        <span className="he-pm-rec-badge">{t.pmPixRec}</span>
                       </div>
-                      {m === 'pix' && <span className="he-pm-instant">{t.pmPixApproval}</span>}
-                    </button>
-                  ))}
+                      <div className="he-pm-offer">{t.pmPixOffer}</div>
+                      <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
+                    </div>
+                    <span className="he-pm-instant">{t.pmPixApproval}</span>
+                  </button>
+                  {/* ── Tarjeta ── */}
+                  <button type="button" className={`he-pay-m${payMethod === 'card' ? ' selected' : ''}`} onClick={() => setPayMethod('card')}>
+                    <input type="radio" name="he-pay" value="card" checked={payMethod === 'card'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
+                    <div className="he-pm-info">
+                      <div className="he-pm-name">
+                        <CreditCard size={13} aria-hidden />{t.pmCard}
+                        <span className="he-pm-fee-badge">{t.pmCardFee}</span>
+                      </div>
+                      <div className="he-pm-offer" style={{ color:'rgba(255,255,255,.5)' }}>{t.pmCardNote}</div>
+                      <div className="he-pm-detail">
+                        {fmtMoney(Math.round(price.deposit * 1.10))} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}
+                      </div>
+                    </div>
+                  </button>
                 </div>
 
                 {bookingError && <div className="he-toast" style={{ margin: '0 0 .75rem' }}>{bookingError}</div>}

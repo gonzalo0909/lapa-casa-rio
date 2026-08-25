@@ -332,6 +332,12 @@ export const paymentAPI = {
    */
   stripeCheckout: (reservationId: string, frontendUrl: string) =>
     api.post('/payments/stripe-checkout', { reservationId, frontendUrl }),
+
+  /**
+   * Genera un link de Stripe para el flujo WhatsApp (sin reserva previa)
+   */
+  stripeWaLink: (amountBRL: number, description: string, guestEmail?: string, frontendUrl?: string) =>
+    api.post('/payments/stripe-wa-link', { amountBRL, description, guestEmail, frontendUrl }),
 };
 
 /**

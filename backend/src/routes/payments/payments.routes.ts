@@ -15,6 +15,39 @@ import { ApiResponse } from '../../utils/responses';
 
 const router = Router();
 
+// POST /payments/stripe-wa-link — genera una Checkout Session sin reserva previa (flujo WhatsApp)
+router.post('/stripe-wa-link', async (req, res, next) => {
+  try {
+    const { amountBRL, description, guestEmail, frontendUrl } = req.body as {
+      amountBRL: number;
+      description?: string;
+      guestEmail?: string;
+      frontendUrl?: string;
+    };
+    if (!amountBRL || amountBRL <= 0) {
+      res.status(400).json(ApiResponse.error('amountBRL es requerido y debe ser mayor a 0'));
+      return;
+    }
+    const baseUrl = frontendUrl || process.env.FRONTEND_URL || 'https://lapacasario.com';
+    const session = await stripeHandler.createCheckoutSession({
+      amount: amountBRL,
+      description: description || 'Depósito reserva — Lapa Casa Hostel',
+      customerEmail: guestEmail || '',
+      reservationId: `wa-${Date.now()}`,
+      successUrl: `${baseUrl}/pt/hostel?paid=1`,
+      cancelUrl:  `${baseUrl}/pt/hostel`,
+      metadata: { source: 'whatsapp' },
+    });
+    logger.info('Stripe WA link generado', { amount: amountBRL, sessionId: session.sessionId });
+    res.status(200).json(ApiResponse.success({ url: session.url }, 'Link de pago generado'));
+  } catch (error) {
+    logger.error('Error al generar Stripe WA link', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    next(error);
+  }
+});
+
 // POST /payments/stripe-checkout — genera una Checkout Session de Stripe (pago con tarjeta)
 router.post('/stripe-checkout', async (req, res, next) => {
   try {

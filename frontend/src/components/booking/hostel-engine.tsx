@@ -251,6 +251,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const [timerSecs, setTimerSecs]     = useState(300);
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingError, setBookingError] = useState('');
+  const [isWaLoading, setIsWaLoading]   = useState(false);
   const [pixData, setPixData]           = useState<{ qrCode: string; qrCodeBase64: string } | null>(null);
   const [pixCopied, setPixCopied]       = useState(false);
   const [stripeUrl, setStripeUrl]       = useState<string | null>(null);
@@ -519,8 +520,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     return { main: fmtMoney(85 * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
   })();
 
-  // ─ Link WhatsApp ─
-  const waLink = (() => {
+  // ─ Botón WhatsApp — genera link de Stripe para tarjeta on-click ─
+  const buildWaMsg = (stripeLink?: string) => {
     if (!checkIn || !checkOut || !price) return '#';
     const selR     = rooms.filter(r => (beds[r.id] ?? 0) > 0);
     const roomsStr = selR.map(r => {
@@ -531,11 +532,36 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     const depCard = Math.round(price.deposit * 1.10);
     const remPix  = Math.round(price.total - price.deposit);
     const remCard = Math.round((price.total - price.deposit) * 1.10);
+    const cardLine = stripeLink
+      ? `• Tarjeta (+10%): ${fmtMoney(depCard)} → ${stripeLink}`
+      : `• Tarjeta (+10%): ${fmtMoney(depCard)}`;
     const msg = encodeURIComponent(
-      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\nDepósito (30%):\n• PIX: ${fmtMoney(depPix)} → lapalandiarj@gmail.com\n• Tarjeta (+10%): ${fmtMoney(depCard)}\n\nRestante en check-in:\n• PIX: ${fmtMoney(remPix)}\n• Tarjeta (+10%): ${fmtMoney(remCard)}\n\n${t.waAwait}`
+      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\nDepósito (30%):\n• PIX: ${fmtMoney(depPix)} → lapalandiarj@gmail.com\n${cardLine}\n\nRestante en check-in:\n• PIX: ${fmtMoney(remPix)}\n• Tarjeta (+10%): ${fmtMoney(remCard)}\n\n${t.waAwait}`
     );
     return `https://wa.me/5521999999999?text=${msg}`;
-  })();
+  };
+
+  const handleWaClick = async () => {
+    if (!price) return;
+    setIsWaLoading(true);
+    let stripeLink: string | undefined;
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const depCard = Math.round(price.deposit * 1.10);
+      const res = await paymentAPI.stripeWaLink(
+        depCard,
+        `Depósito reserva — Lapa Casa Hostel`,
+        form.email || undefined,
+        origin,
+      );
+      stripeLink = res.data?.url;
+    } catch {
+      // Si falla, el mensaje igual se abre sin link de Stripe
+    } finally {
+      setIsWaLoading(false);
+    }
+    window.open(buildWaMsg(stripeLink), '_blank');
+  };
 
   // ─ Datos del resumen (Step 4) ─
   const summaryDates = (() => {
@@ -778,9 +804,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 <button className="he-btn-confirm" onClick={handleConfirm} disabled={isProcessing}>
                   {isProcessing ? '...' : t.btnConfirm}
                 </button>
-                <button className="he-btn-wa" onClick={() => window.open(waLink, '_blank')}>
+                <button className="he-btn-wa" onClick={handleWaClick} disabled={isWaLoading}>
                   <MessageCircle size={16} aria-hidden />
-                  {t.btnWhatsApp}
+                  {isWaLoading ? '...' : t.btnWhatsApp}
                 </button>
               </div>
             )}

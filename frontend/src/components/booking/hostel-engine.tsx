@@ -742,7 +742,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
 
                 <div className="he-ota">
                   <Tag size={14} aria-hidden />
-                  <span>{t.otaDirect} <strong>{fmtMoney(price.total * 0.15)}</strong> {t.otaVs}</span>
+                  <span>{t.directBanner}</span>
                 </div>
 
                 <div className="he-pay-methods">

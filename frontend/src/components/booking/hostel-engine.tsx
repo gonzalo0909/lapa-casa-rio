@@ -716,7 +716,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                         <div className="he-dep-amt">{fmtMoney(depositAmt)}</div>
                         {currency && <div className="he-conv">{convertBRL(depositAmt, currency)}</div>}
                         <div className="he-dep-note">
-                          {payMethod === 'card' ? t.pmCardTotal : '30% PIX'}
+                          {payMethod === 'card' ? t.pmCardTotal : '30%'}
                         </div>
                       </div>
                       <div className="he-dep-half">

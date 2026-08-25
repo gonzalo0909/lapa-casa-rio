@@ -761,12 +761,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     <div className="he-pm-info">
                       <div className="he-pm-name">
                         <Zap size={13} aria-hidden />{t.pmPix}
-                        <span className="he-pm-rec-badge">{t.pmPixRec}</span>
                       </div>
-                      <div className="he-pm-offer">{t.pmPixOffer}</div>
                       <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
                     </div>
-                    <span className="he-pm-instant">{t.pmPixApproval}</span>
                   </button>}
                   {/* ── Tarjeta ── */}
                   <button type="button" className={`he-pay-m${payMethod === 'card' ? ' selected' : ''}`} onClick={() => setPayMethod('card')}>
@@ -774,9 +771,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     <div className="he-pm-info">
                       <div className="he-pm-name">
                         <CreditCard size={13} aria-hidden />{t.pmCard}
-                        <span className="he-pm-fee-badge">{t.pmCardFee}</span>
                       </div>
-                      <div className="he-pm-offer" style={{ color:'rgba(255,255,255,.5)' }}>{t.pmCardNote}</div>
                       <div className="he-pm-detail">
                         {fmtMoney(Math.round(price.deposit * 1.10))} · {fmtMoney(Math.round((price.total - price.deposit) * 1.10))} {t.tAtCheckin}
                       </div>

@@ -97,6 +97,8 @@ export const T = {
     otaDirect:'Reservar direto economiza',otaVs:'em relação ao Airbnb/Booking',
     directBanner:'Preço direto garantido · Sem comissões · Confirmação imediata',
     errorBooking:'Erro ao criar reserva. Tente novamente.',
+    waGreet:'Olá! Quero reservar no Lapa Casa Hostel.',
+    waAwait:'Aguardo confirmação. Obrigado!',
   },
   es: {
     step1:'Fechas',step2:'Cuartos',step3:'Huésped',step4:'Resumen',
@@ -155,6 +157,8 @@ export const T = {
     otaDirect:'Reservar directo ahorra',otaVs:'vs Airbnb/Booking',
     directBanner:'Precio directo garantizado · Sin comisiones · Confirmación inmediata',
     errorBooking:'Error al crear la reserva. Inténtalo de nuevo.',
+    waGreet:'¡Hola! Quiero reservar en Lapa Casa Hostel.',
+    waAwait:'Quedo a la espera de confirmación. ¡Gracias!',
   },
   en: {
     step1:'Dates',step2:'Rooms',step3:'Guest',step4:'Summary',
@@ -213,6 +217,8 @@ export const T = {
     otaDirect:'Booking direct saves you',otaVs:'vs Airbnb/Booking',
     directBanner:'Best rate guaranteed · No platform fees · Instant confirmation',
     errorBooking:'Error creating booking. Please try again.',
+    waGreet:'Hello! I would like to book at Lapa Casa Hostel.',
+    waAwait:'Looking forward to your confirmation. Thank you!',
   },
   fr: {
     step1:'Dates',step2:'Chambres',step3:'Voyageur',step4:'Récapitulatif',
@@ -271,6 +277,8 @@ export const T = {
     otaDirect:'Réserver en direct économise',otaVs:'vs Airbnb/Booking',
     directBanner:'Meilleur tarif garanti · Sans commission · Confirmation immédiate',
     errorBooking:'Erreur lors de la réservation. Veuillez réessayer.',
+    waGreet:'Bonjour ! Je souhaite réserver au Lapa Casa Hostel.',
+    waAwait:'Dans l\'attente de votre confirmation. Merci !',
   },
   de: {
     step1:'Daten',step2:'Zimmer',step3:'Gast',step4:'Übersicht',
@@ -329,6 +337,8 @@ export const T = {
     otaDirect:'Direktbuchung spart',otaVs:'vs Airbnb/Booking',
     directBanner:'Bestpreis garantiert · Keine Provisionen · Sofortbestätigung',
     errorBooking:'Fehler bei der Buchungserstellung. Bitte erneut versuchen.',
+    waGreet:'Hallo! Ich möchte im Lapa Casa Hostel buchen.',
+    waAwait:'Ich freue mich auf Ihre Bestätigung. Vielen Dank!',
   },
   it: {
     step1:'Date',step2:'Camere',step3:'Ospite',step4:'Riepilogo',
@@ -387,6 +397,8 @@ export const T = {
     otaDirect:'Prenotare direttamente risparmia',otaVs:'vs Airbnb/Booking',
     directBanner:'Miglior tariffa garantita · Nessuna commissione · Conferma immediata',
     errorBooking:'Errore durante la creazione della prenotazione. Riprova.',
+    waGreet:'Ciao! Vorrei prenotare al Lapa Casa Hostel.',
+    waAwait:'In attesa della vostra conferma. Grazie!',
   },
 } as const;
 

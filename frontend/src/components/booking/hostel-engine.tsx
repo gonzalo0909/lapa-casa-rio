@@ -531,9 +531,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     const depositAmt = Math.round(price.deposit * mult);
     const remaining  = Math.round((price.total - price.deposit) * mult);
     const payInfo = payMethod === 'pix'
-      ? `\nPagamento: PIX\nChave PIX: lapalandiarj@gmail.com\nDepositar 30%: ${fmtMoney(depositAmt)}`
-      : `\nPagamento: Tarjeta de crédito (+10%)\nDepositar 30% (+10%): ${fmtMoney(depositAmt)}\n(Restante 70% no check-in: ${fmtMoney(remaining)})`;
-    const msg = encodeURIComponent(`${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}${payInfo}\n70% ${t.tAtCheckin}: ${fmtMoney(remaining)}\n\n${t.waAwait}`);
+      ? `\n💳 Pago: PIX (30% sin recargo)\n→ Depositar ${fmtMoney(depositAmt)} a lapalandiarj@gmail.com\n→ Restante ${fmtMoney(remaining)} en check-in`
+      : `\n💳 Pago: Tarjeta de crédito (+10%)\n→ Depósito ${fmtMoney(depositAmt)} vía Stripe (link por enviar)\n→ Restante ${fmtMoney(remaining)} en check-in`;
+    const msg = encodeURIComponent(`${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}${payInfo}\n\n${t.waAwait}`);
     return `https://wa.me/5521999999999?text=${msg}`;
   })();
 

@@ -482,7 +482,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     } finally {
       setIsProcessing(false);
     }
-  }, [form, beds, rooms, checkIn, checkOut, lang, t, totalBeds]);
+  }, [form, beds, rooms, checkIn, checkOut, lang, t, totalBeds, payMethod]);
 
   // ─ Timer 5 minutos ─
   const startTimer = useCallback(() => {
@@ -511,12 +511,12 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       const disc = price.disc > 0 ? ` (${price.disc * 100}% desc.)` : '';
       return {
         main: fmtMoney(price.total),
-        sub:  `${price.beds} ${price.beds === 1 ? t.tBed : t.tBeds} · ${price.nights} ${price.nights === 1 ? t.tNight : t.tNights2} · ${price.season.label}${disc}`,
+        sub:  `${price.beds} ${price.beds === 1 ? t.tBed : t.tBeds} · ${price.nights} ${price.nights === 1 ? t.tNight : t.tNights2}${disc}`,
       };
     }
     if (checkIn && !checkOut) return { main: t.tSelectCheckout, sub: t.tClickCheckout };
     const s = getSeason(TODAY.current);
-    return { main: fmtMoney(85 * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: `${s.label} ${t.tInProgress}` };
+    return { main: fmtMoney(85 * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
   })();
 
   // ─ Link WhatsApp ─
@@ -527,7 +527,13 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       const cnt = beds[r.id] ?? 0;
       return `${r.name}: ${cnt} ${cnt > 1 ? t.tBeds : t.tBed}`;
     }).join(', ');
-    const msg = encodeURIComponent(`${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n${t.tDepositNow} (30%): ${fmtMoney(price.deposit)}\n70% ${t.tAtCheckin}: ${fmtMoney(price.total - price.deposit)}\n\n${t.waAwait}`);
+    const mult       = payMethod === 'card' ? 1.10 : 1;
+    const depositAmt = Math.round(price.deposit * mult);
+    const remaining  = Math.round((price.total - price.deposit) * mult);
+    const payInfo = payMethod === 'pix'
+      ? `\nPagamento: PIX\nChave PIX: lapalandiarj@gmail.com\nDepositar 30%: ${fmtMoney(depositAmt)}`
+      : `\nPagamento: Tarjeta de crédito (+10%)\nDepositar 30% (+10%): ${fmtMoney(depositAmt)}\n(Restante 70% no check-in: ${fmtMoney(remaining)})`;
+    const msg = encodeURIComponent(`${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}${payInfo}\n70% ${t.tAtCheckin}: ${fmtMoney(remaining)}\n\n${t.waAwait}`);
     return `https://wa.me/5521999999999?text=${msg}`;
   })();
 
@@ -682,8 +688,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   <div className="he-sum-head">{t.sumPriceHead}</div>
                   <div className="he-sum-rows">
                     <div className="he-sum-row">
-                      <span>R$ 85/{t.tBed} × {price.season.mult}x ({price.season.label})</span>
                       <span>{fmtMoney(price.pbn)}/{t.tBed}/nt</span>
+                      <span>{price.beds} {price.beds === 1 ? t.tBed : t.tBeds} × {price.nights} {price.nights === 1 ? t.tNight : t.tNights2}</span>
                     </div>
                     <div className="he-sum-row">
                       <span>Subtotal ({price.beds} {t.tBeds} × {price.nights} {t.tNights2})</span>

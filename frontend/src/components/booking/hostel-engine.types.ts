@@ -105,7 +105,7 @@ export const T = {
     pmCardFee:'10% acréscimo com cartão',
     pmCardNote:'Nacional ou internacional',
     pmCardTotal:'Total com cartão',
-    pmNote:'PIX: sem acréscimo. Cartão: 10% adicional.',
+    pmNote:'PIX: 30% sem acréscimo · Cartão de crédito: 10% a mais',
     pmPixUnavailable:'Disponível apenas no Brasil',
   },
   es: {
@@ -173,7 +173,7 @@ export const T = {
     pmCardFee:'10% adicional con tarjeta',
     pmCardNote:'Nacional o internacional',
     pmCardTotal:'Total con tarjeta',
-    pmNote:'PIX: sin cargo. Tarjeta: 10% adicional.',
+    pmNote:'PIX: 30% sin recargo · Tarjeta de crédito: 10% extra',
     pmPixUnavailable:'Disponible solo en Brasil',
   },
   en: {
@@ -241,7 +241,7 @@ export const T = {
     pmCardFee:'10% added for card',
     pmCardNote:'Domestic or international',
     pmCardTotal:'Total with card',
-    pmNote:'PIX: no surcharge. Card: 10% added.',
+    pmNote:'PIX: 30% no surcharge · Credit card: 10% extra',
     pmPixUnavailable:'Available in Brazil only',
   },
   fr: {
@@ -309,7 +309,7 @@ export const T = {
     pmCardFee:'10% supplément carte',
     pmCardNote:'Nationale ou internationale',
     pmCardTotal:'Total avec carte',
-    pmNote:'PIX: sans frais. Carte: +10%.',
+    pmNote:'PIX: 30% sans frais · Carte de crédit: +10% en plus',
     pmPixUnavailable:'Disponible au Brésil uniquement',
   },
   de: {
@@ -377,7 +377,7 @@ export const T = {
     pmCardFee:'10% Aufpreis Karte',
     pmCardNote:'Inland oder Ausland',
     pmCardTotal:'Gesamt mit Karte',
-    pmNote:'PIX: ohne Aufpreis. Karte: +10%.',
+    pmNote:'PIX: 30% ohne Aufpreis · Kreditkarte: +10% extra',
     pmPixUnavailable:'Nur in Brasilien verfügbar',
   },
   it: {
@@ -445,7 +445,7 @@ export const T = {
     pmCardFee:'10% in più con carta',
     pmCardNote:'Nazionale o internazionale',
     pmCardTotal:'Totale con carta',
-    pmNote:'PIX: senza costi. Carta: +10%.',
+    pmNote:'PIX: 30% senza costi aggiuntivi · Carta di credito: +10% in più',
     pmPixUnavailable:'Disponibile solo in Brasile',
   },
 } as const;

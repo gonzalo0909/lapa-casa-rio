@@ -325,7 +325,13 @@ export const paymentAPI = {
   /**
    * Full payment history for a reservation
    */
-  getByReservation: (reservationId: string) => api.get(`/payments/reservation/${reservationId}`)
+  getByReservation: (reservationId: string) => api.get(`/payments/reservation/${reservationId}`),
+
+  /**
+   * Crea una Stripe Checkout Session (pago con tarjeta) y devuelve la URL de pago
+   */
+  stripeCheckout: (reservationId: string, frontendUrl: string) =>
+    api.post('/payments/stripe-checkout', { reservationId, frontendUrl }),
 };
 
 /**

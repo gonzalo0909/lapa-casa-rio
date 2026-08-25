@@ -88,6 +88,43 @@ export class StripeHandler {
     }
   }
 
+  /** Crea una Checkout Session de Stripe (página de pago hosteada por Stripe).
+   *  Devuelve la URL a la que se redirige/abre el huésped para pagar con tarjeta. */
+  async createCheckoutSession(data: {
+    amount: number;           // en BRL
+    description: string;
+    customerEmail: string;
+    reservationId: string;
+    successUrl: string;
+    cancelUrl: string;
+    metadata?: Record<string, string>;
+  }): Promise<{ sessionId: string; url: string }> {
+    if (!this.stripe) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new AppError('Pago con tarjeta no disponible en este momento', 503);
+      }
+      return { sessionId: `cs_test_${Date.now()}`, url: data.successUrl };
+    }
+    const amountCents = Math.round(data.amount * 100);
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'brl',
+          product_data: { name: data.description },
+          unit_amount: amountCents,
+        },
+        quantity: 1,
+      }],
+      customer_email: data.customerEmail,
+      metadata: { reservationId: data.reservationId, ...(data.metadata ?? {}) },
+      success_url: data.successUrl,
+      cancel_url: data.cancelUrl,
+    });
+    return { sessionId: session.id, url: session.url! };
+  }
+
   constructWebhookEvent(payload: Buffer | string, signature: string): Stripe.Event {
     if (!this.stripe || !this.webhookSecret) {
       throw new Error('Stripe webhook no configurado');

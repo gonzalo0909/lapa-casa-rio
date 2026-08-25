@@ -9,10 +9,59 @@ import { processDepositHandler } from './process-deposit';
 import { handleWebhookHandler } from './handle-webhook';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
+import { stripeHandler } from '../../lib/payments/stripe-handler';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
 const router = Router();
+
+// POST /payments/stripe-checkout — genera una Checkout Session de Stripe (pago con tarjeta)
+router.post('/stripe-checkout', async (req, res, next) => {
+  try {
+    const { reservationId, frontendUrl } = req.body as { reservationId: string; frontendUrl?: string };
+    if (!reservationId) {
+      res.status(400).json(ApiResponse.error('reservationId es requerido'));
+      return;
+    }
+
+    const booking = await bookingService.getBooking(reservationId);
+    if (!booking) {
+      res.status(404).json(ApiResponse.error('Reserva no encontrada', { reservationId }));
+      return;
+    }
+    if (booking.status === 'cancelled') {
+      res.status(400).json(ApiResponse.error('No se puede pagar una reserva cancelada'));
+      return;
+    }
+
+    const baseUrl = frontendUrl || process.env.FRONTEND_URL || 'https://lapacasario.com';
+    const depositAmount = Number(booking.deposit_amount);
+    const displayCode = `LCH-${reservationId.substring(0, 8).toUpperCase()}`;
+    const guestEmail = booking.guest?.email ?? '';
+
+    const session = await stripeHandler.createCheckoutSession({
+      amount: depositAmount,
+      description: `Depósito reserva ${displayCode} — Lapa Casa Hostel`,
+      customerEmail: guestEmail,
+      reservationId,
+      successUrl: `${baseUrl}/pt/hostel?paid=1&booking=${reservationId}`,
+      cancelUrl: `${baseUrl}/pt/hostel`,
+    });
+
+    logger.info('Stripe Checkout Session creada', { reservationId, sessionId: session.sessionId });
+    res.status(200).json(ApiResponse.success({
+      url: session.url,
+      sessionId: session.sessionId,
+      amount: depositAmount,
+      currency: 'BRL',
+    }, 'Checkout Session creada'));
+  } catch (error) {
+    logger.error('Error al crear Stripe Checkout Session', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    next(error);
+  }
+});
 
 // POST /payments/intent
 router.post('/intent', createPaymentIntentHandler);

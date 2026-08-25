@@ -99,6 +99,7 @@ export const T = {
     errorBooking:'Erro ao criar reserva. Tente novamente.',
     waGreet:'Olá! Quero reservar no Lapa Casa Hostel.',
     waAwait:'Aguardo confirmação. Obrigado!',
+    cardGoToPayment:'Ir para o pagamento com cartão →',
   },
   es: {
     step1:'Fechas',step2:'Cuartos',step3:'Huésped',step4:'Resumen',
@@ -159,6 +160,7 @@ export const T = {
     errorBooking:'Error al crear la reserva. Inténtalo de nuevo.',
     waGreet:'¡Hola! Quiero reservar en Lapa Casa Hostel.',
     waAwait:'Quedo a la espera de confirmación. ¡Gracias!',
+    cardGoToPayment:'Ir al pago con tarjeta →',
   },
   en: {
     step1:'Dates',step2:'Rooms',step3:'Guest',step4:'Summary',
@@ -219,6 +221,7 @@ export const T = {
     errorBooking:'Error creating booking. Please try again.',
     waGreet:'Hello! I would like to book at Lapa Casa Hostel.',
     waAwait:'Looking forward to your confirmation. Thank you!',
+    cardGoToPayment:'Go to card payment →',
   },
   fr: {
     step1:'Dates',step2:'Chambres',step3:'Voyageur',step4:'Récapitulatif',
@@ -279,6 +282,7 @@ export const T = {
     errorBooking:'Erreur lors de la réservation. Veuillez réessayer.',
     waGreet:'Bonjour ! Je souhaite réserver au Lapa Casa Hostel.',
     waAwait:'Dans l\'attente de votre confirmation. Merci !',
+    cardGoToPayment:'Accéder au paiement par carte →',
   },
   de: {
     step1:'Daten',step2:'Zimmer',step3:'Gast',step4:'Übersicht',
@@ -339,6 +343,7 @@ export const T = {
     errorBooking:'Fehler bei der Buchungserstellung. Bitte erneut versuchen.',
     waGreet:'Hallo! Ich möchte im Lapa Casa Hostel buchen.',
     waAwait:'Ich freue mich auf Ihre Bestätigung. Vielen Dank!',
+    cardGoToPayment:'Zur Kartenzahlung →',
   },
   it: {
     step1:'Date',step2:'Camere',step3:'Ospite',step4:'Riepilogo',
@@ -399,6 +404,7 @@ export const T = {
     errorBooking:'Errore durante la creazione della prenotazione. Riprova.',
     waGreet:'Ciao! Vorrei prenotare al Lapa Casa Hostel.',
     waAwait:'In attesa della vostra conferma. Grazie!',
+    cardGoToPayment:'Vai al pagamento con carta →',
   },
 } as const;
 

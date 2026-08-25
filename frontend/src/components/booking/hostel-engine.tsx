@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, CreditCard, Clock, Tag, Zap, MessageCircle, AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff } from 'lucide-react';
-import { bookingAPI, availabilityAPI } from '@/lib/api';
+import { bookingAPI, availabilityAPI, paymentAPI } from '@/lib/api';
 import { useCurrency, convertBRL } from '@/hooks/use-currency';
 import {
   Lang, Phase, PayMethod, RoomDef, FormState, FormErrors,
@@ -163,6 +163,12 @@ const CSS = `
 .he-booking-code{font-family:ui-monospace,'Cascadia Code',monospace;font-size:1.1rem;font-weight:700;letter-spacing:.12em;color:#A7DFB8;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;padding:.6rem 1.25rem;display:inline-block;margin-bottom:1.25rem}
 .he-pay-box{border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:1rem;display:inline-flex;flex-direction:column;align-items:center;gap:.5rem}
 .he-pix-qr{width:96px;height:96px;background:#0D1C12;border-radius:4px;display:flex;align-items:center;justify-content:center}
+.he-pix-qr-img{width:128px;height:128px;border-radius:6px;border:3px solid #fff;display:block}
+.he-pix-copy-btn{font-size:.72rem;font-weight:600;letter-spacing:.04em;padding:.35em .8em;border-radius:6px;border:1.5px solid #7BC47F;background:transparent;color:#7BC47F;cursor:pointer;transition:background .12s,color .12s}
+.he-pix-copy-btn:hover{background:#7BC47F;color:#0D1C12}
+.he-pix-key{font-size:.65rem;color:rgba(255,255,255,.55);margin-top:-.1rem}
+.he-stripe-link{font-size:.78rem;font-weight:700;padding:.4em 1em;border-radius:8px;background:#635BFF;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;transition:background .12s}
+.he-stripe-link:hover{background:#7B74FF}
 .he-pix-lbl{font-size:.68rem;color:rgba(255,255,255,.95);letter-spacing:.06em;text-transform:uppercase}
 .he-pix-amt{font-size:.95rem;font-weight:800;color:#7BC47F}
 .he-timer{font-size:.8rem;color:rgba(255,255,255,.95);margin-top:.25rem}
@@ -243,6 +249,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const [timerSecs, setTimerSecs]     = useState(300);
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingError, setBookingError] = useState('');
+  const [pixData, setPixData]           = useState<{ qrCode: string; qrCodeBase64: string } | null>(null);
+  const [pixCopied, setPixCopied]       = useState(false);
+  const [stripeUrl, setStripeUrl]       = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ─ Estado del formulario ─
@@ -430,10 +439,42 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         source: 'direct',
         guestGender: gender,
       });
-      const code = response.data?.booking?.id || response.data?.bookingId || 'LCH-' + Math.random().toString(36).slice(2,8).toUpperCase();
-      setBookingCode(code);
-      setPhase('success');
-      startTimer();
+
+      const reservationId: string = response.data?.booking?.id || response.data?.bookingId || '';
+      const displayCode = reservationId
+        ? 'LCH-' + reservationId.substring(0, 8).toUpperCase()
+        : 'LCH-' + Math.random().toString(36).slice(2,8).toUpperCase();
+      setBookingCode(displayCode);
+
+      if (payMethod === 'pix') {
+        // PIX: generar QR real via Mercado Pago
+        try {
+          const dep = await paymentAPI.processDeposit(reservationId, 'mercadopago');
+          const p = dep.data?.payment;
+          if (p?.qrCodeBase64 || p?.qrCode) {
+            setPixData({ qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' });
+          }
+        } catch {
+          // falla silenciosamente — igual se muestra la pantalla de éxito
+        }
+        setPhase('success');
+        startTimer();
+      } else {
+        // Tarjeta: Stripe Checkout Session — se abre en nueva pestaña
+        try {
+          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+          const checkout = await paymentAPI.stripeCheckout(reservationId, origin);
+          const url: string | undefined = checkout.data?.url;
+          if (url) {
+            setStripeUrl(url);
+            window.open(url, '_blank', 'noopener');
+          }
+        } catch {
+          // falla silenciosamente
+        }
+        setPhase('success');
+        startTimer();
+      }
     } catch (err: any) {
       setBookingError(err?.response?.data?.error || err?.message || t.errorBooking);
     } finally {
@@ -752,22 +793,58 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 {payMethod === 'pix' ? (
                   <>
                     <div className="he-pix-lbl">{t.pixDepLabel}</div>
-                    <div className="he-pix-qr">
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,8px)', gridTemplateRows:'repeat(7,8px)', gap:'1px' }}>
-                        {PIX_PAT.map((b, i) => <div key={i} style={{ background: b ? '#fff' : 'transparent', width:'8px', height:'8px' }} />)}
+                    {pixData?.qrCodeBase64 ? (
+                      /* QR real de Mercado Pago */
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                        alt="QR PIX"
+                        className="he-pix-qr-img"
+                      />
+                    ) : (
+                      /* fallback decorativo si MP no respondió */
+                      <div className="he-pix-qr">
+                        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,8px)', gridTemplateRows:'repeat(7,8px)', gap:'1px' }}>
+                          {PIX_PAT.map((b, i) => <div key={i} style={{ background: b ? '#fff' : 'transparent', width:'8px', height:'8px' }} />)}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
+                    {pixData?.qrCode && (
+                      <button
+                        type="button"
+                        className="he-pix-copy-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixData.qrCode).catch(() => {});
+                          setPixCopied(true);
+                          setTimeout(() => setPixCopied(false), 3000);
+                        }}
+                      >
+                        {pixCopied ? '✓ Código copiado' : 'Copiar código PIX'}
+                      </button>
+                    )}
+                    <div className="he-pix-key">{t.pixKey}</div>
                     <div className="he-timer">{t.timerLabel}: <strong>{timerStr}</strong></div>
                   </>
                 ) : (
                   <>
                     <div className="he-pix-lbl">{t.cardDepLabel}</div>
                     <div style={{ margin:'.4rem 0', display:'flex', justifyContent:'center' }}>
-                      <CreditCard size={40} color="#2A5234" aria-hidden />
+                      <CreditCard size={40} color="#7BC47F" aria-hidden />
                     </div>
                     <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
-                    <div style={{ fontSize:'.72rem', color:'#5A5E50', marginTop:'.2rem' }}>{t.cardInstruction}</div>
+                    {stripeUrl ? (
+                      <a
+                        href={stripeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="he-stripe-link"
+                      >
+                        {t.cardGoToPayment ?? 'Ir al pago con tarjeta →'}
+                      </a>
+                    ) : (
+                      <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.7)', marginTop:'.2rem', textAlign:'center' }}>{t.cardInstruction}</div>
+                    )}
                     <div className="he-timer">{t.timerLabel}: <strong>{timerStr}</strong></div>
                   </>
                 )}

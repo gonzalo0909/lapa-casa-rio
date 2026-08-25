@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, CreditCard, Clock, Tag, Zap, MessageCircle, AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff } from 'lucide-react';
+import { CheckCircle2, CreditCard, Clock, Zap, MessageCircle, AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff } from 'lucide-react';
 import { bookingAPI, availabilityAPI, paymentAPI } from '@/lib/api';
 import { useCurrency, convertBRL } from '@/hooks/use-currency';
 import {
@@ -132,17 +132,12 @@ const CSS = `
 .he-dep-lbl{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.95);margin-bottom:.2rem}
 .he-dep-amt{font-size:1.05rem;font-weight:800;color:#7BC47F}
 .he-dep-note{font-size:.65rem;color:rgba(255,255,255,.95);margin-top:.1rem}
-.he-ota{background:rgba(42,82,52,.3);border:1px solid rgba(123,196,127,.25);border-radius:8px;padding:.6rem .85rem;font-size:.75rem;color:#A7DFB8;margin-bottom:.85rem;display:flex;align-items:center;gap:.45rem}
 .he-pay-methods{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.85rem}
 .he-pay-m{display:flex;align-items:center;gap:.75rem;border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.65rem .9rem;cursor:pointer;transition:border-color .22s ease,background .22s ease,box-shadow .22s ease;background:rgba(255,255,255,.06);width:100%;text-align:left;font-family:inherit}
 .he-pay-m.selected{border-color:#7BC47F;background:rgba(123,196,127,.06);box-shadow:0 0 0 2px rgba(123,196,127,.12)}
 .he-pm-info{flex:1;min-width:0}
 .he-pm-name{font-size:.82rem;font-weight:700;color:#F0EDE0;display:flex;align-items:center;gap:.35rem}
 .he-pm-detail{font-size:.72rem;color:rgba(255,255,255,.95);margin-top:.1rem}
-.he-pm-instant{font-size:.62rem;font-weight:700;padding:.15em .5em;border-radius:4px;background:#D5E8D4;color:#1E5E40;white-space:nowrap;flex-shrink:0}
-.he-pm-offer{font-size:.68rem;color:#7BC47F;margin-top:.1rem;font-weight:500}
-.he-pm-rec-badge{font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#2A5234;color:#A7DFB8;padding:.1em .4em;border-radius:4px;border:1px solid #7BC47F;flex-shrink:0}
-.he-pm-fee-badge{font-size:.58rem;font-weight:700;letter-spacing:.04em;background:rgba(200,135,10,.15);color:#C8870A;padding:.1em .4em;border-radius:4px;border:1px solid rgba(200,135,10,.35);flex-shrink:0;white-space:nowrap}
 .he-btn-confirm{padding:.78rem 1.5rem;border-radius:10px;font-size:1.05rem;font-weight:700;background:linear-gradient(135deg,#2A5234 0%,#35673F 100%);color:#fff;width:100%;display:block;text-align:center;letter-spacing:.02em;cursor:pointer;border:none;font-family:inherit;transition:background .22s ease,transform .15s ease,box-shadow .22s ease}
 .he-btn-confirm:hover:not(:disabled){background:linear-gradient(135deg,#33623E 0%,#3E7448 100%);transform:translateY(-1px);box-shadow:0 6px 20px rgba(42,82,52,.45)}
 .he-btn-confirm:active:not(:disabled){transform:translateY(0)}
@@ -154,7 +149,6 @@ const CSS = `
 .he-price-sub{font-size:.68rem;color:rgba(255,255,255,.95)}
 .he-conv{font-size:.65rem;color:rgba(255,255,255,.60);font-weight:500;margin-top:.1rem;font-variant-numeric:tabular-nums}
 .he-conv-inline{font-size:.72rem;color:rgba(255,255,255,.55);font-weight:400;margin-left:.35rem;font-variant-numeric:tabular-nums}
-.he-direct-banner{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem .85rem;background:rgba(42,82,52,.35);border-bottom:1px solid rgba(123,196,127,.2);font-size:.72rem;font-weight:600;color:#A7DFB8;letter-spacing:.02em;text-align:center}
 .he-foot-btns{display:flex;gap:.5rem;flex-shrink:0;margin-left:auto}
 .he-btn-back{padding:.55rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;color:rgba(255,255,255,.70);border:1.5px solid rgba(255,255,255,.20);background:rgba(255,255,255,.06);cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
 .he-btn-back:hover{border-color:#7BC47F;color:#7BC47F}
@@ -616,12 +610,6 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               ))}
             </div>
 
-            {/* Banner precio directo */}
-            <div className="he-direct-banner">
-              <Tag size={12} aria-hidden />
-              {t.directBanner}
-            </div>
-
             {toast && <div className="he-toast">{toast}</div>}
 
             {/* Step 1 — Calendario */}
@@ -747,11 +735,6 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     <div className="he-sum-row"><span>{t.tCountryLabel}</span><span>{form.country}</span></div>
                     <div className="he-sum-row"><span>{t.lblArrival}</span><span>{form.arrival}</span></div>
                   </div>
-                </div>
-
-                <div className="he-ota">
-                  <Tag size={14} aria-hidden />
-                  <span>{t.directBanner}</span>
                 </div>
 
                 <div className="he-pay-methods">

@@ -1,0 +1,242 @@
+<!-- lapa-casa-hostel/backend/src/admin/offers.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ofertas de Apartamentos — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:8px 10px; border-bottom:2px solid var(--border); font-weight:600; color:var(--text-muted); }
+  td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+  .badge-green  { background:#dcfce7; color:#166534; }
+  .badge-gray   { background:#f3f4f6; color:#6b7280; }
+  .offer-form { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:20px; }
+  .offer-form h3 { margin:0 0 12px; font-size:14px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .form-row.three { grid-template-columns:1fr 1fr 1fr; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:500; }
+  label input, label select { padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; }
+  .msg { font-size:13px; padding:8px 12px; border-radius:6px; margin-bottom:12px; display:none; }
+  .msg.ok  { background:#dcfce7; color:#166534; display:block; }
+  .msg.err { background:#fee2e2; color:#991b1b; display:block; }
+  .row-actions button { padding:4px 10px; font-size:12px; border:1px solid var(--border); background:var(--bg); border-radius:4px; cursor:pointer; margin-left:4px; }
+  .row-actions button:hover { background:var(--border); }
+  .row-actions button.danger { border-color:#fca5a5; color:var(--danger); }
+  .row-actions button.danger:hover { background:#fee2e2; }
+  .code-chip { font-family:monospace; background:#f3f4f6; padding:2px 6px; border-radius:4px; font-size:12px; }
+  .apt-checks { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .apt-checks label { flex-direction:row; align-items:center; gap:6px; font-weight:normal; }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+
+  <div class="card">
+    <h2>🏷️ Ofertas de Apartamentos</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;">
+      Códigos de descuento para apartamentos. Se aplican en el motor de reservas al elegir fechas.
+    </p>
+
+    <div class="offer-form">
+      <h3 id="form-title">+ Nueva oferta</h3>
+      <div id="form-msg" class="msg"></div>
+
+      <div class="form-row three">
+        <label>Código (mayúsculas)
+          <input type="text" id="of-code" placeholder="CARNAVAL25" style="text-transform:uppercase">
+        </label>
+        <label>Descripción
+          <input type="text" id="of-label" placeholder="Carnaval 2025 — 15% off">
+        </label>
+        <label>Descuento (%)
+          <input type="number" id="of-discount" min="1" max="99" step="1" placeholder="15">
+        </label>
+      </div>
+
+      <div class="form-row">
+        <label>Válido desde
+          <input type="date" id="of-from">
+        </label>
+        <label>Válido hasta
+          <input type="date" id="of-to">
+        </label>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:6px;">Apartamentos incluidos</div>
+        <div class="apt-checks" id="apt-checks">Cargando…</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+        <label style="flex-direction:row;align-items:center;gap:8px;font-weight:normal;">
+          <input type="checkbox" id="of-active" checked> Activa
+        </label>
+      </div>
+
+      <input type="hidden" id="of-editing-id">
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveOffer()" style="padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">
+          Guardar oferta
+        </button>
+        <button onclick="resetForm()" style="padding:8px 14px;border:1px solid var(--border);background:var(--bg);border-radius:6px;cursor:pointer;font-size:13px;">
+          Cancelar
+        </button>
+      </div>
+    </div>
+
+    <div id="list-msg" class="msg"></div>
+    <table id="offers-table">
+      <thead><tr>
+        <th>Código</th><th>Descripción</th><th>Descuento</th>
+        <th>Desde</th><th>Hasta</th><th>Estado</th><th>Acciones</th>
+      </tr></thead>
+      <tbody><tr><td colspan="7" style="color:#888">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script>
+let offersData = [];
+let aptList = [];
+
+// Apartamentos conocidos (igual que en el motor de reservas)
+const KNOWN_APTS = [
+  { id:'apt-1', label:'Apt. 1' }, { id:'apt-2', label:'Apt. 2' },
+  { id:'apt-3', label:'Apt. 3' }, { id:'apt-4', label:'Apt. 4' },
+  { id:'apt-5', label:'Apt. 5' }, { id:'apt-6', label:'Apt. 6' },
+  { id:'apt-7', label:'Apt. 7' }, { id:'apt-8', label:'Apt. 8' },
+  { id:'apt-9', label:'Apt. 9' }, { id:'apt-10', label:'Apt. 10' },
+];
+
+(async () => {
+  await requireAuth();
+  renderNav('offers');
+  renderAptChecks(KNOWN_APTS);
+  await loadOffers();
+})();
+
+function renderAptChecks(apts) {
+  document.getElementById('apt-checks').innerHTML = apts.map(a =>
+    `<label><input type="checkbox" class="apt-cb" value="${escapeHtml(a.id)}" checked> ${escapeHtml(a.label)}</label>`
+  ).join('');
+}
+
+async function loadOffers() {
+  try {
+    offersData = await apiFetch('/admin/offers') || [];
+    renderTable();
+  } catch(e) {
+    showMsg(document.getElementById('list-msg'), e.message, 'err');
+  }
+}
+
+function renderTable() {
+  const tbody = document.querySelector('#offers-table tbody');
+  if (!offersData.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#888">Sin ofertas creadas</td></tr>';
+    return;
+  }
+  tbody.innerHTML = offersData.map(o => `
+    <tr>
+      <td><span class="code-chip">${escapeHtml(o.code)}</span></td>
+      <td>${escapeHtml(o.label || '—')}</td>
+      <td><b>${o.discount_percent}%</b></td>
+      <td>${o.valid_from ? fmtDate(o.valid_from) : '—'}</td>
+      <td>${o.valid_to   ? fmtDate(o.valid_to)   : '—'}</td>
+      <td><span class="badge ${o.is_active ? 'badge-green' : 'badge-gray'}">${o.is_active ? 'Activa' : 'Inactiva'}</span></td>
+      <td class="row-actions">
+        <button onclick="editOffer('${o.id}')">Editar</button>
+        <button class="danger" onclick="deleteOffer('${o.id}')">Eliminar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function editOffer(id) {
+  const o = offersData.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('of-editing-id').value = id;
+  document.getElementById('of-code').value     = o.code;
+  document.getElementById('of-label').value    = o.label || '';
+  document.getElementById('of-discount').value = o.discount_percent;
+  document.getElementById('of-from').value     = o.valid_from?.slice(0,10) || '';
+  document.getElementById('of-to').value       = o.valid_to?.slice(0,10)   || '';
+  document.getElementById('of-active').checked = !!o.is_active;
+  // Marcar apartamentos
+  const ids = o.apartment_ids || [];
+  document.querySelectorAll('.apt-cb').forEach(cb => {
+    cb.checked = ids.length === 0 || ids.includes(cb.value);
+  });
+  document.getElementById('form-title').textContent = '✏️ Editar oferta';
+}
+
+function resetForm() {
+  document.getElementById('of-editing-id').value = '';
+  document.getElementById('of-code').value     = '';
+  document.getElementById('of-label').value    = '';
+  document.getElementById('of-discount').value = '';
+  document.getElementById('of-from').value     = '';
+  document.getElementById('of-to').value       = '';
+  document.getElementById('of-active').checked = true;
+  document.querySelectorAll('.apt-cb').forEach(cb => { cb.checked = true; });
+  document.getElementById('form-title').textContent = '+ Nueva oferta';
+  showMsg(document.getElementById('form-msg'), '', '');
+}
+
+async function saveOffer() {
+  const msg = document.getElementById('form-msg');
+  const editId = document.getElementById('of-editing-id').value;
+  const aptIds = Array.from(document.querySelectorAll('.apt-cb:checked')).map(cb => cb.value);
+  const body = {
+    code:             document.getElementById('of-code').value.toUpperCase(),
+    label:            document.getElementById('of-label').value,
+    discount_percent: +document.getElementById('of-discount').value,
+    valid_from:       document.getElementById('of-from').value || null,
+    valid_to:         document.getElementById('of-to').value   || null,
+    apartment_ids:    aptIds,
+    is_active:        document.getElementById('of-active').checked,
+  };
+  if (!body.code || !body.discount_percent) {
+    return showMsg(msg, 'Código y descuento son obligatorios', 'err');
+  }
+  try {
+    if (editId) {
+      await apiFetch(`/admin/offers/${editId}`, { method:'PUT', body:JSON.stringify(body) });
+    } else {
+      await apiFetch('/admin/offers', { method:'POST', body:JSON.stringify(body) });
+    }
+    showMsg(msg, '✅ Guardado', 'ok');
+    resetForm();
+    await loadOffers();
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  }
+}
+
+async function deleteOffer(id) {
+  if (!confirm('¿Eliminar esta oferta?')) return;
+  try {
+    await apiFetch(`/admin/offers/${id}`, { method:'DELETE' });
+    await loadOffers();
+  } catch(e) {
+    showMsg(document.getElementById('list-msg'), e.message, 'err');
+  }
+}
+
+function showMsg(el, text, type) {
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg ' + (type || '');
+  if (!type) el.style.display = 'none';
+}
+</script>
+</body>
+</html>

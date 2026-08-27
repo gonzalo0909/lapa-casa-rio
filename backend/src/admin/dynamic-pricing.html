@@ -1,0 +1,432 @@
+<!-- lapa-casa-hostel/backend/src/admin/dynamic-pricing.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precios Dinámicos — Admin Lapa Casa Hostel</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .tabs-inner { display:flex; gap:4px; margin-bottom:20px; flex-wrap:wrap; }
+  .tabs-inner button {
+    padding:8px 16px; border:1px solid var(--border); background:var(--bg);
+    border-radius:6px; cursor:pointer; font-size:13px; color:var(--text-muted);
+  }
+  .tabs-inner button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:8px 10px; border-bottom:2px solid var(--border); font-weight:600; color:var(--text-muted); }
+  td { padding:8px 10px; border-bottom:1px solid var(--border); }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+  .badge-green { background:#dcfce7; color:#166534; }
+  .badge-gray  { background:#f3f4f6; color:#6b7280; }
+  .badge-blue  { background:#dbeafe; color:#1e40af; }
+  .badge-purple{ background:#ede9fe; color:#5b21b6; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-row.three { grid-template-columns:1fr 1fr 1fr; }
+  .form-row.four  { grid-template-columns:1fr 1fr 1fr 1fr; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:500; }
+  label input, label select { padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; }
+  .msg { font-size:13px; padding:8px 12px; border-radius:6px; margin-bottom:12px; display:none; }
+  .msg.ok  { background:#dcfce7; color:#166534; display:block; }
+  .msg.err { background:#fee2e2; color:#991b1b; display:block; }
+  .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-day { padding:6px 4px; border-radius:6px; font-size:11px; text-align:center; background:var(--bg); }
+  .cal-day .date { font-weight:600; color:var(--text-muted); }
+  .cal-day .price { font-weight:700; font-size:12px; }
+  .cal-day .occ { font-size:10px; color:var(--text-muted); }
+  .row-actions button { padding:4px 10px; font-size:12px; border:1px solid var(--border); background:var(--bg); border-radius:4px; cursor:pointer; margin-left:4px; }
+  .row-actions button:hover { background:var(--border); }
+  .row-actions button.danger { border-color:#fca5a5; color:var(--danger); }
+  .row-actions button.danger:hover { background:#fee2e2; }
+  .run-btn { background:var(--accent); color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600; }
+  .run-btn:disabled { opacity:0.5; cursor:default; }
+  .event-form { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:16px; }
+  .event-form h3 { margin:0 0 12px; font-size:14px; }
+  .filter-bar { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-bar select, .filter-bar input { padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 style="margin:0">🤖 Precios Dinámicos</h2>
+      <button class="run-btn" id="run-bot-btn">▶ Ejecutar bot ahora</button>
+    </div>
+    <div id="run-msg" class="msg"></div>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;">
+      El bot corre automáticamente a las 02:00 UTC todos los días. Calcula precios según
+      ocupación, proximidad de fechas, día de semana y eventos especiales.
+    </p>
+
+    <div class="tabs-inner">
+      <button class="active" onclick="showTab('config')">⚙️ Configuración</button>
+      <button onclick="showTab('events')">🎉 Eventos</button>
+      <button onclick="showTab('calendar')">📅 Calendario</button>
+    </div>
+
+    <!-- ── Config ──────────────────────────────────────────────────── -->
+    <div id="tab-config" class="tab-panel active">
+      <div id="config-msg" class="msg"></div>
+      <form id="config-form" class="stack">
+        <div class="form-row">
+          <label>Precio base hostel (BRL/cama)
+            <input type="number" id="base-hostel" min="0" step="0.01">
+          </label>
+          <label>Precio base apartamento (BRL/noche)
+            <input type="number" id="base-apt" min="0" step="0.01">
+          </label>
+        </div>
+        <div class="form-row four" style="margin-top:12px;">
+          <label>Factor ocupación (peso)
+            <input type="number" id="w-occ" min="0" max="1" step="0.05">
+          </label>
+          <label>Factor proximidad (peso)
+            <input type="number" id="w-prox" min="0" max="1" step="0.05">
+          </label>
+          <label>Factor día semana (peso)
+            <input type="number" id="w-dow" min="0" max="1" step="0.05">
+          </label>
+          <label>Factor evento (peso)
+            <input type="number" id="w-event" min="0" max="1" step="0.05">
+          </label>
+        </div>
+        <div class="form-row" style="margin-top:12px;">
+          <label>Precio mínimo hostel (BRL)
+            <input type="number" id="min-hostel" min="0" step="0.01">
+          </label>
+          <label>Precio máximo hostel (BRL)
+            <input type="number" id="max-hostel" min="0" step="0.01">
+          </label>
+        </div>
+        <div class="form-row" style="margin-top:12px;">
+          <label>Precio mínimo apartamento (BRL)
+            <input type="number" id="min-apt" min="0" step="0.01">
+          </label>
+          <label>Precio máximo apartamento (BRL)
+            <input type="number" id="max-apt" min="0" step="0.01">
+          </label>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px;">
+          <label style="flex-direction:row;align-items:center;gap:8px;font-weight:normal;">
+            <input type="checkbox" id="bot-enabled"> Bot habilitado
+          </label>
+        </div>
+        <button type="submit" style="margin-top:16px;padding:9px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;align-self:flex-start;">
+          Guardar configuración
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Events ─────────────────────────────────────────────────── -->
+    <div id="tab-events" class="tab-panel">
+      <div class="event-form">
+        <h3 id="event-form-title">+ Nuevo evento</h3>
+        <div id="event-msg" class="msg"></div>
+        <div class="form-row three">
+          <label>Nombre <input type="text" id="ev-name" placeholder="Rock in Rio 2026"></label>
+          <label>Desde <input type="date" id="ev-from"></label>
+          <label>Hasta  <input type="date" id="ev-to"></label>
+        </div>
+        <div class="form-row" style="margin-top:12px;">
+          <label>Factor de precio (ej: 1.5 = +50%)
+            <input type="number" id="ev-factor" min="0.5" max="5" step="0.05" value="1.5">
+          </label>
+          <label>Aplica a
+            <select id="ev-applies">
+              <option value="all">Hostel + Apartamentos</option>
+              <option value="hostel">Solo Hostel</option>
+              <option value="apartment">Solo Apartamentos</option>
+            </select>
+          </label>
+        </div>
+        <input type="hidden" id="ev-editing-id">
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button onclick="saveEvent()" style="padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">
+            Guardar evento
+          </button>
+          <button onclick="resetEventForm()" style="padding:8px 14px;border:1px solid var(--border);background:var(--bg);border-radius:6px;cursor:pointer;font-size:13px;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <div id="events-msg" class="msg"></div>
+      <table id="events-table">
+        <thead><tr>
+          <th>Nombre</th><th>Desde</th><th>Hasta</th>
+          <th>Factor</th><th>Aplica a</th><th>Acciones</th>
+        </tr></thead>
+        <tbody><tr><td colspan="6" style="color:#888">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- ── Calendar ───────────────────────────────────────────────── -->
+    <div id="tab-calendar" class="tab-panel">
+      <div class="filter-bar">
+        <label style="flex-direction:row;align-items:center;gap:6px;font-weight:normal;">
+          Mes: <input type="month" id="cal-month">
+        </label>
+        <select id="cal-type">
+          <option value="hostel">Hostel</option>
+          <option value="apartment">Apartamento</option>
+        </select>
+        <button onclick="loadCalendar()" style="padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">Ver</button>
+      </div>
+      <div id="cal-msg" class="msg"></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-bottom:8px;">
+        <b style="font-size:11px;color:var(--text-muted)">Dom</b>
+        <b style="font-size:11px;color:var(--text-muted)">Lun</b>
+        <b style="font-size:11px;color:var(--text-muted)">Mar</b>
+        <b style="font-size:11px;color:var(--text-muted)">Mié</b>
+        <b style="font-size:11px;color:var(--text-muted)">Jue</b>
+        <b style="font-size:11px;color:var(--text-muted)">Vie</b>
+        <b style="font-size:11px;color:var(--text-muted)">Sáb</b>
+      </div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+    </div>
+  </div>
+
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script>
+(async () => {
+  await requireAuth();
+  renderNav('dynamic-pricing');
+  await loadConfig();
+  await loadEvents();
+  // tab calendar: mes actual por defecto
+  const now = new Date();
+  document.getElementById('cal-month').value = now.toISOString().slice(0,7);
+
+  document.getElementById('run-bot-btn').addEventListener('click', runBot);
+  document.getElementById('config-form').addEventListener('submit', saveConfig);
+})();
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tabs-inner button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Run bot ─────────────────────────────────────────────────────────────────
+async function runBot() {
+  const btn = document.getElementById('run-bot-btn');
+  const msg = document.getElementById('run-msg');
+  btn.disabled = true;
+  btn.textContent = '⏳ Ejecutando...';
+  showMsg(msg, '', '');
+  try {
+    const data = await apiFetch('/admin/dynamic-pricing/run', { method: 'POST' });
+    showMsg(msg, `✅ Bot ejecutado — ${data?.processed ?? ''} precios calculados`, 'ok');
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Ejecutar bot ahora';
+  }
+}
+
+// ── Config ───────────────────────────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const d = await apiFetch('/admin/dynamic-pricing/config');
+    if (!d) return;
+    document.getElementById('base-hostel').value = d.base_price_hostel ?? 85;
+    document.getElementById('base-apt').value    = d.base_price_apartment ?? 150;
+    document.getElementById('w-occ').value   = d.weight_occupancy ?? 0.4;
+    document.getElementById('w-prox').value  = d.weight_proximity ?? 0.3;
+    document.getElementById('w-dow').value   = d.weight_day_of_week ?? 0.15;
+    document.getElementById('w-event').value = d.weight_event ?? 0.15;
+    document.getElementById('min-hostel').value = d.min_price_hostel ?? 50;
+    document.getElementById('max-hostel').value = d.max_price_hostel ?? 300;
+    document.getElementById('min-apt').value    = d.min_price_apartment ?? 100;
+    document.getElementById('max-apt').value    = d.max_price_apartment ?? 800;
+    document.getElementById('bot-enabled').checked = !!d.is_enabled;
+  } catch(e) {
+    showMsg(document.getElementById('config-msg'), e.message, 'err');
+  }
+}
+
+async function saveConfig(e) {
+  e.preventDefault();
+  const msg = document.getElementById('config-msg');
+  try {
+    await apiFetch('/admin/dynamic-pricing/config', {
+      method: 'PUT',
+      body: JSON.stringify({
+        base_price_hostel:    +document.getElementById('base-hostel').value,
+        base_price_apartment: +document.getElementById('base-apt').value,
+        weight_occupancy:     +document.getElementById('w-occ').value,
+        weight_proximity:     +document.getElementById('w-prox').value,
+        weight_day_of_week:   +document.getElementById('w-dow').value,
+        weight_event:         +document.getElementById('w-event').value,
+        min_price_hostel:     +document.getElementById('min-hostel').value,
+        max_price_hostel:     +document.getElementById('max-hostel').value,
+        min_price_apartment:  +document.getElementById('min-apt').value,
+        max_price_apartment:  +document.getElementById('max-apt').value,
+        is_enabled:           document.getElementById('bot-enabled').checked,
+      })
+    });
+    showMsg(msg, '✅ Configuración guardada', 'ok');
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  }
+}
+
+// ── Events ───────────────────────────────────────────────────────────────────
+let eventsData = [];
+
+async function loadEvents() {
+  const msg = document.getElementById('events-msg');
+  try {
+    eventsData = await apiFetch('/admin/dynamic-pricing/events') || [];
+    renderEventsTable();
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  }
+}
+
+function renderEventsTable() {
+  const appliesLabel = { all:'Hostel + Apts', hostel:'Solo Hostel', apartment:'Solo Apts' };
+  const tbody = document.querySelector('#events-table tbody');
+  if (!eventsData.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#888">Sin eventos cargados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = eventsData.map(ev => `
+    <tr>
+      <td>${escapeHtml(ev.name)}</td>
+      <td>${fmtDate(ev.start_date)}</td>
+      <td>${fmtDate(ev.end_date)}</td>
+      <td><b>×${(+ev.price_factor).toFixed(2)}</b></td>
+      <td><span class="badge badge-blue">${appliesLabel[ev.applies_to] || ev.applies_to}</span></td>
+      <td class="row-actions">
+        <button onclick="editEvent('${ev.id}')">Editar</button>
+        <button class="danger" onclick="deleteEvent('${ev.id}')">Eliminar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function editEvent(id) {
+  const ev = eventsData.find(e => e.id === id);
+  if (!ev) return;
+  document.getElementById('ev-editing-id').value = id;
+  document.getElementById('ev-name').value   = ev.name;
+  document.getElementById('ev-from').value   = ev.start_date?.slice(0,10) || '';
+  document.getElementById('ev-to').value     = ev.end_date?.slice(0,10) || '';
+  document.getElementById('ev-factor').value = ev.price_factor;
+  document.getElementById('ev-applies').value= ev.applies_to || 'all';
+  document.getElementById('event-form-title').textContent = '✏️ Editar evento';
+}
+
+function resetEventForm() {
+  document.getElementById('ev-editing-id').value = '';
+  document.getElementById('ev-name').value   = '';
+  document.getElementById('ev-from').value   = '';
+  document.getElementById('ev-to').value     = '';
+  document.getElementById('ev-factor').value = '1.5';
+  document.getElementById('ev-applies').value= 'all';
+  document.getElementById('event-form-title').textContent = '+ Nuevo evento';
+  showMsg(document.getElementById('event-msg'), '', '');
+}
+
+async function saveEvent() {
+  const msg = document.getElementById('event-msg');
+  const editId = document.getElementById('ev-editing-id').value;
+  const body = {
+    name:         document.getElementById('ev-name').value,
+    start_date:   document.getElementById('ev-from').value,
+    end_date:     document.getElementById('ev-to').value,
+    price_factor: +document.getElementById('ev-factor').value,
+    applies_to:   document.getElementById('ev-applies').value,
+  };
+  try {
+    if (editId) {
+      await apiFetch(`/admin/dynamic-pricing/events/${editId}`, { method:'PUT', body:JSON.stringify(body) });
+    } else {
+      await apiFetch('/admin/dynamic-pricing/events', { method:'POST', body:JSON.stringify(body) });
+    }
+    showMsg(msg, '✅ Guardado', 'ok');
+    resetEventForm();
+    await loadEvents();
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('¿Eliminar este evento?')) return;
+  const msg = document.getElementById('events-msg');
+  try {
+    await apiFetch(`/admin/dynamic-pricing/events/${id}`, { method:'DELETE' });
+    await loadEvents();
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  }
+}
+
+// ── Calendar ─────────────────────────────────────────────────────────────────
+async function loadCalendar() {
+  const msg = document.getElementById('cal-msg');
+  const month = document.getElementById('cal-month').value;
+  const type  = document.getElementById('cal-type').value;
+  showMsg(msg, '', '');
+  try {
+    const data = await apiFetch(`/admin/dynamic-pricing/calendar?month=${month}&type=${type}`);
+    renderCalendar(data || [], month);
+  } catch(e) {
+    showMsg(msg, e.message, 'err');
+  }
+}
+
+function renderCalendar(entries, month) {
+  const grid = document.getElementById('calendar-grid');
+  const map = {};
+  entries.forEach(e => { map[e.date] = e; });
+
+  const [year, m] = month.split('-').map(Number);
+  const firstDay = new Date(year, m-1, 1).getDay();
+  const daysInMonth = new Date(year, m, 0).getDate();
+
+  let html = '';
+  // Empty cells before month start
+  for (let i = 0; i < firstDay; i++) html += '<div></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${month}-${String(d).padStart(2,'0')}`;
+    const entry = map[dateStr];
+    const pct = entry?.occupancy_pct != null ? Math.round(entry.occupancy_pct) : null;
+    const color = pct == null ? '#f9f9f9'
+      : pct >= 80 ? '#fee2e2'
+      : pct >= 50 ? '#fef9c3'
+      : '#dcfce7';
+    html += `
+      <div class="cal-day" style="background:${color}">
+        <div class="date">${d}</div>
+        ${entry ? `<div class="price">R$${Math.round(entry.final_price ?? entry.base_price)}</div>` : '<div class="price" style="color:#ccc">—</div>'}
+        ${pct != null ? `<div class="occ">${pct}%</div>` : ''}
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showMsg(el, text, type) {
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg ' + (type || '');
+  if (!type) el.style.display = 'none';
+}
+</script>
+</body>
+</html>

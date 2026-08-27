@@ -65,7 +65,7 @@ router.post('/', async (req, res, next) => {
 
     res.status(200).json(
       ApiResponse.success(
-        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
+        { token, refreshToken, expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
         'Login exitoso'
       )
     );

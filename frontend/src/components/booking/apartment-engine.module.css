@@ -316,6 +316,25 @@
 .guestsDeclAlert { display: flex; align-items: flex-start; gap: .4rem; margin-top: .75rem; padding: .5rem .65rem; background: var(--success-bg); border-radius: 7px; font-size: .72rem; color: var(--success-fg); line-height: 1.4; }
 .guestsDeclAlert svg { flex-shrink: 0; margin-top: .05rem; }
 
+/* ── Document photo upload ────────────────────────────────── */
+.docUploadSection { background: var(--bg-subtle); border: 1.5px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1.25rem; }
+.docUploadTitle { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-muted); margin-bottom: .35rem; }
+.docUploadNote { font-size: .78rem; color: var(--fg-muted); margin-bottom: .7rem; }
+.docUploadSlots { display: flex; flex-direction: column; gap: .5rem; }
+.docUploadSlot { display: flex; align-items: center; gap: .5rem; }
+.docUploadInput { display: none; }
+.docUploadBtn { flex: 1; display: flex; align-items: center; gap: .5rem; padding: .55rem .85rem; border-radius: 8px; border: 1.5px dashed var(--border); background: var(--bg-card); color: var(--fg-muted); font-size: .82rem; cursor: pointer; transition: border-color .15s, background .15s; text-align: left; }
+.docUploadBtn:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.docUploadSlotFilled .docUploadBtn { border-style: solid; border-color: var(--success-border, #16a34a); background: var(--success-bg); color: var(--success-fg); }
+.docUploadCheckIcon { color: var(--success-fg); flex-shrink: 0; }
+.docUploadFileName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+.docUploadClear { flex-shrink: 0; padding: .35rem; border: none; background: none; color: var(--fg-muted); cursor: pointer; border-radius: 4px; }
+.docUploadClear:hover { color: var(--danger, #dc2626); }
+.docUploadFormats { font-size: .7rem; color: var(--fg-muted); margin-top: .5rem; }
+
+/* ── Arras note in cancel policy ─────────────────────────── */
+.cancelArrasNote { font-size: .72rem; color: var(--fg-muted); margin-top: .65rem; padding-top: .5rem; border-top: 1px solid var(--border); line-height: 1.5; }
+
 .rulesConfirm { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1.25rem; }
 .rulesConfirmTitle { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--warn-fg); margin-bottom: .6rem; }
 .rulesConfirmList { display: flex; flex-direction: column; gap: .4rem; }

@@ -6,12 +6,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Tag, MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
   Ban, CigaretteOff, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
-  Users, ShieldCheck, Trash2,
+  Users, ShieldCheck, Trash2, Upload, Camera,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { CHECKIN_TIMES } from './apartment-engine.types';
@@ -62,6 +62,10 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // ── Estado local ───────────────────────────────────────────────────────────
   const [cancelOpen, setCancelOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  /** Fotos de documentos: [titular, acompanhante] */
+  const [docPhotos, setDocPhotos] = useState<[File | null, File | null]>([null, null]);
+  const photoInputTitular = useRef<HTMLInputElement>(null);
+  const photoInputCompanion = useRef<HTMLInputElement>(null);
 
   // ── Cálculos derivados de props (variables locales, no estado) ─────────────
   const totalPrice = selectedApartment.priceTotal;
@@ -336,7 +340,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             />
           </div>
 
-          {/* Documento (CPF o pasaporte) */}
+          {/* Documento (CPF, pasaporte o doc. estrangeiro) */}
           <div className={styles.formField}>
             <label htmlFor="apt-guest-document">
               {t('documentLabel')} <span className={styles.req}>*</span>
@@ -344,8 +348,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <input
               id="apt-guest-document"
               type="text"
-              placeholder="000.000.000-00"
-              maxLength={14}
+              placeholder={t('documentPlaceholder')}
+              maxLength={20}
               autoComplete="off"
               value={guestForm.document}
               onChange={(e) =>
@@ -422,16 +426,15 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             </div>
             <p className={styles.guestsDeclNote}>{t('guestDeclarationNote')}</p>
 
-            {/* Titular — solo lectura, datos del form principal */}
+            {/* Titular — solo lectura: solo tag + doc, sin mostrar nombre */}
             <div className={styles.guestDeclRow}>
               <span className={styles.guestDeclBadge}>1</span>
               <div className={styles.guestDeclFields}>
                 <span className={styles.guestDeclName}>
-                  {guestForm.fullName || <em style={{ color: 'var(--fg-muted)' }}>{t('fullNameLabel')}</em>}
                   <span className={styles.guestDeclTitularTag}>{t('guestTitularTag')}</span>
                 </span>
                 <span className={styles.guestDeclDoc}>
-                  {guestForm.document || <em style={{ color: 'var(--fg-muted)' }}>{t('documentLabel')}</em>}
+                  {guestForm.document || <em style={{ color: 'var(--fg-muted)' }}>{t('documentPlaceholder')}</em>}
                 </span>
               </div>
             </div>
@@ -453,8 +456,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                     <div className={styles.guestDeclDocWrap}>
                       <input
                         type="text"
-                        placeholder="000.000.000-00"
-                        maxLength={14}
+                        placeholder={t('documentPlaceholder')}
+                        maxLength={20}
                         value={g.document}
                         onChange={(e) => updateAdditionalGuest(idx, 'document', e.target.value)}
                         className={`${styles.guestDeclInput} ${
@@ -497,6 +500,78 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             </div>
           </div>
         )}
+
+        {/* ── Upload de foto do documento (até 2 pessoas) ──────────────── */}
+        <div className={styles.docUploadSection}>
+          <div className={styles.docUploadTitle}>
+            <Camera size={15} /> {t('docUploadTitle')}
+          </div>
+          <p className={styles.docUploadNote}>{t('docUploadNote')}</p>
+
+          <div className={styles.docUploadSlots}>
+            {/* Slot 1 — Titular */}
+            {([0, 1] as const).map((slot) => {
+              const isCompanion = slot === 1;
+              const inputRef = isCompanion ? photoInputCompanion : photoInputTitular;
+              const file = docPhotos[slot];
+              return (
+                <div key={slot} className={`${styles.docUploadSlot} ${file ? styles.docUploadSlotFilled : ''}`}>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                    className={styles.docUploadInput}
+                    onChange={(e) => {
+                      const picked = e.target.files?.[0] ?? null;
+                      setDocPhotos((prev) => {
+                        const next: [File | null, File | null] = [...prev] as [File | null, File | null];
+                        next[slot] = picked;
+                        return next;
+                      });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={styles.docUploadBtn}
+                    onClick={() => inputRef.current?.click()}
+                  >
+                    {file ? (
+                      <>
+                        <Check size={15} className={styles.docUploadCheckIcon} />
+                        <span className={styles.docUploadFileName}>{file.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={15} />
+                        <span>
+                          {isCompanion ? t('docUploadCompanion') : t('docUploadTitular')}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  {file && (
+                    <button
+                      type="button"
+                      className={styles.docUploadClear}
+                      onClick={() =>
+                        setDocPhotos((prev) => {
+                          const next: [File | null, File | null] = [...prev] as [File | null, File | null];
+                          next[slot] = null;
+                          return next;
+                        })
+                      }
+                      aria-label={t('removeGuest')}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className={styles.docUploadFormats}>{t('docUploadFormats')}</p>
+        </div>
 
         {/* Reglas de la casa */}
         <div className={styles.rulesConfirm}>
@@ -601,6 +676,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   <span>{t.rich('cancelNone', { b: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
               </div>
+              <p className={styles.cancelArrasNote}>{t('cancelArrasNote')}</p>
             </div>
           )}
         </div>

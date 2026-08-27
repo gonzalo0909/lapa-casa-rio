@@ -159,8 +159,8 @@ function T(key: string, locale: string): string {
       title: 'Résumé du Paiement', baseAmount: 'Montant de base', groupDiscount: 'Remise de groupe',
       seasonSurcharge: 'Haute saison', totalAmount: 'Montant total', depositLabel: 'Acompte initial',
       ofTotal: 'du montant total', depositNote1: 'Payez maintenant pour confirmer votre réservation',
-      depositNote2: ‘Remboursable dans les 7 jours suivant la confirmation (arrivée à plus de 7 jours) — autres annulations non remboursables’, remainingLabel: ‘Solde restant’,
-      remainingNote1: ‘Payé directement à l’Administrateur à l’arrivée’, remainingNote2: ‘Non prélevé par la plateforme — aucun débit automatique’,
+      depositNote2: 'Remboursable dans les 7 jours suivant la confirmation (arrivée à plus de 7 jours) — autres annulations non remboursables', remainingLabel: 'Solde restant',
+      remainingNote1: 'Payé directement à l\'Administrateur à l\'arrivée', remainingNote2: 'Non prélevé par la plateforme — aucun débit automatique',
       secureNote: 'Paiement 100% sécurisé et chiffré'
     },
     de: {

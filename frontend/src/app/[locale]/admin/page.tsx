@@ -46,7 +46,7 @@ export default function AdminPage({
 
   // Check localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
     setIsLoggedIn(!!token);
   }, []);
 
@@ -55,11 +55,17 @@ export default function AdminPage({
     setLoginError(null);
     setIsLoggingIn(true);
     try {
-      // POST /api/v1/admin/login → {success, data: {token, refreshToken, expiresIn}}
+      // POST /api/v1/admin/login → {success, data: {token, expiresIn}}
+      // El token puede venir en el body o sólo como cookie httpOnly.
+      // En ambos casos la respuesta es HTTP 200 → login exitoso.
       const res = await api.post('/admin/login', { password });
       const token = res.data?.token as string | undefined;
-      if (!token) { throw new Error('Token não recebido'); }
-      localStorage.setItem('token', token);
+      if (token) {
+        localStorage.setItem('admin_token', token);
+      } else {
+        // Sin token en body (cookie-only): marcamos sesión con un flag
+        localStorage.setItem('admin_token', 'cookie-session');
+      }
       setPassword('');
       setIsLoggedIn(true);
     } catch (err) {
@@ -70,6 +76,7 @@ export default function AdminPage({
   }, [password, locale]);
 
   const handleLogout = useCallback(() => {
+    localStorage.removeItem('admin_token');
     localStorage.removeItem('token');
     setIsLoggedIn(false);
     setActiveTab('dashboard');

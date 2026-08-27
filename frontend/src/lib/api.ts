@@ -89,8 +89,18 @@ async function request<T = any>(
     ...headers
   };
 
-  if (token) {
-    requestHeaders['Authorization'] = `Bearer ${token}`;
+  // Agrega Bearer token si se pasa explícitamente, o si el endpoint es admin
+  // y hay un token guardado en localStorage (evita pasar el flag 'cookie-session').
+  const resolvedToken = token ?? (
+    endpoint.startsWith('/admin') && typeof window !== 'undefined'
+      ? (() => {
+          const t = localStorage.getItem('admin_token') || localStorage.getItem('token');
+          return t && t !== 'cookie-session' ? t : undefined;
+        })()
+      : undefined
+  );
+  if (resolvedToken) {
+    requestHeaders['Authorization'] = `Bearer ${resolvedToken}`;
   }
 
   const requestOptions: RequestInit = {
@@ -157,6 +167,16 @@ async function request<T = any>(
   }
 
   throw lastError || new Error('Request failed');
+}
+
+/**
+ * Devuelve el token de admin guardado en localStorage (si existe y no es el flag de cookie-session).
+ * Los componentes del panel admin llaman getAdminToken() para incluirlo como Bearer header.
+ */
+export function getAdminToken(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const t = localStorage.getItem('admin_token') || localStorage.getItem('token');
+  return t && t !== 'cookie-session' ? t : undefined;
 }
 
 /**

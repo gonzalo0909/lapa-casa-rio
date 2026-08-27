@@ -61,6 +61,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
   // ── Estado local ───────────────────────────────────────────────────────────
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // ── Cálculos derivados de props (variables locales, no estado) ─────────────
   const totalPrice = selectedApartment.priceTotal;
@@ -91,7 +92,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
     guestForm.fullName.trim() &&
     emailOk && confirmEmailOk && phoneOk &&
     (cpfOk === true) &&
-    guestForm.arrivalTime
+    guestForm.arrivalTime &&
+    termsAccepted
   );
 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
@@ -603,12 +605,41 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
           )}
         </div>
 
+        {/* Aceite dos Termos de Reserva */}
+        <div className={styles.termsAccept}>
+          <label className={styles.termsAcceptLabel}>
+            <input
+              type="checkbox"
+              className={styles.termsAcceptCheckbox}
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+            />
+            <span>
+              {t.rich('termsAcceptText', {
+                link: (chunks) => (
+                  <a
+                    href="/termos-hospede"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.termsAcceptLink}
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </span>
+          </label>
+          {!termsAccepted && (
+            <p className={styles.termsAcceptHint}>{t('termsAcceptHint')}</p>
+          )}
+        </div>
+
         {/* Botón Confirmar y pagar */}
         <button
           type="button"
           className={styles.btnReserve}
           onClick={onReserve}
-          disabled={isCreatingBooking}
+          disabled={isCreatingBooking || !canReserve}
         >
           {isCreatingBooking ? t('creatingBooking') : `${t('confirmAndPay')} →`}
         </button>

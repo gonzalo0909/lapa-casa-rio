@@ -585,6 +585,8 @@
     "cancelPartial": "Check-in em menos de 7 dias — reembolso integral até as <b>11h do dia do check-in</b>",
     "cancelNoneBadge": "Sem reembolso",
     "cancelNone": "Demais cancelamentos ou no-show — depósito não reembolsável",
+    "termsAcceptText": "Li e concordo com o <link>Termo de Reserva e Hospedagem</link>, incluindo a política de cancelamento e a política de arras (depósito confirmatório)",
+    "termsAcceptHint": "É necessário aceitar os termos para confirmar a reserva",
     "creatingBooking": "Criando reserva…",
     "confirmAndPay": "Confirmar e ir para pagamento",
     "confirmViaWhatsapp": "Confirmar via WhatsApp",

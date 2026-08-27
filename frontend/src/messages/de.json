@@ -585,6 +585,8 @@
     "cancelPartial": "Check-in in weniger als 7 Tagen — volle Rückerstattung bei Stornierung vor <b>11 Uhr am Check-in-Tag</b>",
     "cancelNoneBadge": "Keine Rückerstattung",
     "cancelNone": "Alle anderen Stornierungen oder Nichterscheinen — Anzahlung nicht erstattungsfähig",
+    "termsAcceptText": "Ich habe die <link>Reservierungs- und Beherbergungsbedingungen</link> gelesen und stimme ihnen zu, einschließlich der Stornierungs- und Anzahlungsbedingungen (Bestätigungsanzahlung)",
+    "termsAcceptHint": "Sie müssen die Bedingungen akzeptieren, um die Buchung zu bestätigen",
     "creatingBooking": "Buchung wird erstellt…",
     "confirmAndPay": "Bestätigen und zur Zahlung",
     "confirmViaWhatsapp": "Über WhatsApp bestätigen",

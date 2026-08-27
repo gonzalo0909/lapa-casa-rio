@@ -585,6 +585,8 @@
     "cancelPartial": "Check-in within 7 days — full refund if cancelled before <b>11am on check-in day</b>",
     "cancelNoneBadge": "No refund",
     "cancelNone": "All other cancellations or no-show — deposit non-refundable",
+    "termsAcceptText": "I have read and agree to the <link>Reservation and Accommodation Terms</link>, including the cancellation policy and earnest-money (confirmatory deposit) policy",
+    "termsAcceptHint": "You must accept the terms to confirm your booking",
     "creatingBooking": "Creating booking…",
     "confirmAndPay": "Confirm and proceed to payment",
     "confirmViaWhatsapp": "Confirm via WhatsApp",

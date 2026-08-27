@@ -124,7 +124,9 @@ services:
     # devDependency -- con NODE_ENV=production npm salta devDependencies
     # por defecto y el build tira MODULE_NOT_FOUND. Mismo patron que ya
     # usa el backend arriba.
-    buildCommand: npm install --include=dev && npm run build
+    # standalone mode: after next build, copy public/ and .next/static/ into
+    # .next/standalone/ so the server.js can serve them directly (Next.js docs).
+    buildCommand: npm install --include=dev && npm run build && cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static
     startCommand: npm run start
     envVars:
       - key: NODE_ENV

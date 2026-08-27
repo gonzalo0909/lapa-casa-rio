@@ -426,15 +426,16 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             </div>
             <p className={styles.guestsDeclNote}>{t('guestDeclarationNote')}</p>
 
-            {/* Titular — solo lectura: solo tag + doc, sin mostrar nombre */}
+            {/* Titular — solo lectura, datos del form principal */}
             <div className={styles.guestDeclRow}>
               <span className={styles.guestDeclBadge}>1</span>
               <div className={styles.guestDeclFields}>
                 <span className={styles.guestDeclName}>
+                  {guestForm.fullName || <em style={{ color: 'var(--fg-muted)' }}>{t('fullNameLabel')}</em>}
                   <span className={styles.guestDeclTitularTag}>{t('guestTitularTag')}</span>
                 </span>
                 <span className={styles.guestDeclDoc}>
-                  {guestForm.document || <em style={{ color: 'var(--fg-muted)' }}>{t('documentPlaceholder')}</em>}
+                  {guestForm.document || <em style={{ color: 'var(--fg-muted)' }}>{t('documentLabel')}</em>}
                 </span>
               </div>
             </div>
@@ -676,7 +677,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   <span>{t.rich('cancelNone', { b: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
               </div>
-              <p className={styles.cancelArrasNote}>{t('cancelArrasNote')}</p>
             </div>
           )}
         </div>

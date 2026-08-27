@@ -332,8 +332,6 @@
 .docUploadClear:hover { color: var(--danger, #dc2626); }
 .docUploadFormats { font-size: .7rem; color: var(--fg-muted); margin-top: .5rem; }
 
-/* ── Arras note in cancel policy ─────────────────────────── */
-.cancelArrasNote { font-size: .72rem; color: var(--fg-muted); margin-top: .65rem; padding-top: .5rem; border-top: 1px solid var(--border); line-height: 1.5; }
 
 .rulesConfirm { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1.25rem; }
 .rulesConfirmTitle { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--warn-fg); margin-bottom: .6rem; }

@@ -365,7 +365,7 @@ function EventsPanel({ events, onRefresh }: {
 }) {
   const emptyForm = {
     name: '', date_from: '', date_to: '',
-    adjustment_pct: 0, applies_to: 'all' as const,
+    adjustment_pct: 0, applies_to: 'all' as 'all' | 'hostel' | 'apartment',
     is_active: true, notes: '',
   };
   const [form, setForm] = useState(emptyForm);

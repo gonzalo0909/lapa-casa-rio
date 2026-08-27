@@ -531,7 +531,7 @@
     "checkinSelectedHint": "<b>Check-in:</b> {date} — select the check-out date",
     "availableForGuests": "{count, plural, one {# apartment available} other {# apartments available}} for {guests, plural, one {# guest} other {# guests}}",
     "backToStep": "Back to step {n} ({label})",
-    "otaBanner": "Booking direct you pay <b>R$ {saving} less</b> than through Booking.com or Airbnb — no middleman fees.",
+    "otaBanner": "Booking direct you pay <b>R$ {saving} less</b> than on international platforms — no middleman fees.",
     "guests": "Guests",
     "season": "Season",
     "location": "Location",

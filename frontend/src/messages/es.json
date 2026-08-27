@@ -531,7 +531,7 @@
     "checkinSelectedHint": "<b>Entrada:</b> {date} — seleccioná la salida",
     "availableForGuests": "{count, plural, one {# apartamento disponible} other {# apartamentos disponibles}} para {guests, plural, one {# huésped} other {# huéspedes}}",
     "backToStep": "Volver al paso {n} ({label})",
-    "otaBanner": "Reservando directo pagás <b>R$ {saving} menos</b> que por Booking.com o Airbnb — sin comisiones de intermediarios.",
+    "otaBanner": "Reservando directo pagás <b>R$ {saving} menos</b> que en plataformas internacionales — sin comisiones de intermediarios.",
     "guests": "Huéspedes",
     "season": "Temporada",
     "location": "Ubicación",

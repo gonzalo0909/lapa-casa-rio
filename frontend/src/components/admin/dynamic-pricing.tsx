@@ -663,7 +663,7 @@ function CalendarPanel({ calendar, onRefresh }: {
             </thead>
             <tbody>
               {dates.map(date =>
-                byDate[date].map(e => (
+                (byDate[date] ?? []).map(e => (
                   <tr key={`${date}-${e.property_type}`} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="py-2 pr-4 text-foreground font-mono text-xs">{date}</td>
                     <td className="py-2 pr-4">

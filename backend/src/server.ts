@@ -5,9 +5,12 @@ import app from './app';
 import { logger } from '@/utils/logger';
 import { connectDatabase, disconnect } from '@/config/database';
 import { environment } from '@/config/environment';
+import { dynamicPricingService } from './services/dynamic-pricing-service';
 // ventana5: no queda ningun proceso programado en node-cron -- todo el
 // scheduling (cleanup, flexible-conversion, ota-sync) vive en BullMQ,
 // consumido por el proceso separado `npm run worker` (workers/index.ts).
+// El bot de precios dinámicos usa un setTimeout nativo para no añadir
+// dependencias: corre a las 02:00 UTC todos los dias.
 
 const PORT = environment.PORT || 5000;
 const NODE_ENV = environment.NODE_ENV || 'development';
@@ -34,6 +37,9 @@ async function startServer(): Promise<void> {
       }
 
       logger.info('Lapa Casa Channel Manager is ready!');
+
+      // ── Bot de precios dinámicos: cron nativo a las 02:00 UTC ──────────────
+      scheduleDynamicPricingBot();
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -116,6 +122,35 @@ server.on('listening', () => {
     : `port ${addr?.port}`;
   logger.info(`Listening on ${bind}`);
 });
+
+/** Programa el bot de precios dinámicos para correr a las 02:00 UTC cada día. */
+function scheduleDynamicPricingBot(): void {
+  const runBot = async () => {
+    try {
+      logger.info('DynamicPricingBot: ejecución nocturna iniciada');
+      const result = await dynamicPricingService.run();
+      logger.info('DynamicPricingBot: ejecución nocturna completada', result);
+    } catch (err) {
+      logger.error('DynamicPricingBot: error en ejecución nocturna', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+  const scheduleNext = () => {
+    const now = new Date();
+    // Próximas 02:00 UTC
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 2, 0, 0, 0));
+    if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+    const msUntilNext = next.getTime() - now.getTime();
+    logger.info(`DynamicPricingBot: próxima ejecución en ${Math.round(msUntilNext / 60000)} min (${next.toISOString()})`);
+    setTimeout(() => {
+      runBot().finally(scheduleNext);
+    }, msUntilNext);
+  };
+
+  scheduleNext();
+}
 
 startServer();
 

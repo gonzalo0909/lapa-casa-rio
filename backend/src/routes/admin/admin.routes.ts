@@ -27,6 +27,7 @@ import { adminConflictsRouter } from './conflicts.routes';
 import { adminPhotosRouter } from './photos.routes';
 import { adminBlockedDatesRouter } from './blocked-dates.routes';
 import { roomTypePhotosRouter } from './room-type-photos.routes';
+import { dynamicPricingRouter } from './dynamic-pricing.routes';
 import type { BookingWithGuest } from '../../services/email-service';
 
 const router = Router();
@@ -53,6 +54,11 @@ router.use('/blocked-dates', adminBlockedDatesRouter);
  * /admin/room-types — gestión de fotos por apartamento
  */
 router.use('/room-types', roomTypePhotosRouter);
+
+/**
+ * /admin/dynamic-pricing — bot de precios dinámicos (config, eventos, calendario)
+ */
+router.use('/dynamic-pricing', dynamicPricingRouter);
 
 /**
  * GET /admin/dashboard — KPIs del mes actual

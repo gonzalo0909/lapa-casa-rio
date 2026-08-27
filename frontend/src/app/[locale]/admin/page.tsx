@@ -10,6 +10,7 @@ import { DateBlocking } from '@/components/admin/date-blocking';
 import ICalSettings from '@/components/admin/ical-settings';
 import { ApartmentOffers } from '@/components/admin/apartment-offers';
 import { ApartmentPhotos } from '@/components/admin/apartment-photos';
+import { DynamicPricing } from '@/components/admin/dynamic-pricing';
 import { api, handleAPIError } from '@/lib/api';
 
 /**
@@ -25,7 +26,7 @@ import { api, handleAPIError } from '@/lib/api';
  * Login vía POST /admin/login (admin-auth.routes.ts, requiere ADMIN_PASSWORD_HASH en backend).
  */
 
-type Tab = 'dashboard' | 'pricing' | 'blocking' | 'ical' | 'offers' | 'photos';
+type Tab = 'dashboard' | 'pricing' | 'offers' | 'blocking' | 'ical' | 'photos' | 'dynamic-pricing';
 
 export default function AdminPage({
   params,
@@ -77,6 +78,7 @@ export default function AdminPage({
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'dashboard', label: t('dashboard'), icon: '📊' },
     { id: 'pricing', label: t('pricing'), icon: '💰' },
+    { id: 'dynamic-pricing', label: 'Precios Din.', icon: '🤖' },
     { id: 'offers', label: 'Ofertas', icon: '🏷️' },
     { id: 'blocking', label: t('dateBlocking'), icon: '🔒' },
     { id: 'ical', label: t('ical'), icon: '📅' },
@@ -188,6 +190,7 @@ export default function AdminPage({
         {activeTab === 'blocking' && <DateBlocking locale={locale} />}
         {activeTab === 'ical' && <ICalSettings />}
         {activeTab === 'photos' && <ApartmentPhotos />}
+        {activeTab === 'dynamic-pricing' && <DynamicPricing />}
       </div>
     </div>
   );

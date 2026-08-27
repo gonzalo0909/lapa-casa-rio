@@ -29,12 +29,9 @@ export function DepositInfo({
     }).format(value);
   };
 
-  const remainingPaymentDate = useMemo(() => {
+  const checkInDisplayDate = useMemo(() => {
     const checkIn = new Date(checkInDate);
-    const paymentDate = new Date(checkIn);
-    paymentDate.setDate(checkIn.getDate() - 7);
-
-    return paymentDate.toLocaleDateString(BCP47[locale] ?? 'pt-BR', {
+    return checkIn.toLocaleDateString(BCP47[locale] ?? 'pt-BR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'
@@ -62,7 +59,7 @@ export function DepositInfo({
                 <div className="flex items-start gap-2">
                   <span className="font-bold">2.</span>
                   <div>
-                    <p className="font-medium">{T('step2', locale)} {remainingPaymentDate}: {formatCurrency(remainingAmount)}</p>
+                    <p className="font-medium">{T('step2', locale)} ({checkInDisplayDate}): {formatCurrency(remainingAmount)}</p>
                     <p className="text-blue-700 dark:text-blue-400">{T('step2Note', locale)}</p>
                   </div>
                 </div>
@@ -135,89 +132,89 @@ export function DepositInfo({
 function T(key: string, locale: string): string {
   const t: Record<string, Record<string, string>> = {
     pt: {
-      title: 'Pagamento em 2 Etapas',
-      step1: 'Depósito agora', step1Note: 'Confirma sua reserva imediatamente -- a confirmação chega por email e WhatsApp',
-      step2: 'Saldo em', step2Note: 'Pago no hostel na chegada, salvo se preferir cartão',
-      guaranteesTitle: 'Garantias e Segurança',
-      instant: 'Confirmação instantânea da reserva',
-      flexible: 'Política de cancelamento clara, sem letra miúda',
-      fraud: 'Proteção contra fraudes',
-      encrypted: 'Dados criptografados e seguros',
-      faqTitle: 'Perguntas Frequentes',
-      faq1Q: 'O que acontece se eu cancelar?',
-      faq1A: 'O depósito não é reembolsável em caso de cancelamento, qualquer que seja a antecedência.',
-      faq2Q: 'O que acontece se eu não pagar o saldo?',
-      faq2A: 'Enviamos até 3 lembretes por email nos dias seguintes. Se ainda assim não pagar, entraremos em contato diretamente com você antes do check-in.',
-      policyTitle: 'Política de Cancelamento',
-      policyNone: 'O depósito não é reembolsável em caso de cancelamento ou não comparecimento, qualquer que seja a antecedência.'
+      title: ‘Pagamento em 2 Etapas’,
+      step1: ‘Depósito agora’, step1Note: ‘Confirma sua reserva imediatamente — a confirmação chega por email e WhatsApp’,
+      step2: ‘Saldo no check-in’, step2Note: ‘Pago diretamente ao Administrador no check-in — não é cobrado pela plataforma’,
+      guaranteesTitle: ‘Garantias e Segurança’,
+      instant: ‘Confirmação instantânea da reserva’,
+      flexible: ‘Política de cancelamento clara, sem letra miúda’,
+      fraud: ‘Proteção contra fraudes’,
+      encrypted: ‘Dados criptografados e seguros’,
+      faqTitle: ‘Perguntas Frequentes’,
+      faq1Q: ‘O que acontece se eu cancelar?’,
+      faq1A: ‘Se cancelar em até 7 dias da confirmação da reserva e o check-in for a mais de 7 dias, você recebe reembolso integral (Art. 49 CDC). Se o check-in for em menos de 7 dias, pode cancelar até as 11h do próprio dia. Fora dessas hipóteses, o depósito não é reembolsável.’,
+      faq2Q: ‘O saldo restante é cobrado automaticamente?’,
+      faq2A: ‘Não. Os 70% restantes são pagos diretamente ao Administrador no check-in, sem passar pela plataforma.’,
+      policyTitle: ‘Política de Cancelamento’,
+      policyNone: ‘Cancelamento em até 7 dias da confirmação (com check-in a mais de 7 dias): reembolso integral. Check-in em menos de 7 dias: reembolso até as 11h do dia. Demais casos ou no-show: depósito não reembolsável.’
     },
     es: {
-      title: 'Pago en 2 Etapas',
-      step1: 'Depósito ahora', step1Note: 'Confirma tu reserva de inmediato -- la confirmación te llega por email y WhatsApp',
-      step2: 'Saldo el', step2Note: 'Se paga en el hostel al llegar, salvo que prefieras tarjeta',
-      guaranteesTitle: 'Garantías y Seguridad',
-      instant: 'Confirmación instantánea de la reserva',
-      flexible: 'Política de cancelación clara, sin letra chica',
-      fraud: 'Protección contra fraude',
-      encrypted: 'Datos cifrados y seguros',
-      faqTitle: 'Preguntas Frecuentes',
-      faq1Q: '¿Qué pasa si cancelo?',
-      faq1A: 'El depósito no es reembolsable en caso de cancelación, sin importar con cuánta anticipación avises.',
-      faq2Q: '¿Qué pasa si no pago el saldo?',
-      faq2A: 'Te mandamos hasta 3 recordatorios por email en los días siguientes. Si igual no pagás, te contactamos directamente antes del check-in.',
-      policyTitle: 'Política de Cancelación',
-      policyNone: 'El depósito no es reembolsable en caso de cancelación o no-show, sin importar con cuánta anticipación avises.'
+      title: ‘Pago en 2 Etapas’,
+      step1: ‘Depósito ahora’, step1Note: ‘Confirma tu reserva de inmediato — la confirmación te llega por email y WhatsApp’,
+      step2: ‘Saldo en el check-in’, step2Note: ‘Pagado directamente al Administrador en el check-in — no se cobra por la plataforma’,
+      guaranteesTitle: ‘Garantías y Seguridad’,
+      instant: ‘Confirmación instantánea de la reserva’,
+      flexible: ‘Política de cancelación clara, sin letra chica’,
+      fraud: ‘Protección contra fraude’,
+      encrypted: ‘Datos cifrados y seguros’,
+      faqTitle: ‘Preguntas Frecuentes’,
+      faq1Q: ‘¿Qué pasa si cancelo?’,
+      faq1A: ‘Si cancelás dentro de los 7 días de la confirmación y el check-in es a más de 7 días, recibís reembolso total. Si el check-in es en menos de 7 días, podés cancelar hasta las 11h del mismo día. Fuera de esos casos, el depósito no se reembolsa.’,
+      faq2Q: ‘¿El saldo restante se cobra automáticamente?’,
+      faq2A: ‘No. El 70% restante se paga directamente al Administrador en el check-in, sin pasar por la plataforma.’,
+      policyTitle: ‘Política de Cancelación’,
+      policyNone: ‘Cancelación dentro de los 7 días de confirmación (con check-in a más de 7 días): reembolso total. Check-in en menos de 7 días: reembolso hasta las 11h del día. Otros casos o no-show: depósito no reembolsable.’
     },
     en: {
-      title: '2-Step Payment',
-      step1: 'Deposit now', step1Note: 'Confirms your booking immediately -- the confirmation is sent by email and WhatsApp',
-      step2: 'Balance on', step2Note: 'Paid at the hostel on arrival, unless you\'d rather pay by card',
-      guaranteesTitle: 'Guarantees & Security',
-      instant: 'Instant booking confirmation',
-      flexible: 'Clear cancellation policy, no fine print',
-      fraud: 'Fraud protection',
-      encrypted: 'Encrypted, secure data',
-      faqTitle: 'Frequently Asked Questions',
-      faq1Q: 'What happens if I cancel?',
-      faq1A: 'The deposit is non-refundable in case of cancellation, no matter how much notice you give.',
-      faq2Q: 'What if I don\'t pay the balance?',
-      faq2A: 'We\'ll send up to 3 email reminders over the following days. If it\'s still unpaid, we\'ll contact you directly before check-in.',
-      policyTitle: 'Cancellation Policy',
-      policyNone: 'The deposit is non-refundable in case of cancellation or no-show, no matter how much notice you give.'
+      title: ‘2-Step Payment’,
+      step1: ‘Deposit now’, step1Note: ‘Confirms your booking immediately — confirmation sent by email and WhatsApp’,
+      step2: ‘Balance at check-in’, step2Note: ‘Paid directly to the Administrator at check-in — not charged by the platform’,
+      guaranteesTitle: ‘Guarantees & Security’,
+      instant: ‘Instant booking confirmation’,
+      flexible: ‘Clear cancellation policy, no fine print’,
+      fraud: ‘Fraud protection’,
+      encrypted: ‘Encrypted, secure data’,
+      faqTitle: ‘Frequently Asked Questions’,
+      faq1Q: ‘What happens if I cancel?’,
+      faq1A: ‘If you cancel within 7 days of booking confirmation and check-in is more than 7 days away, you receive a full refund. If check-in is within 7 days, you can cancel until 11am on check-in day. In all other cases the deposit is non-refundable.’,
+      faq2Q: ‘Is the remaining balance charged automatically?’,
+      faq2A: ‘No. The remaining 70% is paid directly to the Administrator at check-in — it does not go through the platform.’,
+      policyTitle: ‘Cancellation Policy’,
+      policyNone: ‘Cancellation within 7 days of booking (check-in more than 7 days away): full refund. Check-in within 7 days: refund until 11am on the day. All other cases or no-show: deposit non-refundable.’
     },
     fr: {
-      title: 'Paiement en 2 Étapes',
-      step1: 'Acompte maintenant', step1Note: 'Confirme votre réservation immédiatement -- la confirmation vous est envoyée par e-mail et WhatsApp',
-      step2: 'Solde le', step2Note: 'Payé à l’auberge à l’arrivée, sauf si vous préférez la carte',
-      guaranteesTitle: 'Garanties et Sécurité',
-      instant: 'Confirmation instantanée de la réservation',
-      flexible: 'Politique d’annulation claire, sans petits caractères',
-      fraud: 'Protection contre la fraude',
-      encrypted: 'Données chiffrées et sécurisées',
-      faqTitle: 'Questions Fréquentes',
-      faq1Q: 'Que se passe-t-il si j’annule ?',
-      faq1A: 'L’acompte n’est pas remboursable en cas d’annulation, quel que soit le délai de prévenance.',
-      faq2Q: 'Que se passe-t-il si je ne paie pas le solde ?',
-      faq2A: 'Nous vous envoyons jusqu’à 3 rappels par e-mail les jours suivants. Si le solde reste impayé, nous vous contacterons directement avant l’arrivée.',
-      policyTitle: 'Politique d’Annulation',
-      policyNone: 'L’acompte n’est pas remboursable en cas d’annulation ou de non-présentation, quel que soit le délai de prévenance.'
+      title: ‘Paiement en 2 Étapes’,
+      step1: ‘Acompte maintenant’, step1Note: ‘Confirme votre réservation immédiatement — la confirmation vous est envoyée par e-mail et WhatsApp’,
+      step2: ‘Solde au check-in’, step2Note: ‘Payé directement à l’Administrateur à l’arrivée — non prélevé par la plateforme’,
+      guaranteesTitle: ‘Garanties et Sécurité’,
+      instant: ‘Confirmation instantanée de la réservation’,
+      flexible: ‘Politique d’annulation claire, sans petits caractères’,
+      fraud: ‘Protection contre la fraude’,
+      encrypted: ‘Données chiffrées et sécurisées’,
+      faqTitle: ‘Questions Fréquentes’,
+      faq1Q: ‘Que se passe-t-il si j’annule ?’,
+      faq1A: ‘Si vous annulez dans les 7 jours suivant la confirmation et que l’arrivée est à plus de 7 jours, vous êtes intégralement remboursé. Si l’arrivée est dans moins de 7 jours, vous pouvez annuler jusqu’à 11h le jour même. Dans tous les autres cas, l’acompte n’est pas remboursable.’,
+      faq2Q: ‘Le solde restant est-il prélevé automatiquement ?’,
+      faq2A: ‘Non. Les 70 % restants sont réglés directement à l’Administrateur à l’arrivée — ils ne transitent pas par la plateforme.’,
+      policyTitle: ‘Politique d’Annulation’,
+      policyNone: ‘Annulation dans les 7 jours suivant la confirmation (arrivée à plus de 7 jours) : remboursement intégral. Arrivée dans moins de 7 jours : remboursement jusqu’à 11h le jour J. Autres cas ou no-show : acompte non remboursable.’
     },
     de: {
-      title: 'Zahlung in 2 Schritten',
-      step1: 'Anzahlung jetzt', step1Note: 'Bestätigt Ihre Buchung sofort -- die Bestätigung erhalten Sie per E-Mail und WhatsApp',
-      step2: 'Restbetrag am', step2Note: 'Zahlung im Hostel bei Ankunft, außer Sie zahlen lieber mit Karte',
-      guaranteesTitle: 'Garantien & Sicherheit',
-      instant: 'Sofortige Buchungsbestätigung',
-      flexible: 'Klare Stornierungsbedingungen, ohne Kleingedrucktes',
-      fraud: 'Betrugsschutz',
-      encrypted: 'Verschlüsselte, sichere Daten',
-      faqTitle: 'Häufige Fragen',
-      faq1Q: 'Was passiert, wenn ich storniere?',
-      faq1A: 'Die Anzahlung wird bei Stornierung nicht erstattet, unabhängig von der Vorlaufzeit.',
-      faq2Q: 'Was, wenn ich den Restbetrag nicht zahle?',
-      faq2A: 'Wir senden in den folgenden Tagen bis zu 3 E-Mail-Erinnerungen. Bleibt es unbezahlt, kontaktieren wir Sie direkt vor dem Check-in.',
-      policyTitle: 'Stornierungsbedingungen',
-      policyNone: 'Die Anzahlung wird bei Stornierung oder Nichterscheinen nicht erstattet, unabhängig von der Vorlaufzeit.'
+      title: ‘Zahlung in 2 Schritten’,
+      step1: ‘Anzahlung jetzt’, step1Note: ‘Bestätigt Ihre Buchung sofort — die Bestätigung erhalten Sie per E-Mail und WhatsApp’,
+      step2: ‘Restbetrag beim Check-in’, step2Note: ‘Direkt an den Administrator beim Check-in gezahlt — nicht über die Plattform abgerechnet’,
+      guaranteesTitle: ‘Garantien & Sicherheit’,
+      instant: ‘Sofortige Buchungsbestätigung’,
+      flexible: ‘Klare Stornierungsbedingungen, ohne Kleingedrucktes’,
+      fraud: ‘Betrugsschutz’,
+      encrypted: ‘Verschlüsselte, sichere Daten’,
+      faqTitle: ‘Häufige Fragen’,
+      faq1Q: ‘Was passiert, wenn ich storniere?’,
+      faq1A: ‘Bei Stornierung innerhalb von 7 Tagen nach Buchungsbestätigung und Check-in mehr als 7 Tage entfernt erhalten Sie eine volle Rückerstattung. Ist der Check-in in weniger als 7 Tagen, können Sie bis 11 Uhr am Check-in-Tag stornieren. In allen anderen Fällen ist die Anzahlung nicht erstattungsfähig.’,
+      faq2Q: ‘Wird der Restbetrag automatisch abgebucht?’,
+      faq2A: ‘Nein. Die verbleibenden 70 % werden direkt beim Check-in an den Administrator gezahlt — ohne Abwicklung über die Plattform.’,
+      policyTitle: ‘Stornierungsbedingungen’,
+      policyNone: ‘Stornierung innerhalb von 7 Tagen nach Buchung (Check-in mehr als 7 Tage entfernt): volle Rückerstattung. Check-in in weniger als 7 Tagen: Rückerstattung bis 11 Uhr. Sonstige Fälle oder Nichterscheinen: Anzahlung nicht erstattungsfähig.’
     }
   };
   return t[locale]?.[key] || key;

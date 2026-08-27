@@ -142,12 +142,12 @@ export function PaymentSchedule({
                 {formatCurrency(remainingAmount)}
               </p>
               <p className="text-sm text-gray-600">
-                {remainingStatus === 'paid' ? 'Pago em' : 'Cobrança automática em'} {formatDate(remainingDate)}
+                {remainingStatus === 'paid' ? 'Pago em' : 'Devido no check-in em'} {formatDate(remainingDate)}
               </p>
               {remainingStatus === 'scheduled' && (
                 <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-blue-800">
-                    ⓘ Cobrança agendada para 7 dias antes do check-in no mesmo cartão usado no depósito.
+                    ⓘ Pago diretamente ao Administrador no check-in — não é cobrado pela plataforma.
                   </p>
                 </div>
               )}
@@ -198,25 +198,25 @@ export function PaymentSchedule({
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
               </svg>
-              O saldo restante será cobrado automaticamente no cartão usado no depósito
+              O saldo restante (70%) é pago diretamente ao Administrador no check-in — não é cobrado pela plataforma
             </li>
             <li className="flex items-start gap-2">
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
               </svg>
-              Você receberá lembretes por email antes de cada cobrança
+              Você receberá a confirmação da reserva por email e WhatsApp
             </li>
             <li className="flex items-start gap-2">
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
               </svg>
-              Você pode atualizar os dados de pagamento até 10 dias antes do check-in
+              Cancelamento em até 7 dias da confirmação (check-in a mais de 7 dias): reembolso integral do depósito (Art. 49 CDC)
             </li>
             <li className="flex items-start gap-2">
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
               </svg>
-              Cancelamentos com mais de 7 dias recebem reembolso total do depósito
+              Check-in em menos de 7 dias: reembolso integral até as 11h do dia do check-in
             </li>
           </ul>
         </div>

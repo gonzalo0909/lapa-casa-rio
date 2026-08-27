@@ -69,9 +69,11 @@ A comprovação das apólices vigentes deverá ser encaminhada à Lapa Casa anua
   {
     id: 6,
     title: 'Da Comissão e Modelo Financeiro',
-    content: `A Lapa Casa recebe uma comissão de **5% (cinco por cento)** sobre o valor bruto de cada reserva confirmada e efetivamente realizada.
+    content: `A Lapa Casa recebe uma comissão de **5% (cinco por cento)** sobre o valor total de cada reserva confirmada e efetivamente realizada, deduzida do valor retido (30% do total pago pelo hóspede à Plataforma no momento da confirmação).
 
-A comissão será deduzida automaticamente no momento do repasse ao Administrador(a), que ocorrerá em até **5 (cinco) dias úteis** após o check-out do hóspede, mediante transferência bancária para a conta indicada no cadastro.
+Além da comissão, é cobrada uma **taxa operacional de 0,99%** sobre o valor total da reserva, independentemente do meio de pagamento utilizado pelo hóspede, também deduzida do valor retido.
+
+O repasse ao Administrador(a) da parte que lhe cabe ocorre **automaticamente até 2 (duas) horas após a confirmação do check-in** pelo Administrador(a) na plataforma.
 
 Não há taxa de adesão, mensalidade ou custo fixo para listar imóveis na Plataforma.`,
   },
@@ -93,20 +95,21 @@ A Lapa Casa poderá solicitar documentação comprobatória para fins de conform
 
 • Os dados coletados serão utilizados exclusivamente para fins de operação da hospedagem;
 • É vedado o compartilhamento de dados com terceiros não autorizados;
-• O(a) Administrador(a) compromete-se a implementar medidas básicas de segurança no tratamento de dados de hóspedes;
-• A Lapa Casa atua como **Operadora** de dados dos hóspedes; o(a) Administrador(a) como **Co-Controlador(a)** no que tange à operação local do imóvel.`,
+• O(a) Administrador(a) compromete-se a implementar medidas básicas de segurança no tratamento de dados de hóspedes e a comunicar à Lapa Casa qualquer incidente de segurança em até 24 horas;
+• A Lapa Casa atua como **Controladora** dos dados dos hóspedes coletados na reserva (base legal: execução de contrato, Art. 7º, V da LGPD); o(a) Administrador(a) atua como **Operador(a)** no tratamento dos dados dos hóspedes para fins da hospedagem, nos termos do Art. 39 da LGPD;
+• Dados retidos por 5 anos após o encerramento da relação contratual.`,
   },
   {
     id: 9,
     title: 'Da Política de Cancelamento',
-    content: `A política de cancelamento padrão da Plataforma é:
+    content: `O valor de 30% pago pelo hóspede constitui **arras confirmatórias** (Arts. 417 a 420 do Código Civil):
 
-• **Cancelamento com mais de 7 dias** antes do check-in: reembolso integral ao hóspede; sem penalidade ao Administrador(a);
-• **Cancelamento com 3 a 7 dias**: reembolso de 50% ao hóspede; Administrador(a) retém 50%;
-• **Cancelamento com menos de 3 dias**: sem reembolso ao hóspede; Administrador(a) retém valor integral;
-• **Cancelamento pelo Administrador(a)** após confirmação: reembolso integral ao hóspede + penalidade operacional de **R$ 200,00** por reserva cancelada, descontada do próximo repasse.
-
-Cancelamentos por força maior documentada serão avaliados caso a caso.`,
+• **Se o hóspede cancelar sem justificativa**: perde as arras (o valor pago à Plataforma);
+• **Exceção — Art. 49 do CDC**: cancelamento em até 7 dias corridos da confirmação da reserva, com check-in previsto para mais de 7 dias: reembolso integral ao hóspede, sem penalidade ao Administrador(a);
+• **Política comercial — check-in em menos de 7 dias**: reembolso integral ao hóspede até as 11h do dia do check-in, sem penalidade ao Administrador(a);
+• **No-show**: sem reembolso ao hóspede;
+• **Cancelamento pelo Administrador(a)** após confirmação, sem justificativa: reembolso integral ao hóspede + cláusula penal equivalente à **comissão da reserva cancelada** (5% do valor total), descontada do próximo repasse ou cobrada via Pix caso não haja reservas futuras;
+• **Cancelamento por força maior operacional** (manutenções obrigatórias, reformas estruturais ou determinações de organismos competentes, devidamente documentadas): reembolso integral ao hóspede, sem cláusula penal.`,
   },
   {
     id: 10,
@@ -115,11 +118,13 @@ Cancelamentos por força maior documentada serão avaliados caso a caso.`,
 
 | Ocorrência | Penalidade |
 |---|---|
-| Cancelamento injustificado após confirmação | R$ 200,00 por reserva |
-| Reclamação formal de hóspede não respondida em 48h | Advertência + suspensão temporária |
-| 3ª reclamação formal no período de 12 meses | Rescisão contratual |
+| Cancelamento injustificado após confirmação | Comissão da reserva cancelada (5% do valor total) |
+| Falha no check-in sem aviso de 2h | Suspensão temporária + reembolso das arras ao hóspede |
+| Propriedade diferente das fotos ou descrição | Suspensão até regularização |
+| Cobrança ao hóspede superior ao anunciado | Rescisão imediata |
+| 3º cancelamento injustificado em 12 meses | Suspensão definitiva |
 | Descumprimento das normas de seguro | Suspensão imediata das listagens |
-| Listagem com informações falsas | Rescisão imediata + eventual responsabilização civil |`,
+| Listagem com informações falsas | Rescisão imediata + responsabilização civil e criminal |`,
   },
   {
     id: 11,
@@ -406,7 +411,7 @@ export function PartnerContractPage({ locale: _locale }: Props) {
             { label: 'Comissão', value: '5% por reserva' },
             { label: 'Seguro imóvel', value: 'R$ 50.000 mín.' },
             { label: 'Seguro civil', value: 'R$ 500.000 mín.' },
-            { label: 'Repasse', value: '5 dias úteis pós check-out' },
+            { label: 'Repasse', value: 'Até 2h após check-in' },
           ].map(({ label, value }) => (
             <div key={label}>
               <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: '#0369a1' }}>{label}</div>

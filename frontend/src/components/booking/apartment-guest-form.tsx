@@ -589,7 +589,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   <span>{t.rich('cancelFull', { b: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
                 <div className={styles.cancelRow}>
-                  <span className={`${styles.cancelBadge} ${styles.cancelBadgeAmber}`}>50%</span>
+                  <span className={`${styles.cancelBadge} ${styles.cancelBadgeAmber}`}>{t('cancelPartialBadge')}</span>
                   <span>{t.rich('cancelPartial', { b: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
                 <div className={styles.cancelRow}>

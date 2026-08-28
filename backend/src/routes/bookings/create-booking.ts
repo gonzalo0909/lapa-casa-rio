@@ -49,6 +49,8 @@ interface CreateBookingRequest {
   language?: 'pt' | 'en' | 'es';
   source?: string;
   guestGender?: 'mixed' | 'female' | 'male';
+  /** Código de oferta/cupón de descuento para apartamentos (opcional). */
+  offerCode?: string;
 }
 
 // ── Helpers de blocklist ──────────────────────────────────────────────────────
@@ -197,6 +199,38 @@ export const createBookingHandler = async (
       totalBeds: totalBedsRequested
     });
 
+    // ── Cupón de oferta (apartamentos) ────────────────────────────────────────
+    // Si viene offerCode, validamos contra apartment_offers y aplicamos el
+    // descuento al precio final ANTES de crear la reserva.
+    let appliedOffer: { id: string; code: string; label: string; discount_percent: number } | null = null;
+    if (bookingData.offerCode) {
+      const today = bookingData.checkIn; // fecha de check-in como referencia de validez
+      const { rows: offerRows } = await query(
+        `SELECT id, code, label, discount_percent, apartment_ids
+         FROM apartment_offers
+         WHERE code = $1
+           AND is_active = true
+           AND (valid_from IS NULL OR valid_from <= $2::date)
+           AND (valid_to   IS NULL OR valid_to   >= $2::date)
+         LIMIT 1`,
+        [bookingData.offerCode.trim().toUpperCase(), today]
+      );
+      if (offerRows.length > 0) {
+        const offer = offerRows[0];
+        // Verificar si aplica al apartamento solicitado (null/vacío = todos)
+        const aptId = bookingData.rooms[0]?.roomId;
+        const aptOk = !offer.apartment_ids || offer.apartment_ids.length === 0 || (aptId && offer.apartment_ids.includes(aptId));
+        if (aptOk) {
+          appliedOffer = offer;
+          const discountFactor = 1 - offer.discount_percent / 100;
+          pricingDetails.totalPrice = Math.round(pricingDetails.totalPrice * discountFactor * 100) / 100;
+          pricingDetails.depositAmount = Math.round(pricingDetails.depositAmount * discountFactor * 100) / 100;
+          pricingDetails.remainingAmount = Math.round(pricingDetails.remainingAmount * discountFactor * 100) / 100;
+          logger.info('Oferta aplicada a reserva', { offerCode: offer.code, discount: offer.discount_percent });
+        }
+      }
+    }
+
     // Check per-room availability
     for (const room of bookingData.rooms) {
       const roomAvail = await availabilityService.checkRoomAvailability(
@@ -322,7 +356,14 @@ export const createBookingHandler = async (
             total: pricingDetails.totalPrice,
             deposit: pricingDetails.depositAmount,
             remaining: pricingDetails.remainingAmount,
-            currency: 'BRL'
+            currency: 'BRL',
+            ...(appliedOffer ? {
+              appliedOffer: {
+                code: appliedOffer.code,
+                label: appliedOffer.label,
+                discount_percent: appliedOffer.discount_percent,
+              }
+            } : {})
           },
           payment: {
             depositRequired: true,

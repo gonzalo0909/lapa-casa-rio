@@ -245,6 +245,8 @@ export const bookingAPI = {
     language?: 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
     source?: string;
     guestGender?: 'mixed' | 'female';
+    /** Código de oferta/cupón de descuento (apartamentos). */
+    offerCode?: string;
   }) => api.post('/bookings', data),
 
   /**
@@ -387,6 +389,15 @@ export const roomsAPI = {
  */
 export const photosAPI = {
   list: () => api.get('/photos')
+};
+
+/**
+ * Offers API — validación pública de códigos de descuento de apartamentos.
+ * Ruta pública: POST /api/v1/offers/validate
+ */
+export const offersAPI = {
+  validate: (code: string, apartmentId: string, checkIn: string) =>
+    api.post('/offers/validate', { code, apartmentId, checkIn }),
 };
 
 /**

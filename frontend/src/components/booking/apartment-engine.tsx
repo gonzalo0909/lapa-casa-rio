@@ -21,7 +21,7 @@ import styles from './apartment-engine.module.css';
 import { Modal, ModalBody } from '../ui/modal';
 import { PaymentCountdown } from '../payment/payment-countdown';
 import { PaymentProcessor } from '../payment/payment-processor';
-import { availabilityAPI, bookingAPI, handleAPIError } from '@/lib/api';
+import { availabilityAPI, bookingAPI, offersAPI, handleAPIError } from '@/lib/api';
 import { ApartmentDateStep } from './apartment-date-step';
 import { ApartmentSelectorStep } from './apartment-selector-step';
 import { ApartmentGuestForm } from './apartment-guest-form';
@@ -34,6 +34,7 @@ import type {
   CreatedBooking,
   ApartmentEngineProps,
   AdditionalGuest,
+  AppliedCoupon,
 } from './apartment-engine.types';
 import { EMPTY_FORM } from './apartment-engine.types';
 
@@ -64,6 +65,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
   const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([]);
+
+  // ── Cupón de descuento ───────────────────────────────────────────────────
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
   // ── Paso 4: pago ─────────────────────────────────────────────────────────
   const [booking, setBooking] = useState<CreatedBooking | null>(null);
@@ -213,18 +217,23 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         language: locale === 'de' || locale === 'fr' ? 'en' : locale,
         source: 'web',
         guestGender: 'mixed',
+        ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),
       });
       const b = res?.data?.booking;
       if (!b?.id) { throw new Error('No se recibió ID de reserva del servidor'); }
       const totalPrice = selectedApartment.priceTotal;
       const depositAmount = selectedApartment.depositAmount;
+      // Si hay cupón aplicado, usamos el precio con descuento como fallback
+      const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
+      const discountedTotal = Math.round(totalPrice * discountFactor);
+      const discountedDeposit = Math.round(depositAmount * discountFactor);
       setBooking({
         id: b.id,
         confirmationNumber: b.confirmationNumber,
         pendingExpiresAt: b.pendingExpiresAt ?? null,
-        total: b.pricing?.total ?? totalPrice,
-        deposit: b.payment?.depositAmount ?? depositAmount,
-        remaining: b.pricing?.remaining ?? totalPrice - depositAmount,
+        total: b.pricing?.total ?? discountedTotal,
+        deposit: b.payment?.depositAmount ?? discountedDeposit,
+        remaining: b.pricing?.remaining ?? discountedTotal - discountedDeposit,
         checkIn,
       });
       setStep(4);
@@ -400,6 +409,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onBack={goBack}
             additionalGuests={additionalGuests}
             onAdditionalGuestsChange={setAdditionalGuests}
+            appliedCoupon={appliedCoupon}
+            onCouponApply={(coupon) => setAppliedCoupon(coupon)}
+            onCouponRemove={() => setAppliedCoupon(null)}
+            onValidateCoupon={async (code) => {
+              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '');
+              return res?.data;
+            }}
           />
         )}
 

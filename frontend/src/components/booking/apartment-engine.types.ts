@@ -55,6 +55,14 @@ export interface CreatedBooking {
   checkIn: string;
 }
 
+// ─── Cupón de descuento ──────────────────────────────────────────────────────
+
+export interface AppliedCoupon {
+  code: string;
+  label: string;
+  discount_percent: number;
+}
+
 // ─── Props del engine ────────────────────────────────────────────────────────
 
 export interface ApartmentEngineProps {

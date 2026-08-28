@@ -16,6 +16,7 @@ import { photosRouter } from './photos/photos.routes';
 import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
+import { offersRouter } from './offers/offers.routes';
 import { adminRouter } from './admin/admin.routes';
 import { adminAuthRouter } from './admin/admin-auth.routes';
 import icalRouter from './ical/ical.routes';
@@ -71,6 +72,7 @@ router.get('/info', (req: Request, res: Response) => {
 router.use('/availability', rateLimiter({ max: 120, windowMs: 60000 }), availabilityRouter);
 router.use('/rooms', rateLimiter({ max: 60, windowMs: 60000 }), roomsRouter);
 router.use('/photos', rateLimiter({ max: 60, windowMs: 60000 }), photosRouter);
+router.use('/offers', rateLimiter({ max: 30, windowMs: 60000 }), offersRouter);
 
 /**
  * iCal (ventana5): export publico de disponibilidad + config/sync de

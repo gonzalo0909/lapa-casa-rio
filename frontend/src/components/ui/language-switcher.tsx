@@ -37,7 +37,8 @@ export function LanguageSwitcher({ currentLocale, className = '' }: LanguageSwit
   const buildPath = (locale: Locale) =>
     pathname.replace(/^\/[a-z]{2}\b/, `/${locale}`);
 
-  const current = LOCALES.find((l) => l.code === currentLocale) ?? LOCALES[0];
+  // LOCALES always has entries; find always matches a valid Locale
+  const current = LOCALES.find((l) => l.code === currentLocale) as (typeof LOCALES)[number];
 
   return (
     <div ref={ref} className={`relative ${className}`}>

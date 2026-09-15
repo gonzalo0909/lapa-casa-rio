@@ -13,8 +13,7 @@ import {
   seasonForDateStr,
   CARNAVAL_MIN_NIGHTS,
 } from '@/lib/apartment-seasons';
-import type { AptLocale } from './apartment-engine.types';
-import { MAX_APT_GUESTS } from './apartment-engine.types';
+import { type AptLocale, MAX_APT_GUESTS } from './apartment-engine.types';
 import {
   parseDs,
   isCarnivalDs,

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 // lapa-casa-hostel/frontend/src/app/owner/contract/page.tsx

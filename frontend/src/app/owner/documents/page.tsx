@@ -212,8 +212,9 @@ export default function OwnerDocumentsPage() {
           <CardContent className="flex flex-col gap-4">
             {/* Selector de tipo */}
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Tipo de documento</label>
+              <label htmlFor="doc-type" className="text-sm font-medium">Tipo de documento</label>
               <select
+                id="doc-type"
                 value={selectedDocType}
                 onChange={(e) => setSelectedDocType(e.target.value as DocType)}
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm"

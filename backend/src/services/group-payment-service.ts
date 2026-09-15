@@ -377,7 +377,7 @@ export class GroupPaymentService {
       const sessionToken = generateToken();
       const groupPaymentUrl = `${input.appBaseUrl}/group-payment/${sessionToken}`;
       const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
-        `Hola! Te invito a pagar tu cama para nuestro grupo en Lapa Casa Rio. Cada uno paga la suya:\n${groupPaymentUrl}\n\nTenés 10 minutos desde que abrí este link.`,
+        `Hola! Te invito a pagar tu cama para nuestro grupo en Lapa Casa Hostel. Cada uno paga la suya:\n${groupPaymentUrl}\n\nTenés 10 minutos desde que abrí este link.`,
       )}`;
 
       const { rows: sessionRows } = await client.query(
@@ -619,7 +619,7 @@ export class GroupPaymentService {
       const { stripeHandler } = await import('../lib/payments/stripe-handler');
       const checkoutSession = await stripeHandler.createCheckoutSession({
         amount: amountCharged,
-        description: `Pago grupal — cama Lapa Casa Rio`,
+        description: `Pago grupal — cama Lapa Casa Hostel`,
         customerEmail: input.guest.email,
         reservationId: session.reservation_id,
         successUrl,
@@ -644,7 +644,7 @@ export class GroupPaymentService {
       const pixResult = await mercadoPagoHandler.createPaymentIntent({
         amount: amountCharged,
         currency: 'BRL',
-        description: `Pago grupal — cama Lapa Casa Rio`,
+        description: `Pago grupal — cama Lapa Casa Hostel`,
         payerEmail: input.guest.email,
         paymentMethod: 'pix',
         metadata: {

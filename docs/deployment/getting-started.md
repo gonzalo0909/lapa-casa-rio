@@ -2,7 +2,7 @@
 
 # Developer Guide - Getting Started
 
-## Welcome to Lapa Casa Rio Channel Manager Development
+## Welcome to Lapa Casa Hostel Channel Manager Development
 
 This guide will help you set up your local development environment and understand the project structure.
 
@@ -68,7 +68,7 @@ This starts:
 
 ### 4. Verify Installation
 
-Open http://localhost:3000 in your browser. You should see the Lapa Casa Rio booking interface.
+Open http://localhost:3000 in your browser. You should see the Lapa Casa Hostel booking interface.
 
 Test the API:
 ```bash

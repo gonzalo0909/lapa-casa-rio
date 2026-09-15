@@ -1,10 +1,10 @@
 # lapa-casa-hostel/docs/business/pricing-logic.md
 
-# Lapa Casa Rio - Pricing Logic Documentation
+# Lapa Casa Hostel - Pricing Logic Documentation
 
 ## Overview
 
-This document describes the complete pricing system for Lapa Casa Rio, including base pricing, group discounts, seasonal multipliers, and payment structure.
+This document describes the complete pricing system for Lapa Casa Hostel, including base pricing, group discounts, seasonal multipliers, and payment structure.
 
 ---
 
@@ -25,7 +25,7 @@ This document describes the complete pricing system for Lapa Casa Rio, including
 
 ### Room Inventory
 
-Lapa Casa Rio has **5 rooms** with **45 total beds**:
+Lapa Casa Hostel has **5 rooms** with **45 total beds**:
 
 | Room ID | Room Name | Capacity | Type | Flexible | Base Price (BRL) |
 |---------|-----------|----------|------|----------|------------------|

@@ -1,10 +1,10 @@
 # lapa-casa-hostel/backend/README.md
 
-# Lapa Casa Rio - Backend API
+# Lapa Casa Hostel - Backend API
 
-Channel Manager backend system for Lapa Casa Rio, Rio de Janeiro.
+Channel Manager backend system for Lapa Casa Hostel, Rio de Janeiro.
 
-## 🏨 About Lapa Casa Rio
+## 🏨 About Lapa Casa Hostel
 
 **Location:** Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro  
 **Capacity:** 45 beds across 4 rooms  
@@ -438,7 +438,7 @@ MIT License - See LICENSE file for details
 
 ## 👥 Contributors
 
-Lapa Casa Rio Tech Team
+Lapa Casa Hostel Tech Team
 
 ---
 

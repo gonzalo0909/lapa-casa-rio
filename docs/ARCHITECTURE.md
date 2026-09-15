@@ -1,4 +1,4 @@
-# Arquitectura — Lapa Casa Rio Channel Manager
+# Arquitectura — Lapa Casa Hostel Channel Manager
 
 ## Vista general
 

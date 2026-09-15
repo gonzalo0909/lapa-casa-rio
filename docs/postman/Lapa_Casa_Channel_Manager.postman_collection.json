@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Lapa Casa Rio — Channel Manager",
+    "name": "Lapa Casa Hostel — Channel Manager",
     "description": "Coleccion de la API real del backend (ver backend/src/routes). Requiere las variables de entorno del archivo adjunto (development o production). El login de admin guarda el token automaticamente en {{adminToken}} via test script -- correr 'Admin > Login' antes de cualquier request de la carpeta Admin.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

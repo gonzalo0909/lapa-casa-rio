@@ -1,7 +1,7 @@
 {
   "name": "lapa-casa-hostel-backend",
   "version": "1.0.0",
-  "description": "Backend API for Lapa Casa Rio",
+  "description": "Backend API for Lapa Casa Hostel",
   "main": "dist/server.js",
   "scripts": {
     "postinstall": "prisma generate",
@@ -25,7 +25,7 @@
     "booking",
     "api"
   ],
-  "author": "Lapa Casa Rio",
+  "author": "Lapa Casa Hostel",
   "license": "MIT",
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

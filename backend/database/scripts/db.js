@@ -1,5 +1,5 @@
 // db.js
-// Lapa Casa Rio - Channel Manager
+// Lapa Casa Hostel - Channel Manager
 //
 // Conexion compartida a Postgres para los scripts de las migraciones iniciales
 // (migrate.js, seed.js, test-scenarios.js). En la versión con Prisma, la capa de

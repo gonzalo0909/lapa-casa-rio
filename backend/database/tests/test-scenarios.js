@@ -1,5 +1,5 @@
 // test-scenarios.js
-// Lapa Casa Rio - Channel Manager
+// Lapa Casa Hostel - Channel Manager
 //
 // Los 13 escenarios de prueba, corridos contra una base
 // Postgres real (no mocks). Cubren la jerarquia anti-overbooking

@@ -1,5 +1,5 @@
 // migrate.js
-// Lapa Casa Rio - Channel Manager
+// Lapa Casa Hostel - Channel Manager
 //
 // Aplica, en orden, los archivos .sql de database/migrations/ que aun no
 // figuren en la tabla schema_migrations. Cada archivo corre dentro de su

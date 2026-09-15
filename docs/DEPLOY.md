@@ -1,4 +1,4 @@
-# Deploy — Lapa Casa Rio Channel Manager
+# Deploy — Lapa Casa Hostel Channel Manager
 
 Guía paso a paso para desplegar el sistema en producción. Apunta al Supabase real ya
 migrado (proyecto `rpowardrcwnhbkzjsiok`, región `sa-east-1`) — **no crear un proyecto

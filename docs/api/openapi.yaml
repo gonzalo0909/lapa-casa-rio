@@ -20,10 +20,10 @@
 
 openapi: 3.0.3
 info:
-  title: Lapa Casa Rio - Channel Manager API
+  title: Lapa Casa Hostel - Channel Manager API
   description: |
     Documentación de la API del sistema de reservas y channel manager de
-    Lapa Casa Rio.
+    Lapa Casa Hostel.
 
     ## Autenticación
     Las rutas bajo /admin/* requieren un JWT (cookie httpOnly `lch_admin`
@@ -36,7 +36,7 @@ info:
     en /availability.
   version: 1.0.0
   contact:
-    name: Lapa Casa Rio Tech Team
+    name: Lapa Casa Hostel Tech Team
     email: lapalandiarj@gmail.com
     url: https://lapacasario.com
   license:

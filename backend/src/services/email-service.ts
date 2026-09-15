@@ -811,7 +811,7 @@ export class EmailService {
           <div><strong>Camas:</strong> ${params.totalBeds}</div>
           <div><strong>Check-in:</strong> ${checkInFormatted}</div>
         </div>
-        <p style="font-size:13px;color:#888;">Lapa Casa Rio — Rio de Janeiro</p>
+        <p style="font-size:13px;color:#888;">Lapa Casa Hostel — Rio de Janeiro</p>
       </div>
     `;
     return dispatch(
@@ -833,17 +833,17 @@ export class EmailService {
         <p style="font-size:14px;color:#555;margin-bottom:12px;">Olá ${escapeText(params.guestName)},</p>
         <p style="font-size:14px;color:#555;margin-bottom:20px;">
           O tempo para concluir o pagamento grupal expirou e o seu lugar não foi confirmado.
-          Se ainda quiser reservar uma cama no Lapa Casa Rio, você pode fazer isso diretamente:
+          Se ainda quiser reservar uma cama no Lapa Casa Hostel, você pode fazer isso diretamente:
         </p>
         <a href="${params.bookingUrl}" style="display:inline-block;background:#1a1a1a;color:#fff;font-size:14px;font-weight:700;padding:12px 24px;border-radius:7px;text-decoration:none;">
           Reservar minha cama
         </a>
-        <p style="margin-top:20px;font-size:13px;color:#888;">Lapa Casa Rio — Rio de Janeiro</p>
+        <p style="margin-top:20px;font-size:13px;color:#888;">Lapa Casa Hostel — Rio de Janeiro</p>
       </div>
     `;
     return dispatch(
       params.guestEmail,
-      'Seu lugar no grupo não foi confirmado — Lapa Casa Rio',
+      'Seu lugar no grupo não foi confirmado — Lapa Casa Hostel',
       html,
     );
   }

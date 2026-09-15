@@ -1,6 +1,6 @@
 # lapa-casa-hostel/docs/deployment/setup-guide.md
 
-# Lapa Casa Rio - Complete Setup Guide
+# Lapa Casa Hostel - Complete Setup Guide
 
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
@@ -507,6 +507,6 @@ After successful deployment:
 7. **Load Testing**: Simulate concurrent users
 8. **Security Audit**: Run security scan
 
-**Congratulations! Your Lapa Casa Rio Channel Manager is now live! 🎉**
+**Congratulations! Your Lapa Casa Hostel Channel Manager is now live! 🎉**
 
 ✅ Archivo 182/184 completado

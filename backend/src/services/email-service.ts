@@ -649,12 +649,15 @@ function buildAddressHtml(
   lang: Language,
   aptAddress?: { name: string; street: string; number: string | null; cep: string | null }
 ): string {
-  const label = { pt: 'Endereço', en: 'Address', es: 'Dirección' }[lang];
-  const mapsLabel = { pt: 'Ver no Google Maps →', en: 'View on Google Maps →', es: 'Ver en Google Maps →' }[lang];
+  const label = { pt: 'Endereço', en: 'Address', es: 'Dirección', fr: 'Adresse', de: 'Adresse', it: 'Indirizzo' }[lang];
+  const mapsLabel = { pt: 'Ver no Google Maps →', en: 'View on Google Maps →', es: 'Ver en Google Maps →', fr: 'Voir sur Google Maps →', de: 'Auf Google Maps ansehen →', it: 'Vedi su Google Maps →' }[lang];
   const pendingMsg = {
     pt: 'O endereço exato será enviado por e-mail após a confirmação do pagamento.',
     en: 'The exact address will be sent by email once your payment is confirmed.',
     es: 'La dirección exacta se enviará por correo tras la confirmación del pago.',
+    fr: "L'adresse exacte vous sera envoyée par e-mail une fois le paiement confirmé.",
+    de: 'Die genaue Adresse wird Ihnen nach Zahlungsbestätigung per E-Mail zugesandt.',
+    it: "L'indirizzo esatto verrà inviato via e-mail una volta confermato il pagamento.",
   }[lang];
 
   if (isApt) {
@@ -1102,6 +1105,9 @@ export class EmailService {
       pt: `Lembrete: seu check-in e amanha — ${booking.reservation_number}`,
       en: `Reminder: your check-in is tomorrow — ${booking.reservation_number}`,
       es: `Recordatorio: tu check-in es manana — ${booking.reservation_number}`,
+      fr: `Rappel : votre check-in est demain — ${booking.reservation_number}`,
+      de: `Erinnerung: Ihr Check-in ist morgen — ${booking.reservation_number}`,
+      it: `Promemoria: il tuo check-in è domani — ${booking.reservation_number}`,
     };
     return dispatch(booking.guest.email, subjects[language], html);
   }
@@ -1136,6 +1142,9 @@ export class EmailService {
       pt: `Como foi a sua estadia no Lapa Casa?`,
       en: `How was your stay at Lapa Casa?`,
       es: `Como fue tu estadía en Lapa Casa?`,
+      fr: `Comment s'est passé votre séjour au Lapa Casa ?`,
+      de: `Wie war Ihr Aufenthalt im Lapa Casa?`,
+      it: `Com'è stato il tuo soggiorno al Lapa Casa?`,
     };
     return dispatch(booking.guest.email, subjects[language], html);
   }
@@ -1170,6 +1179,9 @@ export class EmailService {
       pt: `Seu presente por indicar um amigo ao Lapa Casa`,
       en: `Your reward for referring a friend to Lapa Casa`,
       es: `Tu premio por recomendar a un amigo a Lapa Casa`,
+      fr: `Votre cadeau pour avoir recommandé Lapa Casa à un ami`,
+      de: `Ihr Dankeschön für die Empfehlung von Lapa Casa`,
+      it: `Il tuo premio per aver raccomandato Lapa Casa a un amico`,
     };
     return dispatch(referrer.email, subjects[language], html);
   }

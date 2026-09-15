@@ -60,6 +60,12 @@ const env = {
   // C-01: secret para verificar firma HMAC-SHA256 de notificaciones MP.
   // Activar en el dashboard de MercadoPago → Webhooks → Firma de notificaciones.
   MP_WEBHOOK_SECRET: process.env.MP_WEBHOOK_SECRET || '',
+
+  // Telegram bot para alertas de Sentry (opcional — si no están configurados el
+  // endpoint acepta el webhook pero no envía nada).
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
+  TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '',
+  SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET || '',
 };
 
 if (!env.DATABASE_URL) {

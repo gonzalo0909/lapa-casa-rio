@@ -24,6 +24,7 @@ import { ownerAuthRouter } from './owner/owner-auth.routes';
 import { ownerRouter } from './owner/owner.routes';
 import icalRouter from './ical/ical.routes';
 import otaWebhooksRouter from './webhooks/ota.routes';
+import { sentryWebhookRouter } from './webhooks/sentry.routes';
 import { rateLimiter } from '../middleware/rate-limiter';
 import { authenticateToken, requireRole, authenticateOwnerToken } from '../middleware/auth';
 import { verifyCsrf } from '../middleware/csrf';
@@ -101,6 +102,7 @@ router.use('/partners', partnersRouter);
  */
 router.use('/ical', icalRouter);
 router.use('/webhooks', otaWebhooksRouter);
+router.use('/webhooks/sentry', sentryWebhookRouter);
 
 /**
  * Semi-Protected Routes (Rate Limited)

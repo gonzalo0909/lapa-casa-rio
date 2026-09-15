@@ -1,6 +1,6 @@
 // lapa-casa-hostel/frontend/next.config.js
 /**
- * Next.js Configuration - Lapa Casa Hostel Channel Manager
+ * Next.js Configuration - Lapa Casa Rio Channel Manager
  * Production-ready settings for Vercel deployment
  * Optimized for booking engine, payments, and multi-language support
  */

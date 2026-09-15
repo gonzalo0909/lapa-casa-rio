@@ -1,10 +1,10 @@
-# Lapa Casa Hostel - Frontend Channel Manager
+# Lapa Casa Rio - Frontend Channel Manager
 
 Production-ready booking engine and channel manager frontend built with Next.js 14, TypeScript, and Tailwind CSS.
 
 ## 🏨 Project Overview
 
-**Client:** Lapa Casa Hostel  
+**Client:** Lapa Casa Rio  
 **Location:** Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro  
 **Capacity:** 45 beds in 4 rooms  
 **Specialization:** Group bookings (7+ people)
@@ -331,7 +331,7 @@ Translation files: `src/messages/{locale}.json`
 
 ## 🤝 Contributing
 
-This is a private project for Lapa Casa Hostel. For internal team members:
+This is a private project for Lapa Casa Rio. For internal team members:
 
 1. Create feature branch: `git checkout -b feature/your-feature`
 2. Make changes with type-safe code
@@ -348,9 +348,9 @@ This is a private project for Lapa Casa Hostel. For internal team members:
 
 ## 📄 License
 
-UNLICENSED - Proprietary software for Lapa Casa Hostel
+UNLICENSED - Proprietary software for Lapa Casa Rio
 
 ---
 
-**Built with ❤️ for Lapa Casa Hostel**  
+**Built with ❤️ for Lapa Casa Rio**  
 **Santa Teresa, Rio de Janeiro**

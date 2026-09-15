@@ -1,4 +1,4 @@
-# Base de datos — Channel Manager Lapa Casa Hostel
+# Base de datos — Channel Manager Lapa Casa Rio
 
 Capa SQL completa: extensiones, ENUMs, 17 tablas, constraint `EXCLUDE`
 anti-overbooking, funciones de pricing/disponibilidad/locks, triggers y

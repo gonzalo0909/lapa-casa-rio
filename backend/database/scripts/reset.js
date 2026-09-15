@@ -1,5 +1,5 @@
 // reset.js
-// Lapa Casa Hostel - Channel Manager
+// Lapa Casa Rio - Channel Manager
 //
 // SOLO DESARROLLO. Elimina el schema "public" completo (tablas, tipos,
 // funciones, procedimientos) y lo vuelve a crear vacio, para poder

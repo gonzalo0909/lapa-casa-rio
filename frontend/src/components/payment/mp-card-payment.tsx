@@ -235,7 +235,7 @@ function formatCardNumber(v: string) {
 }
 function formatExpiry(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 6);
-  if (d.length > 2) return d.slice(0, 2) + '/' + d.slice(2);
+  if (d.length > 2) { return d.slice(0, 2) + '/' + d.slice(2); }
   return d;
 }
 function formatCpf(v: string) {
@@ -246,16 +246,16 @@ function formatCpf(v: string) {
 }
 function validateCpf(cpf: string) {
   const c = cpf.replace(/\D/g, '');
-  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) { return false; }
   let s = 0;
   // noUncheckedIndexedAccess: c[i] es string|undefined — ?? '0' es inerte
   // porque c.length === 11 garantiza que los índices 0-10 existen.
-  for (let i = 0; i < 9; i++) s += +(c[i] ?? '0') * (10 - i);
-  let d = 11 - (s % 11); if (d >= 10) d = 0;
-  if (d !== +(c[9] ?? '0')) return false;
+  for (let i = 0; i < 9; i++) { s += +(c[i] ?? '0') * (10 - i); }
+  let d = 11 - (s % 11); if (d >= 10) { d = 0; }
+  if (d !== +(c[9] ?? '0')) { return false; }
   s = 0;
-  for (let i = 0; i < 10; i++) s += +(c[i] ?? '0') * (11 - i);
-  d = 11 - (s % 11); if (d >= 10) d = 0;
+  for (let i = 0; i < 10; i++) { s += +(c[i] ?? '0') * (11 - i); }
+  d = 11 - (s % 11); if (d >= 10) { d = 0; }
   return d === +(c[10] ?? '0');
 }
 
@@ -314,7 +314,7 @@ export function MpCardPayment({
   // ── Cargar surcharge del backend ─────────────────────────────────────────
 
   useEffect(() => {
-    if (surchargePercent > 0) return; // ya viene del padre
+    if (surchargePercent > 0) { return; } // ya viene del padre
     api.get<{ success: boolean; data: { cardSurchargePercent: number } }>('/payments/surcharge')
       .then(r => setSurcharge(r.data.cardSurchargePercent))
       .catch(() => {}); // si falla, usamos 0
@@ -324,7 +324,7 @@ export function MpCardPayment({
   // ── Cargar SDK de MP ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') { return; }
     if (window.MercadoPago) { initMp(); return; }
 
     const script = document.createElement('script');
@@ -357,7 +357,7 @@ export function MpCardPayment({
     try {
       const methods = await mp.getPaymentMethods({ bin });
       const method  = methods.results[0];
-      if (!method) return;
+      if (!method) { return; }
 
       setPaymentMethodId(method.id);
 

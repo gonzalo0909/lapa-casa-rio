@@ -1,4 +1,4 @@
-# Mantenimiento — Lapa Casa Hostel Channel Manager
+# Mantenimiento — Lapa Casa Rio Channel Manager
 
 ## Diario
 

@@ -226,7 +226,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   // Carga el PaymentIntent de PIX.
   const loadPix = useCallback(
     async (cached: PixPaymentData | null) => {
-      if (cached) return;
+      if (cached) { return; }
       setLoading(true);
       setError(null);
       try {
@@ -255,10 +255,10 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   }, []);
 
   const handleTabClick = async (tab: 'pix' | 'card') => {
-    if (tab === activeTab) return;
+    if (tab === activeTab) { return; }
     setActiveTab(tab);
     setError(null);
-    if (tab === 'pix') await loadPix(pixData);
+    if (tab === 'pix') { await loadPix(pixData); }
   };
 
   const handlePixSuccess = useCallback(

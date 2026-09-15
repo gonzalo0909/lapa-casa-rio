@@ -9,7 +9,7 @@ import { generateSecret, generateURI, verify } from 'otplib';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 
-const ISSUER = 'Lapa Casa Hostel';
+const ISSUER = 'Lapa Casa Rio';
 
 export function generateTotpSecret(): string {
   return generateSecret();

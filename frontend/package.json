@@ -1,7 +1,7 @@
 {
   "name": "lapa-casa-hostel-frontend",
   "version": "1.0.0",
-  "description": "Channel Manager frontend for Lapa Casa Hostel - Group booking system",
+  "description": "Channel Manager frontend for Lapa Casa Rio - Group booking system",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -91,7 +91,7 @@
     "typescript"
   ],
   "author": {
-    "name": "Lapa Casa Hostel Tech Team",
+    "name": "Lapa Casa Rio Tech Team",
     "email": "lapalandiarj@gmail.com"
   },
   "license": "UNLICENSED",

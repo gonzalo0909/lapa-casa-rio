@@ -1,5 +1,5 @@
 // seed.js
-// Lapa Casa Hostel - Channel Manager
+// Lapa Casa Rio - Channel Manager
 //
 // Aplica, en orden, los archivos .sql de database/seeds/ que aun no
 // figuren en la tabla schema_seeds -- mismo patron que migrate.js con

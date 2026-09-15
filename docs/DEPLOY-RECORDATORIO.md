@@ -66,7 +66,7 @@ panel admin general (`api.lapacasario.com/admin`).
 ## Google Business Profile (cuando el site esté listo)
 
 Crear **dos fichas separadas**:
-1. **Lapa Casa Hostel** — con dirección física: Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro
+1. **Lapa Casa Rio** — con dirección física: Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro
 2. **Lapa Casa Apartamentos** — sin dirección fija, seleccionar categoría "Área de servicio" → "Rio de Janeiro"
 
 ---

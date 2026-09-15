@@ -423,7 +423,7 @@ export class PaymentService {
     const baseUrl = data.frontendUrl || process.env.FRONTEND_URL || 'https://lapacasario.com';
     const session = await this.stripeHandler.createCheckoutSession({
       amount: data.amountBRL,
-      description: data.description || 'Depósito reserva — Lapa Casa Hostel',
+      description: data.description || 'Depósito reserva — Lapa Casa Rio',
       customerEmail: data.guestEmail || '',
       reservationId: `wa-${Date.now()}`,
       successUrl: `${baseUrl}/pt/hostel?paid=1`,
@@ -449,7 +449,7 @@ export class PaymentService {
 
     const session = await this.stripeHandler.createCheckoutSession({
       amount: depositAmount,
-      description: `Depósito reserva ${displayCode} — Lapa Casa Hostel`,
+      description: `Depósito reserva ${displayCode} — Lapa Casa Rio`,
       customerEmail: guestEmail,
       reservationId: booking.id,
       successUrl: `${baseUrl}/pt/hostel?paid=1&booking=${booking.id}`,

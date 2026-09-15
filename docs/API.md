@@ -1,4 +1,4 @@
-# API — Lapa Casa Hostel Channel Manager
+# API — Lapa Casa Rio Channel Manager
 
 Base URL: `https://api.lapacasario.com/api/v1` (producción) /
 `http://localhost:3001/api/v1` (desarrollo).

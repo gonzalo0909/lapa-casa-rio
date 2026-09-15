@@ -1,4 +1,4 @@
-# Troubleshooting — Lapa Casa Hostel Channel Manager
+# Troubleshooting — Lapa Casa Rio Channel Manager
 
 ## El proceso no arranca: `DATABASE_URL environment variable is required`
 

@@ -1,6 +1,6 @@
 // lapa-casa-hostel/frontend/tailwind.config.js
 /**
- * Tailwind CSS Configuration - Lapa Casa Hostel
+ * Tailwind CSS Configuration - Lapa Casa Rio
  * Design system optimized for booking engine and hospitality UX
  * Mobile-first, accessible, conversion-optimized
  */
@@ -32,7 +32,7 @@ module.exports = {
       },
     },
     extend: {
-      // Brand colors for Lapa Casa Hostel
+      // Brand colors for Lapa Casa Rio
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

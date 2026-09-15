@@ -101,13 +101,13 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
   // ── Cargar SDK de MP para detección ──────────────────────────────────────
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') { return; }
     const key = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
-    if (!key) return;
+    if (!key) { return; }
 
     const init = () => {
       const MP = (window as any).MercadoPago;
-      if (!MP || mpSdkRef.current) return;
+      if (!MP || mpSdkRef.current) { return; }
       try { mpSdkRef.current = new MP(key, { locale: 'pt-BR' }); } catch { /* silent */ }
     };
 
@@ -122,13 +122,13 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
   // ── Detección automática por BIN ─────────────────────────────────────────
 
   const handleBinChange = async (bin: string) => {
-    if (!bin || bin.length < 6) return;
+    if (!bin || bin.length < 6) { return; }
     // No repetir la misma detección
-    if (bin === lastCheckedBin.current) return;
+    if (bin === lastCheckedBin.current) { return; }
     lastCheckedBin.current = bin;
 
     const mp = mpSdkRef.current;
-    if (!mp) return; // SDK no cargó → no detectamos, dejamos MP como default
+    if (!mp) { return; } // SDK no cargó → no detectamos, dejamos MP como default
 
     try {
       const methods = await mp.getPaymentMethods({ bin });

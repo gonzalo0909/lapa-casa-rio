@@ -23,6 +23,7 @@ import { bookingService } from '../../services/booking-service';
 import { paymentService } from '../../services/payment-service';
 import type { BookingStatus } from '../../types/database';
 import { ApiResponse } from '../../utils/responses';
+import { generateConfirmationToken } from '../../utils/confirmation-token';
 
 const router = Router();
 
@@ -141,6 +142,12 @@ router.get(
   async (req, res, next) => {
     try {
       const { id } = req.params;
+      const { token } = req.query as { token?: string };
+
+      if (!token || token !== generateConfirmationToken(id)) {
+        return res.status(403).json(ApiResponse.error('Invalid or missing confirmation token'));
+      }
+
       logger.info('Get booking confirmation', { bookingId: id });
 
       const booking = await bookingService.getBooking(id);

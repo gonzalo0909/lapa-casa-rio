@@ -284,6 +284,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       if (!b?.id) {
         throw new Error('No se recibió ID de reserva del servidor');
       }
+      if (b.confirmationToken) {
+        try { sessionStorage.setItem(`ct_${b.id}`, b.confirmationToken); } catch {}
+      }
       const totalPrice = selectedApartment.priceTotal;
       const depositAmount = selectedApartment.depositAmount;
       // Si hay cupón aplicado, usamos el precio con descuento como fallback

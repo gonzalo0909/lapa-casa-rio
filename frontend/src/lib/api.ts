@@ -328,7 +328,8 @@ export const bookingAPI = {
   /**
    * Confirmation details (número de confirmación, QR, instrucciones de check-in)
    */
-  getConfirmation: (bookingId: string) => api.get(`/bookings/${bookingId}/confirmation`),
+  getConfirmation: (bookingId: string, token?: string) =>
+    api.get(`/bookings/${bookingId}/confirmation${token ? `?token=${encodeURIComponent(token)}` : ''}`),
 };
 
 /**

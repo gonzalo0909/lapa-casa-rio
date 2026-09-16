@@ -88,14 +88,22 @@ export const checkApartmentAvailabilityHandler = async (
          rt.external_rating,
          rt.external_review_count,
          rt.external_rating_label,
-         NOT EXISTS (
-           SELECT 1
-           FROM reservation_beds rb
-           JOIN beds b ON b.id = rb.bed_id
-           JOIN reservations res ON res.id = rb.reservation_id
-           WHERE b.room_type_id = rt.id
-             AND res.status != 'cancelled'
-             AND daterange(rb.check_in, rb.check_out, '[)') && daterange($1::date, $2::date, '[)')
+         (
+           NOT EXISTS (
+             SELECT 1
+             FROM reservation_beds rb
+             JOIN beds b ON b.id = rb.bed_id
+             JOIN reservations res ON res.id = rb.reservation_id
+             WHERE b.room_type_id = rt.id
+               AND res.status != 'cancelled'
+               AND daterange(rb.check_in, rb.check_out, '[)') && daterange($1::date, $2::date, '[)')
+           )
+           AND NOT EXISTS (
+             SELECT 1
+             FROM room_blocks rbl
+             WHERE rbl.room_type_id = rt.id
+               AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($1::date, $2::date, '[)')
+           )
          ) AS available
        FROM room_types rt
        WHERE rt.property_type = 'apartment'

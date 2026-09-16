@@ -363,16 +363,24 @@ export const createBookingHandler = async (
       const isApt = aptCheck[0]?.is_apartment ?? false;
 
       if (isApt) {
-        // Para apartamentos: available si NO existe reserva activa solapada.
+        // Para apartamentos: available si NO existe reserva activa solapada NI bloqueo manual.
         const { rows: aptAvail } = await query<{ available: boolean }>(
-          `SELECT NOT EXISTS (
-             SELECT 1
-             FROM reservation_beds rb
-             JOIN beds b ON b.id = rb.bed_id
-             JOIN reservations res ON res.id = rb.reservation_id
-             WHERE b.room_type_id = $1
-               AND res.status != 'cancelled'
-               AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+          `SELECT (
+             NOT EXISTS (
+               SELECT 1
+               FROM reservation_beds rb
+               JOIN beds b ON b.id = rb.bed_id
+               JOIN reservations res ON res.id = rb.reservation_id
+               WHERE b.room_type_id = $1
+                 AND res.status != 'cancelled'
+                 AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+             )
+             AND NOT EXISTS (
+               SELECT 1
+               FROM room_blocks rbl
+               WHERE rbl.room_type_id = $1
+                 AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($2::date, $3::date, '[)')
+             )
            ) AS available`,
           [room.roomId, bookingData.checkIn, bookingData.checkOut]
         );

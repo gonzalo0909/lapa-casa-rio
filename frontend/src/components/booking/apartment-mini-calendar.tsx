@@ -8,6 +8,7 @@ import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-r
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
 import { seasonForDateStr } from '@/lib/apartment-seasons';
+import { minCheckInDs } from './apartment-engine.utils';
 
 /** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
  * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
@@ -47,26 +48,6 @@ function fmtShort(ds: string | null, locale: string): string {
   if (!ds) { return ''; }
   const d = parseDs(ds);
   return String(d.getDate()).padStart(2, '0') + ' ' + monthShortLabel(d.getFullYear(), d.getMonth(), locale);
-}
-/**
- * Espeja minCheckInDs() de apartment-engine.utils.ts.
- * Antes de las 12:00 BRT → hoy disponible.
- * A partir de las 12:00 BRT → hoy bloqueado, devuelve mañana.
- */
-function minCheckInDs(): string {
-  const now = new Date();
-  const hourParts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    hour: 'numeric',
-    hour12: false,
-  }).formatToParts(now);
-  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
-  const todaySp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
-  if (hourBrt >= 12) {
-    const [y, m, d] = todaySp.split('-').map(Number) as [number, number, number];
-    return toDs(new Date(y, m - 1, d + 1));
-  }
-  return todaySp;
 }
 
 function monthCells(

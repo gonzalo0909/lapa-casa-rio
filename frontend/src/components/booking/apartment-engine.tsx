@@ -89,7 +89,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
   const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
-    Array.from({ length: Math.max(0, 2 - 1) }, () => ({
+    Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
       id: Math.random().toString(36).slice(2),
       fullName: '',
       document: '',

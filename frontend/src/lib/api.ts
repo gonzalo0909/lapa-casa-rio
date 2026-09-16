@@ -330,6 +330,13 @@ export const bookingAPI = {
    */
   getConfirmation: (bookingId: string, token?: string) =>
     api.get(`/bookings/${bookingId}/confirmation${token ? `?token=${encodeURIComponent(token)}` : ''}`),
+
+  /**
+   * Abandon a pending_payment booking (called when guest goes back from payment step).
+   * Requires confirmationToken to prove ownership.
+   */
+  abandon: (bookingId: string, token: string) =>
+    api.post(`/bookings/${bookingId}/abandon`, { token }),
 };
 
 /**

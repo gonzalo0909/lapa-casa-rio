@@ -345,11 +345,21 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     } else if (step === 3) {
       setStep(2);
     } else if (step === 4) {
-      // Limpiar la reserva creada para que al re-enviar el paso 3 se
-      // genere una nueva (la anterior expirará sola en pending_payment).
+      // Cancel the pending_payment booking before going back so it doesn't
+      // block availability or create a duplicate when the guest re-submits.
+      if (booking?.id) {
+        const bookingId = booking.id;
+        let token: string | null = null;
+        try { token = sessionStorage.getItem(`ct_${bookingId}`); } catch {}
+        if (token) {
+          bookingAPI.abandon(bookingId, token).catch(() => {
+            // Fire-and-forget: the booking will expire on its own if this fails.
+          });
+        }
+      }
       setBooking(null);
       setPaymentDone(false);
-      setPaySuccessOpen(true);
+      setPaySuccessOpen(false);
       setIsExpired(false);
       setStep(3);
     }

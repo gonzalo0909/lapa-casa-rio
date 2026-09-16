@@ -206,4 +206,42 @@ router.get(
   }
 );
 
+/**
+ * Abandon a pending_payment booking
+ * @route POST /bookings/:id/abandon
+ * Guest-callable: verified via confirmationToken, only on pending_payment status.
+ * No refund processing — no payment has been made at this point.
+ */
+router.post(
+  '/:id/abandon',
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { token } = req.body as { token?: string };
+
+      if (!token || token !== generateConfirmationToken(id)) {
+        return res.status(403).json(ApiResponse.error('Invalid or missing confirmation token'));
+      }
+
+      const booking = await bookingService.getBooking(id);
+      if (!booking) {
+        return res.status(404).json(ApiResponse.error('Booking not found'));
+      }
+
+      if (booking.status !== 'pending_payment') {
+        return res.status(400).json(
+          ApiResponse.error('Only pending_payment bookings can be abandoned')
+        );
+      }
+
+      await bookingService.cancelBooking(id, 'abandoned_by_guest');
+
+      logger.info('Booking abandoned by guest', { bookingId: id });
+      res.status(200).json(ApiResponse.success({ bookingId: id }, 'Booking abandoned'));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export const bookingsRouter = router;

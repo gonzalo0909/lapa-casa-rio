@@ -624,7 +624,9 @@
     "couponError": "Erreur lors de la validation du code",
     "couponApplied": "Code {code} appliqué",
     "couponOriginalPrice": "Prix original",
-    "reservationExpired": "Réservation expirée — les dates ne sont plus retenues. Veuillez réessayer."
+    "reservationExpired": "Réservation expirée — les dates ne sont plus retenues. Veuillez réessayer.",
+    "couponRemove": "Supprimer le coupon",
+    "clearPhoto": "Supprimer la photo"
   },
   "guestForm": {
     "title": "Informations du Client",

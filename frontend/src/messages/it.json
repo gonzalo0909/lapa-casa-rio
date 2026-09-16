@@ -624,7 +624,9 @@
     "couponError": "Errore durante la convalida del codice",
     "couponApplied": "Codice {code} applicato",
     "couponOriginalPrice": "Prezzo originale",
-    "reservationExpired": "Prenotazione scaduta — le date non sono più riservate. Riprova."
+    "reservationExpired": "Prenotazione scaduta — le date non sono più riservate. Riprova.",
+    "couponRemove": "Rimuovi coupon",
+    "clearPhoto": "Rimuovi foto"
   },
   "guestForm": {
     "title": "Informazioni Ospite",

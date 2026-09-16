@@ -624,7 +624,9 @@
     "couponError": "Error validating code",
     "couponApplied": "Code {code} applied",
     "couponOriginalPrice": "Original price",
-    "reservationExpired": "Reservation expired — dates are no longer held. Please try again."
+    "reservationExpired": "Reservation expired — dates are no longer held. Please try again.",
+    "couponRemove": "Remove coupon",
+    "clearPhoto": "Remove photo"
   },
   "guestForm": {
     "title": "Guest Information",

@@ -10,7 +10,7 @@ import { availabilityAPI } from '@/lib/api';
 
 /** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
  * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
-const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT' };
 
 function monthLabel(y: number, m: number, locale: string): string {
   return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'long', year: 'numeric' });
@@ -32,6 +32,7 @@ interface ApartmentMiniCalendarProps {
   globalCheckIn: Date;
   globalCheckOut: Date;
   onApply: (range: { checkIn: Date; checkOut: Date }) => void;
+  guestCount?: number;
 }
 
 function toDs(d: Date): string {
@@ -116,6 +117,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   globalCheckIn,
   globalCheckOut,
   onApply,
+  guestCount,
 }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
@@ -207,7 +209,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     setChecking(true);
     setResult(null);
     try {
-      const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout });
+      const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout, ...(guestCount ? { guests: guestCount } : {}) });
       const apartments = res?.data?.apartments ?? [];
       const found = apartments.find((a: { id: string }) => a.id === apartmentId);
       const available = !!found?.available;

@@ -55,6 +55,7 @@ interface ApartmentCardProps {
   globalCheckOut: Date;
   onApplyDates: (range: { checkIn: Date; checkOut: Date }) => void;
   onContinue?: () => void;
+  guestCount?: number;
 }
 
 export const ApartmentCard: React.FC<ApartmentCardProps> = ({
@@ -67,6 +68,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   globalCheckOut,
   onApplyDates,
   onContinue,
+  guestCount,
 }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
@@ -198,6 +200,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
               globalCheckIn={globalCheckIn}
               globalCheckOut={globalCheckOut}
               onApply={(range) => { onApplyDates(range); }}
+              guestCount={guestCount}
             />
             {onContinue && (
               <button
@@ -226,6 +229,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
                 globalCheckIn={globalCheckIn}
                 globalCheckOut={globalCheckOut}
                 onApply={(range) => { onApplyDates(range); setCalOpen(false); }}
+                guestCount={guestCount}
               />
             )}
             <button

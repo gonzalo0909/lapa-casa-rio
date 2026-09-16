@@ -624,7 +624,9 @@
     "couponError": "Error al validar el código",
     "couponApplied": "Código {code} aplicado",
     "couponOriginalPrice": "Precio original",
-    "reservationExpired": "La reserva expiró — las fechas ya no están retenidas. Intentá de nuevo."
+    "reservationExpired": "La reserva expiró — las fechas ya no están retenidas. Intentá de nuevo.",
+    "couponRemove": "Eliminar cupón",
+    "clearPhoto": "Eliminar foto"
   },
   "guestForm": {
     "title": "Información del Huésped",

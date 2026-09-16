@@ -277,7 +277,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   type="button"
                   onClick={() => { onCouponRemove?.(); setCouponError(null); }}
                   className="cursor-pointer border-0 bg-transparent px-0.5 text-lg leading-none text-success"
-                  aria-label={t('removeGuest')}
+                  aria-label={t('couponRemove')}
                 >×</button>
               </div>
             ) : (
@@ -539,8 +539,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
         </div>
 
         {/* ── Declaración de hóspedes ──────────────────────────────────── */}
-        {guestCount > 0 && (
-          <div className={styles.guestsDeclaration}>
+        <div className={styles.guestsDeclaration}>
             <div className={styles.guestsDeclTitle}>
               <Users size={15} /> {t('guestDeclarationTitle')}
             </div>
@@ -637,7 +636,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <span>{t('guestDeclarationVerifyNote')}</span>
             </div>
           </div>
-        )}
 
         {/* ── Upload de foto do documento (titular) ──────────────── */}
         <div className={styles.docUploadSection}>
@@ -678,7 +676,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   type="button"
                   className={styles.docUploadClear}
                   onClick={() => onDocumentPhotoChange(null)}
-                  aria-label={t('removeGuest')}
+                  aria-label={t('clearPhoto')}
                 >
                   <X size={13} />
                 </button>
@@ -717,7 +715,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                     type="button"
                     className={styles.docUploadClear}
                     onClick={() => onCompanionDocumentPhotoChange(null)}
-                    aria-label={t('removeGuest')}
+                    aria-label={t('clearPhoto')}
                   >
                     <X size={13} />
                   </button>

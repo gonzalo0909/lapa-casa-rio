@@ -98,7 +98,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // ── Cálculos derivados de props (variables locales, no estado) ─────────────
   const totalPrice = selectedApartment.priceTotal;
   const otaPrice = Math.round(totalPrice * 1.15);
-  const otaSaving = otaPrice - totalPrice;
   const depositAmount = selectedApartment.depositAmount;
   const depositPct = totalPrice > 0 ? Math.round((depositAmount / totalPrice) * 100) : 0;
   const isCarnaval = selectedApartment.seasonType === 'carnaval';
@@ -108,6 +107,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const displayTotal = Math.round(totalPrice * discountFactor);
   const displayDeposit = Math.round(depositAmount * discountFactor);
   const discountAmount = totalPrice - displayTotal;
+  // El ahorro vs. OTA usa el precio final (con cupón si lo hay) para que
+  // el banner refleje el beneficio real de reservar directamente.
+  const otaSaving = otaPrice - displayTotal;
 
   /** Valida el cupón ingresado contra el backend */
   const handleApplyCoupon = async () => {

@@ -621,6 +621,7 @@
     "backToOriginalDates": "Zurück zu den ursprünglichen Terminen ({from} → {to})",
     "checkinCheckoutLegend": "Check-in/Check-out",
     "periodLegend": "Zeitraum",
+    "blockedLegend": "Nicht verfügbar",
     "couponLabel": "Haben Sie einen Rabattcode?",
     "couponApply": "Anwenden",
     "couponInvalid": "Ungültiger Code",

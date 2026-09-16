@@ -311,6 +311,8 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
         <span>{t('checkinCheckoutLegend')}</span>
         <span className={styles.miniLegendDot} style={{ background: 'var(--primary-soft)', border: '1px solid var(--primary)' }} />
         <span>{t('periodLegend')}</span>
+        <span className={`${styles.miniLegendDot} ${styles.miniLegendDotBlocked}`} />
+        <span>{t('blockedLegend')}</span>
       </div>
     </div>
   );

@@ -621,6 +621,7 @@
     "backToOriginalDates": "Back to original dates ({from} → {to})",
     "checkinCheckoutLegend": "Check-in/Check-out",
     "periodLegend": "Period",
+    "blockedLegend": "Unavailable",
     "couponLabel": "Have a discount code?",
     "couponApply": "Apply",
     "couponInvalid": "Invalid code",

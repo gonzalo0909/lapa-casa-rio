@@ -158,7 +158,7 @@ export const createBookingHandler = async (
       hour: 'numeric',
       hour12: false,
     }).formatToParts(now);
-    const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')!.value, 10);
+    const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '12', 10);
 
     // minCheckIn: hoy si son antes de las 12h, mañana si ya pasó el mediodía.
     let minCheckIn = todayInSaoPaulo;
@@ -701,7 +701,10 @@ export const createBookingHandler = async (
       logger.warn('Insufficient availability detected during createBooking', {
         details: error.details,
       });
-      res.status(409).json(ApiResponse.error(error.message, error.details));
+      const msg = isApartmentBooking
+        ? 'El apartamento ya no está disponible para esas fechas'
+        : error.message;
+      res.status(409).json(ApiResponse.error(msg, error.details));
       return;
     }
 

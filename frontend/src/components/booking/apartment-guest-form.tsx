@@ -28,7 +28,6 @@ interface ApartmentGuestFormProps {
   guestForm: GuestForm;
   touched: Record<string, boolean>;
   isCreatingBooking: boolean;
-  error: string | null;
   onFieldChange: (field: keyof GuestForm, value: string) => void;
   onFieldBlur: (field: string) => void;
   onReserve: () => void;
@@ -65,7 +64,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   guestForm,
   touched,
   isCreatingBooking,
-  error,
   onFieldChange,
   onFieldBlur,
   onReserve,
@@ -90,6 +88,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const [cancelOpen, setCancelOpen] = useState(false);
   const photoInputTitular = useRef<HTMLInputElement>(null);
   const photoInputCompanion = useRef<HTMLInputElement>(null);
+  const [companionTouched, setCompanionTouched] = useState<Record<string, { fullName?: boolean; document?: boolean }>>({});
 
   // ── Estado del cupón de descuento ─────────────────────────────────────────
   const [couponInput, setCouponInput] = useState('');
@@ -327,8 +326,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
       {/* Formulario de huésped */}
       <div className={styles.guestForm}>
         <h3>{t('guestDataTitle')}</h3>
-
-        {error && <div className={styles.errorBanner}>{error}</div>}
 
         <div className={styles.formGrid}>
           {/* Nombre completo */}
@@ -591,7 +588,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                       aria-label={`${t('companionNamePlaceholder')} ${idx + 2}`}
                       value={g.fullName}
                       onChange={(e) => updateAdditionalGuest(idx, 'fullName', e.target.value)}
-                      className={`${styles.guestDeclInput} ${!g.fullName.trim() ? styles.inputInvalid : ''}`}
+                      onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], fullName: true } }))}
+                      className={`${styles.guestDeclInput} ${companionTouched[g.id]?.fullName && !g.fullName.trim() ? styles.inputInvalid : ''}`}
                     />
                     <div className={styles.guestDeclDocWrap}>
                       <input
@@ -601,8 +599,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                         maxLength={20}
                         value={g.document}
                         onChange={(e) => updateAdditionalGuest(idx, 'document', e.target.value)}
+                        onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], document: true } }))}
                         className={`${styles.guestDeclInput} ${
-                          ok === true ? styles.inputValid : ok === false ? styles.inputInvalid : ''
+                          ok === true ? styles.inputValid : (companionTouched[g.id]?.document && ok === false) ? styles.inputInvalid : ''
                         }`}
                       />
                       {ok === true && (
@@ -787,7 +786,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <div>
                 <div className={styles.pmName}>{t('creditCard')}</div>
                 <div className={styles.pmDetail}>
-                  {t('cardDepositDetail', { amount: depositAmount.toLocaleString('pt-BR') })}
+                  {t('cardDepositDetail', { amount: displayDeposit.toLocaleString('pt-BR') })}
                 </div>
               </div>
             </div>

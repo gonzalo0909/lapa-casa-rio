@@ -8,6 +8,7 @@ import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-r
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
 import { seasonForDateStr } from '@/lib/apartment-seasons';
+import { minCheckInDs } from './apartment-engine.utils';
 
 /** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
  * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
@@ -48,26 +49,6 @@ function fmtShort(ds: string | null, locale: string): string {
   const d = parseDs(ds);
   return String(d.getDate()).padStart(2, '0') + ' ' + monthShortLabel(d.getFullYear(), d.getMonth(), locale);
 }
-/**
- * Espeja minCheckInDs() de apartment-engine.utils.ts.
- * Antes de las 12:00 BRT → hoy disponible.
- * A partir de las 12:00 BRT → hoy bloqueado, devuelve mañana.
- */
-function minCheckInDs(): string {
-  const now = new Date();
-  const hourParts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    hour: 'numeric',
-    hour12: false,
-  }).formatToParts(now);
-  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
-  const todaySp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
-  if (hourBrt >= 12) {
-    const [y, m, d] = todaySp.split('-').map(Number) as [number, number, number];
-    return toDs(new Date(y, m - 1, d + 1));
-  }
-  return todaySp;
-}
 
 function monthCells(
   y: number,
@@ -75,12 +56,16 @@ function monthCells(
   cin: string | null,
   cout: string | null,
   blocked: Set<string>,
-  onDayClick: (ds: string) => void
+  onDayClick: (ds: string) => void,
+  hoverDs: string | null,
+  onDayHover: (ds: string | null) => void,
 ): React.ReactNode {
   const dim = new Date(y, m + 1, 0).getDate();
   const fdow = new Date(y, m, 1).getDay();
   const today = minCheckInDs(); // fecha mínima seleccionable (corte 12h)
-  const hasEnd = !!(cin && cout);
+  // Rango efectivo: checkout real o hover (solo cuando se está eligiendo checkout)
+  const endDs = cout || (!cout && cin && hoverDs && hoverDs > cin ? hoverDs : null);
+  const hasEnd = !!(cin && endDs);
   const cells: React.ReactNode[] = [];
   for (let i = 0; i < fdow; i++) {
     cells.push(<span key={'e' + i} className={`${styles.miniDay} ${styles.miniDayPast}`} />);
@@ -89,8 +74,8 @@ function monthCells(
     const s = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const past = s < today;
     const isCin = s === cin;
-    const isCout = s === cout;
-    const inRng = hasEnd && s > (cin as string) && s < (cout as string);
+    const isCout = s === (cout ?? (hoverDs && !cout && cin && hoverDs > cin ? hoverDs : null));
+    const inRng = hasEnd && s > (cin as string) && s < (endDs as string);
     const isBlocked = blocked.has(s);
     let cls = styles.miniDay;
     if (past) { cls += ` ${styles.miniDayPast}`; }
@@ -105,6 +90,7 @@ function monthCells(
         className={cls}
         disabled={past || isBlocked}
         onClick={() => onDayClick(s)}
+        onMouseEnter={() => !past && !isBlocked && onDayHover(s)}
       >
         {d}
       </button>
@@ -130,6 +116,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'min-nights'; minNights?: number } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
+  const [hoverDs, setHoverDs] = useState<string | null>(null);
 
   // Single-month display: offset from the check-in month (0 = check-in month, 1 = next, etc.)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -281,8 +268,8 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       </div>
 
       {/* Day cells — single month */}
-      <div className={styles.miniDayCells}>
-        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick)}
+      <div className={styles.miniDayCells} onMouseLeave={() => setHoverDs(null)}>
+        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick, hoverDs, setHoverDs)}
       </div>
 
       {/* Apply / hint bar */}

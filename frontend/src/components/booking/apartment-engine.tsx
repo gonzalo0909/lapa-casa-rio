@@ -89,7 +89,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
   const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
-    Array.from({ length: Math.max(0, 2 - 1) }, () => ({
+    Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
       id: Math.random().toString(36).slice(2),
       fullName: '',
       document: '',
@@ -273,7 +273,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         })),
         arrivalTime: guestForm.arrivalTime || undefined,
         specialRequests: guestForm.specialRequests.trim() || undefined,
-        language: locale === 'de' || locale === 'fr' || locale === 'it' ? 'en' : locale,
+        language: locale === 'pt' || locale === 'es' ? locale : 'en',
         source: 'web',
         guestGender: 'mixed',
         ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),
@@ -497,7 +497,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             guestForm={guestForm}
             touched={touched}
             isCreatingBooking={isCreatingBooking}
-            error={error}
             onFieldChange={(field, value) => setGuestForm((f) => ({ ...f, [field]: value }))}
             onFieldBlur={(field) => setTouched((tt) => ({ ...tt, [field]: true }))}
             onReserve={handleReserve}
@@ -508,7 +507,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onCouponApply={(coupon) => setAppliedCoupon(coupon)}
             onCouponRemove={() => setAppliedCoupon(null)}
             onValidateCoupon={async (code) => {
-              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '');
+              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '', checkOut ?? '');
               return res?.data;
             }}
             documentPhoto={documentPhoto}

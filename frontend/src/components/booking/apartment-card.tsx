@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -77,6 +77,8 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const [calOpen, setCalOpen] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
 
+  useEffect(() => { setPhotoIdx(0); }, [apartment.id]);
+
   // WhatsApp share — construye el link al cargar (client-side), incluye URL de la página
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
   const pageUrl = `${siteUrl}${pathname}`;
@@ -84,7 +86,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
   const isSelectable = !disabledReason;
   const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
-  const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round(apartment.basePrice * apartment.seasonMultiplier);
+  const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round((apartment.basePrice ?? 0) * (apartment.seasonMultiplier ?? 1));
   const photos = apartment.photos ?? [];
   const hasPhotos = photos.length > 0;
   const currentPhoto = photos[photoIdx];

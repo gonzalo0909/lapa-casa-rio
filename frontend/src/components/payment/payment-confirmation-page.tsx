@@ -68,7 +68,7 @@ export const PaymentConfirmationPage: React.FC<PaymentConfirmationPageProps> = (
     setIsLoading(true);
     setError(null);
     try {
-      const response = await bookingAPI.getById(bookingId);
+      const response = await bookingAPI.getConfirmation(bookingId);
       const data = response.data;
       setBooking({
         status: data.booking.status,

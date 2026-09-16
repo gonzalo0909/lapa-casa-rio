@@ -312,7 +312,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   };
 
   /** Cambia el número de huéspedes y sincroniza la lista de acompañantes.
-   *  Al subir a 2 se añade una fila vacía; al bajar a 1 se limpia la lista. */
+   *  Al subir a 2 se añade una fila vacía; al bajar a 1 se limpia la lista
+   *  y se descarta la foto del acompañante para que no se envíe al backend. */
   const handleGuestCountChange = useCallback((n: number) => {
     setGuestCount(n);
     setAdditionalGuests((prev) => {
@@ -327,6 +328,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       }
       return prev.slice(0, needed);
     });
+    if (n <= 1) {
+      setCompanionDocumentPhoto(null);
+    }
   }, []);
 
   const goBack = () => {

@@ -199,7 +199,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // caso de uso. Esto además rompía `next build` (noUnusedLocals),
   // pre-existente a esta sesión y sin relación con el resto de fixes.
 
-  function removeGuest(_index: number) {
+  function removeGuest(index: number) {
+    onAdditionalGuestsChange(additionalGuests.filter((_, i) => i !== index));
     onGuestCountChange(Math.max(1, guestCount - 1));
   }
 

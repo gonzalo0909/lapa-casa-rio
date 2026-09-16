@@ -228,16 +228,19 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     setIsCreatingBooking(true);
     setError(null);
     try {
-      // Convertir foto del documento a base64 si el usuario la adjuntó
-      let documentPhotoBase64: string | undefined;
-      if (documentPhoto) {
-        documentPhotoBase64 = await new Promise<string>((resolve, reject) => {
+      // Convierte un File a data URL base64
+      const toBase64 = (file: File): Promise<string> =>
+        new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = () => reject(new Error('Error al leer la foto del documento'));
-          reader.readAsDataURL(documentPhoto);
+          reader.readAsDataURL(file);
         });
-      }
+
+      // Foto del titular
+      const documentPhotoBase64 = documentPhoto ? await toBase64(documentPhoto) : undefined;
+      // Foto del acompañante (si hay uno)
+      const companionPhotoBase64 = companionDocumentPhoto ? await toBase64(companionDocumentPhoto) : undefined;
 
       const nameParts = guestForm.fullName.trim().split(/\s+/);
       const firstName = nameParts[0] ?? guestForm.fullName.trim();
@@ -256,10 +259,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           ...(documentPhotoBase64 ? { documentPhotoBase64 } : {}),
         },
         // Acompañantes declarados en el checkout (booking_guests)
-        additionalGuests: additionalGuests.map((g) => ({
+        additionalGuests: additionalGuests.map((g, idx) => ({
           fullName: g.fullName,
           document: g.document,
           documentType: /[a-zA-Z]/.test(g.document) ? 'passaporte' : 'CPF',
+          // Adjunta la foto del acompañante solo al primer acompañante (máx. 1)
+          ...(idx === 0 && companionPhotoBase64 ? { documentPhotoBase64: companionPhotoBase64 } : {}),
         })),
         arrivalTime: guestForm.arrivalTime || undefined,
         specialRequests: guestForm.specialRequests.trim() || undefined,

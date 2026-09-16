@@ -297,6 +297,8 @@ export const bookingAPI = {
       fullName: string;
       document: string;
       documentType?: string;
+      /** Foto del DNI/pasaporte del acompañante (data URL base64) — opcional. */
+      documentPhotoBase64?: string;
     }>;
     specialRequests?: string;
     arrivalTime?: string;

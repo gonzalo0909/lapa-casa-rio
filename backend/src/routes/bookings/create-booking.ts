@@ -50,6 +50,8 @@ interface CreateBookingRequest {
     fullName: string;
     document: string;
     documentType?: string; // 'CPF' | 'RG' | 'passaporte' — default 'CPF'
+    /** Foto del DNI/pasaporte del acompañante (data URL base64) — opcional. */
+    documentPhotoBase64?: string;
   }>;
   specialRequests?: string;
   arrivalTime?: string;
@@ -93,23 +95,37 @@ async function anyDocumentBlocked(documents: string[]): Promise<boolean> {
 async function insertBookingGuests(
   reservationId: string,
   titular: { fullName: string; document: string; documentType: string },
-  additional: Array<{ fullName: string; document: string; documentType?: string }>,
+  additional: Array<{ fullName: string; document: string; documentType?: string; photoUrl?: string; photoPublicId?: string }>,
 ): Promise<void> {
   const guests = [
-    { ...titular, isTitular: true },
-    ...additional.map((g) => ({ ...g, documentType: g.documentType ?? 'CPF', isTitular: false })),
+    { ...titular, isTitular: true, photoUrl: null as string | null, photoPublicId: null as string | null },
+    ...additional.map((g) => ({
+      ...g,
+      documentType: g.documentType ?? 'CPF',
+      isTitular: false,
+      photoUrl: g.photoUrl ?? null,
+      photoPublicId: g.photoPublicId ?? null,
+    })),
   ];
   // INSERT en batch usando unnest para evitar N queries individuales
   const names = guests.map((g) => g.fullName);
   const docs = guests.map((g) => g.document.replace(/\D/g, '') || g.document); // normaliza CPF
   const types = guests.map((g) => g.documentType);
   const titular_flags = guests.map((g) => g.isTitular);
+  const photo_urls = guests.map((g) => g.photoUrl);
+  const photo_pids = guests.map((g) => g.photoPublicId);
+  const now = new Date().toISOString();
+  const uploaded_ats = guests.map((g) => (g.photoUrl ? now : null));
   await query(
-    `INSERT INTO booking_guests (reservation_id, full_name, document_number, document_type, is_titular)
-     SELECT $1, name, doc, dtype, is_tit
-     FROM unnest($2::text[], $3::text[], $4::text[], $5::bool[])
-            AS t(name, doc, dtype, is_tit)`,
-    [reservationId, names, docs, types, titular_flags],
+    `INSERT INTO booking_guests
+       (reservation_id, full_name, document_number, document_type, is_titular,
+        document_photo_url, document_photo_public_id, document_photo_uploaded_at)
+     SELECT $1, name, doc, dtype, is_tit, photo_url, photo_pid,
+            CASE WHEN photo_url IS NOT NULL THEN $8::timestamptz ELSE NULL END
+     FROM unnest($2::text[], $3::text[], $4::text[], $5::bool[],
+                 $6::text[], $7::text[])
+            AS t(name, doc, dtype, is_tit, photo_url, photo_pid)`,
+    [reservationId, names, docs, types, titular_flags, photo_urls, photo_pids, now],
   );
 }
 
@@ -522,15 +538,34 @@ export const createBookingHandler = async (
     // ── Registro de hóspedes declarados (booking_guests) ─────────────────────
     // Fire-and-forget: si falla, la reserva ya quedó guardada correctamente.
     // El admin puede completar el registro en el check-in físico.
-    insertBookingGuests(
-      booking.id,
-      {
-        fullName,
-        document: bookingData.guest.document ?? '',
-        documentType: /[a-zA-Z]/.test(bookingData.guest.document ?? '') ? 'passaporte' : 'CPF',
-      },
-      bookingData.additionalGuests ?? [],
-    ).catch((err) => {
+    (async () => {
+      // Subir fotos de documento de acompañantes a Cloudinary antes del INSERT
+      const additionalWithPhotos = await Promise.all(
+        (bookingData.additionalGuests ?? []).map(async (g) => {
+          if (!g.documentPhotoBase64) { return g; }
+          try {
+            const photoBuffer = decodeBase64Image(g.documentPhotoBase64);
+            const photo = await uploadDocumentPhoto(photoBuffer);
+            return { ...g, photoUrl: photo.url, photoPublicId: photo.publicId };
+          } catch (err) {
+            logger.error('No se pudo subir foto de acompañante a Cloudinary', {
+              bookingId: booking.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+            return g;
+          }
+        }),
+      );
+      await insertBookingGuests(
+        booking.id,
+        {
+          fullName,
+          document: bookingData.guest.document ?? '',
+          documentType: /[a-zA-Z]/.test(bookingData.guest.document ?? '') ? 'passaporte' : 'CPF',
+        },
+        additionalWithPhotos,
+      );
+    })().catch((err) => {
       logger.error('No se pudo insertar booking_guests', {
         bookingId: booking.id,
         error: err instanceof Error ? err.message : String(err),

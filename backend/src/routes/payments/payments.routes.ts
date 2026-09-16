@@ -16,8 +16,22 @@ import { query } from '../../config/database';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
 import { groupPaymentService } from '../../services/group-payment-service';
+import { authenticateToken, requireRole } from '../../middleware/auth';
+import { generateConfirmationToken } from '../../utils/confirmation-token';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
+import type { Request, Response, NextFunction } from 'express';
+
+// Middleware: verifies confirmationToken against the booking's reservationId.
+// Reads reservationId from req.body; token from req.body.confirmationToken.
+const verifyBookingToken = (req: Request, res: Response, next: NextFunction): void => {
+  const { reservationId, confirmationToken } = req.body as Record<string, string | undefined>;
+  if (!reservationId || !confirmationToken || confirmationToken !== generateConfirmationToken(reservationId)) {
+    res.status(403).json(ApiResponse.error('Invalid or missing confirmation token'));
+    return;
+  }
+  next();
+};
 
 const router = Router();
 
@@ -114,13 +128,13 @@ router.get('/surcharge', async (_req, res, next) => {
 });
 
 // POST /payments/intent
-router.post('/intent', createPaymentIntentHandler);
+router.post('/intent', verifyBookingToken, createPaymentIntentHandler);
 
-// POST /payments/confirm
-router.post('/confirm', confirmPaymentHandler);
+// POST /payments/confirm — verifies token using reservationId from body
+router.post('/confirm', verifyBookingToken, confirmPaymentHandler);
 
 // POST /payments/deposit
-router.post('/deposit', processDepositHandler);
+router.post('/deposit', verifyBookingToken, processDepositHandler);
 
 // POST /payments/deposit-mp-card — pago con tarjeta brasileña via MP (token del SDK)
 router.post('/deposit-mp-card', depositMpCardHandler);
@@ -283,13 +297,24 @@ router.post(
   }
 );
 
-// GET /payments/:id/status
+// GET /payments/:id/status — requires reservationId + token as query params
 router.get('/:id/status', async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { reservationId, token } = req.query as Record<string, string | undefined>;
+
+    if (!reservationId || !token || token !== generateConfirmationToken(reservationId)) {
+      res.status(403).json(ApiResponse.error('Invalid or missing confirmation token'));
+      return;
+    }
+
     const payment = await paymentService.getPaymentById(id);
     if (!payment) {
       res.status(404).json(ApiResponse.error('Pago no encontrado', { paymentId: id }));
+      return;
+    }
+    if (payment.reservation_id !== reservationId) {
+      res.status(403).json(ApiResponse.error('Token does not match this payment'));
       return;
     }
     res.status(200).json(ApiResponse.success({
@@ -299,7 +324,6 @@ router.get('/:id/status', async (req, res, next) => {
       currency: payment.currency,
       provider: payment.provider,
       paymentType: payment.payment_type,
-      providerPaymentId: payment.provider_payment_id,
       paidAt: payment.paid_at,
       createdAt: payment.created_at,
     }, 'Estado del pago'));
@@ -308,8 +332,8 @@ router.get('/:id/status', async (req, res, next) => {
   }
 });
 
-// GET /payments/reservation/:reservationId
-router.get('/reservation/:reservationId', async (req, res, next) => {
+// GET /payments/reservation/:reservationId (admin/staff only)
+router.get('/reservation/:reservationId', authenticateToken, requireRole(['admin', 'staff']), async (req, res, next) => {
   try {
     const { reservationId } = req.params;
     const booking = await bookingService.getBooking(reservationId);

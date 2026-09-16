@@ -8,7 +8,7 @@
 //   - tarjeta internacional → cambia automáticamente al form de Stripe
 
 import React, { useState, useEffect, useRef } from 'react';
-import { paymentAPI } from '@/lib/api';
+import { paymentAPI, getBookingToken } from '@/lib/api';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { type PaymentLocale, createPaymentT } from './payment-i18n';
 import { MpCardPayment } from './mp-card-payment';
@@ -178,7 +178,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
     setMode('switching');
     setStripeError(null);
     try {
-      const res = await paymentAPI.processDeposit(reservationId, 'stripe');
+      const res = await paymentAPI.processDeposit(reservationId, 'stripe', undefined, getBookingToken(reservationId));
       const raw = (res as any).data;
       const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;
       setStripeData({
@@ -248,6 +248,8 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
               amount={stripeData.amount}
               currency={stripeData.currency}
               locale={locale}
+              reservationId={reservationId}
+              confirmationToken={getBookingToken(reservationId) ?? undefined}
               onSuccess={onSuccess}
               onError={onError}
             />

@@ -26,6 +26,8 @@ interface CardPaymentProps {
   amount: number;
   currency: string;
   locale?: PaymentLocale;
+  reservationId?: string;
+  confirmationToken?: string;
   onSuccess: (paymentData: { paymentId: string; amount: number; currency: string }) => void;
   onError: (error: Error) => void;
 }
@@ -55,7 +57,7 @@ function getCardElementOptions(isDark: boolean) {
   };
 }
 
-export function CardPayment({ paymentId, clientSecret, amount, currency, locale = 'pt', onSuccess, onError }: CardPaymentProps) {
+export function CardPayment({ paymentId, clientSecret, amount, currency, locale = 'pt', reservationId, confirmationToken, onSuccess, onError }: CardPaymentProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -116,7 +118,7 @@ export function CardPayment({ paymentId, clientSecret, amount, currency, locale 
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        await paymentAPI.confirm(paymentId);
+        await paymentAPI.confirm(paymentId, reservationId ?? '', confirmationToken);
         onSuccess({ paymentId, amount, currency });
       }
     } catch (err) {

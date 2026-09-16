@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { paymentAPI } from '@/lib/api';
+import { paymentAPI, getBookingToken } from '@/lib/api';
 import { PixPayment } from './pix-payment';
 import { AutoCardPayment } from './auto-card-payment';
 import { type PaymentLocale, createPaymentT } from './payment-i18n';
@@ -230,7 +230,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const res = await paymentAPI.processDeposit(reservationId, 'mercadopago');
+        const res = await paymentAPI.processDeposit(reservationId, 'mercadopago', undefined, getBookingToken(reservationId));
         const raw = (res as any).data;
         const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;
         setPixData({
@@ -340,6 +340,8 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
               qrCodeBase64={pixData.qrCodeBase64}
               amount={pixData.amount}
               locale={loc}
+              reservationId={reservationId}
+              confirmationToken={getBookingToken(reservationId)}
               onSuccess={handlePixSuccess}
               onError={handlePaymentError}
             />

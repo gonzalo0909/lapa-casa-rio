@@ -89,7 +89,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
   const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
-    Array.from({ length: Math.max(0, 2 - 1) }, () => ({
+    Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
       id: Math.random().toString(36).slice(2),
       fullName: '',
       document: '',
@@ -151,6 +151,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       return;
     }
     setStep(2);
+    scrollToContent();
     loadApartments(checkIn, checkOut);
   };
 
@@ -400,7 +401,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           ))}
         </div>
 
-        {error && <div className={styles.errorBanner}>{error}</div>}
+        {/* Step 3 renders the error internally via ApartmentGuestForm to avoid duplication */}
+        {error && step !== 3 && <div className={styles.errorBanner}>{error}</div>}
 
         {/* Avisos generales */}
         <div className={styles.notices}>

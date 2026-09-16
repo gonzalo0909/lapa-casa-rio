@@ -526,6 +526,7 @@
     "seasonBaixaShort": "Basse",
     "seasonMediaShort": "Moyenne",
     "minNightsWarning": "<b>{seasonLabel} :</b> séjour minimum de <b>{nights, plural, one {# nuit} other {# nuits}}</b>. Le Carnaval (saison dynamique) peut exiger {carnavalNights} nuits — la disponibilité réelle est confirmée à l'étape suivante.",
+    "minNightsError": "Minimum {n} nuits",
     "selectCheckinDate": "Sélectionnez la date d'arrivée",
     "selectCheckoutDate": "Sélectionnez la date de départ",
     "checkinSelectedHint": "<b>Arrivée :</b> {date} — sélectionnez la date de départ",
@@ -750,6 +751,7 @@
     "message": "Nous utilisons des cookies propres et tiers (Google Analytics, Meta Pixel) pour comprendre votre navigation et améliorer votre expérience.",
     "learnMore": "En savoir plus",
     "accept": "Accepter",
-    "reject": "Refuser"
+    "reject": "Refuser",
+    "minNightsError": "Minimum {n} nuits"
   }
 }

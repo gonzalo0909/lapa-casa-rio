@@ -198,7 +198,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // caso de uso. Esto además rompía `next build` (noUnusedLocals),
   // pre-existente a esta sesión y sin relación con el resto de fixes.
 
-  function removeGuest(_index: number) {
+  function removeGuest(index: number) {
+    const updated = additionalGuests.filter((_, i) => i !== index);
+    onAdditionalGuestsChange(updated);
     onGuestCountChange(Math.max(1, guestCount - 1));
   }
 
@@ -787,7 +789,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <div>
                 <div className={styles.pmName}>{t('creditCard')}</div>
                 <div className={styles.pmDetail}>
-                  {t('cardDepositDetail', { amount: depositAmount.toLocaleString('pt-BR') })}
+                  {t('cardDepositDetail', { amount: displayDeposit.toLocaleString('pt-BR') })}
                 </div>
               </div>
             </div>

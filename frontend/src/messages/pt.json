@@ -526,13 +526,14 @@
     "seasonBaixaShort": "Baixa",
     "seasonMediaShort": "Média",
     "minNightsWarning": "<b>{seasonLabel}:</b> estadia mínima de <b>{nights, plural, one {# noite} other {# noites}}</b>. O Carnaval (temporada dinâmica) pode exigir {carnavalNights} noites — a disponibilidade real se confirma no próximo passo.",
+    "minNightsError": "Mínimo {n} noites",
     "selectCheckinDate": "Selecione a data de entrada",
     "selectCheckoutDate": "Selecione a data de saída",
     "checkinSelectedHint": "<b>Entrada:</b> {date} — selecione a saída",
     "availableForGuests": "{count, plural, one {# apartamento disponível} other {# apartamentos disponíveis}} para {guests, plural, one {# hóspede} other {# hóspedes}}",
     "backToStep": "Voltar ao passo {n} ({label})",
     "otaBanner": "Reservando direto você paga <b>R$ {saving} a menos</b> do que em plataformas internacionais — sem taxas de intermediário.",
-    "guest": "h\u00f3spede",
+    "guest": "hóspede",
     "guests": "Hóspedes",
     "season": "Temporada",
     "location": "Localização",
@@ -750,6 +751,7 @@
     "message": "Usamos cookies próprios e de terceiros (Google Analytics, Meta Pixel) para entender como você usa o site e melhorar sua experiência.",
     "learnMore": "Saiba mais",
     "accept": "Aceitar",
-    "reject": "Recusar"
+    "reject": "Recusar",
+    "minNightsError": "Mínimo {n} noites"
   }
 }

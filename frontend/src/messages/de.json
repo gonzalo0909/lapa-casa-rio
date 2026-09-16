@@ -526,6 +526,7 @@
     "seasonBaixaShort": "Niedrig",
     "seasonMediaShort": "Mittel",
     "minNightsWarning": "<b>{seasonLabel}:</b> Mindestaufenthalt von <b>{nights, plural, one {# Nacht} other {# Nächte}}</b>. Der Karneval (dynamische Saison) kann {carnavalNights} Nächte erfordern — die tatsächliche Verfügbarkeit wird im nächsten Schritt bestätigt.",
+    "minNightsError": "Mindestens {n} Nächte",
     "selectCheckinDate": "Wählen Sie das Anreisedatum",
     "selectCheckoutDate": "Wählen Sie das Abreisedatum",
     "checkinSelectedHint": "<b>Anreise:</b> {date} — wählen Sie das Abreisedatum",
@@ -750,6 +751,7 @@
     "message": "Wir verwenden eigene Cookies und Cookies von Drittanbietern (Google Analytics, Meta Pixel), um zu verstehen, wie Sie die Website nutzen, und Ihr Erlebnis zu verbessern.",
     "learnMore": "Mehr erfahren",
     "accept": "Akzeptieren",
-    "reject": "Ablehnen"
+    "reject": "Ablehnen",
+    "minNightsError": "Mindestens {n} Nächte"
   }
 }

@@ -526,6 +526,7 @@
     "seasonBaixaShort": "Low",
     "seasonMediaShort": "Mid",
     "minNightsWarning": "<b>{seasonLabel}:</b> minimum stay of <b>{nights, plural, one {# night} other {# nights}}</b>. Carnival (a dynamic season) may require {carnavalNights} nights — actual availability is confirmed in the next step.",
+    "minNightsError": "Minimum {n} nights",
     "selectCheckinDate": "Select the check-in date",
     "selectCheckoutDate": "Select the check-out date",
     "checkinSelectedHint": "<b>Check-in:</b> {date} — select the check-out date",
@@ -750,6 +751,7 @@
     "message": "We use our own and third-party cookies (Google Analytics, Meta Pixel) to understand how you use the site and improve your experience.",
     "learnMore": "Learn more",
     "accept": "Accept",
-    "reject": "Reject"
+    "reject": "Reject",
+    "minNightsError": "Minimum {n} nights"
   }
 }

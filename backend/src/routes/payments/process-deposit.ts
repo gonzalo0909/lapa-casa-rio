@@ -50,7 +50,8 @@ export const processDepositHandler = async (
 
     const existingPayments = await paymentService.getPaymentsByReservation(reservationId);
     const depositPayment = existingPayments.find(
-      p => p.payment_type === 'deposit' && p.status === 'succeeded'
+      p => p.payment_type === 'deposit' &&
+           ['succeeded', 'pending', 'in_process'].includes(p.status)
     );
 
     if (depositPayment) {
@@ -64,7 +65,8 @@ export const processDepositHandler = async (
     }
 
     const bedsCount = booking.beds_count ?? 0;
-    const depositPercentage = bedsCount >= 15 ? 0.50 : 0.30;
+    const storedPercent = Number(booking.deposit_percent ?? 0);
+    const depositPercentage = storedPercent > 0 ? storedPercent : (bedsCount >= 15 ? 0.50 : 0.30);
     const depositAmount = Number(booking.deposit_amount);
 
     // El recargo solo aplica a tarjeta (Stripe cobra comisión real); PIX

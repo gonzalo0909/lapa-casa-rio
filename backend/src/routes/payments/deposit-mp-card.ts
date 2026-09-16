@@ -64,7 +64,10 @@ export const depositMpCardHandler = async (
 
     // Idempotencia: no cobrar si el depósito ya fue pagado
     const existingPayments = await paymentService.getPaymentsByReservation(reservationId);
-    const depositPaid = existingPayments.find(p => p.payment_type === 'deposit' && p.status === 'succeeded');
+    const depositPaid = existingPayments.find(
+      p => p.payment_type === 'deposit' &&
+           ['succeeded', 'pending', 'in_process'].includes(p.status)
+    );
     if (depositPaid) {
       res.status(409).json(ApiResponse.error('O depósito já foi pago', { paymentId: depositPaid.id }));
       return;
@@ -128,7 +131,8 @@ export const depositMpCardHandler = async (
     }
 
     const bedsCount = booking.beds_count ?? 0;
-    const depositPercentage = bedsCount >= 15 ? 0.50 : 0.30;
+    const storedPercent = Number(booking.deposit_percent ?? 0);
+    const depositPercentage = storedPercent > 0 ? storedPercent : (bedsCount >= 15 ? 0.50 : 0.30);
 
     res.status(200).json(
       ApiResponse.success({

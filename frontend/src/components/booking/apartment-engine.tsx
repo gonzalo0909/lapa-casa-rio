@@ -289,13 +289,17 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
       const discountedTotal = Math.round(totalPrice * discountFactor);
       const discountedDeposit = Math.round(depositAmount * discountFactor);
+      // Resolver total y deposit antes de calcular remaining para que los tres
+      // valores sean siempre coherentes entre sí (server o frontend, nunca mixtos).
+      const resolvedTotal = b.pricing?.total ?? discountedTotal;
+      const resolvedDeposit = b.payment?.depositAmount ?? discountedDeposit;
       setBooking({
         id: b.id,
         confirmationNumber: b.confirmationNumber,
         pendingExpiresAt: b.pendingExpiresAt ?? null,
-        total: b.pricing?.total ?? discountedTotal,
-        deposit: b.payment?.depositAmount ?? discountedDeposit,
-        remaining: b.pricing?.remaining ?? discountedTotal - discountedDeposit,
+        total: resolvedTotal,
+        deposit: resolvedDeposit,
+        remaining: b.pricing?.remaining ?? (resolvedTotal - resolvedDeposit),
         checkIn,
         referralCode: b.referralCode ?? null,
       });

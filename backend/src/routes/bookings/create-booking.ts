@@ -669,15 +669,17 @@ export const createBookingHandler = async (
               depositDueDate: booking.pending_expires_at,
               remainingAmount: pricingDetails.remainingAmount,
               // Apartamentos ≥48h: 70% vence la mañana del check-in (8am SP).
-              // Apartamentos <48h: remaining = 0, esta fecha es irrelevante.
+              // Apartamentos <48h: remaining = 0, no hay saldo → null.
               // Hostel: 7 días antes del check-in (modelo clásico).
-              remainingDueDate: isApartmentBooking
-                ? (() => {
-                    const morning = new Date(checkIn);
-                    morning.setUTCHours(11, 0, 0, 0); // 8:00 AM São Paulo = 11:00 UTC
-                    return morning.toISOString();
-                  })()
-                : new Date(checkIn.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+              remainingDueDate: pricingDetails.remainingAmount === 0
+                ? null
+                : isApartmentBooking
+                  ? (() => {
+                      const morning = new Date(checkIn);
+                      morning.setUTCHours(11, 0, 0, 0); // 8:00 AM São Paulo = 11:00 UTC
+                      return morning.toISOString();
+                    })()
+                  : new Date(checkIn.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             },
             // Expiración real del hold (5 min) para que el frontend arme el
             // contador regresivo con el dato correcto, no un valor inventado.

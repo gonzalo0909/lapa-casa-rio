@@ -15,6 +15,11 @@ if (dsn) {
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     // Evita enviar datos en desarrollo local si no hay DSN configurado
     enabled: !!dsn,
+    // Ignorar errores de configuración esperados: la ruta ya los captura,
+    // devuelve 422 al cliente y loguea el warning. No son bugs del código.
+    ignoreErrors: [
+      'Cloudinary no está configurado',
+    ],
   });
   console.info('[Sentry] Inicializado en entorno:', process.env.NODE_ENV);
 } else {

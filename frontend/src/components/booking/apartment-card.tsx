@@ -2,14 +2,14 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useCurrency, convertBRL } from '@/hooks/use-currency';
 import {
   Building2, Landmark, Home, Palette, Mountain, Music, Leaf, Building,
-  Sparkles, Clapperboard, Calendar, AlertTriangle,
+  Sparkles, Clapperboard, Calendar, AlertTriangle, Clock,
   MapPin, ChevronLeft, ChevronRight, type LucideIcon,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
@@ -55,6 +55,7 @@ interface ApartmentCardProps {
   globalCheckOut: Date;
   onApplyDates: (range: { checkIn: Date; checkOut: Date }) => void;
   onContinue?: () => void;
+  guestCount?: number;
 }
 
 export const ApartmentCard: React.FC<ApartmentCardProps> = ({
@@ -67,6 +68,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   globalCheckOut,
   onApplyDates,
   onContinue,
+  guestCount,
 }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
@@ -75,6 +77,8 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const [calOpen, setCalOpen] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
 
+  useEffect(() => { setPhotoIdx(0); }, [apartment.id]);
+
   // WhatsApp share — construye el link al cargar (client-side), incluye URL de la página
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
   const pageUrl = `${siteUrl}${pathname}`;
@@ -82,7 +86,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
   const isSelectable = !disabledReason;
   const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
-  const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round(apartment.basePrice * apartment.seasonMultiplier);
+  const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round((apartment.basePrice ?? 0) * (apartment.seasonMultiplier ?? 1));
   const photos = apartment.photos ?? [];
   const hasPhotos = photos.length > 0;
   const currentPhoto = photos[photoIdx];
@@ -107,8 +111,8 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
         {hasPhotos ? (
           <>
             <Image
-              src={currentPhoto!.url}
-              alt={currentPhoto!.altText ?? apartment.name}
+              src={currentPhoto?.url ?? ''}
+              alt={currentPhoto?.altText ?? apartment.name}
               className={styles.aptPhotoImg}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 350px"
@@ -116,10 +120,10 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
             />
             {photos.length > 1 && (
               <>
-                <button type="button" className={`${styles.photoNav} ${styles.photoNavPrev}`} onClick={prevPhoto} aria-label="Foto anterior">
+                <button type="button" className={`${styles.photoNav} ${styles.photoNavPrev}`} onClick={prevPhoto} aria-label={t('photoNavPrev')}>
                   <ChevronLeft size={16} />
                 </button>
-                <button type="button" className={`${styles.photoNav} ${styles.photoNavNext}`} onClick={nextPhoto} aria-label="Foto siguiente">
+                <button type="button" className={`${styles.photoNav} ${styles.photoNavNext}`} onClick={nextPhoto} aria-label={t('photoNavNext')}>
                   <ChevronRight size={16} />
                 </button>
                 <div className={styles.photoDots}>
@@ -159,9 +163,9 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
               <div className={styles.cardExternalRating}>
                 ⭐ {apartment.externalRating.toFixed(1)}
                 {apartment.externalReviewCount !== null && apartment.externalReviewCount !== undefined && (
-                  <span> · {apartment.externalReviewCount} reseñas</span>
+                  <span> · {t('reviews', { count: apartment.externalReviewCount })}</span>
                 )}
-                <span> · {apartment.externalRatingLabel ?? 'plataformas internacionales'}</span>
+                <span> · {apartment.externalRatingLabel ?? t('externalRatingSource')}</span>
               </div>
             )}
             {disabledReason === 'too-small' && (
@@ -189,6 +193,12 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
               </div>
             </>
           )}
+          {apartment.fullPaymentRequired && (
+            <div className={styles.fullPaymentNotice}>
+              <Clock size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+              {t('fullPaymentRequired48h')}
+            </div>
+          )}
         </div>
         {/* Cuando está seleccionado: mini cal siempre visible + botón Continuar */}
         {selected ? (
@@ -198,6 +208,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
               globalCheckIn={globalCheckIn}
               globalCheckOut={globalCheckOut}
               onApply={(range) => { onApplyDates(range); }}
+              guestCount={guestCount}
             />
             {onContinue && (
               <button
@@ -226,6 +237,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
                 globalCheckIn={globalCheckIn}
                 globalCheckOut={globalCheckOut}
                 onApply={(range) => { onApplyDates(range); setCalOpen(false); }}
+                guestCount={guestCount}
               />
             )}
             <button

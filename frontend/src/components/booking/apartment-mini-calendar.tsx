@@ -7,10 +7,12 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
+import { seasonForDateStr } from '@/lib/apartment-seasons';
+import { minCheckInDs } from './apartment-engine.utils';
 
 /** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
  * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
-const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT' };
 
 function monthLabel(y: number, m: number, locale: string): string {
   return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'long', year: 'numeric' });
@@ -32,6 +34,7 @@ interface ApartmentMiniCalendarProps {
   globalCheckIn: Date;
   globalCheckOut: Date;
   onApply: (range: { checkIn: Date; checkOut: Date }) => void;
+  guestCount?: number;
 }
 
 function toDs(d: Date): string {
@@ -46,26 +49,6 @@ function fmtShort(ds: string | null, locale: string): string {
   const d = parseDs(ds);
   return String(d.getDate()).padStart(2, '0') + ' ' + monthShortLabel(d.getFullYear(), d.getMonth(), locale);
 }
-/**
- * Espeja minCheckInDs() de apartment-engine.utils.ts.
- * Antes de las 12:00 BRT → hoy disponible.
- * A partir de las 12:00 BRT → hoy bloqueado, devuelve mañana.
- */
-function minCheckInDs(): string {
-  const now = new Date();
-  const hourParts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    hour: 'numeric',
-    hour12: false,
-  }).formatToParts(now);
-  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')!.value, 10);
-  const todaySp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
-  if (hourBrt >= 12) {
-    const [y, m, d] = todaySp.split('-').map(Number) as [number, number, number];
-    return toDs(new Date(y, m - 1, d + 1));
-  }
-  return todaySp;
-}
 
 function monthCells(
   y: number,
@@ -73,12 +56,16 @@ function monthCells(
   cin: string | null,
   cout: string | null,
   blocked: Set<string>,
-  onDayClick: (ds: string) => void
+  onDayClick: (ds: string) => void,
+  hoverDs: string | null,
+  onDayHover: (ds: string | null) => void,
 ): React.ReactNode {
   const dim = new Date(y, m + 1, 0).getDate();
   const fdow = new Date(y, m, 1).getDay();
   const today = minCheckInDs(); // fecha mínima seleccionable (corte 12h)
-  const hasEnd = !!(cin && cout);
+  // Rango efectivo: checkout real o hover (solo cuando se está eligiendo checkout)
+  const endDs = cout || (!cout && cin && hoverDs && hoverDs > cin ? hoverDs : null);
+  const hasEnd = !!(cin && endDs);
   const cells: React.ReactNode[] = [];
   for (let i = 0; i < fdow; i++) {
     cells.push(<span key={'e' + i} className={`${styles.miniDay} ${styles.miniDayPast}`} />);
@@ -87,8 +74,8 @@ function monthCells(
     const s = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const past = s < today;
     const isCin = s === cin;
-    const isCout = s === cout;
-    const inRng = hasEnd && s > (cin as string) && s < (cout as string);
+    const isCout = s === (cout ?? (hoverDs && !cout && cin && hoverDs > cin ? hoverDs : null));
+    const inRng = hasEnd && s > (cin as string) && s < (endDs as string);
     const isBlocked = blocked.has(s);
     let cls = styles.miniDay;
     if (past) { cls += ` ${styles.miniDayPast}`; }
@@ -101,8 +88,9 @@ function monthCells(
         key={s}
         type="button"
         className={cls}
-        disabled={past}
+        disabled={past || isBlocked}
         onClick={() => onDayClick(s)}
+        onMouseEnter={() => !past && !isBlocked && onDayHover(s)}
       >
         {d}
       </button>
@@ -116,6 +104,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   globalCheckIn,
   globalCheckOut,
   onApply,
+  guestCount,
 }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
@@ -124,8 +113,10 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [cin, setCin] = useState<string | null>(toDs(globalCheckIn));
   const [cout, setCout] = useState<string | null>(toDs(globalCheckOut));
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<{ available: boolean } | null>(null);
+  const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'min-nights'; minNights?: number } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
+  const [hoverDs, setHoverDs] = useState<string | null>(null);
 
   // Single-month display: offset from the check-in month (0 = check-in month, 1 = next, etc.)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -178,13 +169,23 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   const handleDayClick = (ds: string) => {
     setResult(null);
+    setBlockedRangeWarn(false);
     if (!cin || cout) {
       setCin(ds);
       setCout(null);
     } else if (ds <= cin) {
       setCin(ds);
     } else {
-      setCout(ds);
+      // If any blocked date falls inside (cin, ds) the stay would span an
+      // occupied night — start a fresh selection from the clicked date instead
+      // and warn the user why the checkout was not accepted.
+      const hasBlockedInRange = Array.from(blockedDates).some((b) => b > cin && b < ds);
+      if (hasBlockedInRange) {
+        setCin(ds);
+        setBlockedRangeWarn(true);
+      } else {
+        setCout(ds);
+      }
     }
   };
 
@@ -192,6 +193,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     setCin(toDs(globalCheckIn));
     setCout(toDs(globalCheckOut));
     setResult(null);
+    setBlockedRangeWarn(false);
     setMonthOffset(0);
   };
 
@@ -204,19 +206,31 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   const handleApply = async () => {
     if (!cin || !cout) { return; }
+
+    // Client-side minimum-nights check (mirrors apartment-date-step.tsx).
+    // Regular seasons: alta=3, media=2, baixa=1 (from apartment-seasons.ts).
+    // Carnaval dates are dynamic (DB), so CARNAVAL_MIN_NIGHTS is used as a
+    // lower-bound hint — the API enforces the real limit for that period.
+    const nightCount = Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000);
+    const season = seasonForDateStr(cin);
+    if (nightCount < season.minNights) {
+      setResult({ available: false, reason: 'min-nights', minNights: season.minNights });
+      return;
+    }
+
     setChecking(true);
     setResult(null);
     try {
-      const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout });
+      const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout, ...(guestCount ? { guests: guestCount } : {}) });
       const apartments = res?.data?.apartments ?? [];
       const found = apartments.find((a: { id: string }) => a.id === apartmentId);
       const available = !!found?.available;
-      setResult({ available });
+      setResult({ available, reason: available ? undefined : 'occupied' });
       if (available) {
         onApply({ checkIn: parseDs(cin), checkOut: parseDs(cout) });
       }
     } catch {
-      setResult({ available: false });
+      setResult({ available: false, reason: 'occupied' });
     } finally {
       setChecking(false);
     }
@@ -231,7 +245,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
           className={styles.miniNavBtn}
           onClick={() => setMonthOffset((o) => o - 1)}
           disabled={isAtMinMonth}
-          aria-label="Mês anterior"
+          aria-label={t('miniCalPrev')}
         >
           <ChevronLeft size={14} />
         </button>
@@ -242,7 +256,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
           type="button"
           className={styles.miniNavBtn}
           onClick={() => setMonthOffset((o) => o + 1)}
-          aria-label="Próximo mês"
+          aria-label={t('miniCalNext')}
         >
           <ChevronRight size={14} />
         </button>
@@ -254,8 +268,8 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       </div>
 
       {/* Day cells — single month */}
-      <div className={styles.miniDayCells}>
-        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick)}
+      <div className={styles.miniDayCells} onMouseLeave={() => setHoverDs(null)}>
+        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick, hoverDs, setHoverDs)}
       </div>
 
       {/* Apply / hint bar */}
@@ -276,7 +290,16 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
       {result && !result.available && (
         <div className={styles.miniOccupiedNote}>
-          <AlertTriangle size={13} /> {t('apartmentOccupied')}
+          <AlertTriangle size={13} />{' '}
+          {result.reason === 'min-nights' && result.minNights
+            ? t('minNightsError', { n: result.minNights })
+            : t('apartmentOccupied')}
+        </div>
+      )}
+
+      {blockedRangeWarn && (
+        <div className={styles.miniOccupiedNote}>
+          <AlertTriangle size={13} /> {t('rangeBlockedWarning')}
         </div>
       )}
 
@@ -291,6 +314,8 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
         <span>{t('checkinCheckoutLegend')}</span>
         <span className={styles.miniLegendDot} style={{ background: 'var(--primary-soft)', border: '1px solid var(--primary)' }} />
         <span>{t('periodLegend')}</span>
+        <span className={`${styles.miniLegendDot} ${styles.miniLegendDotBlocked}`} />
+        <span>{t('blockedLegend')}</span>
       </div>
     </div>
   );

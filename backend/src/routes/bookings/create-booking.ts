@@ -50,6 +50,8 @@ interface CreateBookingRequest {
     fullName: string;
     document: string;
     documentType?: string; // 'CPF' | 'RG' | 'passaporte' — default 'CPF'
+    /** Foto del DNI/pasaporte del acompañante (data URL base64) — opcional. */
+    documentPhotoBase64?: string;
   }>;
   specialRequests?: string;
   arrivalTime?: string;
@@ -93,23 +95,37 @@ async function anyDocumentBlocked(documents: string[]): Promise<boolean> {
 async function insertBookingGuests(
   reservationId: string,
   titular: { fullName: string; document: string; documentType: string },
-  additional: Array<{ fullName: string; document: string; documentType?: string }>,
+  additional: Array<{ fullName: string; document: string; documentType?: string; photoUrl?: string; photoPublicId?: string }>,
 ): Promise<void> {
   const guests = [
-    { ...titular, isTitular: true },
-    ...additional.map((g) => ({ ...g, documentType: g.documentType ?? 'CPF', isTitular: false })),
+    { ...titular, isTitular: true, photoUrl: null as string | null, photoPublicId: null as string | null },
+    ...additional.map((g) => ({
+      ...g,
+      documentType: g.documentType ?? 'CPF',
+      isTitular: false,
+      photoUrl: g.photoUrl ?? null,
+      photoPublicId: g.photoPublicId ?? null,
+    })),
   ];
   // INSERT en batch usando unnest para evitar N queries individuales
   const names = guests.map((g) => g.fullName);
   const docs = guests.map((g) => g.document.replace(/\D/g, '') || g.document); // normaliza CPF
   const types = guests.map((g) => g.documentType);
   const titular_flags = guests.map((g) => g.isTitular);
+  const photo_urls = guests.map((g) => g.photoUrl);
+  const photo_pids = guests.map((g) => g.photoPublicId);
+  const now = new Date().toISOString();
+  const uploaded_ats = guests.map((g) => (g.photoUrl ? now : null));
   await query(
-    `INSERT INTO booking_guests (reservation_id, full_name, document_number, document_type, is_titular)
-     SELECT $1, name, doc, dtype, is_tit
-     FROM unnest($2::text[], $3::text[], $4::text[], $5::bool[])
-            AS t(name, doc, dtype, is_tit)`,
-    [reservationId, names, docs, types, titular_flags],
+    `INSERT INTO booking_guests
+       (reservation_id, full_name, document_number, document_type, is_titular,
+        document_photo_url, document_photo_public_id, document_photo_uploaded_at)
+     SELECT $1, name, doc, dtype, is_tit, photo_url, photo_pid,
+            CASE WHEN photo_url IS NOT NULL THEN $8::timestamptz ELSE NULL END
+     FROM unnest($2::text[], $3::text[], $4::text[], $5::bool[],
+                 $6::text[], $7::text[])
+            AS t(name, doc, dtype, is_tit, photo_url, photo_pid)`,
+    [reservationId, names, docs, types, titular_flags, photo_urls, photo_pids, now],
   );
 }
 
@@ -142,7 +158,7 @@ export const createBookingHandler = async (
       hour: 'numeric',
       hour12: false,
     }).formatToParts(now);
-    const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')!.value, 10);
+    const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '12', 10);
 
     // minCheckIn: hoy si son antes de las 12h, mañana si ya pasó el mediodía.
     let minCheckIn = todayInSaoPaulo;
@@ -280,12 +296,14 @@ export const createBookingHandler = async (
       );
       if (offerRows.length > 0) {
         const offer = offerRows[0];
-        // Verificar si aplica al apartamento solicitado (null/vacío = todos)
-        const aptId = bookingData.rooms[0]?.roomId;
+        // Verificar si aplica a TODOS los apartamentos solicitados (null/vacío = todos).
+        // Se comprueba cada roomId para evitar que un código válido solo para un
+        // apartamento se aplique a una reserva que incluye otros apartamentos.
+        const requestedAptIds = bookingData.rooms.map((r) => r.roomId).filter(Boolean);
         const aptOk =
           !offer.apartment_ids ||
           offer.apartment_ids.length === 0 ||
-          (aptId && offer.apartment_ids.includes(aptId));
+          requestedAptIds.every((id) => offer.apartment_ids.includes(id));
         // Un código de referido no aplica sobre la reserva del propio dueño
         // del código (mismo email) -- si no, cualquiera se autorregala 10%.
         let selfReferral = false;
@@ -347,16 +365,24 @@ export const createBookingHandler = async (
       const isApt = aptCheck[0]?.is_apartment ?? false;
 
       if (isApt) {
-        // Para apartamentos: available si NO existe reserva activa solapada.
+        // Para apartamentos: available si NO existe reserva activa solapada NI bloqueo manual.
         const { rows: aptAvail } = await query<{ available: boolean }>(
-          `SELECT NOT EXISTS (
-             SELECT 1
-             FROM reservation_beds rb
-             JOIN beds b ON b.id = rb.bed_id
-             JOIN reservations res ON res.id = rb.reservation_id
-             WHERE b.room_type_id = $1
-               AND res.status != 'cancelled'
-               AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+          `SELECT (
+             NOT EXISTS (
+               SELECT 1
+               FROM reservation_beds rb
+               JOIN beds b ON b.id = rb.bed_id
+               JOIN reservations res ON res.id = rb.reservation_id
+               WHERE b.room_type_id = $1
+                 AND res.status != 'cancelled'
+                 AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+             )
+             AND NOT EXISTS (
+               SELECT 1
+               FROM room_blocks rbl
+               WHERE rbl.room_type_id = $1
+                 AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($2::date, $3::date, '[)')
+             )
            ) AS available`,
           [room.roomId, bookingData.checkIn, bookingData.checkOut]
         );
@@ -522,15 +548,34 @@ export const createBookingHandler = async (
     // ── Registro de hóspedes declarados (booking_guests) ─────────────────────
     // Fire-and-forget: si falla, la reserva ya quedó guardada correctamente.
     // El admin puede completar el registro en el check-in físico.
-    insertBookingGuests(
-      booking.id,
-      {
-        fullName,
-        document: bookingData.guest.document ?? '',
-        documentType: /[a-zA-Z]/.test(bookingData.guest.document ?? '') ? 'passaporte' : 'CPF',
-      },
-      bookingData.additionalGuests ?? [],
-    ).catch((err) => {
+    (async () => {
+      // Subir fotos de documento de acompañantes a Cloudinary antes del INSERT
+      const additionalWithPhotos = await Promise.all(
+        (bookingData.additionalGuests ?? []).map(async (g) => {
+          if (!g.documentPhotoBase64) { return g; }
+          try {
+            const photoBuffer = decodeBase64Image(g.documentPhotoBase64);
+            const photo = await uploadDocumentPhoto(photoBuffer);
+            return { ...g, photoUrl: photo.url, photoPublicId: photo.publicId };
+          } catch (err) {
+            logger.error('No se pudo subir foto de acompañante a Cloudinary', {
+              bookingId: booking.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+            return g;
+          }
+        }),
+      );
+      await insertBookingGuests(
+        booking.id,
+        {
+          fullName,
+          document: bookingData.guest.document ?? '',
+          documentType: /[a-zA-Z]/.test(bookingData.guest.document ?? '') ? 'passaporte' : 'CPF',
+        },
+        additionalWithPhotos,
+      );
+    })().catch((err) => {
       logger.error('No se pudo insertar booking_guests', {
         bookingId: booking.id,
         error: err instanceof Error ? err.message : String(err),
@@ -626,15 +671,17 @@ export const createBookingHandler = async (
               depositDueDate: booking.pending_expires_at,
               remainingAmount: pricingDetails.remainingAmount,
               // Apartamentos ≥48h: 70% vence la mañana del check-in (8am SP).
-              // Apartamentos <48h: remaining = 0, esta fecha es irrelevante.
+              // Apartamentos <48h: remaining = 0, no hay saldo → null.
               // Hostel: 7 días antes del check-in (modelo clásico).
-              remainingDueDate: isApartmentBooking
-                ? (() => {
-                    const morning = new Date(checkIn);
-                    morning.setUTCHours(11, 0, 0, 0); // 8:00 AM São Paulo = 11:00 UTC
-                    return morning.toISOString();
-                  })()
-                : new Date(checkIn.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+              remainingDueDate: pricingDetails.remainingAmount === 0
+                ? null
+                : isApartmentBooking
+                  ? (() => {
+                      const morning = new Date(checkIn);
+                      morning.setUTCHours(11, 0, 0, 0); // 8:00 AM São Paulo = 11:00 UTC
+                      return morning.toISOString();
+                    })()
+                  : new Date(checkIn.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             },
             // Expiración real del hold (5 min) para que el frontend arme el
             // contador regresivo con el dato correcto, no un valor inventado.
@@ -654,7 +701,10 @@ export const createBookingHandler = async (
       logger.warn('Insufficient availability detected during createBooking', {
         details: error.details,
       });
-      res.status(409).json(ApiResponse.error(error.message, error.details));
+      const msg = isApartmentBooking
+        ? 'El apartamento ya no está disponible para esas fechas'
+        : error.message;
+      res.status(409).json(ApiResponse.error(msg, error.details));
       return;
     }
 

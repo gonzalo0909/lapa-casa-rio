@@ -15,7 +15,7 @@ import { AlertTriangle } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { ApartmentCard } from './apartment-card';
 import type { ApartmentAvailability } from '@/types/global';
-import type { AptLocale } from './apartment-engine.types';
+import { MAX_APT_GUESTS, type AptLocale } from './apartment-engine.types';
 import { fmtDate, parseDs, rankApartments } from './apartment-engine.utils';
 
 interface ApartmentSelectorStepProps {
@@ -85,8 +85,8 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
         <button
           type="button"
           className={styles.guestCounterBtn}
-          onClick={() => onGuestCountChange(Math.min(2, guestCount + 1))}
-          disabled={guestCount >= 2}
+          onClick={() => onGuestCountChange(Math.min(MAX_APT_GUESTS, guestCount + 1))}
+          disabled={guestCount >= MAX_APT_GUESTS}
           aria-label="+"
         >+</button>
       </span>
@@ -117,6 +117,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
             globalCheckOut={parseDs(checkOut)}
             onApplyDates={onApplyDates}
             onContinue={onContinue}
+            guestCount={guestCount}
           />
 
           <div className={styles.actions}>
@@ -150,6 +151,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
               globalCheckOut={parseDs(checkOut)}
               onApplyDates={onApplyDates}
               onContinue={undefined}  /* sin botón Continuar */
+              guestCount={guestCount}
             />
             <div className={styles.actions}>
               <button type="button" className={styles.cardChangeLink} onClick={onDeselect}>
@@ -174,6 +176,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
                     globalCheckIn={parseDs(checkIn)}
                     globalCheckOut={parseDs(checkOut)}
                     onApplyDates={onApplyDates}
+                    guestCount={guestCount}
                   />
                 ))}
               </div>
@@ -211,6 +214,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
                 globalCheckIn={parseDs(checkIn)}
                 globalCheckOut={parseDs(checkOut)}
                 onApplyDates={onApplyDates}
+                guestCount={guestCount}
               />
             ))}
           </div>

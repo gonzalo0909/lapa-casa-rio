@@ -297,6 +297,8 @@ export const bookingAPI = {
       fullName: string;
       document: string;
       documentType?: string;
+      /** Foto del DNI/pasaporte del acompañante (data URL base64) — opcional. */
+      documentPhotoBase64?: string;
     }>;
     specialRequests?: string;
     arrivalTime?: string;
@@ -477,8 +479,8 @@ export const offersAPI = {
   // validar códigos de referido (idea #49), sin apartamento asociado.
   // El backend (POST /offers/validate) ya trata apartmentId como
   // opcional, solo el tipo acá no lo reflejaba.
-  validate: (code: string, apartmentId: string | undefined, checkIn: string) =>
-    api.post('/offers/validate', { code, apartmentId, checkIn }),
+  validate: (code: string, apartmentId: string | undefined, checkIn: string, checkOut?: string) =>
+    api.post('/offers/validate', { code, apartmentId, checkIn, checkOut }),
 };
 
 /**

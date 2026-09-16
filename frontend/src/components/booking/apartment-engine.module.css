@@ -160,6 +160,8 @@
 
 .carnivalWarn { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: .75rem 1rem; font-size: .82rem; color: var(--warn-fg); margin-top: .75rem; line-height: 1.4; }
 
+.fullPaymentNotice { display: flex; align-items: flex-start; gap: .45rem; background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 8px; padding: .6rem .85rem; font-size: .8rem; color: var(--warn-fg); margin-top: .6rem; line-height: 1.4; }
+
 /* ── Apt header ──────────────────────────────────────── */
 .aptHeader { margin-bottom: 1.5rem; }
 .aptHeader h2 { font-family: var(--font-cormorant), Georgia, serif; font-size: 1.95rem; font-weight: 400; letter-spacing: -.01em; color: var(--fg); margin-bottom: .2rem; }
@@ -248,7 +250,9 @@
 .miniWday { text-align: center; font-size: .8rem; font-weight: 600; color: var(--fg-muted); padding: .08rem 0; }
 .miniDayCells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .miniDay { text-align: center; padding: .22rem .04rem; border-radius: 4px; font-size: .9rem; color: var(--fg); background: none; border: none; min-height: 2.2rem; display: flex; align-items: center; justify-content: center; width: 100%; }
-.miniDayBlocked { background: #FEE2E2; color: #991B1B; }
+.miniDayBlocked { background: #FEE2E2; color: #991B1B; position: relative; overflow: hidden; cursor: not-allowed; }
+.miniDayBlocked:disabled { opacity: 1; background: #FEE2E2; color: #991B1B; }
+.miniDayBlocked::after { content: ''; position: absolute; top: 50%; left: 50%; width: 135%; height: 1.5px; background: #991B1B; opacity: .45; transform: translate(-50%, -50%) rotate(-45deg); pointer-events: none; }
 .miniDayPast { opacity: .3; pointer-events: none; }
 .miniDayCheckin, .miniDayCheckout { background: var(--primary); color: #fff; font-weight: 700; }
 .miniDayInrange { background: var(--primary-soft); color: var(--primary); border-radius: 0; }
@@ -256,6 +260,8 @@
 .miniDayAvail:hover { background: var(--primary-soft); color: var(--primary); }
 .miniCalLegend { display: flex; gap: .6rem; margin-top: .6rem; font-size: .75rem; color: var(--fg-muted); align-items: center; flex-wrap: wrap; }
 .miniLegendDot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.miniLegendDotBlocked { background: #FEE2E2; border: 1px solid #991B1B; position: relative; overflow: hidden; }
+.miniLegendDotBlocked::after { content: ''; position: absolute; top: 50%; left: 50%; width: 140%; height: 1.5px; background: #991B1B; opacity: .5; transform: translate(-50%, -50%) rotate(-45deg); }
 .miniApplyBar { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; padding: .45rem .6rem; background: var(--primary-soft); border-radius: 8px; gap: .4rem; font-size: .78rem; color: var(--primary); font-weight: 600; flex-wrap: wrap; }
 .miniApplyHint { justify-content: center; font-weight: 400; color: var(--fg-muted); background: var(--bg-subtle); font-style: italic; }
 .miniApplyBtn { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: .35rem .75rem; font-size: .78rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }

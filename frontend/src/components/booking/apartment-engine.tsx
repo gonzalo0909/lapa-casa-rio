@@ -88,7 +88,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
-  const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([]);
+  const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
+    Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
+      id: Math.random().toString(36).slice(2),
+      fullName: '',
+      document: '',
+    }))
+  );
   /** Foto del documento del titular (se convierte a base64 y se envía al crear la reserva) */
   const [documentPhoto, setDocumentPhoto] = useState<File | null>(null);
   /** Foto del documento del acompañante — obligatoria cuando guestCount > 1 */
@@ -182,7 +188,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         setIsLoadingApartments(false);
       }
     },
-    [locale],
+    [locale, guestCount],
   );
 
   /** Valida el formulario y crea la reserva vía API. */
@@ -223,25 +229,29 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       setError(t('formIncomplete'));
       return;
     }
-    setError(null);
 
     setIsCreatingBooking(true);
     setError(null);
     try {
-      // Convertir foto del documento a base64 si el usuario la adjuntó
-      let documentPhotoBase64: string | undefined;
-      if (documentPhoto) {
-        documentPhotoBase64 = await new Promise<string>((resolve, reject) => {
+      // Convierte un File a data URL base64
+      const toBase64 = (file: File): Promise<string> =>
+        new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = () => reject(new Error('Error al leer la foto del documento'));
-          reader.readAsDataURL(documentPhoto);
+          reader.readAsDataURL(file);
         });
-      }
+
+      // Foto del titular
+      const documentPhotoBase64 = documentPhoto ? await toBase64(documentPhoto) : undefined;
+      // Foto del acompañante (si hay uno)
+      const companionPhotoBase64 = companionDocumentPhoto ? await toBase64(companionDocumentPhoto) : undefined;
 
       const nameParts = guestForm.fullName.trim().split(/\s+/);
       const firstName = nameParts[0] ?? guestForm.fullName.trim();
-      const lastName = nameParts.slice(1).join(' ') || firstName;
+      // '' cuando el huésped tiene un solo nombre; el backend une con trim()
+      // → fullName correcto en vez de duplicar el firstName ("João João").
+      const lastName = nameParts.slice(1).join(' ');
       const res = await bookingAPI.create({
         checkIn,
         checkOut,
@@ -256,14 +266,16 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           ...(documentPhotoBase64 ? { documentPhotoBase64 } : {}),
         },
         // Acompañantes declarados en el checkout (booking_guests)
-        additionalGuests: additionalGuests.map((g) => ({
+        additionalGuests: additionalGuests.map((g, idx) => ({
           fullName: g.fullName,
           document: g.document,
           documentType: /[a-zA-Z]/.test(g.document) ? 'passaporte' : 'CPF',
+          // Adjunta la foto del acompañante solo al primer acompañante (máx. 1)
+          ...(idx === 0 && companionPhotoBase64 ? { documentPhotoBase64: companionPhotoBase64 } : {}),
         })),
         arrivalTime: guestForm.arrivalTime || undefined,
         specialRequests: guestForm.specialRequests.trim() || undefined,
-        language: locale === 'de' || locale === 'fr' || locale === 'it' ? 'en' : locale,
+        language: locale === 'pt' || locale === 'es' ? locale : 'en',
         source: 'web',
         guestGender: 'mixed',
         ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),
@@ -278,13 +290,17 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
       const discountedTotal = Math.round(totalPrice * discountFactor);
       const discountedDeposit = Math.round(depositAmount * discountFactor);
+      // Resolver total y deposit antes de calcular remaining para que los tres
+      // valores sean siempre coherentes entre sí (server o frontend, nunca mixtos).
+      const resolvedTotal = b.pricing?.total ?? discountedTotal;
+      const resolvedDeposit = b.payment?.depositAmount ?? discountedDeposit;
       setBooking({
         id: b.id,
         confirmationNumber: b.confirmationNumber,
         pendingExpiresAt: b.pendingExpiresAt ?? null,
-        total: b.pricing?.total ?? discountedTotal,
-        deposit: b.payment?.depositAmount ?? discountedDeposit,
-        remaining: b.pricing?.remaining ?? discountedTotal - discountedDeposit,
+        total: resolvedTotal,
+        deposit: resolvedDeposit,
+        remaining: b.pricing?.remaining ?? (resolvedTotal - resolvedDeposit),
         checkIn,
         referralCode: b.referralCode ?? null,
       });
@@ -297,6 +313,28 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     }
   };
 
+  /** Cambia el número de huéspedes y sincroniza la lista de acompañantes.
+   *  Al subir a 2 se añade una fila vacía; al bajar a 1 se limpia la lista
+   *  y se descarta la foto del acompañante para que no se envíe al backend. */
+  const handleGuestCountChange = useCallback((n: number) => {
+    setGuestCount(n);
+    setAdditionalGuests((prev) => {
+      const needed = Math.max(0, n - 1);
+      if (prev.length < needed) {
+        const toAdd = Array.from({ length: needed - prev.length }, () => ({
+          id: Math.random().toString(36).slice(2),
+          fullName: '',
+          document: '',
+        }));
+        return [...prev, ...toAdd];
+      }
+      return prev.slice(0, needed);
+    });
+    if (n <= 1) {
+      setCompanionDocumentPhoto(null);
+    }
+  }, []);
+
   const goBack = () => {
     setError(null);
     if (step === 2) {
@@ -304,6 +342,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     } else if (step === 3) {
       setStep(2);
     } else if (step === 4) {
+      // Limpiar la reserva creada para que al re-enviar el paso 3 se
+      // genere una nueva (la anterior expirará sola en pending_payment).
+      setBooking(null);
+      setPaymentDone(false);
+      setPaySuccessOpen(true);
+      setIsExpired(false);
       setStep(3);
     }
     scrollToContent();
@@ -414,7 +458,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           <ApartmentDateStep
             locale={locale}
             guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={handleGuestCountChange}
             checkIn={checkIn}
             checkOut={checkOut}
             onDatesChange={(cin, cout) => {
@@ -434,7 +478,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             checkOut={checkOut ?? ''}
             nights={nights}
             guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={handleGuestCountChange}
             apartments={apartments}
             isLoading={isLoadingApartments}
             selectedApartment={selectedApartment}
@@ -457,12 +501,11 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             checkOut={checkOut ?? ''}
             nights={nights}
             guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={handleGuestCountChange}
             selectedApartment={selectedApartment}
             guestForm={guestForm}
             touched={touched}
             isCreatingBooking={isCreatingBooking}
-            error={error}
             onFieldChange={(field, value) => setGuestForm((f) => ({ ...f, [field]: value }))}
             onFieldBlur={(field) => setTouched((tt) => ({ ...tt, [field]: true }))}
             onReserve={handleReserve}
@@ -473,7 +516,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onCouponApply={(coupon) => setAppliedCoupon(coupon)}
             onCouponRemove={() => setAppliedCoupon(null)}
             onValidateCoupon={async (code) => {
-              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '');
+              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '', checkOut ?? '');
               return res?.data;
             }}
             documentPhoto={documentPhoto}

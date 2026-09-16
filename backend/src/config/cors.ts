@@ -51,6 +51,10 @@ const getAllowedOrigins = (): string[] => {
     // Origin: <APP_URL> y el login queda bloqueado por CORS (ver login
     // admin devolviendo 500 "Origin ... not allowed by CORS policy").
     env.APP_URL,
+    // Deployments de Vercel: producción (lapa-casa.vercel.app) y previews
+    // (lapa-casa-git-<branch>-lapa-casa.vercel.app, lapa-casa-<hash>-lapa-casa.vercel.app).
+    'https://lapa-casa.vercel.app',
+    'https://lapa-casa-*.vercel.app',
     ...origins
   ].filter(origin => origin !== '*');
 };
@@ -84,11 +88,11 @@ const originValidator = (
     return callback(null, true);
   }
 
-  // Check wildcard patterns
+  // Check wildcard patterns (escape literal dots first, then expand * to .*)
   const isAllowed = allowedOrigins.some(allowedOrigin => {
     if (allowedOrigin.includes('*')) {
       const pattern = new RegExp(
-        '^' + allowedOrigin.replace(/\*/g, '.*').replace(/\./g, '\\.') + '$'
+        '^' + allowedOrigin.split('*').map(p => p.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$'
       );
       return pattern.test(origin);
     }

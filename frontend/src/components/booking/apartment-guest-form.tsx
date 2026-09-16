@@ -28,7 +28,6 @@ interface ApartmentGuestFormProps {
   guestForm: GuestForm;
   touched: Record<string, boolean>;
   isCreatingBooking: boolean;
-  error: string | null;
   onFieldChange: (field: keyof GuestForm, value: string) => void;
   onFieldBlur: (field: string) => void;
   onReserve: () => void;
@@ -65,7 +64,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   guestForm,
   touched,
   isCreatingBooking,
-  error,
   onFieldChange,
   onFieldBlur,
   onReserve,
@@ -90,6 +88,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const [cancelOpen, setCancelOpen] = useState(false);
   const photoInputTitular = useRef<HTMLInputElement>(null);
   const photoInputCompanion = useRef<HTMLInputElement>(null);
+  const [companionTouched, setCompanionTouched] = useState<Record<string, { fullName?: boolean; document?: boolean }>>({});
 
   // ── Estado del cupón de descuento ─────────────────────────────────────────
   const [couponInput, setCouponInput] = useState('');
@@ -99,7 +98,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // ── Cálculos derivados de props (variables locales, no estado) ─────────────
   const totalPrice = selectedApartment.priceTotal;
   const otaPrice = Math.round(totalPrice * 1.15);
-  const otaSaving = otaPrice - totalPrice;
   const depositAmount = selectedApartment.depositAmount;
   const depositPct = totalPrice > 0 ? Math.round((depositAmount / totalPrice) * 100) : 0;
   const isCarnaval = selectedApartment.seasonType === 'carnaval';
@@ -109,6 +107,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const displayTotal = Math.round(totalPrice * discountFactor);
   const displayDeposit = Math.round(depositAmount * discountFactor);
   const discountAmount = totalPrice - displayTotal;
+  // El ahorro vs. OTA usa el precio final (con cupón si lo hay) para que
+  // el banner refleje el beneficio real de reservar directamente.
+  const otaSaving = otaPrice - displayTotal;
 
   /** Valida el cupón ingresado contra el backend */
   const handleApplyCoupon = async () => {
@@ -200,6 +201,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
   function removeGuest(index: number) {
     onAdditionalGuestsChange(additionalGuests.filter((_, i) => i !== index));
+    onGuestCountChange(Math.max(1, guestCount - 1));
   }
 
   return (
@@ -277,7 +279,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   type="button"
                   onClick={() => { onCouponRemove?.(); setCouponError(null); }}
                   className="cursor-pointer border-0 bg-transparent px-0.5 text-lg leading-none text-success"
-                  aria-label={t('removeGuest')}
+                  aria-label={t('couponRemove')}
                 >×</button>
               </div>
             ) : (
@@ -327,8 +329,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
       {/* Formulario de huésped */}
       <div className={styles.guestForm}>
         <h3>{t('guestDataTitle')}</h3>
-
-        {error && <div className={styles.errorBanner}>{error}</div>}
 
         <div className={styles.formGrid}>
           {/* Nombre completo */}
@@ -539,8 +539,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
         </div>
 
         {/* ── Declaración de hóspedes ──────────────────────────────────── */}
-        {guestCount > 0 && (
-          <div className={styles.guestsDeclaration}>
+        <div className={styles.guestsDeclaration}>
             <div className={styles.guestsDeclTitle}>
               <Users size={15} /> {t('guestDeclarationTitle')}
             </div>
@@ -592,7 +591,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                       aria-label={`${t('companionNamePlaceholder')} ${idx + 2}`}
                       value={g.fullName}
                       onChange={(e) => updateAdditionalGuest(idx, 'fullName', e.target.value)}
-                      className={`${styles.guestDeclInput} ${!g.fullName.trim() ? styles.inputInvalid : ''}`}
+                      onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], fullName: true } }))}
+                      className={`${styles.guestDeclInput} ${companionTouched[g.id]?.fullName && !g.fullName.trim() ? styles.inputInvalid : ''}`}
                     />
                     <div className={styles.guestDeclDocWrap}>
                       <input
@@ -602,8 +602,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                         maxLength={20}
                         value={g.document}
                         onChange={(e) => updateAdditionalGuest(idx, 'document', e.target.value)}
+                        onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], document: true } }))}
                         className={`${styles.guestDeclInput} ${
-                          ok === true ? styles.inputValid : ok === false ? styles.inputInvalid : ''
+                          ok === true ? styles.inputValid : (companionTouched[g.id]?.document && ok === false) ? styles.inputInvalid : ''
                         }`}
                       />
                       {ok === true && (
@@ -637,7 +638,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <span>{t('guestDeclarationVerifyNote')}</span>
             </div>
           </div>
-        )}
 
         {/* ── Upload de foto do documento (titular) ──────────────── */}
         <div className={styles.docUploadSection}>
@@ -678,7 +678,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                   type="button"
                   className={styles.docUploadClear}
                   onClick={() => onDocumentPhotoChange(null)}
-                  aria-label={t('removeGuest')}
+                  aria-label={t('clearPhoto')}
                 >
                   <X size={13} />
                 </button>
@@ -717,7 +717,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                     type="button"
                     className={styles.docUploadClear}
                     onClick={() => onCompanionDocumentPhotoChange(null)}
-                    aria-label={t('removeGuest')}
+                    aria-label={t('clearPhoto')}
                   >
                     <X size={13} />
                   </button>
@@ -789,7 +789,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <div>
                 <div className={styles.pmName}>{t('creditCard')}</div>
                 <div className={styles.pmDetail}>
-                  {t('cardDepositDetail', { amount: depositAmount.toLocaleString('pt-BR') })}
+                  {t('cardDepositDetail', { amount: displayDeposit.toLocaleString('pt-BR') })}
                 </div>
               </div>
             </div>

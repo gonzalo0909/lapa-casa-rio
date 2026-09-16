@@ -787,7 +787,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               <div>
                 <div className={styles.pmName}>{t('creditCard')}</div>
                 <div className={styles.pmDetail}>
-                  {t('cardDepositDetail', { amount: depositAmount.toLocaleString('pt-BR') })}
+                  {t('cardDepositDetail', { amount: displayDeposit.toLocaleString('pt-BR') })}
                 </div>
               </div>
             </div>

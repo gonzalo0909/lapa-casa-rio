@@ -632,7 +632,11 @@
     "couponRemove": "Remove coupon",
     "clearPhoto": "Remove photo",
     "miniCalPrev": "Previous month",
-    "miniCalNext": "Next month"
+    "miniCalNext": "Next month",
+    "photoNavPrev": "Previous photo",
+    "photoNavNext": "Next photo",
+    "reviews": "{count} reviews",
+    "externalRatingSource": "international platforms"
   },
   "guestForm": {
     "title": "Guest Information",

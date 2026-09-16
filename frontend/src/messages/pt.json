@@ -632,7 +632,11 @@
     "couponRemove": "Remover cupom",
     "clearPhoto": "Remover foto",
     "miniCalPrev": "Mês anterior",
-    "miniCalNext": "Próximo mês"
+    "miniCalNext": "Próximo mês",
+    "photoNavPrev": "Foto anterior",
+    "photoNavNext": "Próxima foto",
+    "reviews": "{count} avaliações",
+    "externalRatingSource": "plataformas internacionais"
   },
   "guestForm": {
     "title": "Informações do Hóspede",

@@ -632,7 +632,11 @@
     "couponRemove": "Gutschein entfernen",
     "clearPhoto": "Foto entfernen",
     "miniCalPrev": "Vorheriger Monat",
-    "miniCalNext": "Nächster Monat"
+    "miniCalNext": "Nächster Monat",
+    "photoNavPrev": "Vorheriges Foto",
+    "photoNavNext": "Nächstes Foto",
+    "reviews": "{count} Bewertungen",
+    "externalRatingSource": "internationale Plattformen"
   },
   "guestForm": {
     "title": "Gastinformationen",

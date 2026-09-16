@@ -339,6 +339,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       // Limpiar la reserva creada para que al re-enviar el paso 3 se
       // genere una nueva (la anterior expirará sola en pending_payment).
       setBooking(null);
+      setPaymentDone(false);
+      setPaySuccessOpen(true);
+      setIsExpired(false);
       setStep(3);
     }
     scrollToContent();

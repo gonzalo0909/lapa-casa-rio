@@ -296,12 +296,14 @@ export const createBookingHandler = async (
       );
       if (offerRows.length > 0) {
         const offer = offerRows[0];
-        // Verificar si aplica al apartamento solicitado (null/vacío = todos)
-        const aptId = bookingData.rooms[0]?.roomId;
+        // Verificar si aplica a TODOS los apartamentos solicitados (null/vacío = todos).
+        // Se comprueba cada roomId para evitar que un código válido solo para un
+        // apartamento se aplique a una reserva que incluye otros apartamentos.
+        const requestedAptIds = bookingData.rooms.map((r) => r.roomId).filter(Boolean);
         const aptOk =
           !offer.apartment_ids ||
           offer.apartment_ids.length === 0 ||
-          (aptId && offer.apartment_ids.includes(aptId));
+          requestedAptIds.every((id) => offer.apartment_ids.includes(id));
         // Un código de referido no aplica sobre la reserva del propio dueño
         // del código (mismo email) -- si no, cualquiera se autorregala 10%.
         let selfReferral = false;

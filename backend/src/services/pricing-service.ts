@@ -235,27 +235,6 @@ export class PricingService {
     );
     return parseFloat(rows[0].calculate_channel_net_revenue);
   }
-
-  async estimatePriceRange(
-    checkInDate: string,
-    checkOutDate: string,
-    totalBeds: number
-  ): Promise<{ minPrice: number; maxPrice: number; averagePrice: number; seasonType: string }> {
-    const nights = nightsBetween(checkInDate, checkOutDate);
-    const basePrice = this.calculateBasePrice(totalBeds, nights);
-    const { discount } = await this.calculateGroupDiscount(totalBeds);
-    const priceAfterDiscount = basePrice * (1 - discount);
-    const seasonType = await getSeasonType(checkInDate);
-    const seasonMultiplier = await this.getSeasonMultiplier(checkInDate);
-    const seasonPrice = priceAfterDiscount * seasonMultiplier;
-
-    return {
-      minPrice: Math.round(priceAfterDiscount * 0.8 * 100) / 100,
-      maxPrice: Math.round(priceAfterDiscount * 2.0 * 100) / 100,
-      averagePrice: Math.round(seasonPrice * 100) / 100,
-      seasonType
-    };
-  }
 }
 
 export const pricingService = new PricingService();

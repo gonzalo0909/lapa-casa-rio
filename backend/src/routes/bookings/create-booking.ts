@@ -158,7 +158,7 @@ export const createBookingHandler = async (
       hour: 'numeric',
       hour12: false,
     }).formatToParts(now);
-    const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+    const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '12', 10);
 
     // minCheckIn: hoy si son antes de las 12h, mañana si ya pasó el mediodía.
     let minCheckIn = todayInSaoPaulo;

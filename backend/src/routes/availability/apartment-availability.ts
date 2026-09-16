@@ -6,7 +6,6 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database';
-import { pricingService } from '../../services/pricing-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -117,59 +116,103 @@ export const checkApartmentAvailabilityHandler = async (
       return acc;
     }, {});
 
-    const apartmentsWithAvailability = await Promise.all(
-      apartments.map(async (apt) => {
-        const basePrice = parseFloat(apt.base_price) || 0;
-        const available = apt.available;
+    // Pricing en batch: todos los apartamentos comparten las mismas fechas y
+    // totalBeds=1, así que season/group-discount/min-nights son idénticos para
+    // cada uno. Se hacen 4 queries totales en lugar de 7×N.
+    let seasonMultiplier = 1;
+    let seasonType: string = 'media';
+    let groupDiscount = 0;
+    let depositPercent = 0.3;
+    let pricingFailed = false;
+    const finalPriceById = new Map<string, number>();
 
-        const sharedFields = {
-          id: apt.id,
-          code: apt.code,
-          name: apt.name,
-          capacity: apt.capacity,
-          basePrice,
-          available,
-          neighborhood: apt.neighborhood ?? undefined,
-          externalRating: apt.external_rating !== null ? parseFloat(apt.external_rating) : undefined,
-          externalReviewCount: apt.external_review_count ?? undefined,
-          externalRatingLabel: apt.external_rating_label ?? undefined,
-          photos: (photosByApt[apt.id] ?? []).map(p => ({
-            id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
-          })),
-        };
+    try {
+      const bookingDate = new Date().toISOString().slice(0, 10);
 
-        try {
-          const pricing = await pricingService.calculateTotalPrice({
-            checkInDate: checkIn,
-            checkOutDate: checkOut,
-            rooms: [{ roomId: apt.id, bedsCount: 1 }],
-            totalBeds: 1,
-          });
-          return {
-            ...sharedFields,
-            priceTotal: pricing.totalPrice,
-            seasonMultiplier: pricing.seasonMultiplier,
-            seasonType: pricing.seasonType,
-            depositAmount: pricing.depositAmount,
-          };
-        } catch (pricingError) {
-          // Si el cálculo de precio falla (ej. Carnaval con menos noches del mínimo),
-          // el apartamento sigue apareciendo — la disponibilidad no depende del precio.
-          logger.warn('Apartment pricing unavailable for date range', {
-            apartmentId: apt.id,
-            checkIn, checkOut,
-            error: pricingError instanceof Error ? pricingError.message : 'Unknown error',
-          });
-          return {
-            ...sharedFields,
-            priceTotal: basePrice * nights,
-            seasonMultiplier: 1,
-            seasonType: 'media' as const,
-            depositAmount: basePrice * nights * 0.3,
-          };
+      // 1) Valores compartidos — una sola query por aspecto estacional
+      const [
+        { rows: seasonRows },
+        { rows: minNightsRows },
+        { rows: groupDiscountRows },
+        { rows: depositPctRows },
+      ] = await Promise.all([
+        query<{ multiplier: string; season_type: string }>(
+          `SELECT calculate_season_multiplier($1::date) AS multiplier,
+                  get_season_type($1::date) AS season_type`,
+          [checkIn]
+        ),
+        query<{ get_min_nights: number }>(
+          `SELECT get_min_nights($1::date) AS get_min_nights`,
+          [checkIn]
+        ),
+        query<{ calculate_group_discount: string }>(
+          `SELECT calculate_group_discount(1) AS calculate_group_discount`
+        ),
+        // totalBeds=1 → deposit_percent es constante; precio ficticio para obtener el %
+        query<{ deposit_percent: string }>(
+          `SELECT deposit_percent FROM calculate_deposit(100::numeric, 1)`
+        ),
+      ]);
+
+      seasonMultiplier = parseFloat(seasonRows[0].multiplier);
+      seasonType = seasonRows[0].season_type;
+      groupDiscount = parseFloat(groupDiscountRows[0].calculate_group_discount);
+      depositPercent = parseFloat(depositPctRows[0].deposit_percent);
+      const minNights = minNightsRows[0]?.get_min_nights ?? 1;
+
+      if (seasonType === 'carnaval' && nights < minNights) {
+        throw new Error(`Durante Carnaval se requiere minimo ${minNights} noches`);
+      }
+
+      // 2) calculate_final_price en batch para todos los apartamentos a la vez
+      if (apartments.length > 0) {
+        const aptIds = apartments.map(a => a.id);
+        const basePrices = apartments.map(a => parseFloat(a.base_price) || 0);
+        const { rows: priceRows } = await query<{ apt_id: string; final_price: string }>(
+          `SELECT t.apt_id,
+                  calculate_final_price(t.base_price::numeric, $1, 1, $2::date, $3::date) AS final_price
+           FROM UNNEST($4::uuid[], $5::numeric[]) AS t(apt_id, base_price)`,
+          [nights, checkIn, bookingDate, aptIds, basePrices]
+        );
+        for (const row of priceRows) {
+          const preDiscount = parseFloat(row.final_price);
+          const discountAmount = Math.round(preDiscount * groupDiscount * 100) / 100;
+          finalPriceById.set(row.apt_id, Math.round((preDiscount - discountAmount) * 100) / 100);
         }
-      })
-    );
+      }
+    } catch (pricingError) {
+      pricingFailed = true;
+      logger.warn('Apartment batch pricing unavailable for date range', {
+        checkIn, checkOut,
+        error: pricingError instanceof Error ? pricingError.message : 'Unknown error',
+      });
+    }
+
+    const apartmentsWithAvailability = apartments.map((apt) => {
+      const basePrice = parseFloat(apt.base_price) || 0;
+      const finalPrice = finalPriceById.get(apt.id) ?? (pricingFailed ? basePrice * nights : basePrice * nights);
+      const depositAmount = Math.round(finalPrice * depositPercent * 100) / 100;
+
+      return {
+        id: apt.id,
+        code: apt.code,
+        name: apt.name,
+        capacity: apt.capacity,
+        basePrice,
+        available: apt.available,
+        neighborhood: apt.neighborhood ?? undefined,
+        externalRating: apt.external_rating !== null ? parseFloat(apt.external_rating) : undefined,
+        externalReviewCount: apt.external_review_count ?? undefined,
+        externalRatingLabel: apt.external_rating_label ?? undefined,
+        photos: (photosByApt[apt.id] ?? []).map(p => ({
+          id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
+        })),
+        priceTotal: finalPrice,
+        seasonMultiplier: pricingFailed ? 1 : seasonMultiplier,
+        seasonType: pricingFailed ? 'media' : seasonType,
+        depositAmount,
+      };
+    });
 
     logger.info('Apartment availability checked', {
       checkIn, checkOut, nights, guestCount,

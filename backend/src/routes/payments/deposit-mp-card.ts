@@ -117,16 +117,14 @@ export const depositMpCardHandler = async (
       installments,
     });
 
-    // 3. Confirmar si MP ya lo aprobó
+    // 3. Confirmar si MP ya lo aprobó.
+    // Se usa solo el ID interno (garantizado tras registerExternalPayment) para
+    // evitar la doble llamada anterior que silenciaba errores parciales: si
+    // confirmPayment(mpId) actualizaba la DB pero fallaba antes de disparar
+    // notificaciones, confirmPaymentById encontraba el pago en 'succeeded'
+    // y también fallaba silenciosamente → el huésped nunca recibía el email.
     if (mpResult.status === 'approved') {
-      await paymentService.confirmPayment(mpResult.id).catch(err => {
-        // MP usa su propio ID, puede no estar en nuestra DB todavía — usar el internal ID
-        logger.warn('confirmPayment by MP id falló, usando payment_id interno', { mpId: mpResult.id, err: err.message });
-      });
-      // Confirmar por ID interno garantizado
-      await paymentService.confirmPaymentById(payment.payment_id).catch(err => {
-        logger.warn('confirmPaymentById ya confirmado o error', { err: err.message });
-      });
+      await paymentService.confirmPaymentById(payment.payment_id);
     }
 
     const bedsCount = booking.beds_count ?? 0;

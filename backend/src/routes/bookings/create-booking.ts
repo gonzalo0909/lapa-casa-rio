@@ -647,7 +647,7 @@ export const createBookingHandler = async (
               subtotal: pricingDetails.basePrice,
               groupDiscount: pricingDetails.discountAmount,
               seasonalAdjustment:
-                pricingDetails.priceAfterSeason - pricingDetails.priceAfterDiscount,
+                pricingDetails.priceAfterSeason - pricingDetails.basePrice,
               total: pricingDetails.totalPrice,
               deposit: pricingDetails.depositAmount,
               remaining: pricingDetails.remainingAmount,

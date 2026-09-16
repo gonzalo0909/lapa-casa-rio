@@ -1,0 +1,203 @@
+// lapa-casa-hostel/backend/src/admin/js/ical.js
+
+requireAuth();
+renderNav('ical');
+
+const PLATFORM_LABELS = {
+  airbnb:      'Airbnb',
+  booking:     'Booking.com',
+  hostelworld: 'Hostelworld',
+  expedia:     'Expedia',
+};
+
+function showMsg(elId, text, type) {
+  document.getElementById(elId).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : '';
+}
+
+// ── Habitaciones: caché compartida entre select y renderFeeds ────────────────
+
+let roomsCache = []; // [{ id, name }]
+
+async function loadRoomOptions() {
+  try {
+    const data = await apiFetch('/rooms');
+    roomsCache = data.rooms ?? [];
+    const select = document.getElementById('feed-room');
+    select.innerHTML = roomsCache.map(
+      (r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`
+    ).join('');
+  } catch {
+    document.getElementById('feed-room').innerHTML = '<option value="">Error al cargar habitaciones</option>';
+  }
+}
+
+function roomName(roomTypeId) {
+  const r = roomsCache.find((r) => r.id === roomTypeId);
+  return r ? r.name : roomTypeId;
+}
+
+// ── Feeds ────────────────────────────────────────────────────────────────────
+
+async function loadFeeds() {
+  try {
+    const data = await apiFetch('/ical/feeds');
+    renderFeeds(data.feeds ?? []);
+  } catch (err) {
+    showMsg('feeds-msg', err.message, 'error');
+  }
+}
+
+function renderFeeds(feeds) {
+  const tbody = document.querySelector('#feeds-table tbody');
+  if (!feeds.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#888;">Sin feeds configurados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = feeds.map((f) => `
+    <tr data-id="${f.id}">
+      <td>${escapeHtml(PLATFORM_LABELS[f.channelCode] ?? f.channelCode)}</td>
+      <td>${escapeHtml(roomName(f.roomTypeId))}</td>
+      <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(f.url)}">${escapeHtml(f.url)}</td>
+      <td><span class="badge ${f.isActive ? 'confirmed' : 'cancelled'}">${f.isActive ? 'Activo' : 'Inactivo'}</span></td>
+      <td><button data-action="delete-feed">Quitar</button></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('button[data-action="delete-feed"]').forEach((btn) => {
+    btn.addEventListener('click', () => deleteFeed(btn.closest('tr').dataset.id));
+  });
+}
+
+async function deleteFeed(id) {
+  if (!confirm('¿Eliminar este feed? Dejará de sincronizarse.')) return;
+  try {
+    await apiFetch(`/ical/feeds/${id}`, { method: 'DELETE' });
+    showMsg('feeds-msg', 'Feed eliminado.', 'success');
+    loadFeeds();
+  } catch (err) {
+    showMsg('feeds-msg', err.message, 'error');
+  }
+}
+
+document.getElementById('add-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const channelCode = document.getElementById('feed-channel').value;
+  const roomTypeId  = document.getElementById('feed-room').value;
+  const url         = document.getElementById('feed-url').value.trim();
+
+  try { new URL(url); } catch {
+    showMsg('add-msg', 'La URL no es válida.', 'error');
+    return;
+  }
+
+  try {
+    await apiFetch('/ical/import/config', {
+      method: 'POST',
+      body: JSON.stringify({ channelCode, roomTypeId, url }),
+    });
+    showMsg('add-msg', 'Feed agregado correctamente.', 'success');
+    document.getElementById('add-form').reset();
+    loadFeeds();
+  } catch (err) {
+    showMsg('add-msg', err.message, 'error');
+  }
+});
+
+// ── Sync manual ──────────────────────────────────────────────────────────────
+
+async function loadSyncStatus() {
+  try {
+    // response.data = { feeds: [...], syncStatus: { airbnb: { lastSyncAt, success, ... }, ... } }
+    const data = await apiFetch('/ical/status');
+    const el = document.getElementById('sync-status');
+    if (!data) return;
+
+    const totalFeeds = (data.feeds ?? []).length;
+
+    // Encontrar la sync más reciente entre todos los canales
+    const syncEntries = Object.values(data.syncStatus ?? {});
+    const lastSyncAt = syncEntries
+      .map((s) => s.lastSyncAt)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+
+    el.textContent = [
+      lastSyncAt ? `Última sync: ${fmtDate(lastSyncAt)}` : 'Sin sincronizaciones aún',
+      `Feeds configurados: ${totalFeeds}`,
+    ].join(' · ');
+  } catch {
+    // No bloquea la página si el status falla
+  }
+}
+
+document.getElementById('sync-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sincronizando...';
+  showMsg('sync-msg', '', '');
+  try {
+    const data = await apiFetch('/ical/sync', { method: 'POST' });
+    const ok   = data.successfulFeeds ?? '?';
+    const fail = data.failedFeeds ?? 0;
+    const imp  = data.totalImported ?? 0;
+    showMsg('sync-msg',
+      `Sync completada — ${ok} feed(s) OK · ${fail} error(es) · ${imp} bloqueo(s) importado(s).`,
+      'success'
+    );
+    loadFeeds();
+    loadSyncStatus();
+  } catch (err) {
+    showMsg('sync-msg', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⟳ Sincronizar agora todos os feeds';
+  }
+});
+
+// ── URLs de exportación ──────────────────────────────────────────────────────
+
+async function loadExportURLs() {
+  try {
+    const data = await apiFetch('/rooms');
+    const rooms = data.rooms ?? [];
+    const base = window.location.origin;
+    const el = document.getElementById('export-list');
+
+    if (!rooms.length) {
+      el.innerHTML = '<p style="color:#888;">Sin habitaciones disponibles.</p>';
+      return;
+    }
+
+    el.innerHTML = rooms.map((r) => {
+      const url = `${base}/api/v1/ical/export/${r.id}`;
+      return `
+        <div style="margin-bottom:14px;" data-url="${escapeHtml(url)}">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--bg,#f5f5f5);border:1px solid #ddd;border-radius:6px;padding:8px 12px;">
+            <code style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(url)}</code>
+            <button data-action="copy-url" style="white-space:nowrap;font-size:12px;">Copiar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // onclick="..." en el HTML lo bloquea la CSP del backend (scriptSrc:
+    // 'self', sin unsafe-inline) -- el botón "Copiar" nunca funcionó antes.
+    el.querySelectorAll('button[data-action="copy-url"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const url = btn.closest('[data-url]').dataset.url;
+        copyToClipboard(url, btn);
+      });
+    });
+  } catch (err) {
+    document.getElementById('export-list').innerHTML = `<p style="color:red;">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+loadRoomOptions();
+loadFeeds();
+loadSyncStatus();
+loadExportURLs();

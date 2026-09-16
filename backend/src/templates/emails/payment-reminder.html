@@ -1,0 +1,17 @@
+<!-- lapa-casa-hostel/backend/src/templates/emails/payment-reminder.html -->
+<h1 style="margin:0 0 16px;font-size:22px;color:#1a1a1a;">{{labelTitle}}</h1>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.6;">{{labelGreeting}} {{guestName}},</p>
+<p style="margin:0 0 24px;font-size:15px;line-height:1.6;">{{labelIntro}}</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff8e6;border-radius:6px;margin-bottom:24px;border:1px solid #f0dca0;">
+  <tr><td style="padding:16px 20px;">
+    <p style="margin:0 0 8px;font-size:14px;"><strong>{{labelReservation}}:</strong> {{reservationNumber}}</p>
+    <p style="margin:0 0 8px;font-size:14px;"><strong>{{labelAmountDue}}:</strong> {{remainingAmountFormatted}}</p>
+    <p style="margin:0 0 8px;font-size:14px;"><strong>{{labelDueDate}}:</strong> {{dueDateFormatted}}</p>
+    <p style="margin:0;font-size:14px;"><strong>{{labelDaysUntilCheckIn}}:</strong> {{daysUntilCheckIn}}</p>
+  </td></tr>
+</table>
+
+{{paymentButtonHtml}}
+
+<p style="margin:24px 0 0;font-size:13px;color:#777777;">{{labelRetryNote}}</p>

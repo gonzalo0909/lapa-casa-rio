@@ -1,0 +1,283 @@
+// Prisma cubre exclusivamente el dominio de administración/config de
+// apartamentos (dueños, ofertas, precios dinámicos, reseñas, fotos,
+// reportes de huéspedes, bloqueos de fechas).
+//
+// El núcleo de reservas/pagos (reservations, reservation_beds, beds,
+// room_types, guests, payments, channels) sigue 100% en SQL crudo sobre
+// el pool de `pg` sobre config/database.ts -- ver backend/src/services/
+// booking-service.ts. Las migraciones SQL en database/migrations/ siguen
+// siendo la única fuente de verdad del esquema (Prisma no gestiona
+// migraciones acá, solo lee tablas ya creadas por migrate.js).
+//
+// Las FK hacia tablas del núcleo (room_type_id, reservation_id, guest_id)
+// se modelan como columnas escalares simples, sin @relation, porque el
+// modelo del otro lado no existe en este schema a propósito.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── 0021_apartment_connect.sql ────────────────────────────────────────────
+
+enum ConnectOnboardingStatus {
+  pending
+  in_progress
+  active
+  restricted
+
+  @@map("connect_onboarding_status")
+}
+
+model ApartmentOwner {
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName               String                  @map("full_name") @db.VarChar(200)
+  email                  String                  @unique @db.VarChar(200)
+  phone                  String?                 @db.VarChar(30)
+  stripeAccountId        String?                 @unique @map("stripe_account_id") @db.VarChar(60)
+  onboardingStatus       ConnectOnboardingStatus @default(pending) @map("onboarding_status")
+  onboardingUrl          String?                 @map("onboarding_url")
+  onboardingUrlExpiresAt DateTime?               @map("onboarding_url_expires_at")
+  commissionRate         Decimal                 @default(0.0500) @map("commission_rate") @db.Decimal(5, 4)
+  payoutFeeRate          Decimal                 @default(0.0099) @map("payout_fee_rate") @db.Decimal(5, 4)
+  isActive               Boolean                 @default(true) @map("is_active")
+  notes                  String?
+  // 0031_apartment_owner_login.sql -- login propio del administrador,
+  // separado de la contraseña única de la plataforma (ADMIN_PASSWORD_HASH).
+  passwordHash           String?                 @map("password_hash")
+  mustChangePassword     Boolean                 @default(true) @map("must_change_password")
+  lastLoginAt            DateTime?               @map("last_login_at")
+  // 0033_owner_term_acceptance.sql -- registro del aceite del Termo de Adesão.
+  // NULL = no aceptó todavía → el panel bloquea el acceso hasta aceptar.
+  termAcceptedAt         DateTime?               @map("term_accepted_at")
+  termAcceptedIp         String?                 @map("term_accepted_ip")
+  termVersion            String?                 @map("term_version")
+  // 0034_owner_documents.sql -- verificación KYC del administrador.
+  // pending → sin docs o en revisión; verified → aprobado (badge "Verificado"); rejected → rechazado.
+  verificationStatus     String                  @default("pending") @map("verification_status") @db.VarChar(20)
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @default(now()) @map("updated_at")
+
+  transfers OwnerTransfer[]
+  documents OwnerDocument[]
+
+  @@map("apartment_owners")
+}
+
+// ─── 0034_owner_documents.sql ──────────────────────────────────────────────
+
+model OwnerDocument {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId      String         @map("owner_id") @db.Uuid
+  owner        ApartmentOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  docType      String         @map("doc_type") @db.VarChar(30)
+  fileUrl      String         @map("file_url")
+  filePath     String         @map("file_path")
+  originalName String?        @map("original_name") @db.VarChar(255)
+  mimeType     String?        @map("mime_type") @db.VarChar(100)
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
+  reviewedAt   DateTime?      @map("reviewed_at")
+  reviewNotes  String?        @map("review_notes")
+
+  @@map("owner_documents")
+}
+
+model OwnerTransfer {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // FK a reservations, tabla del núcleo -- no modelada acá a propósito.
+  reservationId     String    @map("reservation_id") @db.Uuid
+  ownerId           String    @map("owner_id") @db.Uuid
+  owner             ApartmentOwner @relation(fields: [ownerId], references: [id])
+  amount            Decimal   @db.Decimal(10, 2)
+  currency          String    @default("BRL") @db.VarChar(3)
+  transferKind      String    @default("remaining") @map("transfer_kind") @db.VarChar(30)
+  stripeTransferId  String?   @unique @map("stripe_transfer_id") @db.VarChar(60)
+  status            String    @default("pending") @db.VarChar(20)
+  errorMessage      String?   @map("error_message")
+  transferredAt     DateTime? @map("transferred_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @map("updated_at")
+
+  @@map("owner_transfers")
+}
+
+// ─── 0019_apartment_offers.sql ─────────────────────────────────────────────
+
+model ApartmentOffer {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String    @unique @db.VarChar(64)
+  label            String    @db.VarChar(255)
+  discountPercent  Decimal   @map("discount_percent") @db.Decimal(5, 2)
+  // NULL = aplica a todos los apartamentos
+  apartmentIds     String[]  @map("apartment_ids") @db.Uuid
+  validFrom        DateTime? @map("valid_from") @db.Date
+  validTo          DateTime? @map("valid_to") @db.Date
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @map("updated_at")
+
+  @@map("apartment_offers")
+}
+
+// ─── 0016_room_blocks.sql ──────────────────────────────────────────────────
+
+model RoomBlock {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // FK a room_types, tabla del núcleo -- no modelada acá a propósito.
+  roomTypeId String   @map("room_type_id") @db.Uuid
+  startDate  DateTime @map("start_date") @db.Date
+  endDate    DateTime @map("end_date") @db.Date
+  blockType  String   @default("other") @map("block_type") @db.VarChar(20)
+  reason     String?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @map("updated_at")
+
+  @@map("room_blocks")
+}
+
+// ─── 0022_dynamic_pricing.sql + 0023_dynamic_pricing_per_unit.sql ─────────
+// NOTA: dynamic_pricing_config, pricing_events y price_cache también los
+// LEE el motor de precios del núcleo (dynamic-pricing-service.ts) vía SQL
+// crudo -- eso no cambia. Prisma se usa acá solo para el CRUD del admin
+// (crear/editar eventos, ajustar config, ver caché), nunca para el
+// cálculo de precio que se cobra en una reserva real.
+
+model DynamicPricingConfig {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occTierLowPct    Int      @default(30) @map("occ_tier_low_pct") @db.SmallInt
+  occTierMidPct    Int      @default(60) @map("occ_tier_mid_pct") @db.SmallInt
+  occTierHighPct   Int      @default(80) @map("occ_tier_high_pct") @db.SmallInt
+  occTierVhighPct  Int      @default(90) @map("occ_tier_vhigh_pct") @db.SmallInt
+  occAdjLow        Decimal  @default(-10) @map("occ_adj_low") @db.Decimal(5, 2)
+  occAdjMid        Decimal  @default(0) @map("occ_adj_mid") @db.Decimal(5, 2)
+  occAdjHigh       Decimal  @default(10) @map("occ_adj_high") @db.Decimal(5, 2)
+  occAdjVhigh      Decimal  @default(20) @map("occ_adj_vhigh") @db.Decimal(5, 2)
+  occAdjMax        Decimal  @default(35) @map("occ_adj_max") @db.Decimal(5, 2)
+  proxTierFar      Int      @default(60) @map("prox_tier_far") @db.SmallInt
+  proxTierMid      Int      @default(30) @map("prox_tier_mid") @db.SmallInt
+  proxTierNear     Int      @default(14) @map("prox_tier_near") @db.SmallInt
+  proxTierClose    Int      @default(7) @map("prox_tier_close") @db.SmallInt
+  proxAdjFar       Decimal  @default(-5) @map("prox_adj_far") @db.Decimal(5, 2)
+  proxAdjMid       Decimal  @default(0) @map("prox_adj_mid") @db.Decimal(5, 2)
+  proxAdjNear      Decimal  @default(10) @map("prox_adj_near") @db.Decimal(5, 2)
+  proxAdjClose     Decimal  @default(20) @map("prox_adj_close") @db.Decimal(5, 2)
+  proxAdjLastmin   Decimal  @default(30) @map("prox_adj_lastmin") @db.Decimal(5, 2)
+  dowAdjWeekday    Decimal  @default(0) @map("dow_adj_weekday") @db.Decimal(5, 2)
+  dowAdjWeekend    Decimal  @default(15) @map("dow_adj_weekend") @db.Decimal(5, 2)
+  priceMinBrl      Decimal  @default(70) @map("price_min_brl") @db.Decimal(10, 2)
+  priceMaxBrl      Decimal  @default(250) @map("price_max_brl") @db.Decimal(10, 2)
+  horizonDays      Int      @default(90) @map("horizon_days") @db.SmallInt
+  updatedAt        DateTime @default(now()) @map("updated_at")
+
+  @@map("dynamic_pricing_config")
+}
+
+model DynamicPricingUnitConfig {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // FK a room_types, tabla del núcleo -- no modelada acá a propósito.
+  roomTypeId  String   @unique @map("room_type_id") @db.Uuid
+  minPriceBrl Decimal? @map("min_price_brl") @db.Decimal(10, 2)
+  maxPriceBrl Decimal? @map("max_price_brl") @db.Decimal(10, 2)
+  botEnabled  Boolean  @default(true) @map("bot_enabled")
+  notes       String?
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("dynamic_pricing_unit_config")
+}
+
+model PricingEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String   @db.VarChar(200)
+  dateFrom       DateTime @map("date_from") @db.Date
+  dateTo         DateTime @map("date_to") @db.Date
+  adjustmentPct  Decimal  @map("adjustment_pct") @db.Decimal(5, 2)
+  appliesTo      String   @default("all") @map("applies_to") @db.VarChar(20)
+  isActive       Boolean  @default(true) @map("is_active")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  @@map("pricing_events")
+}
+
+model PriceCache {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  targetDate    DateTime @map("target_date") @db.Date
+  // FK a room_types, tabla del núcleo -- no modelada acá a propósito.
+  roomTypeId    String   @map("room_type_id") @db.Uuid
+  propertyType  String   @default("hostel") @map("property_type")
+  basePrice     Decimal  @map("base_price") @db.Decimal(10, 2)
+  finalPrice    Decimal  @map("final_price") @db.Decimal(10, 2)
+  occFactor     Decimal  @default(1) @map("occ_factor") @db.Decimal(5, 4)
+  proxFactor    Decimal  @default(1) @map("prox_factor") @db.Decimal(5, 4)
+  dowFactor     Decimal  @default(1) @map("dow_factor") @db.Decimal(5, 4)
+  eventFactor   Decimal  @default(1) @map("event_factor") @db.Decimal(5, 4)
+  eventName     String?  @map("event_name") @db.VarChar(200)
+  occupancyPct  Decimal? @map("occupancy_pct") @db.Decimal(5, 2)
+  calculatedAt  DateTime @default(now()) @map("calculated_at")
+
+  @@unique([targetDate, roomTypeId])
+  @@map("price_cache")
+}
+
+// ─── 0024_apartment_editor.sql ─────────────────────────────────────────────
+
+model ApartmentReview {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // FK a room_types, tabla del núcleo -- no modelada acá a propósito.
+  roomTypeId  String   @map("room_type_id") @db.Uuid
+  authorName  String   @map("author_name") @db.VarChar(100)
+  platform    String   @default("Admin") @db.VarChar(50)
+  rating      Decimal  @db.Decimal(2, 1)
+  comment     String
+  reviewDate  DateTime @default(now()) @map("review_date") @db.Date
+  isPublished Boolean  @default(true) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("apartment_reviews")
+}
+
+// ─── 0015_guest_photos.sql ─────────────────────────────────────────────────
+
+model GuestPhoto {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  imageUrl            String   @map("image_url")
+  cloudinaryPublicId  String   @map("cloudinary_public_id") @db.VarChar(255)
+  guestName           String?  @map("guest_name") @db.VarChar(120)
+  guestCountry        String?  @map("guest_country") @db.VarChar(2)
+  caption             String?
+  isPublished         Boolean  @default(true) @map("is_published")
+  displayOrder        Int      @default(0) @map("display_order")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @map("updated_at")
+
+  @@map("guest_photos")
+}
+
+// ─── 0020_guest_blocklist_and_booking_guests.sql ──────────────────────────
+// Solo la parte de reportes de admin -- guests y booking_guests son
+// escritos por el flujo de checkout (núcleo) y se quedan en SQL crudo.
+
+model GuestReport {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // FK a reservations y guests, tablas del núcleo -- no modeladas acá a propósito.
+  reservationId   String    @map("reservation_id") @db.Uuid
+  reportedGuestId String    @map("reported_guest_id") @db.Uuid
+  reportedBy      String    @map("reported_by") @db.Uuid
+  reason          String
+  description     String
+  evidenceUrls    String[]  @map("evidence_urls")
+  status          String    @default("pending") @db.VarChar(20)
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedBy      String?   @map("reviewed_by") @db.Uuid
+  platformNotes   String?   @map("platform_notes")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @map("updated_at")
+
+  @@map("guest_reports")
+}

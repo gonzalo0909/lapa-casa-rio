@@ -1,0 +1,258 @@
+<!-- lapa-casa-hostel/backend/src/admin/apartments.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apartamentos — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+  @media(max-width:680px){ .layout { grid-template-columns:1fr; } }
+
+  .apt-list { display: flex; flex-direction: column; gap: 6px; }
+  .apt-item { display: flex; justify-content: space-between; align-items: center;
+              padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius);
+              background: var(--surface); cursor: pointer; text-align: left; width: 100%; }
+  .apt-item:hover { border-color: var(--accent); }
+  .apt-item.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .apt-item-name { font-weight: 600; font-size: 13px; }
+  .apt-item-sub  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .photo-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+                 background: var(--border); color: var(--text-muted); }
+  .photo-badge.has-photos { background: #dcfce7; color: #166534; }
+
+  /* Tabs dentro del editor */
+  .inner-tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .inner-tab-btn { padding: 7px 14px; border: none; background: none; cursor: pointer; font-size: 13px;
+                   color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+                   font-weight: 500; }
+  .inner-tab-btn:hover { color: var(--text); }
+  .inner-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .inner-panel { display: none; }
+  .inner-panel.active { display: block; }
+
+  /* Formulario datos */
+  .field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .field-grid label, .field-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .field-grid input, .field-grid select, .field-grid textarea { width: 100%; }
+  textarea { resize: vertical; min-height: 80px; }
+  .full-col { grid-column: 1 / -1; }
+
+  /* Amenidades */
+  .amenity-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .amenity-chip { display: flex; align-items: center; gap: 5px; padding: 5px 10px;
+                  border: 1.5px solid var(--border); border-radius: 99px; font-size: 12px;
+                  cursor: pointer; background: var(--surface); user-select: none; }
+  .amenity-chip.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--accent); font-weight: 600; }
+
+  /* Fotos */
+  .upload-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .upload-bar input[type=file] { flex: 1; min-width: 160px; font-size: 13px; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 4px; }
+  .photo-card { border: 2px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .photo-card.primary { border-color: var(--accent); }
+  .photo-card img { width: 100%; height: 110px; object-fit: cover; display: block; }
+  .photo-actions { padding: 6px 8px; display: flex; justify-content: space-between; font-size: 12px; }
+  .btn-primary-label { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Resenas */
+  .review-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; background: var(--surface); }
+  .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .review-author { font-weight: 600; font-size: 14px; }
+  .review-platform { font-size: 11px; color: var(--text-muted); }
+  .review-stars { color: #f59e0b; font-size: 13px; letter-spacing: 1px; }
+  .review-comment { font-size: 13px; color: var(--text); line-height: 1.55; }
+  .review-date { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+  .review-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .review-actions button { font-size: 12px; background: none; border: none; cursor: pointer; padding: 2px 4px; }
+  .btn-edit-review { color: var(--accent); font-weight: 600; }
+  .btn-del-review  { color: var(--danger); }
+  .review-form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; align-items: end; margin-bottom: 12px; }
+  .review-form-grid label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 3px; }
+  @media(max-width:600px){ .review-form-grid { grid-template-columns: 1fr 1fr; } }
+  .aggregate-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  @media(max-width:500px){ .aggregate-grid { grid-template-columns: 1fr; } }
+  .unpublished { opacity: .55; }
+
+  .outer-tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .outer-tab-btn { padding: 7px 14px; border: none; background: none; cursor: pointer; font-size: 13px;
+                   color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+                   font-weight: 500; }
+  .outer-tab-btn:hover { color: var(--text); }
+  .outer-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .outer-panel { display: none; }
+  .outer-panel.active { display: block; }
+  .embed-frame { width: 100%; min-height: 900px; border: none; }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+
+<div class="outer-tab-bar">
+  <button class="outer-tab-btn active" data-otab="apartamentos">Apartamentos</button>
+  <button class="outer-tab-btn" data-otab="bloqueos">Bloqueos</button>
+  <button class="outer-tab-btn" data-otab="ofertas">Ofertas</button>
+  <button class="outer-tab-btn" data-otab="precios">Precios dinámicos</button>
+</div>
+
+<div class="outer-panel active" id="opanel-apartamentos">
+
+<div id="page-msg"></div>
+
+<div class="layout">
+
+  <!-- Lista de apartamentos -->
+  <div class="card">
+    <h2>Apartamentos</h2>
+    <div class="apt-list" id="apt-list">Cargando...</div>
+  </div>
+
+  <!-- Editor -->
+  <div id="editor" style="display:none">
+    <div class="card">
+      <h2 id="editor-title">—</h2>
+
+      <div class="inner-tab-bar">
+        <button class="inner-tab-btn active" id="itbtn-datos">Datos</button>
+        <button class="inner-tab-btn" id="itbtn-fotos">Fotos</button>
+        <button class="inner-tab-btn" id="itbtn-resenas">Resenas</button>
+      </div>
+
+      <!-- TAB DATOS ────────────────────────────────────── -->
+      <div class="inner-panel active" id="itab-datos">
+        <div id="datos-msg"></div>
+        <div class="field-grid">
+          <div class="full-col">
+            <label class="field-label">Nombre</label>
+            <input type="text" id="f-name" maxlength="100">
+          </div>
+          <div>
+            <label class="field-label">Barrio</label>
+            <input type="text" id="f-neighborhood" maxlength="100" placeholder="Santa Teresa">
+          </div>
+          <div>
+            <label class="field-label">Capacidad (huespedes)</label>
+            <input type="number" id="f-capacity" min="1" max="20">
+          </div>
+          <div>
+            <label class="field-label">Habitaciones</label>
+            <input type="number" id="f-bedrooms" min="0" max="10">
+          </div>
+          <div>
+            <label class="field-label">Banos</label>
+            <input type="number" id="f-bathrooms" min="0" max="10">
+          </div>
+          <div>
+            <label class="field-label">Precio base (BRL/noche)</label>
+            <input type="number" id="f-base-price" min="1" step="0.01">
+          </div>
+          <div class="full-col">
+            <label class="field-label">Descripcion</label>
+            <textarea id="f-description" placeholder="Descripcion del apartamento para los motores de busqueda..."></textarea>
+          </div>
+          <div class="full-col">
+            <label class="field-label">Comodidades</label>
+            <div class="amenity-grid" id="amenity-grid"></div>
+          </div>
+        </div>
+        <button id="save-datos-btn">Guardar datos</button>
+      </div>
+
+      <!-- TAB FOTOS ────────────────────────────────────── -->
+      <div class="inner-panel" id="itab-fotos">
+        <div id="fotos-msg"></div>
+        <div class="upload-bar">
+          <input type="file" id="photo-file" accept="image/*">
+          <button id="upload-btn">Subir foto</button>
+        </div>
+        <div class="photo-grid" id="photo-grid">
+          <p style="color:var(--text-muted)">Selecciona un apartamento.</p>
+        </div>
+      </div>
+
+      <!-- TAB RESENAS ──────────────────────────────────── -->
+      <div class="inner-panel" id="itab-resenas">
+        <div id="resenas-msg"></div>
+
+        <!-- Puntuacion agregada de plataformas -->
+        <p class="section-label">Puntuacion agregada (plataformas externas)</p>
+        <div class="aggregate-grid">
+          <div>
+            <label class="field-label">Rating (0 - 5)</label>
+            <input type="number" id="r-rating" min="0" max="5" step="0.01" placeholder="4.85">
+          </div>
+          <div>
+            <label class="field-label">Cantidad de resenas</label>
+            <input type="number" id="r-count" min="0" placeholder="127">
+          </div>
+          <div>
+            <label class="field-label">Etiqueta</label>
+            <input type="text" id="r-label" maxlength="80" placeholder="plataformas internacionales">
+          </div>
+        </div>
+        <button id="save-aggregate-btn" style="margin-bottom:24px">Guardar puntuacion</button>
+
+        <!-- Resenas individuales -->
+        <p class="section-label">Resenas individuales</p>
+        <div id="reviews-list"></div>
+
+        <!-- Formulario nueva resena -->
+        <div class="card" style="margin-top:12px">
+          <h3 id="review-form-title" style="font-size:14px;margin-bottom:12px">Nueva resena</h3>
+          <div class="review-form-grid">
+            <div><label>Autor</label><input type="text" id="rv-author" placeholder="Nombre del huesped"></div>
+            <div>
+              <label>Plataforma</label>
+              <select id="rv-platform">
+                <option value="Admin">Admin</option>
+                <option value="Airbnb">Airbnb</option>
+                <option value="Booking.com">Booking.com</option>
+                <option value="Google">Google</option>
+                <option value="Hostelworld">Hostelworld</option>
+              </select>
+            </div>
+            <div><label>Rating (1-5)</label><input type="number" id="rv-rating" min="1" max="5" step="0.5" placeholder="5"></div>
+            <div><label>Fecha</label><input type="date" id="rv-date"></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <label class="field-label">Comentario</label>
+            <textarea id="rv-comment" placeholder="Excelente apartamento..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:13px;display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="rv-published" checked> Publicada
+            </label>
+            <button id="save-review-btn">Guardar resena</button>
+            <button id="cancel-review-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--text-muted)">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /opanel-apartamentos -->
+
+<div class="outer-panel" id="opanel-bloqueos">
+  <iframe class="embed-frame" src="/admin/blocking.html?type=apartment&embed=1"></iframe>
+</div>
+
+<div class="outer-panel" id="opanel-ofertas">
+  <iframe class="embed-frame" src="/admin/offers.html?type=apartment&embed=1"></iframe>
+</div>
+
+<div class="outer-panel" id="opanel-precios">
+  <iframe class="embed-frame" src="/admin/dynamic-pricing.html?type=apartment&embed=1"></iframe>
+</div>
+
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/apartments.js"></script>
+</body>
+</html>

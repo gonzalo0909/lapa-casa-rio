@@ -1,0 +1,115 @@
+// frontend/src/components/booking/apartment-engine.types.ts
+// Tipos, interfaces y constantes compartidas del motor de reservas de apartamentos.
+
+import type { ApartmentAvailability } from '@/types/global';
+
+// ─── Tipos base ──────────────────────────────────────────────────────────────
+
+export type Step = 1 | 2 | 3 | 4;
+
+export type AptLocale = 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
+
+// ─── Formulario de huésped ───────────────────────────────────────────────────
+
+/** Un acompañante declarado en el checkout (puede ser pasaporte o CPF). */
+export interface AdditionalGuest {
+  /** ID local — solo para React key, nunca se envía al servidor */
+  id: string;
+  fullName: string;
+  /** CPF formateado (000.000.000-00) o número de pasaporte (letras aceptadas) */
+  document: string;
+}
+
+export interface GuestForm {
+  fullName: string;
+  email: string;
+  confirmEmail: string;
+  phone: string;
+  country: string;
+  document: string;
+  arrivalTime: string;
+  specialRequests: string;
+}
+
+export const EMPTY_FORM: GuestForm = {
+  fullName: '',
+  email: '',
+  confirmEmail: '',
+  phone: '',
+  country: 'Brasil',
+  document: '',
+  arrivalTime: '',
+  specialRequests: '',
+};
+
+// ─── Reserva creada (respuesta del backend) ──────────────────────────────────
+// Re-exportado para que ApartmentGuestForm no importe de este archivo por separado
+
+export interface CreatedBooking {
+  id: string;
+  confirmationNumber: string;
+  pendingExpiresAt: string | null;
+  total: number;
+  deposit: number;
+  remaining: number;
+  checkIn: string;
+  /** Código de referido propio, generado al confirmar (idea #49, roadmap.html). */
+  referralCode?: string | null;
+}
+
+// ─── Cupón de descuento ──────────────────────────────────────────────────────
+
+export interface AppliedCoupon {
+  code: string;
+  label: string;
+  discount_percent: number;
+}
+
+// ─── Props del engine ────────────────────────────────────────────────────────
+
+export interface ApartmentEngineProps {
+  locale?: AptLocale;
+}
+
+// ─── Constantes ──────────────────────────────────────────────────────────────
+
+/** Mapeo locale → BCP-47 para Intl (nombres de mes/día). */
+export const BCP47: Record<string, string> = {
+  pt: 'pt-BR',
+  es: 'es-ES',
+  en: 'en-US',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  it: 'it-IT',
+};
+
+/** Capacidad máxima seleccionable en el contador de huéspedes del Paso 1. */
+export const MAX_APT_GUESTS = 2;
+
+/** Horarios de check-in disponibles (cada 30 min, 14:00–22:00). */
+export const CHECKIN_TIMES = [
+  '14:00',
+  '14:30',
+  '15:00',
+  '15:30',
+  '16:00',
+  '16:30',
+  '17:00',
+  '17:30',
+  '18:00',
+  '18:30',
+  '19:00',
+  '19:30',
+  '20:00',
+  '20:30',
+  '21:00',
+  '21:30',
+  '22:00',
+];
+
+// ─── Tipo auxiliar para el grid del Paso 2 ──────────────────────────────────
+
+export interface RankedApartment {
+  apt: ApartmentAvailability;
+  disabledReason: 'unavailable' | 'too-small' | undefined;
+}

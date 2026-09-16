@@ -1,0 +1,153 @@
+<!-- lapa-casa-hostel/backend/src/admin/dynamic-pricing.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precios Dinamicos — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .tab-bar { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--border); }
+  .tab-btn { padding:8px 16px; cursor:pointer; border:none; background:none; font-size:14px; color:var(--text-muted); border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:500; }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  .units-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-bottom:20px; }
+  .unit-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+  .unit-name { font-weight:600; font-size:14px; margin-bottom:2px; }
+  .unit-base { font-size:12px; color:var(--text-muted); margin-bottom:12px; }
+  .unit-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .unit-fields label { font-size:12px; color:var(--text-muted); display:block; margin-bottom:3px; }
+  .unit-fields input { width:100%; }
+  .unit-toggle { display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:10px; }
+  .config-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+  .config-grid label { font-size:12px; color:var(--text-muted); display:block; margin-bottom:3px; }
+  .config-grid input { width:100%; }
+  .event-row { display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:8px; background:var(--surface); }
+  .event-row .ev-name { flex:1; font-weight:600; font-size:13px; }
+  .event-row .ev-dates { font-size:12px; color:var(--text-muted); }
+  .event-row .ev-adj { font-weight:700; color:var(--accent); min-width:45px; }
+  .event-form-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr auto; gap:8px; align-items:end; }
+  .event-form-grid label { font-size:12px; color:var(--text-muted); display:block; margin-bottom:3px; }
+  .cal-filters { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .cal-filters label { font-size:13px; color:var(--text-muted); }
+  .cal-filters input[type=number] { width:70px; }
+  .occ-bar { display:inline-block; width:50px; height:6px; background:var(--border); border-radius:3px; vertical-align:middle; overflow:hidden; }
+  .occ-fill { height:100%; background:var(--accent); }
+  .price-up { color:var(--accent); font-weight:600; }
+  .price-dn { color:var(--danger); font-weight:600; }
+  .run-row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .run-info { font-size:13px; color:var(--text-muted); }
+  .section-label { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin:0 0 10px; }
+  @media(max-width:600px){ .event-form-grid{grid-template-columns:1fr 1fr;} .units-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+
+<div id="page-error" style="display:none" class="msg error"></div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tbtn-hostel">Hostel</button>
+  <button class="tab-btn" id="tbtn-apartments">Apartamentos</button>
+  <button class="tab-btn" id="tbtn-global">Factores globales</button>
+  <button class="tab-btn" id="tbtn-events">Eventos</button>
+  <button class="tab-btn" id="tbtn-calendar">Calendario</button>
+</div>
+
+<!-- HOSTEL -->
+<div id="tab-hostel" class="tab-panel active">
+  <div class="run-row">
+    <button id="run-btn">Ejecutar bot</button>
+    <span class="run-info" id="run-result"></span>
+  </div>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Precio por cama/noche. El bot ajusta segun ocupacion de cada habitacion.</p>
+  <div class="units-grid" id="hostel-units"><p style="color:var(--text-muted)">Cargando...</p></div>
+</div>
+
+<!-- APARTAMENTOS -->
+<div id="tab-apartments" class="tab-panel">
+  <div class="run-row">
+    <button id="run-btn-apt">Ejecutar bot</button>
+    <span class="run-info" id="run-result-apt"></span>
+  </div>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Precio por noche (unidad completa). Ocupa reservas de Airbnb/Booking via iCal.</p>
+  <div class="units-grid" id="apt-units"><p style="color:var(--text-muted)">Cargando...</p></div>
+</div>
+
+<!-- FACTORES GLOBALES -->
+<div id="tab-global" class="tab-panel">
+  <div class="card">
+    <h2>Factores globales</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Aplican a todas las unidades. Min/max se puede sobreescribir por unidad.</p>
+    <div id="global-msg"></div>
+    <p class="section-label">Ocupacion — tiers y ajustes (%)</p>
+    <div class="config-grid" id="cfg-occ"></div>
+    <p class="section-label">Proximidad — dias hasta la fecha</p>
+    <div class="config-grid" id="cfg-prox"></div>
+    <p class="section-label">Dia de semana</p>
+    <div class="config-grid" id="cfg-dow"></div>
+    <p class="section-label">Precio global min / max (fallback si la unidad no tiene override)</p>
+    <div class="config-grid" id="cfg-limits"></div>
+    <p class="section-label">Horizonte</p>
+    <div class="config-grid" id="cfg-horizon"></div>
+    <button id="save-global-btn">Guardar factores globales</button>
+  </div>
+</div>
+
+<!-- EVENTOS -->
+<div id="tab-events" class="tab-panel">
+  <div class="card">
+    <h2>Eventos con impacto en precio</h2>
+    <div id="events-msg"></div>
+    <div id="events-list"><p style="color:var(--text-muted)">Cargando...</p></div>
+  </div>
+  <div class="card">
+    <h2>Nuevo evento</h2>
+    <div class="event-form-grid">
+      <div><label>Nombre</label><input id="ev-name" placeholder="Rock in Rio 2026"></div>
+      <div><label>Desde</label><input id="ev-from" type="date"></div>
+      <div><label>Hasta</label><input id="ev-to" type="date"></div>
+      <div><label>Ajuste %</label><input id="ev-adj" type="number" placeholder="50"></div>
+      <div><label>Aplica a</label>
+        <select id="ev-applies">
+          <option value="all">Todos</option>
+          <option value="hostel">Hostel</option>
+          <option value="apartment">Apartamentos</option>
+        </select>
+      </div>
+      <div><label>&nbsp;</label><button id="add-event-btn">Agregar</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDARIO -->
+<div id="tab-calendar" class="tab-panel">
+  <div class="card">
+    <h2>Precios calculados</h2>
+    <div class="cal-filters">
+      <select id="cal-filter-type"><option value="">Todos</option><option value="hostel">Hostel</option><option value="apartment">Apartamentos</option></select>
+      <select id="cal-filter-room"><option value="">Todas las unidades</option></select>
+      <input id="cal-days" type="number" value="60" min="7" max="365">
+      <label>dias</label>
+      <button id="cal-refresh-btn">Actualizar</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Fecha</th><th>Unidad</th><th>Tipo</th><th>Base</th><th>Final</th><th>Delta</th><th>Ocupacion</th><th>Evento</th></tr></thead>
+        <tbody id="cal-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<!-- dynamic-pricing.js como archivo externo: cumple CSP (scriptSrc: self, sin unsafe-inline) -->
+<script src="/admin/js/dynamic-pricing.js"></script>
+</body>
+</html>

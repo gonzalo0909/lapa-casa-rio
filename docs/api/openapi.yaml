@@ -1,0 +1,1531 @@
+# lapa-casa-hostel/docs/api/openapi.yaml
+#
+# Sección 8 auditoría de 17 secciones: reescrito por completo. El archivo
+# anterior documentaba solo 8 endpoints inventados (paths y campos que no
+# coincidían con el código real, ej. BookingRequest.guest.name en vez de
+# firstName/lastName, /api/availability/check como POST cuando en
+# realidad es GET con query params) bajo el prefijo /api/ en vez de
+# /api/v1/, y terminaba con un vestigio de generación con IA pegado al
+# final del archivo ("✅ Archivo 181/184 completado") que además lo
+# dejaba con un error de sintaxis YAML.
+#
+# Cobertura: se listan TODAS las rutas reales (comparado contra
+# backend/src/routes/index.ts y cada sub-router). Los endpoints públicos
+# de mayor tráfico (rooms, availability, bookings, payments, webhooks)
+# tienen request/response detallados y verificados contra el código.
+# Los ~60 endpoints de /admin/* (protegidos, uso interno del panel
+# admin) están documentados con path, método y resumen reales, pero con
+# schemas de request/response genéricos -- documentarlos en el mismo
+# nivel de detalle es un trabajo aparte, de alcance mucho mayor.
+
+openapi: 3.0.3
+info:
+  title: Lapa Casa Hostel - Channel Manager API
+  description: |
+    Documentación de la API del sistema de reservas y channel manager de
+    Lapa Casa Hostel.
+
+    ## Autenticación
+    Las rutas bajo /admin/* requieren un JWT (cookie httpOnly `lch_admin`
+    o header `Authorization: Bearer <token>`), obtenido via
+    POST /admin/login. El resto de las rutas son públicas.
+
+    ## Rate limiting
+    Cada grupo de rutas tiene su propio límite (ver rate-limit.md o
+    routes/index.ts) -- desde 3 req/seg en /bookings hasta 120 req/min
+    en /availability.
+  version: 1.0.0
+  contact:
+    name: Lapa Casa Hostel Tech Team
+    email: lapalandiarj@gmail.com
+    url: https://lapacasario.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.lapacasario.com/api/v1
+    description: Producción (aún no desplegado bajo este dominio -- ver sección 11 de la auditoría de 17 secciones)
+  - url: http://localhost:3001/api/v1
+    description: Desarrollo local
+
+tags:
+  - name: Rooms
+    description: Información de habitaciones del hostel
+  - name: Availability
+    description: Disponibilidad y cotización de precio
+  - name: Bookings
+    description: Creación y gestión de reservas (hostel)
+  - name: Payments
+    description: Pagos (Stripe, Mercado Pago/PIX) y pago grupal
+  - name: Offers
+    description: Validación de cupones/ofertas de apartamentos
+  - name: Partners
+    description: Contacto de administradores de propiedades interesados
+  - name: Photos
+    description: Galería pública de fotos de huéspedes
+  - name: iCal
+    description: Import/export de calendarios (Airbnb, Hostelworld, Booking.com)
+  - name: Webhooks
+    description: Webhooks entrantes de proveedores de pago y OTAs
+  - name: Admin Auth
+    description: Login/logout del panel admin
+  - name: Admin
+    description: Panel admin (protegido, requiere rol admin)
+  - name: Owner Auth
+    description: Login/logout del panel de administradores de apartamento
+  - name: Owner Panel
+    description: >-
+      Panel de administradores de apartamento (protegido, requiere rol owner
+      -- cada uno ve solo sus propios apartamentos, filtrado por owner_id)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: También aceptado como cookie httpOnly `lch_admin`
+    ownerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        JWT de administrador de apartamento (role owner), separado del admin
+        único de arriba. También aceptado como cookie httpOnly `lch_owner`.
+
+  schemas:
+    ApiSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data: {}
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Reserva no encontrada
+        timestamp:
+          type: string
+          format: date-time
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: Mixto 12A
+        capacity:
+          type: integer
+          example: 12
+        type:
+          type: string
+          enum: [mixed, female]
+        basePrice:
+          type: number
+          example: 60.00
+        isFlexible:
+          type: boolean
+
+    AvailabilityQuoteRequest:
+      type: object
+      required: [checkIn, checkOut, rooms]
+      properties:
+        checkIn:
+          type: string
+          format: date
+        checkOut:
+          type: string
+          format: date
+        rooms:
+          type: array
+          items:
+            type: object
+            required: [roomId, bedsCount]
+            properties:
+              roomId:
+                type: string
+              bedsCount:
+                type: integer
+
+    BookingCreateRequest:
+      type: object
+      required: [checkIn, checkOut, rooms, guest]
+      properties:
+        checkIn:
+          type: string
+          format: date
+        checkOut:
+          type: string
+          format: date
+        rooms:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [roomId, bedsCount]
+            properties:
+              roomId:
+                type: string
+              bedsCount:
+                type: integer
+                minimum: 1
+        guest:
+          type: object
+          required: [firstName, lastName, email]
+          properties:
+            firstName:
+              type: string
+            lastName:
+              type: string
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            country:
+              type: string
+        specialRequests:
+          type: string
+        language:
+          type: string
+          enum: [pt, en, es]
+
+    PaymentIntentRequest:
+      type: object
+      required: [reservationId, paymentType, provider]
+      properties:
+        reservationId:
+          type: string
+        paymentType:
+          type: string
+          enum: [deposit, remaining]
+        provider:
+          type: string
+          enum: [stripe, mercadopago]
+        currency:
+          type: string
+          default: BRL
+        installments:
+          type: integer
+          description: Solo con provider=mercadopago y currency=BRL, máximo 12.
+
+paths:
+  # ── Rooms ──────────────────────────────────────────────────────────────
+  /rooms:
+    get:
+      tags: [Rooms]
+      summary: Lista todos los tipos de habitación
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Room' }
+
+  /rooms/flexible/status:
+    get:
+      tags: [Rooms]
+      summary: Estado de conversión de la habitación Flexible 7
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: OK }
+
+  /rooms/{id}:
+    get:
+      tags: [Rooms]
+      summary: Detalle de una habitación
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: No encontrada, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /rooms/{id}/amenities:
+    get:
+      tags: [Rooms]
+      summary: Amenities de una habitación
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  /rooms/{id}/photos:
+    get:
+      tags: [Rooms]
+      summary: Fotos de una habitación
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ── Availability ───────────────────────────────────────────────────────
+  /availability/check:
+    get:
+      tags: [Availability]
+      summary: Verifica disponibilidad de camas para un rango de fechas
+      parameters:
+        - { name: checkIn, in: query, required: true, schema: { type: string, format: date } }
+        - { name: checkOut, in: query, required: true, schema: { type: string, format: date } }
+        - { name: beds, in: query, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+        '400': { description: Parámetros inválidos, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /availability/carnival-dates:
+    get:
+      tags: [Availability]
+      summary: Fechas de Carnaval configuradas (system_config.carnival_dates)
+      responses:
+        '200': { description: OK }
+
+  /availability/apartments:
+    get:
+      tags: [Availability]
+      summary: Disponibilidad de los 10 apartamentos para un rango de fechas
+      parameters:
+        - { name: checkIn, in: query, required: true, schema: { type: string, format: date } }
+        - { name: checkOut, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200': { description: OK }
+
+  /availability/room/{roomId}:
+    get:
+      tags: [Availability]
+      summary: Disponibilidad de una habitación puntual
+      parameters:
+        - { name: roomId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  /availability/quote:
+    post:
+      tags: [Availability]
+      summary: Cotiza el precio real (mismo cálculo que usa la creación de reserva)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AvailabilityQuoteRequest' }
+      responses:
+        '200': { description: OK }
+        '400': { description: Faltan campos requeridos, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /availability/calendar:
+    get:
+      tags: [Availability]
+      summary: Vista de calendario de disponibilidad
+      responses:
+        '200': { description: OK }
+
+  /availability/summary:
+    get:
+      tags: [Availability]
+      summary: Resumen agregado de disponibilidad
+      responses:
+        '200': { description: OK }
+
+  # ── Bookings ───────────────────────────────────────────────────────────
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Crea una reserva de hostel
+      description: Aplica automáticamente descuento por grupo y multiplicador de temporada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookingCreateRequest' }
+      responses:
+        '201':
+          description: Reserva creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiSuccess' }
+        '400': { description: Datos inválidos, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: Camas no disponibles para esas fechas, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    get:
+      tags: [Bookings]
+      summary: Lista reservas (uso interno/admin)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /bookings/{id}:
+    get:
+      tags: [Bookings]
+      summary: Detalle de una reserva
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: No encontrada, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    patch:
+      tags: [Bookings]
+      summary: Actualiza una reserva
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      tags: [Bookings]
+      summary: Cancela una reserva
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Cancelada }
+        '404': { description: No encontrada }
+
+  /bookings/{id}/confirmation:
+    get:
+      tags: [Bookings]
+      summary: Datos de confirmación de una reserva (para la página de éxito)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ── Payments ───────────────────────────────────────────────────────────
+  /payments/intent:
+    post:
+      tags: [Payments]
+      summary: Crea un payment intent (depósito o saldo) contra una reserva existente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentIntentRequest' }
+      responses:
+        '201': { description: Payment intent creado }
+        '400': { description: Reserva cancelada / cuotas inválidas, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '404': { description: Reserva no encontrada, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: El depósito ya fue pagado, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/confirm:
+    post:
+      tags: [Payments]
+      summary: Confirma un pago por su paymentId (uso administrativo/manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentId]
+              properties:
+                paymentId: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /payments/deposit:
+    post:
+      tags: [Payments]
+      summary: Procesa el pago de depósito de una reserva
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservationId, provider]
+              properties:
+                reservationId: { type: string }
+                provider: { type: string, enum: [stripe, mercadopago] }
+                installments: { type: integer, default: 1 }
+      responses:
+        '200': { description: OK }
+
+  /payments/stripe-wa-link:
+    post:
+      tags: [Payments]
+      summary: Genera un link de Stripe Checkout sin reserva previa (flujo WhatsApp)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amountBRL]
+              properties:
+                amountBRL: { type: number, minimum: 0.01 }
+                description: { type: string }
+                guestEmail: { type: string, format: email }
+                frontendUrl: { type: string, format: uri }
+      responses:
+        '200': { description: Link generado }
+        '400': { description: Body inválido, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/stripe-checkout:
+    post:
+      tags: [Payments]
+      summary: Genera una Stripe Checkout Session para una reserva ya creada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservationId]
+              properties:
+                reservationId: { type: string }
+                frontendUrl: { type: string, format: uri }
+      responses:
+        '200': { description: Checkout Session creada }
+        '404': { description: Reserva no encontrada, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/group-session:
+    post:
+      tags: [Payments]
+      summary: El titular crea una sesión de pago grupal (2+ camas)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [checkIn, checkOut, totalBeds, nights, titular]
+              properties:
+                checkIn: { type: string, format: date }
+                checkOut: { type: string, format: date }
+                totalBeds: { type: integer, minimum: 2 }
+                nights: { type: integer }
+                guestGender: { type: string, enum: [mixed, female, male] }
+                titular:
+                  type: object
+                  required: [full_name, email]
+                  properties:
+                    full_name: { type: string }
+                    email: { type: string, format: email }
+                    phone: { type: string }
+                    country: { type: string }
+                    language: { type: string }
+                specialRequests: { type: string }
+      responses:
+        '201': { description: Sesión creada }
+        '400': { description: Faltan campos / menos de 2 camas, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/group/{token}:
+    get:
+      tags: [Payments]
+      summary: Estado general de la sesión de pago grupal (vista del titular)
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: Sesión no encontrada, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/group/{token}/pay:
+    post:
+      tags: [Payments]
+      summary: Un invitado reclama y paga su propio slot dentro de la sesión grupal
+      description: >-
+        Auditoría 17 secciones, sección 8: reemplaza a
+        `/payments/group-member/{memberToken}` y
+        `/payments/group-member/{memberToken}/pay`, que documentaban rutas
+        que nunca existieron en el código (el token es único por sesión
+        grupal, no hay un `memberToken` separado — ver
+        `routes/payments/payments.routes.ts:163`).
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [guest, paymentMethod, documentPhotoBase64]
+              properties:
+                guest:
+                  type: object
+                  required: [full_name, email]
+                  properties:
+                    full_name: { type: string }
+                    email: { type: string, format: email }
+                    phone: { type: string }
+                    country: { type: string }
+                    language: { type: string }
+                paymentMethod: { type: string, enum: [card, pix] }
+                documentPhotoBase64: { type: string, description: 'Foto del documento como data URL, obligatoria' }
+      responses:
+        '200': { description: Pago iniciado }
+        '409': { description: 'Sesión expirada, cerrada, o slot ya pagado/reclamado', content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/release-deposit:
+    post:
+      tags: [Payments]
+      summary: Libera el 25% retenido al administrador del apartamento (solo admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservationId]
+              properties:
+                reservationId: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /payments/mark-received-at-desk:
+    post:
+      tags: [Payments]
+      summary: Registra un pago físico (InfinityPay/efectivo) recibido en recepción (solo admin)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /payments/{id}/status:
+    get:
+      tags: [Payments]
+      summary: Estado de un pago por su id
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: Pago no encontrado, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /payments/reservation/{reservationId}:
+    get:
+      tags: [Payments]
+      summary: Historial de pagos de una reserva (total pagado/pendiente/saldo restante)
+      parameters:
+        - { name: reservationId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: Reserva no encontrada, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  # ── Offers / Partners / Photos ───────────────────────────────────────────
+  /offers/validate:
+    post:
+      tags: [Offers]
+      summary: Valida un cupón de descuento para apartamentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+                apartmentId: { type: string }
+                checkIn: { type: string, format: date }
+      responses:
+        '200': { description: Cupón válido }
+        '404': { description: Cupón no encontrado/inválido, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /partners/contact:
+    post:
+      tags: [Partners]
+      summary: Formulario de contacto de administradores de propiedad interesados en asociarse
+      description: Rate limit estricto (5/hora) -- endpoint público sin login.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, property]
+              properties:
+                name: { type: string, maxLength: 200 }
+                email: { type: string, format: email, maxLength: 200 }
+                phone: { type: string, maxLength: 50 }
+                property: { type: string, maxLength: 300 }
+                message: { type: string, maxLength: 2000 }
+      responses:
+        '200': { description: Mensaje enviado }
+        '400': { description: Validación fallida, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /photos:
+    get:
+      tags: [Photos]
+      summary: Galería pública de fotos de huéspedes
+      responses:
+        '200': { description: OK }
+
+  # ── iCal / Channel Manager ─────────────────────────────────────────────
+  /ical/export:
+    get:
+      tags: [iCal]
+      summary: Exporta el calendario completo (todas las habitaciones) en formato iCal
+      description: Público, sin auth -- pensado para pegar como URL de "calendario a importar" en Airbnb/Hostelworld/Booking.
+      responses:
+        '200': { description: 'OK (text/calendar)' }
+
+  /ical/export/{roomId}:
+    get:
+      tags: [iCal]
+      summary: Exporta el calendario iCal de una habitación puntual
+      parameters:
+        - { name: roomId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 'OK (text/calendar)' }
+
+  /ical/feeds:
+    get:
+      tags: [iCal]
+      summary: Lista los feeds de importación configurados (solo admin)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /ical/import/config:
+    post:
+      tags: [iCal]
+      summary: Configura un nuevo feed de importación iCal (solo admin)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Feed creado }
+
+  /ical/feeds/{id}:
+    patch:
+      tags: [iCal]
+      summary: Actualiza un feed de importación
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      tags: [iCal]
+      summary: Elimina un feed de importación
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Eliminado }
+
+  /ical/sync:
+    post:
+      tags: [iCal]
+      summary: Dispara una sincronización manual de todos los feeds
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Sincronizado }
+
+  /ical/status:
+    get:
+      tags: [iCal]
+      summary: Estado de la última sincronización de cada feed
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  # ── Webhooks ───────────────────────────────────────────────────────────
+  /payments/webhook/stripe:
+    post:
+      tags: [Webhooks]
+      summary: Webhook de Stripe
+      description: |
+        Verifica la firma con el body crudo (req.rawBody) y
+        STRIPE_WEBHOOK_SECRET -- no requiere autenticación de usuario,
+        la seguridad es la firma de Stripe.
+      responses:
+        '200': { description: Procesado }
+        '401': { description: Firma inválida }
+
+  /payments/webhook/mercadopago:
+    post:
+      tags: [Webhooks]
+      summary: Webhook de Mercado Pago
+      description: Verifica el header X-Signature (HMAC SHA256) contra MP_WEBHOOK_SECRET.
+      responses:
+        '200': { description: 'Procesado (siempre 200, incluso en error, para que MP no reintente indefinidamente)' }
+        '401': { description: Firma inválida o ausente }
+
+  /webhooks/booking:
+    post:
+      tags: [Webhooks]
+      summary: Webhook de Booking.com
+      description: Requiere header X-Api-Key y, según configuración, X-Signature + allowlist de IPs.
+      security: []
+      responses:
+        '200': { description: Procesado }
+        '401': { description: API key/firma inválida }
+
+  /webhooks/expedia:
+    post:
+      tags: [Webhooks]
+      summary: Webhook de Expedia
+      description: Mismo esquema de auth que /webhooks/booking, secrets propios (EXPEDIA_WEBHOOK_*).
+      security: []
+      responses:
+        '200': { description: Procesado }
+        '401': { description: API key/firma inválida }
+
+  # ── Admin Auth ─────────────────────────────────────────────────────────
+  /admin/login:
+    post:
+      tags: [Admin Auth]
+      summary: Login del admin único
+      description: Emite el JWT como cookie httpOnly `lch_admin`. Rate limit 10/min.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string }
+      responses:
+        '200': { description: Login exitoso (Set-Cookie lch_admin) }
+        '401': { description: Credenciales inválidas, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /admin/login/logout:
+    post:
+      tags: [Admin Auth]
+      summary: Logout -- revoca el token actual (y el refreshToken si se envía) y limpia la cookie
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Sesión cerrada }
+
+  # ── Admin (protegido, requiere rol admin) ───────────────────────────────
+  # Todas las rutas de acá abajo requieren bearerAuth y pasan por
+  # requireRole(['admin']) (ver routes/index.ts). Documentadas con su
+  # path/método/resumen reales; el detalle de request/response de cada
+  # una queda para una pasada dedicada dado el tamaño de esta superficie
+  # (~40 endpoints).
+  /admin/me:
+    get:
+      tags: [Admin]
+      summary: Datos de la sesión admin activa
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Resumen general del dashboard
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings:
+    get:
+      tags: [Admin]
+      summary: Lista todas las reservas (con filtros)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings/today:
+    get:
+      tags: [Admin]
+      summary: Reservas con check-in/check-out hoy
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings/upcoming:
+    get:
+      tags: [Admin]
+      summary: Próximas reservas
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings/export:
+    get:
+      tags: [Admin]
+      summary: Exporta reservas (CSV/Sheets)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings/{id}:
+    put:
+      tags: [Admin]
+      summary: Edita una reserva
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings/{id}/resend-confirmation:
+    post:
+      tags: [Admin]
+      summary: Reenvía el email de confirmación de una reserva
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/bookings/{id}/confirm:
+    post:
+      tags: [Admin]
+      summary: Confirma manualmente una reserva (check-in/pago recibido en persona)
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/rooms/{id}/settings:
+    put:
+      tags: [Admin]
+      summary: Configuración de una habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/pricing:
+    get:
+      tags: [Admin]
+      summary: Configuración de precios y descuentos por grupo
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Actualiza configuración de precios
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/group-discount-tiers/{id}:
+    put:
+      tags: [Admin]
+      summary: Actualiza un tramo de descuento por grupo
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/offers:
+    get:
+      tags: [Admin]
+      summary: Lista ofertas/cupones de apartamentos
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Crea una oferta/cupón
+      security: [{ bearerAuth: [] }]
+      responses: { '201': { description: Creada } }
+
+  /admin/offers/{id}:
+    put:
+      tags: [Admin]
+      summary: Edita una oferta/cupón
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Elimina una oferta/cupón
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminada } }
+
+  /admin/audit-logs:
+    get:
+      tags: [Admin]
+      summary: Logs de auditoría de acciones del admin
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/stats/occupancy:
+    get:
+      tags: [Admin]
+      summary: Estadísticas de ocupación
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/stats/revenue:
+    get:
+      tags: [Admin]
+      summary: Estadísticas de ingresos
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/stats/channels:
+    get:
+      tags: [Admin]
+      summary: Estadísticas por canal (Airbnb, Booking.com, directo, etc.)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/stats/groups:
+    get:
+      tags: [Admin]
+      summary: Estadísticas de reservas grupales
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/sync/sheets:
+    post:
+      tags: [Admin]
+      summary: Sincroniza manualmente con Google Sheets
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/health:
+    get:
+      tags: [Admin]
+      summary: Health check interno (DB, Redis, colas)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/guests:
+    get:
+      tags: [Admin]
+      summary: Lista huéspedes
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/guests/{id}/block:
+    patch:
+      tags: [Admin]
+      summary: Bloquea a un huésped
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/guests/{id}/unblock:
+    patch:
+      tags: [Admin]
+      summary: Desbloquea a un huésped
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/guests/document-photos:
+    get:
+      tags: [Admin]
+      summary: Lista fotos de documento subidas por huéspedes al reservar (solo lectura)
+      description: >-
+        Auditoría 17 secciones, sección 8: faltaba en este doc. El admin solo
+        mira -- la subida es automática al reservar (guests.document_photo_url).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 100 } }
+      responses: { '200': { description: OK } }
+
+  /admin/photos:
+    get:
+      tags: [Admin]
+      summary: Lista fotos de huéspedes pendientes/publicadas
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Sube una foto de huésped (multipart/form-data, campo "photo")
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo: { type: string, format: binary }
+      responses: { '201': { description: Subida } }
+
+  /admin/photos/{id}:
+    patch:
+      tags: [Admin]
+      summary: Edita metadata de una foto (caption, publicada/oculta)
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Elimina una foto
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminada } }
+
+  /admin/room-type-photos:
+    get:
+      tags: [Admin]
+      summary: Lista tipos de habitación con sus fotos
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/room-type-photos/{id}:
+    get:
+      tags: [Admin]
+      summary: Detalle de un tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Edita un tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/room-type-photos/{id}/photos:
+    get:
+      tags: [Admin]
+      summary: Fotos de un tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Sube una foto para un tipo de habitación (multipart/form-data, campo "photo")
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo: { type: string, format: binary }
+      responses: { '201': { description: Subida } }
+
+  /admin/room-type-photos/photos/{photoId}:
+    patch:
+      tags: [Admin]
+      summary: Edita una foto de tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: photoId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Elimina una foto de tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: photoId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminada } }
+
+  /admin/room-type-photos/{id}/reviews:
+    get:
+      tags: [Admin]
+      summary: Reseñas de un tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Agrega una reseña
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Creada } }
+
+  /admin/room-type-photos/reviews/{reviewId}:
+    put:
+      tags: [Admin]
+      summary: Edita una reseña
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: reviewId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Elimina una reseña
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: reviewId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminada } }
+
+  /admin/apartment-owners:
+    get:
+      tags: [Admin]
+      summary: Lista administradores/dueños de apartamentos
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Crea un administrador de apartamento
+      security: [{ bearerAuth: [] }]
+      responses: { '201': { description: Creado } }
+
+  /admin/apartment-owners/{id}:
+    get:
+      tags: [Admin]
+      summary: Detalle de un administrador de apartamento
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Edita un administrador de apartamento
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Elimina un administrador de apartamento
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminado } }
+
+  /admin/apartment-owners/{id}/reset-password:
+    post:
+      tags: [Admin]
+      summary: Genera una nueva contraseña temporal para el administrador de apartamento
+      description: >-
+        Auditoría 17 secciones, sección 8: faltaba en este doc. La contraseña
+        viaja una sola vez en texto plano en la respuesta (ver
+        owner-auth.routes.ts) -- must_change_password fuerza cambiarla en el
+        primer login siguiente.
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: 'Contraseña temporal generada' } }
+
+  /admin/apartment-owners/{id}/onboarding-link:
+    post:
+      tags: [Admin]
+      summary: Genera el link de onboarding de Stripe Connect para el dueño
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/apartment-owners/{id}/status:
+    get:
+      tags: [Admin]
+      summary: Estado de la cuenta Stripe Connect del dueño
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/apartment-owners/{id}/assign-room/{roomId}:
+    put:
+      tags: [Admin]
+      summary: Asigna un apartamento a un administrador
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: roomId, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Desasigna un apartamento de un administrador
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: roomId, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: OK } }
+
+  /admin/blocked-dates:
+    get:
+      tags: [Admin]
+      summary: Lista fechas bloqueadas
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Bloquea fechas
+      security: [{ bearerAuth: [] }]
+      responses: { '201': { description: Creado } }
+
+  /admin/blocked-dates/{id}:
+    delete:
+      tags: [Admin]
+      summary: Elimina un bloqueo de fechas
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminado } }
+
+  /admin/conflicts:
+    get:
+      tags: [Admin]
+      summary: Lista conflictos de reservas (overbooking entre canales)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/conflicts/{id}:
+    get:
+      tags: [Admin]
+      summary: Detalle de un conflicto
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/conflicts/{id}/resolve:
+    post:
+      tags: [Admin]
+      summary: Resuelve un conflicto
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Resuelto } }
+
+  /admin/dynamic-pricing/config:
+    get:
+      tags: [Admin]
+      summary: Configuración de precios dinámicos
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Actualiza configuración de precios dinámicos
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/dynamic-pricing/unit-configs:
+    get:
+      tags: [Admin]
+      summary: Configuración de precios dinámicos por tipo de habitación
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/dynamic-pricing/unit-configs/{roomTypeId}:
+    put:
+      tags: [Admin]
+      summary: Actualiza la config de precio dinámico de un tipo de habitación
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: roomTypeId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /admin/dynamic-pricing/events:
+    get:
+      tags: [Admin]
+      summary: Lista eventos que afectan el precio dinámico (ej. Carnaval, Réveillon)
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Crea un evento de precio dinámico
+      security: [{ bearerAuth: [] }]
+      responses: { '201': { description: Creado } }
+
+  /admin/dynamic-pricing/events/{id}:
+    put:
+      tags: [Admin]
+      summary: Edita un evento de precio dinámico
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Elimina un evento de precio dinámico
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminado } }
+
+  /admin/dynamic-pricing/run:
+    post:
+      tags: [Admin]
+      summary: Ejecuta manualmente el motor de precio dinámico
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Ejecutado } }
+
+  /admin/dynamic-pricing/calendar:
+    get:
+      tags: [Admin]
+      summary: Calendario de precios dinámicos resultantes
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /admin/dynamic-pricing/rio-events:
+    get:
+      tags: [Admin]
+      summary: Eventos de la ciudad de Río usados como señal de precio dinámico
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  # ── Owner Auth ───────────────────────────────────────────────────────────
+  # Auditoría 17 secciones, sección 8: toda esta sección faltaba en el doc
+  # (18 rutas reales sin documentar). Mismo nivel de detalle que la sección
+  # Admin de arriba -- path/método/resumen reales, request body solo donde
+  # es simple.
+  /owner/login:
+    post:
+      tags: [Owner Auth]
+      summary: Login de administrador de apartamento
+      description: Emite el JWT como cookie httpOnly `lch_owner`. Rate limit 10/min.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Login exitoso (Set-Cookie lch_owner) }
+        '401': { description: Credenciales inválidas, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /owner/login/change-password:
+    post:
+      tags: [Owner Auth]
+      summary: Cambia la contraseña del administrador logueado
+      security: [{ ownerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties:
+                newPassword: { type: string, minLength: 8, description: 'Mayúscula + minúscula + número, mín. 8 caracteres' }
+      responses: { '200': { description: 'Contraseña actualizada' } }
+
+  /owner/login/logout:
+    post:
+      tags: [Owner Auth]
+      summary: Logout -- revoca el token actual y limpia la cookie
+      security: [{ ownerAuth: [] }]
+      responses: { '200': { description: 'Sesión cerrada' } }
+
+  # ── Owner Panel (protegido, requiere ownerAuth) ─────────────────────────
+  /owner/me:
+    get:
+      tags: [Owner Panel]
+      summary: Datos de la sesión de owner activa
+      security: [{ ownerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /owner/apartments:
+    get:
+      tags: [Owner Panel]
+      summary: Lista los apartamentos del owner logueado
+      security: [{ ownerAuth: [] }]
+      responses: { '200': { description: OK } }
+
+  /owner/apartments/{id}:
+    get:
+      tags: [Owner Panel]
+      summary: Detalle de un apartamento propio
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Owner Panel]
+      summary: Edita datos de un apartamento propio (descripción, capacidad, precio base, etc.)
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+
+  /owner/apartments/{id}/photos:
+    get:
+      tags: [Owner Panel]
+      summary: Lista fotos de un apartamento propio
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Owner Panel]
+      summary: Sube una foto (multipart, campo `photo`, máx 15MB, valida magic bytes reales)
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: { type: string, format: binary }
+                altText: { type: string }
+      responses: { '201': { description: Creada } }
+
+  /owner/apartments/photos/{photoId}:
+    patch:
+      tags: [Owner Panel]
+      summary: Edita metadata de una foto (isPrimary, altText, displayOrder)
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: photoId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Owner Panel]
+      summary: Elimina una foto
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: photoId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminada } }
+
+  /owner/apartments/{id}/reviews:
+    get:
+      tags: [Owner Panel]
+      summary: Lista reseñas de un apartamento propio
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Owner Panel]
+      summary: Agrega una reseña externa (importada de Google/Booking, etc.)
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Creada } }
+
+  /owner/apartments/reviews/{reviewId}:
+    put:
+      tags: [Owner Panel]
+      summary: Edita una reseña
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: reviewId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Owner Panel]
+      summary: Elimina una reseña
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: reviewId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminada } }
+
+  /owner/apartments/{id}/blocks:
+    get:
+      tags: [Owner Panel]
+      summary: Lista bloqueos de fechas de un apartamento propio
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Owner Panel]
+      summary: Bloquea un rango de fechas (mantenimiento, uso personal, etc.)
+      description: >-
+        Auditoría 17 secciones, sección 2: devuelve 409 si el rango se
+        superpone con una reserva confirmada o pendiente de pago existente
+        (ver owner-apartments.routes.ts) -- ya no se puede bloquear encima de
+        un huésped con reserva activa.
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_date, end_date]
+              properties:
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                block_type: { type: string }
+                reason: { type: string }
+                notes: { type: string }
+      responses:
+        '201': { description: Creado }
+        '400': { description: 'Fecha de fin no posterior a la de inicio', content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 'Hay una reserva confirmada/pendiente en ese rango', content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /owner/apartments/blocks/{blockId}:
+    delete:
+      tags: [Owner Panel]
+      summary: Elimina un bloqueo de fechas
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: blockId, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Eliminado } }
+
+  /owner/apartments/{id}/pricing:
+    get:
+      tags: [Owner Panel]
+      summary: Configuración de precios/unidad de un apartamento propio
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Owner Panel]
+      summary: Edita configuración de precios/unidad de un apartamento propio
+      security: [{ ownerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }

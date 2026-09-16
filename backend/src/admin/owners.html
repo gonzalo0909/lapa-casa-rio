@@ -1,0 +1,146 @@
+<!-- lapa-casa-hostel/backend/src/admin/owners.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administradores de apartamento — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted);
+       text-transform: uppercase; letter-spacing: .05em; padding: 8px 10px;
+       border-bottom: 1px solid var(--border); }
+  td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  .badge-active   { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                    font-weight: 700; background: #dcfce7; color: #166534; }
+  .badge-inactive { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                    font-weight: 700; background: #fee2e2; color: #991b1b; }
+
+  .apt-chip { display: inline-block; padding: 2px 8px; border: 1px solid var(--border);
+              border-radius: 99px; font-size: 11px; margin: 2px; }
+
+  .actions-cell { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+  .actions-cell button { font-size: 12px; padding: 4px 8px; }
+  .btn-danger { border: 1px solid var(--danger); color: var(--danger); background: none; }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  .empty { color: var(--text-muted); font-size: 13px; padding: 24px 0; text-align: center; }
+
+  /* ── Modal crear administrador ────────────────────────────────────────── */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
+                    align-items: center; justify-content: center; z-index: 100; }
+  .modal-box { background: var(--surface); border-radius: var(--radius); padding: 24px;
+               width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+  .modal-box h3 { margin: 0 0 16px; font-size: 16px; }
+  .modal-box label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 3px; }
+  .modal-box input { width: 100%; margin-bottom: 12px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .btn-cancel-modal { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+
+  /* Aviso de contraseña temporal -- se muestra una sola vez */
+  .temp-pass-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius);
+                    padding: 14px; margin-bottom: 16px; font-size: 13px; }
+  .temp-pass-box strong { font-family: monospace; font-size: 14px; }
+
+  /* ── Modal gestionar apartamentos ─────────────────────────────────────── */
+  .modal-box-wide { max-width: 540px; }
+  .modal-box-wide input:not([type=checkbox]) { margin-bottom: 0; }
+
+  .apt-checklist { max-height: 380px; overflow-y: auto; border: 1px solid var(--border);
+                   border-radius: var(--radius); margin: 12px 0; }
+
+  .apt-check-row { display: flex; align-items: flex-start; gap: 10px;
+                   padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .apt-check-row:last-child { border-bottom: none; }
+  .apt-check-row input[type=checkbox] { margin-top: 4px; flex-shrink: 0; cursor: pointer;
+                                         width: 15px; height: 15px; }
+  .apt-check-body { flex: 1; min-width: 0; }
+  .apt-name-group { display: flex; align-items: center; gap: 6px; }
+  .apt-name-text { font-size: 13px; font-weight: 500; }
+  .apt-other-note { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .btn-rename { border: none; background: none; cursor: pointer;
+                color: var(--accent); font-size: 13px; padding: 0 2px; opacity: .65; }
+  .btn-rename:hover { opacity: 1; }
+
+  .apt-rename-form { display: none; align-items: center; gap: 6px; margin-top: 6px; }
+  .apt-rename-form input { flex: 1; font-size: 13px; padding: 3px 7px; min-width: 0; }
+  .apt-rename-form button { font-size: 12px; padding: 3px 9px; flex-shrink: 0; }
+  .btn-rename-cancel { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+
+<div id="page-msg"></div>
+<div id="temp-pass-msg"></div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <h2 style="margin:0;">Administradores de apartamento</h2>
+    <button id="new-owner-btn">+ Nuevo administrador</button>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email / Tel.</th>
+          <th>Estado</th>
+          <th>Apartamentos asignados</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="owners-body">
+        <tr><td colspan="5" class="empty">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Modal crear administrador ──────────────────────────────────────── -->
+<div class="modal-backdrop" id="new-owner-modal" style="display:none">
+  <div class="modal-box">
+    <h3>Nuevo administrador</h3>
+    <div id="modal-msg"></div>
+    <label>Nombre completo</label>
+    <input type="text" id="new-owner-name" placeholder="Ej: Juan Pérez">
+    <label>Email</label>
+    <input type="email" id="new-owner-email" placeholder="juan@email.com">
+    <label>Teléfono (opcional)</label>
+    <input type="text" id="new-owner-phone" placeholder="+55 21 99999-9999">
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" id="new-owner-cancel">Cancelar</button>
+      <button id="new-owner-confirm">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal gestionar apartamentos ──────────────────────────────────── -->
+<div class="modal-backdrop" id="assign-modal" style="display:none">
+  <div class="modal-box modal-box-wide">
+    <h3 id="assign-modal-title">Apartamentos</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 4px">
+      Marcá los apartamentos que pertenecen a este administrador.
+      Usá ✏ para editar el nombre de un apartamento.
+    </p>
+    <div id="assign-modal-msg"></div>
+    <div id="apt-checklist" class="apt-checklist"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" id="assign-modal-cancel">Cerrar</button>
+      <button id="assign-modal-save">Guardar asignaciones</button>
+    </div>
+  </div>
+</div>
+
+</main>
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/owners.js"></script>
+</body>
+</html>

@@ -88,7 +88,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
-  const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([]);
+  const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
+    Array.from({ length: Math.max(0, 2 - 1) }, () => ({
+      id: Math.random().toString(36).slice(2),
+      fullName: '',
+      document: '',
+    }))
+  );
   /** Foto del documento del titular (se convierte a base64 y se envía al crear la reserva) */
   const [documentPhoto, setDocumentPhoto] = useState<File | null>(null);
   /** Foto del documento del acompañante — obligatoria cuando guestCount > 1 */

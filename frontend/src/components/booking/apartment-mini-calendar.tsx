@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
+import { seasonForDateStr } from '@/lib/apartment-seasons';
 
 /** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
  * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
@@ -126,7 +127,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [cin, setCin] = useState<string | null>(toDs(globalCheckIn));
   const [cout, setCout] = useState<string | null>(toDs(globalCheckOut));
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<{ available: boolean } | null>(null);
+  const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'min-nights'; minNights?: number } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
 
@@ -218,6 +219,18 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   const handleApply = async () => {
     if (!cin || !cout) { return; }
+
+    // Client-side minimum-nights check (mirrors apartment-date-step.tsx).
+    // Regular seasons: alta=3, media=2, baixa=1 (from apartment-seasons.ts).
+    // Carnaval dates are dynamic (DB), so CARNAVAL_MIN_NIGHTS is used as a
+    // lower-bound hint — the API enforces the real limit for that period.
+    const nightCount = Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000);
+    const season = seasonForDateStr(cin);
+    if (nightCount < season.minNights) {
+      setResult({ available: false, reason: 'min-nights', minNights: season.minNights });
+      return;
+    }
+
     setChecking(true);
     setResult(null);
     try {
@@ -225,12 +238,12 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       const apartments = res?.data?.apartments ?? [];
       const found = apartments.find((a: { id: string }) => a.id === apartmentId);
       const available = !!found?.available;
-      setResult({ available });
+      setResult({ available, reason: available ? undefined : 'occupied' });
       if (available) {
         onApply({ checkIn: parseDs(cin), checkOut: parseDs(cout) });
       }
     } catch {
-      setResult({ available: false });
+      setResult({ available: false, reason: 'occupied' });
     } finally {
       setChecking(false);
     }
@@ -290,7 +303,10 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
       {result && !result.available && (
         <div className={styles.miniOccupiedNote}>
-          <AlertTriangle size={13} /> {t('apartmentOccupied')}
+          <AlertTriangle size={13} />{' '}
+          {result.reason === 'min-nights' && result.minNights
+            ? t('minNightsError', { n: result.minNights })
+            : t('apartmentOccupied')}
         </div>
       )}
 

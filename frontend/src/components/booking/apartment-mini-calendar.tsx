@@ -258,7 +258,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
           className={styles.miniNavBtn}
           onClick={() => setMonthOffset((o) => o - 1)}
           disabled={isAtMinMonth}
-          aria-label="Mês anterior"
+          aria-label={t('miniCalPrev')}
         >
           <ChevronLeft size={14} />
         </button>
@@ -269,7 +269,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
           type="button"
           className={styles.miniNavBtn}
           onClick={() => setMonthOffset((o) => o + 1)}
-          aria-label="Próximo mês"
+          aria-label={t('miniCalNext')}
         >
           <ChevronRight size={14} />
         </button>

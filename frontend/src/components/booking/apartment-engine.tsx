@@ -229,7 +229,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       setError(t('formIncomplete'));
       return;
     }
-    setError(null);
 
     setIsCreatingBooking(true);
     setError(null);

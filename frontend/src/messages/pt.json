@@ -630,7 +630,13 @@
     "couponOriginalPrice": "Preço original",
     "reservationExpired": "A reserva expirou — as datas não estão mais retidas. Tente novamente.",
     "couponRemove": "Remover cupom",
-    "clearPhoto": "Remover foto"
+    "clearPhoto": "Remover foto",
+    "miniCalPrev": "Mês anterior",
+    "miniCalNext": "Próximo mês",
+    "photoNavPrev": "Foto anterior",
+    "photoNavNext": "Próxima foto",
+    "reviews": "{count} avaliações",
+    "externalRatingSource": "plataformas internacionais"
   },
   "guestForm": {
     "title": "Informações do Hóspede",

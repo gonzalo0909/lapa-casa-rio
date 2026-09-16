@@ -118,10 +118,10 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
             />
             {photos.length > 1 && (
               <>
-                <button type="button" className={`${styles.photoNav} ${styles.photoNavPrev}`} onClick={prevPhoto} aria-label="Foto anterior">
+                <button type="button" className={`${styles.photoNav} ${styles.photoNavPrev}`} onClick={prevPhoto} aria-label={t('photoNavPrev')}>
                   <ChevronLeft size={16} />
                 </button>
-                <button type="button" className={`${styles.photoNav} ${styles.photoNavNext}`} onClick={nextPhoto} aria-label="Foto siguiente">
+                <button type="button" className={`${styles.photoNav} ${styles.photoNavNext}`} onClick={nextPhoto} aria-label={t('photoNavNext')}>
                   <ChevronRight size={16} />
                 </button>
                 <div className={styles.photoDots}>
@@ -161,9 +161,9 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
               <div className={styles.cardExternalRating}>
                 ⭐ {apartment.externalRating.toFixed(1)}
                 {apartment.externalReviewCount !== null && apartment.externalReviewCount !== undefined && (
-                  <span> · {apartment.externalReviewCount} reseñas</span>
+                  <span> · {t('reviews', { count: apartment.externalReviewCount })}</span>
                 )}
-                <span> · {apartment.externalRatingLabel ?? 'plataformas internacionales'}</span>
+                <span> · {apartment.externalRatingLabel ?? t('externalRatingSource')}</span>
               </div>
             )}
             {disabledReason === 'too-small' && (

@@ -617,6 +617,7 @@
     "fullPaymentRequired48h": "Paiement total à la réservation — le check-in est dans moins de 48 h et il n'y a pas le temps de percevoir le solde restant.",
     "checking": "Vérification…",
     "apartmentOccupied": "Cet appartement est déjà réservé à ces dates — d'autres peuvent être disponibles",
+    "rangeBlockedWarning": "Des dates dans cette période ne sont pas disponibles — veuillez sélectionner une nouvelle date d'arrivée",
     "backToOriginalDates": "Revenir aux dates initiales ({from} → {to})",
     "checkinCheckoutLegend": "Arrivée/Départ",
     "periodLegend": "Période",

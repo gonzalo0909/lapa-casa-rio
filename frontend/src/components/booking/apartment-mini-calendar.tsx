@@ -128,6 +128,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<{ available: boolean } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
 
   // Single-month display: offset from the check-in month (0 = check-in month, 1 = next, etc.)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -180,6 +181,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   const handleDayClick = (ds: string) => {
     setResult(null);
+    setBlockedRangeWarn(false);
     if (!cin || cout) {
       setCin(ds);
       setCout(null);
@@ -187,10 +189,12 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       setCin(ds);
     } else {
       // If any blocked date falls inside (cin, ds) the stay would span an
-      // occupied night — start a fresh selection from the clicked date instead.
+      // occupied night — start a fresh selection from the clicked date instead
+      // and warn the user why the checkout was not accepted.
       const hasBlockedInRange = Array.from(blockedDates).some((b) => b > cin && b < ds);
       if (hasBlockedInRange) {
         setCin(ds);
+        setBlockedRangeWarn(true);
       } else {
         setCout(ds);
       }
@@ -201,6 +205,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     setCin(toDs(globalCheckIn));
     setCout(toDs(globalCheckOut));
     setResult(null);
+    setBlockedRangeWarn(false);
     setMonthOffset(0);
   };
 
@@ -286,6 +291,12 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       {result && !result.available && (
         <div className={styles.miniOccupiedNote}>
           <AlertTriangle size={13} /> {t('apartmentOccupied')}
+        </div>
+      )}
+
+      {blockedRangeWarn && (
+        <div className={styles.miniOccupiedNote}>
+          <AlertTriangle size={13} /> {t('rangeBlockedWarning')}
         </div>
       )}
 

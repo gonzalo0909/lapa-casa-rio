@@ -617,6 +617,7 @@
     "fullPaymentRequired48h": "Full payment at booking — check-in is in less than 48 h and there is no time to collect the remaining balance afterwards.",
     "checking": "Checking…",
     "apartmentOccupied": "This apartment is booked for those dates — others may be available",
+    "rangeBlockedWarning": "Some dates in that period are unavailable — please select a new check-in date",
     "backToOriginalDates": "Back to original dates ({from} → {to})",
     "checkinCheckoutLegend": "Check-in/Check-out",
     "periodLegend": "Period",

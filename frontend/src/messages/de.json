@@ -617,6 +617,7 @@
     "fullPaymentRequired48h": "Vollständige Zahlung bei Buchung — der Check-in ist in weniger als 48 Std. und es bleibt keine Zeit, den Restbetrag einzuziehen.",
     "checking": "Wird geprüft…",
     "apartmentOccupied": "Dieses Apartment ist an diesen Terminen belegt — andere sind möglicherweise verfügbar",
+    "rangeBlockedWarning": "Einige Tage in diesem Zeitraum sind belegt — bitte wählen Sie ein neues Check-in-Datum",
     "backToOriginalDates": "Zurück zu den ursprünglichen Terminen ({from} → {to})",
     "checkinCheckoutLegend": "Check-in/Check-out",
     "periodLegend": "Zeitraum",

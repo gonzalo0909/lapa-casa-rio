@@ -124,6 +124,17 @@ export const checkApartmentAvailabilityHandler = async (
       return acc;
     }, {});
 
+    // Regla de pago completo (Cláusula 3 Termo de Adesão v2.1):
+    // si el check-in es en menos de 48h, no hay tiempo de cobrar el saldo
+    // restante, por lo que se requiere el 100% al reservar.
+    // Se calcula con el mismo criterio que create-booking.ts: el check-in
+    // se toma a las 14:00 BRT (17:00 UTC) para no castigar reservas de hoy
+    // hechas a primera hora de la mañana.
+    const checkInAt14hBRT = new Date(checkIn!);
+    checkInAt14hBRT.setUTCHours(17, 0, 0, 0);
+    const hoursUntilCheckIn = (checkInAt14hBRT.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const fullPaymentRequired = hoursUntilCheckIn < 48;
+
     // Pricing en batch: todos los apartamentos comparten las mismas fechas y
     // totalBeds=1, así que season/group-discount/min-nights son idénticos para
     // cada uno. Se hacen 4 queries totales en lugar de 7×N.
@@ -198,8 +209,13 @@ export const checkApartmentAvailabilityHandler = async (
 
     const apartmentsWithAvailability = apartments.map((apt) => {
       const basePrice = parseFloat(apt.base_price) || 0;
-      const finalPrice = finalPriceById.get(apt.id) ?? (pricingFailed ? basePrice * nights : basePrice * nights);
-      const depositAmount = Math.round(finalPrice * depositPercent * 100) / 100;
+      const finalPrice = finalPriceById.get(apt.id) ?? basePrice * nights;
+      // Si faltan menos de 48h para el check-in se cobra el total al reservar
+      // (no hay tiempo de gestionar el pago del saldo restante).
+      // Se muestra el monto real para que el huésped no se sorprenda al pagar.
+      const depositAmount = fullPaymentRequired
+        ? finalPrice
+        : Math.round(finalPrice * depositPercent * 100) / 100;
 
       return {
         id: apt.id,
@@ -219,6 +235,10 @@ export const checkApartmentAvailabilityHandler = async (
         seasonMultiplier: pricingFailed ? 1 : seasonMultiplier,
         seasonType: pricingFailed ? 'media' : seasonType,
         depositAmount,
+        // Indica al frontend si se requiere pago completo y el motivo,
+        // para que pueda mostrar una explicación clara al huésped.
+        fullPaymentRequired,
+        fullPaymentReason: fullPaymentRequired ? 'less_than_48h' : null,
       };
     });
 

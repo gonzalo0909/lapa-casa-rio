@@ -107,8 +107,8 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
         {hasPhotos ? (
           <>
             <Image
-              src={currentPhoto!.url}
-              alt={currentPhoto!.altText ?? apartment.name}
+              src={currentPhoto?.url ?? ''}
+              alt={currentPhoto?.altText ?? apartment.name}
               className={styles.aptPhotoImg}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 350px"

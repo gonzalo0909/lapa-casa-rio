@@ -182,7 +182,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         setIsLoadingApartments(false);
       }
     },
-    [locale],
+    [locale, guestCount],
   );
 
   /** Valida el formulario y crea la reserva vía API. */

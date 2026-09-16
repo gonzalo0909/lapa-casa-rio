@@ -77,7 +77,7 @@ export function minCheckInDs(): string {
     hour: 'numeric',
     hour12: false,
   }).formatToParts(now);
-  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')!.value, 10);
+  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
   const todaySp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
   if (hourBrt >= 12) {
     const [y, m, d] = todaySp.split('-').map(Number) as [number, number, number];

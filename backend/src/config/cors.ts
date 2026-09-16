@@ -51,9 +51,9 @@ const getAllowedOrigins = (): string[] => {
     // Origin: <APP_URL> y el login queda bloqueado por CORS (ver login
     // admin devolviendo 500 "Origin ... not allowed by CORS policy").
     env.APP_URL,
-    // Deployments de preview de Vercel (branch deploys y PR previews)
-    // con el patrón <project>-<hash/branch>-<team>.vercel.app.
-    // Verificable con CORS_ORIGINS si el slug del proyecto cambia.
+    // Deployments de Vercel: producción (lapa-casa.vercel.app) y previews
+    // (lapa-casa-git-<branch>-lapa-casa.vercel.app, lapa-casa-<hash>-lapa-casa.vercel.app).
+    'https://lapa-casa.vercel.app',
     'https://lapa-casa-*.vercel.app',
     ...origins
   ].filter(origin => origin !== '*');

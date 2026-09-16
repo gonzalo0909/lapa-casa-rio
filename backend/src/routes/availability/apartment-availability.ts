@@ -222,6 +222,9 @@ export const checkApartmentAvailabilityHandler = async (
         code: apt.code,
         name: apt.name,
         capacity: apt.capacity,
+        // El backend confirma explícitamente si el apartamento cabe para la
+        // cantidad solicitada, para que el frontend no lo recalcule por su cuenta.
+        fitsGuests: apt.capacity >= guestCount,
         basePrice,
         available: apt.available,
         neighborhood: apt.neighborhood ?? undefined,

@@ -103,6 +103,8 @@ export interface ApartmentAvailability {
   /** true cuando el check-in es en < 48h y se requiere el pago completo al reservar */
   fullPaymentRequired?: boolean;
   fullPaymentReason?: 'less_than_48h' | null;
+  /** true si el apartamento tiene capacidad suficiente para los huéspedes solicitados */
+  fitsGuests?: boolean;
 }
 
 export type ApartmentStep = 'dates' | 'apartment' | 'summary';

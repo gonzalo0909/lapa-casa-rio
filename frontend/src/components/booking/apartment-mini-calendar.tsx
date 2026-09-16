@@ -102,7 +102,7 @@ function monthCells(
         key={s}
         type="button"
         className={cls}
-        disabled={past}
+        disabled={past || isBlocked}
         onClick={() => onDayClick(s)}
       >
         {d}

@@ -273,7 +273,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         })),
         arrivalTime: guestForm.arrivalTime || undefined,
         specialRequests: guestForm.specialRequests.trim() || undefined,
-        language: locale === 'de' || locale === 'fr' || locale === 'it' ? 'en' : locale,
+        language: locale === 'pt' || locale === 'es' ? locale : 'en',
         source: 'web',
         guestGender: 'mixed',
         ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),

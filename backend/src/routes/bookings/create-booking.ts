@@ -134,6 +134,7 @@ export const createBookingHandler = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  let isApartmentBooking = false;
   try {
     const bookingData = req.body;
 
@@ -234,7 +235,7 @@ export const createBookingHandler = async (
       `SELECT COUNT(*) AS count FROM room_types WHERE id = ANY($1::uuid[]) AND property_type = 'apartment'`,
       [allRoomIds],
     );
-    const isApartmentBooking = parseInt(aptTypeRows[0]?.count ?? '0') > 0;
+    isApartmentBooking = parseInt(aptTypeRows[0]?.count ?? '0') > 0;
 
     // Check overall availability — solo para reservas del hostel.
     // Para apartamentos se omite: el per-room check con NOT EXISTS que sigue

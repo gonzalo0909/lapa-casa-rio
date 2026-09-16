@@ -105,6 +105,17 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
     const key = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
     if (!key) { return; }
 
+    // El SDK de MP lanza promesas internas que pueden ser rechazadas por
+    // bloqueadores de anuncios (mercadolibre.com bloqueado). Las capturamos
+    // antes de que lleguen al handler global y evitamos el error de Sentry.
+    const suppressMpRejection = (event: PromiseRejectionEvent) => {
+      const msg = event.reason?.message ?? String(event.reason ?? '');
+      if (msg.includes('mercadolibre.com') || msg.includes('mercadopago.com')) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('unhandledrejection', suppressMpRejection);
+
     const init = () => {
       const MP = (window as any).MercadoPago;
       if (!MP || mpSdkRef.current) { return; }
@@ -117,6 +128,8 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
     s.async = true;
     s.onload = init;
     document.head.appendChild(s);
+
+    return () => { window.removeEventListener('unhandledrejection', suppressMpRejection); };
   }, []);
 
   // ── Detección automática por BIN ─────────────────────────────────────────

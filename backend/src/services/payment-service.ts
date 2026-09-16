@@ -28,6 +28,7 @@ interface CreatePaymentIntentDTO {
   provider?: PaymentProvider;
   payment_method?: 'card' | 'pix';
   installments?: number;
+  notificationUrl?: string;
 }
 
 interface PaymentIntentResponse {
@@ -87,6 +88,7 @@ export class PaymentService {
         paymentMethod: preferredMethod,
         installments: data.installments,
         metadata: { reservation_id: data.reservation_id, payment_type: data.payment_type },
+        notificationUrl: data.notificationUrl,
       });
       providerPaymentId = result.paymentIntentId;
       pixDetails = { qr_code: result.qrCode, qr_code_base64: result.qrCodeBase64, expires_at: result.expiresAt };

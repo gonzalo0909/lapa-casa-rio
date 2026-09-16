@@ -11,6 +11,7 @@ interface MPCreatePaymentInput {
   paymentMethod?: 'pix' | 'card' | string;
   installments?: number;
   metadata?: Record<string, any>;
+  notificationUrl?: string;
 }
 
 interface MPPaymentResult {
@@ -44,6 +45,7 @@ interface MPCardPaymentInput {
   description: string;
   reservationId: string;
   paymentType: 'deposit' | 'remaining';
+  notificationUrl?: string;
 }
 
 interface MPCardPaymentResult {
@@ -100,6 +102,7 @@ export class MercadoPagoPaymentHandler {
     if (data.paymentMethod === 'pix') {
       body.date_of_expiration = new Date(Date.now() + this.PIX_EXPIRATION_MINUTES * 60 * 1000).toISOString();
     }
+    if (data.notificationUrl) { body.notification_url = data.notificationUrl; }
 
     const resp = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
@@ -178,7 +181,7 @@ export class MercadoPagoPaymentHandler {
       return { id: `mp_card_test_${Date.now()}`, status: 'approved', statusDetail: 'accredited' };
     }
 
-    const body = {
+    const body: Record<string, any> = {
       transaction_amount: data.amount,
       token: data.token,
       description: data.description,
@@ -194,6 +197,7 @@ export class MercadoPagoPaymentHandler {
         payment_type: data.paymentType,
       },
     };
+    if (data.notificationUrl) { body.notification_url = data.notificationUrl; }
 
     const resp = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',

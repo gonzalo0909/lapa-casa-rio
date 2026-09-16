@@ -20,6 +20,7 @@ interface PaymentProcessorProps {
   checkInDate: string;
   locale: string;
   onSuccess: () => void;
+  paymentContext?: 'apartment';
 }
 
 interface PixPaymentData {
@@ -215,6 +216,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   checkInDate,
   locale,
   onSuccess,
+  paymentContext,
 }) => {
   const loc = safeLocale(locale);
 
@@ -230,7 +232,10 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const res = await paymentAPI.processDeposit(reservationId, 'mercadopago');
+        const apiCall = paymentContext === 'apartment'
+          ? paymentAPI.processApartmentDeposit(reservationId, 'mercadopago')
+          : paymentAPI.processDeposit(reservationId, 'mercadopago');
+        const res = await apiCall;
         const raw = (res as any).data;
         const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;
         setPixData({
@@ -245,7 +250,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
         setLoading(false);
       }
     },
-    [reservationId, loc]
+    [reservationId, loc, paymentContext]
   );
 
   // Carga PIX al montar (tab por defecto).
@@ -352,6 +357,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
             locale={loc}
             onSuccess={handleCardSuccess}
             onError={handlePaymentError}
+            paymentContext={paymentContext}
           />
         )}
       </div>

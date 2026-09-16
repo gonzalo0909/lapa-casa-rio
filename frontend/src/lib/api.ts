@@ -410,6 +410,15 @@ export const paymentAPI = {
   ) => api.post('/payments/deposit', { reservationId, provider, installments }),
 
   /**
+   * Process the deposit for an apartment reservation (separate engine from hostel)
+   */
+  processApartmentDeposit: (
+    reservationId: string,
+    provider: 'stripe' | 'mercadopago',
+    installments?: number,
+  ) => api.post('/payments/apartments/deposit', { reservationId, provider, installments }),
+
+  /**
    * Obtiene el porcentaje de recargo para tarjeta (card_surcharge_percent de system_config)
    */
   getSurcharge: () => api.get('/payments/surcharge'),

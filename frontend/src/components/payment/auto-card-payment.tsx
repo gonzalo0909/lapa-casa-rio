@@ -33,6 +33,7 @@ export interface AutoCardPaymentProps {
   locale: PaymentLocale;
   onSuccess: (data: { paymentId: string; amount: number; currency: string }) => void;
   onError: (err: Error) => void;
+  paymentContext?: 'apartment';
 }
 
 // ── i18n ─────────────────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
   locale,
   onSuccess,
   onError,
+  paymentContext,
 }) => {
   const [mode,         setMode]        = useState<Mode>('mp');
   const [stripeData,   setStripeData]  = useState<StripePaymentData | null>(null);
@@ -178,7 +180,9 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
     setMode('switching');
     setStripeError(null);
     try {
-      const res = await paymentAPI.processDeposit(reservationId, 'stripe');
+      const res = await (paymentContext === 'apartment'
+        ? paymentAPI.processApartmentDeposit(reservationId, 'stripe')
+        : paymentAPI.processDeposit(reservationId, 'stripe'));
       const raw = (res as any).data;
       const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;
       setStripeData({
@@ -293,6 +297,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
       onError={onError}
       onBinChange={handleBinChange}
       onSdkError={switchToStripe}
+      mpCardEndpoint={paymentContext === 'apartment' ? '/payments/apartments/deposit-mp-card' : undefined}
     />
   );
 };

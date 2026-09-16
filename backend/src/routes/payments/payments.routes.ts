@@ -9,6 +9,8 @@ import { createPaymentIntentHandler } from './create-payment-intent';
 import { confirmPaymentHandler } from './confirm-payment';
 import { processDepositHandler } from './process-deposit';
 import { depositMpCardHandler } from './deposit-mp-card';
+import { apartmentProcessDepositHandler } from './apartment-process-deposit';
+import { apartmentDepositMpCardHandler } from './apartment-deposit-mp-card';
 import { handleWebhookHandler } from './handle-webhook';
 import releaseDepositRouter from './release-deposit';
 import markReceivedAtDeskRouter from './mark-received-at-desk';
@@ -125,6 +127,14 @@ router.post('/deposit', processDepositHandler);
 // POST /payments/deposit-mp-card — pago con tarjeta brasileña via MP (token del SDK)
 router.post('/deposit-mp-card', depositMpCardHandler);
 
+// ── Apartamentos (motor separado del hostel) ─────────────────────────────────
+
+// POST /payments/apartments/deposit — depósito PIX o Stripe para apartamentos
+router.post('/apartments/deposit', apartmentProcessDepositHandler);
+
+// POST /payments/apartments/deposit-mp-card — tarjeta BR via MP para apartamentos
+router.post('/apartments/deposit-mp-card', apartmentDepositMpCardHandler);
+
 // ── Pago Grupal (Feature 2) ──────────────────────────────────────────────────
 
 // POST /payments/group-session — el titular crea la sesión grupal
@@ -217,71 +227,73 @@ router.post(
   handleWebhookHandler
 );
 
-// POST /payments/webhook/mercadopago
-router.post(
-  '/webhook/mercadopago',
-  async (req, res) => {
-    try {
-      const secret = process.env.MP_WEBHOOK_SECRET;
-      if (!secret) {
-        logger.error('MP_WEBHOOK_SECRET no configurado — webhook rechazado');
-        res.status(500).json(ApiResponse.error('Webhook not configured'));
-        return;
-      }
-
-      const signatureHeader = req.headers['x-signature'] as string | undefined;
-      if (!signatureHeader) {
-        logger.warn('Webhook MP sin header X-Signature');
-        res.status(401).json(ApiResponse.error('Missing signature'));
-        return;
-      }
-
-      const tsMatch = signatureHeader.match(/ts=(\d+)/);
-      const v1Match = signatureHeader.match(/v1=([a-f0-9]+)/);
-      if (!tsMatch || !v1Match) {
-        logger.warn('Webhook MP: formato de X-Signature inválido', { signatureHeader });
-        res.status(401).json(ApiResponse.error('Invalid signature format'));
-        return;
-      }
-
-      const ts = tsMatch[1];
-      const receivedHmac = v1Match[1];
-      const xRequestId = req.headers['x-request-id'] as string | undefined ?? '';
-
-      const dataId = (req.body as any)?.data?.id ?? '';
-      const signedPayload = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-      const expectedHmac = createHmac('sha256', secret)
-        .update(signedPayload)
-        .digest('hex');
-
-      const sigOk = timingSafeEqual(
-        Buffer.from(receivedHmac),
-        Buffer.from(expectedHmac),
-      );
-
-      if (!sigOk) {
-        logger.warn('Webhook MP: firma inválida');
-        res.status(401).json(ApiResponse.error('Invalid signature'));
-        return;
-      }
-
-      // FIX (auditoría 2026-08-30): antes se logueaba req.body completo,
-      // que puede incluir el email del pagador -- se loguean solo los
-      // campos no sensibles necesarios para trazabilidad.
-      logger.info('Webhook MercadoPago recibido y verificado', {
-        type: (req.body as any)?.type,
-        dataId,
-      });
-      await paymentService.handleMercadoPagoWebhook(req.body);
-      res.status(200).json({ received: true });
-    } catch (error) {
-      logger.error('Error en webhook MercadoPago', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      res.status(200).json({ received: true, error: 'Processing failed' });
+// Shared handler para webhooks de MercadoPago — usado por hostel y apartamentos.
+// MP envía al mismo handler lógico; la separación de rutas sólo permite
+// pasar notification_url distintos por pago (ver apartment-process-deposit.ts).
+async function mpWebhookHandler(req: any, res: any): Promise<void> {
+  try {
+    const secret = process.env.MP_WEBHOOK_SECRET;
+    if (!secret) {
+      logger.error('MP_WEBHOOK_SECRET no configurado — webhook rechazado');
+      res.status(500).json(ApiResponse.error('Webhook not configured'));
+      return;
     }
+
+    const signatureHeader = req.headers['x-signature'] as string | undefined;
+    if (!signatureHeader) {
+      logger.warn('Webhook MP sin header X-Signature');
+      res.status(401).json(ApiResponse.error('Missing signature'));
+      return;
+    }
+
+    const tsMatch = signatureHeader.match(/ts=(\d+)/);
+    const v1Match = signatureHeader.match(/v1=([a-f0-9]+)/);
+    if (!tsMatch || !v1Match) {
+      logger.warn('Webhook MP: formato de X-Signature inválido', { signatureHeader });
+      res.status(401).json(ApiResponse.error('Invalid signature format'));
+      return;
+    }
+
+    const ts = tsMatch[1];
+    const receivedHmac = v1Match[1];
+    const xRequestId = req.headers['x-request-id'] as string | undefined ?? '';
+
+    const dataId = (req.body as any)?.data?.id ?? '';
+    const signedPayload = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+    const expectedHmac = createHmac('sha256', secret)
+      .update(signedPayload)
+      .digest('hex');
+
+    const sigOk = timingSafeEqual(
+      Buffer.from(receivedHmac),
+      Buffer.from(expectedHmac),
+    );
+
+    if (!sigOk) {
+      logger.warn('Webhook MP: firma inválida');
+      res.status(401).json(ApiResponse.error('Invalid signature'));
+      return;
+    }
+
+    logger.info('Webhook MercadoPago recibido y verificado', {
+      type: (req.body as any)?.type,
+      dataId,
+    });
+    await paymentService.handleMercadoPagoWebhook(req.body);
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Error en webhook MercadoPago', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    res.status(200).json({ received: true, error: 'Processing failed' });
   }
-);
+}
+
+// POST /payments/webhook/mercadopago — hostel
+router.post('/webhook/mercadopago', mpWebhookHandler);
+
+// POST /payments/apartments/webhook/mercadopago — apartamentos
+router.post('/apartments/webhook/mercadopago', mpWebhookHandler);
 
 // GET /payments/:id/status
 router.get('/:id/status', async (req, res, next) => {

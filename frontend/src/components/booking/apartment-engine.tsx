@@ -656,6 +656,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                   checkInDate={booking.checkIn}
                   locale={locale}
                   onSuccess={() => setPaymentDone(true)}
+                  paymentContext="apartment"
                 />
                 <div className={styles.actions} style={{ marginTop: '1.5rem' }}>
                   <button type="button" className={styles.btnBack} onClick={goBack}>

@@ -71,6 +71,9 @@ interface MpCardPaymentProps {
    *  inicializarse. AutoCardPayment lo usa para cambiar automáticamente al
    *  formulario de Stripe en lugar de mostrar un error al usuario. */
   onSdkError?: () => void;
+  /** Endpoint alternativo para el POST de tarjeta MP. Por defecto usa el
+   *  del hostel; pasar '/payments/apartments/deposit-mp-card' para apartamentos. */
+  mpCardEndpoint?: string;
 }
 
 // ── i18n ─────────────────────────────────────────────────────────────────────
@@ -284,7 +287,7 @@ const secureRow: React.CSSProperties = {
 
 export function MpCardPayment({
   reservationId, depositAmount, surchargePercent, locale, onSuccess, onError,
-  initialCardNumber, onBinChange: onBinChangeExternal, onSdkError,
+  initialCardNumber, onBinChange: onBinChangeExternal, onSdkError, mpCardEndpoint,
 }: MpCardPaymentProps) {
 
   const mpRef = useRef<MercadoPagoInstance | null>(null);
@@ -444,11 +447,12 @@ export function MpCardPayment({
       }
 
       // 2. Enviar token al backend
+      const endpoint = mpCardEndpoint ?? '/payments/deposit-mp-card';
       const res = await api.post<{
         success: boolean;
         data: { payment: { paymentId: string; amount: number; status: string } };
         message: string;
-      }>('/payments/deposit-mp-card', {
+      }>(endpoint, {
         reservationId,
         token:           tokenResult.id,
         paymentMethodId: paymentMethodId || 'credit_card',

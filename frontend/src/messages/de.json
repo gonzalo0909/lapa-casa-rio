@@ -630,7 +630,9 @@
     "couponOriginalPrice": "Originalpreis",
     "reservationExpired": "Reservierung abgelaufen — die Daten sind nicht mehr gesperrt. Bitte versuchen Sie es erneut.",
     "couponRemove": "Gutschein entfernen",
-    "clearPhoto": "Foto entfernen"
+    "clearPhoto": "Foto entfernen",
+    "miniCalPrev": "Vorheriger Monat",
+    "miniCalNext": "Nächster Monat"
   },
   "guestForm": {
     "title": "Gastinformationen",

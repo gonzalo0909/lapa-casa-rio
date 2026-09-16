@@ -630,7 +630,9 @@
     "couponOriginalPrice": "Original price",
     "reservationExpired": "Reservation expired — dates are no longer held. Please try again.",
     "couponRemove": "Remove coupon",
-    "clearPhoto": "Remove photo"
+    "clearPhoto": "Remove photo",
+    "miniCalPrev": "Previous month",
+    "miniCalNext": "Next month"
   },
   "guestForm": {
     "title": "Guest Information",

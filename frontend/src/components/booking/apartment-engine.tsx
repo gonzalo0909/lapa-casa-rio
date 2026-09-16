@@ -497,7 +497,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             guestForm={guestForm}
             touched={touched}
             isCreatingBooking={isCreatingBooking}
-            error={error}
             onFieldChange={(field, value) => setGuestForm((f) => ({ ...f, [field]: value }))}
             onFieldBlur={(field) => setTouched((tt) => ({ ...tt, [field]: true }))}
             onReserve={handleReserve}

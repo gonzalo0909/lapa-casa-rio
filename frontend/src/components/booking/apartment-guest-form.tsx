@@ -28,7 +28,6 @@ interface ApartmentGuestFormProps {
   guestForm: GuestForm;
   touched: Record<string, boolean>;
   isCreatingBooking: boolean;
-  error: string | null;
   onFieldChange: (field: keyof GuestForm, value: string) => void;
   onFieldBlur: (field: string) => void;
   onReserve: () => void;
@@ -65,7 +64,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   guestForm,
   touched,
   isCreatingBooking,
-  error,
   onFieldChange,
   onFieldBlur,
   onReserve,
@@ -327,8 +325,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
       {/* Formulario de huésped */}
       <div className={styles.guestForm}>
         <h3>{t('guestDataTitle')}</h3>
-
-        {error && <div className={styles.errorBanner}>{error}</div>}
 
         <div className={styles.formGrid}>
           {/* Nombre completo */}

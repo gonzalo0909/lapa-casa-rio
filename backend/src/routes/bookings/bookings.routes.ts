@@ -72,6 +72,8 @@ router.patch(
  */
 router.delete(
   '/:id',
+  authenticateToken,
+  requireRole(['admin', 'staff']),
   cancelBookingHandler
 );
 

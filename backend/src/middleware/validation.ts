@@ -90,7 +90,7 @@ export const bookingSchemas = {
     })).min(1),
     guest: z.object({
       firstName: z.string().min(1),
-      lastName: z.string().min(1),
+      lastName: z.string(),
       email: z.string().email(),
       phone: z.string().optional(),
       country: z.string().optional(),

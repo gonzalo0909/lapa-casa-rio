@@ -47,7 +47,7 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
   const tc = useTranslations('common');
 
   const [hoverDs, setHoverDs] = useState<string | null>(null);
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [carnivalRanges, setCarnivalRanges] = useState<

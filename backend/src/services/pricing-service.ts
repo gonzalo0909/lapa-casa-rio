@@ -98,8 +98,10 @@ export class PricingService {
       throw new Error(`Durante Carnaval se requiere minimo ${minNights} noches`);
     }
 
-    const priceAfterDiscount = basePrice - discountAmount;
-    const priceAfterSeason = Math.round(priceAfterDiscount * seasonMultiplier * 100) / 100;
+    // preDiscountTotal ya incorpora temporada + early bird (vía SQL calculate_final_price).
+    // priceAfterSeason = ese total pre-descuento de grupo; priceAfterDiscount = total real.
+    const priceAfterSeason = preDiscountTotal;
+    const priceAfterDiscount = finalPrice;
 
     const deposit = await this.calculateDeposit(finalPrice, request.totalBeds);
 
@@ -124,7 +126,7 @@ export class PricingService {
         nightlyRate: basePrice / (nights || 1),
         subtotal: basePrice,
         discountApplied: discountAmount,
-        seasonAdjustment: priceAfterSeason - priceAfterDiscount,
+        seasonAdjustment: priceAfterSeason - basePrice,
         finalTotal: finalPrice
       }
     };

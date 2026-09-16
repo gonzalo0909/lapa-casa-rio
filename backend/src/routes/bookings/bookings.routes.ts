@@ -62,6 +62,8 @@ router.get(
  */
 router.patch(
   '/:id',
+  authenticateToken,
+  requireRole(['admin', 'staff']),
   validate(bookingSchemas.update),
   updateBookingHandler
 );

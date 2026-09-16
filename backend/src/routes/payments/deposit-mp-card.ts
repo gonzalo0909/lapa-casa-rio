@@ -128,7 +128,10 @@ export const depositMpCardHandler = async (
     }
 
     const bedsCount = booking.beds_count ?? 0;
-    const depositPercentage = Number(booking.deposit_percent);
+    // Apartamentos con check-in < 48h tienen deposit_percent = 1.00 (pago completo).
+    // Para el resto (hostel y apartamentos normales) se mantiene la lógica original.
+    const storedPercent = Number(booking.deposit_percent);
+    const depositPercentage = storedPercent >= 1 ? storedPercent : bedsCount >= 15 ? 0.50 : 0.30;
 
     res.status(200).json(
       ApiResponse.success({

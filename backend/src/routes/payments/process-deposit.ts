@@ -64,7 +64,7 @@ export const processDepositHandler = async (
     }
 
     const bedsCount = booking.beds_count ?? 0;
-    const depositPercentage = bedsCount >= 15 ? 0.50 : 0.30;
+    const depositPercentage = Number(booking.deposit_percent);
     const depositAmount = Number(booking.deposit_amount);
 
     // El recargo solo aplica a tarjeta (Stripe cobra comisión real); PIX

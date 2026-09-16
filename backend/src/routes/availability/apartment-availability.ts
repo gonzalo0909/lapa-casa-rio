@@ -88,14 +88,22 @@ export const checkApartmentAvailabilityHandler = async (
          rt.external_rating,
          rt.external_review_count,
          rt.external_rating_label,
-         NOT EXISTS (
-           SELECT 1
-           FROM reservation_beds rb
-           JOIN beds b ON b.id = rb.bed_id
-           JOIN reservations res ON res.id = rb.reservation_id
-           WHERE b.room_type_id = rt.id
-             AND res.status != 'cancelled'
-             AND daterange(rb.check_in, rb.check_out, '[)') && daterange($1::date, $2::date, '[)')
+         (
+           NOT EXISTS (
+             SELECT 1
+             FROM reservation_beds rb
+             JOIN beds b ON b.id = rb.bed_id
+             JOIN reservations res ON res.id = rb.reservation_id
+             WHERE b.room_type_id = rt.id
+               AND res.status != 'cancelled'
+               AND daterange(rb.check_in, rb.check_out, '[)') && daterange($1::date, $2::date, '[)')
+           )
+           AND NOT EXISTS (
+             SELECT 1
+             FROM room_blocks rbl
+             WHERE rbl.room_type_id = rt.id
+               AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($1::date, $2::date, '[)')
+           )
          ) AS available
        FROM room_types rt
        WHERE rt.property_type = 'apartment'
@@ -115,6 +123,17 @@ export const checkApartmentAvailabilityHandler = async (
       (acc[p.room_type_id] ??= []).push(p);
       return acc;
     }, {});
+
+    // Regla de pago completo (Cláusula 3 Termo de Adesão v2.1):
+    // si el check-in es en menos de 48h, no hay tiempo de cobrar el saldo
+    // restante, por lo que se requiere el 100% al reservar.
+    // Se calcula con el mismo criterio que create-booking.ts: el check-in
+    // se toma a las 14:00 BRT (17:00 UTC) para no castigar reservas de hoy
+    // hechas a primera hora de la mañana.
+    const checkInAt14hBRT = new Date(checkIn!);
+    checkInAt14hBRT.setUTCHours(17, 0, 0, 0);
+    const hoursUntilCheckIn = (checkInAt14hBRT.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const fullPaymentRequired = hoursUntilCheckIn < 48;
 
     // Pricing en batch: todos los apartamentos comparten las mismas fechas y
     // totalBeds=1, así que season/group-discount/min-nights son idénticos para
@@ -190,14 +209,22 @@ export const checkApartmentAvailabilityHandler = async (
 
     const apartmentsWithAvailability = apartments.map((apt) => {
       const basePrice = parseFloat(apt.base_price) || 0;
-      const finalPrice = finalPriceById.get(apt.id) ?? (pricingFailed ? basePrice * nights : basePrice * nights);
-      const depositAmount = Math.round(finalPrice * depositPercent * 100) / 100;
+      const finalPrice = finalPriceById.get(apt.id) ?? basePrice * nights;
+      // Si faltan menos de 48h para el check-in se cobra el total al reservar
+      // (no hay tiempo de gestionar el pago del saldo restante).
+      // Se muestra el monto real para que el huésped no se sorprenda al pagar.
+      const depositAmount = fullPaymentRequired
+        ? finalPrice
+        : Math.round(finalPrice * depositPercent * 100) / 100;
 
       return {
         id: apt.id,
         code: apt.code,
         name: apt.name,
         capacity: apt.capacity,
+        // El backend confirma explícitamente si el apartamento cabe para la
+        // cantidad solicitada, para que el frontend no lo recalcule por su cuenta.
+        fitsGuests: apt.capacity >= guestCount,
         basePrice,
         available: apt.available,
         neighborhood: apt.neighborhood ?? undefined,
@@ -211,6 +238,10 @@ export const checkApartmentAvailabilityHandler = async (
         seasonMultiplier: pricingFailed ? 1 : seasonMultiplier,
         seasonType: pricingFailed ? 'media' : seasonType,
         depositAmount,
+        // Indica al frontend si se requiere pago completo y el motivo,
+        // para que pueda mostrar una explicación clara al huésped.
+        fullPaymentRequired,
+        fullPaymentReason: fullPaymentRequired ? 'less_than_48h' : null,
       };
     });
 

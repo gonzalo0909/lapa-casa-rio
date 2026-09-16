@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { useCurrency, convertBRL } from '@/hooks/use-currency';
 import {
   Building2, Landmark, Home, Palette, Mountain, Music, Leaf, Building,
-  Sparkles, Clapperboard, Calendar, AlertTriangle,
+  Sparkles, Clapperboard, Calendar, AlertTriangle, Clock,
   MapPin, ChevronLeft, ChevronRight, type LucideIcon,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
@@ -190,6 +190,12 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
                 </span>
               </div>
             </>
+          )}
+          {apartment.fullPaymentRequired && (
+            <div className={styles.fullPaymentNotice}>
+              <Clock size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+              {t('fullPaymentRequired48h')}
+            </div>
           )}
         </div>
         {/* Cuando está seleccionado: mini cal siempre visible + botón Continuar */}

@@ -97,9 +97,9 @@ export function rankApartments(
   guestCount: number,
 ) {
   const fits = (a: ApartmentAvailability) =>
-    a.available && a.capacity >= guestCount;
+    a.available && (a.fitsGuests ?? a.capacity >= guestCount);
   const tooSmall = (a: ApartmentAvailability) =>
-    a.available && a.capacity < guestCount;
+    a.available && !(a.fitsGuests ?? a.capacity >= guestCount);
   return [
     ...apartments
       .filter(fits)

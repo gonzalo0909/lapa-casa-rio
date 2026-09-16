@@ -296,12 +296,14 @@ export const createBookingHandler = async (
       );
       if (offerRows.length > 0) {
         const offer = offerRows[0];
-        // Verificar si aplica al apartamento solicitado (null/vacío = todos)
-        const aptId = bookingData.rooms[0]?.roomId;
+        // Verificar si aplica a TODOS los apartamentos solicitados (null/vacío = todos).
+        // Se comprueba cada roomId para evitar que un código válido solo para un
+        // apartamento se aplique a una reserva que incluye otros apartamentos.
+        const requestedAptIds = bookingData.rooms.map((r) => r.roomId).filter(Boolean);
         const aptOk =
           !offer.apartment_ids ||
           offer.apartment_ids.length === 0 ||
-          (aptId && offer.apartment_ids.includes(aptId));
+          requestedAptIds.every((id) => offer.apartment_ids.includes(id));
         // Un código de referido no aplica sobre la reserva del propio dueño
         // del código (mismo email) -- si no, cualquiera se autorregala 10%.
         let selfReferral = false;
@@ -363,16 +365,24 @@ export const createBookingHandler = async (
       const isApt = aptCheck[0]?.is_apartment ?? false;
 
       if (isApt) {
-        // Para apartamentos: available si NO existe reserva activa solapada.
+        // Para apartamentos: available si NO existe reserva activa solapada NI bloqueo manual.
         const { rows: aptAvail } = await query<{ available: boolean }>(
-          `SELECT NOT EXISTS (
-             SELECT 1
-             FROM reservation_beds rb
-             JOIN beds b ON b.id = rb.bed_id
-             JOIN reservations res ON res.id = rb.reservation_id
-             WHERE b.room_type_id = $1
-               AND res.status != 'cancelled'
-               AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+          `SELECT (
+             NOT EXISTS (
+               SELECT 1
+               FROM reservation_beds rb
+               JOIN beds b ON b.id = rb.bed_id
+               JOIN reservations res ON res.id = rb.reservation_id
+               WHERE b.room_type_id = $1
+                 AND res.status != 'cancelled'
+                 AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+             )
+             AND NOT EXISTS (
+               SELECT 1
+               FROM room_blocks rbl
+               WHERE rbl.room_type_id = $1
+                 AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($2::date, $3::date, '[)')
+             )
            ) AS available`,
           [room.roomId, bookingData.checkIn, bookingData.checkOut]
         );
@@ -661,15 +671,17 @@ export const createBookingHandler = async (
               depositDueDate: booking.pending_expires_at,
               remainingAmount: pricingDetails.remainingAmount,
               // Apartamentos ≥48h: 70% vence la mañana del check-in (8am SP).
-              // Apartamentos <48h: remaining = 0, esta fecha es irrelevante.
+              // Apartamentos <48h: remaining = 0, no hay saldo → null.
               // Hostel: 7 días antes del check-in (modelo clásico).
-              remainingDueDate: isApartmentBooking
-                ? (() => {
-                    const morning = new Date(checkIn);
-                    morning.setUTCHours(11, 0, 0, 0); // 8:00 AM São Paulo = 11:00 UTC
-                    return morning.toISOString();
-                  })()
-                : new Date(checkIn.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+              remainingDueDate: pricingDetails.remainingAmount === 0
+                ? null
+                : isApartmentBooking
+                  ? (() => {
+                      const morning = new Date(checkIn);
+                      morning.setUTCHours(11, 0, 0, 0); // 8:00 AM São Paulo = 11:00 UTC
+                      return morning.toISOString();
+                    })()
+                  : new Date(checkIn.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             },
             // Expiración real del hold (5 min) para que el frontend arme el
             // contador regresivo con el dato correcto, no un valor inventado.

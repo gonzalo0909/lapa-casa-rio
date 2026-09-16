@@ -507,7 +507,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onCouponApply={(coupon) => setAppliedCoupon(coupon)}
             onCouponRemove={() => setAppliedCoupon(null)}
             onValidateCoupon={async (code) => {
-              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '');
+              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '', checkOut ?? '');
               return res?.data;
             }}
             documentPhoto={documentPhoto}

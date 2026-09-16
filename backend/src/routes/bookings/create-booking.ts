@@ -701,7 +701,10 @@ export const createBookingHandler = async (
       logger.warn('Insufficient availability detected during createBooking', {
         details: error.details,
       });
-      res.status(409).json(ApiResponse.error(error.message, error.details));
+      const msg = isApartmentBooking
+        ? 'El apartamento ya no está disponible para esas fechas'
+        : error.message;
+      res.status(409).json(ApiResponse.error(msg, error.details));
       return;
     }
 

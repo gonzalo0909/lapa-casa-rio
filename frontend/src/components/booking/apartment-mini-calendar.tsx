@@ -56,12 +56,16 @@ function monthCells(
   cin: string | null,
   cout: string | null,
   blocked: Set<string>,
-  onDayClick: (ds: string) => void
+  onDayClick: (ds: string) => void,
+  hoverDs: string | null,
+  onDayHover: (ds: string | null) => void,
 ): React.ReactNode {
   const dim = new Date(y, m + 1, 0).getDate();
   const fdow = new Date(y, m, 1).getDay();
   const today = minCheckInDs(); // fecha mínima seleccionable (corte 12h)
-  const hasEnd = !!(cin && cout);
+  // Rango efectivo: checkout real o hover (solo cuando se está eligiendo checkout)
+  const endDs = cout || (!cout && cin && hoverDs && hoverDs > cin ? hoverDs : null);
+  const hasEnd = !!(cin && endDs);
   const cells: React.ReactNode[] = [];
   for (let i = 0; i < fdow; i++) {
     cells.push(<span key={'e' + i} className={`${styles.miniDay} ${styles.miniDayPast}`} />);
@@ -70,8 +74,8 @@ function monthCells(
     const s = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const past = s < today;
     const isCin = s === cin;
-    const isCout = s === cout;
-    const inRng = hasEnd && s > (cin as string) && s < (cout as string);
+    const isCout = s === (cout ?? (hoverDs && !cout && cin && hoverDs > cin ? hoverDs : null));
+    const inRng = hasEnd && s > (cin as string) && s < (endDs as string);
     const isBlocked = blocked.has(s);
     let cls = styles.miniDay;
     if (past) { cls += ` ${styles.miniDayPast}`; }
@@ -86,6 +90,7 @@ function monthCells(
         className={cls}
         disabled={past || isBlocked}
         onClick={() => onDayClick(s)}
+        onMouseEnter={() => !past && !isBlocked && onDayHover(s)}
       >
         {d}
       </button>
@@ -111,6 +116,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'min-nights'; minNights?: number } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
+  const [hoverDs, setHoverDs] = useState<string | null>(null);
 
   // Single-month display: offset from the check-in month (0 = check-in month, 1 = next, etc.)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -262,8 +268,8 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       </div>
 
       {/* Day cells — single month */}
-      <div className={styles.miniDayCells}>
-        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick)}
+      <div className={styles.miniDayCells} onMouseLeave={() => setHoverDs(null)}>
+        {monthCells(baseMonth.y, baseMonth.m, cin, cout, blockedDates, handleDayClick, hoverDs, setHoverDs)}
       </div>
 
       {/* Apply / hint bar */}

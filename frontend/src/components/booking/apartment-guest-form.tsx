@@ -88,6 +88,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const [cancelOpen, setCancelOpen] = useState(false);
   const photoInputTitular = useRef<HTMLInputElement>(null);
   const photoInputCompanion = useRef<HTMLInputElement>(null);
+  const [companionTouched, setCompanionTouched] = useState<Record<string, { fullName?: boolean; document?: boolean }>>({});
 
   // ── Estado del cupón de descuento ─────────────────────────────────────────
   const [couponInput, setCouponInput] = useState('');
@@ -587,7 +588,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                       aria-label={`${t('companionNamePlaceholder')} ${idx + 2}`}
                       value={g.fullName}
                       onChange={(e) => updateAdditionalGuest(idx, 'fullName', e.target.value)}
-                      className={`${styles.guestDeclInput} ${!g.fullName.trim() ? styles.inputInvalid : ''}`}
+                      onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], fullName: true } }))}
+                      className={`${styles.guestDeclInput} ${companionTouched[g.id]?.fullName && !g.fullName.trim() ? styles.inputInvalid : ''}`}
                     />
                     <div className={styles.guestDeclDocWrap}>
                       <input
@@ -597,8 +599,9 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                         maxLength={20}
                         value={g.document}
                         onChange={(e) => updateAdditionalGuest(idx, 'document', e.target.value)}
+                        onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], document: true } }))}
                         className={`${styles.guestDeclInput} ${
-                          ok === true ? styles.inputValid : ok === false ? styles.inputInvalid : ''
+                          ok === true ? styles.inputValid : (companionTouched[g.id]?.document && ok === false) ? styles.inputInvalid : ''
                         }`}
                       />
                       {ok === true && (

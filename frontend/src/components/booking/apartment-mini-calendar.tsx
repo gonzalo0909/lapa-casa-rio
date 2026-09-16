@@ -186,7 +186,14 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     } else if (ds <= cin) {
       setCin(ds);
     } else {
-      setCout(ds);
+      // If any blocked date falls inside (cin, ds) the stay would span an
+      // occupied night — start a fresh selection from the clicked date instead.
+      const hasBlockedInRange = Array.from(blockedDates).some((b) => b > cin && b < ds);
+      if (hasBlockedInRange) {
+        setCin(ds);
+      } else {
+        setCout(ds);
+      }
     }
   };
 

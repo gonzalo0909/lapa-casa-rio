@@ -297,6 +297,24 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     }
   };
 
+  /** Cambia el número de huéspedes y sincroniza la lista de acompañantes.
+   *  Al subir a 2 se añade una fila vacía; al bajar a 1 se limpia la lista. */
+  const handleGuestCountChange = useCallback((n: number) => {
+    setGuestCount(n);
+    setAdditionalGuests((prev) => {
+      const needed = Math.max(0, n - 1);
+      if (prev.length < needed) {
+        const toAdd = Array.from({ length: needed - prev.length }, () => ({
+          id: Math.random().toString(36).slice(2),
+          fullName: '',
+          document: '',
+        }));
+        return [...prev, ...toAdd];
+      }
+      return prev.slice(0, needed);
+    });
+  }, []);
+
   const goBack = () => {
     setError(null);
     if (step === 2) {
@@ -417,7 +435,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           <ApartmentDateStep
             locale={locale}
             guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={handleGuestCountChange}
             checkIn={checkIn}
             checkOut={checkOut}
             onDatesChange={(cin, cout) => {
@@ -437,7 +455,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             checkOut={checkOut ?? ''}
             nights={nights}
             guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={handleGuestCountChange}
             apartments={apartments}
             isLoading={isLoadingApartments}
             selectedApartment={selectedApartment}
@@ -460,7 +478,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             checkOut={checkOut ?? ''}
             nights={nights}
             guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={handleGuestCountChange}
             selectedApartment={selectedApartment}
             guestForm={guestForm}
             touched={touched}

@@ -532,6 +532,7 @@
     "availableForGuests": "{count, plural, one {# apartment available} other {# apartments available}} for {guests, plural, one {# guest} other {# guests}}",
     "backToStep": "Back to step {n} ({label})",
     "otaBanner": "Booking direct you pay <b>R$ {saving} less</b> than on international platforms — no middleman fees.",
+    "guest": "guest",
     "guests": "Guests",
     "season": "Season",
     "location": "Location",

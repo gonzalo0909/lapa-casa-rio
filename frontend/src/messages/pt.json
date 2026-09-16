@@ -532,6 +532,7 @@
     "availableForGuests": "{count, plural, one {# apartamento disponível} other {# apartamentos disponíveis}} para {guests, plural, one {# hóspede} other {# hóspedes}}",
     "backToStep": "Voltar ao passo {n} ({label})",
     "otaBanner": "Reservando direto você paga <b>R$ {saving} a menos</b> do que em plataformas internacionais — sem taxas de intermediário.",
+    "guest": "h\u00f3spede",
     "guests": "Hóspedes",
     "season": "Temporada",
     "location": "Localização",

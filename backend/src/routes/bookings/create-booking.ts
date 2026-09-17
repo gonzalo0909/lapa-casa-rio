@@ -594,7 +594,7 @@ export const createBookingHandler = async (
         // Primera vez: crear el código permanente (válido 10 años)
         ownReferralCode = generateReferralCode();
         const validTo = new Date();
-        validTo.setFullYear(validTo.getFullYear() + 10);
+        validTo.setFullYear(validTo.getFullYear() + 1);
         await query(
           `INSERT INTO apartment_offers
              (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)

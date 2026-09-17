@@ -232,6 +232,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       phoneOk &&
       cpfOk &&
       guestForm.arrivalTime &&
+      documentPhoto &&
       termsAccepted &&
       companionPhotoOk &&
       companionsOk

@@ -650,7 +650,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
           <div className={styles.docUploadSlots}>
             {/* Slot titular — foto enviada al servidor al confirmar la reserva */}
-            <div className={`${styles.docUploadSlot} ${documentPhoto ? styles.docUploadSlotFilled : ''}`}>
+            <div className={`${styles.docUploadSlot} ${documentPhoto ? styles.docUploadSlotFilled : submitAttempted ? styles.docUploadSlotError : ''}`}>
               <input
                 ref={photoInputTitular}
                 type="file"

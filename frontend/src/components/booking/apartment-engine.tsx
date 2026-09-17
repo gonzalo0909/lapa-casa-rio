@@ -87,6 +87,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   }));
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  /** true cuando el usuario intentó enviar y debe mostrar errores en campos de acompañante */
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
   const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
     Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
@@ -202,6 +204,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       document: true,
       arrivalTime: true,
     });
+    setSubmitAttempted(true);
     if (!selectedApartment || !checkIn || !checkOut) {
       return;
     }
@@ -215,6 +218,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     const cpfDigits = guestForm.document.replace(/\D/g, '');
     const cpfOk = cpfHasLetter ? true : cpfDigits.length === 11 ? validateCPF(cpfDigits) : false;
     const companionPhotoOk = guestCount <= 1 || !!companionDocumentPhoto;
+    // Validar que cada acompañante tenga nombre y documento válido
+    const companionsOk = additionalGuests.every((g) => {
+      if (!g.fullName.trim()) { return false; }
+      if (/[a-zA-Z]/.test(g.document)) { return true; }      // pasaporte
+      const digits = g.document.replace(/\D/g, '');
+      return digits.length === 11 && validateCPF(digits);     // CPF completo y válido
+    });
     const canReserve = !!(
       guestForm.fullName.trim() &&
       emailOk &&
@@ -223,7 +233,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       cpfOk &&
       guestForm.arrivalTime &&
       termsAccepted &&
-      companionPhotoOk
+      companionPhotoOk &&
+      companionsOk
     );
     if (!canReserve) {
       setError(t('formIncomplete'));
@@ -344,6 +355,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     if (step === 2) {
       setStep(1);
     } else if (step === 3) {
+      setSubmitAttempted(false);
       setStep(2);
     } else if (step === 4) {
       // Cancel the pending_payment booking before going back so it doesn't
@@ -539,6 +551,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onCompanionDocumentPhotoChange={setCompanionDocumentPhoto}
             termsAccepted={termsAccepted}
             onTermsAcceptedChange={setTermsAccepted}
+            submitAttempted={submitAttempted}
           />
         )}
 

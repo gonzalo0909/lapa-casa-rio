@@ -529,10 +529,10 @@ export const createBookingHandler = async (
       })();
     }
 
-    // ── Foto del documento (obligatoria en el motor del hostel) ──────────────
-    // Opcional a nivel de este endpoint compartido -- el motor de apartamentos
-    // reusa la misma ruta y todavía no pide esta foto. El motor del hostel la
-    // exige del lado del cliente antes de llegar acá.
+    // ── Foto del documento ────────────────────────────────────────────────────
+    // Ambos motores (hostel y apartamentos) la exigen del lado del cliente
+    // antes de llegar acá. El endpoint la acepta como campo opcional para
+    // no romper integraciones de canal que no la envían (iCal, OTAs).
     if (bookingData.guest.documentPhotoBase64) {
       try {
         const photoBuffer = decodeBase64Image(bookingData.guest.documentPhotoBase64);

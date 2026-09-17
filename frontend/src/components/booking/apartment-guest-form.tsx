@@ -689,7 +689,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
             {/* Slot acompañante — obligatorio cuando guestCount > 1 */}
             {guestCount > 1 && (
-              <div id="apt-companion-upload" className={`${styles.docUploadSlot} ${companionDocumentPhoto ? styles.docUploadSlotFilled : ''}`}>
+              <div id="apt-companion-upload" className={`${styles.docUploadSlot} ${companionDocumentPhoto ? styles.docUploadSlotFilled : submitAttempted ? styles.docUploadSlotError : ''}`}>
                 <input
                   ref={photoInputCompanion}
                   type="file"

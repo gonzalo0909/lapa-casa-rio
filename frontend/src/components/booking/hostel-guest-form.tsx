@@ -231,7 +231,6 @@ export function HostelGuestForm({
             type="tel"
             value={form.phone}
             placeholder="+55 21 9 9999-9999"
-            inputMode="numeric"
             maxLength={20}
             onChange={(e) => onFormChange({ phone: formatPhone(e.target.value) })}
             onBlur={() => {

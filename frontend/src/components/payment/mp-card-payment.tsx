@@ -291,6 +291,11 @@ export function MpCardPayment({
 }: MpCardPaymentProps) {
 
   const mpRef = useRef<MercadoPagoInstance | null>(null);
+  // Ref para que el effect del SDK (deps []) siempre llame la versión actual
+  // del callback sin necesidad de re-montar el script.
+  const onSdkErrorRef = useRef(onSdkError);
+  useEffect(() => { onSdkErrorRef.current = onSdkError; }, [onSdkError]);
+
   const [sdkReady, setSdkReady]           = useState(false);
   const [sdkError, setSdkError]           = useState(false);
   const [surcharge, setSurcharge]         = useState(surchargePercent);
@@ -334,20 +339,20 @@ export function MpCardPayment({
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.async = true;
     script.onload  = initMp;
-    script.onerror = () => { if (onSdkError) { onSdkError(); } else { setSdkError(true); } };
+    script.onerror = () => { if (onSdkErrorRef.current) { onSdkErrorRef.current(); } else { setSdkError(true); } };
     document.head.appendChild(script);
 
     function initMp() {
       const key = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
       if (!key || !window.MercadoPago) {
-        if (onSdkError) { onSdkError(); } else { setSdkError(true); }
+        if (onSdkErrorRef.current) { onSdkErrorRef.current(); } else { setSdkError(true); }
         return;
       }
       try {
         mpRef.current = new window.MercadoPago(key, { locale: 'pt-BR' });
         setSdkReady(true);
       } catch {
-        if (onSdkError) { onSdkError(); } else { setSdkError(true); }
+        if (onSdkErrorRef.current) { onSdkErrorRef.current(); } else { setSdkError(true); }
       }
     }
   }, []);
@@ -375,13 +380,14 @@ export function MpCardPayment({
       });
       const opts = instData[0]?.payer_costs?.map(c => ({ n: c.installments, label: c.recommended_message })) ?? [];
       setInstallmentOpts(opts);
-      if (opts.length > 0 && !opts.find(o => o.n === installments)) {
-        setInstallments(opts[0]!.n);
-      }
+      setInstallments(prev => {
+        if (opts.length > 0 && !opts.find(o => o.n === prev)) { return opts[0]!.n; }
+        return prev;
+      });
     } catch {
       // silent — las cuotas son opcionales
     }
-  }, [chargedAmount, installments]);
+  }, [chargedAmount]);
 
   // Si viene initialCardNumber desde AutoCardPayment, disparar BIN detection
   // cuando el SDK esté listo (después de que onBinChange ya está definido).

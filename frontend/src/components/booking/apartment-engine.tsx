@@ -154,6 +154,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     }
     setStep(2);
     loadApartments(checkIn, checkOut);
+    scrollToContent();
   };
 
   const handleMiniCalendarApply = useCallback(

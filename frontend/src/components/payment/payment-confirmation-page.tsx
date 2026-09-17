@@ -68,7 +68,15 @@ export const PaymentConfirmationPage: React.FC<PaymentConfirmationPageProps> = (
     setIsLoading(true);
     setError(null);
     try {
-      const response = await bookingAPI.getById(bookingId);
+      // Token from sessionStorage (direct flow) or URL query param (email link).
+      let token: string | undefined;
+      try {
+        token = sessionStorage.getItem(`ct_${bookingId}`) ?? undefined;
+      } catch {}
+      if (!token && typeof window !== 'undefined') {
+        token = new URLSearchParams(window.location.search).get('token') ?? undefined;
+      }
+      const response = await bookingAPI.getConfirmation(bookingId, token);
       const data = response.data;
       setBooking({
         status: data.booking.status,

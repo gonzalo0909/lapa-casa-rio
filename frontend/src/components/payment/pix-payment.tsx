@@ -27,11 +27,13 @@ interface PixPaymentProps {
   qrCodeBase64?: string;
   amount: number;
   locale?: PaymentLocale;
+  reservationId?: string;
+  confirmationToken?: string;
   onSuccess: (paymentData: { paymentId: string; amount: number }) => void;
   onError: (error: Error) => void;
 }
 
-export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = 'pt', onSuccess, onError }: PixPaymentProps) {
+export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = 'pt', reservationId, confirmationToken, onSuccess, onError }: PixPaymentProps) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -47,7 +49,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
 
   const checkPaymentStatus = useCallback(async () => {
     try {
-      const response = await paymentAPI.getStatus(paymentId);
+      const response = await paymentAPI.getStatus(paymentId, reservationId ?? '', confirmationToken);
       const status = response.data?.status;
       if (status === 'succeeded' || status === 'approved' || status === 'paid') {
         handleSuccess();
@@ -73,7 +75,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
     setIsVerifying(true);
     setError(null);
     try {
-      await paymentAPI.confirm(paymentId);
+      await paymentAPI.confirm(paymentId, reservationId ?? '', confirmationToken);
       handleSuccess();
     } catch (err) {
       // Si el backend dice "no aprobado todavía" mostramos un aviso suave,

@@ -201,10 +201,16 @@ export const checkApartmentAvailabilityHandler = async (
         }
       }
     } catch (pricingError) {
+      const msg = pricingError instanceof Error ? pricingError.message : 'Unknown error';
+      // El error de noches mínimas de Carnaval es una restricción de negocio,
+      // no una falla técnica de pricing — hay que devolver 400 con el mensaje.
+      if (msg.startsWith('Durante Carnaval')) {
+        res.status(400).json(ApiResponse.error(msg, { minNightsRequired: true }));
+        return;
+      }
       pricingFailed = true;
       logger.warn('Apartment batch pricing unavailable for date range', {
-        checkIn, checkOut,
-        error: pricingError instanceof Error ? pricingError.message : 'Unknown error',
+        checkIn, checkOut, error: msg,
       });
     }
 

@@ -20,8 +20,10 @@ import { validate, bookingSchemas } from '../../middleware/validation';
 import { authenticateToken, requireRole } from '../../middleware/auth';
 import { logger } from '../../utils/logger';
 import { bookingService } from '../../services/booking-service';
+import { paymentService } from '../../services/payment-service';
 import type { BookingStatus } from '../../types/database';
 import { ApiResponse } from '../../utils/responses';
+import { generateConfirmationToken } from '../../utils/confirmation-token';
 
 const router = Router();
 
@@ -53,6 +55,8 @@ router.post(
  */
 router.get(
   '/:id',
+  authenticateToken,
+  requireRole(['admin', 'staff']),
   getBookingHandler
 );
 
@@ -62,6 +66,8 @@ router.get(
  */
 router.patch(
   '/:id',
+  authenticateToken,
+  requireRole(['admin', 'staff']),
   validate(bookingSchemas.update),
   updateBookingHandler
 );
@@ -72,6 +78,8 @@ router.patch(
  */
 router.delete(
   '/:id',
+  authenticateToken,
+  requireRole(['admin', 'staff']),
   cancelBookingHandler
 );
 
@@ -134,6 +142,12 @@ router.get(
   async (req, res, next) => {
     try {
       const { id } = req.params;
+      const { token } = req.query as { token?: string };
+
+      if (!token || token !== generateConfirmationToken(id)) {
+        return res.status(403).json(ApiResponse.error('Invalid or missing confirmation token'));
+      }
+
       logger.info('Get booking confirmation', { bookingId: id });
 
       const booking = await bookingService.getBooking(id);
@@ -141,19 +155,92 @@ router.get(
         return res.status(404).json(ApiResponse.error('Booking not found'));
       }
 
-      // L-02: QR generado localmente como data URI PNG — sin dependencia
-      // externa ni envío del número de reserva a api.qrserver.com.
+      const checkInDate = new Date(booking.check_in_date);
+      const checkOutDate = new Date(booking.check_out_date);
+      const nights = Math.round(
+        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      const payments = await paymentService.getPaymentsByReservation(id);
+      const paidAmount = payments
+        .filter(p => p.status === 'succeeded')
+        .reduce((sum, p) => {
+          const baseAmount = (p.provider_metadata as { base_amount?: number } | null)?.base_amount;
+          return sum + (baseAmount ?? Number(p.amount));
+        }, 0);
+      const depositAmount = Number(booking.deposit_amount);
+      const finalPrice = Number(booking.final_price);
+
+      // L-02: QR generado localmente como data URI PNG.
       const qrCode = await QRCode.toDataURL(booking.reservation_number, { width: 200 });
 
       res.status(200).json(ApiResponse.success({
-        bookingId: booking.id,
-        confirmationNumber: booking.reservation_number,
-        status: booking.status,
-        checkInDate: booking.check_in_date,
-        checkOutDate: booking.check_out_date,
+        booking: {
+          id: booking.id,
+          confirmationNumber: booking.reservation_number,
+          status: booking.status,
+          pendingExpiresAt: booking.pending_expires_at,
+        },
+        dates: {
+          checkIn: booking.check_in_date,
+          checkOut: booking.check_out_date,
+          nights,
+        },
+        guest: {
+          fullName: booking.guest?.full_name ?? '',
+        },
+        pricing: {
+          total: finalPrice,
+          deposit: depositAmount,
+          remaining: Number(booking.remaining_amount),
+          bedsCount: booking.beds_count,
+          currency: 'BRL',
+        },
+        payment: {
+          depositPaid: paidAmount >= depositAmount,
+          fullyPaid: paidAmount >= finalPrice,
+        },
         qrCode,
-        checkInInstructions: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro'
+        checkInInstructions: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro',
       }));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * Abandon a pending_payment booking
+ * @route POST /bookings/:id/abandon
+ * Guest-callable: verified via confirmationToken, only on pending_payment status.
+ * No refund processing — no payment has been made at this point.
+ */
+router.post(
+  '/:id/abandon',
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { token } = req.body as { token?: string };
+
+      if (!token || token !== generateConfirmationToken(id)) {
+        return res.status(403).json(ApiResponse.error('Invalid or missing confirmation token'));
+      }
+
+      const booking = await bookingService.getBooking(id);
+      if (!booking) {
+        return res.status(404).json(ApiResponse.error('Booking not found'));
+      }
+
+      if (booking.status !== 'pending_payment') {
+        return res.status(400).json(
+          ApiResponse.error('Only pending_payment bookings can be abandoned')
+        );
+      }
+
+      await bookingService.cancelBooking(id, 'abandoned_by_guest');
+
+      logger.info('Booking abandoned by guest', { bookingId: id });
+      res.status(200).json(ApiResponse.success({ bookingId: id }, 'Booking abandoned'));
     } catch (error) {
       next(error);
     }

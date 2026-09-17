@@ -372,9 +372,16 @@ export const createBookingHandler = async (
             logger.warn('Código de referido rechazado -- autorreferido', { offerCode: offer.code });
           }
         }
+        // Código de recompensa (referral_owner_guest_id seteado) solo aplica a apartamentos
+        let aptTypeBlocked = false;
+        if (aptOk && !selfReferral && offer.referral_owner_guest_id && !isApartmentBooking) {
+          aptTypeBlocked = true;
+          logger.info('Código de recompensa rechazado -- solo válido para apartamentos', { offerCode: offer.code });
+        }
+
         // Bloqueo en feriados / carnaval / año nuevo
         let holidayBlocked = false;
-        if (aptOk && !selfReferral && offer.block_holidays && isHolidayDate(bookingData.checkIn)) {
+        if (aptOk && !selfReferral && !aptTypeBlocked && offer.block_holidays && isHolidayDate(bookingData.checkIn)) {
           holidayBlocked = true;
           logger.info('Código de oferta rechazado -- fecha de feriado', {
             offerCode: offer.code,
@@ -401,7 +408,7 @@ export const createBookingHandler = async (
           }
         }
 
-        if (aptOk && !selfReferral && !holidayBlocked && !monthlyLimitReached) {
+        if (aptOk && !selfReferral && !aptTypeBlocked && !holidayBlocked && !monthlyLimitReached) {
           appliedOffer = offer;
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             // Descuento de valor fijo en BRL (ej: R$5)

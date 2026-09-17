@@ -489,6 +489,24 @@
   color: var(--fg-muted); text-align: center; margin-top: 1.5rem;
 }
 
+/* ── Apt header row (título + toggle) ──────────────────────── */
+.aptHeaderRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.aptHeaderRow h2 { margin-bottom: .2rem; }
+.aptHeaderRow p { margin: 0; }
+
+/* ── Toggle Lista / Mapa ────────────────────────────────────── */
+.viewToggle { display: inline-flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.viewToggleBtn { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .85rem; background: transparent; border: none; color: var(--fg-muted); font-size: .84rem; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
+.viewToggleBtn + .viewToggleBtn { border-left: 1.5px solid var(--border); }
+.viewToggleBtn:hover { background: var(--bg-subtle); color: var(--fg); }
+.viewToggleBtnActive { background: var(--primary); color: #fff !important; }
+.viewToggleBtnActive:hover { background: var(--primary); opacity: .9; }
+
+/* ── Mapa ────────────────────────────────────────────────────── */
+.mapContainer { margin-bottom: 1.5rem; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--border); }
+.mapLeaflet { height: 420px; width: 100%; }
+.mapNote { margin: 0; padding: .55rem 1rem; background: var(--bg-subtle); font-size: .75rem; color: var(--fg-muted); font-style: italic; text-align: center; }
+
 /* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   /* Hero */
@@ -514,6 +532,11 @@
 
   /* Apt grid: single column, bigger card content */
   .aptGrid { grid-template-columns: 1fr; gap: .75rem; }
+
+  /* Mapa en mobile: altura reducida */
+  .mapLeaflet { height: 320px; }
+  .aptHeaderRow { flex-direction: column; gap: .5rem; }
+  .viewToggle { align-self: flex-start; }
   .aptPhoto { height: 140px; }
   .photoNav { width: 28px; height: 28px; }
   .cardBody { padding: .75rem .9rem; }

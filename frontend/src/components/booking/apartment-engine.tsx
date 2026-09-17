@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -119,6 +119,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   /** Número de secuencia para cancelar llamadas a la API del mini-calendario
    *  que llegan fuera de orden (race condition al cambiar fechas rápidamente). */
   const miniCalSeq = useRef(0);
+  const referralCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (referralCopiedTimerRef.current) { clearTimeout(referralCopiedTimerRef.current); } }, []);
   /** Desplaza suavemente hasta el bloque de contenido del paso activo,
    *  sin volver al hero. delay pequeño para que React haya renderizado. */
   const scrollToContent = useCallback(() => {
@@ -643,7 +645,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                                 .writeText(booking.referralCode ?? '')
                                 .catch(() => {});
                               setReferralCopied(true);
-                              setTimeout(() => setReferralCopied(false), 3000);
+                              referralCopiedTimerRef.current = setTimeout(() => setReferralCopied(false), 3000);
                             }}
                           >
                             {referralCopied ? (

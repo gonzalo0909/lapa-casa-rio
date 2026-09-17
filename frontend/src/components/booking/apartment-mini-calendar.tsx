@@ -205,9 +205,9 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const nights = cin && cout ? Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000) : 0;
   const changed = cin !== toDs(globalCheckIn) || cout !== toDs(globalCheckOut);
 
-  // Disable prev if we're already at the current month
-  const today = new Date();
-  const isAtMinMonth = baseMonth.y === today.getFullYear() && baseMonth.m === today.getMonth();
+  // Disable prev if we're already at the earliest selectable month (BRT-aware).
+  const minCinDs = minCheckInDs();
+  const isAtMinMonth = baseMonth.y === Number(minCinDs.slice(0, 4)) && baseMonth.m === (Number(minCinDs.slice(5, 7)) - 1);
 
   const handleApply = async () => {
     if (!cin || !cout) { return; }

@@ -610,7 +610,12 @@ export const createBookingHandler = async (
       ownReferralCode = null;
     }
 
-    if (appliedOffer?.referral_owner_guest_id) {
+    // El programa de recompensas cierra el 31/12/2026: después de esa fecha
+    // el sistema no emite más premios (los códigos ya emitidos siguen válidos).
+    const REFERRAL_PROGRAM_ENDS = new Date('2026-12-31T23:59:59-03:00');
+    const programActive = new Date() <= REFERRAL_PROGRAM_ENDS;
+
+    if (programActive && appliedOffer?.referral_owner_guest_id) {
       (async () => {
         try {
           const { rows: referrerRows } = await query<{

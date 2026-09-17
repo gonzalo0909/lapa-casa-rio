@@ -9,10 +9,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
-import {
-  seasonForDateStr,
-  CARNAVAL_MIN_NIGHTS,
-} from '@/lib/apartment-seasons';
 import { type AptLocale } from './apartment-engine.types';
 import {
   parseDs,
@@ -72,13 +68,6 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
             86400000,
         )
       : 0;
-
-  const seasonHint = checkIn ? seasonForDateStr(checkIn) : null;
-  const minNightsWarn = !!(
-    seasonHint &&
-    nights > 0 &&
-    nights < seasonHint.minNights
-  );
 
   const handleDayClick = (ds: string) => {
     if (ds < minCheckInDs()) { return; }
@@ -142,14 +131,11 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
         s === hoverDs &&
         hoverDs > checkIn
       );
-      const season = !past ? seasonForDateStr(s) : null;
       const isCarnival = !past && isCarnivalDs(s, carnivalRanges);
 
       let cls = styles.dayCell;
       if (past) { cls += ` ${styles.dayCellPast}`; }
       else if (isCarnival) { cls += ` ${styles.dayCellCarnival}`; }
-      else if (season?.name === 'alta') { cls += ` ${styles.dayCellAlta}`; }
-      else if (season?.name === 'baixa') { cls += ` ${styles.dayCellBaixa}`; }
 
       if (isCin) {
         cls += ` ${styles.dayCellSelStart}${hasEnd ? ` ${styles.dayCellHasEnd}` : ''}`;
@@ -222,23 +208,6 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
         </button>
       </div>
 
-      {/* Advertencia de mínimo de noches */}
-      {minNightsWarn && seasonHint && (
-        <div className={styles.carnivalWarn}>
-          {t.rich('minNightsWarning', {
-            b: (chunks) => <strong>{chunks}</strong>,
-            seasonLabel:
-              seasonHint.name === 'alta'
-                ? t('seasonAlta')
-                : seasonHint.name === 'baixa'
-                  ? t('seasonBaja')
-                  : t('seasonMedia'),
-            nights: seasonHint.minNights,
-            carnavalNights: CARNAVAL_MIN_NIGHTS,
-          })}
-        </div>
-      )}
-
       {/* Barra inferior: fechas seleccionadas + botón continuar */}
       <div className={styles.actions} style={{ marginTop: '1.25rem' }}>
         <div
@@ -262,9 +231,9 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
         </div>
         <button
           type="button"
-          className={`${styles.btnContinue} ${checkIn && checkOut && !minNightsWarn ? styles.btnContinueActive : ''}`}
+          className={`${styles.btnContinue} ${checkIn && checkOut ? styles.btnContinueActive : ''}`}
           onClick={onContinue}
-          disabled={!checkIn || !checkOut || minNightsWarn}
+          disabled={!checkIn || !checkOut}
         >
           {tc('continue')} →
         </button>

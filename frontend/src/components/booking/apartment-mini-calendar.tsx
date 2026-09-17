@@ -7,7 +7,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
-import { seasonForDateStr } from '@/lib/apartment-seasons';
 import { minCheckInDs } from './apartment-engine.utils';
 
 /** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
@@ -211,17 +210,6 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   const handleApply = async () => {
     if (!cin || !cout) { return; }
-
-    // Client-side minimum-nights check (mirrors apartment-date-step.tsx).
-    // Regular seasons: alta=3, media=2, baixa=1 (from apartment-seasons.ts).
-    // Carnaval dates are dynamic (DB), so CARNAVAL_MIN_NIGHTS is used as a
-    // lower-bound hint — the API enforces the real limit for that period.
-    const nightCount = Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000);
-    const season = seasonForDateStr(cin);
-    if (nightCount < season.minNights) {
-      setResult({ available: false, reason: 'min-nights', minNights: season.minNights });
-      return;
-    }
 
     setChecking(true);
     setResult(null);

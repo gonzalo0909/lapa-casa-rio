@@ -213,11 +213,16 @@ export class BookingService {
       // 2) Adquirir advisory locks de esas camas especificas, DENTRO de esta transaccion
       await acquireLock(client, candidateBedIds);
 
-      // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos
+      // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos.
+      // Se filtra status != 'cancelled' para mantener consistencia con pickAvailableBedsInRoom —
+      // sin el filtro, una reserva cancelada previa sobre esas camas genera un falso positivo.
       const { rows: stillOccupied } = await client.query(
-        `SELECT bed_id FROM reservation_beds
-         WHERE bed_id = ANY($1::uuid[])
-           AND daterange(check_in, check_out, '[)') && daterange($2::date, $3::date, '[)')`,
+        `SELECT rb.bed_id
+         FROM reservation_beds rb
+         JOIN reservations res ON res.id = rb.reservation_id
+         WHERE rb.bed_id = ANY($1::uuid[])
+           AND res.status != 'cancelled'
+           AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')`,
         [candidateBedIds, data.checkIn, data.checkOut],
       );
       if (stillOccupied.length > 0) {

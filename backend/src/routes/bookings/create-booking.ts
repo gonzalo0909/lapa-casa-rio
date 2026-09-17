@@ -617,7 +617,7 @@ export const createBookingHandler = async (
               });
             });
         }
-        return notificationService.notify('booking_confirmation', guest);
+        return notificationService.notify('booking_confirmation', guest, { referralCode: ownReferralCode });
       })
       .catch((error) => {
         logger.error('Failed to send booking confirmation email', {

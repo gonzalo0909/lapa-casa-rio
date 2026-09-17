@@ -191,6 +191,9 @@ const LABELS: Record<Language, Record<string, string>> = {
       'Como agradecimento, aqui está um código de 10% de desconto para a sua próxima estadia. Válido por 90 dias.',
     referralRewardClosing: 'Esperamos ver você de novo em breve!',
     useReward: 'Reservar com este código',
+    referralCodeTitle: 'Indique um amigo e ganhe 10% de desconto',
+    referralCodeBody: 'Compartilhe seu código: seu amigo ganha 10% de desconto na reserva e, quando ele reservar, você recebe outro código de 10% para a sua próxima estadia.',
+    referralCodeLabel: 'Seu código de indicação',
   },
   en: {
     greeting: 'Hello',
@@ -266,6 +269,9 @@ const LABELS: Record<Language, Record<string, string>> = {
       'As a thank you, here is a 10% discount code for your next stay. Valid for 90 days.',
     referralRewardClosing: 'We hope to see you again soon!',
     useReward: 'Book with this code',
+    referralCodeTitle: 'Refer a friend and get 10% off',
+    referralCodeBody: 'Share your code: your friend gets 10% off their booking and, once they book, you\'ll receive another 10% code for your next stay.',
+    referralCodeLabel: 'Your referral code',
   },
   es: {
     greeting: 'Hola',
@@ -341,6 +347,9 @@ const LABELS: Record<Language, Record<string, string>> = {
       'Como agradecimiento, acá tenés un código de 10% de descuento para tu próxima estadía. Válido por 90 días.',
     referralRewardClosing: '¡Esperamos verte de nuevo pronto!',
     useReward: 'Reservar con este código',
+    referralCodeTitle: 'Recomienda a un amigo y obtén 10% de descuento',
+    referralCodeBody: 'Comparte tu código: tu amigo obtiene un 10% de descuento en su reserva y, cuando reserve, tú recibirás otro código de 10% para tu próxima estadia.',
+    referralCodeLabel: 'Tu código de recomendación',
   },
   fr: {
     greeting: 'Bonjour',
@@ -408,6 +417,9 @@ const LABELS: Record<Language, Record<string, string>> = {
     referralRewardBody: 'En guise de remerciement, voici un code de réduction de 10 % pour votre prochain séjour. Valable 90 jours.',
     referralRewardClosing: 'Nous espérons vous revoir bientôt !',
     useReward: 'Réserver avec ce code',
+    referralCodeTitle: 'Parrainez un ami et obtenez 10 % de remise',
+    referralCodeBody: "Partagez votre code : votre ami bénéficie de 10 % de réduction sur sa réservation et, dès qu'il réserve, vous recevez un autre code de 10 % pour votre prochain séjour.",
+    referralCodeLabel: 'Votre code de parrainage',
   },
   de: {
     greeting: 'Hallo',
@@ -475,6 +487,9 @@ const LABELS: Record<Language, Record<string, string>> = {
     referralRewardBody: 'Als Dankeschön erhalten Sie einen 10%-Rabattcode für Ihren nächsten Aufenthalt. Gültig für 90 Tage.',
     referralRewardClosing: 'Wir hoffen, Sie bald wiederzusehen!',
     useReward: 'Mit diesem Code buchen',
+    referralCodeTitle: 'Freund empfehlen und 10 % Rabatt erhalten',
+    referralCodeBody: 'Teilen Sie Ihren Code: Ihr Freund bekommt 10 % Rabatt auf seine Buchung und, wenn er bucht, erhalten Sie einen weiteren 10 %-Code für Ihren nächsten Aufenthalt.',
+    referralCodeLabel: 'Ihr Empfehlungscode',
   },
   it: {
     greeting: 'Ciao',
@@ -542,6 +557,9 @@ const LABELS: Record<Language, Record<string, string>> = {
     referralRewardBody: 'Come ringraziamento, ecco un codice sconto del 10% per il tuo prossimo soggiorno. Valido per 90 giorni.',
     referralRewardClosing: 'Speriamo di rivederti presto!',
     useReward: 'Prenota con questo codice',
+    referralCodeTitle: 'Consiglia un amico e ottieni il 10% di sconto',
+    referralCodeBody: 'Condividi il tuo codice: il tuo amico ottiene il 10% di sconto sulla prenotazione e, quando prenota, tu ricevi un altro codice del 10% per il tuo prossimo soggiorno.',
+    referralCodeLabel: 'Il tuo codice referral',
   },
 };
 
@@ -714,7 +732,7 @@ function escapeText(value: string): string {
 }
 
 export class EmailService {
-  async sendBookingConfirmation(booking: BookingWithGuest): Promise<SendResult> {
+  async sendBookingConfirmation(booking: BookingWithGuest, referralCode?: string | null): Promise<SendResult> {
     const language = resolveLanguage(booking.guest.language);
     const t = LABELS[language];
     const rooms = await getRoomsBreakdown(booking.id);
@@ -762,6 +780,17 @@ export class EmailService {
 </table>`
         : '';
 
+    const referralBlockHtml = referralCode
+      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff8f0;border-radius:8px;margin-top:24px;border:2px solid #f0b429;">
+  <tr><td style="padding:18px 20px;">
+    <p style="margin:0 0 6px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;color:#92400e;">🎁 ${escapeText(t.referralCodeTitle)}</p>
+    <p style="margin:0 0 14px;font-size:14px;color:#555555;line-height:1.5;">${escapeText(t.referralCodeBody)}</p>
+    <p style="margin:0 0 6px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;color:#888888;">${escapeText(t.referralCodeLabel)}</p>
+    <p style="margin:0;font-size:22px;font-weight:bold;letter-spacing:3px;color:#1a1a1a;font-family:monospace;">${escapeText(referralCode)}</p>
+  </td></tr>
+</table>`
+      : '';
+
     const html = renderEmailTemplate('booking-confirmation', {
       emailTitle: t.bookingConfirmationTitle,
       labelTitle: t.bookingConfirmationTitle,
@@ -793,6 +822,7 @@ export class EmailService {
         ? paymentButtonHtml(`${FRONTEND_URL}/${language}/payment/${booking.id}?token=${generateConfirmationToken(booking.id)}`, t.payNow)
         : '',
       sameDayHtml,
+      referralBlockHtml,
     });
 
     return dispatch(

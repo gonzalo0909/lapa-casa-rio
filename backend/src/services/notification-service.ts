@@ -42,7 +42,7 @@ export interface NotificationRecord {
 async function dispatchByType(type: NotificationType, booking: BookingWithGuest, data: Record<string, any>): Promise<void> {
   switch (type) {
     case 'booking_confirmation':
-      await emailService.sendBookingConfirmation(booking);
+      await emailService.sendBookingConfirmation(booking, data.referralCode as string | null | undefined);
       return;
     case 'payment_reminder':
       await emailService.sendPaymentReminder(booking);

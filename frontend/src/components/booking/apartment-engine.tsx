@@ -314,23 +314,16 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       if (b.confirmationToken) {
         try { sessionStorage.setItem(`ct_${b.id}`, b.confirmationToken); } catch {}
       }
-      const totalPrice = selectedApartment.priceTotal;
-      const depositAmount = selectedApartment.depositAmount;
-      // Si hay cupón aplicado, usamos el precio con descuento como fallback
-      const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
-      const discountedTotal = Math.round(totalPrice * discountFactor);
-      const discountedDeposit = Math.round(depositAmount * discountFactor);
-      // Resolver total y deposit antes de calcular remaining para que los tres
-      // valores sean siempre coherentes entre sí (server o frontend, nunca mixtos).
-      const resolvedTotal = b.pricing?.total ?? discountedTotal;
-      const resolvedDeposit = b.payment?.depositAmount ?? discountedDeposit;
+      if (b.pricing?.total == null || b.payment?.depositAmount == null) {
+        throw new Error('El servidor no devolvió el precio de la reserva');
+      }
       setBooking({
         id: b.id,
         confirmationNumber: b.confirmationNumber,
         pendingExpiresAt: b.pendingExpiresAt ?? null,
-        total: resolvedTotal,
-        deposit: resolvedDeposit,
-        remaining: b.pricing?.remaining ?? (resolvedTotal - resolvedDeposit),
+        total: b.pricing.total,
+        deposit: b.payment.depositAmount,
+        remaining: b.pricing.remaining ?? (b.pricing.total - b.payment.depositAmount),
         checkIn,
         referralCode: b.referralCode ?? null,
       });

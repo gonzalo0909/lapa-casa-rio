@@ -58,7 +58,7 @@ export function PixPayment({ paymentId, qrCode, qrCodeBase64, amount, locale = '
       // Se reintenta solo en el próximo tick -- un error de red puntual
       // consultando el estado no debe interrumpir la espera del Pix.
     }
-  }, [paymentId, handleSuccess]);
+  }, [paymentId, reservationId, confirmationToken, handleSuccess]);
 
   useEffect(() => {
     const interval = setInterval(checkPaymentStatus, 5000);

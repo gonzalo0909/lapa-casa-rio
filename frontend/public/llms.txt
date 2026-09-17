@@ -1,0 +1,25 @@
+# Lapa Casa
+
+> Boutique hostel and private apartments in Santa Teresa, Rio de Janeiro, Brazil. Direct booking, specializing in group stays with automatic group discounts. Address: Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Phone/WhatsApp: +55 21 97715-7530.
+
+Lapa Casa offers two independent booking flows on the same site: shared hostel dorm beds (mixed and female dormitories, 7 to 12 beds per room) and private apartments. Site available in Portuguese, Spanish, English, French, German and Italian.
+
+## Key facts
+
+- Check-in: from 2:00 PM. Check-out: by 12:00 PM. Reception is open until 10:00 PM; arrivals must be scheduled between 2 PM and 10 PM.
+- Payment methods: credit card and PIX (PIX available for Brazilian residents). No installment payments.
+- Group discounts: 10% off for 6+ beds, 15% off for 10+ beds. Groups can book entire dorms and split payment among members via a shareable link.
+- Cancellation policy: the deposit paid at booking is non-refundable under any circumstance -- cancellation or no-show, regardless of notice.
+- Free high-speed WiFi throughout. Shared kitchen available (breakfast is not included).
+
+## Pages
+
+- [Hostel booking](https://lapacasario.com/en/hostel): dormitory beds, availability calendar and pricing.
+- [Apartments booking](https://lapacasario.com/en/apartamentos): private apartments, availability calendar and pricing.
+- [Groups](https://lapacasario.com/en/grupos): information for group bookings.
+- [Santa Teresa neighborhood guide](https://lapacasario.com/en/santa-teresa): the neighborhood the hostel is located in.
+- [Photo gallery](https://lapacasario.com/en/galeria): guest photo gallery.
+- [Luggage storage](https://lapacasario.com/en/guardavolumes): guardavolumes / left-luggage service.
+- [Partners](https://lapacasario.com/en/parceiros): information for travel agencies and partners.
+- [Guest terms](https://lapacasario.com/en/termos-hospede): full booking and cancellation policy.
+- [Privacy policy](https://lapacasario.com/en/privacy)

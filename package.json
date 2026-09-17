@@ -1,0 +1,13 @@
+{
+  "name": "lapa-casa-hostel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repo root -- solo coordina el pre-commit hook (lint/format) para frontend y backend, cada uno mantiene su propio package.json.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0"
+  }
+}

@@ -1,0 +1,64 @@
+<!-- lapa-casa-hostel/backend/src/admin/rooms.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hostel — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .inner-tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .inner-tab-btn { padding: 7px 14px; border: none; background: none; cursor: pointer; font-size: 13px;
+                   color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+                   font-weight: 500; }
+  .inner-tab-btn:hover { color: var(--text); }
+  .inner-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .inner-panel { display: none; }
+  .inner-panel.active { display: block; }
+  .embed-frame { width: 100%; min-height: 900px; border: none; }
+</style>
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+
+  <div class="inner-tab-bar">
+    <button class="inner-tab-btn active" data-tab="cuartos">Cuartos</button>
+    <button class="inner-tab-btn" data-tab="bloqueos">Bloqueos</button>
+    <button class="inner-tab-btn" data-tab="ofertas">Ofertas</button>
+    <button class="inner-tab-btn" data-tab="preciosdin">Precios dinámicos</button>
+    <button class="inner-tab-btn" data-tab="precios">Precios</button>
+  </div>
+
+  <div class="inner-panel active" id="panel-cuartos">
+    <div class="card">
+      <h2>Cuartos del hostel</h2>
+      <div id="rooms-msg"></div>
+      <div class="room-list" id="room-list"></div>
+    </div>
+  </div>
+
+  <div class="inner-panel" id="panel-bloqueos">
+    <iframe class="embed-frame" src="/admin/blocking.html?type=hostel&embed=1"></iframe>
+  </div>
+
+  <div class="inner-panel" id="panel-ofertas">
+    <iframe class="embed-frame" src="/admin/offers.html?type=hostel&embed=1"></iframe>
+  </div>
+
+  <div class="inner-panel" id="panel-preciosdin">
+    <iframe class="embed-frame" src="/admin/dynamic-pricing.html?type=hostel&embed=1"></iframe>
+  </div>
+
+  <div class="inner-panel" id="panel-precios">
+    <iframe class="embed-frame" src="/admin/pricing.html?embed=1"></iframe>
+  </div>
+
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/rooms.js"></script>
+</body>
+</html>

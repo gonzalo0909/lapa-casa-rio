@@ -1,0 +1,55 @@
+<!-- lapa-casa-hostel/backend/src/admin/gallery.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galería — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
+  .photo-card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+  .photo-card img { width: 100%; height: 150px; object-fit: cover; display: block; }
+  .photo-card .body { padding: 10px; font-size: 13px; }
+  .photo-card .body input { width: 100%; margin-bottom: 6px; font-size: 13px; }
+  .photo-card .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .photo-card.unpublished { opacity: 0.55; }
+</style>
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Subir foto de huésped</h2>
+    <p style="font-size:13px;color:#888;">Bitácora de viajantes (galería pública en /galeria): subí acá las fotos que te mandan los huéspedes por WhatsApp o email. No es un formulario público -- solo vos las cargás.</p>
+    <div id="upload-msg"></div>
+    <form class="stack" id="upload-form">
+      <label>Foto
+        <input type="file" id="photo-file" accept="image/*" required>
+      </label>
+      <label>Nombre del huésped (opcional)
+        <input type="text" id="guest-name" placeholder="Ej: Camila">
+      </label>
+      <label>País (código de 2 letras, opcional)
+        <input type="text" id="guest-country" placeholder="Ej: AR" maxlength="2">
+      </label>
+      <label>Comentario (opcional)
+        <input type="text" id="caption" placeholder="Ej: ¡Increíble estadía!">
+      </label>
+      <button type="submit" id="upload-btn">Subir foto</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Galería</h2>
+    <div id="gallery-msg"></div>
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/gallery.js"></script>
+</body>
+</html>

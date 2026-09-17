@@ -1,0 +1,61 @@
+<!-- lapa-casa-hostel/backend/src/admin/2fa-recovery.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuperar acceso — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<section id="login-screen">
+  <div class="card">
+    <h2>Recuperar acceso</h2>
+    <p style="font-size:13px;color:var(--text-muted,#888)">
+      Esto desactiva la doble verificación usando tu código de respaldo.
+      Después vas a poder entrar de nuevo con solo tu contraseña.
+    </p>
+    <div id="recovery-msg"></div>
+    <form class="stack" id="recovery-form">
+      <label>Contraseña de administrador
+        <input type="password" id="password" required autofocus>
+      </label>
+      <label>Código de respaldo
+        <input type="text" id="backup-code" required style="font-family:monospace;letter-spacing:1px">
+      </label>
+      <button type="submit">Desactivar 2FA</button>
+    </form>
+    <p style="margin-top:10px;font-size:13px;">
+      <a href="/admin/index.html">Volver al login</a>
+    </p>
+  </div>
+</section>
+
+<script src="/admin/js/api.js"></script>
+<script>
+(function () {
+  function showMsg(elId, text, type) {
+    var el = document.getElementById(elId);
+    el.innerHTML = text ? '<div class="msg ' + type + '">' + text + '</div>' : '';
+  }
+
+  document.getElementById('recovery-form').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var password = document.getElementById('password').value;
+    var backupCode = document.getElementById('backup-code').value.trim();
+    try {
+      await apiFetch('/admin/login/2fa-recovery', {
+        method: 'POST',
+        body: JSON.stringify({ password: password, backupCode: backupCode }),
+      });
+      showMsg('recovery-msg', '2FA desactivado. Redirigiendo al login...', 'success');
+      setTimeout(function () { window.location.href = '/admin/index.html'; }, 1500);
+    } catch (err) {
+      showMsg('recovery-msg', err.message, 'error');
+    }
+  });
+})();
+</script>
+</body>
+</html>

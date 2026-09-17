@@ -63,6 +63,55 @@ interface CreateBookingRequest {
   offerCode?: string;
 }
 
+// ── Helpers de feriados y límites de ofertas ─────────────────────────────────
+
+/** Devuelve la fecha de Pascua (Domingo de Resurreción) para un año dado.
+ *  Algoritmo de Meeus/Jones/Butcher. */
+function easterDate(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+/** Devuelve true si la fecha (formato 'YYYY-MM-DD') cae en un feriado nacional
+ *  brasileño fijo o en el período de Carnaval (viernes a martes, los 5 días). */
+function isHolidayDate(ds: string): boolean {
+  const [y, m, d] = ds.split('-').map(Number);
+  const mmdd = ds.slice(5); // 'MM-DD'
+
+  // Feriados nacionales fijos de Brasil
+  const fixed = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '12-25', '12-31'];
+  if (fixed.includes(mmdd)) return true;
+
+  // Carnaval: viernes (−51d desde Pascua) a martes (−47d desde Pascua)
+  const easter = easterDate(y);
+  for (let offset = 51; offset >= 47; offset--) {
+    const carnival = new Date(easter.getTime() - offset * 86400000);
+    const cvds = carnival.getFullYear() +
+      '-' + String(carnival.getMonth() + 1).padStart(2, '0') +
+      '-' + String(carnival.getDate()).padStart(2, '0');
+    if (cvds === ds) return true;
+  }
+
+  // Año Nuevo (abarca la semana de fiestas 28 dic – 2 ene)
+  if (m === 12 && d >= 28) return true;
+  if (m === 1 && d <= 2) return true;
+
+  return false;
+}
+
 // ── Helpers de blocklist ──────────────────────────────────────────────────────
 
 /** Normaliza un CPF quitando puntos y guión → '00000000000' */
@@ -282,12 +331,15 @@ export const createBookingHandler = async (
       label: string;
       discount_percent: number;
       discount_amount: number | null;
+      monthly_limit: number | null;
+      block_holidays: boolean;
       referral_owner_guest_id: string | null;
     } | null = null;
     if (bookingData.offerCode) {
       const today = bookingData.checkIn; // fecha de check-in como referencia de validez
       const { rows: offerRows } = await query(
-        `SELECT id, code, label, discount_percent, discount_amount, apartment_ids, referral_owner_guest_id
+        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit, block_holidays,
+                apartment_ids, referral_owner_guest_id
          FROM apartment_offers
          WHERE code = $1
            AND is_active = true
@@ -320,7 +372,36 @@ export const createBookingHandler = async (
             logger.warn('Código de referido rechazado -- autorreferido', { offerCode: offer.code });
           }
         }
-        if (aptOk && !selfReferral) {
+        // Bloqueo en feriados / carnaval / año nuevo
+        let holidayBlocked = false;
+        if (aptOk && !selfReferral && offer.block_holidays && isHolidayDate(bookingData.checkIn)) {
+          holidayBlocked = true;
+          logger.info('Código de oferta rechazado -- fecha de feriado', {
+            offerCode: offer.code,
+            checkIn: bookingData.checkIn,
+          });
+        }
+
+        // Límite mensual de canjes
+        let monthlyLimitReached = false;
+        if (aptOk && !selfReferral && !holidayBlocked && offer.monthly_limit != null) {
+          const { rows: usageRows } = await query<{ count: string }>(
+            `SELECT COUNT(*) AS count FROM reservations
+             WHERE applied_offer_code = $1
+               AND date_trunc('month', created_at) = date_trunc('month', now())
+               AND status != 'cancelled'`,
+            [offer.code],
+          );
+          if (parseInt(usageRows[0]?.count ?? '0') >= offer.monthly_limit) {
+            monthlyLimitReached = true;
+            logger.info('Código de oferta rechazado -- límite mensual alcanzado', {
+              offerCode: offer.code,
+              limit: offer.monthly_limit,
+            });
+          }
+        }
+
+        if (aptOk && !selfReferral && !holidayBlocked && !monthlyLimitReached) {
           appliedOffer = offer;
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             // Descuento de valor fijo en BRL (ej: R$5)
@@ -475,6 +556,20 @@ export const createBookingHandler = async (
       totalPrice: pricingDetails.totalPrice,
     });
 
+    // Registra el código de oferta aplicado para el conteo de límite mensual
+    if (appliedOffer) {
+      query(
+        `UPDATE reservations SET applied_offer_code = $1 WHERE id = $2`,
+        [appliedOffer.code, booking.id],
+      ).catch((err) => {
+        logger.error('No se pudo registrar applied_offer_code', {
+          bookingId: booking.id,
+          offerCode: appliedOffer!.code,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }
+
     // ── Programa de referidos (idea #49, roadmap.html) ────────────────────────
     // Un único código permanente por huésped: se reutiliza en todas sus reservas
     // para que pueda compartirlo con cuantos amigos quiera. Cada reserva completada
@@ -533,11 +628,12 @@ export const createBookingHandler = async (
           const rewardCode = generateReferralCode();
           const rewardValidTo = new Date();
           rewardValidTo.setDate(rewardValidTo.getDate() + 90);
-          // Premio de R$5 fijo (valor fijo, no porcentual -- ver 0033_referral_fixed_amount.sql)
+          // Premio de R$5 fijo, bloqueado en feriados, máx 3 canjes por mes (ver 0033/0034)
           await query(
             `INSERT INTO apartment_offers
-               (code, label, discount_percent, discount_amount, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-             VALUES ($1, 'Premio por referido', 0, 5, NULL, now()::date, $2::date, true, $3)`,
+               (code, label, discount_percent, discount_amount, monthly_limit, block_holidays,
+                apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
+             VALUES ($1, 'Premio por referido', 0, 5, 3, true, NULL, now()::date, $2::date, true, $3)`,
             [
               rewardCode,
               rewardValidTo.toISOString().slice(0, 10),

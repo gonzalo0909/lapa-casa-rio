@@ -626,8 +626,8 @@ export const createBookingHandler = async (
           }
 
           const rewardCode = generateReferralCode();
-          const rewardValidTo = new Date();
-          rewardValidTo.setDate(rewardValidTo.getDate() + 90);
+          // Válido hasta el 31 de diciembre del año en curso
+          const rewardValidTo = new Date(new Date().getFullYear(), 11, 31);
           // Premio de R$5 fijo, bloqueado en feriados, máx 3 canjes por mes (ver 0033/0034)
           await query(
             `INSERT INTO apartment_offers
@@ -644,6 +644,7 @@ export const createBookingHandler = async (
           await emailService.sendReferralReward(
             { fullName: referrer.full_name, email: referrer.email, language: referrer.language },
             rewardCode,
+            rewardValidTo,
           );
           logger.info('Premio de referido enviado', {
             referrerGuestId: appliedOffer!.referral_owner_guest_id,

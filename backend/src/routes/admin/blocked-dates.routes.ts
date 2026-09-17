@@ -12,7 +12,7 @@ import { createDateBlocker } from '../../lib/ical/date-blocker';
 import { auditLogService } from '../../services/audit-log-service';
 import { ApiResponse } from '../../utils/responses';
 import { validate } from '../../middleware/validation';
-import { redisClient } from '../../cache/redis-client';
+import redisClient from '../../cache/redis-client';
 
 const router = Router();
 const dateBlocker = createDateBlocker();

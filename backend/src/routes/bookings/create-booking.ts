@@ -281,12 +281,13 @@ export const createBookingHandler = async (
       code: string;
       label: string;
       discount_percent: number;
+      discount_amount: number | null;
       referral_owner_guest_id: string | null;
     } | null = null;
     if (bookingData.offerCode) {
       const today = bookingData.checkIn; // fecha de check-in como referencia de validez
       const { rows: offerRows } = await query(
-        `SELECT id, code, label, discount_percent, apartment_ids, referral_owner_guest_id
+        `SELECT id, code, label, discount_percent, discount_amount, apartment_ids, referral_owner_guest_id
          FROM apartment_offers
          WHERE code = $1
            AND is_active = true
@@ -306,7 +307,7 @@ export const createBookingHandler = async (
           offer.apartment_ids.length === 0 ||
           requestedAptIds.every((id) => offer.apartment_ids.includes(id));
         // Un código de referido no aplica sobre la reserva del propio dueño
-        // del código (mismo email) -- si no, cualquiera se autorregala 10%.
+        // del código (mismo email) -- si no, cualquiera se autorregala el descuento.
         let selfReferral = false;
         if (aptOk && offer.referral_owner_guest_id) {
           const { rows: ownerRows } = await query<{ email: string }>(
@@ -321,16 +322,31 @@ export const createBookingHandler = async (
         }
         if (aptOk && !selfReferral) {
           appliedOffer = offer;
-          const discountFactor = 1 - offer.discount_percent / 100;
-          pricingDetails.totalPrice =
-            Math.round(pricingDetails.totalPrice * discountFactor * 100) / 100;
-          pricingDetails.depositAmount =
-            Math.round(pricingDetails.depositAmount * discountFactor * 100) / 100;
-          pricingDetails.remainingAmount =
-            Math.round(pricingDetails.remainingAmount * discountFactor * 100) / 100;
+          if (offer.discount_amount != null && offer.discount_amount > 0) {
+            // Descuento de valor fijo en BRL (ej: R$5)
+            const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);
+            pricingDetails.totalPrice =
+              Math.round((pricingDetails.totalPrice - discount) * 100) / 100;
+            // Proporcionar el descuento entre depósito y saldo según sus proporciones originales
+            const depositRatio = pricingDetails.depositAmount / (pricingDetails.depositAmount + pricingDetails.remainingAmount || 1);
+            const depositDiscount = Math.round(discount * depositRatio * 100) / 100;
+            const remainingDiscount = Math.round((discount - depositDiscount) * 100) / 100;
+            pricingDetails.depositAmount = Math.max(0, Math.round((pricingDetails.depositAmount - depositDiscount) * 100) / 100);
+            pricingDetails.remainingAmount = Math.max(0, Math.round((pricingDetails.remainingAmount - remainingDiscount) * 100) / 100);
+          } else {
+            // Descuento porcentual
+            const discountFactor = 1 - offer.discount_percent / 100;
+            pricingDetails.totalPrice =
+              Math.round(pricingDetails.totalPrice * discountFactor * 100) / 100;
+            pricingDetails.depositAmount =
+              Math.round(pricingDetails.depositAmount * discountFactor * 100) / 100;
+            pricingDetails.remainingAmount =
+              Math.round(pricingDetails.remainingAmount * discountFactor * 100) / 100;
+          }
           logger.info('Oferta aplicada a reserva', {
             offerCode: offer.code,
-            discount: offer.discount_percent,
+            discount_percent: offer.discount_percent,
+            discount_amount: offer.discount_amount,
           });
         }
       }
@@ -517,10 +533,11 @@ export const createBookingHandler = async (
           const rewardCode = generateReferralCode();
           const rewardValidTo = new Date();
           rewardValidTo.setDate(rewardValidTo.getDate() + 90);
+          // Premio de R$5 fijo (valor fijo, no porcentual -- ver 0033_referral_fixed_amount.sql)
           await query(
             `INSERT INTO apartment_offers
-               (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-             VALUES ($1, 'Premio por referido', 10, NULL, now()::date, $2::date, true, $3)`,
+               (code, label, discount_percent, discount_amount, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
+             VALUES ($1, 'Premio por referido', 0, 5, NULL, now()::date, $2::date, true, $3)`,
             [
               rewardCode,
               rewardValidTo.toISOString().slice(0, 10),
@@ -674,6 +691,7 @@ export const createBookingHandler = async (
                       code: appliedOffer.code,
                       label: appliedOffer.label,
                       discount_percent: appliedOffer.discount_percent,
+                      discount_amount: appliedOffer.discount_amount,
                     },
                   }
                 : {}),

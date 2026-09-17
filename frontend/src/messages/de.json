@@ -518,6 +518,7 @@
     "noticeDocument": "Das Einsenden eines Fotos des Ausweisdokuments ist <b>Pflicht</b>, ohne Ausnahme",
     "noticeAge": "Nur für <b>Personen ab 18 Jahren</b>",
     "noticeSmoking": "<b>Rauchen ist verboten</b> im Apartment und in den Gemeinschaftsbereichen des Gebäudes",
+    "noticeCapacity": "Maximale Belegung: <b>2 Personen</b> pro Apartment",
     "stepPayment": "Zahlung",
     "selectCheckinDate": "Wählen Sie das Anreisedatum",
     "selectCheckoutDate": "Wählen Sie das Abreisedatum",

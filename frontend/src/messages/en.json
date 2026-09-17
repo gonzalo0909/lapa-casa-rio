@@ -518,6 +518,7 @@
     "noticeDocument": "Sending a photo of your ID is <b>mandatory</b>, no exceptions",
     "noticeAge": "Guests must be <b>18 or older</b>",
     "noticeSmoking": "<b>Smoking is not allowed</b> in the apartment or anywhere on the property",
+    "noticeCapacity": "Maximum capacity of <b>2 guests</b> per apartment",
     "stepPayment": "Payment",
     "selectCheckinDate": "Select the check-in date",
     "selectCheckoutDate": "Select the check-out date",

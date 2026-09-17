@@ -518,6 +518,7 @@
     "noticeDocument": "L'envoi d'une photo de la pièce d'identité est <b>obligatoire</b>, sans exception",
     "noticeAge": "Réservé aux <b>personnes majeures (18 ans et plus)</b>",
     "noticeSmoking": "<b>Il est interdit de fumer</b> dans l'appartement et dans les parties communes de l'immeuble",
+    "noticeCapacity": "Capacité maximale de <b>2 personnes</b> par appartement",
     "stepPayment": "Paiement",
     "selectCheckinDate": "Sélectionnez la date d'arrivée",
     "selectCheckoutDate": "Sélectionnez la date de départ",

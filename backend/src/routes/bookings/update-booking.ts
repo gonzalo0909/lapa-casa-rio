@@ -4,6 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
+import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -88,20 +89,65 @@ export const updateBookingHandler = async (
         return;
       }
 
-      const availability = await availabilityService.checkAvailability({
-        checkIn: newCheckIn,
-        checkOut: newCheckOut,
-        bedsNeeded: totalBeds,
-      });
+      // Determinar si la reserva corresponde a un apartamento
+      const { rows: bedRows } = await query<{ room_type_id: string; is_apartment: boolean }>(
+        `SELECT b.room_type_id,
+                (rt.property_type = 'apartment') AS is_apartment
+         FROM reservation_beds rb
+         JOIN beds b ON b.id = rb.bed_id
+         JOIN room_types rt ON rt.id = b.room_type_id
+         WHERE rb.reservation_id = $1
+         LIMIT 1`,
+        [id]
+      );
+      const isApartment = bedRows[0]?.is_apartment ?? false;
+      const roomTypeId  = bedRows[0]?.room_type_id;
 
-      if (!availability.available) {
-        res.status(409).json(
-          ApiResponse.error('No hay disponibilidad para las fechas solicitadas', {
-            availableBeds: availability.availableBeds,
-            requestedBeds: totalBeds,
-          })
+      if (isApartment && roomTypeId) {
+        // Disponibilidad de apartamento: SQL directo excluyendo la reserva actual
+        const { rows: aptAvail } = await query<{ available: boolean }>(
+          `SELECT (
+             NOT EXISTS (
+               SELECT 1
+               FROM reservation_beds rb2
+               JOIN beds b2 ON b2.id = rb2.bed_id
+               JOIN reservations res2 ON res2.id = rb2.reservation_id
+               WHERE b2.room_type_id = $1
+                 AND res2.id != $4
+                 AND res2.status != 'cancelled'
+                 AND daterange(rb2.check_in, rb2.check_out, '[)') && daterange($2::date, $3::date, '[)')
+             )
+             AND NOT EXISTS (
+               SELECT 1
+               FROM room_blocks rbl
+               WHERE rbl.room_type_id = $1
+                 AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($2::date, $3::date, '[)')
+             )
+           ) AS available`,
+          [roomTypeId, newCheckIn, newCheckOut, id]
         );
-        return;
+        if (!aptAvail[0]?.available) {
+          res.status(409).json(
+            ApiResponse.error('El apartamento no está disponible para las fechas solicitadas')
+          );
+          return;
+        }
+      } else {
+        // Hostel: usar check_availability() como fuente de verdad
+        const availability = await availabilityService.checkAvailability({
+          checkIn: newCheckIn,
+          checkOut: newCheckOut,
+          bedsNeeded: totalBeds,
+        });
+        if (!availability.available) {
+          res.status(409).json(
+            ApiResponse.error('No hay disponibilidad para las fechas solicitadas', {
+              availableBeds: availability.availableBeds,
+              requestedBeds: totalBeds,
+            })
+          );
+          return;
+        }
       }
 
       const nights = Math.round(

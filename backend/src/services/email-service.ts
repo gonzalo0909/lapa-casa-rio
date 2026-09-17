@@ -10,6 +10,7 @@ import nodemailer from 'nodemailer';
 import { query } from '../config/database';
 import { renderEmailTemplate as _renderEmailTemplate, type TemplateVars } from '../templates/render';
 import { logger } from '../utils/logger';
+import { generateConfirmationToken } from '../utils/confirmation-token';
 import type { Reservation, Guest } from '../types/database';
 
 type Language = 'pt' | 'en' | 'es' | 'fr' | 'de' | 'it';
@@ -789,7 +790,7 @@ export class EmailService {
       // Solo mostrar botón de pago si queda saldo pendiente — si ya está
       // totalmente pagado no tiene sentido mostrar "Pagar ahora".
       paymentButtonHtml: booking.remaining_amount > 0
-        ? paymentButtonHtml(`${FRONTEND_URL}/${language}/payment/${booking.id}`, t.payNow)
+        ? paymentButtonHtml(`${FRONTEND_URL}/${language}/payment/${booking.id}?token=${generateConfirmationToken(booking.id)}`, t.payNow)
         : '',
       sameDayHtml,
     });
@@ -826,7 +827,7 @@ export class EmailService {
       dueDateFormatted: formatDate(checkIn, language),
       daysUntilCheckIn,
       paymentButtonHtml: paymentButtonHtml(
-        `${FRONTEND_URL}/${language}/payment/${booking.id}`,
+        `${FRONTEND_URL}/${language}/payment/${booking.id}?token=${generateConfirmationToken(booking.id)}`,
         t.payNow,
       ),
     });

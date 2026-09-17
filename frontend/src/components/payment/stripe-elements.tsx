@@ -6,7 +6,8 @@ import React from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, type StripeElementsOptions } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : null;
 
 interface StripeElementsWrapperProps {
   clientSecret: string;
@@ -20,6 +21,14 @@ export function StripeElementsWrapper({
   currency,
   children
 }: StripeElementsWrapperProps) {
+  if (!stripePromise) {
+    return (
+      <div style={{ padding: '16px', color: '#dc2626', border: '1px solid #dc2626', borderRadius: '8px' }}>
+        Stripe no está configurado. Contacte al administrador.
+      </div>
+    );
+  }
+
   const options: StripeElementsOptions = {
     clientSecret,
     appearance: {

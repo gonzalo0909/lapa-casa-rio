@@ -24,12 +24,25 @@ export const checkAvailabilityHandler = async (
     const { checkIn, checkOut, beds } = req.query;
     const bedsNeeded = parseInt(beds, 10);
 
+    if (!checkIn || !checkOut) {
+      res.status(400).json(ApiResponse.error('checkIn y checkOut son requeridos (YYYY-MM-DD)'));
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(checkOut)) {
+      res.status(400).json(ApiResponse.error('Formato de fecha inválido. Use YYYY-MM-DD'));
+      return;
+    }
+
     logger.info('Checking availability', { checkIn, checkOut, bedsNeeded });
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
     const now = new Date();
 
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+      res.status(400).json(ApiResponse.error('Fechas inválidas'));
+      return;
+    }
     if (checkInDate < now) {
       res.status(400).json(ApiResponse.error('Check-in date cannot be in the past'));
       return;

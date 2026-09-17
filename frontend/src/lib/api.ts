@@ -328,7 +328,15 @@ export const bookingAPI = {
   /**
    * Confirmation details (número de confirmación, QR, instrucciones de check-in)
    */
-  getConfirmation: (bookingId: string) => api.get(`/bookings/${bookingId}/confirmation`),
+  getConfirmation: (bookingId: string, token?: string) =>
+    api.get(`/bookings/${bookingId}/confirmation${token ? `?token=${encodeURIComponent(token)}` : ''}`),
+
+  /**
+   * Abandon a pending_payment booking (called when guest goes back from payment step).
+   * Requires confirmationToken to prove ownership.
+   */
+  abandon: (bookingId: string, token: string) =>
+    api.post(`/bookings/${bookingId}/abandon`, { token }),
 };
 
 /**
@@ -380,6 +388,11 @@ export const availabilityAPI = {
   getCarnivalDates: () => api.get('/availability/carnival-dates'),
 };
 
+/** Read the HMAC confirmation token stored when the booking was created. */
+export function getBookingToken(reservationId: string): string | undefined {
+  try { return sessionStorage.getItem(`ct_${reservationId}`) ?? undefined; } catch { return undefined; }
+}
+
 /**
  * Payment API endpoints — alineados con backend/src/routes/payments/
  */
@@ -393,12 +406,14 @@ export const paymentAPI = {
     provider: 'stripe' | 'mercadopago';
     currency?: string;
     installments?: number;
+    confirmationToken?: string;
   }) => api.post('/payments/intent', data),
 
   /**
    * Confirm a payment by its ID
    */
-  confirm: (paymentId: string) => api.post('/payments/confirm', { paymentId }),
+  confirm: (paymentId: string, reservationId: string, confirmationToken?: string) =>
+    api.post('/payments/confirm', { paymentId, reservationId, confirmationToken }),
 
   /**
    * Process the deposit shortcut for a reservation
@@ -407,7 +422,8 @@ export const paymentAPI = {
     reservationId: string,
     provider: 'stripe' | 'mercadopago',
     installments?: number,
-  ) => api.post('/payments/deposit', { reservationId, provider, installments }),
+    confirmationToken?: string,
+  ) => api.post('/payments/deposit', { reservationId, provider, installments, confirmationToken }),
 
   /**
    * Process the deposit for an apartment reservation (separate engine from hostel)
@@ -424,12 +440,13 @@ export const paymentAPI = {
   getSurcharge: () => api.get('/payments/surcharge'),
 
   /**
-   * Get payment status
+   * Get payment status — requires reservationId + confirmationToken to prove ownership.
    */
-  getStatus: (paymentId: string) => api.get(`/payments/${paymentId}/status`),
+  getStatus: (paymentId: string, reservationId: string, confirmationToken?: string) =>
+    api.get(`/payments/${paymentId}/status?reservationId=${encodeURIComponent(reservationId)}${confirmationToken ? `&token=${encodeURIComponent(confirmationToken)}` : ''}`),
 
   /**
-   * Full payment history for a reservation
+   * Full payment history for a reservation (admin/staff only)
    */
   getByReservation: (reservationId: string) => api.get(`/payments/reservation/${reservationId}`),
 

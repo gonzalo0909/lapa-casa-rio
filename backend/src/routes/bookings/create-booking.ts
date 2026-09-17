@@ -631,8 +631,9 @@ export const createBookingHandler = async (
           }
 
           const rewardCode = generateReferralCode();
-          // Válido hasta el 31 de diciembre del año en curso
-          const rewardValidTo = new Date(new Date().getFullYear(), 11, 31);
+          // Válido 1 año desde la emisión
+          const rewardValidTo = new Date();
+          rewardValidTo.setFullYear(rewardValidTo.getFullYear() + 1);
           // Premio de R$5 fijo, bloqueado en feriados, máx 3 canjes por mes (ver 0033/0034)
           await query(
             `INSERT INTO apartment_offers

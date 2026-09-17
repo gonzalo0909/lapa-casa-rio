@@ -250,6 +250,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     );
     if (!canReserve) {
       setError(t('formIncomplete'));
+      scrollToContent();
       return;
     }
 
@@ -278,7 +279,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       const res = await bookingAPI.create({
         checkIn,
         checkOut,
-        rooms: [{ roomId: selectedApartment.id, bedsCount: 1 }],
+        rooms: [{ roomId: selectedApartment.id, bedsCount: guestCount }],
         guest: {
           firstName,
           lastName,
@@ -499,8 +500,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         {step === 1 && (
           <ApartmentDateStep
             locale={locale}
-            guestCount={guestCount}
-            onGuestCountChange={handleGuestCountChange}
             checkIn={checkIn}
             checkOut={checkOut}
             onDatesChange={(cin, cout) => {
@@ -678,9 +677,16 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                 </ModalBody>
               </Modal>
             ) : isExpired ? (
-              <div className={styles.errorBanner}>
-                {t('reservationExpired')}
-              </div>
+              <>
+                <div className={styles.errorBanner}>
+                  {t('reservationExpired')}
+                </div>
+                <div className={styles.actions} style={{ marginTop: '1rem' }}>
+                  <button type="button" className={styles.btnBack} onClick={goBack}>
+                    ← {t('backToStep', { n: 3, label: t('stepSummary') })}
+                  </button>
+                </div>
+              </>
             ) : (
               <>
                 {booking.pendingExpiresAt && (

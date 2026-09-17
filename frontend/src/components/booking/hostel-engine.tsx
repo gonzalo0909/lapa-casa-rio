@@ -465,6 +465,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       setBookingCode(displayCode);
       setReservationId(newReservationId);
       setOwnReferralCode(response.data?.booking?.referralCode ?? null);
+      if (response.data?.booking?.confirmationToken && newReservationId) {
+        try { sessionStorage.setItem(`ct_${newReservationId}`, response.data.booking.confirmationToken); } catch {}
+      }
 
       setPaymentInitFailed(false);
       if (payMethod === 'pix') {
@@ -488,7 +491,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         // Tarjeta: Stripe Checkout Session — se abre en nueva pestaña
         try {
           const origin = typeof window !== 'undefined' ? window.location.origin : '';
-          const checkout = await paymentAPI.stripeCheckout(newReservationId, origin);
+          let ct: string | undefined;
+          try { ct = sessionStorage.getItem(`ct_${newReservationId}`) ?? undefined; } catch {}
+          const checkout = await paymentAPI.stripeCheckout(newReservationId, origin, ct);
           const url: string | undefined = checkout.data?.url;
           if (url) {
             setStripeUrl(url);
@@ -528,7 +533,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         }
       } else {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const checkout = await paymentAPI.stripeCheckout(reservationId, origin);
+        let ct: string | undefined;
+        try { ct = sessionStorage.getItem(`ct_${reservationId}`) ?? undefined; } catch {}
+        const checkout = await paymentAPI.stripeCheckout(reservationId, origin, ct);
         const url: string | undefined = checkout.data?.url;
         if (url) {
           setStripeUrl(url);
@@ -562,7 +569,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         }
       } else {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const checkout = await paymentAPI.stripeCheckout(reservationId, origin);
+        let ct: string | undefined;
+        try { ct = sessionStorage.getItem(`ct_${reservationId}`) ?? undefined; } catch {}
+        const checkout = await paymentAPI.stripeCheckout(reservationId, origin, ct);
         const url: string | undefined = checkout.data?.url;
         if (url) {
           setStripeUrl(url);

@@ -77,6 +77,7 @@ export const checkApartmentAvailabilityHandler = async (
     const { rows: apartments } = await query<{
       id: string; code: string; name: string; capacity: number; base_price: string; available: boolean;
       neighborhood: string | null; external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
+      address: string | null; lat: string | null; lng: string | null;
     }>(
       `SELECT
          rt.id,
@@ -88,6 +89,9 @@ export const checkApartmentAvailabilityHandler = async (
          rt.external_rating,
          rt.external_review_count,
          rt.external_rating_label,
+         rt.address,
+         rt.lat,
+         rt.lng,
          (
            NOT EXISTS (
              SELECT 1
@@ -234,6 +238,9 @@ export const checkApartmentAvailabilityHandler = async (
         basePrice,
         available: apt.available,
         neighborhood: apt.neighborhood ?? undefined,
+        street: apt.address ?? undefined,
+        lat: apt.lat !== null ? parseFloat(apt.lat) : undefined,
+        lng: apt.lng !== null ? parseFloat(apt.lng) : undefined,
         externalRating: apt.external_rating !== null ? parseFloat(apt.external_rating) : undefined,
         externalReviewCount: apt.external_review_count ?? undefined,
         externalRatingLabel: apt.external_rating_label ?? undefined,

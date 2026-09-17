@@ -88,6 +88,11 @@ export interface ApartmentAvailability {
   code: string;
   name: string;
   neighborhood?: string;
+  /** Nombre de la calle sin número — para mostrar en el mapa público */
+  street?: string;
+  /** Coordenadas para el mapa; null = usar centroide del barrio como fallback */
+  lat?: number;
+  lng?: number;
   capacity: number;
   basePrice: number;
   priceTotal: number;

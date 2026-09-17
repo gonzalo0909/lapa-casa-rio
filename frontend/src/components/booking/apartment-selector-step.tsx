@@ -9,14 +9,17 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, List, Map } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import styles from './apartment-engine.module.css';
 import { ApartmentCard } from './apartment-card';
 import type { ApartmentAvailability } from '@/types/global';
 import { MAX_APT_GUESTS, type AptLocale } from './apartment-engine.types';
 import { fmtDate, parseDs, rankApartments } from './apartment-engine.utils';
+
+const ApartmentMap = dynamic(() => import('./apartment-map'), { ssr: false });
 
 interface ApartmentSelectorStepProps {
   locale: AptLocale;
@@ -53,6 +56,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
 }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   const rankedApartments = useMemo(
     () => rankApartments(apartments, guestCount),
@@ -198,13 +202,35 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
         <>
           <div className={styles.aptHeader}>
             {datePill}
-            <h2>{t('chooseApartment')}</h2>
-            <p>
-              {t('availableForGuests', {
-                count: rankedApartments.filter(({ apt, disabledReason }) => apt.available && !disabledReason).length,
-                guests: guestCount,
-              })}
-            </p>
+            <div className={styles.aptHeaderRow}>
+              <div>
+                <h2>{t('chooseApartment')}</h2>
+                <p>
+                  {t('availableForGuests', {
+                    count: rankedApartments.filter(({ apt, disabledReason }) => apt.available && !disabledReason).length,
+                    guests: guestCount,
+                  })}
+                </p>
+              </div>
+              <div className={styles.viewToggle}>
+                <button
+                  type="button"
+                  className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
+                  onClick={() => setViewMode('list')}
+                  aria-label="Vista lista"
+                >
+                  <List size={15} /> Lista
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.viewToggleBtn} ${viewMode === 'map' ? styles.viewToggleBtnActive : ''}`}
+                  onClick={() => setViewMode('map')}
+                  aria-label="Vista mapa"
+                >
+                  <Map size={15} /> Mapa
+                </button>
+              </div>
+            </div>
           </div>
 
           {apartments.some((a) => a.pricingFailed) && (
@@ -214,22 +240,32 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
             </div>
           )}
 
-          <div className={styles.aptGrid}>
-            {rankedApartments.map(({ apt, disabledReason }) => (
-              <ApartmentCard
-                key={apt.id}
-                apartment={apt}
-                nights={nights}
-                selected={false}
-                onSelect={onSelect}
-                disabledReason={disabledReason}
-                globalCheckIn={parseDs(checkIn)}
-                globalCheckOut={parseDs(checkOut)}
-                onApplyDates={onApplyDates}
-                guestCount={guestCount}
-              />
-            ))}
-          </div>
+          {viewMode === 'map' ? (
+            <ApartmentMap
+              apartments={apartments}
+              selectedApartment={selectedApartment}
+              nights={nights}
+              onSelect={(apt) => { onSelect(apt); setViewMode('list'); }}
+              locale={locale}
+            />
+          ) : (
+            <div className={styles.aptGrid}>
+              {rankedApartments.map(({ apt, disabledReason }) => (
+                <ApartmentCard
+                  key={apt.id}
+                  apartment={apt}
+                  nights={nights}
+                  selected={false}
+                  onSelect={onSelect}
+                  disabledReason={disabledReason}
+                  globalCheckIn={parseDs(checkIn)}
+                  globalCheckOut={parseDs(checkOut)}
+                  onApplyDates={onApplyDates}
+                  guestCount={guestCount}
+                />
+              ))}
+            </div>
+          )}
 
           <div className={styles.actions}>
             <button type="button" className={styles.btnBack} onClick={onBack}>

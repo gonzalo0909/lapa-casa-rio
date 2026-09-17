@@ -696,7 +696,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                     expiresAt={booking.pendingExpiresAt}
                     onExpire={() => setIsExpired(true)}
                     locale={locale}
-                    className={styles.carnivalWarn}
+                    className={styles.warnBox}
                   />
                 )}
                 <PaymentProcessor

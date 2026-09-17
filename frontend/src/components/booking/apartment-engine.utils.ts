@@ -21,14 +21,6 @@ export function parseDs(s: string): Date {
   return new Date(Number(y), Number(m) - 1, Number(d));
 }
 
-/** Devuelve true si ds cae dentro de alguno de los rangos de Carnaval. */
-export function isCarnivalDs(
-  ds: string,
-  ranges: Array<{ startDate: string; endDate: string }>,
-): boolean {
-  return ranges.some((r) => ds >= r.startDate && ds <= r.endDate);
-}
-
 /** Formatea un datestring YYYY-MM-DD como "DD MMM YYYY" localizado. */
 export function fmtDate(ds: string | null, locale: string): string {
   if (!ds) { return ''; }

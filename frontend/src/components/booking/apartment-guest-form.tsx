@@ -103,8 +103,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const otaPrice = Math.round(totalPrice * 1.15);
   const depositAmount = selectedApartment.depositAmount;
   const depositPct = totalPrice > 0 ? Math.round((depositAmount / totalPrice) * 100) : 0;
-  const isCarnaval = selectedApartment.seasonType === 'carnaval';
-
   // Precio con descuento aplicado (si hay cupón)
   const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
   const displayTotal = Math.round(totalPrice * discountFactor);
@@ -757,9 +755,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <CreditCard size={15} /> {t('paymentNoteTitle')}
           </div>
           <div className={styles.depositPill}>
-            <Lock size={13} /> {isCarnaval
-              ? t('depositPillCarnaval', { pct: depositPct })
-              : t('depositPill', { pct: depositPct })}
+            <Lock size={13} /> {t('depositPill', { pct: depositPct })}
           </div>
           <div className={styles.paymentMethods}>
             <div className={`${styles.paymentMethod} ${styles.paymentMethodPix}`}>

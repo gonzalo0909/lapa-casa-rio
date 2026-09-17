@@ -117,7 +117,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   useEffect(() => { setCin(toDs(globalCheckIn)); }, [globalCheckIn]);
   useEffect(() => { setCout(toDs(globalCheckOut)); }, [globalCheckOut]);
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'min-nights'; minNights?: number } | null>(null);
+  const [result, setResult] = useState<{ available: boolean } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
   const [hoverDs, setHoverDs] = useState<string | null>(null);
@@ -218,7 +218,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       const apartments = res?.data?.apartments ?? [];
       const found = apartments.find((a: { id: string }) => a.id === apartmentId);
       const available = !!found?.available;
-      setResult({ available, reason: available ? undefined : 'occupied' });
+      setResult({ available });
       if (available) {
         onApply({ checkIn: parseDs(cin), checkOut: parseDs(cout) });
       }
@@ -284,9 +284,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       {result && !result.available && (
         <div className={styles.miniOccupiedNote}>
           <AlertTriangle size={13} />{' '}
-          {result.reason === 'min-nights' && result.minNights
-            ? t('minNightsError', { n: result.minNights })
-            : t('apartmentOccupied')}
+          {t('apartmentOccupied')}
         </div>
       )}
 

@@ -518,6 +518,7 @@
     "noticeDocument": "El envío de la foto del documento es <b>obligatorio</b>, sin excepción",
     "noticeAge": "Solo para <b>mayores de 18 años</b>",
     "noticeSmoking": "<b>Prohibido fumar</b> en el apartamento y en las áreas comunes del edificio",
+    "noticeCapacity": "Capacidad máxima de <b>2 personas</b> por apartamento",
     "stepPayment": "Pago",
     "selectCheckinDate": "Selecciona la fecha de entrada",
     "selectCheckoutDate": "Selecciona la fecha de salida",

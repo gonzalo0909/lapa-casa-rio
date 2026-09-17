@@ -24,6 +24,7 @@ import {
   FileText,
   Ban,
   CigaretteOff,
+  Users,
   CheckCircle2,
   Mail,
   Gift,
@@ -491,6 +492,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                 <CigaretteOff size={16} />
               </span>
               <span>{t.rich('noticeSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <Users size={16} />
+              </span>
+              <span>{t.rich('noticeCapacity', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
           </div>
         </div>

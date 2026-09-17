@@ -87,6 +87,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   }));
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  /** true cuando el usuario intentó enviar y debe mostrar errores en campos de acompañante */
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
   const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
     Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
@@ -114,6 +116,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
   // ── Ref para scroll suave al contenido del paso (evitar saltar al hero) ──
   const stepContentRef = useRef<HTMLDivElement>(null);
+  /** Número de secuencia para cancelar llamadas a la API del mini-calendario
+   *  que llegan fuera de orden (race condition al cambiar fechas rápidamente). */
+  const miniCalSeq = useRef(0);
   /** Desplaza suavemente hasta el bloque de contenido del paso activo,
    *  sin volver al hero. delay pequeño para que React haya renderizado. */
   const scrollToContent = useCallback(() => {
@@ -152,10 +157,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     }
     setStep(2);
     loadApartments(checkIn, checkOut);
+    scrollToContent();
   };
 
   const handleMiniCalendarApply = useCallback(
     async (range: { checkIn: Date; checkOut: Date }) => {
+      const seq = ++miniCalSeq.current;   // captura la secuencia de esta llamada
       const ds = (d: Date) =>
         [
           d.getFullYear(),
@@ -172,6 +179,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       setError(null);
       try {
         const res = await availabilityAPI.checkApartments({ checkIn: newCin, checkOut: newCout, guests: guestCount });
+        if (seq !== miniCalSeq.current) { return; }  // llamada obsoleta — descartar
         const apts: ApartmentAvailability[] = res?.data?.apartments ?? [];
         setApartments(apts);
         setSelectedApartment((prev) => {
@@ -179,13 +187,18 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           const updated = apts.find((a) => a.id === prev.id);
           // Mantener el apt seleccionado aunque ya no esté disponible —
           // el selector muestra la vista "bloqueado + alternativas".
-          return updated ?? null;
+          // Si el API no devuelve el apartamento en la respuesta, conservamos
+          // el objeto anterior en lugar de borrar la selección silenciosamente.
+          return updated ?? prev;
         });
       } catch (err) {
+        if (seq !== miniCalSeq.current) { return; }  // llamada obsoleta — descartar
         setError(handleAPIError(err, locale));
         setSelectedApartment(null);
       } finally {
-        setIsLoadingApartments(false);
+        if (seq === miniCalSeq.current) {
+          setIsLoadingApartments(false);
+        }
       }
     },
     [locale, guestCount],
@@ -202,6 +215,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       document: true,
       arrivalTime: true,
     });
+    setSubmitAttempted(true);
     if (!selectedApartment || !checkIn || !checkOut) {
       return;
     }
@@ -215,6 +229,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     const cpfDigits = guestForm.document.replace(/\D/g, '');
     const cpfOk = cpfHasLetter ? true : cpfDigits.length === 11 ? validateCPF(cpfDigits) : false;
     const companionPhotoOk = guestCount <= 1 || !!companionDocumentPhoto;
+    // Validar que cada acompañante tenga nombre y documento válido
+    const companionsOk = additionalGuests.every((g) => {
+      if (!g.fullName.trim()) { return false; }
+      if (/[a-zA-Z]/.test(g.document)) { return true; }      // pasaporte
+      const digits = g.document.replace(/\D/g, '');
+      return digits.length === 11 && validateCPF(digits);     // CPF completo y válido
+    });
     const canReserve = !!(
       guestForm.fullName.trim() &&
       emailOk &&
@@ -222,8 +243,10 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       phoneOk &&
       cpfOk &&
       guestForm.arrivalTime &&
+      documentPhoto &&
       termsAccepted &&
-      companionPhotoOk
+      companionPhotoOk &&
+      companionsOk
     );
     if (!canReserve) {
       setError(t('formIncomplete'));
@@ -307,6 +330,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         checkIn,
         referralCode: b.referralCode ?? null,
       });
+      setPaySuccessOpen(true);
       setStep(4);
       scrollToContent();
     } catch (err) {
@@ -343,6 +367,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     if (step === 2) {
       setStep(1);
     } else if (step === 3) {
+      setSubmitAttempted(false);
       setStep(2);
     } else if (step === 4) {
       // Cancel the pending_payment booking before going back so it doesn't
@@ -538,6 +563,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onCompanionDocumentPhotoChange={setCompanionDocumentPhoto}
             termsAccepted={termsAccepted}
             onTermsAcceptedChange={setTermsAccepted}
+            submitAttempted={submitAttempted}
           />
         )}
 

@@ -356,6 +356,9 @@
 .docUploadBtn { flex: 1; display: flex; align-items: center; gap: .5rem; padding: .55rem .85rem; border-radius: 8px; border: 1.5px dashed var(--border); background: var(--bg-card); color: var(--fg-muted); font-size: .82rem; cursor: pointer; transition: border-color .15s, background .15s; text-align: left; }
 .docUploadBtn:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
 .docUploadSlotFilled .docUploadBtn { border-style: solid; border-color: var(--success-border, #16a34a); background: var(--success-bg); color: var(--success-fg); }
+.docUploadSlotError .docUploadBtn { border-style: solid; border-color: #FCA5A5; color: #991B1B; }
+:global(:root:not([data-theme='light'])) .docUploadSlotError .docUploadBtn { border-color: #FCA5A5; color: #FCA5A5; }
+:global([data-theme='dark']) .docUploadSlotError .docUploadBtn { border-color: #FCA5A5; color: #FCA5A5; }
 .docUploadCheckIcon { color: var(--success-fg); flex-shrink: 0; }
 .docUploadFileName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
 .docUploadClear { flex-shrink: 0; padding: .35rem; border: none; background: none; color: var(--fg-muted); cursor: pointer; border-radius: 4px; }
@@ -466,6 +469,7 @@
 :global([data-theme='dark']) .errorBanner { background: #3B1111; border-color: #7F1D1D; color: #FCA5A5; }
 
 .spinnerWrap { display: flex; justify-content: center; padding: 4rem 0; }
+.loadingInline { font-size: .8rem; color: var(--fg-muted); padding: .3rem 0; }
 
 /* ── Apt bloqueado (seleccionado sin disponibilidad) + alternativas ── */
 

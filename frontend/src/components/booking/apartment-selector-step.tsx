@@ -104,7 +104,9 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
         <>
           <div className={styles.aptHeader}>
             {datePill}
-            <h2>{selectedApartment.name}</h2>
+            {isLoading
+              ? <div className={styles.loadingInline}>{tc('loading')}</div>
+              : <h2>{selectedApartment.name}</h2>}
           </div>
 
           <ApartmentCard
@@ -116,7 +118,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
             globalCheckIn={parseDs(checkIn)}
             globalCheckOut={parseDs(checkOut)}
             onApplyDates={onApplyDates}
-            onContinue={onContinue}
+            onContinue={isLoading ? undefined : onContinue}
             guestCount={guestCount}
           />
 
@@ -130,7 +132,10 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
       ) : selectedApartment && !selectedApartment.available ? (
         /* ── B) Seleccionado pero sin disponibilidad para las nuevas fechas ─── */
         <>
-          <div className={styles.aptHeader}>{datePill}</div>
+          <div className={styles.aptHeader}>
+            {datePill}
+            {isLoading && <div className={styles.loadingInline}>{tc('loading')}</div>}
+          </div>
 
           {/* Banner de aviso */}
           <div className={styles.unavailBanner}>

@@ -70,10 +70,10 @@ router.get('/info', (req: Request, res: Response) => {
 });
 
 /**
- * Debug Sentry Endpoint (solo en non-production o con header secreto)
+ * Debug Sentry Endpoint — solo para admin (evita spam en logs de Sentry)
  * @route GET /debug-sentry
  */
-router.get('/debug-sentry', (_req: Request, _res: Response) => {
+router.get('/debug-sentry', authenticateToken, requireRole(['admin']), (_req: Request, _res: Response) => {
   throw new Error('[Sentry test] Error de prueba desde /debug-sentry — si ves esto en Sentry, está funcionando.');
 });
 

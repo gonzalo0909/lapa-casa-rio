@@ -181,7 +181,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
     setStripeError(null);
     try {
       const res = await (paymentContext === 'apartment'
-        ? paymentAPI.processApartmentDeposit(reservationId, 'stripe')
+        ? paymentAPI.processApartmentDeposit(reservationId, 'stripe', undefined, getBookingToken(reservationId) ?? undefined)
         : paymentAPI.processDeposit(reservationId, 'stripe', undefined, getBookingToken(reservationId)));
       const raw = (res as any).data;
       const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;
@@ -300,6 +300,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
       onBinChange={handleBinChange}
       onSdkError={() => switchToStripe(true)}
       mpCardEndpoint={paymentContext === 'apartment' ? '/payments/apartments/deposit-mp-card' : undefined}
+      confirmationToken={getBookingToken(reservationId) ?? undefined}
     />
   );
 };

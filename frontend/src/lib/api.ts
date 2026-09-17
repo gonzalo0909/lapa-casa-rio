@@ -432,7 +432,8 @@ export const paymentAPI = {
     reservationId: string,
     provider: 'stripe' | 'mercadopago',
     installments?: number,
-  ) => api.post('/payments/apartments/deposit', { reservationId, provider, installments }),
+    confirmationToken?: string,
+  ) => api.post('/payments/apartments/deposit', { reservationId, provider, installments, confirmationToken }),
 
   /**
    * Obtiene el porcentaje de recargo para tarjeta (card_surcharge_percent de system_config)

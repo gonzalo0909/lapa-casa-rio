@@ -78,7 +78,8 @@ const GroupClaimPaySchema = z.object({
 });
 
 // POST /payments/stripe-wa-link — genera una Checkout Session sin reserva previa (flujo WhatsApp)
-router.post('/stripe-wa-link', validate(StripeWaLinkSchema), async (req, res, next) => {
+// Solo staff/admin pueden generar estos links de pago arbitrarios
+router.post('/stripe-wa-link', authenticateToken, requireRole(['admin', 'staff']), validate(StripeWaLinkSchema), async (req, res, next) => {
   try {
     const data = req.body as z.infer<typeof StripeWaLinkSchema>;
     const result = await paymentService.createWhatsappCheckoutLink(data);
@@ -138,15 +139,15 @@ router.post('/confirm', verifyBookingToken, confirmPaymentHandler);
 router.post('/deposit', verifyBookingToken, processDepositHandler);
 
 // POST /payments/deposit-mp-card — pago con tarjeta brasileña via MP (token del SDK)
-router.post('/deposit-mp-card', depositMpCardHandler);
+router.post('/deposit-mp-card', verifyBookingToken, depositMpCardHandler);
 
 // ── Apartamentos (motor separado del hostel) ─────────────────────────────────
 
 // POST /payments/apartments/deposit — depósito PIX o Stripe para apartamentos
-router.post('/apartments/deposit', apartmentProcessDepositHandler);
+router.post('/apartments/deposit', verifyBookingToken, apartmentProcessDepositHandler);
 
 // POST /payments/apartments/deposit-mp-card — tarjeta BR via MP para apartamentos
-router.post('/apartments/deposit-mp-card', apartmentDepositMpCardHandler);
+router.post('/apartments/deposit-mp-card', verifyBookingToken, apartmentDepositMpCardHandler);
 
 // ── Pago Grupal (Feature 2) ──────────────────────────────────────────────────
 

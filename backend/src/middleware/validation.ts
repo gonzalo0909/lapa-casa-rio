@@ -107,10 +107,10 @@ export const bookingSchemas = {
       documentPhotoBase64: z.string().optional(),
     })).optional(),
     specialRequests: z.string().max(1000).optional(),
-    arrivalTime: z.string().optional(),
+    arrivalTime: z.string().max(20).optional(),
     offerCode: z.string().max(50).optional(),
     guestGender: z.enum(['mixed', 'female', 'male']).optional(),
-    source: z.string().optional(),
+    source: z.string().max(100).optional(),
     language: z.enum(['pt', 'en', 'es']).optional(),
   }),
   update: z.object({

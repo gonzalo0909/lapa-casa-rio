@@ -74,6 +74,9 @@ interface MpCardPaymentProps {
   /** Endpoint alternativo para el POST de tarjeta MP. Por defecto usa el
    *  del hostel; pasar '/payments/apartments/deposit-mp-card' para apartamentos. */
   mpCardEndpoint?: string;
+  /** Token de confirmación HMAC que prueba que el cliente hizo la reserva.
+   *  Requerido por el backend en todos los endpoints de depósito. */
+  confirmationToken?: string;
 }
 
 // ── i18n ─────────────────────────────────────────────────────────────────────
@@ -288,6 +291,7 @@ const secureRow: React.CSSProperties = {
 export function MpCardPayment({
   reservationId, depositAmount, surchargePercent, locale, onSuccess, onError,
   initialCardNumber, onBinChange: onBinChangeExternal, onSdkError, mpCardEndpoint,
+  confirmationToken,
 }: MpCardPaymentProps) {
 
   const mpRef = useRef<MercadoPagoInstance | null>(null);
@@ -460,11 +464,12 @@ export function MpCardPayment({
         message: string;
       }>(endpoint, {
         reservationId,
-        token:           tokenResult.id,
-        paymentMethodId: paymentMethodId || 'credit_card',
-        issuerId:        issuerId || '',
+        token:             tokenResult.id,
+        paymentMethodId:   paymentMethodId || 'credit_card',
+        issuerId:          issuerId || '',
         installments,
-        cpf:             cpf.replace(/\D/g, ''),
+        cpf:               cpf.replace(/\D/g, ''),
+        confirmationToken,
       });
 
       const pmt = res.data.payment;

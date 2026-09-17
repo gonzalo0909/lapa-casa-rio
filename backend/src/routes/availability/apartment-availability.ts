@@ -249,6 +249,8 @@ export const checkApartmentAvailabilityHandler = async (
         // para que pueda mostrar una explicación clara al huésped.
         fullPaymentRequired,
         fullPaymentReason: fullPaymentRequired ? 'less_than_48h' : null,
+        // true cuando la query de pricing falló — precio es estimativa (base * noches)
+        pricingFailed: pricingFailed || undefined,
       };
     });
 

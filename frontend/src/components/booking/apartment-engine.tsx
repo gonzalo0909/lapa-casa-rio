@@ -135,11 +135,11 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
   // ── API: carga de apartamentos disponibles ───────────────────────────────
   const loadApartments = useCallback(
-    async (cin: string, cout: string) => {
+    async (cin: string, cout: string, guests: number) => {
       setIsLoadingApartments(true);
       setError(null);
       try {
-        const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout, guests: guestCount });
+        const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout, guests });
         setApartments(res?.data?.apartments ?? []);
       } catch (err) {
         setError(handleAPIError(err, locale));
@@ -147,7 +147,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         setIsLoadingApartments(false);
       }
     },
-    [locale, guestCount],
+    [locale],
   );
 
   // ── Manejadores de paso ──────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       return;
     }
     setStep(2);
-    loadApartments(checkIn, checkOut);
+    loadApartments(checkIn, checkOut, guestCount);
     scrollToContent();
   };
 
@@ -179,7 +179,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       setError(null);
       try {
         const res = await availabilityAPI.checkApartments({ checkIn: newCin, checkOut: newCout, guests: guestCount });
-        if (seq !== miniCalSeq.current) { return; }  // llamada obsoleta — descartar
+        if (seq !== miniCalSeq.current) { return; }
         const apts: ApartmentAvailability[] = res?.data?.apartments ?? [];
         setApartments(apts);
         setSelectedApartment((prev) => {
@@ -342,7 +342,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
   /** Cambia el número de huéspedes y sincroniza la lista de acompañantes.
    *  Al subir a 2 se añade una fila vacía; al bajar a 1 se limpia la lista
-   *  y se descarta la foto del acompañante para que no se envíe al backend. */
+   *  y se descarta la foto del acompañante. En el paso 2 relanza el fetch de
+   *  apartamentos con el nuevo número para que fitsGuests sea correcto. */
   const handleGuestCountChange = useCallback((n: number) => {
     setGuestCount(n);
     setAdditionalGuests((prev) => {
@@ -360,7 +361,10 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     if (n <= 1) {
       setCompanionDocumentPhoto(null);
     }
-  }, []);
+    if (step === 2 && checkIn && checkOut) {
+      loadApartments(checkIn, checkOut, n);
+    }
+  }, [step, checkIn, checkOut, loadApartments]);
 
   const goBack = () => {
     setError(null);

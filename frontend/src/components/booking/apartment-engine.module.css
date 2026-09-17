@@ -469,6 +469,7 @@
 :global([data-theme='dark']) .errorBanner { background: #3B1111; border-color: #7F1D1D; color: #FCA5A5; }
 
 .spinnerWrap { display: flex; justify-content: center; padding: 4rem 0; }
+.loadingInline { font-size: .8rem; color: var(--fg-muted); padding: .3rem 0; }
 
 /* ── Apt bloqueado (seleccionado sin disponibilidad) + alternativas ── */
 

@@ -307,6 +307,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         checkIn,
         referralCode: b.referralCode ?? null,
       });
+      setPaySuccessOpen(true);
       setStep(4);
       scrollToContent();
     } catch (err) {

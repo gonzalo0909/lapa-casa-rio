@@ -460,24 +460,39 @@ export const createBookingHandler = async (
     });
 
     // ── Programa de referidos (idea #49, roadmap.html) ────────────────────────
-    // Cada reserva nueva recibe su propio código de referido (10% para quien
-    // lo use, ver 0032_referral_codes.sql) -- se muestra en la pantalla de
-    // éxito para que el huésped lo comparta. Si esta reserva a su vez redimió
-    // un código, quien lo compartió recibe un email con un premio propio.
+    // Un único código permanente por huésped: se reutiliza en todas sus reservas
+    // para que pueda compartirlo con cuantos amigos quiera. Cada reserva completada
+    // por un amigo genera una recompensa nueva para el dueño del código (email con
+    // otro 10% de descuento válido 90 días para uso personal).
     // Todo fire-and-forget: un fallo acá nunca debe tumbar la reserva ya creada.
     let ownReferralCode: string | null = null;
     try {
-      ownReferralCode = generateReferralCode();
-      const validTo = new Date();
-      validTo.setFullYear(validTo.getFullYear() + 1);
-      await query(
-        `INSERT INTO apartment_offers
-           (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-         VALUES ($1, 'Código de referido', 10, NULL, now()::date, $2::date, true, $3)`,
-        [ownReferralCode, validTo.toISOString().slice(0, 10), booking.guest_id],
+      // Buscar si el huésped ya tiene un código permanente
+      const { rows: existing } = await query<{ code: string }>(
+        `SELECT code FROM apartment_offers
+         WHERE referral_owner_guest_id = $1
+           AND label = 'Código de referido'
+           AND is_active = true
+         ORDER BY created_at ASC
+         LIMIT 1`,
+        [booking.guest_id],
       );
+      if (existing.length > 0) {
+        ownReferralCode = existing[0]!.code;
+      } else {
+        // Primera vez: crear el código permanente (válido 10 años)
+        ownReferralCode = generateReferralCode();
+        const validTo = new Date();
+        validTo.setFullYear(validTo.getFullYear() + 10);
+        await query(
+          `INSERT INTO apartment_offers
+             (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
+           VALUES ($1, 'Código de referido', 10, NULL, now()::date, $2::date, true, $3)`,
+          [ownReferralCode, validTo.toISOString().slice(0, 10), booking.guest_id],
+        );
+      }
     } catch (error) {
-      logger.error('No se pudo generar el código de referido', {
+      logger.error('No se pudo obtener/generar el código de referido', {
         bookingId: booking.id,
         error: error instanceof Error ? error.message : String(error),
       });

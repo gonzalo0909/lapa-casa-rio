@@ -64,9 +64,6 @@
     repeating-linear-gradient(-45deg, transparent, transparent 22px, rgba(255,255,255,.04) 22px, rgba(255,255,255,.04) 23px);
   pointer-events: none;
 }
-.heroBackHome { position: relative; z-index: 1; margin-bottom: .75rem; }
-.heroBackLink { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 700; letter-spacing: .05em; color: #fff; text-decoration: none; background: rgba(0,0,0,.38); border: 1.5px solid rgba(255,255,255,.28); border-radius: 999px; padding: .28em .85em; backdrop-filter: blur(6px); box-shadow: 0 1px 6px rgba(0,0,0,.3); transition: background .15s, border-color .15s; }
-.heroBackLink:hover { background: rgba(0,0,0,.56); border-color: rgba(255,255,255,.55); color: #fff; }
 .heroLocation { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.9); text-shadow: 0 1px 6px rgba(0,0,0,.6); margin-bottom: .75rem; position: relative; z-index: 1; }
 .heroBrand {
   font-family: var(--font-cormorant), Georgia, serif;

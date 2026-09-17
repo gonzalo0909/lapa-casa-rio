@@ -14,7 +14,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
@@ -412,13 +411,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     <div className={styles.root}>
       {/* Hero */}
       <div className={styles.hero}>
-        {/* Volver al home */}
-        <div className={styles.heroBackHome}>
-          <Link href="/" className={styles.heroBackLink}>
-            ← Home
-          </Link>
-        </div>
-        <div className={styles.heroLocation}>{t('heroLocation')}</div>
+<div className={styles.heroLocation}>{t('heroLocation')}</div>
         <h1 className={styles.heroBrand}>
           Lapa Casa<span>{t('heroApartmentsWord')}</span>
         </h1>

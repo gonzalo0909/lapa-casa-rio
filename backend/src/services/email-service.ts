@@ -585,8 +585,8 @@ function paymentButtonHtml(url: string | undefined, label: string): string {
   if (!url) {
     return '';
   }
-  return `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:4px;background-color:#1a1a1a;">
-    <a href="${url}" style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">${label}</a>
+  return `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:6px;background-color:#2C4A8C;">
+    <a href="${url}" style="display:inline-block;padding:13px 28px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;font-family:'Inter',Arial,sans-serif;letter-spacing:0.02em;">${label}</a>
   </td></tr></table>`;
 }
 
@@ -893,9 +893,11 @@ export class EmailService {
       : t.paymentReceivedWelcome;
 
     const remainingSectionHtml = stillDue
-      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-           <tr><td style="padding:6px 0;font-size:14px;color:#555555;">${t.remainingStillDue}</td>
-           <td align="right" style="padding:6px 0;font-size:14px;font-weight:bold;">${formatCurrency(booking.remaining_amount, language)}</td></tr>
+      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff3cd;border-radius:8px;margin-bottom:24px;border:2px solid #F0B429;">
+           <tr><td style="padding:16px 20px;">
+             <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#92400e;">⚠️ ${escapeText(t.remainingStillDue)}</p>
+             <p style="margin:0;font-size:30px;font-weight:700;color:#1A1610;font-family:'Cormorant Garamond',Georgia,serif;letter-spacing:0.01em;">${formatCurrency(booking.remaining_amount, language)}</p>
+           </td></tr>
          </table>`
       : `<p style="margin:0 0 24px;font-size:14px;color:#0a7d2c;font-weight:bold;">${t.fullyPaid}</p>`;
 

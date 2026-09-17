@@ -1,0 +1,30 @@
+# Idea #23 (roadmap.html): que las vulnerabilidades de dependencias se
+# detecten solas en vez de en rondas manuales de auditoría. Agrupa
+# actualizaciones menores/parche para no inundar de PRs -- las mayores
+# siempre llegan aparte, para revisarlas con cuidado (algunas, como la
+# de Next.js, son proyectos propios por el alcance del cambio).
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

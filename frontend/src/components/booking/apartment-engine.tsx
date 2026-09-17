@@ -1,0 +1,700 @@
+// lapa-casa-hostel/frontend/src/components/booking/apartment-engine.tsx
+//
+// Orquestador del motor de reservas de Apartamentos.
+// Gestiona el estado global entre pasos y delega cada paso a su componente:
+//   Paso 1 → ApartmentDateStep
+//   Paso 2 → ApartmentSelectorStep
+//   Paso 3 → ApartmentGuestForm
+//   Paso 4 → PaymentProcessor (inline, mínimo)
+//
+// Dos ajustes deliberados frente al prototipo LCACOPIA (ver PR original):
+//  1. El "10% de desconto no PIX" no existe en el backend real — se omite.
+//  2. El Paso 4 usa el componente de pago real (Stripe + Mercado Pago PIX).
+
+'use client';
+
+import React, { useCallback, useRef, useState } from 'react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
+import {
+  AlertTriangle,
+  KeyRound,
+  DoorOpen,
+  FileText,
+  Ban,
+  CigaretteOff,
+  CheckCircle2,
+  Mail,
+  Gift,
+  Check,
+} from 'lucide-react';
+import styles from './apartment-engine.module.css';
+import { Modal, ModalBody } from '../ui/modal';
+import { PaymentCountdown } from '../payment/payment-countdown';
+import { LoadingSpinner } from '../ui/loading-spinner';
+import { availabilityAPI, bookingAPI, offersAPI, handleAPIError } from '@/lib/api';
+import { ApartmentDateStep } from './apartment-date-step';
+import { ApartmentSelectorStep } from './apartment-selector-step';
+import { ApartmentGuestForm } from './apartment-guest-form';
+import { parseDs, isEmailFmt, validateCPF } from './apartment-engine.utils';
+import type { ApartmentAvailability } from '@/types/global';
+import {
+  type Step,
+  type GuestForm,
+  type CreatedBooking,
+  type ApartmentEngineProps,
+  type AdditionalGuest,
+  type AppliedCoupon,
+  EMPTY_FORM,
+} from './apartment-engine.types';
+
+// Carga @stripe/stripe-js + @stripe/react-stripe-js (SDK pesado) recién al
+// llegar al paso 4 (pago) en vez de en el bundle inicial del wizard.
+const PaymentProcessor = dynamic(
+  () => import('../payment/payment-processor').then((m) => m.PaymentProcessor),
+  {
+    loading: () => (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+        <LoadingSpinner size="md" />
+      </div>
+    ),
+  },
+);
+
+export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' }) => {
+  const t = useTranslations('apartments');
+  const tc = useTranslations('common');
+
+  // ── Navegación ───────────────────────────────────────────────────────────
+  const [step, setStep] = useState<Step>(1);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Paso 1: fechas y huéspedes ───────────────────────────────────────────
+  const [guestCount, setGuestCount] = useState(2);
+  const [checkIn, setCheckIn] = useState<string | null>(null);
+  const [checkOut, setCheckOut] = useState<string | null>(null);
+
+  // ── Paso 2: apartamentos ─────────────────────────────────────────────────
+  const [apartments, setApartments] = useState<ApartmentAvailability[]>([]);
+  const [isLoadingApartments, setIsLoadingApartments] = useState(false);
+  const [selectedApartment, setSelectedApartment] = useState<ApartmentAvailability | null>(null);
+
+  // ── Paso 3: formulario de huésped ────────────────────────────────────────
+  const [guestForm, setGuestForm] = useState<GuestForm>(() => ({
+    ...EMPTY_FORM,
+    country: t('defaultCountry'),
+  }));
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  /** true cuando el usuario intentó enviar y debe mostrar errores en campos de acompañante */
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
+  const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>(() =>
+    Array.from({ length: Math.max(0, guestCount - 1) }, () => ({
+      id: Math.random().toString(36).slice(2),
+      fullName: '',
+      document: '',
+    }))
+  );
+  /** Foto del documento del titular (se convierte a base64 y se envía al crear la reserva) */
+  const [documentPhoto, setDocumentPhoto] = useState<File | null>(null);
+  /** Foto del documento del acompañante — obligatoria cuando guestCount > 1 */
+  const [companionDocumentPhoto, setCompanionDocumentPhoto] = useState<File | null>(null);
+  /** Aceptación de términos — verificada en handleReserve antes de crear la reserva */
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // ── Cupón de descuento ───────────────────────────────────────────────────
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+
+  // ── Paso 4: pago ─────────────────────────────────────────────────────────
+  const [booking, setBooking] = useState<CreatedBooking | null>(null);
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [paySuccessOpen, setPaySuccessOpen] = useState(true);
+  const [referralCopied, setReferralCopied] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+
+  // ── Ref para scroll suave al contenido del paso (evitar saltar al hero) ──
+  const stepContentRef = useRef<HTMLDivElement>(null);
+  /** Desplaza suavemente hasta el bloque de contenido del paso activo,
+   *  sin volver al hero. delay pequeño para que React haya renderizado. */
+  const scrollToContent = useCallback(() => {
+    setTimeout(() => {
+      stepContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  }, []);
+
+  // ── Cálculos derivados ───────────────────────────────────────────────────
+  const nights =
+    checkIn && checkOut
+      ? Math.round((parseDs(checkOut).getTime() - parseDs(checkIn).getTime()) / 86400000)
+      : 0;
+
+  // ── API: carga de apartamentos disponibles ───────────────────────────────
+  const loadApartments = useCallback(
+    async (cin: string, cout: string) => {
+      setIsLoadingApartments(true);
+      setError(null);
+      try {
+        const res = await availabilityAPI.checkApartments({ checkIn: cin, checkOut: cout, guests: guestCount });
+        setApartments(res?.data?.apartments ?? []);
+      } catch (err) {
+        setError(handleAPIError(err, locale));
+      } finally {
+        setIsLoadingApartments(false);
+      }
+    },
+    [locale, guestCount],
+  );
+
+  // ── Manejadores de paso ──────────────────────────────────────────────────
+  const handleDatesContinue = () => {
+    if (!checkIn || !checkOut) {
+      return;
+    }
+    setStep(2);
+    loadApartments(checkIn, checkOut);
+  };
+
+  const handleMiniCalendarApply = useCallback(
+    async (range: { checkIn: Date; checkOut: Date }) => {
+      const ds = (d: Date) =>
+        [
+          d.getFullYear(),
+          String(d.getMonth() + 1).padStart(2, '0'),
+          String(d.getDate()).padStart(2, '0'),
+        ].join('-');
+      const newCin = ds(range.checkIn);
+      const newCout = ds(range.checkOut);
+      setCheckIn(newCin);
+      setCheckOut(newCout);
+      // No deseleccionamos: si el apartamento sigue disponible en las nuevas
+      // fechas lo mantenemos seleccionado para que "Continuar" siga visible.
+      setIsLoadingApartments(true);
+      setError(null);
+      try {
+        const res = await availabilityAPI.checkApartments({ checkIn: newCin, checkOut: newCout, guests: guestCount });
+        const apts: ApartmentAvailability[] = res?.data?.apartments ?? [];
+        setApartments(apts);
+        setSelectedApartment((prev) => {
+          if (!prev) {return null;}
+          const updated = apts.find((a) => a.id === prev.id);
+          // Mantener el apt seleccionado aunque ya no esté disponible —
+          // el selector muestra la vista "bloqueado + alternativas".
+          return updated ?? null;
+        });
+      } catch (err) {
+        setError(handleAPIError(err, locale));
+        setSelectedApartment(null);
+      } finally {
+        setIsLoadingApartments(false);
+      }
+    },
+    [locale, guestCount],
+  );
+
+  /** Valida el formulario y crea la reserva vía API. */
+  const handleReserve = async () => {
+    // Marcar todos los campos como tocados para mostrar errores en el form
+    setTouched({
+      fullName: true,
+      email: true,
+      confirmEmail: true,
+      phone: true,
+      document: true,
+      arrivalTime: true,
+    });
+    setSubmitAttempted(true);
+    if (!selectedApartment || !checkIn || !checkOut) {
+      return;
+    }
+
+    // Validación local (espeja la lógica de ApartmentGuestForm)
+    const emailOk = isEmailFmt(guestForm.email);
+    const confirmEmailOk = emailOk && guestForm.confirmEmail === guestForm.email;
+    const phoneDigits = guestForm.phone.replace(/\D/g, '');
+    const phoneOk = phoneDigits.length >= 10;
+    const cpfHasLetter = /[a-zA-Z]/.test(guestForm.document);
+    const cpfDigits = guestForm.document.replace(/\D/g, '');
+    const cpfOk = cpfHasLetter ? true : cpfDigits.length === 11 ? validateCPF(cpfDigits) : false;
+    const companionPhotoOk = guestCount <= 1 || !!companionDocumentPhoto;
+    // Validar que cada acompañante tenga nombre y documento válido
+    const companionsOk = additionalGuests.every((g) => {
+      if (!g.fullName.trim()) { return false; }
+      if (/[a-zA-Z]/.test(g.document)) { return true; }      // pasaporte
+      const digits = g.document.replace(/\D/g, '');
+      return digits.length === 11 && validateCPF(digits);     // CPF completo y válido
+    });
+    const canReserve = !!(
+      guestForm.fullName.trim() &&
+      emailOk &&
+      confirmEmailOk &&
+      phoneOk &&
+      cpfOk &&
+      guestForm.arrivalTime &&
+      termsAccepted &&
+      companionPhotoOk &&
+      companionsOk
+    );
+    if (!canReserve) {
+      setError(t('formIncomplete'));
+      return;
+    }
+
+    setIsCreatingBooking(true);
+    setError(null);
+    try {
+      // Convierte un File a data URL base64
+      const toBase64 = (file: File): Promise<string> =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Error al leer la foto del documento'));
+          reader.readAsDataURL(file);
+        });
+
+      // Foto del titular
+      const documentPhotoBase64 = documentPhoto ? await toBase64(documentPhoto) : undefined;
+      // Foto del acompañante (si hay uno)
+      const companionPhotoBase64 = companionDocumentPhoto ? await toBase64(companionDocumentPhoto) : undefined;
+
+      const nameParts = guestForm.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] ?? guestForm.fullName.trim();
+      // '' cuando el huésped tiene un solo nombre; el backend une con trim()
+      // → fullName correcto en vez de duplicar el firstName ("João João").
+      const lastName = nameParts.slice(1).join(' ');
+      const res = await bookingAPI.create({
+        checkIn,
+        checkOut,
+        rooms: [{ roomId: selectedApartment.id, bedsCount: 1 }],
+        guest: {
+          firstName,
+          lastName,
+          email: guestForm.email,
+          phone: guestForm.phone,
+          country: guestForm.country,
+          document: guestForm.document,
+          ...(documentPhotoBase64 ? { documentPhotoBase64 } : {}),
+        },
+        // Acompañantes declarados en el checkout (booking_guests)
+        additionalGuests: additionalGuests.map((g, idx) => ({
+          fullName: g.fullName,
+          document: g.document,
+          documentType: /[a-zA-Z]/.test(g.document) ? 'passaporte' : 'CPF',
+          // Adjunta la foto del acompañante solo al primer acompañante (máx. 1)
+          ...(idx === 0 && companionPhotoBase64 ? { documentPhotoBase64: companionPhotoBase64 } : {}),
+        })),
+        arrivalTime: guestForm.arrivalTime || undefined,
+        specialRequests: guestForm.specialRequests.trim() || undefined,
+        language: locale === 'pt' || locale === 'es' ? locale : 'en',
+        source: 'web',
+        guestGender: 'mixed',
+        ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),
+      });
+      const b = res?.data?.booking;
+      if (!b?.id) {
+        throw new Error('No se recibió ID de reserva del servidor');
+      }
+      if (b.confirmationToken) {
+        try { sessionStorage.setItem(`ct_${b.id}`, b.confirmationToken); } catch {}
+      }
+      const totalPrice = selectedApartment.priceTotal;
+      const depositAmount = selectedApartment.depositAmount;
+      // Si hay cupón aplicado, usamos el precio con descuento como fallback
+      const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
+      const discountedTotal = Math.round(totalPrice * discountFactor);
+      const discountedDeposit = Math.round(depositAmount * discountFactor);
+      // Resolver total y deposit antes de calcular remaining para que los tres
+      // valores sean siempre coherentes entre sí (server o frontend, nunca mixtos).
+      const resolvedTotal = b.pricing?.total ?? discountedTotal;
+      const resolvedDeposit = b.payment?.depositAmount ?? discountedDeposit;
+      setBooking({
+        id: b.id,
+        confirmationNumber: b.confirmationNumber,
+        pendingExpiresAt: b.pendingExpiresAt ?? null,
+        total: resolvedTotal,
+        deposit: resolvedDeposit,
+        remaining: b.pricing?.remaining ?? (resolvedTotal - resolvedDeposit),
+        checkIn,
+        referralCode: b.referralCode ?? null,
+      });
+      setPaySuccessOpen(true);
+      setStep(4);
+      scrollToContent();
+    } catch (err) {
+      setError(handleAPIError(err, locale));
+    } finally {
+      setIsCreatingBooking(false);
+    }
+  };
+
+  /** Cambia el número de huéspedes y sincroniza la lista de acompañantes.
+   *  Al subir a 2 se añade una fila vacía; al bajar a 1 se limpia la lista
+   *  y se descarta la foto del acompañante para que no se envíe al backend. */
+  const handleGuestCountChange = useCallback((n: number) => {
+    setGuestCount(n);
+    setAdditionalGuests((prev) => {
+      const needed = Math.max(0, n - 1);
+      if (prev.length < needed) {
+        const toAdd = Array.from({ length: needed - prev.length }, () => ({
+          id: Math.random().toString(36).slice(2),
+          fullName: '',
+          document: '',
+        }));
+        return [...prev, ...toAdd];
+      }
+      return prev.slice(0, needed);
+    });
+    if (n <= 1) {
+      setCompanionDocumentPhoto(null);
+    }
+  }, []);
+
+  const goBack = () => {
+    setError(null);
+    if (step === 2) {
+      setStep(1);
+    } else if (step === 3) {
+      setSubmitAttempted(false);
+      setStep(2);
+    } else if (step === 4) {
+      // Cancel the pending_payment booking before going back so it doesn't
+      // block availability or create a duplicate when the guest re-submits.
+      if (booking?.id) {
+        const bookingId = booking.id;
+        let token: string | null = null;
+        try { token = sessionStorage.getItem(`ct_${bookingId}`); } catch {}
+        if (token) {
+          bookingAPI.abandon(bookingId, token).catch(() => {
+            // Fire-and-forget: the booking will expire on its own if this fails.
+          });
+        }
+      }
+      setBooking(null);
+      setPaymentDone(false);
+      setPaySuccessOpen(false);
+      setIsExpired(false);
+      setStep(3);
+    }
+    scrollToContent();
+  };
+
+  // ── Indicador de pasos ───────────────────────────────────────────────────
+  const STEP_LABELS: { n: Step; label: string }[] = [
+    { n: 1, label: t('stepDates') },
+    { n: 2, label: t('stepApartment') },
+    { n: 3, label: t('stepSummary') },
+    { n: 4, label: t('stepPayment') },
+  ];
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  return (
+    <div className={styles.root}>
+      {/* Hero */}
+      <div className={styles.hero}>
+        {/* Volver al home */}
+        <div className={styles.heroBackHome}>
+          <Link href="/" className={styles.heroBackLink}>
+            ← Home
+          </Link>
+        </div>
+        <div className={styles.heroLocation}>{t('heroLocation')}</div>
+        <h1 className={styles.heroBrand}>
+          Lapa Casa<span>{t('heroApartmentsWord')}</span>
+        </h1>
+        <p className={styles.heroSub}>{t('heroSubtitle')}</p>
+      </div>
+
+      <div className={styles.section}>
+        {step > 1 && (
+          <button type="button" className={styles.backTop} onClick={goBack}>
+            ← {tc('back')}
+          </button>
+        )}
+
+        {/* Barra de progreso */}
+        <div className={styles.steps}>
+          {STEP_LABELS.map((s, i) => (
+            <React.Fragment key={s.n}>
+              {i > 0 && <div className={styles.stepConnector} />}
+              <div className={styles.stepItem}>
+                <span
+                  className={`${styles.stepBadge} ${
+                    step > s.n ? styles.stepBadgeDone : step === s.n ? styles.stepBadgeActive : ''
+                  }`}
+                >
+                  {step > s.n ? '✓' : s.n}
+                </span>
+                <span
+                  className={`${styles.stepLabel} ${step === s.n ? styles.stepLabelActive : ''}`}
+                >
+                  {s.label}
+                </span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {error && <div className={styles.errorBanner}>{error}</div>}
+
+        {/* Avisos generales */}
+        <div className={styles.notices}>
+          <div className={styles.noticesTitle}>
+            <AlertTriangle size={15} strokeWidth={2.2} /> {t('noticesTitle')}
+          </div>
+          <div className={styles.noticesGrid}>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <KeyRound size={16} />
+              </span>
+              <span>{t.rich('noticeCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <DoorOpen size={16} />
+              </span>
+              <span>{t.rich('noticeCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <FileText size={16} />
+              </span>
+              <span>{t.rich('noticeDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <Ban size={16} />
+              </span>
+              <span>{t.rich('noticeAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <CigaretteOff size={16} />
+              </span>
+              <span>{t.rich('noticeSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Anchor de scroll: scrollToContent() apunta aquí (no al hero) */}
+        <div ref={stepContentRef} style={{ scrollMarginTop: '1.5rem' }} />
+
+        {/* ── Paso 1: Fechas ──────────────────────────────────────────────── */}
+        {step === 1 && (
+          <ApartmentDateStep
+            locale={locale}
+            guestCount={guestCount}
+            onGuestCountChange={handleGuestCountChange}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            onDatesChange={(cin, cout) => {
+              setCheckIn(cin);
+              setCheckOut(cout);
+              setSelectedApartment(null);
+            }}
+            onContinue={handleDatesContinue}
+          />
+        )}
+
+        {/* ── Paso 2: Selector de apartamento ─────────────────────────────── */}
+        {step === 2 && (
+          <ApartmentSelectorStep
+            locale={locale}
+            checkIn={checkIn ?? ''}
+            checkOut={checkOut ?? ''}
+            nights={nights}
+            guestCount={guestCount}
+            onGuestCountChange={handleGuestCountChange}
+            apartments={apartments}
+            isLoading={isLoadingApartments}
+            selectedApartment={selectedApartment}
+            onSelect={setSelectedApartment}
+            onDeselect={() => setSelectedApartment(null)}
+            onApplyDates={handleMiniCalendarApply}
+            onBack={goBack}
+            onContinue={() => {
+              setStep(3);
+              scrollToContent();
+            }}
+          />
+        )}
+
+        {/* ── Paso 3: Resumen + formulario de huésped ──────────────────────── */}
+        {step === 3 && selectedApartment && (
+          <ApartmentGuestForm
+            locale={locale}
+            checkIn={checkIn ?? ''}
+            checkOut={checkOut ?? ''}
+            nights={nights}
+            guestCount={guestCount}
+            onGuestCountChange={handleGuestCountChange}
+            selectedApartment={selectedApartment}
+            guestForm={guestForm}
+            touched={touched}
+            isCreatingBooking={isCreatingBooking}
+            onFieldChange={(field, value) => setGuestForm((f) => ({ ...f, [field]: value }))}
+            onFieldBlur={(field) => setTouched((tt) => ({ ...tt, [field]: true }))}
+            onReserve={handleReserve}
+            onBack={goBack}
+            additionalGuests={additionalGuests}
+            onAdditionalGuestsChange={setAdditionalGuests}
+            appliedCoupon={appliedCoupon}
+            onCouponApply={(coupon) => setAppliedCoupon(coupon)}
+            onCouponRemove={() => setAppliedCoupon(null)}
+            onValidateCoupon={async (code) => {
+              const res = await offersAPI.validate(code, selectedApartment.id, checkIn ?? '', checkOut ?? '');
+              return res?.data;
+            }}
+            documentPhoto={documentPhoto}
+            onDocumentPhotoChange={setDocumentPhoto}
+            companionDocumentPhoto={companionDocumentPhoto}
+            onCompanionDocumentPhotoChange={setCompanionDocumentPhoto}
+            termsAccepted={termsAccepted}
+            onTermsAcceptedChange={setTermsAccepted}
+            submitAttempted={submitAttempted}
+          />
+        )}
+
+        {/* ── Paso 4: Pago (Stripe / Mercado Pago PIX) ─────────────────────── */}
+        {step === 4 && booking && (
+          <div>
+            {paymentDone ? (
+              <Modal
+                open={paySuccessOpen}
+                onClose={() => setPaySuccessOpen(false)}
+                size="sm"
+              >
+                <ModalBody>
+                  <div className={styles.paySuccess}>
+                    <div className={styles.paySuccessIcon}>
+                      <CheckCircle2 size={48} strokeWidth={1.6} />
+                    </div>
+                    <div className={styles.paySuccessTitle}>{t('paymentReceived')}</div>
+                    <div className={styles.paySuccessRef}>{booking.confirmationNumber}</div>
+                    <div className={styles.paySuccessMsg}>
+                      {t('paymentSuccessLine1')}
+                      <br />
+                      {t('paymentSuccessLine2')}
+                      <br />
+                      <span className={styles.inlineIconText}>
+                        <Mail size={14} /> {t('paymentSuccessLine3')}
+                      </span>
+                    </div>
+                    {booking.referralCode && (
+                      <div style={{ marginTop: '1.25rem', textAlign: 'left', width: '100%' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '.4rem',
+                            fontSize: '.8rem',
+                            fontWeight: 600,
+                            marginBottom: '.35rem',
+                          }}
+                        >
+                          <Gift size={14} /> {t('referralTitle')}
+                        </div>
+                        <p
+                          style={{
+                            fontSize: '.78rem',
+                            color: 'var(--fg-muted)',
+                            margin: '0 0 .6rem',
+                          }}
+                        >
+                          {t('referralBody')}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                          <code
+                            style={{
+                              flex: 1,
+                              fontFamily: 'monospace',
+                              fontSize: '.9rem',
+                              fontWeight: 700,
+                              letterSpacing: '.04em',
+                              background: 'var(--bg-subtle)',
+                              border: '1px solid var(--border)',
+                              borderRadius: '8px',
+                              padding: '.5rem .7rem',
+                            }}
+                          >
+                            {booking.referralCode}
+                          </code>
+                          <button
+                            type="button"
+                            className={styles.cardBtn}
+                            style={{ width: 'auto', marginTop: 0, whiteSpace: 'nowrap' }}
+                            onClick={() => {
+                              navigator.clipboard
+                                .writeText(booking.referralCode ?? '')
+                                .catch(() => {});
+                              setReferralCopied(true);
+                              setTimeout(() => setReferralCopied(false), 3000);
+                            }}
+                          >
+                            {referralCopied ? (
+                              <>
+                                <Check
+                                  size={13}
+                                  style={{
+                                    display: 'inline',
+                                    verticalAlign: '-2px',
+                                    marginRight: '.3em',
+                                  }}
+                                />
+                                {t('referralCopied')}
+                              </>
+                            ) : (
+                              t('referralCopy')
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.cardBtn}
+                      style={{ marginTop: '1.5rem', width: '100%' }}
+                      onClick={() => setPaySuccessOpen(false)}
+                    >
+                      {tc('close')}
+                    </button>
+                  </div>
+                </ModalBody>
+              </Modal>
+            ) : isExpired ? (
+              <div className={styles.errorBanner}>
+                {t('reservationExpired')}
+              </div>
+            ) : (
+              <>
+                {booking.pendingExpiresAt && (
+                  <PaymentCountdown
+                    expiresAt={booking.pendingExpiresAt}
+                    onExpire={() => setIsExpired(true)}
+                    locale={locale}
+                    className={styles.carnivalWarn}
+                  />
+                )}
+                <PaymentProcessor
+                  reservationId={booking.id}
+                  totalAmount={booking.total}
+                  depositAmount={booking.deposit}
+                  remainingAmount={booking.remaining}
+                  checkInDate={booking.checkIn}
+                  locale={locale}
+                  onSuccess={() => setPaymentDone(true)}
+                  paymentContext="apartment"
+                />
+                <div className={styles.actions} style={{ marginTop: '1.5rem' }}>
+                  <button type="button" className={styles.btnBack} onClick={goBack}>
+                    ← {t('backToStep', { n: 3, label: t('stepSummary') })}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

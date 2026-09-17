@@ -1,0 +1,38 @@
+<!-- lapa-casa-hostel/backend/src/admin/photos.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fotos de huéspedes — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+  .doc-card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+  .doc-card img { width: 100%; height: 160px; object-fit: cover; display: block; background: #f3f4f6; }
+  .doc-card .body { padding: 10px; font-size: 13px; }
+  .doc-card .name { font-weight: 600; }
+  .doc-card .meta { color: #888; font-size: 12px; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Fotos de documento de huéspedes</h2>
+    <p style="font-size:13px;color:#888;">
+      Foto del DNI/pasaporte que cada huésped sube automáticamente al hacer la reserva (verificación de
+      identidad, obligatoria antes de pagar). Esta pantalla es de solo lectura — nadie sube nada acá,
+      llega solo de la reserva.
+    </p>
+    <div id="gallery-msg"></div>
+    <div class="doc-grid" id="doc-grid"></div>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/photos.js"></script>
+</body>
+</html>

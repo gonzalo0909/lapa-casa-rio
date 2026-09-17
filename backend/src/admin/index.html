@@ -1,0 +1,80 @@
+<!-- lapa-casa-hostel/backend/src/admin/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lapa Casa — Admin</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<section id="login-screen">
+  <div class="card">
+    <h2>Iniciar sesión</h2>
+    <div id="login-msg"></div>
+    <form class="stack" id="login-form">
+      <label>Contraseña de administrador
+        <input type="password" id="password" required autofocus>
+      </label>
+      <label id="totp-field" class="hidden">Código de 2FA (app autenticadora)
+        <input type="text" id="totp-token" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code">
+      </label>
+      <button type="submit">Entrar</button>
+    </form>
+    <p style="margin-top:10px;font-size:13px;">
+      <a href="/admin/2fa-recovery.html">¿Perdiste el celular con la app de 2FA?</a>
+    </p>
+  </div>
+</section>
+
+<div id="nav-root" class="hidden"></div>
+<main id="dashboard-screen" class="hidden">
+  <div class="card">
+    <h2>Resumen del mes</h2>
+    <div id="dashboard-msg"></div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ocupación por habitación</h2>
+    <div id="occupancy-chart" class="chart-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ingresos por canal</h2>
+    <div id="revenue-chart" class="chart-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Hoje <span id="today-occupancy" style="font-weight:400;font-size:14px;color:#888;"></span></h2>
+    <div id="today-checkins-msg"></div>
+
+    <h3 style="margin-top:0;">Check-ins</h3>
+    <table id="today-checkins-table">
+      <thead><tr><th>Reserva</th><th>Huésped</th><th>Camas</th><th>Check-out</th><th>Estado</th></tr></thead>
+      <tbody><tr><td colspan="5" style="color:#888;">Cargando...</td></tr></tbody>
+    </table>
+
+    <h3>Check-outs</h3>
+    <table id="today-checkouts-table">
+      <thead><tr><th>Reserva</th><th>Huésped</th><th>Camas</th><th>Check-in</th><th>Estado</th></tr></thead>
+      <tbody><tr><td colspan="5" style="color:#888;">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Próximos check-ins — 7 días</h2>
+    <div id="upcoming-msg"></div>
+    <table id="upcoming-table">
+      <thead><tr><th>Reserva</th><th>Huésped</th><th>Check-in</th><th>Check-out</th><th>Camas</th><th>Estado</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/dashboard.js"></script>
+</body>
+</html>

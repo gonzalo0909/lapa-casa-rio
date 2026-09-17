@@ -1,0 +1,93 @@
+<!-- lapa-casa-hostel/backend/src/admin/security.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguridad — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .qr-box { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 16px 0; }
+  .qr-box img { width: 200px; height: 200px; border: 1px solid var(--border); border-radius: 8px; }
+  .secret-manual { font-family: monospace; font-size: 13px; background: var(--bg, #f5f5f0); padding: 8px 12px; border-radius: 6px; letter-spacing: 1px; }
+  .backup-code-box { background: #fdf6e3; border: 1.5px solid #e0c068; border-radius: 8px; padding: 16px; margin: 16px 0; text-align: center; }
+  .backup-code-box code { font-size: 20px; font-weight: 700; letter-spacing: 2px; display: block; margin-top: 8px; }
+  .status-on { color: #166534; font-weight: 700; }
+  .status-off { color: var(--text-muted); }
+  input#code-input, input#disable-code-input { width: 140px; font-size: 18px; letter-spacing: 4px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+
+<div id="page-msg"></div>
+
+<div class="card">
+  <h2>Doble verificación (2FA)</h2>
+  <p>Además de la contraseña, pide un código de 6 dígitos generado por una app como Google Authenticator o Authy. Opcional -- si no la activás, el login sigue funcionando exactamente igual que hoy.</p>
+  <p>Estado: <span id="status-text">Cargando...</span></p>
+
+  <div id="setup-section" class="hidden">
+    <h3>Activar</h3>
+    <ol>
+      <li>Escaneá este código QR con tu app autenticadora (o ingresá la clave manualmente).</li>
+      <li>Escribí el código de 6 dígitos que te muestra la app para confirmar.</li>
+    </ol>
+    <div class="qr-box">
+      <img id="qr-img" alt="Código QR para 2FA">
+      <span class="secret-manual" id="secret-manual"></span>
+    </div>
+    <div class="stack" style="max-width:260px">
+      <label>Código de la app
+        <input type="text" id="code-input" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+      </label>
+      <button id="confirm-btn">Confirmar y activar</button>
+    </div>
+  </div>
+
+  <div id="backup-section" class="hidden">
+    <div class="backup-code-box">
+      <strong>Guardá este código de respaldo en un lugar seguro.</strong>
+      <p style="margin:6px 0 0;font-size:13px;">Sirve para entrar si perdés el celular con la app. Solo se muestra esta vez.</p>
+      <code id="backup-code-text"></code>
+    </div>
+  </div>
+
+  <div id="disable-section" class="hidden">
+    <h3>Desactivar</h3>
+    <div class="stack" style="max-width:260px">
+      <label>Código de la app (para confirmar)
+        <input type="text" id="disable-code-input" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+      </label>
+      <button id="disable-btn" style="background:var(--danger);border-color:var(--danger)">Desactivar 2FA</button>
+    </div>
+  </div>
+
+  <button id="activate-btn" class="hidden">Activar 2FA</button>
+</div>
+
+<div class="card">
+  <h2>Cambiar contraseña</h2>
+  <p>Mínimo 12 caracteres. Tras el cambio se cerrará la sesión y tendrás que entrar con la nueva contraseña.</p>
+  <div id="pw-msg"></div>
+  <div class="stack" style="max-width:320px">
+    <label>Contraseña actual
+      <input type="password" id="pw-current" autocomplete="current-password">
+    </label>
+    <label>Nueva contraseña
+      <input type="password" id="pw-new" autocomplete="new-password">
+    </label>
+    <label>Confirmar nueva contraseña
+      <input type="password" id="pw-confirm" autocomplete="new-password">
+    </label>
+    <button id="pw-submit">Cambiar contraseña</button>
+  </div>
+</div>
+
+</main>
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/security.js"></script>
+</body>
+</html>

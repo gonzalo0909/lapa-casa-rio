@@ -1,0 +1,11 @@
+# lapa-casa-hostel/render.yaml
+#
+# ARCHIVADO — frontend y landing migraron a Vercel (ver docs/DEPLOY.md y
+# docs/DEPLOY-RECORDATORIO.md). El backend+worker ya estaban en Fly.io
+# desde 2026-09-02. Este archivo ya no define servicios activos; se
+# conserva solo como referencia histórica.
+#
+# Stack actual:
+#   Frontend (Next.js) + Landing estática → Vercel
+#   Backend + Worker (BullMQ)             → Fly.io (ver backend/fly.toml)
+#   Base de datos                         → Supabase (rpowardrcwnhbkzjsiok)

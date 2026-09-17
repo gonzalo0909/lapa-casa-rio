@@ -1,0 +1,7 @@
+npx lint-staged || exit 1
+
+echo "Chequeando tipos (frontend)..."
+(cd frontend && npx tsc --noEmit) || { echo "frontend: hay errores de tipos, commit cancelado."; exit 1; }
+
+echo "Chequeando tipos (backend)..."
+(cd backend && npx tsc --noEmit) || { echo "backend: hay errores de tipos, commit cancelado."; exit 1; }

@@ -12,6 +12,10 @@ import { logger } from '@/utils/logger';
  * Implementa el contrato { increment, decrement, resetKey } usando
  * el RedisCache ya configurado en el proyecto.
  */
+// In-memory fallback used when Redis is unavailable. Per-instance only, but
+// still enforces limits rather than letting everything through.
+const memFallback = new Map<string, { count: number; resetAt: number }>();
+
 class RedisRateLimitStore {
   private prefix: string;
   private windowMs: number;
@@ -19,6 +23,18 @@ class RedisRateLimitStore {
   constructor(prefix: string, windowMs: number) {
     this.prefix = prefix;
     this.windowMs = windowMs;
+  }
+
+  private memIncrement(key: string): { totalHits: number; resetTime: Date } {
+    const now = Date.now();
+    const entry = memFallback.get(key);
+    if (!entry || now >= entry.resetAt) {
+      const resetAt = now + this.windowMs;
+      memFallback.set(key, { count: 1, resetAt });
+      return { totalHits: 1, resetTime: new Date(resetAt) };
+    }
+    entry.count += 1;
+    return { totalHits: entry.count, resetTime: new Date(entry.resetAt) };
   }
 
   async increment(key: string): Promise<{ totalHits: number; resetTime: Date }> {
@@ -30,14 +46,14 @@ class RedisRateLimitStore {
         await redisCache.expire(redisKey, ttlSec);
       }
       // Upstash puede devolver 0 cuando supera su límite de requests en vez de
-      // lanzar una excepción — express-rate-limit exige totalHits >= 1, así que
-      // en ese caso fail-open (no bloqueamos tráfico legítimo).
-      const totalHits = typeof current === 'number' && current > 0 ? current : 1;
-      return { totalHits, resetTime: new Date(Date.now() + ttlSec * 1000) };
+      // lanzar una excepción — en ese caso caemos al fallback en memoria.
+      if (typeof current !== 'number' || current <= 0) {
+        return this.memIncrement(`${this.prefix}:${key}`);
+      }
+      return { totalHits: current, resetTime: new Date(Date.now() + ttlSec * 1000) };
     } catch (err) {
-      // Si Redis falla, fail-open con hit = 1 para no bloquear tráfico legítimo
-      logger.error('RedisRateLimitStore.increment error', { err });
-      return { totalHits: 1, resetTime: new Date(Date.now() + ttlSec * 1000) };
+      logger.error('RedisRateLimitStore.increment error — using in-memory fallback', { err });
+      return this.memIncrement(`${this.prefix}:${key}`);
     }
   }
 

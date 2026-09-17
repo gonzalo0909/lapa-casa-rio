@@ -233,7 +233,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       setError(null);
       try {
         const res = await (paymentContext === 'apartment'
-          ? paymentAPI.processApartmentDeposit(reservationId, 'mercadopago')
+          ? paymentAPI.processApartmentDeposit(reservationId, 'mercadopago', undefined, getBookingToken(reservationId) ?? undefined)
           : paymentAPI.processDeposit(reservationId, 'mercadopago', undefined, getBookingToken(reservationId)));
         const raw = (res as any).data;
         const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;

@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl';
 import {
   Tag, MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
   Ban, CigaretteOff, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
-  Users, ShieldCheck, Trash2, Upload, Camera,
+  Users, Trash2, Upload, Camera,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { CHECKIN_TIMES, MAX_APT_GUESTS, type GuestForm, type AptLocale, type AdditionalGuest, type AppliedCoupon } from './apartment-engine.types';
@@ -547,23 +547,18 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             </div>
             <p className={styles.guestsDeclNote}>{t('guestDeclarationNote')}</p>
 
-            {/* Contador de huéspedes */}
-            <div className={styles.guestCounterInline} style={{ marginBottom: '0.75rem' }}>
+            {/* Toggle Sim / Não */}
+            <div className={styles.companionToggle}>
               <button
                 type="button"
-                className={styles.guestCounterBtn}
-                disabled={guestCount <= 1}
-                onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
-                aria-label={t('decreaseGuests')}
-              >−</button>
-              <span className={styles.guestCounterVal}>{guestCount}</span>
+                className={`${styles.companionToggleBtn} ${guestCount <= 1 ? styles.companionToggleBtnActive : ''}`}
+                onClick={() => onGuestCountChange(1)}
+              >{t('companionNo')}</button>
               <button
                 type="button"
-                className={styles.guestCounterBtn}
-                disabled={guestCount >= MAX_APT_GUESTS}
-                onClick={() => onGuestCountChange(Math.min(MAX_APT_GUESTS, guestCount + 1))}
-                aria-label={t('increaseGuests')}
-              >+</button>
+                className={`${styles.companionToggleBtn} ${guestCount > 1 ? styles.companionToggleBtnActive : ''}`}
+                onClick={() => onGuestCountChange(2)}
+              >{t('companionYes')}</button>
             </div>
 
             {/* Titular — solo lectura, datos del form principal */}
@@ -635,10 +630,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
             {/* Máximo 2 huéspedes por apartamento — botón de agregar acompañante eliminado */}
 
-            <div className={styles.guestsDeclAlert}>
-              <ShieldCheck size={14} />
-              <span>{t('guestDeclarationVerifyNote')}</span>
-            </div>
           </div>
 
         {/* ── Upload de foto do documento (titular) ──────────────── */}

@@ -45,6 +45,7 @@ const StripeWaLinkSchema = z.object({
 
 const StripeCheckoutSchema = z.object({
   reservationId: z.string().trim().min(1),
+  confirmationToken: z.string().trim().min(1),
   frontendUrl: z.string().trim().url().optional(),
 });
 
@@ -93,7 +94,7 @@ router.post('/stripe-wa-link', authenticateToken, requireRole(['admin', 'staff']
 });
 
 // POST /payments/stripe-checkout — genera una Checkout Session de Stripe (pago con tarjeta)
-router.post('/stripe-checkout', validate(StripeCheckoutSchema), async (req, res, next) => {
+router.post('/stripe-checkout', verifyBookingToken, validate(StripeCheckoutSchema), async (req, res, next) => {
   try {
     const { reservationId, frontendUrl } = req.body as z.infer<typeof StripeCheckoutSchema>;
 

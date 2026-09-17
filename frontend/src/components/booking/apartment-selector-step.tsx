@@ -11,7 +11,7 @@
 
 import React, { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { ApartmentCard } from './apartment-card';
 import type { ApartmentAvailability } from '@/types/global';
@@ -206,6 +206,13 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
               })}
             </p>
           </div>
+
+          {apartments.some((a) => a.pricingFailed) && (
+            <div className={styles.unavailBanner} style={{ borderColor: 'var(--color-info, #3b82f6)', background: 'var(--color-info-bg, #eff6ff)' }}>
+              <Info size={16} style={{ flexShrink: 0, marginTop: '.1rem' }} />
+              <span>{t('pricingEstimate')}</span>
+            </div>
+          )}
 
           <div className={styles.aptGrid}>
             {rankedApartments.map(({ apt, disabledReason }) => (

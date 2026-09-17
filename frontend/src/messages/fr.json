@@ -502,6 +502,7 @@
     "yourSelection": "Votre sélection",
     "availableAlternatives": "Disponibles pour ces dates",
     "noAlternativesAvailable": "Aucun appartement disponible pour ces dates. Essayez d'autres dates.",
+    "pricingEstimate": "Prix estimés — impossible de calculer la saison en temps réel.",
     "guestCount": "{count} client(s)",
     "guestCountHint": "Filtre les appartements par capacité",
     "decreaseGuests": "Diminuer le nombre de clients",

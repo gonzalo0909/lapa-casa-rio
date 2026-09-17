@@ -502,6 +502,7 @@
     "yourSelection": "Your selection",
     "availableAlternatives": "Available for these dates",
     "noAlternativesAvailable": "No apartments available for these dates. Try adjusting the dates.",
+    "pricingEstimate": "Estimated prices — season pricing unavailable at this time.",
     "guestCount": "{count} guest(s)",
     "guestCountHint": "Filters apartments by capacity",
     "decreaseGuests": "Decrease guests",

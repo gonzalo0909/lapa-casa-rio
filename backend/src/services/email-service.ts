@@ -188,7 +188,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     referralRewardIntro:
       'Alguém que você indicou acabou de fazer uma reserva no Lapa Casa — obrigado por espalhar a palavra!',
     referralRewardBody:
-      'Como agradecimento, aqui está um código de R$5 de desconto para a sua próxima estadia. Válido por 90 dias.',
+      'Como agradecimento, aqui está um código de R$5 de desconto para a sua próxima estadia.',
     referralRewardClosing: 'Esperamos ver você de novo em breve!',
     useReward: 'Reservar com este código',
     referralCodeTitle: 'Indique um amigo e ganhe R$5 de desconto',
@@ -266,7 +266,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     referralRewardIntro:
       'Someone you referred just booked a stay at Lapa Casa -- thanks for spreading the word!',
     referralRewardBody:
-      'As a thank you, here is a R$5 discount code for your next stay. Valid for 90 days.',
+      'As a thank you, here is a R$5 discount code for your next stay.',
     referralRewardClosing: 'We hope to see you again soon!',
     useReward: 'Book with this code',
     referralCodeTitle: 'Refer a friend and get R$5 off',
@@ -344,7 +344,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     referralRewardIntro:
       'Alguien a quien recomendaste acaba de reservar en Lapa Casa -- ¡gracias por compartirnos!',
     referralRewardBody:
-      'Como agradecimiento, acá tenés un código de R$5 de descuento para tu próxima estadía. Válido por 90 días.',
+      'Como agradecimiento, acá tenés un código de R$5 de descuento para tu próxima estadía.',
     referralRewardClosing: '¡Esperamos verte de nuevo pronto!',
     useReward: 'Reservar con este código',
     referralCodeTitle: 'Recomienda a un amigo y obtén R$5 de descuento',
@@ -414,7 +414,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     leaveReview: 'Laisser un avis',
     referralRewardTitle: 'Votre récompense est arrivée !',
     referralRewardIntro: 'Quelqu\'un que vous avez recommandé vient de réserver au Lapa Casa — merci de nous faire connaître !',
-    referralRewardBody: 'En guise de remerciement, voici un code de réduction de R$5 pour votre prochain séjour. Valable 90 jours.',
+    referralRewardBody: 'En guise de remerciement, voici un code de réduction de R$5 pour votre prochain séjour.',
     referralRewardClosing: 'Nous espérons vous revoir bientôt !',
     useReward: 'Réserver avec ce code',
     referralCodeTitle: 'Parrainez un ami et obtenez R$5 de remise',
@@ -484,7 +484,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     leaveReview: 'Bewertung abgeben',
     referralRewardTitle: 'Ihre Belohnung ist eingetroffen!',
     referralRewardIntro: 'Jemand, den Sie empfohlen haben, hat gerade im Lapa Casa gebucht — vielen Dank!',
-    referralRewardBody: 'Als Dankeschön erhalten Sie einen R$5-Rabattcode für Ihren nächsten Aufenthalt. Gültig für 90 Tage.',
+    referralRewardBody: 'Als Dankeschön erhalten Sie einen R$5-Rabattcode für Ihren nächsten Aufenthalt.',
     referralRewardClosing: 'Wir hoffen, Sie bald wiederzusehen!',
     useReward: 'Mit diesem Code buchen',
     referralCodeTitle: 'Freund empfehlen und R$5 Rabatt erhalten',
@@ -554,7 +554,7 @@ const LABELS: Record<Language, Record<string, string>> = {
     leaveReview: 'Lascia una recensione',
     referralRewardTitle: 'Il tuo premio è arrivato!',
     referralRewardIntro: 'Qualcuno che hai raccomandato ha appena prenotato al Lapa Casa — grazie per aver diffuso la voce!',
-    referralRewardBody: 'Come ringraziamento, ecco un codice sconto di R$5 per il tuo prossimo soggiorno. Valido per 90 giorni.',
+    referralRewardBody: 'Come ringraziamento, ecco un codice sconto di R$5 per il tuo prossimo soggiorno.',
     referralRewardClosing: 'Speriamo di rivederti presto!',
     useReward: 'Prenota con questo codice',
     referralCodeTitle: 'Consiglia un amico e ottieni R$5 di sconto',
@@ -1189,17 +1189,32 @@ export class EmailService {
   async sendReferralReward(
     referrer: { fullName: string; email: string; language: string | null },
     rewardCode: string,
+    expiryDate?: Date,
   ): Promise<SendResult> {
     const language = resolveLanguage(referrer.language);
     const t = LABELS[language];
     const siteUrl = process.env.FRONTEND_URL || 'https://lapacasario.com';
+
+    // Formatea la fecha de vencimiento del premio en el idioma del huésped
+    const expiryLabel = expiryDate ? formatDate(expiryDate, language) : null;
+    const validUntilPhrases: Record<Language, (d: string) => string> = {
+      pt: (d) => `Válido até ${d}.`,
+      en: (d) => `Valid until ${d}.`,
+      es: (d) => `Válido hasta ${d}.`,
+      fr: (d) => `Valable jusqu'au ${d}.`,
+      de: (d) => `Gültig bis ${d}.`,
+      it: (d) => `Valido fino al ${d}.`,
+    };
+    const labelBody = expiryLabel
+      ? `${t.referralRewardBody} ${validUntilPhrases[language](expiryLabel)}`
+      : t.referralRewardBody;
 
     const html = renderEmailTemplate('referral-reward', {
       emailTitle: t.referralRewardTitle,
       labelTitle: t.referralRewardTitle,
       labelGreeting: t.greeting,
       labelIntro: t.referralRewardIntro,
-      labelBody: t.referralRewardBody,
+      labelBody,
       labelClosing: t.referralRewardClosing,
       guestName: referrer.fullName,
       rewardCode,

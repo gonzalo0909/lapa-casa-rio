@@ -13,7 +13,7 @@ import {
   seasonForDateStr,
   CARNAVAL_MIN_NIGHTS,
 } from '@/lib/apartment-seasons';
-import { type AptLocale, MAX_APT_GUESTS } from './apartment-engine.types';
+import { type AptLocale } from './apartment-engine.types';
 import {
   parseDs,
   isCarnivalDs,
@@ -26,8 +26,6 @@ import {
 
 interface ApartmentDateStepProps {
   locale: AptLocale;
-  guestCount: number;
-  onGuestCountChange: (n: number) => void;
   checkIn: string | null;
   checkOut: string | null;
   onDatesChange: (cin: string | null, cout: string | null) => void;
@@ -36,8 +34,6 @@ interface ApartmentDateStepProps {
 
 export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
   locale,
-  guestCount,
-  onGuestCountChange,
   checkIn,
   checkOut,
   onDatesChange,
@@ -207,33 +203,6 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
 
   return (
     <div>
-      {/* Contador de huéspedes */}
-      <div className={styles.guestCounterWrap}>
-        <div className={styles.guestCounterLabel}>
-          {t('guestCount', { count: guestCount })}
-          <small>{t('guestCountHint')}</small>
-        </div>
-        <div className={styles.guestCounterBtns}>
-          <button
-            type="button"
-            className={styles.gcntBtn}
-            disabled={guestCount <= 1}
-            onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
-          >
-            −
-          </button>
-          <span className={styles.gcntVal}>{guestCount}</span>
-          <button
-            type="button"
-            className={styles.gcntBtn}
-            disabled={guestCount >= MAX_APT_GUESTS}
-            onClick={() => onGuestCountChange(Math.min(MAX_APT_GUESTS, guestCount + 1))}
-          >
-            +
-          </button>
-        </div>
-      </div>
-
       {/* Calendario de dos meses */}
       <div className={styles.calWrapper}>
         <button

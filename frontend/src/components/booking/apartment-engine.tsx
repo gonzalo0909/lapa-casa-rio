@@ -496,8 +496,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         {step === 1 && (
           <ApartmentDateStep
             locale={locale}
-            guestCount={guestCount}
-            onGuestCountChange={handleGuestCountChange}
             checkIn={checkIn}
             checkOut={checkOut}
             onDatesChange={(cin, cout) => {

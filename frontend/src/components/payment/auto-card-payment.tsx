@@ -175,7 +175,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
 
   // ── Cambio automático a Stripe ────────────────────────────────────────────
 
-  const switchToStripe = async () => {
+  const switchToStripe = async (fromSdkError = false) => {
     if (stripeData) { setMode('intl'); return; }
     setMode('switching');
     setStripeError(null);
@@ -196,8 +196,8 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
     } catch {
       setStripeError(T('stripeErr', locale));
       setMode('mp'); // volver al form MP si falla
-      // Si llegamos acá desde onSdkError (MP falló), ambos proveedores fallaron
-      setBothFailed(true);
+      // Solo bloqueamos ambos métodos si MP también falló (llamado desde onSdkError)
+      if (fromSdkError) { setBothFailed(true); }
     }
   };
 
@@ -298,7 +298,7 @@ export const AutoCardPayment: React.FC<AutoCardPaymentProps> = ({
       onSuccess={d => onSuccess({ ...d, currency: 'BRL' })}
       onError={onError}
       onBinChange={handleBinChange}
-      onSdkError={switchToStripe}
+      onSdkError={() => switchToStripe(true)}
       mpCardEndpoint={paymentContext === 'apartment' ? '/payments/apartments/deposit-mp-card' : undefined}
     />
   );

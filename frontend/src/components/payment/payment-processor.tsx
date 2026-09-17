@@ -281,7 +281,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   const fmtDate = (iso: string) => {
     try {
       const fmt = loc === 'pt' ? 'pt-BR' : loc === 'es' ? 'es-AR' : 'en-US';
-      return new Date(iso).toLocaleDateString(fmt, { day: '2-digit', month: 'short', year: 'numeric' });
+      return new Date(iso + 'T12:00:00').toLocaleDateString(fmt, { day: '2-digit', month: 'short', year: 'numeric' });
     } catch {
       return iso;
     }

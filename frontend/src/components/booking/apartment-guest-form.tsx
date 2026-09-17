@@ -425,7 +425,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               placeholder={t('phonePlaceholder')}
               autoComplete="tel"
               maxLength={20}
-              inputMode="numeric"
               value={guestForm.phone}
               onChange={(e) => onFieldChange('phone', formatBRPhone(e.target.value))}
               onBlur={() => onFieldBlur('phone')}

@@ -105,6 +105,8 @@ export interface ApartmentAvailability {
   fullPaymentReason?: 'less_than_48h' | null;
   /** true si el apartamento tiene capacidad suficiente para los huéspedes solicitados */
   fitsGuests?: boolean;
+  /** true cuando la query de pricing falló — priceTotal es estimativa (base_price × noches) */
+  pricingFailed?: boolean;
 }
 
 export type ApartmentStep = 'dates' | 'apartment' | 'summary';

@@ -1,7 +1,7 @@
 // lapa-casa-hostel/backend/src/routes/payments/payments.routes.ts
 // 0021: agrega release-deposit y mark-received-at-desk (Stripe Connect + InfinityPay)
 
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import { validate } from '../../middleware/validation';
@@ -22,7 +22,6 @@ import { authenticateToken, requireRole } from '../../middleware/auth';
 import { generateConfirmationToken } from '../../utils/confirmation-token';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
-import type { Request, Response, NextFunction } from 'express';
 
 // Middleware: verifies confirmationToken against the booking's reservationId.
 // Reads reservationId from req.body; token from req.body.confirmationToken.

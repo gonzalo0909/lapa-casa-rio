@@ -116,7 +116,6 @@ async function insertBookingGuests(
   const photo_urls = guests.map((g) => g.photoUrl);
   const photo_pids = guests.map((g) => g.photoPublicId);
   const now = new Date().toISOString();
-  const uploaded_ats = guests.map((g) => (g.photoUrl ? now : null));
   await query(
     `INSERT INTO booking_guests
        (reservation_id, full_name, document_number, document_type, is_titular,

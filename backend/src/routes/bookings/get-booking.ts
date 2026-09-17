@@ -67,6 +67,13 @@ export const getBookingHandler = async (
       refundPercentage = finalPrice > 0 ? Math.round((refundAmount / finalPrice) * 100) : 0;
     }
 
+    const aptResult = await query<{ address: string | null; address_number: string | null; cep: string | null; neighborhood: string | null }>(
+      `SELECT address, address_number, cep, neighborhood FROM room_types WHERE id = $1`,
+      [booking.room_type_id]
+    );
+    const apt = aptResult.rows[0];
+    const aptAddress = [apt?.address, apt?.address_number].filter(Boolean).join(', ') || null;
+
     const nameParts = (booking.guest?.full_name || '').split(' ');
 
     res.status(200).json(ApiResponse.success({
@@ -129,12 +136,10 @@ export const getBookingHandler = async (
       },
       specialRequests: booking.special_requests,
       checkInInstructions: {
-        address: process.env.PROPERTY_ADDRESS ?? 'Rua Silvio Romero 22, Santa Teresa',
-        city: process.env.PROPERTY_CITY ?? 'Rio de Janeiro',
-        state: process.env.PROPERTY_STATE ?? 'RJ',
-        zipCode: process.env.PROPERTY_ZIPCODE ?? '20241-110',
+        address: aptAddress,
+        neighborhood: apt?.neighborhood ?? null,
+        zipCode: apt?.cep ?? null,
         country: 'Brazil',
-        whatsapp: process.env.PROPERTY_WHATSAPP ?? '',
       },
     }, 'Reserva obtenida exitosamente'));
 

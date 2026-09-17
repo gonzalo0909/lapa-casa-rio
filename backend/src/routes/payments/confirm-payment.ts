@@ -4,6 +4,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
+import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -42,6 +43,13 @@ export const confirmPaymentHandler = async (
 
     const booking = await bookingService.getBooking(payment.reservation_id);
     if (!booking) {throw new Error('Reserva no encontrada para el pago confirmado');}
+
+    const aptResult = await query<{ address: string | null; address_number: string | null; neighborhood: string | null }>(
+      `SELECT address, address_number, neighborhood FROM room_types WHERE id = $1`,
+      [booking.room_type_id]
+    );
+    const apt = aptResult.rows[0];
+    const aptAddress = [apt?.address, apt?.address_number, apt?.neighborhood].filter(Boolean).join(', ') || null;
 
     const allPayments = await paymentService.getPaymentsByReservation(payment.reservation_id);
     // El recargo por tarjeta (ver process-deposit.ts) no es progreso real
@@ -91,7 +99,7 @@ export const confirmPaymentHandler = async (
               message: 'Tu reserva está completamente pagada y confirmada.',
               checkInDate: booking.check_in_date,
               checkInTime: '14:00',
-              address: process.env.PROPERTY_ADDRESS ?? 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro',
+              address: aptAddress,
             }
           : {
               message: 'Depósito pagado. El saldo restante vence 7 días antes del check-in.',

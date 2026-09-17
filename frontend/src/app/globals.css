@@ -116,4 +116,8 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-cormorant), Georgia, serif;
+  }
 }

@@ -65,33 +65,6 @@ export const apartmentProcessDepositHandler = async (
       return;
     }
 
-    // Para pagos Stripe, verificar que el propietario del apartamento tenga
-    // Stripe Connect activo. Si no, el dinero iría a la cuenta plataforma sin
-    // ruteo correcto — mejor fallar aquí con un mensaje claro.
-    if (provider === 'stripe') {
-      const { rows: connectRows } = await query(
-        `SELECT ao.stripe_account_id, ao.onboarding_status
-         FROM reservation_beds rb
-         JOIN beds b ON b.id = rb.bed_id
-         JOIN room_types rt ON rt.id = b.room_type_id
-         JOIN apartment_owners ao ON ao.id = rt.owner_id
-         WHERE rb.reservation_id = $1
-           AND rt.property_type = 'apartment'
-         LIMIT 1`,
-        [reservationId]
-      );
-      if (connectRows.length > 0) {
-        const owner = connectRows[0];
-        if (!owner.stripe_account_id || owner.onboarding_status !== 'active') {
-          res.status(503).json(ApiResponse.error(
-            'El pago con tarjeta no está disponible para este apartamento en este momento. ' +
-            'Por favor usá PIX o contactá con el establecimiento.'
-          ));
-          return;
-        }
-      }
-    }
-
     const depositAmount = Number(booking.deposit_amount);
     const depositPercentage = Number(booking.deposit_percent ?? 0.30);
 

@@ -52,6 +52,8 @@ interface ApartmentGuestFormProps {
   /** Aceptación de términos — elevada al motor para que handleReserve pueda verificarla. */
   termsAccepted: boolean;
   onTermsAcceptedChange: (v: boolean) => void;
+  /** true cuando el usuario intentó enviar — fuerza mostrar errores en campos de acompañante */
+  submitAttempted?: boolean;
 }
 
 export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
@@ -81,6 +83,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   onCompanionDocumentPhotoChange,
   termsAccepted,
   onTermsAcceptedChange,
+  submitAttempted = false,
 }) => {
   const t = useTranslations('apartments');
 
@@ -591,7 +594,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                       value={g.fullName}
                       onChange={(e) => updateAdditionalGuest(idx, 'fullName', e.target.value)}
                       onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], fullName: true } }))}
-                      className={`${styles.guestDeclInput} ${companionTouched[g.id]?.fullName && !g.fullName.trim() ? styles.inputInvalid : ''}`}
+                      className={`${styles.guestDeclInput} ${(companionTouched[g.id]?.fullName || submitAttempted) && !g.fullName.trim() ? styles.inputInvalid : ''}`}
                     />
                     <div className={styles.guestDeclDocWrap}>
                       <input
@@ -603,7 +606,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                         onChange={(e) => updateAdditionalGuest(idx, 'document', e.target.value)}
                         onBlur={() => setCompanionTouched((prev) => ({ ...prev, [g.id]: { ...prev[g.id], document: true } }))}
                         className={`${styles.guestDeclInput} ${
-                          ok === true ? styles.inputValid : (companionTouched[g.id]?.document && ok === false) ? styles.inputInvalid : ''
+                          ok === true ? styles.inputValid : ((companionTouched[g.id]?.document || submitAttempted) && ok === false) ? styles.inputInvalid : ''
                         }`}
                       />
                       {ok === true && (
@@ -647,7 +650,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
           <div className={styles.docUploadSlots}>
             {/* Slot titular — foto enviada al servidor al confirmar la reserva */}
-            <div className={`${styles.docUploadSlot} ${documentPhoto ? styles.docUploadSlotFilled : ''}`}>
+            <div className={`${styles.docUploadSlot} ${documentPhoto ? styles.docUploadSlotFilled : submitAttempted ? styles.docUploadSlotError : ''}`}>
               <input
                 ref={photoInputTitular}
                 type="file"

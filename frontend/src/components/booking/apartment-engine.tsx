@@ -187,7 +187,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           const updated = apts.find((a) => a.id === prev.id);
           // Mantener el apt seleccionado aunque ya no esté disponible —
           // el selector muestra la vista "bloqueado + alternativas".
-          return updated ?? null;
+          // Si el API no devuelve el apartamento en la respuesta, conservamos
+          // el objeto anterior en lugar de borrar la selección silenciosamente.
+          return updated ?? prev;
         });
       } catch (err) {
         if (seq !== miniCalSeq.current) { return; }  // llamada obsoleta — descartar

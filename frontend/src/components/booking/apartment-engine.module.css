@@ -20,7 +20,6 @@
  *   --accent: #F0B429      → ámbar (--accent global es rosa 307°, incompatible)
  *   --success-bg/fg        → sin equivalente exacto
  *   --warn-bg/border/fg    → sin equivalente (no hay token warn en globals.css)
- *   #F5E3C4/#8A5A2A        → colores carnaval (sin token)
  *   #DBEBD9/#2C6E49        → colores baixa (sin token)
  *   #FEE2E2/#991B1B        → rojo error/cancelación (--destructive global es rojo-marrón)
  *   #86EFAC/#FCA5A5        → verde/rojo validación input (sin token)
@@ -122,7 +121,6 @@
 /* ── Season legend ─────────────────────────────────────── */
 .seasonLegend { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .seasonChip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
-.seasonChipCarnaval { background: #F5E3C4; color: #8A5A2A; }
 .seasonChipAlta { background: var(--primary-soft); color: var(--primary); }
 .seasonChipMedia { background: var(--bg-subtle); color: var(--fg-muted); border: 1px solid var(--border); }
 .seasonChipBaixa { background: #DBEBD9; color: #2C6E49; }
@@ -153,10 +151,7 @@
 .dateInfo strong { color: var(--fg); }
 .dateInfoHint { font-style: italic; }
 
-.dayCellCarnival { background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.dayCellCarnival .dayNum { color: var(--accent); font-weight: 700; }
-
-.carnivalWarn { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: .75rem 1rem; font-size: .82rem; color: var(--warn-fg); margin-top: .75rem; line-height: 1.4; }
+.warnBox { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: .75rem 1rem; font-size: .82rem; color: var(--warn-fg); margin-top: .75rem; line-height: 1.4; }
 
 .fullPaymentNotice { display: flex; align-items: flex-start; gap: .45rem; background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 8px; padding: .6rem .85rem; font-size: .8rem; color: var(--warn-fg); margin-top: .6rem; line-height: 1.4; }
 
@@ -230,7 +225,6 @@
 .inlineIconText { display: inline-flex; align-items: center; gap: .35rem; }
 .priceMultiplier { font-size: .78rem; font-weight: 600; padding: .12rem .45rem; border-radius: 3px; margin-left: .3rem; }
 .priceBaseStrike { font-size: .85rem; text-decoration: line-through; color: var(--fg-muted); margin-right: .3rem; }
-.badgeCarnaval { background: #F5E3C4; color: #8A5A2A; }
 .badgeAlta { background: var(--primary-soft); color: var(--primary); }
 .badgeBaixa { background: #DBEBD9; color: #2C6E49; }
 

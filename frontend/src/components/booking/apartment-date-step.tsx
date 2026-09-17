@@ -8,11 +8,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import styles from './apartment-engine.module.css';
-import { availabilityAPI } from '@/lib/api';
 import { type AptLocale } from './apartment-engine.types';
 import {
   parseDs,
-  isCarnivalDs,
   fmtDate,
   monthYearLabel,
   weekdayLabels,
@@ -42,24 +40,7 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [carnivalRanges, setCarnivalRanges] = useState<
-    Array<{ startDate: string; endDate: string }>
-  >([]);
-
   const wdays = useMemo(() => weekdayLabels(locale), [locale]);
-
-  // Carga las fechas de Carnaval para pintar las celdas del calendario.
-  // Falla en silencio: es un tinte anticipado, no bloquea la reserva.
-  useEffect(() => {
-    let cancelled = false;
-    availabilityAPI
-      .getCarnivalDates()
-      .then((res) => {
-        if (!cancelled) { setCarnivalRanges(res?.data?.dates ?? []); }
-      })
-      .catch(() => { /* tinte opcional */ });
-    return () => { cancelled = true; };
-  }, []);
 
   const nights =
     checkIn && checkOut
@@ -131,11 +112,8 @@ export const ApartmentDateStep: React.FC<ApartmentDateStepProps> = ({
         s === hoverDs &&
         hoverDs > checkIn
       );
-      const isCarnival = !past && isCarnivalDs(s, carnivalRanges);
-
       let cls = styles.dayCell;
       if (past) { cls += ` ${styles.dayCellPast}`; }
-      else if (isCarnival) { cls += ` ${styles.dayCellCarnival}`; }
 
       if (isCin) {
         cls += ` ${styles.dayCellSelStart}${hasEnd ? ` ${styles.dayCellHasEnd}` : ''}`;

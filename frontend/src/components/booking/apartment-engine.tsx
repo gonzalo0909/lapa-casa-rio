@@ -116,6 +116,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
   // ── Ref para scroll suave al contenido del paso (evitar saltar al hero) ──
   const stepContentRef = useRef<HTMLDivElement>(null);
+  /** Número de secuencia para cancelar llamadas a la API del mini-calendario
+   *  que llegan fuera de orden (race condition al cambiar fechas rápidamente). */
+  const miniCalSeq = useRef(0);
   /** Desplaza suavemente hasta el bloque de contenido del paso activo,
    *  sin volver al hero. delay pequeño para que React haya renderizado. */
   const scrollToContent = useCallback(() => {
@@ -159,6 +162,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
 
   const handleMiniCalendarApply = useCallback(
     async (range: { checkIn: Date; checkOut: Date }) => {
+      const seq = ++miniCalSeq.current;   // captura la secuencia de esta llamada
       const ds = (d: Date) =>
         [
           d.getFullYear(),
@@ -175,6 +179,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       setError(null);
       try {
         const res = await availabilityAPI.checkApartments({ checkIn: newCin, checkOut: newCout, guests: guestCount });
+        if (seq !== miniCalSeq.current) { return; }  // llamada obsoleta — descartar
         const apts: ApartmentAvailability[] = res?.data?.apartments ?? [];
         setApartments(apts);
         setSelectedApartment((prev) => {
@@ -185,10 +190,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           return updated ?? null;
         });
       } catch (err) {
+        if (seq !== miniCalSeq.current) { return; }  // llamada obsoleta — descartar
         setError(handleAPIError(err, locale));
         setSelectedApartment(null);
       } finally {
-        setIsLoadingApartments(false);
+        if (seq === miniCalSeq.current) {
+          setIsLoadingApartments(false);
+        }
       }
     },
     [locale, guestCount],

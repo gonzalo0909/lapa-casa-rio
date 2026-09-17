@@ -76,6 +76,13 @@ export const cancelBookingHandler = async (
       totalPaid,
     });
 
+    // La cancelación de la reserva es independiente del resultado del reembolso.
+    // Se cancela primero; si el reembolso falla, la reserva igual queda cancelada
+    // y se marca para gestión manual — nunca se bloquea la cancelación por un
+    // fallo transitorio de la pasarela de pago.
+    await bookingService.cancelBooking(id, reason || undefined);
+
+    let refundStatus: 'processed' | 'not_applicable' | 'pending_manual' = 'not_applicable';
     if (actualRefund > 0 && completedPayments.length > 0) {
       try {
         await paymentService.processRefund({
@@ -83,17 +90,16 @@ export const cancelBookingHandler = async (
           amount: actualRefund,
           reason: reason || 'Cancelado por el huésped',
         });
+        refundStatus = 'processed';
       } catch (error) {
-        logger.error('Error al procesar reembolso', {
+        refundStatus = 'pending_manual';
+        logger.error('Error al procesar reembolso — reserva cancelada, reembolso pendiente manual', {
           bookingId: id,
+          actualRefund,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
-        res.status(500).json(ApiResponse.error('Error al procesar el reembolso. Contacte soporte.'));
-        return;
       }
     }
-
-    await bookingService.cancelBooking(id, reason || undefined);
 
     logger.info('Reserva cancelada', { bookingId: id, refundAmount: actualRefund });
 
@@ -120,6 +126,7 @@ export const cancelBookingHandler = async (
           originalAmount: totalPaid,
           currency: 'BRL',
           processingTime: '5-10 días hábiles',
+          status: refundStatus,
         },
       }, 'Reserva cancelada exitosamente')
     );

@@ -153,8 +153,6 @@
 .dateInfo strong { color: var(--fg); }
 .dateInfoHint { font-style: italic; }
 
-.dayCellAlta .dayNum { color: var(--primary); font-weight: 600; }
-.dayCellBaixa .dayNum { color: var(--success-fg); }
 .dayCellCarnival { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .dayCellCarnival .dayNum { color: var(--accent); font-weight: 700; }
 

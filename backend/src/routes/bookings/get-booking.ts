@@ -129,12 +129,12 @@ export const getBookingHandler = async (
       },
       specialRequests: booking.special_requests,
       checkInInstructions: {
-        address: 'Rua Silvio Romero 22, Santa Teresa',
-        city: 'Rio de Janeiro',
-        state: 'RJ',
-        zipCode: '20241-110',
+        address: process.env.PROPERTY_ADDRESS ?? 'Rua Silvio Romero 22, Santa Teresa',
+        city: process.env.PROPERTY_CITY ?? 'Rio de Janeiro',
+        state: process.env.PROPERTY_STATE ?? 'RJ',
+        zipCode: process.env.PROPERTY_ZIPCODE ?? '20241-110',
         country: 'Brazil',
-        whatsapp: '+55 21 99999-9999',
+        whatsapp: process.env.PROPERTY_WHATSAPP ?? '',
       },
     }, 'Reserva obtenida exitosamente'));
 

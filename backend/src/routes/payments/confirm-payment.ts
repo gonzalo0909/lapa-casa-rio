@@ -91,7 +91,7 @@ export const confirmPaymentHandler = async (
               message: 'Tu reserva está completamente pagada y confirmada.',
               checkInDate: booking.check_in_date,
               checkInTime: '14:00',
-              address: 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro',
+              address: process.env.PROPERTY_ADDRESS ?? 'Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro',
             }
           : {
               message: 'Depósito pagado. El saldo restante vence 7 días antes del check-in.',

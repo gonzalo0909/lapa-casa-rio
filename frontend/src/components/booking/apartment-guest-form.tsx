@@ -146,7 +146,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const cpfOk = !guestForm.document
     ? null
     : cpfHasLetter
-    ? true
+    ? guestForm.document.trim().length >= 5
     : cpfDigits.length === 11
     ? validateCPF(cpfDigits)
     : false;  // partial CPF: invalid once touched

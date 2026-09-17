@@ -12,6 +12,7 @@ import { createDateBlocker } from '../../lib/ical/date-blocker';
 import { auditLogService } from '../../services/audit-log-service';
 import { ApiResponse } from '../../utils/responses';
 import { validate } from '../../middleware/validation';
+import { redisClient } from '../../cache/redis-client';
 
 const router = Router();
 const dateBlocker = createDateBlocker();
@@ -75,6 +76,7 @@ router.post('/', validate(BlockDatesSchema), async (req, res, next) => {
       new_data: { roomTypeId, startDate, endDate, reason }
     });
 
+    redisClient.invalidateCache('availability:*').catch(() => {});
     res.status(201).json(ApiResponse.success({ id: blockId }, 'Fechas bloqueadas'));
   } catch (error: any) {
     if (

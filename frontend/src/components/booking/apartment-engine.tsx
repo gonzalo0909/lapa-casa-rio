@@ -230,12 +230,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     const phoneOk = phoneDigits.length >= 10;
     const cpfHasLetter = /[a-zA-Z]/.test(guestForm.document);
     const cpfDigits = guestForm.document.replace(/\D/g, '');
-    const cpfOk = cpfHasLetter ? true : cpfDigits.length === 11 ? validateCPF(cpfDigits) : false;
+    const cpfOk = cpfHasLetter ? guestForm.document.trim().length >= 5 : cpfDigits.length === 11 ? validateCPF(cpfDigits) : false;
     const companionPhotoOk = guestCount <= 1 || !!companionDocumentPhoto;
     // Validar que cada acompañante tenga nombre y documento válido
     const companionsOk = additionalGuests.every((g) => {
       if (!g.fullName.trim()) { return false; }
-      if (/[a-zA-Z]/.test(g.document)) { return true; }      // pasaporte
+      if (/[a-zA-Z]/.test(g.document)) { return g.document.trim().length >= 5; }  // pasaporte: mínimo 5 chars
       const digits = g.document.replace(/\D/g, '');
       return digits.length === 11 && validateCPF(digits);     // CPF completo y válido
     });

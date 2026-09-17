@@ -87,6 +87,7 @@ export const bookingSchemas = {
     rooms: z.array(z.object({
       roomId: z.string().min(1),
       bedsCount: z.number().int().positive(),
+      preferredBedIds: z.array(z.string().uuid()).optional(),
     })).min(1),
     guest: z.object({
       firstName: z.string().min(1),
@@ -94,8 +95,22 @@ export const bookingSchemas = {
       email: z.string().email(),
       phone: z.string().optional(),
       country: z.string().optional(),
+      // CPF (hasta 14 chars con formato) o pasaporte (hasta 20 chars)
+      document: z.string().max(30).optional(),
+      // Data URI base64 de la foto del documento de identidad
+      documentPhotoBase64: z.string().optional(),
     }),
-    specialRequests: z.string().optional(),
+    additionalGuests: z.array(z.object({
+      firstName: z.string().min(1),
+      lastName: z.string(),
+      document: z.string().max(30).optional(),
+      documentPhotoBase64: z.string().optional(),
+    })).optional(),
+    specialRequests: z.string().max(1000).optional(),
+    arrivalTime: z.string().optional(),
+    offerCode: z.string().max(50).optional(),
+    guestGender: z.enum(['mixed', 'female', 'male']).optional(),
+    source: z.string().optional(),
     language: z.enum(['pt', 'en', 'es']).optional(),
   }),
   update: z.object({
@@ -112,6 +127,6 @@ export const bookingSchemas = {
       phone: z.string().optional(),
       country: z.string().optional(),
     }).optional(),
-    specialRequests: z.string().optional(),
+    specialRequests: z.string().max(1000).optional(),
   }),
 };

@@ -164,7 +164,10 @@ router.get(
       const payments = await paymentService.getPaymentsByReservation(id);
       const paidAmount = payments
         .filter(p => p.status === 'succeeded')
-        .reduce((sum, p) => sum + Number(p.amount), 0);
+        .reduce((sum, p) => {
+          const baseAmount = (p.provider_metadata as { base_amount?: number } | null)?.base_amount;
+          return sum + (baseAmount ?? Number(p.amount));
+        }, 0);
       const depositAmount = Number(booking.deposit_amount);
       const finalPrice = Number(booking.final_price);
 

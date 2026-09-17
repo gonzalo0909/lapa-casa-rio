@@ -28,7 +28,10 @@ export const getBookingHandler = async (
 
     const paidAmount = payments
       .filter(p => p.status === 'succeeded')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+      .reduce((sum, p) => {
+        const baseAmount = (p.provider_metadata as { base_amount?: number } | null)?.base_amount;
+        return sum + (baseAmount ?? Number(p.amount));
+      }, 0);
 
     const pendingAmount = payments
       .filter(p => p.status === 'pending')

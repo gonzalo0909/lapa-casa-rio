@@ -112,6 +112,11 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
   const wdays = useMemo(() => weekdayNarrowLabels(locale), [locale]);
   const [cin, setCin] = useState<string | null>(toDs(globalCheckIn));
   const [cout, setCout] = useState<string | null>(toDs(globalCheckOut));
+
+  // Sincronizar con el padre cuando cambian las fechas globales (ej: otro
+  // mini-calendario aplicó fechas nuevas mientras este estaba abierto).
+  useEffect(() => { setCin(toDs(globalCheckIn)); }, [globalCheckIn]);
+  useEffect(() => { setCout(toDs(globalCheckOut)); }, [globalCheckOut]);
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'min-nights'; minNights?: number } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());

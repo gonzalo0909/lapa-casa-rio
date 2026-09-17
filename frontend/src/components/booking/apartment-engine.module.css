@@ -442,12 +442,12 @@
 .missingFieldsList { margin-top: 1rem; padding: .7rem 1rem; background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 8px; font-size: .8rem; color: var(--warn-fg); list-style: none; display: flex; flex-wrap: wrap; gap: .35rem .75rem; }
 .missingFieldsList li::before { content: '• '; }
 
-/* Selector −/+ de huéspedes inline en el resumen del paso 3 */
-.guestCounterInline { display: flex; align-items: center; gap: .4rem; }
-.guestCounterBtn { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--primary); background: transparent; color: var(--primary); font-size: 1.1rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; }
-.guestCounterBtn:hover:not(:disabled) { background: var(--primary); color: white; }
-.guestCounterBtn:disabled { opacity: .35; cursor: not-allowed; }
-.guestCounterVal { min-width: 1.4rem; text-align: center; font-weight: 600; font-size: .95rem; }
+/* Toggle Sim/Não — ¿vai com acompanhante? (paso 3) */
+.companionToggle { display: flex; gap: 0; margin-bottom: .75rem; }
+.companionToggleBtn { padding: .38rem 1.1rem; border: 1.5px solid var(--primary); background: transparent; color: var(--primary); font-size: .875rem; font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
+.companionToggleBtn:first-child { border-radius: 20px 0 0 20px; border-right: none; }
+.companionToggleBtn:last-child { border-radius: 0 20px 20px 0; }
+.companionToggleBtnActive { background: var(--primary); color: #fff; }
 
 .btnReserve { width: 100%; background: var(--accent); color: white; border: none; border-radius: 8px; padding: .95rem; font-size: 1.05rem; font-weight: 700; transition: opacity .15s; margin-top: 1.25rem; }
 .btnReserve:hover:not(:disabled) { opacity: .88; }

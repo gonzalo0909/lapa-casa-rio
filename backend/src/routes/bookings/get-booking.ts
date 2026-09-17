@@ -67,6 +67,13 @@ export const getBookingHandler = async (
       refundPercentage = finalPrice > 0 ? Math.round((refundAmount / finalPrice) * 100) : 0;
     }
 
+    const aptResult = await query<{ address: string | null; address_number: string | null; cep: string | null; neighborhood: string | null }>(
+      `SELECT address, address_number, cep, neighborhood FROM room_types WHERE id = $1`,
+      [booking.room_type_id]
+    );
+    const apt = aptResult.rows[0];
+    const aptAddress = [apt?.address, apt?.address_number].filter(Boolean).join(', ') || null;
+
     const nameParts = (booking.guest?.full_name || '').split(' ');
 
     res.status(200).json(ApiResponse.success({
@@ -129,12 +136,10 @@ export const getBookingHandler = async (
       },
       specialRequests: booking.special_requests,
       checkInInstructions: {
-        address: 'Rua Silvio Romero 22, Santa Teresa',
-        city: 'Rio de Janeiro',
-        state: 'RJ',
-        zipCode: '20241-110',
+        address: aptAddress,
+        neighborhood: apt?.neighborhood ?? null,
+        zipCode: apt?.cep ?? null,
         country: 'Brazil',
-        whatsapp: '+55 21 99999-9999',
       },
     }, 'Reserva obtenida exitosamente'));
 

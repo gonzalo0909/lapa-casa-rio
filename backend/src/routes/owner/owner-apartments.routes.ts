@@ -29,6 +29,7 @@ import { auditLogService } from '../../services/audit-log-service';
 import { ApiResponse } from '../../utils/responses';
 import { validate } from '../../middleware/validation';
 import { ownsRoomType, ownsRoomTypeOf } from './owner-scope';
+import { redisClient } from '../../cache/redis-client';
 
 const router = Router();
 
@@ -568,6 +569,7 @@ router.post('/:id/blocks', validate(CreateBlockSchema), async (req, res, next) =
        RETURNING id, start_date::text, end_date::text, block_type, reason, notes, created_at`,
       [req.params.id, start_date, end_date, block_type || 'other', reason ?? null, notes ?? null],
     );
+    redisClient.invalidateCache('availability:*').catch(() => {});
     res.status(201).json(ApiResponse.success(rows[0], 'Bloqueo creado'));
   } catch (error: any) {
     if (error?.code === '23514') {
@@ -587,6 +589,7 @@ router.delete('/blocks/:blockId', async (req, res, next) => {
       return;
     }
     await query(`DELETE FROM room_blocks WHERE id = $1`, [blockId]);
+    redisClient.invalidateCache('availability:*').catch(() => {});
     res.status(200).json(ApiResponse.success(null, 'Bloqueo eliminado'));
   } catch (error) {
     next(error);

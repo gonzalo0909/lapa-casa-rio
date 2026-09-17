@@ -9,7 +9,7 @@
 import React, { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  Tag, MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
+  MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
   Ban, CigaretteOff, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
   Users, Trash2, Upload, Camera,
 } from 'lucide-react';
@@ -100,7 +100,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
   // ── Cálculos derivados de props (variables locales, no estado) ─────────────
   const totalPrice = selectedApartment.priceTotal;
-  const otaPrice = Math.round(totalPrice * 1.15);
   const depositAmount = selectedApartment.depositAmount;
   const depositPct = totalPrice > 0 ? Math.round((depositAmount / totalPrice) * 100) : 0;
   // Precio con descuento aplicado (si hay cupón)
@@ -108,9 +107,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const displayTotal = Math.round(totalPrice * discountFactor);
   const displayDeposit = Math.round(depositAmount * discountFactor);
   const discountAmount = totalPrice - displayTotal;
-  // El ahorro vs. OTA usa el precio final (con cupón si lo hay) para que
-  // el banner refleje el beneficio real de reservar directamente.
-  const otaSaving = otaPrice - displayTotal;
 
   /** Valida el cupón ingresado contra el backend */
   const handleApplyCoupon = async () => {
@@ -150,7 +146,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const cpfOk = !guestForm.document
     ? null
     : cpfHasLetter
-    ? true
+    ? guestForm.document.trim().length >= 5
     : cpfDigits.length === 11
     ? validateCPF(cpfDigits)
     : false;  // partial CPF: invalid once touched
@@ -207,12 +203,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
 
   return (
     <div>
-      {/* Banner OTA */}
-      <div className={styles.otaBanner}>
-        <Tag size={15} />
-        <span>{t.rich('otaBanner', { b: (chunks) => <strong>{chunks}</strong>, saving: otaSaving.toLocaleString('pt-BR') })}</span>
-      </div>
-
       {/* Tarjeta de resumen */}
       <div className={styles.summaryCard}>
         <h3>{t('bookingSummary')}</h3>

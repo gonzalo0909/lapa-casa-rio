@@ -77,7 +77,8 @@ export class PricingService {
         `SELECT base_price FROM room_types WHERE id = $1`,
         [room.roomId]
       );
-      const roomBasePrice = rows[0] ? parseFloat(rows[0].base_price) : 60;
+      if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);
+      const roomBasePrice = parseFloat(rows[0].base_price);
       basePrice += roomBasePrice * nights * room.bedsCount;
 
       const { rows: priceRows } = await query<{ p: string }>(
@@ -137,7 +138,8 @@ export class PricingService {
       `SELECT base_price FROM room_types WHERE id = $1`,
       [roomTypeId]
     );
-    const basePrice = rows[0] ? parseFloat(rows[0].base_price) : 60;
+    if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${roomTypeId}`);
+    const basePrice = parseFloat(rows[0].base_price);
     const multiplier = await this.getSeasonMultiplier(checkInDate);
     return Math.round(basePrice * multiplier * 100) / 100;
   }
@@ -165,7 +167,8 @@ export class PricingService {
       `SELECT base_price FROM room_types WHERE id = $1`,
       [roomTypeId]
     );
-    const basePrice = rows[0] ? parseFloat(rows[0].base_price) : 60;
+    if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${roomTypeId}`);
+    const basePrice = parseFloat(rows[0].base_price);
     const bookingDate = todayDate();
     const { rows: priceRows } = await query<{ p: string }>(
       `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
@@ -176,10 +179,6 @@ export class PricingService {
     const totalPrice = Math.round(preDiscountTotal * (1 - groupDiscount) * 100) / 100;
     const deposit = await this.calculateDeposit(totalPrice, totalBeds);
     return { totalPrice, depositAmount: deposit.amount, remainingAmount: deposit.remaining, nights };
-  }
-
-  calculateBasePrice(totalBeds: number, nights: number): number {
-    return 60 * totalBeds * nights;
   }
 
   /** calculate_group_discount() -- nunca hardcodear los tramos en JS; los tramos viven en group_discount_tiers, editables desde el admin. */

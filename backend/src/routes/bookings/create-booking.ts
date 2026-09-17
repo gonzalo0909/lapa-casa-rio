@@ -689,10 +689,10 @@ export const createBookingHandler = async (
     }
 
     // ── Registro de hóspedes declarados (booking_guests) ─────────────────────
-    // Fire-and-forget: si falla, la reserva ya quedó guardada correctamente.
-    // El admin puede completar el registro en el check-in físico.
-    (async () => {
-      // Subir fotos de documento de acompañantes a Cloudinary antes del INSERT
+    // Awaited before sending the response so failures are logged synchronously
+    // and the admin is alerted. The booking itself is already persisted; on
+    // error we continue rather than returning 500 (the guest can still pay).
+    try {
       const additionalWithPhotos = await Promise.all(
         (bookingData.additionalGuests ?? []).map(async (g) => {
           if (!g.documentPhotoBase64) { return g; }
@@ -718,12 +718,12 @@ export const createBookingHandler = async (
         },
         additionalWithPhotos,
       );
-    })().catch((err) => {
-      logger.error('No se pudo insertar booking_guests', {
+    } catch (err) {
+      logger.error('No se pudo insertar booking_guests — revisar manualmente', {
         bookingId: booking.id,
         error: err instanceof Error ? err.message : String(err),
       });
-    });
+    }
 
     // Envio de confirmacion, no bloqueante -- se resuelve con los datos ya
     // insertados (guest joined via bookingService.getBooking), no con el

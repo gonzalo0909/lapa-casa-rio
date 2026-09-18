@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/room-type-photos.routes.ts
 //
 // Gestión de fotos por apartamento (room_type de tipo 'apartment').
 // Montado bajo /admin/room-types (admin.routes.ts), con auth JWT ya aplicada.

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/lib/pricing.ts
 
 /**
  * Date validation for the booking flow.

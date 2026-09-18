@@ -7,7 +7,7 @@
   fallback cross-provider, ver `docs/ARCHITECTURE.md`), servicio caído.
 - **Panel admin** (`/admin`) → Dashboard: check-ins próximos, ocupación.
 - Si `REDIS_URL` está configurada: confirmar que el proceso de workers sigue vivo
-  (`fly logs -a lapa-casa-hostel-worker` — worker y backend corren en Fly.io).
+  (`fly logs -a lapa-casa-hostel` — worker y backend corren en Fly.io).
   Sin workers corriendo, los reintentos de pago y los
   emails encolados no se procesan (la creación de reservas en sí no se ve afectada).
 

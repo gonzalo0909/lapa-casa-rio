@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lapa-casa-hostel/scripts/health-check.sh
 #
 # Verifica que los servicios publicos esten respondiendo. Pensado para
 # correr a mano despues de un deploy, o desde un cron/monitor externo

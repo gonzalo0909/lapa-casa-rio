@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/utils/totp.ts
 //
 // 2FA (TOTP, Google Authenticator/Authy compatibles) para el login de
 // admin (idea #22, roadmap.html). otplib v13 cambió a una API funcional

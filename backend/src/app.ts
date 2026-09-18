@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/app.ts
 
 import express, { type Application, type Request, type Response, type NextFunction } from 'express';
 import path from 'path';

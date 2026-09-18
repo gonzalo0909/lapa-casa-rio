@@ -1,7 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client';
 
-// lapa-casa-hostel/frontend/src/app/owner/accept-terms/page.tsx
 //
 // Página de aceite do Termo de Adesão — Administrador.
 // Exibida automaticamente pelo useOwnerAuth quando termAcceptedAt === null.

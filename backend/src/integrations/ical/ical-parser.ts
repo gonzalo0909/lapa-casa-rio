@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/integrations/ical/ical-parser.ts
 
 import ical, { type VEvent } from 'node-ical';
 import { promises as dns } from 'dns';

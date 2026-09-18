@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/payment/stripe-elements.tsx
 
 'use client';
 

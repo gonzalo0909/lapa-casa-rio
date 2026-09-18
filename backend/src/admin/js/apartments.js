@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/apartments.js
 // Editor completo de apartamentos: datos, fotos y resenas.
 // Cargado como archivo externo (CSP: scriptSrc 'self').
 

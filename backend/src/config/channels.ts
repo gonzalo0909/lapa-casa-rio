@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/config/channels.ts
 //
 // Configuracion estatica del channel manager: mapping de room_types
 // locales (por `code` real, ver 0001_seed.sql) a nombres/alias usados

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/availability-service.ts
 //
 // REQUISITO CRITICO #6: check_availability() y get_flexible_room_status()
 // (migracion 0005) son la unica fuente de verdad sobre que cama esta

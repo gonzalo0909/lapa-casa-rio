@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/integrations/google-sheets/sheets-client.ts
 //
 // Cliente de bajo nivel contra la API de Google Sheets. Reescrito
 // contra el schema real (0002_tables.sql) y la estructura de columnas

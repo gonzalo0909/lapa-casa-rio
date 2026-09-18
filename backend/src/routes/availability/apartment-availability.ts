@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/availability/apartment-availability.ts
 //
 // Disponibilidad de apartamentos. Cada apartamento es una unidad completa
 // (1 cama en la tabla beds = la unidad entera). El precio es por noche

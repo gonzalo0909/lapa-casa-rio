@@ -1,4 +1,3 @@
-# lapa-casa-hostel/docs/deployment/setup-guide.md
 
 # Lapa Casa Hostel - Complete Setup Guide
 
@@ -44,8 +43,8 @@
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/lapa-casa-hostel/lapa-casa-hostel.git
-cd lapa-casa-hostel
+git clone https://github.com/gonzalo0909/lapa-casa-rio.git
+cd lapa-casa-rio
 ```
 
 ### 2. Install Dependencies
@@ -489,7 +488,7 @@ node --prof backend/dist/server.js
 
 - **Documentation**: `/docs` folder
 - **API Docs**: `https://api.lapacasario.com/docs`
-- **GitHub Issues**: https://github.com/lapa-casa-hostel/lapa-casa-hostel/issues
+- **GitHub Issues**: https://github.com/gonzalo0909/lapa-casa-rio/issues
 - **Email Support**: lapalandiarj@gmail.com
 
 ---

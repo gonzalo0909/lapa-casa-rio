@@ -7,9 +7,7 @@
 -- genero (ver availability-service.ts) -- mixed es lo semanticamente
 -- correcto para una unidad completa sin logica de camas por sexo.
 --
--- Datos (nombre, capacidad, precio) y orden de codigo tomados de
--- LCACOPIA (docs/mralapagon/lcacopia.html, array APARTMENTS) -- los
--- codigos apt-01..apt-10 ya coinciden con el mapa de iconos
+-- Los codigos apt-01..apt-10 coinciden con el mapa de iconos
 -- hardcodeado en frontend/src/components/booking/apartment-card.tsx.
 --
 -- Requiere 0018_room_type_property_type.sql aplicada antes.

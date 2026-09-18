@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/stats-service.ts
 //
 // Estadísticas para el dashboard/panel admin. El prompt de esta ventana
 // dice "las estadísticas usan availability_cache (tabla real) para

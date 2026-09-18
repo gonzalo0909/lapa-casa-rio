@@ -19,7 +19,7 @@
 
 Todo se hace desde el dashboard web de Fly (fly.io/dashboard), sin instalar nada:
 
-1. Fly → **Launch an App** → conectar el repo de GitHub → `gonzalo0909/lapa-casa-hostel`
+1. Fly → **Launch an App** → conectar el repo de GitHub → `gonzalo0909/lapa-casa-rio`
 2. Working directory / Config path: `backend` (ahí vive `Dockerfile` y `fly.toml`)
 3. Branch: `definitivo2026`, región: `gru` (São Paulo)
 4. Secrets (Settings → Secrets → Batch Import): `DATABASE_URL`, `REDIS_URL`,

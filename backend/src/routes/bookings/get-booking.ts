@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/bookings/get-booking.ts
 
 import type { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';

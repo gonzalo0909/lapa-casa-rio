@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/blacklist.js
 // Lista negra de huespedes: listado, bloqueo y desbloqueo.
 // Archivo externo — cumple CSP (scriptSrc: self, sin unsafe-inline).
 

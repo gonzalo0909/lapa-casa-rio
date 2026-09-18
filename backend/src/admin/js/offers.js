@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/offers.js
 //
 // Antes vivía como <script> inline dentro de offers.html, con botones
 // onclick="..." -- ambas cosas las bloquea la CSP del backend (scriptSrc:

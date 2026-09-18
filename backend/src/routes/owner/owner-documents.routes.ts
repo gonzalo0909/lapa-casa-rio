@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/owner/owner-documents.routes.ts
 //
 // Gestión de documentos de verificación (KYC) del administrador.
 //

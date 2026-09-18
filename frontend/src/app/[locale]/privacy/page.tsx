@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/privacy/page.tsx
 //
 // Política de Privacidad — sección 14 auditoría de 17 secciones.
 // El banner de consentimiento de cookies (components/legal/cookie-consent.tsx)

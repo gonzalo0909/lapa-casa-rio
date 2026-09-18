@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/queues/sheets-export.queue.ts
 //
 // Estructura de la cola nada mas -- el worker real que exporta a Google
 // Sheets se implementa en el Bloque 2 de esta ventana, cuando la

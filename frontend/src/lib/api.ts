@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/lib/api.ts
 
 /**
  * API Client Library

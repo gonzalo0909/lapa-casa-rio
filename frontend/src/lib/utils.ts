@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/lib/utils.ts
 
 /**
  * Utility Functions Library

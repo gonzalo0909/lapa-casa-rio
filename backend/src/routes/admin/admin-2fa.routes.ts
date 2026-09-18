@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/admin-2fa.routes.ts
 //
 // 2FA (TOTP) para el login de admin (idea #22, roadmap.html). Montado
 // bajo /admin/2fa en admin.routes.ts -- hereda authenticateToken,

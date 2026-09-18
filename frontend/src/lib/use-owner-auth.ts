@@ -1,6 +1,5 @@
 'use client';
 
-// lapa-casa-hostel/frontend/src/lib/use-owner-auth.ts
 //
 // Guard de autenticación para páginas de /owner. La sesión vive en dos
 // cookies httpOnly emitidas por el backend:

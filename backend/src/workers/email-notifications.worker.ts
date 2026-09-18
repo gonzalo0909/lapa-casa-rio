@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/workers/email-notifications.worker.ts
 
 import { type Job, Worker } from 'bullmq';
 import { getQueueConnection } from '../queues/connection';

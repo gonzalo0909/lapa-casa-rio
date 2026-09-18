@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/config/redis.ts
 //
 // FIX (auditoría de seguridad 2026-08-30): este archivo era un stub 100%
 // en memoria (un Map por proceso) que nunca se conectaba a Redis real,

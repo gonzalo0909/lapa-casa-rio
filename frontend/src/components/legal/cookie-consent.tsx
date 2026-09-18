@@ -1,5 +1,4 @@
 'use client';
-// lapa-casa-hostel/frontend/src/components/legal/cookie-consent.tsx
 //
 // Sección 14 auditoría de 17 secciones: GA4 y Facebook Pixel se cargaban
 // incondicionalmente en analytics-provider.tsx apenas las env vars

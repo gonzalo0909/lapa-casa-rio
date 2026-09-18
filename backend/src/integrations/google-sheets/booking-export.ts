@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/integrations/google-sheets/booking-export.ts
 //
 // Reemplaza a booking-sync.ts (schema viejo, tabla `rooms` inexistente,
 // nunca probado). Sentido único DB -> Sheets: la base es la fuente de

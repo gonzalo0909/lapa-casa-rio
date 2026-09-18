@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/utils/encryption.ts
 //
 // FIX (auditoría 2026-08-30): se eliminaron 13 exports sin ningún uso en
 // todo el repo (hashPassword, verifyToken, generateRefreshToken,

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/owner/owner-scope.ts
 //
 // Helpers de "dueño" para las rutas bajo /owner: cada administrador de
 // apartamento solo puede ver/tocar sus propios apartamentos

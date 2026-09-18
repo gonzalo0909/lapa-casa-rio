@@ -1,4 +1,3 @@
-# lapa-casa-hostel/docs/development/getting-started.md
 
 # Developer Guide - Getting Started
 
@@ -35,8 +34,8 @@ Ensure you have installed:
 
 ```bash
 # Clone repository
-git clone https://github.com/lapa-casa-hostel/lapa-casa-hostel.git
-cd lapa-casa-hostel
+git clone https://github.com/gonzalo0909/lapa-casa-rio.git
+cd lapa-casa-rio
 
 # Install dependencies
 npm run install:all
@@ -81,7 +80,7 @@ curl http://localhost:4000/health
 ## Project Structure
 
 ```
-lapa-casa-hostel/
+lapa-casa-rio/
 ├── frontend/                 # Next.js 14 frontend
 │   ├── src/
 │   │   ├── app/             # Next.js app router

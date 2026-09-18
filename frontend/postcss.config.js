@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/postcss.config.js
 //
 // Sin este archivo, Next.js nunca le pasa el CSS a Tailwind/Autoprefixer
 // -- @tailwind base/components/utilities en globals.css quedaban como

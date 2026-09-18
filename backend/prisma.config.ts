@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/prisma.config.ts
 //
 // Solo lo usa el CLI de Prisma (prisma db pull, prisma generate) para
 // saber a qué base conectarse al introspectar. El cliente en tiempo de

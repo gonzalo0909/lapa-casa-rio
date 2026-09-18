@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/types/api.ts
 
 export interface ApiResponse<T = any> {
   success: boolean;

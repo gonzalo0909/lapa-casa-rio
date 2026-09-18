@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/blocking.js
 //
 // ?type=hostel|apartment filtra qué unidades aparecen en el selector --
 // esta misma página se embebe (vía iframe) tanto dentro de Habitaciones

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/payments/payments.routes.ts
 // 0021: agrega release-deposit y mark-received-at-desk (Stripe Connect + InfinityPay)
 
 import { Router, type Request, type Response, type NextFunction } from 'express';

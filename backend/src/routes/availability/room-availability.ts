@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/availability/room-availability.ts
 //
 // Antes usaba un mapa ROOM_CONFIGS local con 4 habitaciones e IDs
 // ficticios ("room_mixto_12a", sin mixto_7c) -- nunca matcheaba un UUID

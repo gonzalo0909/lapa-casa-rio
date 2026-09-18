@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/lib/payments/stripe-handler.ts
 // 0021: agrega soporte de Stripe Connect (connectedAccountId, applicationFeeAmountCents)
 
 import Stripe from 'stripe';

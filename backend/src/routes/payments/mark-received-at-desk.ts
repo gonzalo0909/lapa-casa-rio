@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/payments/mark-received-at-desk.ts
 // POST /payments/mark-received-at-desk
 //
 // Registra pagos que se hacen en la recepción con la máquina física:

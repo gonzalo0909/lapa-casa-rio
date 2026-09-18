@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/termos-hospede/page.tsx
 //
 // Termo de Reserva e Hospedagem — página real, antes inexistente.
 // apartment-guest-form.tsx linkeaba a "/termos-hospede" (checkbox de

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/blocked-dates.routes.ts
 //
 // Bloqueo manual de fechas por habitación (mantenimiento/evento privado).
 // Envuelve date-blocker.ts (ya corregido para usar room_types/room_blocks).

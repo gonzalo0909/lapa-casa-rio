@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/channel-service.ts
 //
 // Reservas entrantes de OTA (via webhook para Booking.com/Expedia, via
 // iCal para Airbnb/Hostelworld) pasan por el MISMO motor anti-overbooking

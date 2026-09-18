@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/config/prisma.ts
 //
 // Cliente Prisma exclusivo para el dominio de administración/config de
 // apartamentos (ver prisma/schema.prisma). El núcleo de reservas/pagos

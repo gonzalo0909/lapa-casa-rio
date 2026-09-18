@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/sentry.edge.config.ts
 // Corre en el Edge Runtime de Next.js (middleware). Se carga automáticamente.
 
 import * as Sentry from '@sentry/nextjs';

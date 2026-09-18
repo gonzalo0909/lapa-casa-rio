@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/queues/safe-queue.ts
 //
 // Wrapper delgado sobre bullmq.Queue que degrada con gracia si
 // REDIS_URL no esta configurada (ver connection.ts): en vez de tirar

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/utils/validate-image-bytes.ts
 //
 // Auditoría 17 secciones, sección 15: los 3 endpoints de upload de imagen
 // (guest photos, room-type photos, foto de documento en base64) validaban

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/pricing.js
 
 requireAuth();
 renderNav('pricing');

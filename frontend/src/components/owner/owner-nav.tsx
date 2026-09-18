@@ -1,6 +1,5 @@
 'use client';
 
-// lapa-casa-hostel/frontend/src/components/owner/owner-nav.tsx
 //
 // Barra de navegação do painel do administrador de apartamento.
 // Usada em todas as páginas autenticadas de /owner.

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/parceiros/page.tsx
 // Página pública del contrato de asociación para administradores de propiedad.
 // URL: /[locale]/parceiros
 

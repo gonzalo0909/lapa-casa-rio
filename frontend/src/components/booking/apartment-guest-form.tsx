@@ -39,8 +39,8 @@ interface ApartmentGuestFormProps {
   appliedCoupon?: AppliedCoupon | null;
   onCouponApply?: (coupon: AppliedCoupon) => void;
   onCouponRemove?: () => void;
-  /** Valida un código de cupón contra el backend → retorna { valid, discount_percent, label, ... } */
-  onValidateCoupon?: (code: string) => Promise<{ valid: boolean; discount_percent?: number; label?: string; code?: string; message?: string } | undefined>;
+  /** Valida un código de cupón contra el backend → retorna { valid, discount_percent, discount_amount, label, ... } */
+  onValidateCoupon?: (code: string) => Promise<{ valid: boolean; discount_percent?: number; discount_amount?: number; label?: string; code?: string; message?: string } | undefined>;
   /** Foto del documento del titular (File seleccionado por el usuario). */
   documentPhoto: File | null;
   onDocumentPhotoChange: (file: File | null) => void;
@@ -102,11 +102,15 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   const totalPrice = selectedApartment.priceTotal;
   const depositAmount = selectedApartment.depositAmount;
   const depositPct = totalPrice > 0 ? Math.round((depositAmount / totalPrice) * 100) : 0;
-  // Precio con descuento aplicado (si hay cupón)
-  const discountFactor = appliedCoupon ? 1 - appliedCoupon.discount_percent / 100 : 1;
-  const displayTotal = Math.round(totalPrice * discountFactor);
-  const displayDeposit = Math.round(depositAmount * discountFactor);
-  const discountAmount = totalPrice - displayTotal;
+  // Precio con descuento aplicado (si hay cupón — porcentual o monto fijo)
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.discount_amount
+      ? appliedCoupon.discount_amount
+      : Math.round(totalPrice * (appliedCoupon.discount_percent / 100))
+    : 0;
+  const displayTotal = Math.max(0, totalPrice - discountAmount);
+  const depositDiscountFactor = totalPrice > 0 ? displayTotal / totalPrice : 1;
+  const displayDeposit = Math.round(depositAmount * depositDiscountFactor);
 
   /** Valida el cupón ingresado contra el backend */
   const handleApplyCoupon = async () => {
@@ -116,11 +120,12 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
     setCouponError(null);
     try {
       const result = await onValidateCoupon?.(code);
-      if (result?.valid && result.discount_percent) {
+      if (result?.valid && (result.discount_percent || result.discount_amount)) {
         onCouponApply?.({
           code: result.code ?? code,
           label: result.label ?? code,
-          discount_percent: result.discount_percent,
+          discount_percent: result.discount_percent ?? 0,
+          discount_amount: result.discount_amount,
         });
         setCouponInput('');
         setCouponError(null);
@@ -247,7 +252,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
                 <span className="line-through">R$ {totalPrice.toLocaleString('pt-BR')}</span>
               </div>
               <div className={`${styles.summaryRow} font-semibold text-success`}>
-                <span>🏷️ {appliedCoupon.label} ({appliedCoupon.discount_percent}% off)</span>
+                <span>🏷️ {appliedCoupon.label} ({appliedCoupon.discount_amount ? `−R$ ${appliedCoupon.discount_amount}` : `${appliedCoupon.discount_percent}% off`})</span>
                 <span>−R$ {discountAmount.toLocaleString('pt-BR')}</span>
               </div>
             </>

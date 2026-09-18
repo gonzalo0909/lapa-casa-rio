@@ -111,6 +111,7 @@ export const checkApartmentAvailabilityHandler = async (
          ) AS available
        FROM room_types rt
        WHERE rt.property_type = 'apartment'
+         AND rt.is_active = true
        ORDER BY rt.name`,
       [checkIn, checkOut]
     );

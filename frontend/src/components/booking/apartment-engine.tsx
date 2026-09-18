@@ -45,6 +45,8 @@ import {
   type AdditionalGuest,
   type AppliedCoupon,
   EMPTY_FORM,
+  CHECKIN_TIMES,
+  MAX_APT_GUESTS,
 } from './apartment-engine.types';
 
 // Carga @stripe/stripe-js + @stripe/react-stripe-js (SDK pesado) recién al
@@ -67,6 +69,16 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   // ── Navegación ───────────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Config editable desde /admin/pricing.html ────────────────────────────
+  const [checkinTimes, setCheckinTimes] = useState<string[]>(CHECKIN_TIMES);
+  const [maxAptGuests, setMaxAptGuests] = useState<number>(MAX_APT_GUESTS);
+  useEffect(() => {
+    availabilityAPI.getApartmentConfig().then((res: any) => {
+      if (res?.data?.checkinTimes?.length) setCheckinTimes(res.data.checkinTimes);
+      if (res?.data?.maxGuests) setMaxAptGuests(res.data.maxGuests);
+    }).catch(() => { /* fallback a los valores por defecto */ });
+  }, []);
 
   // ── Paso 1: fechas y huéspedes ───────────────────────────────────────────
   const [guestCount, setGuestCount] = useState(2);
@@ -511,6 +523,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             checkOut={checkOut ?? ''}
             nights={nights}
             guestCount={guestCount}
+            maxGuests={maxAptGuests}
             onGuestCountChange={handleGuestCountChange}
             apartments={apartments}
             isLoading={isLoadingApartments}
@@ -534,6 +547,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             checkOut={checkOut ?? ''}
             nights={nights}
             guestCount={guestCount}
+            checkinTimes={checkinTimes}
             onGuestCountChange={handleGuestCountChange}
             selectedApartment={selectedApartment}
             guestForm={guestForm}

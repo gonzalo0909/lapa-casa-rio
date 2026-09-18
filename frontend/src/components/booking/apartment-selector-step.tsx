@@ -16,7 +16,7 @@ import dynamic from 'next/dynamic';
 import styles from './apartment-engine.module.css';
 import { ApartmentCard } from './apartment-card';
 import type { ApartmentAvailability } from '@/types/global';
-import { MAX_APT_GUESTS, type AptLocale } from './apartment-engine.types';
+import { type AptLocale } from './apartment-engine.types';
 import { fmtDate, parseDs, rankApartments } from './apartment-engine.utils';
 
 const ApartmentMap = dynamic(() => import('./apartment-map'), { ssr: false });
@@ -27,6 +27,7 @@ interface ApartmentSelectorStepProps {
   checkOut: string;
   nights: number;
   guestCount: number;
+  maxGuests: number;
   onGuestCountChange: (count: number) => void;
   apartments: ApartmentAvailability[];
   isLoading: boolean;
@@ -44,6 +45,7 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
   checkOut,
   nights,
   guestCount,
+  maxGuests,
   onGuestCountChange,
   apartments,
   isLoading,
@@ -89,8 +91,8 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
         <button
           type="button"
           className={styles.guestCounterBtn}
-          onClick={() => onGuestCountChange(Math.min(MAX_APT_GUESTS, guestCount + 1))}
-          disabled={guestCount >= MAX_APT_GUESTS}
+          onClick={() => onGuestCountChange(Math.min(maxGuests, guestCount + 1))}
+          disabled={guestCount >= maxGuests}
           aria-label="+"
         >+</button>
       </span>

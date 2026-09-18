@@ -4,8 +4,8 @@
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
-import { type Lang, T, DAY_LBL, MON_LBL } from './hostel-engine.types';
-import { getSeason, fmtDate, sameDay, dayBefore, inRange } from './hostel-engine.utils';
+import { type Lang, T } from './hostel-engine.types';
+import { getSeason, fmtDate, sameDay, dayBefore, inRange, weekdayLabels, monthLabel } from './hostel-engine.utils';
 import { minCheckInDs } from '@/lib/utils';
 
 // ─── Props ────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export function HostelCalendar({
     return null;
   })();
 
-  const monthName = MON_LBL[lang][calMonth.getMonth()] ?? '';
+  const monthName = monthLabel(calMonth.getMonth(), lang);
 
   return (
     <div className="he-panel">
@@ -85,7 +85,7 @@ export function HostelCalendar({
 
       {/* Grid de días */}
       <div className="he-cal-grid">
-        {DAY_LBL[lang].map(d => <div key={d} className="he-cal-dlbl">{d}</div>)}
+        {weekdayLabels(lang).map(d => <div key={d} className="he-cal-dlbl">{d}</div>)}
         {calCells.map((cell, i) => {
           if (cell.isEmpty) {return <div key={i} className="he-cal-cell" />;}
 

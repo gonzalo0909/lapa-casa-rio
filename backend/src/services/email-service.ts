@@ -1190,17 +1190,31 @@ export class EmailService {
   async sendReferralReward(
     referrer: { fullName: string; email: string; language: string | null },
     rewardCode: string,
+    expiryDate?: Date,
   ): Promise<SendResult> {
     const language = resolveLanguage(referrer.language);
     const t = LABELS[language];
     const siteUrl = process.env.FRONTEND_URL || 'https://lapacasario.com';
+
+    const expiryLabel = expiryDate ? formatDate(expiryDate, language) : null;
+    const validUntilPhrases: Record<Language, (d: string) => string> = {
+      pt: (d) => `Válido até ${d}.`,
+      en: (d) => `Valid until ${d}.`,
+      es: (d) => `Válido hasta ${d}.`,
+      fr: (d) => `Valable jusqu'au ${d}.`,
+      de: (d) => `Gültig bis ${d}.`,
+      it: (d) => `Valido fino al ${d}.`,
+    };
+    const labelBody = expiryLabel
+      ? `${t.referralRewardBody} ${validUntilPhrases[language](expiryLabel)}`
+      : t.referralRewardBody;
 
     const html = renderEmailTemplate('referral-reward', {
       emailTitle: t.referralRewardTitle,
       labelTitle: t.referralRewardTitle,
       labelGreeting: t.greeting,
       labelIntro: t.referralRewardIntro,
-      labelBody: t.referralRewardBody,
+      labelBody,
       labelClosing: t.referralRewardClosing,
       guestName: referrer.fullName,
       rewardCode,

@@ -306,6 +306,7 @@ export const createApartmentBookingHandler = async (
           await emailService.sendReferralReward(
             { fullName: referrer.full_name, email: referrer.email, language: referrer.language },
             rewardCode,
+            rewardValidTo,
           );
           logger.info('Premio de referido enviado', { referrerGuestId: appliedOffer!.referral_owner_guest_id, rewardCode });
         } catch (error) {

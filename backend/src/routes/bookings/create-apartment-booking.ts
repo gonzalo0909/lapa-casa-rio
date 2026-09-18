@@ -294,7 +294,8 @@ export const createApartmentBookingHandler = async (
           const referrer = referrerRows[0];
           if (!referrer) return;
           const rewardCode = generateReferralCode();
-          const rewardValidTo = new Date(new Date().getFullYear(), 11, 31);
+          const rewardValidTo = new Date();
+          rewardValidTo.setFullYear(rewardValidTo.getFullYear() + 1);
           await query(
             `INSERT INTO apartment_offers
                (code, label, discount_percent, discount_amount, monthly_limit,

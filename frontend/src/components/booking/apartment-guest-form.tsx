@@ -14,7 +14,7 @@ import {
   Users, Trash2, Upload, Camera,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
-import { CHECKIN_TIMES, MAX_APT_GUESTS, type GuestForm, type AptLocale, type AdditionalGuest, type AppliedCoupon } from './apartment-engine.types';
+import { CHECKIN_TIMES, type GuestForm, type AptLocale, type AdditionalGuest, type AppliedCoupon } from './apartment-engine.types';
 import { validateCPF, formatCPF, isEmailFmt, formatBRPhone, fmtDate } from './apartment-engine.utils';
 import type { ApartmentAvailability } from '@/types/global';
 

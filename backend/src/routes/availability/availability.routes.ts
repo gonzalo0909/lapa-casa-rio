@@ -50,6 +50,33 @@ router.get('/carnival-dates', async (req, res, next) => {
 /** GET /availability/apartments — disponibilidad de los 10 apartamentos para un rango de fechas. */
 router.get('/apartments', checkApartmentAvailabilityHandler);
 
+/**
+ * GET /availability/apartment-config — configuración pública del motor de apartamentos:
+ * horarios de check-in y límite de huéspedes. Los valores vienen de system_config
+ * y son editables desde /admin/pricing.html.
+ */
+router.get('/apartment-config', async (req, res, next) => {
+  try {
+    const [checkinResult, maxGuestsResult] = await Promise.all([
+      query<{ value: string[] }>(`SELECT value FROM system_config WHERE key = 'checkin_times'`),
+      query<{ value: number }>(`SELECT value FROM system_config WHERE key = 'max_apt_guests'`),
+    ]);
+
+    const checkinTimes: string[] = checkinResult.rows[0]?.value ?? [
+      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+      '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
+    ];
+    const maxGuests: number = maxGuestsResult.rows[0]?.value ?? 2;
+
+    res.status(200).json(ApiResponse.success({ checkinTimes, maxGuests }, 'Apartment config retrieved'));
+  } catch (error) {
+    logger.error('Error getting apartment config', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    next(error);
+  }
+});
+
 router.get('/room/:roomId', roomAvailabilityHandler);
 
 /**

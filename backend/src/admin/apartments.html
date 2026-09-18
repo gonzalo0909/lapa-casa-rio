@@ -94,6 +94,7 @@
   <button class="outer-tab-btn" data-otab="bloqueos">Bloqueos</button>
   <button class="outer-tab-btn" data-otab="ofertas">Ofertas</button>
   <button class="outer-tab-btn" data-otab="precios">Precios dinámicos</button>
+  <button class="outer-tab-btn" data-otab="config">Configuración</button>
 </div>
 
 <div class="outer-panel active" id="opanel-apartamentos">
@@ -246,6 +247,28 @@
 
 <div class="outer-panel" id="opanel-precios">
   <iframe class="embed-frame" src="/admin/dynamic-pricing.html?type=apartment&embed=1"></iframe>
+</div>
+
+<div class="outer-panel" id="opanel-config">
+  <div class="card">
+    <h2>Motor de reservas</h2>
+    <div id="apt-config-msg"></div>
+
+    <form class="stack" id="apt-guests-form" style="margin-bottom:24px">
+      <label>Máximo de huéspedes por reserva
+        <input type="number" step="1" min="1" max="20" id="apt-max-guests" style="width:80px;">
+      </label>
+      <button type="submit">Guardar</button>
+    </form>
+
+    <form class="stack" id="apt-checkin-form">
+      <label>Horarios de check-in disponibles
+        <span style="display:block;font-size:12px;color:#999;margin-top:2px;">Un horario por línea, formato HH:MM (ej: 14:00)</span>
+        <textarea id="apt-checkin-times" rows="10" style="width:200px;font-family:monospace;font-size:13px;margin-top:6px;"></textarea>
+      </label>
+      <button type="submit">Guardar</button>
+    </form>
+  </div>
 </div>
 
 </main>

@@ -1,13 +1,14 @@
 // frontend/src/components/booking/apartment-engine.types.ts
 // Tipos, interfaces y constantes compartidas del motor de reservas de apartamentos.
 
-import type { ApartmentAvailability } from '@/types/global';
+import type { ApartmentAvailability, BookingLocale } from '@/types/global';
 
 // ─── Tipos base ──────────────────────────────────────────────────────────────
 
 export type Step = 1 | 2 | 3 | 4;
 
-export type AptLocale = 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
+/** Re-export del tipo compartido; los componentes importan de aquí para no cambiar sus imports. */
+export type AptLocale = BookingLocale;
 
 // ─── Formulario de huésped ───────────────────────────────────────────────────
 
@@ -75,15 +76,7 @@ export interface ApartmentEngineProps {
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
-/** Mapeo locale → BCP-47 para Intl (nombres de mes/día). */
-export const BCP47: Record<string, string> = {
-  pt: 'pt-BR',
-  es: 'es-ES',
-  en: 'en-US',
-  fr: 'fr-FR',
-  de: 'de-DE',
-  it: 'it-IT',
-};
+export { BCP47 } from '@/lib/utils';
 
 /** Capacidad máxima seleccionable en el contador de huéspedes del Paso 1. */
 export const MAX_APT_GUESTS = 2;

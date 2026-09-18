@@ -73,6 +73,16 @@ export const T = {
 
 export type Translations = (typeof T)[Lang];
 
+export interface PriceQuote {
+  nights: number;
+  beds: number;
+  season: { mult: number; label: string; minNights: number };
+  pbn: number;
+  subtotal: number;
+  total: number;
+  deposit: number;
+}
+
 // ─── Cuartos por defecto (fallback si la API no responde) ─
 export const DEFAULT_ROOMS: RoomDef[] = [
   {

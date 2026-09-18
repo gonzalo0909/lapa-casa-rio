@@ -11,23 +11,6 @@ export function getSeason(date: Date) {
   return { mult:1.0, label:'Média Temporada', minNights:1 };
 }
 
-// ─── Cálculo de precio ────────────────────────────────────
-export function calcPrice(
-  ci: Date | null,
-  co: Date | null,
-  beds: Record<string, number>,
-) {
-  if (!ci || !co) {return null;}
-  const nights = Math.round((co.getTime() - ci.getTime()) / 86400000);
-  const totalB = Object.values(beds).reduce((s, n) => s + n, 0);
-  if (nights <= 0 || totalB === 0) {return null;}
-  const season  = getSeason(ci);
-  const pbn     = 85 * season.mult;
-  const subtotal = pbn * totalB * nights;
-  const total   = subtotal;
-  return { nights, beds: totalB, season, pbn, subtotal, total, deposit: total * 0.3 };
-}
-
 // ─── Validación y formateo CPF ─────────────────────────────
 // FIX (auditoría 2026-08-30): validateCPF/formatCPF vivían acá duplicadas
 // (mismo algoritmo, distinto estilo) con apartment-engine.utils.ts --

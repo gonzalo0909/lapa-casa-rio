@@ -4,10 +4,10 @@
 
 import React, { useState } from 'react';
 import { CheckCircle2, CreditCard, Check, Gift } from 'lucide-react';
-import type { PayMethod, Translations } from './hostel-engine.types';
-import { type calcPrice, fmtMoney } from './hostel-engine.utils';
+import type { PayMethod, PriceQuote, Translations } from './hostel-engine.types';
+import { fmtMoney } from './hostel-engine.utils';
 
-type Price = ReturnType<typeof calcPrice>;
+type Price = PriceQuote | null;
 
 // PIX QR pattern decorativo — fallback si Mercado Pago no devuelve un QR real.
 const PIX_PAT = [

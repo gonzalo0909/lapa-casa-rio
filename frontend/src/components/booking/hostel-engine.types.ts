@@ -1,8 +1,11 @@
 // frontend/src/components/booking/hostel-engine.types.ts
 // Tipos TypeScript · Traducciones PT/ES/EN · DEFAULT_ROOMS · DAY_LBL · MON_LBL
 
+import type { BookingLocale } from '@/types/global';
+
 // ─── Tipos base ─────────────────────────────────────────
-export type Lang = 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
+/** Re-export del tipo compartido; los componentes del hostel importan de aquí para no cambiar sus imports. */
+export type Lang = BookingLocale;
 export type Phase = 'wizard' | 'success' | 'expired' | 'group';
 export type PayMethod = 'pix' | 'card';
 

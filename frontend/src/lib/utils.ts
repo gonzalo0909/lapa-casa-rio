@@ -55,6 +55,36 @@ export function cn(...inputs: ClassValue[]): string {
 // components/booking/apartment-engine.utils.ts y hostel-engine.utils.ts.
 // Se consolidan acá; ambos motores ahora importan de este único lugar.
 
+/**
+ * Fecha mínima de check-in (YYYY-MM-DD) según la hora actual en São Paulo.
+ * Antes de las 12:00 BRT → hoy disponible.
+ * A partir de las 12:00 BRT → hoy bloqueado, devuelve mañana.
+ * Usada por ambos motores (hostel y apartamentos) para bloquear el día actual
+ * en el calendario cuando ya pasó el corte de mediodía.
+ */
+export function minCheckInDs(): string {
+  const now = new Date();
+  const hourParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    hour: 'numeric',
+    hour12: false,
+  }).formatToParts(now);
+  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const todaySp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
+  if (hourBrt >= 12) {
+    const [y, m, d] = todaySp.split('-').map(Number) as [number, number, number];
+    const tomorrow = new Date(y, m - 1, d + 1);
+    return (
+      tomorrow.getFullYear() +
+      '-' +
+      String(tomorrow.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(tomorrow.getDate()).padStart(2, '0')
+    );
+  }
+  return todaySp;
+}
+
 /** Valida un CPF brasileño por dígito verificador (módulo 11). */
 export function validateCPF(raw: string): boolean {
   const cpf = raw.replace(/\D/g, '');

@@ -273,41 +273,48 @@ export const api = {
 /**
  * Booking API endpoints — alineados con backend/src/routes/bookings/bookings.routes.ts
  */
+
+/** Tipo de request compartido entre create (hostel) y createApartment. */
+type BookingCreateData = {
+  checkIn: string;
+  checkOut: string;
+  rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
+  guest: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    country: string;
+    document?: string;
+    documentPhotoBase64?: string;
+  };
+  additionalGuests?: Array<{
+    fullName: string;
+    document: string;
+    documentType?: string;
+    documentPhotoBase64?: string;
+  }>;
+  specialRequests?: string;
+  arrivalTime?: string;
+  language?: 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
+  source?: string;
+  guestGender?: 'mixed' | 'female';
+  offerCode?: string;
+};
+
 export const bookingAPI = {
   /**
-   * Create new booking. Body shape matches create-booking.ts exactamente
-   * (roomId = room_types.id real, guest.firstName/lastName por separado).
+   * Crea una reserva de hostel (camas compartidas).
+   * Endpoint: POST /bookings
    */
-  create: (data: {
-    checkIn: string;
-    checkOut: string;
-    rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
-    guest: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone: string;
-      country: string;
-      document?: string;
-      /** Foto del DNI/pasaporte (data URL base64) -- obligatoria en el motor del hostel. */
-      documentPhotoBase64?: string;
-    };
-    /** Acompañantes declarados en el checkout (tabla booking_guests). */
-    additionalGuests?: Array<{
-      fullName: string;
-      document: string;
-      documentType?: string;
-      /** Foto del DNI/pasaporte del acompañante (data URL base64) — opcional. */
-      documentPhotoBase64?: string;
-    }>;
-    specialRequests?: string;
-    arrivalTime?: string;
-    language?: 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
-    source?: string;
-    guestGender?: 'mixed' | 'female';
-    /** Código de oferta/cupón de descuento -- apartamentos y referidos (idea #49), también válido para el hostel. */
-    offerCode?: string;
-  }) => api.post('/bookings', data),
+  create: (data: BookingCreateData) => api.post('/bookings', data),
+
+  /**
+   * Crea una reserva de apartamento.
+   * Endpoint: POST /apartment-bookings
+   * Incluye regla 48h, programa de referidos y verificación directa por NOT EXISTS.
+   */
+  createApartment: (data: BookingCreateData) => api.post('/apartment-bookings', data),
 
   /**
    * Get booking by ID

@@ -7,11 +7,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Check, AlertTriangle, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './apartment-engine.module.css';
 import { availabilityAPI } from '@/lib/api';
-import { minCheckInDs } from './apartment-engine.utils';
-
-/** BCP-47 usado para nomes de mês/dia da semana localizados (Intl), no mesmo
- * mapeamento que o resto do site (ver date-selector.tsx / apartment-engine.tsx). */
-const BCP47: Record<string, string> = { pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT' };
+import { minCheckInDs, toDs, parseDs } from './apartment-engine.utils';
+import { BCP47 } from './apartment-engine.types';
 
 function monthLabel(y: number, m: number, locale: string): string {
   return new Date(y, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'long', year: 'numeric' });
@@ -36,13 +33,6 @@ interface ApartmentMiniCalendarProps {
   guestCount?: number;
 }
 
-function toDs(d: Date): string {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-function parseDs(s: string): Date {
-  const [y, m, d] = s.split('-') as [string, string, string];
-  return new Date(Number(y), Number(m) - 1, Number(d));
-}
 function fmtShort(ds: string | null, locale: string): string {
   if (!ds) { return ''; }
   const d = parseDs(ds);

@@ -63,6 +63,8 @@ export interface AppliedCoupon {
   code: string;
   label: string;
   discount_percent: number;
+  /** Descuento de monto fijo en BRL (alternativa a discount_percent). */
+  discount_amount?: number;
 }
 
 // ─── Props del engine ────────────────────────────────────────────────────────

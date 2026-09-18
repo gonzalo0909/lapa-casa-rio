@@ -12,6 +12,7 @@
 
 import { Router, type Request, type Response } from 'express';
 import { bookingsRouter } from './bookings/bookings.routes';
+import { apartmentBookingsRouter } from './bookings/apartment-bookings.routes';
 import { photosRouter } from './photos/photos.routes';
 import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
@@ -111,6 +112,11 @@ router.use(
   '/bookings',
   rateLimiter({ max: 3, windowMs: 1000, prefix: 'bookings' }),
   bookingsRouter,
+);
+router.use(
+  '/apartment-bookings',
+  rateLimiter({ max: 3, windowMs: 1000, prefix: 'apartment-bookings' }),
+  apartmentBookingsRouter,
 );
 
 /**

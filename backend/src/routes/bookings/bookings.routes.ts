@@ -12,7 +12,7 @@
 
 import { Router } from 'express';
 import QRCode from 'qrcode';
-import { createBookingHandler } from './create-booking';
+import { createHostelBookingHandler } from './create-hostel-booking';
 import { getBookingHandler } from './get-booking';
 import { updateBookingHandler } from './update-booking';
 import { cancelBookingHandler } from './cancel-booking';
@@ -41,7 +41,7 @@ router.post(
   '/',
   // H-01: usar el middleware real con el schema Zod — validationMiddleware era no-op
   validate(bookingSchemas.create),
-  createBookingHandler
+  createHostelBookingHandler
 );
 
 /**

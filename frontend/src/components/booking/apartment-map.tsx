@@ -8,6 +8,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ApartmentAvailability } from '@/types/global';
 import styles from './apartment-engine.module.css';
 
@@ -62,6 +63,7 @@ export default function ApartmentMap({
   onSelect,
   locale,
 }: ApartmentMapProps) {
+  const t = useTranslations('apartments');
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -159,8 +161,8 @@ export default function ApartmentMap({
         : apt.neighborhood ?? 'Rio de Janeiro';
 
       const priceHtml = isUnavail
-        ? `<span style="color:#888;font-size:.78rem">Indisponível</span>`
-        : `<span style="color:#F0B429;font-weight:700">R$ ${Math.round(apt.priceTotal / (nights || 1))}<small style="font-weight:400;color:#555">/noite</small></span>`;
+        ? `<span style="color:#888;font-size:.78rem">${t('mapUnavailable')}</span>`
+        : `<span style="color:#F0B429;font-weight:700">${currency(Math.round(apt.priceTotal / (nights || 1)))}<small style="font-weight:400;color:#555">${t('mapPerNight')}</small></span>`;
 
       const btnHtml = isUnavail
         ? ''
@@ -168,7 +170,7 @@ export default function ApartmentMap({
             margin-top:6px;width:100%;padding:6px 0;
             background:#2C4A8C;color:#fff;border:none;border-radius:6px;
             font-size:.82rem;font-weight:700;cursor:pointer
-          ">${isSelected ? '✓ Selecionado' : 'Selecionar'}</button>`;
+          ">${isSelected ? t('mapSelected') : t('mapSelect')}</button>`;
 
       const popup = L.popup({ maxWidth: 220, minWidth: 180 }).setContent(`
         <div style="font-family:system-ui,sans-serif;font-size:.88rem;line-height:1.4">

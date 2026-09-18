@@ -4,8 +4,9 @@
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
-import { type Lang, T, DAY_LBL, MON_LBL } from './hostel-engine.types';
-import { getSeason, fmtDate, sameDay, dayBefore, inRange } from './hostel-engine.utils';
+import { type Lang, T } from './hostel-engine.types';
+import { getSeason, fmtDate, sameDay, dayBefore, inRange, weekdayLabels, monthLabel } from './hostel-engine.utils';
+import { minCheckInDs } from '@/lib/utils';
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelCalendarProps {
@@ -50,7 +51,7 @@ export function HostelCalendar({
     return null;
   })();
 
-  const monthName = MON_LBL[lang][calMonth.getMonth()] ?? '';
+  const monthName = monthLabel(calMonth.getMonth(), lang);
 
   return (
     <div className="he-panel">
@@ -84,12 +85,15 @@ export function HostelCalendar({
 
       {/* Grid de días */}
       <div className="he-cal-grid">
-        {DAY_LBL[lang].map(d => <div key={d} className="he-cal-dlbl">{d}</div>)}
+        {weekdayLabels(lang).map(d => <div key={d} className="he-cal-dlbl">{d}</div>)}
         {calCells.map((cell, i) => {
           if (cell.isEmpty) {return <div key={i} className="he-cal-cell" />;}
 
           const { date } = cell;
-          const isPast  = dayBefore(date, today) && !sameDay(date, today);
+          // Bloquea pasado Y el día de hoy si ya pasaron las 12:00 BRT (misma regla que el backend y el motor de apartamentos).
+          const minDs   = minCheckInDs();
+          const dateDs  = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+          const isPast  = dateDs < minDs;
           const isToday = sameDay(date, today);
           const isStart = sameDay(date, checkIn);
           const isEnd   = sameDay(date, checkOut);

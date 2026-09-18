@@ -14,7 +14,7 @@ import {
   Users, Trash2, Upload, Camera,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
-import { CHECKIN_TIMES, MAX_APT_GUESTS, type GuestForm, type AptLocale, type AdditionalGuest, type AppliedCoupon } from './apartment-engine.types';
+import { type GuestForm, type AptLocale, type AdditionalGuest, type AppliedCoupon } from './apartment-engine.types';
 import { validateCPF, formatCPF, isEmailFmt, formatBRPhone, fmtDate } from './apartment-engine.utils';
 import type { ApartmentAvailability } from '@/types/global';
 
@@ -54,6 +54,8 @@ interface ApartmentGuestFormProps {
   onTermsAcceptedChange: (v: boolean) => void;
   /** true cuando el usuario intentó enviar — fuerza mostrar errores en campos de acompañante */
   submitAttempted?: boolean;
+  /** Horarios de check-in disponibles (desde backend, editable en /admin/pricing.html). */
+  checkinTimes: string[];
 }
 
 export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
@@ -84,6 +86,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   termsAccepted,
   onTermsAcceptedChange,
   submitAttempted = false,
+  checkinTimes,
 }) => {
   const t = useTranslations('apartments');
 
@@ -508,7 +511,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               className={touched.arrivalTime && !guestForm.arrivalTime ? styles.inputInvalid : ''}
             >
               <option value="" disabled>{t('arrivalTimeSelectPlaceholder')}</option>
-              {CHECKIN_TIMES.map((ct) => (
+              {checkinTimes.map((ct) => (
                 <option key={ct} value={ct}>{ct}</option>
               ))}
             </select>

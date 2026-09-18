@@ -301,7 +301,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         specialRequests: guestForm.specialRequests.trim() || undefined,
         language: locale === 'pt' || locale === 'es' ? locale : 'en',
         source: 'web',
-        guestGender: 'mixed',
         ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),
       });
       const b = res?.data?.booking;

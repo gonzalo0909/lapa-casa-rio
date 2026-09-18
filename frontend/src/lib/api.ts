@@ -273,8 +273,8 @@ export const api = {
  * Booking API endpoints — alineados con backend/src/routes/bookings/bookings.routes.ts
  */
 
-/** Tipo de request compartido entre create (hostel) y createApartment. */
-type BookingCreateData = {
+/** Campos comunes a ambos motores de reserva. */
+type BookingCreateBase = {
   checkIn: string;
   checkOut: string;
   rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
@@ -297,23 +297,30 @@ type BookingCreateData = {
   arrivalTime?: string;
   language?: 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
   source?: string;
-  guestGender?: 'mixed' | 'female';
   offerCode?: string;
 };
+
+/** Payload para reservas de hostel (camas compartidas). */
+type HostelBookingData = BookingCreateBase & {
+  guestGender?: 'mixed' | 'female';
+};
+
+/** Payload para reservas de apartamento. Sin guestGender: el backend lo fija como 'mixed'. */
+type ApartmentBookingData = BookingCreateBase;
 
 export const bookingAPI = {
   /**
    * Crea una reserva de hostel (camas compartidas).
    * Endpoint: POST /bookings
    */
-  create: (data: BookingCreateData) => api.post('/bookings', data),
+  create: (data: HostelBookingData) => api.post('/bookings', data),
 
   /**
    * Crea una reserva de apartamento.
    * Endpoint: POST /apartment-bookings
    * Incluye regla 48h, programa de referidos y verificación directa por NOT EXISTS.
    */
-  createApartment: (data: BookingCreateData) => api.post('/apartment-bookings', data),
+  createApartment: (data: ApartmentBookingData) => api.post('/apartment-bookings', data),
 
   /**
    * Get booking by ID

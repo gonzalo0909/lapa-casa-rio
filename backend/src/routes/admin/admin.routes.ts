@@ -643,7 +643,7 @@ router.put('/rooms/:id/settings', validate(RoomSettingsSchema), async (req, res,
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge, luggageStorage] =
+    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests] =
       await Promise.all([
         query(
           `SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`,
@@ -654,6 +654,8 @@ router.get('/pricing', async (req, res, next) => {
           `SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`,
         ),
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'luggage_storage'`),
+        query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'checkin_times'`),
+        query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'max_apt_guests'`),
       ]);
     res.status(200).json(
       ApiResponse.success({
@@ -668,6 +670,8 @@ router.get('/pricing', async (req, res, next) => {
           start_time: '08:00',
           end_time: '22:00',
         },
+        checkinTimes: checkinTimes.rows[0]?.value ?? ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'],
+        maxAptGuests: maxAptGuests.rows[0]?.value ?? 2,
       }),
     );
   } catch (error) {
@@ -703,11 +707,13 @@ const PricingUpdateSchema = z.object({
       endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato esperado HH:MM'),
     })
     .optional(),
+  checkinTimes: z.array(z.string().regex(/^\d{2}:\d{2}$/, 'Formato esperado HH:MM')).min(1).optional(),
+  maxAptGuests: z.number().int().min(1).max(20).optional(),
 });
 
 router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => {
   try {
-    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent, luggageStorage } =
+    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests } =
       req.body as z.infer<typeof PricingUpdateSchema>;
 
     const updated: Record<string, any> = {};
@@ -780,12 +786,28 @@ router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => 
       updated.luggageStorage = rows[0];
     }
 
+    if (checkinTimes) {
+      const { rows } = await query(
+        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'checkin_times' RETURNING *`,
+        [JSON.stringify(checkinTimes)],
+      );
+      updated.checkinTimes = rows[0];
+    }
+
+    if (maxAptGuests !== undefined) {
+      const { rows } = await query(
+        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'max_apt_guests' RETURNING *`,
+        [JSON.stringify(maxAptGuests)],
+      );
+      updated.maxAptGuests = rows[0];
+    }
+
     if (Object.keys(updated).length === 0) {
       res
         .status(400)
         .json(
           ApiResponse.error(
-            'Nada para actualizar: seasonType+multiplier/minNights, carnival, cardSurchargePercent, o luggageStorage',
+            'Nada para actualizar: seasonType+multiplier/minNights, carnival, cardSurchargePercent, luggageStorage, checkinTimes, o maxAptGuests',
           ),
         );
       return;

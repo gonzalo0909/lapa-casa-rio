@@ -372,6 +372,12 @@ export const availabilityAPI = {
   checkApartments: (params: { checkIn: string; checkOut: string; guests?: number }) =>
     api.get(`/availability/apartments?checkIn=${params.checkIn}&checkOut=${params.checkOut}${params.guests ? `&guests=${params.guests}` : ''}`),
 
+  /**
+   * Configuración editable del motor de apartamentos: checkinTimes y maxGuests.
+   */
+  getApartmentConfig: () =>
+    api.get<{ checkinTimes: string[]; maxGuests: number }>('/availability/apartment-config'),
+
 };
 
 /** Read the HMAC confirmation token stored when the booking was created. */

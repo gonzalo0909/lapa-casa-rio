@@ -295,18 +295,17 @@ export const createApartmentBookingHandler = async (
           if (!referrer) return;
           const rewardCode = generateReferralCode();
           const rewardValidTo = new Date();
-          rewardValidTo.setFullYear(rewardValidTo.getFullYear() + 1);
+          rewardValidTo.setDate(rewardValidTo.getDate() + 90);
           await query(
             `INSERT INTO apartment_offers
                (code, label, discount_percent, discount_amount, monthly_limit,
                 apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-             VALUES ($1, 'Premio por referido', 0, 5, 3, NULL, now()::date, $2::date, true, $3)`,
+             VALUES ($1, 'Premio por referido', 10, NULL, 3, NULL, now()::date, $2::date, true, $3)`,
             [rewardCode, rewardValidTo.toISOString().slice(0, 10), appliedOffer!.referral_owner_guest_id],
           );
           await emailService.sendReferralReward(
             { fullName: referrer.full_name, email: referrer.email, language: referrer.language },
             rewardCode,
-            rewardValidTo,
           );
           logger.info('Premio de referido enviado', { referrerGuestId: appliedOffer!.referral_owner_guest_id, rewardCode });
         } catch (error) {

@@ -173,7 +173,7 @@ router.post('/refresh', async (req, res, next) => {
     let decoded: AuthPayload;
     try {
       decoded = jwt.verify(incomingRefresh, secret, {
-        issuer: 'lapa-casa-hostel',
+        issuer: 'lapa-casa-rio',
         audience: 'lapacasario-api',
       }) as AuthPayload;
     } catch (verifyErr) {

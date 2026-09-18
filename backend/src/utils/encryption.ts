@@ -111,7 +111,7 @@ export const generateToken = (
   }
   return (jwt.sign as any)(payload, secret, {
     expiresIn,
-    issuer: 'lapa-casa-hostel',
+    issuer: 'lapa-casa-rio',
     audience: 'lapacasario-api',
   });
 };

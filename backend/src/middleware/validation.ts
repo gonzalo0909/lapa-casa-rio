@@ -91,7 +91,7 @@ const guestBase = z.object({
 
 const additionalGuestBase = z.object({
   fullName: z.string().min(1),
-  document: z.string().max(30).optional(),
+  document: z.string().max(30).default(''),
   documentPhotoBase64: z.string().optional(),
 });
 

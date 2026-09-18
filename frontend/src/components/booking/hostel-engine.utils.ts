@@ -86,3 +86,22 @@ export function inRange(d: Date, a: Date | null, b: Date | null): boolean {
   const [s, e] = dayBefore(a, b) ? [a, b] : [b, a];
   return dateOnly(d) > dateOnly(s) && dateOnly(d) < dateOnly(e);
 }
+
+// ─── Labels de calendario (Intl API) ─────────────────────
+const BCP47: Record<string, string> = {
+  pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT',
+};
+
+export function weekdayLabels(locale: string): string[] {
+  const bcp = BCP47[locale] ?? 'pt-BR';
+  const labels: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    labels.push(new Date(2023, 0, 1 + i).toLocaleDateString(bcp, { weekday: 'short' }));
+  }
+  return labels;
+}
+
+export function monthLabel(m: number, locale: string): string {
+  const bcp = BCP47[locale] ?? 'pt-BR';
+  return new Date(2023, m, 1).toLocaleDateString(bcp, { month: 'long' });
+}

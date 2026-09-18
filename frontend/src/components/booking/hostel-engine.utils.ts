@@ -1,6 +1,8 @@
 // frontend/src/components/booking/hostel-engine.utils.ts
 // 12 funciones puras — sin React, sin estado.
 
+import { BCP47 } from '@/lib/utils';
+
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
   const m = date.getMonth(), d = date.getDate(), y = date.getFullYear();
@@ -18,29 +20,7 @@ export function getSeason(date: Date) {
 // tocar cada import existente.
 export { validateCPF, formatCPF } from '@/lib/utils';
 
-// ─── Formateo teléfono ────────────────────────────────────
-export function formatPhone(raw: string): string {
-  const clean  = raw.replace(/[^\d+]/g, '');
-  const digits = clean.replace(/\D/g, '');
-  if (digits.length <= 2) {return clean;}
-  if (clean.startsWith('+55')) {
-    const d = digits.slice(2);
-    let f = '+55 ';
-    if (d.length > 0) {f += '(' + d.slice(0, 2) + ')';}
-    if (d.length > 2) {f += ' ' + d.slice(2, 7);}
-    if (d.length > 7) {f += '-' + d.slice(7, 11);}
-    return f;
-  }
-  if (!clean.startsWith('+')) {
-    const local = digits.slice(2, 11);
-    const sp    = local.length > 8 ? 5 : 4;
-    let f = '(' + digits.slice(0, 2) + ')';
-    if (local.length > 0) {f += ' ' + local.slice(0, sp);}
-    if (local.length > sp) {f += '-' + local.slice(sp);}
-    return f;
-  }
-  return clean.slice(0, 18);
-}
+export { formatBRPhone as formatPhone } from '@/lib/utils';
 
 // ─── Formateo fecha/dinero ────────────────────────────────
 export function fmtDate(d: Date): string {
@@ -71,20 +51,8 @@ export function inRange(d: Date, a: Date | null, b: Date | null): boolean {
 }
 
 // ─── Labels de calendario (Intl API) ─────────────────────
-const BCP47: Record<string, string> = {
-  pt: 'pt-BR', es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT',
-};
-
-export function weekdayLabels(locale: string): string[] {
-  const bcp = BCP47[locale] ?? 'pt-BR';
-  const labels: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    labels.push(new Date(2023, 0, 1 + i).toLocaleDateString(bcp, { weekday: 'short' }));
-  }
-  return labels;
-}
+export { weekdayLabels } from '@/lib/utils';
 
 export function monthLabel(m: number, locale: string): string {
-  const bcp = BCP47[locale] ?? 'pt-BR';
-  return new Date(2023, m, 1).toLocaleDateString(bcp, { month: 'long' });
+  return new Date(2023, m, 1).toLocaleDateString(BCP47[locale] ?? 'pt-BR', { month: 'long' });
 }

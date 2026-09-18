@@ -76,15 +76,7 @@ export interface ApartmentEngineProps {
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
-/** Mapeo locale → BCP-47 para Intl (nombres de mes/día). */
-export const BCP47: Record<string, string> = {
-  pt: 'pt-BR',
-  es: 'es-ES',
-  en: 'en-US',
-  fr: 'fr-FR',
-  de: 'de-DE',
-  it: 'it-IT',
-};
+export { BCP47 } from '@/lib/utils';
 
 /** Capacidad máxima seleccionable en el contador de huéspedes del Paso 1. */
 export const MAX_APT_GUESTS = 2;

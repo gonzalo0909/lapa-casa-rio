@@ -79,32 +79,51 @@ export const sanitizeInput = (req: Request, _res: Response, next: NextFunction):
   next();
 };
 
+const guestBase = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string(),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  country: z.string().optional(),
+  document: z.string().max(30).optional(),
+  documentPhotoBase64: z.string().optional(),
+});
+
+const additionalGuestBase = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string(),
+  document: z.string().max(30).optional(),
+  documentPhotoBase64: z.string().optional(),
+});
+
+export const apartmentBookingSchema = z.object({
+  checkIn: z.string().min(1),
+  checkOut: z.string().min(1),
+  rooms: z.array(z.object({
+    roomId: z.string().min(1),
+  })).min(1),
+  guest: guestBase,
+  additionalGuests: z.array(additionalGuestBase).optional(),
+  specialRequests: z.string().max(1000).optional(),
+  arrivalTime: z.string().max(20).optional(),
+  offerCode: z.string().max(50).optional(),
+  source: z.string().max(100).optional(),
+  language: z.enum(['pt', 'en', 'es']).optional(),
+});
+
+export type CreateApartmentBookingRequest = z.infer<typeof apartmentBookingSchema>;
+
 export const bookingSchemas = {
   create: z.object({
     checkIn: z.string().min(1),
     checkOut: z.string().min(1),
     rooms: z.array(z.object({
       roomId: z.string().min(1),
-      bedsCount: z.number().int().positive().optional(),
+      bedsCount: z.number().int().positive(),
       preferredBedIds: z.array(z.string().uuid()).optional(),
     })).min(1),
-    guest: z.object({
-      firstName: z.string().min(1),
-      lastName: z.string(),
-      email: z.string().email(),
-      phone: z.string().optional(),
-      country: z.string().optional(),
-      // CPF (hasta 14 chars con formato) o pasaporte (hasta 20 chars)
-      document: z.string().max(30).optional(),
-      // Data URI base64 de la foto del documento de identidad
-      documentPhotoBase64: z.string().optional(),
-    }),
-    additionalGuests: z.array(z.object({
-      firstName: z.string().min(1),
-      lastName: z.string(),
-      document: z.string().max(30).optional(),
-      documentPhotoBase64: z.string().optional(),
-    })).optional(),
+    guest: guestBase,
+    additionalGuests: z.array(additionalGuestBase).optional(),
     specialRequests: z.string().max(1000).optional(),
     arrivalTime: z.string().max(20).optional(),
     offerCode: z.string().max(50).optional(),
@@ -117,7 +136,7 @@ export const bookingSchemas = {
     checkOut: z.string().min(1).optional(),
     rooms: z.array(z.object({
       roomId: z.string().min(1),
-      bedsCount: z.number().int().positive().optional(),
+      bedsCount: z.number().int().positive(),
     })).optional(),
     guest: z.object({
       firstName: z.string().min(1).optional(),

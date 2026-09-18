@@ -3,7 +3,7 @@
 
 import { Router } from 'express';
 import { createApartmentBookingHandler } from './create-apartment-booking';
-import { validate, bookingSchemas } from '../../middleware/validation';
+import { validate, apartmentBookingSchema } from '../../middleware/validation';
 
 const router = Router();
 
@@ -11,6 +11,6 @@ const router = Router();
  * Create Apartment Booking
  * @route POST /apartment-bookings
  */
-router.post('/', validate(bookingSchemas.create), createApartmentBookingHandler);
+router.post('/', validate(apartmentBookingSchema), createApartmentBookingHandler);
 
 export const apartmentBookingsRouter = router;

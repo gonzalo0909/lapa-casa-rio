@@ -81,6 +81,34 @@ export const cancelBookingHandler = async (
     // fallo transitorio de la pasarela de pago.
     await bookingService.cancelBooking(id, reason || undefined);
 
+    // Fix #3: revertir R$5 del premio de referido si esta reserva usó un código de referido
+    try {
+      const { rows: offerRows } = await query<{ id: number; discount_amount: number }>(
+        `SELECT ao.id, ao.discount_amount::float AS discount_amount
+         FROM reservations r
+         JOIN apartment_offers ao ON r.applied_offer_code = ao.code
+         WHERE r.id = $1 AND ao.referral_owner_guest_id IS NOT NULL`,
+        [id],
+      );
+      if (offerRows.length > 0) {
+        const newAmount = (offerRows[0].discount_amount ?? 0) - 5;
+        await query(
+          `UPDATE apartment_offers
+           SET discount_amount = GREATEST(0, discount_amount - 5),
+               is_active = CASE WHEN $1 <= 0 THEN false ELSE is_active END
+           WHERE id = $2`,
+          [newAmount, offerRows[0].id],
+        );
+        logger.info('Premio de referido revertido por cancelación', {
+          bookingId: id,
+          offerId: offerRows[0].id,
+          newAmount: Math.max(0, newAmount),
+        });
+      }
+    } catch (revertError) {
+      logger.error('No se pudo revertir premio de referido', { bookingId: id, error: String(revertError) });
+    }
+
     let refundStatus: 'processed' | 'not_applicable' | 'pending_manual' = 'not_applicable';
     if (actualRefund > 0 && completedPayments.length > 0) {
       try {

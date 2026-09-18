@@ -171,24 +171,34 @@ export const createApartmentBookingHandler = async (
         // Un mismo amigo no puede usar el beneficio de referido más de una vez
         let alreadyUsedReferral = false;
         if (aptOk && !selfReferral && offer.referral_owner_guest_id) {
-          const { rows: usedRows } = await query<{ count: string }>(
-            `SELECT COUNT(*) AS count FROM reservations r
-             JOIN guests g ON r.guest_id = g.id
-             JOIN apartment_offers ao ON r.applied_offer_code = ao.code
-             WHERE ao.referral_owner_guest_id IS NOT NULL
-               AND r.status != 'cancelled'
-               AND (
-                 LOWER(g.email) = LOWER($1)
-                 OR (g.document IS NOT NULL AND g.document = $2)
-               )`,
-            [bookingData.guest.email.trim(), (bookingData.guest.document ?? '').trim()],
-          );
-          if (parseInt(usedRows[0]?.count ?? '0') > 0) {
+          const docTrimmed = (bookingData.guest.document ?? '').trim();
+          if (!docTrimmed) {
+            // Fix #1: sin documento no se puede verificar la identidad del amigo
             alreadyUsedReferral = true;
-            logger.warn('Código de referido rechazado -- huésped ya usó un referido antes', {
-              offerCode: offer.code,
-              email: bookingData.guest.email,
-            });
+            logger.warn('Código de referido rechazado -- huésped sin documento', { offerCode: offer.code });
+          } else {
+            // Fix #2: normaliza documento (quita guiones/espacios) para evitar bypass CPF vs pasaporte
+            const { rows: usedRows } = await query<{ count: string }>(
+              `SELECT COUNT(*) AS count FROM reservations r
+               JOIN guests g ON r.guest_id = g.id
+               JOIN apartment_offers ao ON r.applied_offer_code = ao.code
+               WHERE ao.referral_owner_guest_id IS NOT NULL
+                 AND r.status != 'cancelled'
+                 AND (
+                   LOWER(g.email) = LOWER($1)
+                   OR (g.document IS NOT NULL
+                       AND REGEXP_REPLACE(g.document, '[^A-Za-z0-9]', '', 'g')
+                           = REGEXP_REPLACE($2, '[^A-Za-z0-9]', '', 'g'))
+                 )`,
+              [bookingData.guest.email.trim(), docTrimmed],
+            );
+            if (parseInt(usedRows[0]?.count ?? '0') > 0) {
+              alreadyUsedReferral = true;
+              logger.warn('Código de referido rechazado -- huésped ya usó un referido antes', {
+                offerCode: offer.code,
+                email: bookingData.guest.email,
+              });
+            }
           }
         }
 

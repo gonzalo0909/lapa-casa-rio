@@ -614,6 +614,7 @@
     "fullPaymentRequired48h": "Pagamento completo alla prenotazione — il check-in è tra meno di 48 ore e non c'è tempo per riscuotere il saldo rimanente.",
     "checking": "Verifica in corso…",
     "apartmentOccupied": "Questo appartamento è occupato in queste date — altri potrebbero essere disponibili",
+    "checkAvailabilityError": "Impossibile verificare la disponibilità — riprova",
     "rangeBlockedWarning": "Alcune date in quel periodo non sono disponibili — selezionare una nuova data di check-in",
     "backToOriginalDates": "Torna alle date originali ({from} → {to})",
     "checkinCheckoutLegend": "Arrivo/Partenza",

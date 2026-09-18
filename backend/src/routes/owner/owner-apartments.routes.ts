@@ -617,6 +617,69 @@ router.get('/:id/pricing', async (req, res, next) => {
   }
 });
 
+/** GET /owner/apartments/:id/bookings — reservas del apartamento con resumen de pagos y transferencias. */
+router.get('/:id/bookings', async (req, res, next) => {
+  try {
+    const { rows } = await query<{
+      id: string;
+      reservation_number: string;
+      guest_name: string;
+      check_in_date: string;
+      check_out_date: string;
+      status: string;
+      final_price: string;
+      created_at: string;
+      deposit_paid: string;
+      remaining_paid: string;
+      transferred_to_owner: string;
+      transfer_pending: boolean;
+    }>(
+      `SELECT
+         r.id,
+         r.reservation_number,
+         g.full_name            AS guest_name,
+         r.check_in_date,
+         r.check_out_date,
+         r.status,
+         r.final_price,
+         r.created_at,
+         COALESCE(SUM(p.amount)  FILTER (WHERE p.payment_type = 'deposit'   AND p.status = 'succeeded'), 0) AS deposit_paid,
+         COALESCE(SUM(p.amount)  FILTER (WHERE p.payment_type = 'remaining' AND p.status = 'succeeded'), 0) AS remaining_paid,
+         COALESCE(SUM(ot.amount) FILTER (WHERE ot.status = 'succeeded'), 0)                                AS transferred_to_owner,
+         bool_or(ot.status = 'pending')                                                                    AS transfer_pending
+       FROM reservations r
+       JOIN guests          g  ON g.id  = r.guest_id
+       JOIN reservation_beds rb ON rb.reservation_id = r.id
+       JOIN beds             b  ON b.id = rb.bed_id AND b.room_type_id = $1
+       LEFT JOIN payments       p  ON p.reservation_id = r.id
+       LEFT JOIN owner_transfers ot ON ot.reservation_id = r.id
+       GROUP BY r.id, g.full_name
+       ORDER BY r.check_in_date DESC
+       LIMIT 100`,
+      [req.params.id]
+    );
+
+    const bookings = rows.map((r) => ({
+      id: r.id,
+      reservationNumber: r.reservation_number,
+      guestName: r.guest_name,
+      checkIn: r.check_in_date,
+      checkOut: r.check_out_date,
+      status: r.status,
+      finalPrice: parseFloat(r.final_price) || 0,
+      createdAt: r.created_at,
+      depositPaid: parseFloat(r.deposit_paid) || 0,
+      remainingPaid: parseFloat(r.remaining_paid) || 0,
+      transferredToOwner: parseFloat(r.transferred_to_owner) || 0,
+      transferPending: r.transfer_pending ?? false,
+    }));
+
+    res.status(200).json(ApiResponse.success({ bookings }));
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put('/:id/pricing', validate(UnitConfigSchema), async (req, res, next) => {
   try {
     const { min_price_brl, max_price_brl, bot_enabled, notes } = req.body as z.infer<

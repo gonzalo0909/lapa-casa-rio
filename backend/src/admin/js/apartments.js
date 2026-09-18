@@ -373,6 +373,49 @@
 
 })();
 
+// ── Configuración del motor de reservas ─────────────────────────────────────
+
+(function () {
+  function aptCfgMsg(text, type) {
+    var el = document.getElementById('apt-config-msg');
+    if (el) el.innerHTML = text ? '<div class="msg ' + type + '">' + text + '</div>' : '';
+  }
+
+  apiFetch('/admin/pricing').then(function (data) {
+    var maxEl = document.getElementById('apt-max-guests');
+    var timesEl = document.getElementById('apt-checkin-times');
+    if (maxEl) maxEl.value = data.maxAptGuests ?? 2;
+    if (timesEl) {
+      var times = data.checkinTimes ?? ['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
+      timesEl.value = times.join('\n');
+    }
+  }).catch(function () {});
+
+  var guestsForm = document.getElementById('apt-guests-form');
+  if (guestsForm) {
+    guestsForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var maxAptGuests = Number(document.getElementById('apt-max-guests').value);
+      apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ maxAptGuests }) })
+        .then(function () { aptCfgMsg('Máximo de huéspedes guardado: ' + maxAptGuests + '.', 'success'); })
+        .catch(function (err) { aptCfgMsg(err.message, 'error'); });
+    });
+  }
+
+  var checkinForm = document.getElementById('apt-checkin-form');
+  if (checkinForm) {
+    checkinForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var raw = document.getElementById('apt-checkin-times').value;
+      var checkinTimes = raw.split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return /^\d{2}:\d{2}$/.test(s); });
+      if (checkinTimes.length === 0) { aptCfgMsg('Ingresá al menos un horario válido (HH:MM).', 'error'); return; }
+      apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ checkinTimes }) })
+        .then(function () { aptCfgMsg(checkinTimes.length + ' horarios de check-in guardados.', 'success'); })
+        .catch(function (err) { aptCfgMsg(err.message, 'error'); });
+    });
+  }
+})();
+
 // ── Pestañas externas (Apartamentos / Bloqueos / Ofertas / Precios dinámicos) ──
 // Fuera del IIFE de arriba porque no necesita nada de su estado interno.
 // Como archivo externo: la CSP del backend (scriptSrc: 'self', sin

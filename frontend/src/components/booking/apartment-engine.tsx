@@ -278,7 +278,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       // '' cuando el huésped tiene un solo nombre; el backend une con trim()
       // → fullName correcto en vez de duplicar el firstName ("João João").
       const lastName = nameParts.slice(1).join(' ');
-      const res = await bookingAPI.create({
+      const res = await bookingAPI.createApartment({
         checkIn,
         checkOut,
         rooms: [{ roomId: selectedApartment.id, bedsCount: guestCount }],

@@ -23,6 +23,9 @@ async function loadPricing() {
     document.getElementById('luggage-days').value = luggage.days;
     document.getElementById('luggage-start').value = luggage.start_time;
     document.getElementById('luggage-end').value = luggage.end_time;
+    document.getElementById('apt-max-guests').value = data.maxAptGuests ?? 2;
+    const times = data.checkinTimes ?? ['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
+    document.getElementById('apt-checkin-times').value = times.join('\n');
   } catch (err) {
     showMsg('seasons-msg', err.message, 'error');
   }
@@ -175,6 +178,37 @@ document.getElementById('luggage-form').addEventListener('submit', async (event)
     showMsg('luggage-msg', 'Malas/Guardavolumes actualizado.', 'success');
   } catch (err) {
     showMsg('luggage-msg', err.message, 'error');
+  }
+});
+
+// ── Apartamento: máximo de huéspedes ────────────────────────────────────────
+
+document.getElementById('apt-guests-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const maxAptGuests = Number(document.getElementById('apt-max-guests').value);
+  try {
+    await apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ maxAptGuests }) });
+    showMsg('apt-config-msg', `Máximo de huéspedes guardado: ${maxAptGuests}.`, 'success');
+  } catch (err) {
+    showMsg('apt-config-msg', err.message, 'error');
+  }
+});
+
+// ── Apartamento: horarios de check-in ───────────────────────────────────────
+
+document.getElementById('apt-checkin-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const raw = document.getElementById('apt-checkin-times').value;
+  const checkinTimes = raw.split('\n').map(s => s.trim()).filter(s => /^\d{2}:\d{2}$/.test(s));
+  if (checkinTimes.length === 0) {
+    showMsg('apt-config-msg', 'Ingresá al menos un horario válido (HH:MM).', 'error');
+    return;
+  }
+  try {
+    await apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ checkinTimes }) });
+    showMsg('apt-config-msg', `${checkinTimes.length} horarios de check-in guardados.`, 'success');
+  } catch (err) {
+    showMsg('apt-config-msg', err.message, 'error');
   }
 });
 

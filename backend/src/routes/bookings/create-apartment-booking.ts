@@ -19,19 +19,19 @@ import { GuestRepository } from '../../database/repositories/guest-repository';
 import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
 import {
-  type CreateBookingRequest,
   anyDocumentBlocked,
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
   calcCheckInBounds,
 } from './create-booking.shared';
+import { type CreateApartmentBookingRequest } from '../../middleware/validation';
 
 const guestRepo = new GuestRepository();
 const bookingService = new BookingService();
 const pricingService = new PricingService();
 
 export const createApartmentBookingHandler = async (
-  req: Request<{}, {}, CreateBookingRequest>,
+  req: Request<{}, {}, CreateApartmentBookingRequest>,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -115,12 +115,13 @@ export const createApartmentBookingHandler = async (
       }
     }
 
-    // Pricing (apartamentos: 1 unidad por entrada, sin multiplicador por persona)
+    // Pricing (apartamentos: 1 unidad = 1 cama, bedsCount fijo en 1)
+    const aptRooms = bookingData.rooms.map((r) => ({ ...r, bedsCount: 1 as const }));
     const pricingDetails = await pricingService.calculateTotalPrice({
       checkInDate: bookingData.checkIn,
       checkOutDate: bookingData.checkOut,
-      rooms: bookingData.rooms,
-      totalBeds: bookingData.rooms.length,
+      rooms: aptRooms,
+      totalBeds: aptRooms.length,
     });
 
     // Cupón de descuento + programa de referidos (apartment_offers)
@@ -219,7 +220,7 @@ export const createApartmentBookingHandler = async (
     const booking = await bookingService.createBooking({
       checkIn: bookingData.checkIn,
       checkOut: bookingData.checkOut,
-      rooms: bookingData.rooms,
+      rooms: aptRooms,
       guest: {
         full_name: fullName,
         email: bookingData.guest.email,
@@ -229,7 +230,7 @@ export const createApartmentBookingHandler = async (
         language: bookingData.language || 'pt',
       },
       nights,
-      totalBeds: bookingData.rooms.length,
+      totalBeds: aptRooms.length,
       pricing: pricingDetails,
       specialRequests: [
         bookingData.arrivalTime

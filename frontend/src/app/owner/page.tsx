@@ -68,17 +68,34 @@ export default function OwnerDashboardPage() {
 
       <div className="flex flex-col gap-4">
         {apartments?.map((apt) => (
-          <Link key={apt.id} href={`/owner/apartments/${apt.id}`}>
-            <Card>
-              <CardHeader>
-                <CardTitle size="sm">{apt.name}</CardTitle>
-                <CardDescription>
-                  {apt.code} · {apt.capacity} hóspedes
-                  {apt.neighborhood ? ` · ${apt.neighborhood}` : ''}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+          <Card key={apt.id}>
+            <CardHeader>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <CardTitle size="sm">{apt.name}</CardTitle>
+                  <CardDescription>
+                    {apt.code} · {apt.capacity} hóspedes
+                    {apt.neighborhood ? ` · ${apt.neighborhood}` : ''}
+                  </CardDescription>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Link
+                    href={`/owner/apartments/${apt.id}/bookings`}
+                    className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Reservas
+                  </Link>
+                  <Link
+                    href={`/owner/apartments/${apt.id}`}
+                    className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                  >
+                    Editar
+                  </Link>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
         ))}
       </div>
     </div>

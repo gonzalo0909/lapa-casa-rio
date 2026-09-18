@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/payment/payment-i18n.ts
 //
 // pix-payment.tsx, card-payment.tsx y payment-processor.tsx tenían cada uno
 // su propia función local `T(key, locale)` -- misma firma, mismo patrón de

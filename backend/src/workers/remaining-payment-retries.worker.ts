@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/workers/remaining-payment-retries.worker.ts
 //
 // Verifica si el saldo restante ya se pago; si no, registra el intento
 // en `payment_retries` (tabla real), reenvia el recordatorio y

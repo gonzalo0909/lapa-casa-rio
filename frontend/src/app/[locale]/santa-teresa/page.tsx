@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/santa-teresa/page.tsx
 //
 // Página de contenido SEO: Guía de Santa Teresa, Rio de Janeiro.
 // Target keywords:

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/workers/index.ts
 //
 // Punto de entrada del proceso de workers -- separado del servidor HTTP
 // (src/server.ts). Se corre con `npm run worker` (prod) / `npm run

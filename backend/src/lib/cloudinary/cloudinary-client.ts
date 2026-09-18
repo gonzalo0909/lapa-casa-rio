@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/lib/cloudinary/cloudinary-client.ts
 //
 // Cliente de Cloudinary para la galeria de fotos de huespedes. Sigue el
 // mismo patron de degradacion que stripe-handler.ts/redis-client.ts: sin

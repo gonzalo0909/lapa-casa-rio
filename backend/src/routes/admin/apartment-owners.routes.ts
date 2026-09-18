@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/apartment-owners.routes.ts
 // Gestión de administradores de apartamentos con Stripe Connect.
 //
 // Endpoints:

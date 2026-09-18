@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/guests.routes.ts
 //
 // Gestión de huéspedes: listado, búsqueda, bloqueo y desbloqueo.
 // Montado bajo /admin/guests (admin.routes.ts).

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/nav.js
 // Barra de navegación compartida entre las páginas del panel.
 //
 // Bloqueos, Ofertas y Precios dinámicos dejaron de ser pestañas propias

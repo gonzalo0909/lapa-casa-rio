@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/dashboard.js
 
 function showMsg(elId, text, type) {
   const el = document.getElementById(elId);

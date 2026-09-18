@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/precios/page.tsx
 //
 // Página de contenido SEO: precios por temporada, indexable en texto
 // estático rastreable (idea #35, roadmap.html -- antes el pricing por

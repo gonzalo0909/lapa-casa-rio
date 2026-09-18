@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/public/sw.js
 // Service Worker — Lapa Casa Rio
 // Estrategia: Cache-first para assets estáticos, Network-first para páginas y API.
 

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/grupos/page.tsx
 // Long-tail SEO + AEO page: group travel in Rio de Janeiro
 // Target keywords: "hostel grupos rio de janeiro", "viagem em grupo rio", "hospedagem grupos desconto"
 

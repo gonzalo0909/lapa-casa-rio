@@ -1,7 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client';
 
-// lapa-casa-hostel/frontend/src/app/owner/contract/page.tsx
 //
 // Visualização do Termo de Adesão aceito pelo administrador.
 // Mostra a data/hora do aceite e permite ler o contrato completo em PT-BR, ES ou FR.

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/middleware/validation.ts
 
 import type { Request, Response, NextFunction } from 'express';
 import { z, type ZodSchema } from 'zod';

@@ -1,4 +1,3 @@
--- lapa-casa-hostel/backend/database/migrations/0032_referral_codes.sql
 --
 -- Programa de referidos (idea #49, roadmap.html): cada huésped que
 -- completa una reserva recibe un código propio para compartir. Reusa

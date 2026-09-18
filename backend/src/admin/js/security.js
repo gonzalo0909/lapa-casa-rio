@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/security.js
 // Activar/desactivar 2FA (TOTP) para el login de admin.
 
 (function () {

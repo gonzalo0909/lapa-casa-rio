@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/lib/ical/date-blocker.ts
 //
 // Bloqueo manual de fechas por habitación (mantenimiento/evento privado).
 // Usa la tabla room_blocks (migración 0016), que check_availability ya

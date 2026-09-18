@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/database/repositories/guest-repository.ts
 //
 // FIX (auditoría 2026-08-30): reescrito de Prisma a SQL directo (pg) --
 // era la única pieza de todo el backend que hablaba con la base por un

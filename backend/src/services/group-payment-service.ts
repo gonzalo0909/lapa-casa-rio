@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/group-payment-service.ts
 // Feature 2 v3: un solo link compartido para todo el grupo.
 //
 // Flujo:

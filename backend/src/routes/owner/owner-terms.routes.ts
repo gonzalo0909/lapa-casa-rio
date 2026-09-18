@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/owner/owner-terms.routes.ts
 //
 // Aceite del Termo de Adesão por el administrador de apartamento.
 // POST /owner/accept-terms guarda timestamp + IP + versión del término.

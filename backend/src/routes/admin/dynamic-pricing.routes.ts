@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/dynamic-pricing.routes.ts
 // Rutas admin para el bot de precios dinámicos.
 // Montadas bajo /admin/dynamic-pricing (requiere authenticateToken).
 

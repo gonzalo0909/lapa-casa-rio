@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/ical/ical.routes.ts
 //
 // Reescrito completo. La version anterior no estaba montada en
 // routes/index.ts (nunca respondia a ningun request real) e importaba

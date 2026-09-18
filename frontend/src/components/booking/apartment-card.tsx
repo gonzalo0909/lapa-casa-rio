@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/booking/apartment-card.tsx
 
 'use client';
 
@@ -17,7 +16,7 @@ import { ApartmentMiniCalendar } from './apartment-mini-calendar';
 import type { ApartmentAvailability } from '@/types/global';
 
 /** Lavados tonales en la familia de marca (verde follaje · azulejo · terracota),
- *  por código apt-01..apt-10. Reemplazan los gradientes LCACOPIA. */
+ *  por código apt-01..apt-10. */
 const APT_TINTS = [
   'linear-gradient(135deg,#1E4A3A,#2C6E55)',
   'linear-gradient(135deg,#245A54,#2B7E8C)',

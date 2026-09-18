@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/photos.routes.ts
 //
 // Galería curada de fotos de huéspedes ("bitácora de viajantes"): el
 // dueño sube acá las fotos que recibe por WhatsApp/email -- no hay

@@ -1,5 +1,4 @@
 /**
- * File: lapa-casa-hostel/backend/src/routes/index.ts
  * Main API Routes Index
  * Lapa Casa Channel Manager
  *

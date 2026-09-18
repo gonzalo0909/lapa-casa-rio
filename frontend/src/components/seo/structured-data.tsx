@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/seo/structured-data.tsx
 
 /**
  * Structured Data Component

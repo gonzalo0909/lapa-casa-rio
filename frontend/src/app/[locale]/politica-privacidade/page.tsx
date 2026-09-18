@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/politica-privacidade/page.tsx
 //
 // Sección 14 — alias canônico em português para a Política de Privacidade.
 // O banner de cookies e termos-hospede já linkam para /<locale>/privacy

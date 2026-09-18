@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/dynamic-pricing-service.ts
 //
 // Bot de precios dinámicos.
 // Corre nightly (cron) o on-demand desde el admin.

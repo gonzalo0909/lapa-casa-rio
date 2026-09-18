@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/dynamic-pricing.js
 // Script de la pagina de precios dinamicos.
 // Cargado como archivo externo para cumplir con la CSP (scriptSrc: 'self').
 // NO usa onclick ni otros event handlers inline.

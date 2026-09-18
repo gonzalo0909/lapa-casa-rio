@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/workers/sheets-export.worker.ts
 //
 // Procesa el espejo DB -> Sheets. Si Google Sheets no está configurado
 // (ver sheets-client.ts), upsertBookingInSheet/deleteBookingFromSheet

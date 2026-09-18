@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/lib/utils.test.ts
 //
 // Sección 13 auditoría de 17 secciones: primer test real del frontend --
 // el script "test" ya existía en package.json pero no había ningún

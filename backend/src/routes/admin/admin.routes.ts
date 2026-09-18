@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/admin/admin.routes.ts
 //
 // Reescrito completo: la version anterior devolvia datos hardcodeados en
 // cada endpoint (bookings: [], stats fijas, "Room updated" sin tocar la

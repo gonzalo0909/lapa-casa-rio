@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/payments/deposit-mp-card.ts
 //
 // Ruta exclusiva para pagos con tarjeta brasileña via Mercado Pago.
 // El SDK de MP en el frontend tokeniza la tarjeta y envía el token acá.

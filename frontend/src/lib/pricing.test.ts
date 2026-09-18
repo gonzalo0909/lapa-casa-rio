@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/lib/pricing.test.ts
 //
 // Sección 13 auditoría de 17 secciones: segundo archivo de test real del
 // frontend (después de utils.test.ts). Cubre pricing.ts -- lógica pura de

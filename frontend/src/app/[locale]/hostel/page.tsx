@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/hostel/page.tsx
 // Página /hostel — solo el motor de hostel, sin tab de apartamentos.
 // Ambos motores son independientes: el huésped de hostel no ve apartamentos
 // desde aquí, y el de apartamentos no ve el hostel desde /apartamentos.

@@ -23,7 +23,7 @@ Supabase nuevo**.
 Ver `docs/DEPLOY-RECORDATORIO.md` para el flujo paso a paso desde el
 dashboard web de Fly (sin `flyctl` local). Resumen:
 
-1. Fly → **Launch an App** → conectar repo GitHub → `gonzalo0909/lapa-casa-hostel`
+1. Fly → **Launch an App** → conectar repo GitHub → `gonzalo0909/lapa-casa-rio`
 2. Working directory / Config path: `backend` (ahí vive `Dockerfile` y `fly.toml`).
 3. Branch: `definitivo2026`, región: `gru` (São Paulo).
 4. Cargar secretos en Fly → Secrets: `DATABASE_URL`, `REDIS_URL`,
@@ -42,7 +42,7 @@ dashboard web de Fly (sin `flyctl` local). Resumen:
 
 ## 3. Deploy — frontend Next.js (Vercel)
 
-1. Vercel → **Add New Project** → importar repo `gonzalo0909/lapa-casa-hostel`.
+1. Vercel → **Add New Project** → importar repo `gonzalo0909/lapa-casa-rio`.
 2. Root Directory: `frontend`.
 3. Framework Preset: **Next.js** (detectado automáticamente).
 4. Branch de producción: `definitivo2026`.

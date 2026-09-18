@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/booking/apartment-mini-calendar.tsx
 
 'use client';
 

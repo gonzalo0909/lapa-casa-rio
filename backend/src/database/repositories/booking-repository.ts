@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/database/repositories/booking-repository.ts
 //
 // FIX (auditoría 2026-08-30): reescrito de Prisma a SQL directo (pg) para
 // no mantener dos capas de persistencia distintas sobre las mismas tablas

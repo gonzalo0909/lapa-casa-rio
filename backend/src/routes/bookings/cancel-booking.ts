@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/bookings/cancel-booking.ts
 // email de cancelación vía notificationService.notify('cancellation', ...); de paso corrige un bug real que rompía esta ruta (booking.final_price llegaba como Decimal de Prisma a un parámetro de pg crudo)
 
 import type { Request, Response, NextFunction } from 'express';

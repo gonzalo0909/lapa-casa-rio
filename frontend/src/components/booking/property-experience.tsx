@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/booking/property-experience.tsx
 
 'use client';
 

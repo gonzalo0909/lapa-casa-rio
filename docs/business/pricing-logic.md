@@ -1,4 +1,3 @@
-# lapa-casa-hostel/docs/business/pricing-logic.md
 
 # Lapa Casa Hostel - Pricing Logic Documentation
 

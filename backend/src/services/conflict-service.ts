@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/conflict-service.ts
 //
 // REQUISITO CRITICO #1: el constraint EXCLUDE (0003_exclude_constraint.sql)
 // es la autoridad final -- dos reservas realmente superpuestas sobre la

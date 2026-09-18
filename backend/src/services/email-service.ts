@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/email-service.ts
 //
 // Servicio de emails real, vía Resend. Sigue el mismo patron de
 // degradacion que src/cache/redis-client.ts y src/lib/payments/stripe-handler.ts:

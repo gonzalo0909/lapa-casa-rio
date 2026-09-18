@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/analytics/analytics-provider.tsx
 
 /**
  * Analytics Provider Component

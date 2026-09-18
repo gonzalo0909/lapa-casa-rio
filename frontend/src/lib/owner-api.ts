@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/lib/owner-api.ts
 //
 // Cliente API para el panel de administradores de apartamento, alineado
 // con backend/src/routes/owner/*.ts. Usa la cookie httpOnly `lch_owner`

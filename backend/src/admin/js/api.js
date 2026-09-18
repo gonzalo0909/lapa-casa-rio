@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/api.js
 // M-02: JWT migrado de localStorage a httpOnly cookie.
 // El servidor emite la cookie en el login (Set-Cookie: lch_admin=...; HttpOnly; SameSite=Strict)
 // y todas las rutas de admin la leen automáticamente — el JS nunca

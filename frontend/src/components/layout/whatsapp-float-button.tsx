@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/layout/whatsapp-float-button.tsx
 //
 // Idea #48 (roadmap.html): "Chat de WhatsApp visible como opción de
 // consulta pre-reserva (ya existe integración, falta exponerla como canal

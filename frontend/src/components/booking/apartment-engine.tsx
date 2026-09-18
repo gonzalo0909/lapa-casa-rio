@@ -1,5 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/booking/apartment-engine.tsx
-//
 // Orquestador del motor de reservas de Apartamentos.
 // Gestiona el estado global entre pasos y delega cada paso a su componente:
 //   Paso 1 → ApartmentDateStep
@@ -7,7 +5,7 @@
 //   Paso 3 → ApartmentGuestForm
 //   Paso 4 → PaymentProcessor (inline, mínimo)
 //
-// Dos ajustes deliberados frente al prototipo LCACOPIA (ver PR original):
+// Ajustes deliberados en este motor:
 //  1. El "10% de desconto no PIX" no existe en el backend real — se omite.
 //  2. El Paso 4 usa el componente de pago real (Stripe + Mercado Pago PIX).
 

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/photos/photos.routes.ts
 //
 // Endpoint público de solo lectura para la galería de fotos de
 // huéspedes ("bitácora de viajantes") -- la carga/gestión vive en

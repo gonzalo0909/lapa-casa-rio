@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/sentry.client.config.ts
 // Corre en el navegador. Se inicializa automáticamente gracias a withSentryConfig
 // en next.config.js — no hace falta importarlo a mano.
 

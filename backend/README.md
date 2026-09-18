@@ -110,8 +110,8 @@ Carnival (February):       +100% (2.0x, minimum 5 nights)
 
 ```bash
 # Clone repository
-git clone https://github.com/lapa-casa-hostel/channel-manager-backend.git
-cd channel-manager-backend
+git clone https://github.com/gonzalo0909/lapa-casa-rio.git
+cd lapa-casa-rio
 
 # Install dependencies
 npm install
@@ -424,7 +424,7 @@ git push origin feature/your-feature
 
 ## 📞 Support
 
-**Technical Issues:** [GitHub Issues](https://github.com/lapa-casa-hostel/channel-manager-backend/issues)  
+**Technical Issues:** [GitHub Issues](https://github.com/gonzalo0909/lapa-casa-rio/issues)  
 **Business Contact:** lapalandiarj@gmail.com  
 **Phone:** +55 21 XXXX-XXXX
 

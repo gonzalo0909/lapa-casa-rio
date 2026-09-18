@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/gallery/guest-gallery.tsx
 
 'use client';
 

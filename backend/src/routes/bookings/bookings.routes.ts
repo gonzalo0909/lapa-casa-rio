@@ -1,5 +1,4 @@
 /**
- * File: lapa-casa-hostel/backend/src/routes/bookings/bookings.routes.ts
  * Bookings Routes Module
  * Lapa Casa Channel Manager
  * 

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/rooms.js
 
 requireAuth();
 renderNav('rooms');

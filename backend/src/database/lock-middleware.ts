@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/database/lock-middleware.ts
 //
 // Wrapper
 // explicito de acquire_bed_locks() -- SIEMPRE recibe el PoolClient de

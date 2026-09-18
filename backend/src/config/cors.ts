@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/config/cors.ts
 //
 // FIX (auditoría 2026-08-30): se eliminaron 5 exports sin ningún uso
 // (strictCorsOptions, publicCorsOptions, createCorsMiddleware,

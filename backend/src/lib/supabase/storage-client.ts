@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/lib/supabase/storage-client.ts
 //
 // Cliente de Supabase Storage para fotos de apartamentos.
 // Usa la REST API de Supabase Storage directamente con fetch nativo

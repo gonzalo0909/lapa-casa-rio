@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/availability/check-availability.ts
 //
 // Antes usaba un ROOMS_CONFIG hardcodeado con roomId ficticios
 // ("room_mixto_12a") que no existen en la base (room_types.id es UUID) y

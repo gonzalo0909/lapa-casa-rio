@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/seo/faq-section.tsx
 //
 // Componente FAQ visible en la página + JSON-LD FAQPage para AEO.
 // Las respuestas aparecen tanto en el HTML (para lectores y Google) como en

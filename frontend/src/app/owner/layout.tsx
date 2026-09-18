@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/owner/layout.tsx
 //
 // Root layout propio de /owner (panel de administradores de apartamento).
 // No cuelga de app/[locale]/layout.tsx -- middleware.ts excluye /owner del

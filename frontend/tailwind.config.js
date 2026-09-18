@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/tailwind.config.js
 /**
  * Tailwind CSS Configuration - Lapa Casa Hostel
  * Design system optimized for booking engine and hospitality UX

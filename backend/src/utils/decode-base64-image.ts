@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/utils/decode-base64-image.ts
 //
 // Decodifica un data URL de imagen (ej. "data:image/jpeg;base64,...") a un
 // Buffer para subir a Cloudinary. Usado por el pago grupal y por la reserva

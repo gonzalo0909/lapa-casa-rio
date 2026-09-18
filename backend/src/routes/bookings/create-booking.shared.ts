@@ -15,7 +15,7 @@ export interface CreateBookingRequest {
   checkOut: string;
   rooms: Array<{
     roomId: string;
-    bedsCount: number;
+    bedsCount?: number;
     /** Camas elegidas manualmente — opcional, ver bookingService.createBooking(). */
     preferredBedIds?: string[];
   }>;
@@ -42,7 +42,7 @@ export interface CreateBookingRequest {
   offerCode?: string;
 }
 
-// ── Holiday helpers ──────────────────────────────────────────────────────────
+// ── Holiday helpers (usados por el motor del hostel) ─────────────────────────
 
 /** Devuelve la fecha de Pascua (algoritmo de Meeus/Jones/Butcher). */
 export function easterDate(year: number): Date {
@@ -63,20 +63,18 @@ export function easterDate(year: number): Date {
   return new Date(year, month - 1, day);
 }
 
-/** true si la fecha (YYYY-MM-DD) cae en feriado nacional brasileño o Carnaval. */
+/** true si la fecha (YYYY-MM-DD) cae en feriado nacional brasileño. */
 export function isHolidayDate(ds: string): boolean {
   const [y, m, d] = ds.split('-').map(Number);
   const mmdd = ds.slice(5);
   const fixed = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '12-25', '12-31'];
   if (fixed.includes(mmdd)) return true;
   const easter = easterDate(y);
-  for (let offset = 51; offset >= 47; offset--) {
-    const carnival = new Date(easter.getTime() - offset * 86400000);
-    const cvds = carnival.getFullYear() +
-      '-' + String(carnival.getMonth() + 1).padStart(2, '0') +
-      '-' + String(carnival.getDate()).padStart(2, '0');
-    if (cvds === ds) return true;
-  }
+  const goodFriday = new Date(easter.getTime() - 2 * 86400000);
+  const gfDs = goodFriday.getFullYear() +
+    '-' + String(goodFriday.getMonth() + 1).padStart(2, '0') +
+    '-' + String(goodFriday.getDate()).padStart(2, '0');
+  if (gfDs === ds) return true;
   if (m === 12 && d >= 28) return true;
   if (m === 1 && d <= 2) return true;
   return false;

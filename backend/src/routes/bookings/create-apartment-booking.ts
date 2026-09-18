@@ -20,7 +20,6 @@ import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
 import {
   type CreateBookingRequest,
-  isHolidayDate,
   anyDocumentBlocked,
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
@@ -116,13 +115,12 @@ export const createApartmentBookingHandler = async (
       }
     }
 
-    // Pricing
-    const totalBedsRequested = bookingData.rooms.reduce((sum, r) => sum + r.bedsCount, 0);
+    // Pricing (apartamentos: 1 unidad por entrada, sin multiplicador por persona)
     const pricingDetails = await pricingService.calculateTotalPrice({
       checkInDate: bookingData.checkIn,
       checkOutDate: bookingData.checkOut,
       rooms: bookingData.rooms,
-      totalBeds: totalBedsRequested,
+      totalBeds: bookingData.rooms.length,
     });
 
     // Cupón de descuento + programa de referidos (apartment_offers)
@@ -133,13 +131,12 @@ export const createApartmentBookingHandler = async (
       discount_percent: number;
       discount_amount: number | null;
       monthly_limit: number | null;
-      block_holidays: boolean;
       referral_owner_guest_id: string | null;
     } | null = null;
     if (bookingData.offerCode) {
       const today = bookingData.checkIn;
       const { rows: offerRows } = await query(
-        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit, block_holidays,
+        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit,
                 apartment_ids, referral_owner_guest_id
          FROM apartment_offers
          WHERE code = $1
@@ -170,14 +167,8 @@ export const createApartmentBookingHandler = async (
           }
         }
 
-        let holidayBlocked = false;
-        if (aptOk && !selfReferral && offer.block_holidays && isHolidayDate(bookingData.checkIn)) {
-          holidayBlocked = true;
-          logger.info('Código de oferta rechazado -- feriado', { offerCode: offer.code, checkIn: bookingData.checkIn });
-        }
-
         let monthlyLimitReached = false;
-        if (aptOk && !selfReferral && !holidayBlocked && offer.monthly_limit != null) {
+        if (aptOk && !selfReferral && offer.monthly_limit != null) {
           const { rows: usageRows } = await query<{ count: string }>(
             `SELECT COUNT(*) AS count FROM reservations
              WHERE applied_offer_code = $1
@@ -191,7 +182,7 @@ export const createApartmentBookingHandler = async (
           }
         }
 
-        if (aptOk && !selfReferral && !holidayBlocked && !monthlyLimitReached) {
+        if (aptOk && !selfReferral && !monthlyLimitReached) {
           appliedOffer = offer;
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);
@@ -238,7 +229,7 @@ export const createApartmentBookingHandler = async (
         language: bookingData.language || 'pt',
       },
       nights,
-      totalBeds: totalBedsRequested,
+      totalBeds: bookingData.rooms.length,
       pricing: pricingDetails,
       specialRequests: [
         bookingData.arrivalTime
@@ -306,9 +297,9 @@ export const createApartmentBookingHandler = async (
           rewardValidTo.setFullYear(rewardValidTo.getFullYear() + 1);
           await query(
             `INSERT INTO apartment_offers
-               (code, label, discount_percent, discount_amount, monthly_limit, block_holidays,
+               (code, label, discount_percent, discount_amount, monthly_limit,
                 apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-             VALUES ($1, 'Premio por referido', 0, 5, 3, true, NULL, now()::date, $2::date, true, $3)`,
+             VALUES ($1, 'Premio por referido', 0, 5, 3, NULL, now()::date, $2::date, true, $3)`,
             [rewardCode, rewardValidTo.toISOString().slice(0, 10), appliedOffer!.referral_owner_guest_id],
           );
           await emailService.sendReferralReward(

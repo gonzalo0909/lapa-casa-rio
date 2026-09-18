@@ -155,17 +155,12 @@ export const checkApartmentAvailabilityHandler = async (
       // 1) Valores compartidos — una sola query por aspecto estacional
       const [
         { rows: seasonRows },
-        { rows: minNightsRows },
         { rows: groupDiscountRows },
         { rows: depositPctRows },
       ] = await Promise.all([
         query<{ multiplier: string; season_type: string }>(
           `SELECT calculate_season_multiplier($1::date) AS multiplier,
                   get_season_type($1::date) AS season_type`,
-          [checkIn]
-        ),
-        query<{ get_min_nights: number }>(
-          `SELECT get_min_nights($1::date) AS get_min_nights`,
           [checkIn]
         ),
         query<{ calculate_group_discount: string }>(
@@ -181,11 +176,6 @@ export const checkApartmentAvailabilityHandler = async (
       seasonType = seasonRows[0].season_type;
       groupDiscount = parseFloat(groupDiscountRows[0].calculate_group_discount);
       depositPercent = parseFloat(depositPctRows[0].deposit_percent);
-      const minNights = minNightsRows[0]?.get_min_nights ?? 1;
-
-      if (seasonType === 'carnaval' && nights < minNights) {
-        throw new Error(`Durante Carnaval se requiere minimo ${minNights} noches`);
-      }
 
       // 2) calculate_final_price en batch para todos los apartamentos a la vez
       if (apartments.length > 0) {
@@ -204,16 +194,9 @@ export const checkApartmentAvailabilityHandler = async (
         }
       }
     } catch (pricingError) {
-      const msg = pricingError instanceof Error ? pricingError.message : 'Unknown error';
-      // El error de noches mínimas de Carnaval es una restricción de negocio,
-      // no una falla técnica de pricing — hay que devolver 400 con el mensaje.
-      if (msg.startsWith('Durante Carnaval')) {
-        res.status(400).json(ApiResponse.error(msg, { minNightsRequired: true }));
-        return;
-      }
       pricingFailed = true;
       logger.warn('Apartment batch pricing unavailable for date range', {
-        checkIn, checkOut, error: msg,
+        checkIn, checkOut, error: pricingError instanceof Error ? pricingError.message : 'Unknown error',
       });
     }
 

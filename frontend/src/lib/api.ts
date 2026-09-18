@@ -277,7 +277,7 @@ export const api = {
 type BookingCreateData = {
   checkIn: string;
   checkOut: string;
-  rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
+  rooms: Array<{ roomId: string; bedsCount?: number; preferredBedIds?: string[] }>;
   guest: {
     firstName: string;
     lastName: string;

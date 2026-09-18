@@ -1,8 +1,7 @@
 //
 // Repeatable job diario (09:00 America/Sao_Paulo aproximado -- BullMQ
 // corre en UTC, ver nota abajo): corre runScheduledAlertChecks()
-// (monitoring/alerts.ts) -- fechas de Carnaval del año siguiente
-// faltantes y servicios criticos caidos. Mismo patron que
+// (monitoring/alerts.ts) -- servicios criticos caidos. Mismo patron que
 // cleanup.queue.ts: todo el scheduling pasa por BullMQ, no node-cron.
 
 import { createSafeQueue } from './safe-queue';

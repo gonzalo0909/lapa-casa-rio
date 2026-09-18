@@ -16,7 +16,7 @@ import { getSeasonType } from './season-type';
 interface PricingRequest {
   checkInDate: string;
   checkOutDate: string;
-  rooms: Array<{ roomId: string; bedsCount: number }>;
+  rooms: Array<{ roomId: string; bedsCount?: number }>;
   totalBeds: number;
 }
 
@@ -78,11 +78,12 @@ export class PricingService {
       );
       if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);
       const roomBasePrice = parseFloat(rows[0].base_price);
-      basePrice += roomBasePrice * nights * room.bedsCount;
+      const beds = room.bedsCount ?? 1;
+      basePrice += roomBasePrice * nights * beds;
 
       const { rows: priceRows } = await query<{ p: string }>(
         `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
-        [roomBasePrice, nights, room.bedsCount, request.checkInDate, bookingDate]
+        [roomBasePrice, nights, beds, request.checkInDate, bookingDate]
       );
       preDiscountTotal += parseFloat(priceRows[0].p);
     }
@@ -93,10 +94,6 @@ export class PricingService {
 
     const seasonMultiplier = await this.getSeasonMultiplier(request.checkInDate);
     const seasonType = await getSeasonType(request.checkInDate);
-    const minNights = await this.getMinNightsFromDb(request.checkInDate);
-    if (seasonType === 'carnaval' && nights < minNights) {
-      throw new Error(`Durante Carnaval se requiere minimo ${minNights} noches`);
-    }
 
     // preDiscountTotal ya incorpora temporada + early bird (vía SQL calculate_final_price).
     // priceAfterSeason = ese total pre-descuento de grupo; priceAfterDiscount = total real.
@@ -141,18 +138,6 @@ export class PricingService {
     const basePrice = parseFloat(rows[0].base_price);
     const multiplier = await this.getSeasonMultiplier(checkInDate);
     return Math.round(basePrice * multiplier * 100) / 100;
-  }
-
-  async getMinNights(checkInDate: string, _checkOutDate: string): Promise<number> {
-    return this.getMinNightsFromDb(checkInDate);
-  }
-
-  private async getMinNightsFromDb(checkIn: string): Promise<number> {
-    const { rows } = await query<{ get_min_nights: number }>(
-      `SELECT get_min_nights($1::date) AS get_min_nights`,
-      [checkIn]
-    );
-    return rows[0]?.get_min_nights ?? 1;
   }
 
   async calculateFinalPrice(
@@ -203,13 +188,12 @@ export class PricingService {
   }
 
   /** determineSeason: usado por rutas para mostrar info de temporada -- via SQL, no tabla hardcodeada. */
-  async determineSeason(checkIn: string, _checkOut: string): Promise<{ type: string; multiplier: number; minNights: number }> {
-    const [type, multiplier, minNights] = await Promise.all([
+  async determineSeason(checkIn: string, _checkOut: string): Promise<{ type: string; multiplier: number }> {
+    const [type, multiplier] = await Promise.all([
       getSeasonType(checkIn),
       this.getSeasonMultiplier(checkIn),
-      this.getMinNightsFromDb(checkIn)
     ]);
-    return { type, multiplier, minNights };
+    return { type, multiplier };
   }
 
   /** calculate_deposit() -- 30% estandar / 50% para 15+ camas, definido en SQL. */

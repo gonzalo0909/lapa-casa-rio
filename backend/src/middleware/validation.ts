@@ -85,7 +85,7 @@ export const bookingSchemas = {
     checkOut: z.string().min(1),
     rooms: z.array(z.object({
       roomId: z.string().min(1),
-      bedsCount: z.number().int().positive(),
+      bedsCount: z.number().int().positive().optional(),
       preferredBedIds: z.array(z.string().uuid()).optional(),
     })).min(1),
     guest: z.object({
@@ -117,7 +117,7 @@ export const bookingSchemas = {
     checkOut: z.string().min(1).optional(),
     rooms: z.array(z.object({
       roomId: z.string().min(1),
-      bedsCount: z.number().int().positive(),
+      bedsCount: z.number().int().positive().optional(),
     })).optional(),
     guest: z.object({
       firstName: z.string().min(1).optional(),

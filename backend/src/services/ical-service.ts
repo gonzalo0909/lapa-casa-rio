@@ -227,15 +227,62 @@ export async function generateICalFeed(roomTypeId: string): Promise<string> {
   return calendar.toString();
 }
 
-/** Feed iCal combinado con las 5 habitaciones reales. */
+/** Feed iCal combinado con las 5 habitaciones reales del hostel. */
 export async function generateAllFeeds(): Promise<string> {
-  const { rows: rooms } = await query<RoomTypeRow>(`SELECT id, code, name FROM room_types ORDER BY code`);
+  const { rows: rooms } = await query<RoomTypeRow>(
+    `SELECT id, code, name FROM room_types WHERE property_type = 'hostel' ORDER BY code`
+  );
 
   const calendar = ical({
     name: 'Lapa Casa - Todas las habitaciones',
     description: 'Disponibilidad combinada de las 5 habitaciones',
     timezone: 'America/Sao_Paulo',
     url: 'https://lapacasario.com/api/v1/ical/export',
+    ttl: 3600,
+  });
+
+  for (const room of rooms) {
+    const bookings = await fetchBookingsForRoom(room.id);
+    for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
+  }
+
+  return calendar.toString();
+}
+
+/** Feed iCal de UN apartamento — valida que sea property_type='apartment'. */
+export async function generateApartmentICalFeed(roomTypeId: string): Promise<string> {
+  const { rows } = await query<RoomTypeRow>(
+    `SELECT id, code, name FROM room_types WHERE id = $1 AND property_type = 'apartment'`,
+    [roomTypeId]
+  );
+  if (rows.length === 0) {throw new Error(`Apartamento no encontrado: ${roomTypeId}`);}
+  const apt = rows[0];
+
+  const calendar = ical({
+    name: `Lapa Casa - ${apt.name}`,
+    description: `Disponibilidad de ${apt.name}`,
+    timezone: 'America/Sao_Paulo',
+    url: `https://lapacasario.com/api/v1/ical/apartment/export/${roomTypeId}`,
+    ttl: 3600,
+  });
+
+  const bookings = await fetchBookingsForRoom(roomTypeId);
+  for (const booking of bookings) {addBookingEvent(calendar, booking, apt.name);}
+
+  return calendar.toString();
+}
+
+/** Feed iCal combinado de todos los apartamentos. */
+export async function generateAllApartmentFeeds(): Promise<string> {
+  const { rows: rooms } = await query<RoomTypeRow>(
+    `SELECT id, code, name FROM room_types WHERE property_type = 'apartment' ORDER BY code`
+  );
+
+  const calendar = ical({
+    name: 'Lapa Casa - Apartamentos',
+    description: 'Disponibilidad combinada de todos los apartamentos',
+    timezone: 'America/Sao_Paulo',
+    url: 'https://lapacasario.com/api/v1/ical/apartment/export',
     ttl: 3600,
   });
 
@@ -480,6 +527,8 @@ export const icalService = {
   getSyncStatus,
   generateICalFeed,
   generateAllFeeds,
+  generateApartmentICalFeed,
+  generateAllApartmentFeeds,
   parseICalEvents,
   importICalFeed,
   syncICalFeeds,

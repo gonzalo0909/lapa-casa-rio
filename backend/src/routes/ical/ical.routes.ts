@@ -57,6 +57,26 @@ router.get('/export', exportLimiter, async (_req, res) => {
   }
 });
 
+/** GET /api/ical/apartment/export/:roomTypeId — feed iCal público de UN apartamento. */
+router.get('/apartment/export/:roomTypeId', exportLimiter, async (req, res) => {
+  try {
+    const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId);
+    sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);
+  } catch (error) {
+    res.status(404).json(ApiResponse.error('No se pudo generar el feed', error instanceof Error ? error.message : 'Error desconocido'));
+  }
+});
+
+/** GET /api/ical/apartment/export — feed iCal público combinado de todos los apartamentos. */
+router.get('/apartment/export', exportLimiter, async (_req, res) => {
+  try {
+    const calendar = await icalService.generateAllApartmentFeeds();
+    sendCalendar(res, 'lapa-casa-apartamentos.ics', calendar);
+  } catch (error) {
+    res.status(500).json(ApiResponse.error('No se pudo generar el feed combinado', error instanceof Error ? error.message : 'Error desconocido'));
+  }
+});
+
 /** GET /api/ical/feeds — feeds de importacion configurados (admin). */
 router.get('/feeds', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
   try {

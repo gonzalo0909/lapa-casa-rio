@@ -35,7 +35,7 @@ interface BookingSummary {
   total: number;
   deposit: number;
   remaining: number;
-  bedsCount: number;
+  bedsCount?: number;
   depositPaid: boolean;
   fullyPaid: boolean;
 }
@@ -150,10 +150,12 @@ export const PaymentConfirmationPage: React.FC<PaymentConfirmationPageProps> = (
             <p className="text-muted-foreground">{t('guest')}</p>
             <p className="font-medium text-foreground">{booking.guestName}</p>
           </div>
-          <div>
-            <p className="text-muted-foreground">{tb('beds')}</p>
-            <p className="font-medium text-foreground">{booking.bedsCount}</p>
-          </div>
+          {booking.bedsCount != null && (
+            <div>
+              <p className="text-muted-foreground">{tb('beds')}</p>
+              <p className="font-medium text-foreground">{booking.bedsCount}</p>
+            </div>
+          )}
         </div>
       </div>
 

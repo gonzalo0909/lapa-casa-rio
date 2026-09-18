@@ -279,7 +279,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       const res = await bookingAPI.createApartment({
         checkIn,
         checkOut,
-        rooms: [{ roomId: selectedApartment.id, bedsCount: guestCount }],
+        rooms: [{ roomId: selectedApartment.id }],
         guest: {
           firstName,
           lastName,

@@ -43,7 +43,7 @@ export const createHostelBookingHandler = async (
     logger.info('Creating hostel booking', {
       checkIn: bookingData.checkIn,
       checkOut: bookingData.checkOut,
-      totalBeds: bookingData.rooms.reduce((sum, r) => sum + r.bedsCount, 0),
+      totalBeds: bookingData.rooms.reduce((sum, r) => sum + (r.bedsCount ?? 1), 0),
     });
 
     const checkIn = new Date(bookingData.checkIn);
@@ -67,7 +67,7 @@ export const createHostelBookingHandler = async (
     }
 
     const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    const totalBedsRequested = bookingData.rooms.reduce((sum, r) => sum + r.bedsCount, 0);
+    const totalBedsRequested = bookingData.rooms.reduce((sum, r) => sum + (r.bedsCount ?? 1), 0);
 
     // Verificación de lista negra
     const allDocuments = [
@@ -181,10 +181,10 @@ export const createHostelBookingHandler = async (
         bookingData.checkIn,
         bookingData.checkOut,
       );
-      if (roomAvail.availableBeds < room.bedsCount) {
+      if (roomAvail.availableBeds < (room.bedsCount ?? 1)) {
         res.status(409).json(ApiResponse.error(`Insufficient beds in room ${room.roomId}`, {
           roomId: room.roomId,
-          requested: room.bedsCount,
+          requested: room.bedsCount ?? 1,
           available: roomAvail.availableBeds,
         }));
         return;

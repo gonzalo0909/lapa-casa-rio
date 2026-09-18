@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/booking-service.ts
 //
 // REQUISITO CRITICO #1 (prompt Maestro v1.5): acquire_bed_locks() +
 // check_availability() + el INSERT de reservation_beds deben correr

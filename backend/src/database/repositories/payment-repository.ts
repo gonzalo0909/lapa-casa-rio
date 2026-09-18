@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/database/repositories/payment-repository.ts
 //
 // FIX (auditoría 2026-08-30): reescrito de Prisma a SQL directo (pg) --
 // mismo motivo que booking-repository.ts y guest-repository.ts. Se

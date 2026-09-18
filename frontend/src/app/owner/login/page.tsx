@@ -1,6 +1,5 @@
 'use client';
 
-// lapa-casa-hostel/frontend/src/app/owner/login/page.tsx
 //
 // Login del panel de administradores de apartamento (owner-auth.routes.ts).
 // Sesión vive en la cookie httpOnly `lch_owner`, seteada por el backend --

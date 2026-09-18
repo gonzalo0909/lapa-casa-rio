@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/payment/card-payment.tsx
 
 'use client';
 

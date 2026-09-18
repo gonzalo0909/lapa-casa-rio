@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/gallery.js
 //
 // "Bitácora de viajantes" -- galería pública de fotos de huéspedes que
 // alimenta /galeria en el sitio. Antes vivía en photos.js/photos.html;

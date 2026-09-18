@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/partners/partner-contract-page.tsx
 //
 // Página pública para administradores de propiedad interesados en sumar
 // su apartamento a Lapa Casa. Antes mostraba el contrato legal completo

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/availability/availability.routes.ts
 
 import { Router } from 'express';
 import { z } from 'zod';

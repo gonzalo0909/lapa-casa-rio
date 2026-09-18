@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/apartamentos/page.tsx
 // Página /apartamentos — solo el motor de apartamentos, sin tab de hostel.
 // El tab de Hostel no aparece aquí: el huésped de apartamento no ve la
 // dirección del hostel ni tiene acceso cruzado desde esta página.

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/payments/release-deposit.ts
 // POST /payments/release-deposit
 //
 // Endpoint de uso interno (solo admin) que libera los fondos al administrador

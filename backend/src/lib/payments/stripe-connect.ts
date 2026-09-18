@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/lib/payments/stripe-connect.ts
 // Wrapper del SDK de Stripe Connect para administradores de apartamentos.
 //
 // Modelo: "separate charges and transfers"

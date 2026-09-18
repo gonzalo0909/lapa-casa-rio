@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/monitoring/metrics.ts
 //
 // Metricas basicas en memoria: requests por minuto, latencia promedio,
 // tasa de error. Deliberadamente simple -- un solo proceso, sin

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/owners.js
 //
 // CRUD de administradores de apartamento.
 //

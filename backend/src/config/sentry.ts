@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/config/sentry.ts
 // Inicialización de Sentry — debe importarse ANTES de cualquier otro módulo
 // en server.ts para que el auto-instrumentation capture todas las operaciones.
 

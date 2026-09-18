@@ -1,5 +1,4 @@
 /**
- * File: lapa-casa-hostel/backend/src/routes/rooms/list-rooms.ts
  * List Rooms Handler
  * Lapa Casa Channel Manager
  *

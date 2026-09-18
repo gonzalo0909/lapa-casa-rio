@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/utils/logger.ts
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

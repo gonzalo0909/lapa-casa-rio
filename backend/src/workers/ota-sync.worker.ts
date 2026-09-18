@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/workers/ota-sync.worker.ts
 //
 // Consumidor real de la cola `ota-sync` (ver queues/ota-sync.queue.ts).
 // Reemplaza la implementación anterior (que descartaba todos los jobs con un

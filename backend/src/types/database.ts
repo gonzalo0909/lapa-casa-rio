@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/types/database.ts
 
 export type BookingStatus =
   | 'pending_payment'

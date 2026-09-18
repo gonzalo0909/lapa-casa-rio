@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/owner/owner.routes.ts
 //
 // Endpoints protegidos para el administrador ya logueado (ver
 // owner-auth.routes.ts). Primer endpoint real del panel propio: prueba

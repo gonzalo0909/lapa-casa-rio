@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/components/layout/site-footer.tsx
 
 import React from 'react';
 import Link from 'next/link';

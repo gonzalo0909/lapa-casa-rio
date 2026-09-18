@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/admin/js/photos.js
 //
 // Fotos de documento de identidad, subidas automáticamente por los
 // huéspedes al reservar (GET /admin/guests/document-photos). Solo

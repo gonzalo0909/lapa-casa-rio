@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/workers/flexible-conversion.worker.ts
 
 import { type Job, Worker } from 'bullmq';
 import { getQueueConnection } from '../queues/connection';

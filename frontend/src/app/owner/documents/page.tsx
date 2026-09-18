@@ -1,6 +1,5 @@
 'use client';
 
-// lapa-casa-hostel/frontend/src/app/owner/documents/page.tsx
 //
 // Página de verificación de identidad del administrador.
 // El owner sube:

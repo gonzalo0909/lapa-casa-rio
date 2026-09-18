@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/whatsapp-notification-service.ts
 // renombrado desde notification-service.ts. Nada en el repo
 // importaba este archivo (WHATSAPP_ENABLED nunca se prendio), asi que el
 // nombre quedaba libre para el servicio de notificaciones por email que

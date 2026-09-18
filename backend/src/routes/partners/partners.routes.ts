@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/partners/partners.routes.ts
 //
 // FIX (auditoría 2026-08-30): el formulario de contacto de
 // frontend/src/components/partners/partner-contract-page.tsx mostraba

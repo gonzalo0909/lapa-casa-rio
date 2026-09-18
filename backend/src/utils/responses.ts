@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/utils/responses.ts
 //
 // FIX (auditoría 2026-08-30): se eliminaron ~19 exports sin ningún uso
 // en las 30 rutas que sí importan de este archivo -- todas usan

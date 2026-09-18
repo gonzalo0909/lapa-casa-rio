@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/types/global.ts
 
 /**
  * Tipos compartidos del flujo de reserva.

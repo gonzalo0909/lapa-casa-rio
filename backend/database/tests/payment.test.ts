@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/database/tests/payment.test.ts
 //
 // Prueba contra Postgres local: payment_repository + payment_service en modo
 // test (sin STRIPE_SECRET_KEY ni MP_ACCESS_TOKEN --> handlers retornan IDs falsos).

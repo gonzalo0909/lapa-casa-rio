@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/middleware/rate-limiter.ts
 // M-05: rate limiters con Redis store compartido entre instancias.
 // En despliegue multi-instancia (Render con >1 réplica) el contador
 // en memoria es independiente por proceso — con Redis es global.

@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/offers/offers.routes.ts
 //
 // Rutas PÚBLICAS de ofertas de apartamentos.
 // No requieren autenticación — se llaman desde el motor de reservas del guest.

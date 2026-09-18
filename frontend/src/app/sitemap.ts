@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/sitemap.ts
 // Generates /sitemap.xml automatically via Next.js Metadata API.
 
 import type { MetadataRoute } from 'next';

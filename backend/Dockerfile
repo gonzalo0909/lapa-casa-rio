@@ -1,4 +1,3 @@
-# lapa-casa-hostel/backend/Dockerfile
 
 # ===========================================
 # BASE STAGE

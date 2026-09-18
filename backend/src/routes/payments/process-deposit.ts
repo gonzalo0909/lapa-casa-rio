@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/payments/process-deposit.ts
 
 import type { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';

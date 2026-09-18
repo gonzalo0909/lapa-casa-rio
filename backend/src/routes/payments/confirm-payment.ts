@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/payments/confirm-payment.ts
 // el email de pago recibido se centralizó en PaymentService.handlePaymentSucceeded() (ver payment-service.ts) -- ya no se dispara desde acá, para no duplicar con el webhook real
 
 import type { Request, Response, NextFunction } from 'express';

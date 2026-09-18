@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/middleware/csrf.ts
 //
 // Patrón "doble cookie" para los paneles de admin/owner. Las cookies de
 // sesión del panel de owners (lch_owner) usan sameSite:'none' en producción

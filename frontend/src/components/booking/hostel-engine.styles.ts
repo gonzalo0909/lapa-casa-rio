@@ -4,25 +4,6 @@
 // el aislamiento del resto del sitio es por convención de nombres (todo
 // selector empieza con ".he-"), no por CSS Module.
 //
-// TOKENS DEL DESIGN-SYSTEM (auditoría sección 3):
-//   MIGRADO:    hsl(var(--primary-foreground)) → hsl(var(--primary-foreground))  [crema sobre verde oscuro]
-//   TODO:       #1A2E1E, #2A5234, #35673F, #3A6844, #33623E, #3E7448
-//               → verde hostel (sin equivalente exacto en --primary global)
-//   TODO:       #C8870A → dorado/ámbar hostel (--accent global es rosa 307°, incompatible)
-//   TODO:       #7BC47F, #A7DFB8, #4ADE80 → verdes claros/éxito
-//   TODO:       #FCA5A5, #F87171, #C0393B → rojos error/alerta
-//   TODO:       #1D8A55 → verde feedback OK
-//   TODO:       #93C5FD, #4A90D9 → azules (camas mixtas / badge mixto)
-//   TODO:       #F9A8D4, #E87AA8 → rosas (camas femeninas)
-//   TODO:       #B45309, #F59E0B → ámbar temporada alta
-//   TODO:       #9333EA, #A855F7 → púrpura temporada carnaval
-//   TODO:       #1D4ED8, #60A5FA → azul temporada baixa
-//   TODO:       #25D366, #1DAE55 → verde WhatsApp (color de marca externo)
-//   TODO:       #635BFF, #7B74FF → índigo Stripe (color de marca externo)
-//   TODO:       #FBE9DB, #E29B72, #3D1005, #7A2E0A, #1E0800 → paleta info-box cálida
-//   TODO:       #D5E8D4, #1E5E40 → verde badge cancelación OK
-//   TODO:       #FEE2E2, #991B1B → rojo badge cancelación
-//   TODO:       #4A5248, #5A5E50 → grises deshabilitados
 
 export const HOSTEL_ENGINE_CSS = `
 .he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:url('/img/adoquines.png') center/cover;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}

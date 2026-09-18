@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/room-service.ts
 //
 // Extraido de routes/rooms/list-rooms.ts y routes/rooms/get-room.ts
 // (ver room-service.ts). room_types y beds son la unica fuente de

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lapa-casa-hostel/scripts/deploy.sh
 #
 # Dispara un deploy forzado del frontend en Vercel via Deploy Hook.
 # Vercel ya hace auto-deploy en cada push a la rama conectada

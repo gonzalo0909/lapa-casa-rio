@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/integrations/whatsapp/message-templates.ts
 
 interface BookingDetails {
   guestName: string;

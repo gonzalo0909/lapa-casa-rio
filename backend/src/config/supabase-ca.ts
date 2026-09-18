@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/config/supabase-ca.ts
 //
 // CA raíz de Supabase (Project Settings -> Database -> SSL Configuration ->
 // "Download certificate"). No es un secreto -- es un certificado de

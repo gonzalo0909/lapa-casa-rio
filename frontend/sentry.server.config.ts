@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/sentry.server.config.ts
 // Corre en el servidor de Next.js (Node.js). Se carga automáticamente.
 
 import * as Sentry from '@sentry/nextjs';

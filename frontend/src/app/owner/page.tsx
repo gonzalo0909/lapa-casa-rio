@@ -1,6 +1,5 @@
 'use client';
 
-// lapa-casa-hostel/frontend/src/app/owner/page.tsx
 //
 // Painel principal: lista os apartamentos do dono logado
 // (GET /owner/apartments -- já filtrado por ownerId no backend).

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lapa-casa-hostel/scripts/rollback.sh
 #
 # Vuelve el proyecto de Vercel (lapa-frontend) al deploy
 # anterior exitoso, via la API REST de Vercel.

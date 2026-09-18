@@ -1,6 +1,5 @@
 'use client';
 
-// lapa-casa-hostel/frontend/src/app/owner/apartments/[id]/page.tsx
 //
 // Editar um apartamento (campos editoriais do painel do proprietário):
 // nome, endereço completo com busca automática de CEP (ViaCEP), bairro,

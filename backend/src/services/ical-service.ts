@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/ical-service.ts
 //
 // Reemplaza a services/ical-sync-service.ts + integrations/ical/ota-sync.ts
 // + integrations/ical/ical-generator.ts, que

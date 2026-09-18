@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/robots.ts
 // Generates /robots.txt automatically via Next.js Metadata API.
 
 import type { MetadataRoute } from 'next';

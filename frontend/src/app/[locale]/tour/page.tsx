@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/tour/page.tsx
 //
 // Página de producto: Paquete Hospedaje + Tour por Rio de Janeiro.
 // Tour guiado por Rio incluido en la estadía (hostel o apartamento).

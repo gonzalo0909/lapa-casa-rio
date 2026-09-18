@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/monitoring/alerts.ts
 //
 // Alertas configurables del sistema. Dos ya estaban
 // resueltas antes de esta ventana y no se duplican aca:

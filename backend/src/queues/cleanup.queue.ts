@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/queues/cleanup.queue.ts
 //
 // Repeatable job cada 1 minuto: invoca sp_cleanup_expired_pending() y
 // sp_release_no_show() (0007_procedures.sql). Reemplaza el scheduling

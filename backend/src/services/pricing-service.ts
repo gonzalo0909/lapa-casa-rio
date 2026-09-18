@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/services/pricing-service.ts
 //
 // REQUISITO CRITICO #6 (prompt Maestro v1.5): las funciones SQL de
 // 0004_pricing_functions.sql son la UNICA implementacion de

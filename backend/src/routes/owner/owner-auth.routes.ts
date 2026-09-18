@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/owner/owner-auth.routes.ts
 //
 // Login de administradores de apartamento (0031_apartment_owner_login.sql).
 // Separado del admin único (admin-auth.routes.ts) a propósito: misma

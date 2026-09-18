@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/page.tsx
 
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';

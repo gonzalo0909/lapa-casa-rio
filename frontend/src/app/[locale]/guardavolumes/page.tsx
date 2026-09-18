@@ -1,4 +1,3 @@
-// lapa-casa-hostel/frontend/src/app/[locale]/guardavolumes/page.tsx
 //
 // Malas/Guardavolumes: guarda-equipaje abierto a cualquier persona en
 // Rio de Janeiro, no solo a huéspedes de Lapa Casa -- antes del check-in,

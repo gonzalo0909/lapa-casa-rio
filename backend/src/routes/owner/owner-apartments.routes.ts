@@ -1,4 +1,3 @@
-// lapa-casa-hostel/backend/src/routes/owner/owner-apartments.routes.ts
 //
 // Panel de administrador de apartamento: cada uno ve y edita solo sus
 // propios apartamentos (room_types.owner_id = req.user.ownerId), nunca

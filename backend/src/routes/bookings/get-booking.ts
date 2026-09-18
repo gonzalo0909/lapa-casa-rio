@@ -68,8 +68,13 @@ export const getBookingHandler = async (
     }
 
     const aptResult = await query<{ address: string | null; address_number: string | null; cep: string | null; neighborhood: string | null }>(
-      `SELECT address, address_number, cep, neighborhood FROM room_types WHERE id = $1`,
-      [booking.room_type_id]
+      `SELECT rt.address, rt.address_number, rt.cep, rt.neighborhood
+       FROM room_types rt
+       JOIN beds b ON b.room_type_id = rt.id
+       JOIN reservation_beds rb ON rb.bed_id = b.id
+       WHERE rb.reservation_id = $1
+       LIMIT 1`,
+      [id]
     );
     const apt = aptResult.rows[0];
     const aptAddress = [apt?.address, apt?.address_number].filter(Boolean).join(', ') || null;

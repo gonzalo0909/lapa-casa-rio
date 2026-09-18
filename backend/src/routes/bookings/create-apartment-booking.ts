@@ -116,11 +116,12 @@ export const createApartmentBookingHandler = async (
     }
 
     // Pricing (apartamentos: 1 unidad por entrada, sin multiplicador por persona)
+    const aptRooms = bookingData.rooms.map((r) => ({ ...r, bedsCount: 1 }));
     const pricingDetails = await pricingService.calculateTotalPrice({
       checkInDate: bookingData.checkIn,
       checkOutDate: bookingData.checkOut,
-      rooms: bookingData.rooms,
-      totalBeds: bookingData.rooms.length,
+      rooms: aptRooms,
+      totalBeds: aptRooms.length,
     });
 
     // Cupón de descuento + programa de referidos (apartment_offers)
@@ -219,7 +220,7 @@ export const createApartmentBookingHandler = async (
     const booking = await bookingService.createBooking({
       checkIn: bookingData.checkIn,
       checkOut: bookingData.checkOut,
-      rooms: bookingData.rooms,
+      rooms: aptRooms,
       guest: {
         full_name: fullName,
         email: bookingData.guest.email,
@@ -229,7 +230,7 @@ export const createApartmentBookingHandler = async (
         language: bookingData.language || 'pt',
       },
       nights,
-      totalBeds: bookingData.rooms.length,
+      totalBeds: aptRooms.length,
       pricing: pricingDetails,
       specialRequests: [
         bookingData.arrivalTime

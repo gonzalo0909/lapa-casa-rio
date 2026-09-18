@@ -598,7 +598,7 @@ export const createBookingHandler = async (
       if (existing.length > 0) {
         ownReferralCode = existing[0]!.code;
       } else {
-        // Primera vez: crear el código permanente (válido 10 años)
+        // Primera vez: crear el código de referido (válido 1 año)
         ownReferralCode = generateReferralCode();
         const validTo = new Date();
         validTo.setFullYear(validTo.getFullYear() + 1);

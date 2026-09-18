@@ -56,27 +56,8 @@ export function todayDs(): string {
   return toDs(new Date());
 }
 
-/**
- * Fecha mínima de check-in (YYYY-MM-DD) según la hora actual en São Paulo.
- * Antes de las 12:00 BRT → hoy disponible.
- * A partir de las 12:00 BRT → hoy bloqueado, devuelve mañana.
- * Espeja exactamente la validación del backend en apartment-availability.ts.
- */
-export function minCheckInDs(): string {
-  const now = new Date();
-  const hourParts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    hour: 'numeric',
-    hour12: false,
-  }).formatToParts(now);
-  const hourBrt = parseInt(hourParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
-  const todaySp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
-  if (hourBrt >= 12) {
-    const [y, m, d] = todaySp.split('-').map(Number) as [number, number, number];
-    return toDs(new Date(y, m - 1, d + 1));
-  }
-  return todaySp;
-}
+/** Re-export desde lib/utils — fuente única de verdad compartida con el hostel. */
+export { minCheckInDs } from '@/lib/utils';
 
 /**
  * Ordena los apartamentos en tres grupos:

@@ -168,8 +168,32 @@ export const createApartmentBookingHandler = async (
           }
         }
 
+        // Un mismo amigo no puede usar el beneficio de referido más de una vez
+        let alreadyUsedReferral = false;
+        if (aptOk && !selfReferral && offer.referral_owner_guest_id) {
+          const { rows: usedRows } = await query<{ count: string }>(
+            `SELECT COUNT(*) AS count FROM reservations r
+             JOIN guests g ON r.guest_id = g.id
+             JOIN apartment_offers ao ON r.applied_offer_code = ao.code
+             WHERE ao.referral_owner_guest_id IS NOT NULL
+               AND r.status != 'cancelled'
+               AND (
+                 LOWER(g.email) = LOWER($1)
+                 OR (g.document IS NOT NULL AND g.document = $2)
+               )`,
+            [bookingData.guest.email.trim(), (bookingData.guest.document ?? '').trim()],
+          );
+          if (parseInt(usedRows[0]?.count ?? '0') > 0) {
+            alreadyUsedReferral = true;
+            logger.warn('Código de referido rechazado -- huésped ya usó un referido antes', {
+              offerCode: offer.code,
+              email: bookingData.guest.email,
+            });
+          }
+        }
+
         let monthlyLimitReached = false;
-        if (aptOk && !selfReferral && offer.monthly_limit != null) {
+        if (aptOk && !selfReferral && !alreadyUsedReferral && offer.monthly_limit != null) {
           const { rows: usageRows } = await query<{ count: string }>(
             `SELECT COUNT(*) AS count FROM reservations
              WHERE applied_offer_code = $1
@@ -183,7 +207,7 @@ export const createApartmentBookingHandler = async (
           }
         }
 
-        if (aptOk && !selfReferral && !monthlyLimitReached) {
+        if (aptOk && !selfReferral && !alreadyUsedReferral && !monthlyLimitReached) {
           appliedOffer = offer;
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);

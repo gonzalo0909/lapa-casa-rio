@@ -1,13 +1,14 @@
 // frontend/src/components/booking/apartment-engine.types.ts
 // Tipos, interfaces y constantes compartidas del motor de reservas de apartamentos.
 
-import type { ApartmentAvailability } from '@/types/global';
+import type { ApartmentAvailability, BookingLocale } from '@/types/global';
 
 // ─── Tipos base ──────────────────────────────────────────────────────────────
 
 export type Step = 1 | 2 | 3 | 4;
 
-export type AptLocale = 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
+/** Re-export del tipo compartido; los componentes importan de aquí para no cambiar sus imports. */
+export type AptLocale = BookingLocale;
 
 // ─── Formulario de huésped ───────────────────────────────────────────────────
 

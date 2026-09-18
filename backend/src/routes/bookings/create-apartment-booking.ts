@@ -293,16 +293,40 @@ export const createApartmentBookingHandler = async (
           );
           const referrer = referrerRows[0];
           if (!referrer) return;
-          const rewardCode = generateReferralCode();
-          const rewardValidTo = new Date();
-          rewardValidTo.setFullYear(rewardValidTo.getFullYear() + 1);
-          await query(
-            `INSERT INTO apartment_offers
-               (code, label, discount_percent, discount_amount, monthly_limit,
-                apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-             VALUES ($1, 'Premio por referido', 0, 5, 3, NULL, now()::date, $2::date, true, $3)`,
-            [rewardCode, rewardValidTo.toISOString().slice(0, 10), appliedOffer!.referral_owner_guest_id],
+
+          // Busca saldo acumulado activo para este referidor
+          const { rows: existing } = await query<{ id: number; code: string; valid_to: string }>(
+            `SELECT id, code, valid_to FROM apartment_offers
+             WHERE referral_owner_guest_id = $1 AND is_active = true AND valid_to >= now()::date
+             ORDER BY valid_to ASC LIMIT 1`,
+            [appliedOffer!.referral_owner_guest_id],
           );
+
+          let rewardCode: string;
+          let rewardValidTo: Date;
+
+          if (existing.length > 0) {
+            // Ya tiene saldo: acumula R$5 y conserva la fecha de vencimiento original
+            rewardCode = existing[0].code;
+            rewardValidTo = new Date(existing[0].valid_to);
+            await query(
+              `UPDATE apartment_offers SET discount_amount = discount_amount + 5 WHERE id = $1`,
+              [existing[0].id],
+            );
+          } else {
+            // Primer referido: crea el saldo con vencimiento 1 año desde hoy
+            rewardCode = generateReferralCode();
+            rewardValidTo = new Date();
+            rewardValidTo.setFullYear(rewardValidTo.getFullYear() + 1);
+            await query(
+              `INSERT INTO apartment_offers
+                 (code, label, discount_percent, discount_amount,
+                  apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
+               VALUES ($1, 'Premio por referido', 0, 5, NULL, now()::date, $2::date, true, $3)`,
+              [rewardCode, rewardValidTo.toISOString().slice(0, 10), appliedOffer!.referral_owner_guest_id],
+            );
+          }
+
           await emailService.sendReferralReward(
             { fullName: referrer.full_name, email: referrer.email, language: referrer.language },
             rewardCode,

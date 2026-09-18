@@ -57,7 +57,7 @@ export const authenticateToken = async (
     // H-02: verificar issuer y audience para que tokens de otros servicios
     // (misma secret, distinto iss/aud) sean rechazados explícitamente.
     const decoded = jwt.verify(token, secret, {
-      issuer: 'lapa-casa-hostel',
+      issuer: 'lapa-casa-rio',
       audience: 'lapacasario-api',
     }) as AuthPayload;
 
@@ -137,7 +137,7 @@ export const authenticateOwnerToken = async (
 
   try {
     const decoded = jwt.verify(token, secret, {
-      issuer: 'lapa-casa-hostel',
+      issuer: 'lapa-casa-rio',
       audience: 'lapacasario-api',
     }) as AuthPayload;
 

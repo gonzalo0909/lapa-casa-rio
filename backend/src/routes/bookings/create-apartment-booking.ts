@@ -192,22 +192,7 @@ export const createApartmentBookingHandler = async (
           }
         }
 
-        let monthlyLimitReached = false;
-        if (aptOk && !selfReferral && !alreadyUsedReferral && offer.monthly_limit != null) {
-          const { rows: usageRows } = await query<{ count: string }>(
-            `SELECT COUNT(*) AS count FROM reservations
-             WHERE applied_offer_code = $1
-               AND date_trunc('month', created_at) = date_trunc('month', now())
-               AND status != 'cancelled'`,
-            [offer.code],
-          );
-          if (parseInt(usageRows[0]?.count ?? '0') >= offer.monthly_limit) {
-            monthlyLimitReached = true;
-            logger.info('Código de oferta rechazado -- límite mensual', { offerCode: offer.code, limit: offer.monthly_limit });
-          }
-        }
-
-        if (aptOk && !selfReferral && !alreadyUsedReferral && !monthlyLimitReached) {
+        if (aptOk && !selfReferral && !alreadyUsedReferral) {
           appliedOffer = offer;
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);

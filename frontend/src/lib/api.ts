@@ -323,22 +323,6 @@ export const bookingAPI = {
   createApartment: (data: ApartmentBookingData) => api.post('/apartment-bookings', data),
 
   /**
-   * Get booking by ID
-   */
-  getById: (bookingId: string) => api.get(`/bookings/${bookingId}`),
-
-  /**
-   * Update booking (fechas/habitaciones bloqueadas dentro de 48h del check-in)
-   */
-  update: (bookingId: string, data: any) => api.patch(`/bookings/${bookingId}`, data),
-
-  /**
-   * Cancel booking. El backend calcula el reembolso automático según política.
-   */
-  cancel: (bookingId: string, reason?: string) =>
-    api.delete(`/bookings/${bookingId}${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`),
-
-  /**
    * Confirmation details (número de confirmación, QR, instrucciones de check-in)
    */
   getConfirmation: (bookingId: string, token?: string) =>
@@ -365,12 +349,6 @@ export const availabilityAPI = {
     ),
 
   /**
-   * Get single room availability. roomId = room_types.id real (UUID).
-   */
-  getRoomAvailability: (roomId: string, params: { checkIn: string; checkOut: string }) =>
-    api.get(`/availability/room/${roomId}?checkIn=${params.checkIn}&checkOut=${params.checkOut}`),
-
-  /**
    * Monthly calendar of occupancy
    */
   getCalendar: (params: { month: string; roomId?: string }) =>
@@ -394,11 +372,6 @@ export const availabilityAPI = {
   checkApartments: (params: { checkIn: string; checkOut: string; guests?: number }) =>
     api.get(`/availability/apartments?checkIn=${params.checkIn}&checkOut=${params.checkOut}${params.guests ? `&guests=${params.guests}` : ''}`),
 
-  /**
-   * Fechas de Carnaval (system_config.carnival_dates), públicas, para pintar
-   * el calendario del motor de Apartamentos antes de elegir fechas.
-   */
-  getCarnivalDates: () => api.get('/availability/carnival-dates'),
 };
 
 /** Read the HMAC confirmation token stored when the booking was created. */
@@ -449,20 +422,10 @@ export const paymentAPI = {
   ) => api.post('/payments/apartments/deposit', { reservationId, provider, installments, confirmationToken }),
 
   /**
-   * Obtiene el porcentaje de recargo para tarjeta (card_surcharge_percent de system_config)
-   */
-  getSurcharge: () => api.get('/payments/surcharge'),
-
-  /**
    * Get payment status — requires reservationId + confirmationToken to prove ownership.
    */
   getStatus: (paymentId: string, reservationId: string, confirmationToken?: string) =>
     api.get(`/payments/${paymentId}/status?reservationId=${encodeURIComponent(reservationId)}${confirmationToken ? `&token=${encodeURIComponent(confirmationToken)}` : ''}`),
-
-  /**
-   * Full payment history for a reservation (admin/staff only)
-   */
-  getByReservation: (reservationId: string) => api.get(`/payments/reservation/${reservationId}`),
 
   /**
    * Crea una Stripe Checkout Session (pago con tarjeta) y devuelve la URL de pago

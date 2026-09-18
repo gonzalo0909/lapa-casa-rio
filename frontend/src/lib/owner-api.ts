@@ -46,6 +46,21 @@ export interface Apartment {
   cep: string | null;
 }
 
+export interface OwnerBooking {
+  id: string;
+  reservationNumber: string;
+  guestName: string;
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  finalPrice: number;
+  createdAt: string;
+  depositPaid: number;
+  remainingPaid: number;
+  transferredToOwner: number;
+  transferPending: boolean;
+}
+
 export interface ApartmentPhoto {
   id: string;
   image_url: string;
@@ -150,6 +165,9 @@ export const ownerApartmentsAPI = {
 
   deletePhoto: (photoId: string) =>
     api.delete<{ success: boolean; message: string }>(`/owner/apartments/photos/${photoId}`),
+
+  listBookings: (id: string) =>
+    api.get<{ success: boolean; data: { bookings: OwnerBooking[] } }>(`/owner/apartments/${id}/bookings`),
 };
 
 export const ownerDocumentsAPI = {

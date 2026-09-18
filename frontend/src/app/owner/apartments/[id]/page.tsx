@@ -273,7 +273,15 @@ export default function OwnerApartmentEditPage() {
 
       {apartment && (
         <>
-          <h1 className="mb-6 text-2xl font-semibold">{apartment.name}</h1>
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-2xl font-semibold">{apartment.name}</h1>
+            <Link
+              href={`/owner/apartments/${params.id}/bookings`}
+              className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            >
+              Ver reservas →
+            </Link>
+          </div>
 
           <Card className="mb-6">
             <CardHeader>

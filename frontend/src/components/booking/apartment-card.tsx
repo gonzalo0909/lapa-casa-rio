@@ -268,4 +268,3 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   );
 };
 
-export { APT_ICONS };

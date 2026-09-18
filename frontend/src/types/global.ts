@@ -8,9 +8,6 @@
 /** Locale soportado por ambos motores de reserva (hostel y apartamentos). */
 export type BookingLocale = 'pt' | 'es' | 'en' | 'fr' | 'de' | 'it';
 
-/** Género elegido por el huésped junto con las fechas -- filtra qué cuartos son elegibles (mixto ve solo mixtos; mujeres ven mixtos + el cuarto solo-mujeres). */
-export type BookingGender = 'mixed' | 'female';
-
 export interface GuestPhoto {
   id: string;
   image_url: string;
@@ -18,18 +15,6 @@ export interface GuestPhoto {
   guest_country: string | null;
   caption: string | null;
   created_at: string;
-}
-
-export interface GuestDetails {
-  fullName: string;
-  email: string;
-  /** Solo se usa cuando el formulario corre en modo `strict` (Apartamentos). */
-  confirmEmail?: string;
-  phone: string;
-  country: string;
-  documentNumber: string;
-  specialRequests?: string;
-  arrivalTime: string;
 }
 
 export interface ApartmentPhoto {

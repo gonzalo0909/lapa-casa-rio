@@ -160,7 +160,7 @@ export default function ApartmentMap({
 
       const priceHtml = isUnavail
         ? `<span style="color:#888;font-size:.78rem">Indisponível</span>`
-        : `<span style="color:#F0B429;font-weight:700">R$ ${Math.round(apt.priceTotal / (nights || 1))}<small style="font-weight:400;color:#555">/noite</small></span>`;
+        : `<span style="color:#F0B429;font-weight:700">${currency(Math.round(apt.priceTotal / (nights || 1)))}<small style="font-weight:400;color:#555">/noite</small></span>`;
 
       const btnHtml = isUnavail
         ? ''

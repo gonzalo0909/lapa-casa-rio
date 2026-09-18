@@ -262,7 +262,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
     );
     if (!canReserve) {
       setError(t('formIncomplete'));
-      scrollToContent();
       return;
     }
 

@@ -53,6 +53,8 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     : 'pt';
   const [lang, setLang] = useState<Lang>(initLang);
   const t = T[lang];
+  // Email/WA backend solo soporta pt/en/es — de/fr/it caen a 'en'
+  const backendLang = (lang === 'de' || lang === 'fr' || lang === 'it' ? 'en' : lang) as 'pt' | 'en' | 'es';
   const currency = useCurrency();
 
   // ─ Estado del wizard ─
@@ -452,9 +454,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         },
         specialRequests: form.requests,
         arrivalTime: form.arrival,
-        // El backend (email-service.ts) solo soporta pt/en/es -- de/fr/it
-        // caen a 'en' antes de mandarlas, mismo mapeo que apartment-engine.tsx.
-        language: lang === 'de' || lang === 'fr' || lang === 'it' ? 'en' : lang,
+        language: backendLang,
         source: 'direct',
         guestGender: gender,
         ...(appliedCoupon ? { offerCode: appliedCoupon.code } : {}),
@@ -713,7 +713,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
           email: titularEmail,
           phone: form.phone || undefined,
           country: form.country || undefined,
-          language: lang === 'de' || lang === 'fr' || lang === 'it' ? 'en' : lang,
+          language: backendLang,
         },
         specialRequests: form.requests || undefined,
       });

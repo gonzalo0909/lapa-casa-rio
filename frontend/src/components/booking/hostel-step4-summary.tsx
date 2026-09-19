@@ -70,11 +70,11 @@ export function HostelStep4Summary({
         <div className="he-sum-head">{t.sumPriceHead}</div>
         <div className="he-sum-rows">
           <div className="he-sum-row">
-            <span>{fmtMoney(price.pbn)}/{t.tBed}/nt</span>
+            <span>{fmtMoney(price.pbn)}/{t.tBed}/{t.tNightAbbr}</span>
             <span>{price.beds} {price.beds === 1 ? t.tBed : t.tBeds} × {price.nights} {price.nights === 1 ? t.tNight : t.tNights2}</span>
           </div>
           <div className="he-sum-row">
-            <span>Subtotal ({price.beds} {t.tBeds} × {price.nights} {t.tNights2})</span>
+            <span>{t.tSubtotal} ({price.beds} {t.tBeds} × {price.nights} {t.tNights2})</span>
             <span>{fmtMoney(price.subtotal)}</span>
           </div>
           <div className="he-sum-row total">

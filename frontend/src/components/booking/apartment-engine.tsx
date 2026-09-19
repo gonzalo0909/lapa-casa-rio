@@ -273,7 +273,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
         new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Error al leer la foto del documento'));
+          reader.onerror = () => reject(new Error(t('errorReadingPhoto')));
           reader.readAsDataURL(file);
         });
 
@@ -316,13 +316,13 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       });
       const b = res?.data?.booking;
       if (!b?.id) {
-        throw new Error('No se recibió ID de reserva del servidor');
+        throw new Error(t('errorNoBookingId'));
       }
       if (b.confirmationToken) {
         try { sessionStorage.setItem(`ct_${b.id}`, b.confirmationToken); } catch {}
       }
       if (b.pricing?.total == null || b.payment?.depositAmount == null) {
-        throw new Error('El servidor no devolvió el precio de la reserva');
+        throw new Error(t('errorNoPricing'));
       }
       setBooking({
         id: b.id,

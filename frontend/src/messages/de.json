@@ -468,7 +468,11 @@
     "note": "Gleiche Website, gleiches Buchungssystem — der Unterschied ist, was du mietest.",
     "heroTitle": "Ihr Aufenthalt in Rio de Janeiro",
     "heroSubtitle": "Wählen Sie die gemeinsame Energie des Hostels oder die Privatsphäre einer eigenen Wohnung.",
-    "directBooking": "Direktbuchung · Bester Preis garantiert"
+    "directBooking": "Direktbuchung · Bester Preis garantiert",
+    "navHostel": "Hostel",
+    "navApartments": "Apartments",
+    "navPartners": "Partner",
+    "navLuggage": "Gepäckaufbewahrung"
   },
   "apartments": {
     "stepDates": "Daten",
@@ -636,7 +640,14 @@
     "photoNavPrev": "Vorheriges Foto",
     "photoNavNext": "Nächstes Foto",
     "reviews": "{count} Bewertungen",
-    "externalRatingSource": "internationale Plattformen"
+    "externalRatingSource": "internationale Plattformen",
+    "viewList": "Liste",
+    "viewMap": "Karte",
+    "viewListLabel": "Listenansicht",
+    "viewMapLabel": "Kartenansicht",
+    "errorReadingPhoto": "Fehler beim Lesen des Dokumentfotos",
+    "errorNoBookingId": "Keine Buchungs-ID vom Server erhalten",
+    "errorNoPricing": "Server hat keinen Buchungspreis zurückgegeben"
   },
   "guestForm": {
     "title": "Gastinformationen",
@@ -907,6 +918,33 @@
     "infoDoc": "Das Hochladen eines Ausweisfotos ist [[verpflichtend]], ohne Ausnahme",
     "infoSmoke": "Rauchen im Hostel und in den Gemeinschaftsbereichen ist verboten",
     "infoAge": "Nur für Gäste ab [[18 Jahren]]",
-    "infoBunk": "Dreistöckige Etagenbetten — nicht empfohlen für Gäste [[über 50]] oder mit eingeschränkter Mobilität"
+    "infoBunk": "Dreistöckige Etagenbetten — nicht empfohlen für Gäste [[über 50]] oder mit eingeschränkter Mobilität",
+    "roomFemaleOnly": "Nur Frauen",
+    "roomFemale": "Damen",
+    "roomMixed": "Gemischt",
+    "roomAvailOf": "von",
+    "roomAvailLabel": "verf.",
+    "roomPerBedNight": "/Bett/Nacht",
+    "fbEmailOk": "E-Mail gültig",
+    "fbEmailErr": "E-Mail ungültig",
+    "fbPhoneOk": "Telefon gültig",
+    "fbPhoneMin": "Mind. 10 Ziffern",
+    "pixCopied": "Code kopiert",
+    "pixCopyBtn": "PIX-Code kopieren",
+    "btnRetry": "Erneut versuchen",
+    "emailPlaceholder": "email@example.com",
+    "cntBR": "Brasilien",
+    "cntAR": "Argentinien",
+    "cntCO": "Kolumbien",
+    "cntCL": "Chile",
+    "cntUS": "Vereinigte Staaten",
+    "cntDE": "Deutschland",
+    "cntFR": "Frankreich",
+    "cntGB": "Vereinigtes Königreich",
+    "cntPT": "Portugal",
+    "cntES": "Spanien",
+    "cntIT": "Italien",
+    "tNightAbbr": "N.",
+    "tSubtotal": "Zwischensumme"
   }
 }

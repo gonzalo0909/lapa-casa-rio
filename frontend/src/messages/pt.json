@@ -468,7 +468,11 @@
     "note": "Mesmo site, mesmo motor de reservas — a diferença é o que você está alugando.",
     "heroTitle": "Sua estadia no Rio de Janeiro",
     "heroSubtitle": "Escolha a energia coletiva do hostel ou a privacidade de um apartamento próprio.",
-    "directBooking": "Reserva direta · Melhor preço garantido"
+    "directBooking": "Reserva direta · Melhor preço garantido",
+    "navHostel": "Hostel",
+    "navApartments": "Apartamentos",
+    "navPartners": "Parceiros",
+    "navLuggage": "Guardavolumes"
   },
   "apartments": {
     "stepDates": "Datas",
@@ -636,7 +640,14 @@
     "photoNavPrev": "Foto anterior",
     "photoNavNext": "Próxima foto",
     "reviews": "{count} avaliações",
-    "externalRatingSource": "plataformas internacionais"
+    "externalRatingSource": "plataformas internacionais",
+    "viewList": "Lista",
+    "viewMap": "Mapa",
+    "viewListLabel": "Vista em lista",
+    "viewMapLabel": "Vista no mapa",
+    "errorReadingPhoto": "Erro ao ler a foto do documento",
+    "errorNoBookingId": "ID de reserva não recebido do servidor",
+    "errorNoPricing": "O servidor não retornou o preço da reserva"
   },
   "guestForm": {
     "title": "Informações do Hóspede",
@@ -907,6 +918,33 @@
     "infoDoc": "O envio da foto do documento é [[obrigatório]], sem exceção",
     "infoSmoke": "Proibido fumar no hostel e nas áreas comuns",
     "infoAge": "Somente para [[maiores de 18 anos]]",
-    "infoBunk": "Camas beliches de três andares — não recomendadas para [[maiores de 50 anos]] ou pessoas com mobilidade reduzida"
+    "infoBunk": "Camas beliches de três andares — não recomendadas para [[maiores de 50 anos]] ou pessoas com mobilidade reduzida",
+    "roomFemaleOnly": "Somente Mulheres",
+    "roomFemale": "Feminino",
+    "roomMixed": "Misto",
+    "roomAvailOf": "de",
+    "roomAvailLabel": "disp.",
+    "roomPerBedNight": "/cama/noite",
+    "fbEmailOk": "E-mail válido",
+    "fbEmailErr": "E-mail inválido",
+    "fbPhoneOk": "Telefone válido",
+    "fbPhoneMin": "Mínimo 10 dígitos",
+    "pixCopied": "Código copiado",
+    "pixCopyBtn": "Copiar código PIX",
+    "btnRetry": "Tentar novamente",
+    "emailPlaceholder": "email@example.com",
+    "cntBR": "Brasil",
+    "cntAR": "Argentina",
+    "cntCO": "Colômbia",
+    "cntCL": "Chile",
+    "cntUS": "Estados Unidos",
+    "cntDE": "Alemanha",
+    "cntFR": "França",
+    "cntGB": "Reino Unido",
+    "cntPT": "Portugal",
+    "cntES": "Espanha",
+    "cntIT": "Itália",
+    "tNightAbbr": "nt",
+    "tSubtotal": "Subtotal"
   }
 }

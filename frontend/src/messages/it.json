@@ -468,7 +468,11 @@
     "note": "Stesso sito, stesso motore di prenotazione — cambia solo cosa stai affittando.",
     "heroTitle": "Il tuo soggiorno a Rio de Janeiro",
     "heroSubtitle": "Scegli l'energia condivisa dell'ostello o la privacy di un appartamento tutto tuo.",
-    "directBooking": "Prenotazione diretta · Miglior prezzo garantito"
+    "directBooking": "Prenotazione diretta · Miglior prezzo garantito",
+    "navHostel": "Hostel",
+    "navApartments": "Appartamenti",
+    "navPartners": "Partner",
+    "navLuggage": "Deposito bagagli"
   },
   "apartments": {
     "stepDates": "Date",
@@ -636,7 +640,14 @@
     "photoNavPrev": "Foto precedente",
     "photoNavNext": "Foto successiva",
     "reviews": "{count} recensioni",
-    "externalRatingSource": "piattaforme internazionali"
+    "externalRatingSource": "piattaforme internazionali",
+    "viewList": "Lista",
+    "viewMap": "Mappa",
+    "viewListLabel": "Vista elenco",
+    "viewMapLabel": "Vista mappa",
+    "errorReadingPhoto": "Errore nella lettura della foto del documento",
+    "errorNoBookingId": "Nessun ID di prenotazione ricevuto dal server",
+    "errorNoPricing": "Il server non ha restituito il prezzo della prenotazione"
   },
   "guestForm": {
     "title": "Informazioni Ospite",
@@ -907,6 +918,33 @@
     "infoDoc": "L'invio della foto del documento è [[obbligatorio]], senza eccezioni",
     "infoSmoke": "Vietato fumare nell'hostel e nelle aree comuni",
     "infoAge": "Solo per ospiti [[maggiorenni (18+)]]",
-    "infoBunk": "Letti a castello a tre livelli — sconsigliati per ospiti [[over 50]] o con mobilità ridotta"
+    "infoBunk": "Letti a castello a tre livelli — sconsigliati per ospiti [[over 50]] o con mobilità ridotta",
+    "roomFemaleOnly": "Solo Donne",
+    "roomFemale": "Femminile",
+    "roomMixed": "Misto",
+    "roomAvailOf": "di",
+    "roomAvailLabel": "disp.",
+    "roomPerBedNight": "/posto/notte",
+    "fbEmailOk": "Email valida",
+    "fbEmailErr": "Email non valida",
+    "fbPhoneOk": "Telefono valido",
+    "fbPhoneMin": "Min. 10 cifre",
+    "pixCopied": "Codice copiato",
+    "pixCopyBtn": "Copia codice PIX",
+    "btnRetry": "Riprova",
+    "emailPlaceholder": "email@example.com",
+    "cntBR": "Brasile",
+    "cntAR": "Argentina",
+    "cntCO": "Colombia",
+    "cntCL": "Cile",
+    "cntUS": "Stati Uniti",
+    "cntDE": "Germania",
+    "cntFR": "Francia",
+    "cntGB": "Regno Unito",
+    "cntPT": "Portogallo",
+    "cntES": "Spagna",
+    "cntIT": "Italia",
+    "tNightAbbr": "nt",
+    "tSubtotal": "Subtotale"
   }
 }

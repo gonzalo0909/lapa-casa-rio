@@ -468,7 +468,11 @@
     "note": "Mismo sitio, mismo motor de reservas — la diferencia es qué estás alquilando.",
     "heroTitle": "Tu lugar en Rio de Janeiro",
     "heroSubtitle": "Elige la energía compartida del hostel o la privacidad de un apartamento propio.",
-    "directBooking": "Reserva directa · Mejor precio garantizado"
+    "directBooking": "Reserva directa · Mejor precio garantizado",
+    "navHostel": "Hostel",
+    "navApartments": "Apartamentos",
+    "navPartners": "Socios",
+    "navLuggage": "Guardaequipajes"
   },
   "apartments": {
     "stepDates": "Fechas",
@@ -636,7 +640,14 @@
     "photoNavPrev": "Foto anterior",
     "photoNavNext": "Foto siguiente",
     "reviews": "{count} reseñas",
-    "externalRatingSource": "plataformas internacionales"
+    "externalRatingSource": "plataformas internacionales",
+    "viewList": "Lista",
+    "viewMap": "Mapa",
+    "viewListLabel": "Vista lista",
+    "viewMapLabel": "Vista mapa",
+    "errorReadingPhoto": "Error al leer la foto del documento",
+    "errorNoBookingId": "No se recibió ID de reserva del servidor",
+    "errorNoPricing": "El servidor no devolvió el precio de la reserva"
   },
   "guestForm": {
     "title": "Información del Huésped",
@@ -907,6 +918,33 @@
     "infoDoc": "El envío de la foto del documento es [[obligatorio]], sin excepción",
     "infoSmoke": "Prohibido fumar en el hostel y en las áreas comunes",
     "infoAge": "Solo para [[mayores de 18 años]]",
-    "infoBunk": "Camas literas de tres pisos — no recomendadas para [[mayores de 50 años]] ni personas con movilidad reducida"
+    "infoBunk": "Camas literas de tres pisos — no recomendadas para [[mayores de 50 años]] ni personas con movilidad reducida",
+    "roomFemaleOnly": "Solo Mujeres",
+    "roomFemale": "Femenino",
+    "roomMixed": "Mixto",
+    "roomAvailOf": "de",
+    "roomAvailLabel": "disp.",
+    "roomPerBedNight": "/cama/noche",
+    "fbEmailOk": "Email válido",
+    "fbEmailErr": "Email inválido",
+    "fbPhoneOk": "Teléfono válido",
+    "fbPhoneMin": "Mínimo 10 dígitos",
+    "pixCopied": "Código copiado",
+    "pixCopyBtn": "Copiar código PIX",
+    "btnRetry": "Reintentar",
+    "emailPlaceholder": "email@example.com",
+    "cntBR": "Brasil",
+    "cntAR": "Argentina",
+    "cntCO": "Colombia",
+    "cntCL": "Chile",
+    "cntUS": "Estados Unidos",
+    "cntDE": "Alemania",
+    "cntFR": "Francia",
+    "cntGB": "Reino Unido",
+    "cntPT": "Portugal",
+    "cntES": "España",
+    "cntIT": "Italia",
+    "tNightAbbr": "nt",
+    "tSubtotal": "Subtotal"
   }
 }

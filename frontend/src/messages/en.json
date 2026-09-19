@@ -468,7 +468,11 @@
     "note": "Same site, same booking engine — the difference is what you're renting.",
     "heroTitle": "Your stay in Rio de Janeiro",
     "heroSubtitle": "Choose the shared energy of the hostel or the privacy of your own apartment.",
-    "directBooking": "Direct booking · Best price guaranteed"
+    "directBooking": "Direct booking · Best price guaranteed",
+    "navHostel": "Hostel",
+    "navApartments": "Apartments",
+    "navPartners": "Partners",
+    "navLuggage": "Luggage Storage"
   },
   "apartments": {
     "stepDates": "Dates",
@@ -636,7 +640,14 @@
     "photoNavPrev": "Previous photo",
     "photoNavNext": "Next photo",
     "reviews": "{count} reviews",
-    "externalRatingSource": "international platforms"
+    "externalRatingSource": "international platforms",
+    "viewList": "List",
+    "viewMap": "Map",
+    "viewListLabel": "List view",
+    "viewMapLabel": "Map view",
+    "errorReadingPhoto": "Error reading document photo",
+    "errorNoBookingId": "No booking ID returned by server",
+    "errorNoPricing": "Server did not return booking price"
   },
   "guestForm": {
     "title": "Guest Information",
@@ -907,6 +918,33 @@
     "infoDoc": "Sending a photo of your ID is [[mandatory]], no exceptions",
     "infoSmoke": "Smoking in the hostel and common areas is prohibited",
     "infoAge": "Guests must be [[18 or older]]",
-    "infoBunk": "Triple-decker bunk beds — not recommended for guests [[over 50]] or with reduced mobility"
+    "infoBunk": "Triple-decker bunk beds — not recommended for guests [[over 50]] or with reduced mobility",
+    "roomFemaleOnly": "Women Only",
+    "roomFemale": "Female",
+    "roomMixed": "Mixed",
+    "roomAvailOf": "of",
+    "roomAvailLabel": "avail.",
+    "roomPerBedNight": "/bed/night",
+    "fbEmailOk": "Valid email",
+    "fbEmailErr": "Invalid email",
+    "fbPhoneOk": "Valid phone",
+    "fbPhoneMin": "Min. 10 digits",
+    "pixCopied": "Code copied",
+    "pixCopyBtn": "Copy PIX code",
+    "btnRetry": "Try again",
+    "emailPlaceholder": "email@example.com",
+    "cntBR": "Brazil",
+    "cntAR": "Argentina",
+    "cntCO": "Colombia",
+    "cntCL": "Chile",
+    "cntUS": "United States",
+    "cntDE": "Germany",
+    "cntFR": "France",
+    "cntGB": "United Kingdom",
+    "cntPT": "Portugal",
+    "cntES": "Spain",
+    "cntIT": "Italy",
+    "tNightAbbr": "nt",
+    "tSubtotal": "Subtotal"
   }
 }

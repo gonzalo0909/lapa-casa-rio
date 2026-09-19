@@ -181,13 +181,13 @@ export function HostelGuestForm({
           className={`he-inp${formErrors.email ? ' err' : !formErrors.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? ' ok' : ''}`}
           type="email"
           value={form.email}
-          placeholder="seu@email.com"
+          placeholder={t.emailPlaceholder}
           autoComplete="off"
           onPaste={(e) => e.preventDefault()}
           onChange={(e) => onFormChange({ email: e.target.value })}
           onBlur={() => {
             const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
-            onEmailFb(form.email ? { text: ok ? 'E-mail válido' : 'E-mail inválido', ok } : null);
+            onEmailFb(form.email ? { text: ok ? t.fbEmailOk : t.fbEmailErr, ok } : null);
             onFormErrors({ email: !ok ? t.errEmail : undefined });
           }}
         />
@@ -210,7 +210,7 @@ export function HostelGuestForm({
           className={`he-inp${formErrors.email2 ? ' err' : form.email2 && form.email2 === form.email ? ' ok' : ''}`}
           type="email"
           value={form.email2}
-          placeholder="seu@email.com"
+          placeholder={t.emailPlaceholder}
           autoComplete="off"
           onPaste={(e) => e.preventDefault()}
           onCut={(e) => e.preventDefault()}
@@ -236,7 +236,7 @@ export function HostelGuestForm({
             onBlur={() => {
               const ok = form.phone.replace(/\D/g, '').length >= 10;
               onPhoneFb(
-                form.phone ? { text: ok ? 'Telefone válido' : 'Mínimo 10 dígitos', ok } : null,
+                form.phone ? { text: ok ? t.fbPhoneOk : t.fbPhoneMin, ok } : null,
               );
               onFormErrors({ phone: !ok ? t.errPhone : undefined });
             }}
@@ -255,17 +255,17 @@ export function HostelGuestForm({
             onChange={(e) => onFormChange({ country: e.target.value, doc: '' })}
           >
             <option value="">{t.selectPlaceholder}</option>
-            <option value="BR">Brasil</option>
-            <option value="AR">Argentina</option>
-            <option value="CO">Colombia</option>
-            <option value="CL">Chile</option>
-            <option value="US">Estados Unidos</option>
-            <option value="DE">Alemanha / Germany</option>
-            <option value="FR">França / France</option>
-            <option value="GB">Reino Unido / UK</option>
-            <option value="PT">Portugal</option>
-            <option value="ES">España / Espanha</option>
-            <option value="IT">Italia / Itália</option>
+            <option value="BR">{t.cntBR}</option>
+            <option value="AR">{t.cntAR}</option>
+            <option value="CO">{t.cntCO}</option>
+            <option value="CL">{t.cntCL}</option>
+            <option value="US">{t.cntUS}</option>
+            <option value="DE">{t.cntDE}</option>
+            <option value="FR">{t.cntFR}</option>
+            <option value="GB">{t.cntGB}</option>
+            <option value="PT">{t.cntPT}</option>
+            <option value="ES">{t.cntES}</option>
+            <option value="IT">{t.cntIT}</option>
             <option value="OTHER">{t.optOther}</option>
           </select>
           {formErrors.country && <div className="he-ferr">{formErrors.country}</div>}

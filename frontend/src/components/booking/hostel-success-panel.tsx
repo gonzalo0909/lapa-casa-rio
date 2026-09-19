@@ -124,10 +124,10 @@ export function HostelSuccessPanel({
                         aria-hidden
                         style={{ display: 'inline', verticalAlign: '-2px', marginRight: '.3em' }}
                       />
-                      Código copiado
+                      {t.pixCopied}
                     </>
                   ) : (
-                    'Copiar código PIX'
+                    t.pixCopyBtn
                   )}
                 </button>
               )}
@@ -178,7 +178,7 @@ export function HostelSuccessPanel({
                       disabled={isRetryingPayment}
                       onClick={onRetryPaymentLink}
                     >
-                      {isRetryingPayment ? '...' : 'Reintentar'}
+                      {isRetryingPayment ? '...' : t.btnRetry}
                     </button>
                   )}
                 </>

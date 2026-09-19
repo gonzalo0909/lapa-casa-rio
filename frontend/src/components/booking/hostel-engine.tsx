@@ -54,19 +54,13 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const [lang, setLang] = useState<Lang>(initLang);
   const t = T[lang];
   const currency = useCurrency();
-  const TODAY = useRef(
-    (() => {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      return d;
-    })(),
-  );
 
   // ─ Estado del wizard ─
   const [step, setStep] = useState(1);
-  const [calMonth, setCalMonth] = useState(
-    () => new Date(TODAY.current.getFullYear(), TODAY.current.getMonth(), 1),
-  );
+  const [calMonth, setCalMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
@@ -239,7 +233,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
 
   // ─ Valores derivados ─
   const totalBeds = Object.values(beds).reduce((s, n) => s + n, 0);
-  const season = getSeason(checkIn ?? TODAY.current);
+  const season = getSeason(checkIn ?? new Date());
   const price = quote
     ? {
         nights: quote.nights,
@@ -635,7 +629,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       };
     }
     if (checkIn && !checkOut) {return { main: t.tSelectCheckout, sub: t.tClickCheckout };}
-    const s = getSeason(TODAY.current);
+    const s = getSeason(new Date());
     return { main: fmtMoney(85 * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
   })();
 
@@ -871,7 +865,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 checkOut={checkOut}
                 hoverDate={hoverDate}
                 selectingEnd={selectingEnd}
-                today={TODAY.current}
+                today={new Date()}
                 onCalClick={handleCalClick}
                 onMonthChange={handleMonthChange}
                 onHoverDate={setHoverDate}

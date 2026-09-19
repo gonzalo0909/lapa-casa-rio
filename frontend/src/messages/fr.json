@@ -893,6 +893,13 @@
     "gpCopied": "Copié",
     "gpShareWa": "Partager via WhatsApp",
     "gpExpire": "Le lien expire dans 10 minutes. Tous les membres doivent payer dans ce délai.",
-    "gpErrGeneric": "Erreur lors de la génération du lien. Réessayez."
+    "gpErrGeneric": "Erreur lors de la génération du lien. Réessayez.",
+    "infoBannerTitle": "INFORMATION IMPORTANTE",
+    "infoCheckin": "Arrivée : [[14h à 22h]] — arrivée plus tôt ? Réservez aussi la nuit précédente",
+    "infoCheckout": "Départ : avant [[12h]] — besoin de plus de temps ? Réservez une nuit supplémentaire",
+    "infoDoc": "L'envoi d'une photo de pièce d'identité est [[obligatoire]], sans exception",
+    "infoSmoke": "Interdiction de fumer dans le hostel et les espaces communs",
+    "infoAge": "Réservé aux personnes de [[18 ans et plus]]",
+    "infoBunk": "Lits superposés à trois niveaux — déconseillés aux personnes de [[plus de 50 ans]] ou à mobilité réduite"
   }
 }

@@ -893,6 +893,13 @@
     "gpCopied": "Copiado",
     "gpShareWa": "Compartir por WhatsApp",
     "gpExpire": "El link expira en 10 minutos. Todos los integrantes deben pagar en ese plazo.",
-    "gpErrGeneric": "Error al generar el link. Intentá de nuevo."
+    "gpErrGeneric": "Error al generar el link. Intentá de nuevo.",
+    "infoBannerTitle": "INFORMACIÓN IMPORTANTE",
+    "infoCheckin": "Check-in (entrada): [[14h a 22h]] — para llegar antes, reserva también el día anterior",
+    "infoCheckout": "Check-out (salida): hasta las [[12h]] — para salir más tarde, mejor reserva un día más",
+    "infoDoc": "El envío de la foto del documento es [[obligatorio]], sin excepción",
+    "infoSmoke": "Prohibido fumar en el hostel y en las áreas comunes",
+    "infoAge": "Solo para [[mayores de 18 años]]",
+    "infoBunk": "Camas literas de tres pisos — no recomendadas para [[mayores de 50 años]] ni personas con movilidad reducida"
   }
 }

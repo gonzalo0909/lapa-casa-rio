@@ -893,6 +893,13 @@
     "gpCopied": "Copied",
     "gpShareWa": "Share via WhatsApp",
     "gpExpire": "The link expires in 10 minutes. All members must pay within this time.",
-    "gpErrGeneric": "Error generating link. Please try again."
+    "gpErrGeneric": "Error generating link. Please try again.",
+    "infoBannerTitle": "IMPORTANT INFORMATION",
+    "infoCheckin": "Check-in: [[2 pm to 10 pm]] — arriving earlier? Book the previous night",
+    "infoCheckout": "Check-out: by [[12 pm]] — need more time? Book one extra night",
+    "infoDoc": "Sending a photo of your ID is [[mandatory]], no exceptions",
+    "infoSmoke": "Smoking in the hostel and common areas is prohibited",
+    "infoAge": "Guests must be [[18 or older]]",
+    "infoBunk": "Triple-decker bunk beds — not recommended for guests [[over 50]] or with reduced mobility"
   }
 }

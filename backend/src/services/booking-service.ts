@@ -98,6 +98,10 @@ interface CreateBookingInput {
   status?: BookingStatus;
   /** Genero de la reserva, elegido por el huesped junto con las fechas -- determina que camas son elegibles (ver check_availability/is_gender_eligible). Antes quedaba hardcodeado en 'mixed' para toda reserva directa, lo que rompia reservar Flexible 7 (female) por este canal. */
   guestGender?: 'mixed' | 'female' | 'male';
+  /** Código de oferta aplicada -- se escribe dentro de la transacción para garantizar que el límite mensual siempre quede registrado. */
+  appliedOfferCode?: string;
+  /** Límite mensual de la oferta -- se re-verifica dentro de la transacción con row lock para evitar race conditions. */
+  offerMonthlyLimit?: number | null;
 }
 
 /**
@@ -295,6 +299,31 @@ export class BookingService {
            FROM unnest($2::uuid[]) AS bed_id`,
           [reservation.id, candidateBedIds, data.checkIn, data.checkOut],
         );
+
+        if (data.appliedOfferCode) {
+          // Lock the offer row para serializar requests concurrentes (fix race condition #3).
+          // El FOR UPDATE funciona acá porque estamos dentro de la transacción.
+          await client.query(
+            `SELECT id FROM apartment_offers WHERE code = $1 FOR UPDATE`,
+            [data.appliedOfferCode],
+          );
+          if (data.offerMonthlyLimit != null) {
+            const { rows: countRows } = await client.query<{ count: string }>(
+              `SELECT COUNT(*) AS count FROM reservations
+               WHERE applied_offer_code = $1
+                 AND date_trunc('month', created_at) = date_trunc('month', now())
+                 AND status != 'cancelled'`,
+              [data.appliedOfferCode],
+            );
+            if (parseInt(countRows[0]?.count ?? '0') >= data.offerMonthlyLimit) {
+              throw new Error('OFFER_MONTHLY_LIMIT_EXCEEDED');
+            }
+          }
+          await client.query(
+            `UPDATE reservations SET applied_offer_code = $1 WHERE id = $2`,
+            [data.appliedOfferCode, reservation.id],
+          );
+        }
       } catch (error) {
         if (isOverbookingError(error)) {
           throw new InsufficientAvailabilityError({ reason: 'overbooking_detected_at_insert' });

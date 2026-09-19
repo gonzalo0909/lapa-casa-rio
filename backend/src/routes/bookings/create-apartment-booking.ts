@@ -259,15 +259,11 @@ export const createApartmentBookingHandler = async (
       language: bookingData.language || 'pt',
       status: 'pending_payment',
       guestGender: 'mixed', // Apartamentos no usan asignación por género
+      appliedOfferCode: appliedOffer?.code,
+      offerMonthlyLimit: appliedOffer?.monthly_limit,
     });
 
     logger.info('Apartment booking created', { bookingId: booking.id, totalPrice: pricingDetails.totalPrice });
-
-    // Registra oferta aplicada
-    if (appliedOffer) {
-      query(`UPDATE reservations SET applied_offer_code = $1 WHERE id = $2`, [appliedOffer.code, booking.id])
-        .catch((err) => logger.error('No se pudo registrar applied_offer_code', { bookingId: booking.id, offerCode: appliedOffer!.code, error: String(err) }));
-    }
 
     // Programa de referidos (idea #49, roadmap.html)
     let ownReferralCode: string | null = null;
@@ -379,6 +375,10 @@ export const createApartmentBookingHandler = async (
     if (error instanceof InsufficientAvailabilityError) {
       logger.warn('Insufficient availability during createApartmentBooking', { details: error.details });
       res.status(409).json(ApiResponse.error('El apartamento ya no está disponible para esas fechas', error.details));
+      return;
+    }
+    if (error instanceof Error && error.message === 'OFFER_MONTHLY_LIMIT_EXCEEDED') {
+      res.status(409).json(ApiResponse.error('El código de oferta ya alcanzó su límite de uso este mes'));
       return;
     }
     logger.error('Error creating apartment booking', {

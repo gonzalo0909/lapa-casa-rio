@@ -30,9 +30,13 @@ function getHolidaysForYear(y: number): Date[] {
   const holidays = fixed.map(([m, d]) => new Date(y, m - 1, d));
   const easter = easterDate(y);
   const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
+  const carnivalSat = new Date(easter); carnivalSat.setDate(easter.getDate() - 50);
+  const carnivalSun = new Date(easter); carnivalSun.setDate(easter.getDate() - 49);
   const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
   const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
-  holidays.push(easter, goodFriday, carnivalMon, carnivalTue);
+  const corpusChristi = new Date(easter); corpusChristi.setDate(easter.getDate() + 60);
+  holidays.push(easter, goodFriday, carnivalSat, carnivalSun, carnivalMon, carnivalTue, corpusChristi);
+  holidays.push(new Date(y, 11, 31)); // Réveillon
   return holidays;
 }
 

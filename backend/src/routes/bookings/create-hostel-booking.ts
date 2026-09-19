@@ -21,7 +21,6 @@ import { decodeBase64Image } from '../../utils/decode-base64-image';
 import { generateReferralCode } from '../../utils/encryption';
 import {
   type CreateBookingRequest,
-  isHolidayDate,
   anyDocumentBlocked,
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
@@ -119,7 +118,7 @@ export const createHostelBookingHandler = async (
     if (bookingData.offerCode) {
       const today = bookingData.checkIn;
       const { rows: offerRows } = await query(
-        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit, block_holidays,
+        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit,
                 referral_owner_guest_id
          FROM apartment_offers
          WHERE code = $1
@@ -135,12 +134,7 @@ export const createHostelBookingHandler = async (
         if (offer.referral_owner_guest_id) {
           logger.info('Código de referido rechazado para hostel', { offerCode: offer.code });
         } else {
-          let blocked = false;
-          if (offer.block_holidays && isHolidayDate(bookingData.checkIn)) {
-            blocked = true;
-            logger.info('Código de oferta rechazado -- feriado', { offerCode: offer.code });
-          }
-          if (!blocked) {
+          {
             appliedOffer = offer;
             if (offer.discount_amount != null && offer.discount_amount > 0) {
               const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);

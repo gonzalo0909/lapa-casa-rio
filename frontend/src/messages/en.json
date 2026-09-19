@@ -385,7 +385,6 @@
     "checkInTime": "Check-in",
     "checkOutTime": "Check-out",
     "minStay": "Minimum stay",
-    "carnivalNote": "Carnival: minimum 5 nights",
     "minNightsError": "Minimum {n} nights",
     "maxNightsError": "Maximum {n} nights",
     "pastDateError": "Invalid date"
@@ -445,7 +444,6 @@
     "highSeason": "High Season (Dec–Mar)",
     "lowSeason": "Low Season (Jun–Sep)",
     "mediumSeason": "Medium Season (Apr–May, Oct–Nov)",
-    "carnival": "Carnival (Feb)",
     "multiplier": "Multiplier",
     "saveChanges": "Save changes",
     "blockDates": "Block Dates",
@@ -767,7 +765,6 @@
     "calNext": "Next month",
     "seasonMedia": "⛅ Mid season: ×1.0",
     "seasonAlta": "☀️ High (Dec–Mar, Jul–Aug): ×1.5",
-    "seasonCarnaval": "🎉 Carnival (min. 5 nights): ×2.0",
     "seasonBaixa": "🌧 Low (Jun, Sep): ×0.8",
     "p2title": "Select your rooms",
     "p2sub": "How many beds do you need?",

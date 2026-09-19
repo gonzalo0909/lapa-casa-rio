@@ -5,11 +5,9 @@ import { BCP47 } from '@/lib/utils';
 
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
-  const m = date.getMonth(), d = date.getDate(), y = date.getFullYear();
-  if (m===1 && ((y===2027 && d>=13 && d<=17) || (y===2026 && d>=28)))
-    {return { mult:2.0, label:'Carnaval', minNights:5 };}
-  if (m===11||m===0||m===6||m===7) {return { mult:1.5, label:'Alta Temporada', minNights:1 };}
-  if (m===5||m===8)                 {return { mult:0.8, label:'Baixa Temporada', minNights:1 };}
+  const m = date.getMonth();
+  if (m===11||m===0||m===1||m===6||m===7) {return { mult:1.5, label:'Alta Temporada', minNights:1 };}
+  if (m===5||m===8)                        {return { mult:0.8, label:'Baixa Temporada', minNights:1 };}
   return { mult:1.0, label:'Média Temporada', minNights:1 };
 }
 

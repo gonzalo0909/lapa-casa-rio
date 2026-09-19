@@ -385,7 +385,6 @@
     "checkInTime": "Check-in",
     "checkOutTime": "Check-out",
     "minStay": "Estadía mínima",
-    "carnivalNote": "Carnaval: mínimo 5 noches",
     "minNightsError": "Mínimo {n} noches",
     "maxNightsError": "Máximo {n} noches",
     "pastDateError": "Fecha inválida"
@@ -445,7 +444,6 @@
     "highSeason": "Temporada Alta (Dic–Mar)",
     "lowSeason": "Temporada Baja (Jun–Sep)",
     "mediumSeason": "Temporada Media (Abr–May, Oct–Nov)",
-    "carnival": "Carnaval (Feb)",
     "multiplier": "Multiplicador",
     "saveChanges": "Guardar cambios",
     "blockDates": "Bloquear Fechas",
@@ -767,7 +765,6 @@
     "calNext": "Mes siguiente",
     "seasonMedia": "⛅ Media: ×1.0",
     "seasonAlta": "☀️ Alta (Dic–Mar, Jul–Ago): ×1.5",
-    "seasonCarnaval": "🎉 Carnaval (mín. 5 noches): ×2.0",
     "seasonBaixa": "🌧 Baja (Jun, Sep): ×0.8",
     "p2title": "Selecciona los cuartos",
     "p2sub": "¿Cuántas camas necesitas?",

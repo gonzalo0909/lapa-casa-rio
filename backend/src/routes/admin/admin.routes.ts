@@ -639,16 +639,15 @@ router.put('/rooms/:id/settings', validate(RoomSettingsSchema), async (req, res,
 });
 
 /**
- * GET /admin/pricing — estado actual de rate_plans + fechas de Carnaval, para poblar el formulario del panel
+ * GET /admin/pricing — estado actual de rate_plans, para poblar el formulario del panel
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, carnivalConfig, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests] =
+    const [ratePlans, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests] =
       await Promise.all([
         query(
           `SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`,
         ),
-        query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`),
         query(`SELECT id, min_beds, percentage FROM group_discount_tiers ORDER BY min_beds`),
         query<{ value: any }>(
           `SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`,
@@ -660,7 +659,6 @@ router.get('/pricing', async (req, res, next) => {
     res.status(200).json(
       ApiResponse.success({
         ratePlans: ratePlans.rows,
-        carnivalDates: carnivalConfig.rows[0]?.value ?? [],
         groupDiscountTiers: groupDiscountTiers.rows,
         cardSurchargePercent: cardSurcharge.rows[0]?.value ?? 10,
         luggageStorage: luggageStorage.rows[0]?.value ?? {
@@ -680,23 +678,12 @@ router.get('/pricing', async (req, res, next) => {
 });
 
 /**
- * PUT /admin/pricing — rate_plans (multiplicador/mín. noches por temporada) + fechas de Carnaval
+ * PUT /admin/pricing — rate_plans (multiplicador/mín. noches por temporada)
  */
 const PricingUpdateSchema = z.object({
-  seasonType: z.enum(['alta', 'media', 'baja', 'carnaval']).optional(),
+  seasonType: z.enum(['alta', 'media', 'baja']).optional(),
   multiplier: z.number().positive().optional(),
   minNights: z.number().int().positive().optional(),
-  // system_config.carnival_dates es un ARRAY de rangos
-  // {year, start_date, end_date} (ver 0001_seed.sql y
-  // get_season_type() en 0004_pricing_functions.sql, que itera el
-  // array buscando en qué rango cae la fecha) -- no un mapa por año.
-  carnival: z
-    .object({
-      year: z.number().int(),
-      startDate: z.string().trim().min(1),
-      endDate: z.string().trim().min(1),
-    })
-    .optional(),
   cardSurchargePercent: z.number().min(0).max(100).optional(),
   // Guarda-equipaje (Malas/Guardavolumes): precio de la diaria (BRL), días en que se ofrece y franja horaria HH:MM.
   luggageStorage: z
@@ -713,7 +700,7 @@ const PricingUpdateSchema = z.object({
 
 router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => {
   try {
-    const { seasonType, multiplier, minNights, carnival, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests } =
+    const { seasonType, multiplier, minNights, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests } =
       req.body as z.infer<typeof PricingUpdateSchema>;
 
     const updated: Record<string, any> = {};
@@ -739,24 +726,6 @@ router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => 
         return;
       }
       updated.ratePlan = rows[0];
-    }
-
-    if (carnival) {
-      const { rows: existingRows } = await query<{
-        value: Array<{ year: number; start_date: string; end_date: string }>;
-      }>(`SELECT value FROM system_config WHERE key = 'carnival_dates'`);
-      const currentValue = existingRows[0]?.value ?? [];
-      // Reemplaza el rango existente de ese año (si lo había) en vez de acumular duplicados -- "mantenimiento anual" del Maestro.
-      const nextValue = [
-        ...currentValue.filter((p) => p.year !== carnival.year),
-        { year: carnival.year, start_date: carnival.startDate, end_date: carnival.endDate },
-      ].sort((a, b) => a.year - b.year);
-
-      const { rows } = await query(
-        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'carnival_dates' RETURNING *`,
-        [JSON.stringify(nextValue)],
-      );
-      updated.carnivalDates = rows[0];
     }
 
     if (cardSurchargePercent !== undefined) {

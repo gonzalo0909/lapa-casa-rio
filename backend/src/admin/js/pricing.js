@@ -2,7 +2,7 @@
 requireAuth();
 renderNav('pricing');
 
-const SEASON_LABELS = { alta: 'Alta (Dic-Mar)', media: 'Media (Abr-May, Oct-Nov)', baja: 'Baja (Jun-Sep)', carnaval: 'Carnaval' };
+const SEASON_LABELS = { alta: 'Alta (Dic-Mar)', media: 'Media (Abr-May, Oct-Nov)', baja: 'Baja (Jun-Sep)' };
 
 function showMsg(elId, text, type) {
   document.getElementById(elId).innerHTML = text ? `<div class="msg ${type}">${text}</div>` : '';
@@ -12,7 +12,6 @@ async function loadPricing() {
   try {
     const data = await apiFetch('/admin/pricing');
     renderSeasons(data.ratePlans);
-    renderCarnival(data.carnivalDates);
     renderDiscountTiers(data.groupDiscountTiers);
     document.getElementById('surcharge-pct').value = data.cardSurchargePercent;
     const pixPct = data.pixDiscountPercent ?? 0;
@@ -98,32 +97,6 @@ async function saveSeason(row) {
     showMsg('seasons-msg', err.message, 'error');
   }
 }
-
-function renderCarnival(dates) {
-  const tbody = document.querySelector('#carnival-table tbody');
-  const sorted = [...dates].sort((a, b) => a.year - b.year);
-  tbody.innerHTML = sorted.map(d => `
-    <tr><td>${d.year}</td><td>${fmtDate(d.start_date)}</td><td>${fmtDate(d.end_date)}</td></tr>
-  `).join('') || '<tr><td colspan="3" style="color:#888;">Sin fechas cargadas</td></tr>';
-}
-
-document.getElementById('carnival-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const year = Number(document.getElementById('carnival-year').value);
-  const startDate = document.getElementById('carnival-start').value;
-  const endDate = document.getElementById('carnival-end').value;
-
-  try {
-    await apiFetch('/admin/pricing', {
-      method: 'PUT',
-      body: JSON.stringify({ carnival: { year, startDate, endDate } })
-    });
-    showMsg('carnival-msg', `Carnaval ${year} guardado.`, 'success');
-    loadPricing();
-  } catch (err) {
-    showMsg('carnival-msg', err.message, 'error');
-  }
-});
 
 // ── PIX discount ─────────────────────────────────────────────────────────────
 

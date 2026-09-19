@@ -48,10 +48,9 @@ export const HOSTEL_ENGINE_CSS = `
 .he-cal-cell.is-today .he-cal-day{border:1.5px solid #C8870A;color:#C8870A}
 .he-cal-cell.is-today.in-range .he-cal-day{color:#2A5234}
 .he-cal-cell.s-alta .he-cal-day:not(:disabled){color:#B45309}
-.he-cal-cell.s-carnaval .he-cal-day:not(:disabled){color:#9333EA}
 .he-cal-cell.s-baixa .he-cal-day:not(:disabled){color:#1D4ED8}
-.he-cal-cell.s-alta::after,.he-cal-cell.s-carnaval::after,.he-cal-cell.s-baixa::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%}
-.he-cal-cell.s-alta::after{background:#F59E0B}.he-cal-cell.s-carnaval::after{background:#A855F7}.he-cal-cell.s-baixa::after{background:#60A5FA}
+.he-cal-cell.s-alta::after,.he-cal-cell.s-baixa::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%}
+.he-cal-cell.s-alta::after{background:#F59E0B}.he-cal-cell.s-baixa::after{background:#60A5FA}
 .he-dates-sel{display:flex;gap:1rem;margin-top:1rem;padding:.75rem 1rem;background:rgba(255,255,255,.07);border-radius:8px;border:1px solid rgba(255,255,255,.15)}
 .he-date-col{flex:1}.he-date-lbl{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.95);margin-bottom:.15rem}
 .he-date-val{font-size:.88rem;font-weight:700;color:#7BC47F}
@@ -60,7 +59,7 @@ export const HOSTEL_ENGINE_CSS = `
 .he-season-info{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.85rem;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.12)}
 .he-chip{font-size:.68rem;padding:.25em .65em;border-radius:6px;font-weight:600}
 .he-chip.media{background:#EBF4EC;color:#1D6B34}.he-chip.alta{background:#FEF3E2;color:#B45309}
-.he-chip.carnaval{background:#FEE2E2;color:#B91C1C}.he-chip.baixa{background:#EFF6FF;color:#1D4ED8}
+.he-chip.baixa{background:#EFF6FF;color:#1D4ED8}
 .he-rooms{display:flex;flex-direction:column;gap:.65rem}
 .he-room{border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;transition:border-color .22s ease,background .22s ease,box-shadow .22s ease}
 .he-room.has-beds{border-color:#C8870A;background:rgba(200,135,10,.04);box-shadow:0 0 0 1px rgba(200,135,10,.15)}

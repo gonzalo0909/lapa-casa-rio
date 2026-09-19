@@ -91,7 +91,7 @@ interface Content {
   colRoom: string;
   colCapacity: string;
   colBasePrice: string;
-  seasonLabels: { high: string; medium: string; low: string; carnival: string };
+  seasonLabels: { high: string; medium: string; low: string };
   seasonNote: string;
   bedsUnit: string;
   perNight: string;
@@ -119,7 +119,6 @@ const CONTENT: Record<string, Content> = {
       high: 'Alta (dez-mar)',
       medium: 'Média (abr-mai, out-nov)',
       low: 'Baixa (jun-set)',
-      carnival: 'Carnaval (fev)',
     },
     seasonNote:
       'O preço final também depende do número de noites e do desconto de grupo aplicável -- o valor exato aparece no motor de reservas ao escolher as datas.',
@@ -152,7 +151,6 @@ const CONTENT: Record<string, Content> = {
       high: 'Alta (dic-mar)',
       medium: 'Media (abr-may, oct-nov)',
       low: 'Baja (jun-sep)',
-      carnival: 'Carnaval (feb)',
     },
     seasonNote:
       'El precio final también depende del número de noches y del descuento de grupo aplicable -- el valor exacto aparece en el motor de reservas al elegir las fechas.',
@@ -185,7 +183,6 @@ const CONTENT: Record<string, Content> = {
       high: 'High (Dec-Mar)',
       medium: 'Medium (Apr-May, Oct-Nov)',
       low: 'Low (Jun-Sep)',
-      carnival: 'Carnival (Feb)',
     },
     seasonNote:
       'The final price also depends on number of nights and any applicable group discount -- the exact amount shows up in the booking engine once you pick your dates.',
@@ -218,7 +215,6 @@ const CONTENT: Record<string, Content> = {
       high: 'Hoch (Dez-Mär)',
       medium: 'Mittel (Apr-Mai, Okt-Nov)',
       low: 'Niedrig (Jun-Sep)',
-      carnival: 'Karneval (Feb)',
     },
     seasonNote:
       'Der Endpreis hängt auch von der Anzahl der Nächte und einem eventuellen Gruppenrabatt ab -- der genaue Betrag erscheint im Buchungssystem nach der Datumsauswahl.',
@@ -251,7 +247,6 @@ const CONTENT: Record<string, Content> = {
       high: 'Haute (déc-mars)',
       medium: 'Moyenne (avr-mai, oct-nov)',
       low: 'Basse (juin-sept)',
-      carnival: 'Carnaval (fév)',
     },
     seasonNote:
       "Le prix final dépend aussi du nombre de nuits et d'une éventuelle remise de groupe -- le montant exact apparaît dans le moteur de réservation après le choix des dates.",
@@ -284,7 +279,6 @@ const CONTENT: Record<string, Content> = {
       high: 'Alta (dic-mar)',
       medium: 'Media (apr-mag, ott-nov)',
       low: 'Bassa (giu-set)',
-      carnival: 'Carnevale (feb)',
     },
     seasonNote:
       "Il prezzo finale dipende anche dal numero di notti e da un eventuale sconto per gruppi -- l'importo esatto appare nel motore di prenotazione dopo aver scelto le date.",
@@ -359,7 +353,6 @@ export default async function PrecosPage({ params }: { params: { locale: string 
     high: { multiplier: 1.5 },
     medium: { multiplier: 1.0 },
     low: { multiplier: 0.8 },
-    carnival: { multiplier: 2.0 },
   };
 
   const offersSchema = data
@@ -420,9 +413,6 @@ export default async function PrecosPage({ params }: { params: { locale: string 
                     <th className="py-3 pr-3 font-semibold text-foreground">
                       {c.seasonLabels.high}
                     </th>
-                    <th className="py-3 font-semibold text-foreground">
-                      {c.seasonLabels.carnival}
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -444,9 +434,6 @@ export default async function PrecosPage({ params }: { params: { locale: string 
                       </td>
                       <td className="py-3 pr-3 text-muted-foreground">
                         {fmtBRL(room.basePrice * (multipliers.high?.multiplier ?? 1.5))}
-                      </td>
-                      <td className="py-3 text-muted-foreground">
-                        {fmtBRL(room.basePrice * (multipliers.carnival?.multiplier ?? 2.0))}
                       </td>
                     </tr>
                   ))}

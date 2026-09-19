@@ -108,8 +108,7 @@ export function HostelCalendar({
           if (isHover && !isStart)              {cls += ' in-range range-end';}
           if (inRng)                            {cls += ' in-range';}
           if (isToday)                          {cls += ' is-today';}
-          if (s?.label === 'Alta Temporada')    {cls += ' s-alta';}
-          else if (s?.label === 'Carnaval')     {cls += ' s-carnaval';}
+          if (s?.label === 'Alta Temporada')       {cls += ' s-alta';}
           else if (s?.label === 'Baixa Temporada') {cls += ' s-baixa';}
 
           return (

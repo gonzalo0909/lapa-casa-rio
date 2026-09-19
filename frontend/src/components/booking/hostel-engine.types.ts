@@ -10,6 +10,8 @@ import deH from '@/messages/de.json';
 import itH from '@/messages/it.json';
 
 // ─── Tipos base ─────────────────────────────────────────
+/** Re-export del tipo compartido; los componentes del hostel importan de aquí para no cambiar sus imports. */
+export type Lang = BookingLocale;
 export type Phase = 'wizard' | 'success' | 'expired' | 'group';
 export type PayMethod = 'pix' | 'card';
 
@@ -69,7 +71,7 @@ export const T = {
   it: itH.hostel,
 } as const;
 
-export type Translations = (typeof T)[BookingLocale];
+export type Translations = (typeof T)[Lang];
 
 export interface PriceQuote {
   nights: number;

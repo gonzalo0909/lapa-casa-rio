@@ -4,12 +4,11 @@
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
-import type { BookingLocale } from '@/types/global';
-import { type RoomDef, T } from './hostel-engine.types';
+import { type Lang, type RoomDef, T } from './hostel-engine.types';
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelRoomSelectorProps {
-  lang: BookingLocale;
+  lang: Lang;
   /** Cuartos ya filtrados (visibleRooms del orquestador) */
   rooms: RoomDef[];
   beds: Record<string, number>;

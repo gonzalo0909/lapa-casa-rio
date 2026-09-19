@@ -4,14 +4,13 @@
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
-import type { BookingLocale } from '@/types/global';
-import { T } from './hostel-engine.types';
-import { getSeason, fmtDate, sameDay, inRange, weekdayLabels, monthLabel, isBrazilHoliday } from './hostel-engine.utils';
+import { type Lang, T } from './hostel-engine.types';
+import { getSeason, fmtDate, sameDay, dayBefore, inRange, weekdayLabels, monthLabel, isBrazilHoliday } from './hostel-engine.utils';
 import { minCheckInDs } from '@/lib/utils';
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelCalendarProps {
-  lang: BookingLocale;
+  lang: Lang;
   calMonth: Date;
   checkIn: Date | null;
   checkOut: Date | null;

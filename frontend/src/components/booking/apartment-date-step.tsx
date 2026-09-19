@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import styles from './apartment-engine.module.css';
 import { type AptLocale } from './apartment-engine.types';

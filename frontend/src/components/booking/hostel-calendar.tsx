@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { type Lang, T } from './hostel-engine.types';
-import { getSeason, fmtDate, sameDay, dayBefore, inRange, weekdayLabels, monthLabel, isBrazilHoliday } from './hostel-engine.utils';
+import { getSeason, fmtDate, sameDay, inRange, weekdayLabels, monthLabel, isBrazilHoliday } from './hostel-engine.utils';
 import { minCheckInDs } from '@/lib/utils';
 
 // ─── Props ────────────────────────────────────────────────

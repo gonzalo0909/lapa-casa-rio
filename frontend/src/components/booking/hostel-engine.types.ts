@@ -92,7 +92,7 @@ export const DEFAULT_ROOMS: RoomDef[] = [
     type: 'mixed',
     capacity: 12,
     available: 12,
-    price: 85,
+    price: 55,
     isFlexible: false,
   },
   {
@@ -102,7 +102,7 @@ export const DEFAULT_ROOMS: RoomDef[] = [
     type: 'mixed',
     capacity: 12,
     available: 12,
-    price: 85,
+    price: 55,
     isFlexible: false,
   },
   {
@@ -112,7 +112,7 @@ export const DEFAULT_ROOMS: RoomDef[] = [
     type: 'mixed',
     capacity: 7,
     available: 7,
-    price: 85,
+    price: 55,
     isFlexible: false,
   },
   {
@@ -122,7 +122,7 @@ export const DEFAULT_ROOMS: RoomDef[] = [
     type: 'mixed',
     capacity: 7,
     available: 7,
-    price: 85,
+    price: 55,
     isFlexible: false,
   },
   {
@@ -132,7 +132,7 @@ export const DEFAULT_ROOMS: RoomDef[] = [
     type: 'female',
     capacity: 7,
     available: 7,
-    price: 85,
+    price: 65,
     isFlexible: true,
   },
 ];

@@ -19,7 +19,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { type Lang, type FormState, type FormErrors, type FieldFeedback, T } from './hostel-engine.types';
-import { validateCPF, formatCPF, formatPhone } from './hostel-engine.utils';
+import { validateCPF, formatCPF, formatPhone, parseBold } from './hostel-engine.utils';
 
 export interface AppliedCoupon {
   code: string;
@@ -139,10 +139,10 @@ export function HostelGuestForm({
         });
         setCouponInput('');
       } else {
-        setCouponError(result?.message ?? 'Código inválido');
+        setCouponError(result?.message ?? t.couponErrInvalid);
       }
     } catch {
-      setCouponError('Error al validar el código');
+      setCouponError(t.couponErrInvalid);
     } finally {
       setCouponLoading(false);
     }
@@ -474,7 +474,7 @@ export function HostelGuestForm({
         <div className="he-rules">
           <div className="he-rules-title">
             <Tag size={14} color="#6A6058" aria-hidden />
-            ¿Tenés un código de descuento?
+            {t.couponTitle}
           </div>
           {appliedCoupon ? (
             <div
@@ -486,8 +486,11 @@ export function HostelGuestForm({
               }}
             >
               <span className="he-rule">
-                Código <strong>{appliedCoupon.code}</strong> aplicado (
-                {appliedCoupon.discount_percent}% off)
+                {parseBold(
+                  t.couponApplied
+                    .replace('{code}', appliedCoupon.code)
+                    .replace('{pct}', String(appliedCoupon.discount_percent)),
+                )}
               </span>
               <button
                 type="button"
@@ -498,7 +501,7 @@ export function HostelGuestForm({
                 className="he-btn-back"
                 style={{ padding: '.3rem .7rem', fontSize: '.72rem' }}
               >
-                Quitar
+                {t.couponRemove}
               </button>
             </div>
           ) : (
@@ -513,7 +516,7 @@ export function HostelGuestForm({
                     setCouponError(null);
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
-                  placeholder="CÓDIGO"
+                  placeholder={t.couponPlaceholder}
                   disabled={couponLoading}
                 />
                 <button
@@ -526,7 +529,7 @@ export function HostelGuestForm({
                     opacity: couponLoading || !couponInput.trim() ? 0.6 : 1,
                   }}
                 >
-                  {couponLoading ? '…' : 'Aplicar'}
+                  {couponLoading ? '…' : t.couponApply}
                 </button>
               </div>
               {couponError && <div className="he-ferr">{couponError}</div>}

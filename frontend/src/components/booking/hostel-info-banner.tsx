@@ -6,14 +6,9 @@ import React from 'react';
 import { AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff, Accessibility } from 'lucide-react';
 import type { Lang } from './hostel-engine.types';
 import { T } from './hostel-engine.types';
+import { parseBold } from './hostel-engine.utils';
 
 const ICONS = [KeyRound, DoorOpen, FileText, CigaretteOff, Ban, Accessibility];
-
-/** Convierte "texto [[negrita]] más texto" en nodos React con <strong>. */
-function parseBold(str: string): React.ReactNode {
-  const parts = str.split(/\[\[|\]\]/);
-  return parts.map((p, i) => i % 2 === 1 ? <strong key={i}>{p}</strong> : p);
-}
 
 interface HostelInfoBannerProps {
   lang: Lang;

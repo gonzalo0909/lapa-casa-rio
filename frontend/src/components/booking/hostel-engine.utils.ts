@@ -1,6 +1,6 @@
 // frontend/src/components/booking/hostel-engine.utils.ts
-// 12 funciones puras — sin React, sin estado.
 
+import React from 'react';
 import { BCP47 } from '@/lib/utils';
 
 // ─── Feriados nacionais do Brasil ────────────────────────
@@ -85,6 +85,12 @@ export function inRange(d: Date, a: Date | null, b: Date | null): boolean {
   if (!a || !b) {return false;}
   const [s, e] = dayBefore(a, b) ? [a, b] : [b, a];
   return dateOnly(d) > dateOnly(s) && dateOnly(d) < dateOnly(e);
+}
+
+// ─── Texto con negrita marcada con [[texto]] ──────────────
+export function parseBold(str: string): React.ReactNode[] {
+  const parts = str.split(/\[\[|\]\]/);
+  return parts.map((p, i) => i % 2 === 1 ? React.createElement('strong', { key: i }, p) : p);
 }
 
 // ─── Labels de calendario (Intl API) ─────────────────────

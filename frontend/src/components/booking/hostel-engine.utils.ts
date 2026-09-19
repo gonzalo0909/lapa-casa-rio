@@ -69,7 +69,7 @@ export function fmtMoney(v: number): string {
 }
 
 // ─── Helpers de fecha ─────────────────────────────────────
-export function dateOnly(d: Date): Date {
+function dateOnly(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 

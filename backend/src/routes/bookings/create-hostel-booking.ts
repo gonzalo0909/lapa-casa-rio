@@ -139,19 +139,6 @@ export const createHostelBookingHandler = async (
             blocked = true;
             logger.info('Código de oferta rechazado -- feriado', { offerCode: offer.code });
           }
-          if (!blocked && offer.monthly_limit != null) {
-            const { rows: usageRows } = await query<{ count: string }>(
-              `SELECT COUNT(*) AS count FROM reservations
-               WHERE applied_offer_code = $1
-                 AND date_trunc('month', created_at) = date_trunc('month', now())
-                 AND status != 'cancelled'`,
-              [offer.code],
-            );
-            if (parseInt(usageRows[0]?.count ?? '0') >= offer.monthly_limit) {
-              blocked = true;
-              logger.info('Código de oferta rechazado -- límite mensual', { offerCode: offer.code });
-            }
-          }
           if (!blocked) {
             appliedOffer = offer;
             if (offer.discount_amount != null && offer.discount_amount > 0) {
@@ -208,6 +195,8 @@ export const createHostelBookingHandler = async (
       nights,
       totalBeds: totalBedsRequested,
       pricing: pricingDetails,
+      appliedOfferCode: appliedOffer?.code,
+      offerMonthlyLimit: appliedOffer?.monthly_limit ?? null,
       specialRequests: [
         bookingData.arrivalTime
           ? `Horario de llegada: ${bookingData.arrivalTime.includes('-') ? bookingData.arrivalTime.replace('-', ':00 – ') + ':00' : bookingData.arrivalTime}`
@@ -221,12 +210,6 @@ export const createHostelBookingHandler = async (
     });
 
     logger.info('Hostel booking created', { bookingId: booking.id, totalPrice: pricingDetails.totalPrice });
-
-    // Registra oferta aplicada
-    if (appliedOffer) {
-      query(`UPDATE reservations SET applied_offer_code = $1 WHERE id = $2`, [appliedOffer.code, booking.id])
-        .catch((err) => logger.error('No se pudo registrar applied_offer_code', { bookingId: booking.id, error: String(err) }));
-    }
 
     // Foto del documento del titular
     if (bookingData.guest.documentPhotoBase64) {
@@ -304,6 +287,10 @@ export const createHostelBookingHandler = async (
     if (error instanceof InsufficientAvailabilityError) {
       logger.warn('Insufficient availability during createHostelBooking', { details: error.details });
       res.status(409).json(ApiResponse.error(error.message, error.details));
+      return;
+    }
+    if (error instanceof Error && error.message === 'OFFER_MONTHLY_LIMIT_EXCEEDED') {
+      res.status(409).json(ApiResponse.error('El código de oferta ya alcanzó su límite mensual'));
       return;
     }
     logger.error('Error creating hostel booking', {

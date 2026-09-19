@@ -287,41 +287,43 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   // ─ Camas / reveal ─
   const changeBeds = useCallback(
     (id: string, delta: number) => {
-      setRevealed((prev) => {
-        const r1 = rooms.find((r) => r.id === 'cuarto1');
-        const r4 = rooms.find((r) => r.id === 'cuarto4');
-        const newRev = { ...prev };
-        setBeds((prevBeds) => {
-          const cur = prevBeds[id] ?? 0;
-          const room = rooms.find((r) => r.id === id)!;
-          const next = { ...prevBeds };
-          if (delta > 0) {
-            if (cur < room.available) {
-              next[id] = cur + 1;
-            } else if (id === 'cuarto1' && !newRev.cuarto3) {
-              newRev.cuarto3 = true;
-            } else if (id === 'cuarto4' && !newRev.cuarto5) {
-              newRev.cuarto5 = true;
-            }
-          } else {
-            next[id] = Math.max(0, cur - 1);
-          }
-          // Collapse progresivo: si el cuarto principal baja del máximo
-          if ((next['cuarto1'] ?? 0) < (r1?.available ?? 12)) {
-            newRev.cuarto3 = false;
-            next['cuarto3'] = 0;
-          }
-          if ((next['cuarto4'] ?? 0) < (r4?.available ?? 7)) {
-            newRev.cuarto5 = false;
-            next['cuarto5'] = 0;
-          }
-          if (id === 'cuarto5' && delta < 0 && (next['cuarto5'] ?? 0) === 0) {newRev.cuarto5 = false;}
-          return next;
-        });
-        return newRev;
-      });
+      const r1 = rooms.find((r) => r.id === 'cuarto1');
+      const r4 = rooms.find((r) => r.id === 'cuarto4');
+      const cur = beds[id] ?? 0;
+      const room = rooms.find((r) => r.id === id)!;
+
+      const newBeds = { ...beds };
+      const newRev = { ...revealed };
+
+      if (delta > 0) {
+        if (cur < room.available) {
+          newBeds[id] = cur + 1;
+        } else if (id === 'cuarto1' && !newRev.cuarto3) {
+          newRev.cuarto3 = true;
+        } else if (id === 'cuarto4' && !newRev.cuarto5) {
+          newRev.cuarto5 = true;
+        }
+      } else {
+        newBeds[id] = Math.max(0, cur - 1);
+      }
+
+      // Collapse progresivo: si el cuarto principal baja del máximo
+      if ((newBeds['cuarto1'] ?? 0) < (r1?.available ?? 12)) {
+        newRev.cuarto3 = false;
+        newBeds['cuarto3'] = 0;
+      }
+      if ((newBeds['cuarto4'] ?? 0) < (r4?.available ?? 7)) {
+        newRev.cuarto5 = false;
+        newBeds['cuarto5'] = 0;
+      }
+      if (id === 'cuarto5' && delta < 0 && (newBeds['cuarto5'] ?? 0) === 0) {
+        newRev.cuarto5 = false;
+      }
+
+      setBeds(newBeds);
+      setRevealed(newRev);
     },
-    [rooms],
+    [rooms, beds, revealed],
   );
 
   // ─ Scroll suave al tope de la card (step tracker) ─

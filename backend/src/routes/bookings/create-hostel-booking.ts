@@ -18,6 +18,7 @@ import { generateConfirmationToken } from '../../utils/confirmation-token';
 import { GuestRepository } from '../../database/repositories/guest-repository';
 import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
+import { generateReferralCode } from '../../utils/encryption';
 import {
   type CreateBookingRequest,
   isHolidayDate,
@@ -211,6 +212,32 @@ export const createHostelBookingHandler = async (
 
     logger.info('Hostel booking created', { bookingId: booking.id, totalPrice: pricingDetails.totalPrice });
 
+    // Programa de referidos: generar o recuperar código propio del huésped
+    let ownReferralCode: string | null = null;
+    try {
+      const { rows: existing } = await query<{ code: string }>(
+        `SELECT code FROM apartment_offers
+         WHERE referral_owner_guest_id = $1 AND is_active = true LIMIT 1`,
+        [booking.guest_id],
+      );
+      if (existing.length > 0) {
+        ownReferralCode = existing[0]!.code;
+      } else {
+        ownReferralCode = generateReferralCode();
+        const validTo = new Date();
+        validTo.setFullYear(validTo.getFullYear() + 1);
+        await query(
+          `INSERT INTO apartment_offers
+             (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
+           VALUES ($1, 'Código de referido', 10, NULL, now()::date, $2::date, true, $3)`,
+          [ownReferralCode, validTo.toISOString().slice(0, 10), booking.guest_id],
+        );
+      }
+    } catch (error) {
+      logger.error('No se pudo obtener/generar el código de referido', { bookingId: booking.id, error: String(error) });
+      ownReferralCode = null;
+    }
+
     // Foto del documento del titular
     if (bookingData.guest.documentPhotoBase64) {
       try {
@@ -246,7 +273,7 @@ export const createHostelBookingHandler = async (
           language: (['pt', 'en', 'es'] as string[]).includes(guest.guest.language ?? '') ? (guest.guest.language as 'pt' | 'en' | 'es') : 'en',
         }).catch((err) => logger.error('Failed to send WhatsApp notification', { bookingId: booking.id, error: err.message }));
       }
-      return notificationService.notify('booking_confirmation', guest, { referralCode: null });
+      return notificationService.notify('booking_confirmation', guest, { referralCode: ownReferralCode });
     }).catch((err) => logger.error('Failed to send confirmation email', { bookingId: booking.id, error: err.message }));
 
     res.status(201).json(ApiResponse.success({
@@ -259,7 +286,7 @@ export const createHostelBookingHandler = async (
         nights,
         rooms: bookingData.rooms,
         guest: { name: fullName, email: bookingData.guest.email },
-        referralCode: null,
+        referralCode: ownReferralCode,
         pricing: {
           subtotal: pricingDetails.basePrice,
           groupDiscount: pricingDetails.discountAmount,

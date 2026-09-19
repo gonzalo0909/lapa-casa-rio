@@ -80,6 +80,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   });
   const [revealed, setRevealed] = useState({ cuarto3: false, cuarto5: false });
   const [rooms, setRooms] = useState<RoomDef[]>(DEFAULT_ROOMS);
+  const [roomsLoaded, setRoomsLoaded] = useState(false);
   const [toast, setToast] = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
   const [payMethod, setPayMethod] = useState<PayMethod>('pix');
@@ -147,13 +148,17 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   // ─ Fetch cuartos reales cuando hay fechas ─
   useEffect(() => {
     if (!checkIn || !checkOut) {return;}
+    setRoomsLoaded(false);
     const ci = checkIn.toISOString().slice(0, 10);
     const co = checkOut.toISOString().slice(0, 10);
     availabilityAPI
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {
         const apiRooms: any[] = res.data?.rooms || [];
-        if (!apiRooms.length) {return;}
+        if (!apiRooms.length) {
+          showToast(t.tErrAvail ?? 'Error al cargar habitaciones');
+          return;
+        }
         setRooms(
           DEFAULT_ROOMS.map((dr) => {
             // Match por code real de room_types (mixto_12a, flexible_7, etc.) --
@@ -166,13 +171,14 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               ...dr,
               realId: match.roomId,
               available: match.availableBeds ?? dr.available,
-              price: match.basePrice || dr.price,
+              price: match.basePrice,
             };
           }),
         );
+        setRoomsLoaded(true);
       })
       .catch(() => {
-        /* fallback a defaults */
+        showToast(t.tErrAvail ?? 'Error al cargar habitaciones');
       });
   }, [checkIn, checkOut]);
 
@@ -873,6 +879,11 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
             {/* Step 2 — Cuartos */}
             {step === 2 && (
               <>
+                {!roomsLoaded ? (
+                  <div className="he-panel" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--he-muted)' }}>
+                    <div className="he-spinner" />
+                  </div>
+                ) : (
                 <HostelRoomSelector
                   lang={lang}
                   rooms={visibleRooms}
@@ -881,6 +892,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   season={season}
                   onChangeBeds={changeBeds}
                 />
+                )}
 
                 {/* ── Pago grupal (solo si hay 2+ camas y hay fechas) ── */}
                 {totalBeds >= 2 && checkIn && checkOut && (

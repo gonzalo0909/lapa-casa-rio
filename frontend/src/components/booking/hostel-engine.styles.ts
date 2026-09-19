@@ -197,4 +197,6 @@ export const HOSTEL_ENGINE_CSS = `
 .he-glink-wa{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.62rem 1rem;border-radius:8px;font-size:.9rem;font-weight:600;color:#fff;background:#25D366;text-decoration:none;transition:background .15s}
 .he-glink-wa:hover{background:#1DAE55}
 .he-glink-meta{font-size:.72rem;color:rgba(255,255,255,.58);line-height:1.55}
+.he-spinner{width:32px;height:32px;border:3px solid var(--he-border,#e2e8f0);border-top-color:var(--he-accent,#0369a1);border-radius:50%;animation:he-spin .7s linear infinite;margin:0 auto}
+@keyframes he-spin{to{transform:rotate(360deg)}}
 `;

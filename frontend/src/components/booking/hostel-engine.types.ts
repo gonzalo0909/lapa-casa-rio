@@ -83,56 +83,11 @@ export interface PriceQuote {
   deposit: number;
 }
 
-// ─── Cuartos por defecto (fallback si la API no responde) ─
+// ─── Estructura de cuartos (sin precios — los precios siempre vienen de la API) ─
 export const DEFAULT_ROOMS: RoomDef[] = [
-  {
-    id: 'cuarto1',
-    code: 'mixto_12a',
-    name: 'Cuarto 1',
-    type: 'mixed',
-    capacity: 12,
-    available: 12,
-    price: 55,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto3',
-    code: 'mixto_12b',
-    name: 'Cuarto 3',
-    type: 'mixed',
-    capacity: 12,
-    available: 12,
-    price: 55,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto4',
-    code: 'mixto_7',
-    name: 'Cuarto 4',
-    type: 'mixed',
-    capacity: 7,
-    available: 7,
-    price: 55,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto5',
-    code: 'mixto_7c',
-    name: 'Cuarto 5',
-    type: 'mixed',
-    capacity: 7,
-    available: 7,
-    price: 55,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto6',
-    code: 'flexible_7',
-    name: 'Cuarto 6',
-    type: 'female',
-    capacity: 7,
-    available: 7,
-    price: 65,
-    isFlexible: true,
-  },
+  { id: 'cuarto1', code: 'mixto_12a',  name: 'Cuarto 1', type: 'mixed',  capacity: 12, available: 12, price: 0, isFlexible: false },
+  { id: 'cuarto3', code: 'mixto_12b',  name: 'Cuarto 3', type: 'mixed',  capacity: 12, available: 12, price: 0, isFlexible: false },
+  { id: 'cuarto4', code: 'mixto_7',    name: 'Cuarto 4', type: 'mixed',  capacity: 7,  available: 7,  price: 0, isFlexible: false },
+  { id: 'cuarto5', code: 'mixto_7c',   name: 'Cuarto 5', type: 'mixed',  capacity: 7,  available: 7,  price: 0, isFlexible: false },
+  { id: 'cuarto6', code: 'flexible_7', name: 'Cuarto 6', type: 'female', capacity: 7,  available: 7,  price: 0, isFlexible: true  },
 ];

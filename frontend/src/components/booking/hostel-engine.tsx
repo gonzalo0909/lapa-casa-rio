@@ -651,7 +651,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       : `• Tarjeta (+${surchargePct}%): ${fmtMoney(depCard)}`;
     const arrivalLine = form.arrival ? `\nHora de llegada: ${form.arrival}` : '';
     const msg = encodeURIComponent(
-      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}${arrivalLine}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\nDepósito (30%):\n• PIX: ${fmtMoney(depPix)} → lapalandiarj@gmail.com\n${cardLine}\n\nRestante en check-in:\n• PIX: ${fmtMoney(remPix)}\n• Tarjeta (+${surchargePct}%): ${fmtMoney(remCard)}\n\n${t.waAwait}`,
+      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}${arrivalLine}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\nDepósito (30%):\n• PIX: ${fmtMoney(depPix)} → ${process.env.NEXT_PUBLIC_PIX_KEY ?? 'lapalandiarj@gmail.com'}\n${cardLine}\n\nRestante en check-in:\n• PIX: ${fmtMoney(remPix)}\n• Tarjeta (+${surchargePct}%): ${fmtMoney(remCard)}\n\n${t.waAwait}`,
     );
     const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5521977157530';
     return `https://wa.me/${waNumber}?text=${msg}`;

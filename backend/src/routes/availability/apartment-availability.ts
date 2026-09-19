@@ -139,10 +139,8 @@ export const checkApartmentAvailabilityHandler = async (
     const fullPaymentRequired = hoursUntilCheckIn < 48;
 
     // Pricing en batch: todos los apartamentos comparten las mismas fechas y
-    // totalBeds=1, así que season/min-nights son idénticos para cada uno.
-    // Se hacen 3 queries totales en lugar de 7×N.
-    let seasonMultiplier = 1;
-    let seasonType: string = 'media';
+    // totalBeds=1. Se hacen 2 queries totales en lugar de 7×N.
+    // Temporadas no aplican a apartamentos (sin precios estacionales configurados).
     let depositPercent = 0.3;
     let pricingFailed = false;
     const finalPriceById = new Map<string, number>();
@@ -150,24 +148,10 @@ export const checkApartmentAvailabilityHandler = async (
     try {
       const bookingDate = new Date().toISOString().slice(0, 10);
 
-      // 1) Valores compartidos — una sola query por aspecto estacional
-      const [
-        { rows: seasonRows },
-        { rows: depositPctRows },
-      ] = await Promise.all([
-        query<{ multiplier: string; season_type: string }>(
-          `SELECT calculate_season_multiplier($1::date) AS multiplier,
-                  get_season_type($1::date) AS season_type`,
-          [checkIn]
-        ),
-        // totalBeds=1 → deposit_percent es constante; precio ficticio para obtener el %
-        query<{ deposit_percent: string }>(
-          `SELECT deposit_percent FROM calculate_deposit(100::numeric, 1)`
-        ),
-      ]);
-
-      seasonMultiplier = parseFloat(seasonRows[0].multiplier);
-      seasonType = seasonRows[0].season_type;
+      // 1) Porcentaje de depósito — constante para totalBeds=1
+      const { rows: depositPctRows } = await query<{ deposit_percent: string }>(
+        `SELECT deposit_percent FROM calculate_deposit(100::numeric, 1)`
+      );
       depositPercent = parseFloat(depositPctRows[0].deposit_percent);
 
       // 2) calculate_final_price en batch para todos los apartamentos a la vez
@@ -222,8 +206,6 @@ export const checkApartmentAvailabilityHandler = async (
           id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
         })),
         priceTotal: finalPrice,
-        seasonMultiplier: pricingFailed ? 1 : seasonMultiplier,
-        seasonType: pricingFailed ? 'media' : seasonType,
         depositAmount,
         // Indica al frontend si se requiere pago completo y el motivo,
         // para que pueda mostrar una explicación clara al huésped.

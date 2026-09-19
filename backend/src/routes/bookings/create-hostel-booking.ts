@@ -25,6 +25,7 @@ import {
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
   calcCheckInBounds,
+  isBrazilHoliday,
 } from './create-booking.shared';
 
 const guestRepo = new GuestRepository();
@@ -64,6 +65,18 @@ export const createHostelBookingHandler = async (
     if (checkOut <= checkIn) {
       res.status(400).json(ApiResponse.error('Check-out date must be after check-in date'));
       return;
+    }
+
+    // Bloqueo total de feriados nacionais do Brasil
+    const cursor = new Date(checkIn);
+    while (cursor < checkOut) {
+      if (isBrazilHoliday(cursor)) {
+        res.status(422).json(ApiResponse.error(
+          'Las fechas seleccionadas incluyen un feriado nacional de Brasil y no están disponibles para reserva.',
+        ));
+        return;
+      }
+      cursor.setDate(cursor.getDate() + 1);
     }
 
     const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));

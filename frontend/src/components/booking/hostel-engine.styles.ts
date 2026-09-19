@@ -49,6 +49,8 @@ export const HOSTEL_ENGINE_CSS = `
 .he-cal-cell.is-today.in-range .he-cal-day{color:#2A5234}
 .he-cal-cell.s-alta .he-cal-day:not(:disabled){color:#B45309}
 .he-cal-cell.s-baixa .he-cal-day:not(:disabled){color:#1D4ED8}
+.he-cal-cell.s-holiday .he-cal-day{color:rgba(255,255,255,.25)!important;cursor:not-allowed;text-decoration:line-through}
+.he-cal-cell.s-holiday::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#6B7280}
 .he-cal-cell.s-alta::after,.he-cal-cell.s-baixa::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%}
 .he-cal-cell.s-alta::after{background:#F59E0B}.he-cal-cell.s-baixa::after{background:#60A5FA}
 .he-dates-sel{display:flex;gap:1rem;margin-top:1rem;padding:.75rem 1rem;background:rgba(255,255,255,.07);border-radius:8px;border:1px solid rgba(255,255,255,.15)}

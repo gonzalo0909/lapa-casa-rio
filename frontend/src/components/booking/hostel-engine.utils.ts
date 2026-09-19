@@ -3,6 +3,37 @@
 
 import { BCP47 } from '@/lib/utils';
 
+// ─── Feriados nacionais do Brasil ────────────────────────
+function easterDate(year: number): Date {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day   = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month, day);
+}
+
+export function isBrazilHoliday(date: Date): boolean {
+  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  // Feriados fixos
+  const fixed: [number, number][] = [
+    [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
+  ];
+  if (fixed.some(([fm, fd]) => m === fm && d === fd)) {return true;}
+  // Páscoa + Sexta-feira Santa
+  const easter = easterDate(y);
+  const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
+  if (sameDay(date, easter) || sameDay(date, goodFriday)) {return true;}
+  // Carnaval (segunda e terça, 48 e 47 dias antes da Páscoa)
+  const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
+  const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
+  if (sameDay(date, carnivalMon) || sameDay(date, carnivalTue)) {return true;}
+  return false;
+}
+
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
   const m = date.getMonth();

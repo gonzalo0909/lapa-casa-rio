@@ -8,6 +8,41 @@ import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
 import { logger } from '../../utils/logger';
 
+// ── Feriados nacionais do Brasil ──────────────────────────────────────────────
+
+function easterDate(year: number): Date {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m2 = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m2 + 114) / 31) - 1;
+  const day   = ((h + l - 7 * m2 + 114) % 31) + 1;
+  return new Date(year, month, day);
+}
+
+function sameLocalDate(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() &&
+         a.getMonth()    === b.getMonth()    &&
+         a.getDate()     === b.getDate();
+}
+
+export function isBrazilHoliday(date: Date): boolean {
+  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  const fixed: [number, number][] = [
+    [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
+  ];
+  if (fixed.some(([fm, fd]) => m === fm && d === fd)) {return true;}
+  const easter    = easterDate(y);
+  const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
+  if (sameLocalDate(date, easter) || sameLocalDate(date, goodFriday)) {return true;}
+  const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
+  const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
+  if (sameLocalDate(date, carnivalMon) || sameLocalDate(date, carnivalTue)) {return true;}
+  return false;
+}
+
 // ── Request type ─────────────────────────────────────────────────────────────
 
 export interface CreateBookingRequest {

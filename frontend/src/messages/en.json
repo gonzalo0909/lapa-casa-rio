@@ -859,6 +859,7 @@
     "tSelectCheckout": "Select check-out",
     "tClickCheckout": "Click a check-out date",
     "tInProgress": "in progress",
+    "tErrAvail": "Error loading rooms. Please try again.",
     "tCountryLabel": "Country",
     "tToastCheckin": "Select a check-in date.",
     "tToastCheckout": "Select a check-out date.",

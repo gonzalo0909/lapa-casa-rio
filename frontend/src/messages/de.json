@@ -859,6 +859,7 @@
     "tSelectCheckout": "Abreise auswählen",
     "tClickCheckout": "Klicken Sie auf ein Abreisedatum",
     "tInProgress": "läuft",
+    "tErrAvail": "Fehler beim Laden der Zimmer. Bitte erneut versuchen.",
     "tCountryLabel": "Land",
     "tToastCheckin": "Bitte wählen Sie ein Anreisedatum.",
     "tToastCheckout": "Bitte wählen Sie ein Abreisedatum.",

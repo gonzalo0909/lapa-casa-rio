@@ -152,7 +152,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       .then((res) => {
         const apiRooms: any[] = res.data?.rooms || [];
         if (!apiRooms.length) {
-          showToast(t.tErrAvail ?? 'Error al cargar habitaciones');
+          showToast(t.tErrAvail);
           return;
         }
         setRooms(
@@ -174,7 +174,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         setRoomsLoaded(true);
       })
       .catch(() => {
-        showToast(t.tErrAvail ?? 'Error al cargar habitaciones');
+        showToast(t.tErrAvail);
       });
   }, [checkIn, checkOut]);
 

@@ -859,6 +859,7 @@
     "tSelectCheckout": "Seleccionar check-out",
     "tClickCheckout": "Haz clic en una fecha de salida",
     "tInProgress": "en curso",
+    "tErrAvail": "Error al cargar habitaciones. Intentá de nuevo.",
     "tCountryLabel": "País",
     "tToastCheckin": "Selecciona la fecha de check-in.",
     "tToastCheckout": "Selecciona la fecha de check-out.",

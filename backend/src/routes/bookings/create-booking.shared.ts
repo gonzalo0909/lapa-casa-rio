@@ -22,25 +22,34 @@ function easterDate(year: number): Date {
   return new Date(year, month, day);
 }
 
-function sameLocalDate(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() &&
-         a.getMonth()    === b.getMonth()    &&
-         a.getDate()     === b.getDate();
-}
 
-export function isBrazilHoliday(date: Date): boolean {
-  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+function getHolidaysForYear(y: number): Date[] {
   const fixed: [number, number][] = [
     [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
   ];
-  if (fixed.some(([fm, fd]) => m === fm && d === fd)) {return true;}
-  const easter    = easterDate(y);
+  const holidays = fixed.map(([m, d]) => new Date(y, m - 1, d));
+  const easter = easterDate(y);
   const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
-  if (sameLocalDate(date, easter) || sameLocalDate(date, goodFriday)) {return true;}
   const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
   const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
-  if (sameLocalDate(date, carnivalMon) || sameLocalDate(date, carnivalTue)) {return true;}
-  return false;
+  holidays.push(easter, goodFriday, carnivalMon, carnivalTue);
+  return holidays;
+}
+
+function dateOnly(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+export function isBrazilHoliday(date: Date): boolean {
+  const y = date.getFullYear();
+  const t = dateOnly(date).getTime();
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  const holidays = [
+    ...getHolidaysForYear(y - 1),
+    ...getHolidaysForYear(y),
+    ...getHolidaysForYear(y + 1),
+  ];
+  return holidays.some(h => Math.abs(dateOnly(h).getTime() - t) <= WEEK);
 }
 
 // ── Request type ─────────────────────────────────────────────────────────────

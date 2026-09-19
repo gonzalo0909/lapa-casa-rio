@@ -16,22 +16,30 @@ function easterDate(year: number): Date {
   return new Date(year, month, day);
 }
 
-export function isBrazilHoliday(date: Date): boolean {
-  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
-  // Feriados fixos
+function getHolidaysForYear(y: number): Date[] {
   const fixed: [number, number][] = [
     [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
   ];
-  if (fixed.some(([fm, fd]) => m === fm && d === fd)) {return true;}
-  // Páscoa + Sexta-feira Santa
+  const holidays = fixed.map(([m, d]) => new Date(y, m - 1, d));
   const easter = easterDate(y);
   const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
-  if (sameDay(date, easter) || sameDay(date, goodFriday)) {return true;}
-  // Carnaval (segunda e terça, 48 e 47 dias antes da Páscoa)
   const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
   const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
-  if (sameDay(date, carnivalMon) || sameDay(date, carnivalTue)) {return true;}
-  return false;
+  holidays.push(easter, goodFriday, carnivalMon, carnivalTue);
+  return holidays;
+}
+
+export function isBrazilHoliday(date: Date): boolean {
+  const y = date.getFullYear();
+  const t = dateOnly(date).getTime();
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  // Incluye año anterior y siguiente para fechas cerca de límites de año
+  const holidays = [
+    ...getHolidaysForYear(y - 1),
+    ...getHolidaysForYear(y),
+    ...getHolidaysForYear(y + 1),
+  ];
+  return holidays.some(h => Math.abs(dateOnly(h).getTime() - t) <= WEEK);
 }
 
 // ─── Temporada ────────────────────────────────────────────

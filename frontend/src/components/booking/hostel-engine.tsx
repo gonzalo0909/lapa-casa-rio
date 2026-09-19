@@ -427,6 +427,33 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     scrollToCard();
   }, [step, checkIn, checkOut, totalBeds, t, showToast, validateForm, scrollToCard]);
 
+  // ─ Helper: iniciar link de pago (PIX o Stripe) ──────────────────────────────
+  // Retorna { pixData } | { stripeUrl } en éxito o null si la API responde
+  // sin datos. Lanza si la llamada de red falla.
+  const initPaymentLink = useCallback(async (
+    method: PayMethod,
+    resId: string,
+  ): Promise<{ pixData: { qrCode: string; qrCodeBase64: string } } | { stripeUrl: string } | null> => {
+    if (method === 'pix') {
+      const dep = await paymentAPI.processDeposit(resId, 'mercadopago');
+      const p = dep.data?.payment;
+      if (p?.qrCodeBase64 || p?.qrCode) {
+        return { pixData: { qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' } };
+      }
+      return null;
+    }
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    let ct: string | undefined;
+    try { ct = sessionStorage.getItem(`ct_${resId}`) ?? undefined; } catch {}
+    const checkout = await paymentAPI.stripeCheckout(resId, origin, ct);
+    const url: string | undefined = checkout.data?.url;
+    if (url) {
+      window.open(url, '_blank', 'noopener');
+      return { stripeUrl: url };
+    }
+    return null;
+  }, []);
+
   // ─ Confirmar reserva ─
   const handleConfirm = useCallback(async () => {
     setIsProcessing(true);
@@ -472,43 +499,21 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       }
 
       setPaymentInitFailed(false);
-      if (payMethod === 'pix') {
-        // PIX: generar QR real via Mercado Pago
-        try {
-          const dep = await paymentAPI.processDeposit(newReservationId, 'mercadopago');
-          const p = dep.data?.payment;
-          if (p?.qrCodeBase64 || p?.qrCode) {
-            setPixData({ qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' });
-          } else {
-            setPaymentInitFailed(true);
-          }
-        } catch {
-          // La reserva ya está confirmada -- se avisa en la pantalla de éxito,
-          // no se corta el flujo.
+      // La reserva ya está confirmada — el fallo de pago se avisa en pantalla,
+      // no corta el flujo (de ahí el try/catch interno separado del outer).
+      try {
+        const result = await initPaymentLink(payMethod, newReservationId);
+        if (result) {
+          if ('pixData' in result) {setPixData(result.pixData);}
+          if ('stripeUrl' in result) {setStripeUrl(result.stripeUrl);}
+        } else {
           setPaymentInitFailed(true);
         }
-        setPhase('success');
-        startTimer();
-      } else {
-        // Tarjeta: Stripe Checkout Session — se abre en nueva pestaña
-        try {
-          const origin = typeof window !== 'undefined' ? window.location.origin : '';
-          let ct: string | undefined;
-          try { ct = sessionStorage.getItem(`ct_${newReservationId}`) ?? undefined; } catch {}
-          const checkout = await paymentAPI.stripeCheckout(newReservationId, origin, ct);
-          const url: string | undefined = checkout.data?.url;
-          if (url) {
-            setStripeUrl(url);
-            window.open(url, '_blank', 'noopener');
-          }
-          // Sin URL inmediata igual llega el link por e-mail (t.cardInstruction)
-          // -- no es una falla real, a diferencia del catch de abajo.
-        } catch {
-          setPaymentInitFailed(true);
-        }
-        setPhase('success');
-        startTimer();
+      } catch {
+        setPaymentInitFailed(true);
       }
+      setPhase('success');
+      startTimer();
     } catch (err: any) {
       setBookingError(err?.response?.data?.error || err?.message || t.errorBooking);
     } finally {
@@ -525,24 +530,12 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     setBookingError('');
     setPaymentInitFailed(false);
     try {
-      if (nextMethod === 'pix') {
-        const dep = await paymentAPI.processDeposit(reservationId, 'mercadopago');
-        const p = dep.data?.payment;
-        if (p?.qrCodeBase64 || p?.qrCode) {
-          setPixData({ qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' });
-        } else {
-          setPaymentInitFailed(true);
-        }
+      const result = await initPaymentLink(nextMethod, reservationId);
+      if (result) {
+        if ('pixData' in result) {setPixData(result.pixData);}
+        if ('stripeUrl' in result) {setStripeUrl(result.stripeUrl);}
       } else {
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        let ct: string | undefined;
-        try { ct = sessionStorage.getItem(`ct_${reservationId}`) ?? undefined; } catch {}
-        const checkout = await paymentAPI.stripeCheckout(reservationId, origin, ct);
-        const url: string | undefined = checkout.data?.url;
-        if (url) {
-          setStripeUrl(url);
-          window.open(url, '_blank', 'noopener');
-        }
+        setPaymentInitFailed(true);
       }
       setPayMethod(nextMethod);
       startTimer();
@@ -560,28 +553,13 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     setIsRetryingPayment(true);
     setPaymentLinkError(false);
     try {
-      if (payMethod === 'pix') {
-        const dep = await paymentAPI.processDeposit(reservationId, 'mercadopago');
-        const p = dep.data?.payment;
-        if (p?.qrCodeBase64 || p?.qrCode) {
-          setPixData({ qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' });
-          setPaymentInitFailed(false);
-        } else {
-          setPaymentLinkError(true);
-        }
+      const result = await initPaymentLink(payMethod, reservationId);
+      if (result) {
+        if ('pixData' in result) {setPixData(result.pixData);}
+        if ('stripeUrl' in result) {setStripeUrl(result.stripeUrl);}
+        setPaymentInitFailed(false);
       } else {
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        let ct: string | undefined;
-        try { ct = sessionStorage.getItem(`ct_${reservationId}`) ?? undefined; } catch {}
-        const checkout = await paymentAPI.stripeCheckout(reservationId, origin, ct);
-        const url: string | undefined = checkout.data?.url;
-        if (url) {
-          setStripeUrl(url);
-          setPaymentInitFailed(false);
-          window.open(url, '_blank', 'noopener');
-        } else {
-          setPaymentLinkError(true);
-        }
+        setPaymentLinkError(true);
       }
     } catch (err) {
       console.error('handleRetryPaymentLink failed', err);

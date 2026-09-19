@@ -258,7 +258,6 @@ export const createApartmentBookingHandler = async (
       source: bookingData.source || 'website',
       language: bookingData.language || 'pt',
       status: 'pending_payment',
-      guestGender: 'mixed', // Apartamentos no usan asignación por género
       appliedOfferCode: appliedOffer?.code,
       offerMonthlyLimit: appliedOffer?.monthly_limit,
     });
@@ -346,8 +345,6 @@ export const createApartmentBookingHandler = async (
         referralCode: ownReferralCode,
         pricing: {
           subtotal: pricingDetails.basePrice,
-          groupDiscount: pricingDetails.discountAmount,
-          seasonalAdjustment: pricingDetails.priceAfterSeason - pricingDetails.basePrice,
           total: pricingDetails.totalPrice,
           deposit: pricingDetails.depositAmount,
           remaining: pricingDetails.remainingAmount,

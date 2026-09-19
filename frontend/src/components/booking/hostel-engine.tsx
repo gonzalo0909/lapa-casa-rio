@@ -1045,6 +1045,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
             isRetryingPayment={isRetryingPayment}
             onRetryPaymentLink={handleRetryPaymentLink}
             referralCode={ownReferralCode}
+            cardSurchargeMult={cardSurchargeMult}
           />
         )}
 

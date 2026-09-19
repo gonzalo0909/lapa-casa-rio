@@ -85,7 +85,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
   const isSelectable = !disabledReason;
   const PhotoIcon = APT_ICONS[apartment.code] ?? Home;
-  const nightPrice = nights > 0 ? Math.round(apartment.priceTotal / nights) : Math.round((apartment.basePrice ?? 0) * (apartment.seasonMultiplier ?? 1));
+  const nightPrice = Math.round(apartment.priceTotal / Math.max(1, nights));
   const photos = apartment.photos ?? [];
   const hasPhotos = photos.length > 0;
   const currentPhoto = photos[photoIdx];

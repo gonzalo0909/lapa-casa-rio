@@ -104,6 +104,16 @@ export const createApartmentBookingHandler = async (
              WHERE rbl.room_type_id = $1
                AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($2::date, $3::date, '[)')
            )
+           AND NOT EXISTS (
+             SELECT 1 FROM (
+               SELECT period_start, period_end
+               FROM apartment_holiday_periods(EXTRACT(YEAR FROM $2::date)::int)
+               UNION ALL
+               SELECT period_start, period_end
+               FROM apartment_holiday_periods(EXTRACT(YEAR FROM $2::date)::int + 1)
+             ) hp
+             WHERE daterange(hp.period_start, hp.period_end, '[)') && daterange($2::date, $3::date, '[)')
+           )
          ) AS available`,
         [room.roomId, bookingData.checkIn, bookingData.checkOut],
       );
@@ -258,7 +268,6 @@ export const createApartmentBookingHandler = async (
       source: bookingData.source || 'website',
       language: bookingData.language || 'pt',
       status: 'pending_payment',
-      guestGender: 'mixed', // Apartamentos no usan asignación por género
       appliedOfferCode: appliedOffer?.code,
       offerMonthlyLimit: appliedOffer?.monthly_limit,
     });
@@ -346,8 +355,6 @@ export const createApartmentBookingHandler = async (
         referralCode: ownReferralCode,
         pricing: {
           subtotal: pricingDetails.basePrice,
-          groupDiscount: pricingDetails.discountAmount,
-          seasonalAdjustment: pricingDetails.priceAfterSeason - pricingDetails.basePrice,
           total: pricingDetails.totalPrice,
           deposit: pricingDetails.depositAmount,
           remaining: pricingDetails.remainingAmount,

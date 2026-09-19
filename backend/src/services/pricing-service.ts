@@ -36,14 +36,6 @@ interface PricingResponse {
   nights: number;
   pricePerNight: number;
   pricePerBed: number;
-  breakdown: {
-    bedBasePrice: number;
-    nightlyRate: number;
-    subtotal: number;
-    discountApplied: number;
-    seasonAdjustment: number;
-    finalTotal: number;
-  };
 }
 
 const nightsBetween = (checkIn: string, checkOut: string): number =>
@@ -71,14 +63,17 @@ export class PricingService {
 
     let basePrice = 0;
     let preDiscountTotal = 0;
+    let allApartments = true;
     for (const room of request.rooms) {
       const { rows } = await query<{ base_price: string; property_type: string }>(
         `SELECT base_price, property_type FROM room_types WHERE id = $1`,
         [room.roomId]
       );
       if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);
+      const isApartment = rows[0].property_type === 'apartment';
+      if (!isApartment) allApartments = false;
       const roomBasePrice = parseFloat(rows[0].base_price);
-      const beds = rows[0].property_type === 'apartment' ? 1 : (room.hostelBeds ?? 1);
+      const beds = isApartment ? 1 : (room.hostelBeds ?? 1);
       basePrice += roomBasePrice * nights * beds;
 
       const { rows: priceRows } = await query<{ p: string }>(
@@ -88,7 +83,8 @@ export class PricingService {
       preDiscountTotal += parseFloat(priceRows[0].p);
     }
 
-    const groupDiscount = await this.getGroupDiscountRate(request.totalBeds);
+    // Apartamentos se reservan como unidad completa — descuento grupal no aplica.
+    const groupDiscount = allApartments ? 0 : await this.getGroupDiscountRate(request.totalBeds);
     const discountAmount = Math.round(preDiscountTotal * groupDiscount * 100) / 100;
     const finalPrice = Math.round((preDiscountTotal - discountAmount) * 100) / 100;
 
@@ -118,14 +114,6 @@ export class PricingService {
       nights,
       pricePerNight: finalPrice / nights,
       pricePerBed: finalPrice / (request.totalBeds * nights),
-      breakdown: {
-        bedBasePrice: basePrice / (request.totalBeds * nights || 1),
-        nightlyRate: basePrice / (nights || 1),
-        subtotal: basePrice,
-        discountApplied: discountAmount,
-        seasonAdjustment: priceAfterSeason - basePrice,
-        finalTotal: finalPrice
-      }
     };
   }
 

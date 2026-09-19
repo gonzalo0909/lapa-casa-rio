@@ -106,7 +106,7 @@ async function getRoomTypeById(roomTypeId: string): Promise<RoomTypeRow | null> 
 }
 
 /** Mapea un ID/nombre externo de habitacion de OTA al room_type real, por UUID, `code` exacto, o alias de nombre (config/channels.ts). */
-async function mapExternalRoomId(externalRoomIdOrName: string, _channelId?: string): Promise<RoomTypeRow | null> {
+async function mapExternalRoomId(externalRoomIdOrName: string): Promise<RoomTypeRow | null> {
   if (!externalRoomIdOrName) {return null;}
 
   const { rows: direct } = await query<RoomTypeRow>(
@@ -203,7 +203,7 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
 
   const roomType = bookingData.roomTypeId
     ? await getRoomTypeById(bookingData.roomTypeId)
-    : await mapExternalRoomId(bookingData.roomExternalId ?? '', channelId);
+    : await mapExternalRoomId(bookingData.roomExternalId ?? '');
   if (!roomType) {
     throw new Error(`No se pudo mapear la habitación de "${channel.code}": ${bookingData.roomExternalId ?? bookingData.roomTypeId ?? '(vacío)'}`);
   }

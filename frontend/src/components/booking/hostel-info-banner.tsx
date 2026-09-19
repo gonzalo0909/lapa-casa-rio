@@ -4,14 +4,14 @@
 
 import React from 'react';
 import { AlertTriangle, KeyRound, DoorOpen, FileText, Ban, CigaretteOff, Accessibility } from 'lucide-react';
-import type { Lang } from './hostel-engine.types';
+import type { BookingLocale } from '@/types/global';
 import { T } from './hostel-engine.types';
 import { parseBold } from './hostel-engine.utils';
 
 const ICONS = [KeyRound, DoorOpen, FileText, CigaretteOff, Ban, Accessibility];
 
 interface HostelInfoBannerProps {
-  lang: Lang;
+  lang: BookingLocale;
 }
 
 export function HostelInfoBanner({ lang }: HostelInfoBannerProps) {

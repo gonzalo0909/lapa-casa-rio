@@ -3,10 +3,6 @@
 // programa para mas adelante (scheduleNotification, via BullMQ). Toda
 // notificacion queda persistida en la tabla real `notifications`
 // (0002_tables.sql) -- getNotificationHistory lee de ahi, no de un log.
-//
-// El canal WhatsApp vive aparte en whatsapp-notification-service.ts
-// (deshabilitado por defecto, WHATSAPP_ENABLED=false) -- este archivo
-// es el que implementado en notification-service.ts.
 
 import { query } from '../config/database';
 import bookingRepo from '../database/repositories/booking-repository';

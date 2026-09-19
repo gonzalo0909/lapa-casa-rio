@@ -9,7 +9,6 @@ import { BookingService, InsufficientAvailabilityError } from '../../services/bo
 import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
 import { notificationService } from '../../services/notification-service';
-import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
 import { emailService, type BookingWithGuest } from '../../services/email-service';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
@@ -93,25 +92,6 @@ export const createHostelBookingHandler = async (
         reservationEmail: bookingData.guest.email,
       });
       res.status(409).json(ApiResponse.error('No hay disponibilidad para las fechas seleccionadas'));
-      return;
-    }
-
-    // Verificación de disponibilidad general (hostel-centric, usa is_gender_eligible)
-    const availability = await availabilityService.checkAvailability({
-      checkIn: bookingData.checkIn,
-      checkOut: bookingData.checkOut,
-      bedsNeeded: totalBedsRequested,
-    });
-    if (!availability.available) {
-      logger.warn('Insufficient availability', {
-        requested: totalBedsRequested,
-        available: availability.availableBeds,
-      });
-      res.status(409).json(ApiResponse.error('Insufficient availability for requested dates', {
-        availableBeds: availability.availableBeds,
-        requestedBeds: totalBedsRequested,
-        alternativeDates: availability.alternativeDates,
-      }));
       return;
     }
 
@@ -272,14 +252,6 @@ export const createHostelBookingHandler = async (
     bookingService.getBooking(booking.id).then((bookingWithGuest) => {
       if (!bookingWithGuest?.guest) return;
       const guest = bookingWithGuest as BookingWithGuest;
-      if (guest.guest.phone) {
-        whatsappNotificationService.sendBookingNotification({
-          phone: guest.guest.phone,
-          bookingId: guest.reservation_number,
-          checkIn: String(guest.check_in_date),
-          language: (['pt', 'en', 'es'] as string[]).includes(guest.guest.language ?? '') ? (guest.guest.language as 'pt' | 'en' | 'es') : 'en',
-        }).catch((err) => logger.error('Failed to send WhatsApp notification', { bookingId: booking.id, error: err.message }));
-      }
       return notificationService.notify('booking_confirmation', guest, { referralCode: ownReferralCode });
     }).catch((err) => logger.error('Failed to send confirmation email', { bookingId: booking.id, error: err.message }));
 

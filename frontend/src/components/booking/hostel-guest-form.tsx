@@ -18,7 +18,8 @@ import {
   X,
   Tag,
 } from 'lucide-react';
-import { type Lang, type FormState, type FormErrors, type FieldFeedback, T } from './hostel-engine.types';
+import type { BookingLocale } from '@/types/global';
+import { type FormState, type FormErrors, type FieldFeedback, T } from './hostel-engine.types';
 import { validateCPF, formatCPF, formatPhone, parseBold } from './hostel-engine.utils';
 
 export interface AppliedCoupon {
@@ -67,7 +68,7 @@ function resizeDocPhoto(file: File): Promise<string> {
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelGuestFormProps {
-  lang: Lang;
+  lang: BookingLocale;
   form: FormState;
   formErrors: FormErrors;
   docFeedback: FieldFeedback | null;

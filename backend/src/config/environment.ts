@@ -34,11 +34,6 @@ const env = {
   // C-02: sin fallback hardcodeado en producción
   ENCRYPTION_KEY: requireSecret('ENCRYPTION_KEY', isProd ? undefined : 'dev-encryption-key-32-chars-long!'),
 
-  WHATSAPP_ENABLED: process.env.WHATSAPP_ENABLED === 'true',
-  WHATSAPP_API_URL: process.env.WHATSAPP_API_URL || '',
-  WHATSAPP_API_TOKEN: process.env.WHATSAPP_API_TOKEN || '',
-  WHATSAPP_PHONE_ID: process.env.WHATSAPP_PHONE_ID || '',
-
   CORS_ORIGINS: process.env.CORS_ORIGINS || '*',
   CORS_CREDENTIALS: process.env.CORS_CREDENTIALS !== 'false',
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),

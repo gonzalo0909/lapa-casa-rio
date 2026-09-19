@@ -8,7 +8,6 @@ import type { Request, Response, NextFunction } from 'express';
 import { BookingService, InsufficientAvailabilityError } from '../../services/booking-service';
 import { PricingService } from '../../services/pricing-service';
 import { notificationService } from '../../services/notification-service';
-import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
 import { emailService, type BookingWithGuest } from '../../services/email-service';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
@@ -322,14 +321,6 @@ export const createApartmentBookingHandler = async (
     bookingService.getBooking(booking.id).then((bookingWithGuest) => {
       if (!bookingWithGuest?.guest) return;
       const guest = bookingWithGuest as BookingWithGuest;
-      if (guest.guest.phone) {
-        whatsappNotificationService.sendBookingNotification({
-          phone: guest.guest.phone,
-          bookingId: guest.reservation_number,
-          checkIn: String(guest.check_in_date),
-          language: (['pt', 'en', 'es'] as string[]).includes(guest.guest.language ?? '') ? (guest.guest.language as 'pt' | 'en' | 'es') : 'en',
-        }).catch((err) => logger.error('Failed to send WhatsApp notification', { bookingId: booking.id, error: err.message }));
-      }
       return notificationService.notify('booking_confirmation', guest, { referralCode: ownReferralCode });
     }).catch((err) => logger.error('Failed to send confirmation email', { bookingId: booking.id, error: err.message }));
 

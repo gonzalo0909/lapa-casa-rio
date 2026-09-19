@@ -9,12 +9,10 @@ import type { FormState, PayMethod, PriceQuote, RoomDef, Translations } from './
 import { fmtDate, fmtMoney } from './hostel-engine.utils';
 import type { CurrencyInfo } from '@/hooks/use-currency';
 
-type Price = PriceQuote;
-
 interface HostelStep4SummaryProps {
   t: Translations;
   form: FormState;
-  price: Price;
+  price: PriceQuote;
   checkIn: Date;
   checkOut: Date;
   rooms: RoomDef[];

@@ -106,7 +106,7 @@ export const createHostelBookingHandler = async (
     const pricingDetails = await pricingService.calculateTotalPrice({
       checkInDate: bookingData.checkIn,
       checkOutDate: bookingData.checkOut,
-      rooms: bookingData.rooms,
+      rooms: bookingData.rooms.map((r) => ({ roomId: r.roomId, hostelBeds: r.bedsCount })),
       totalBeds: totalBedsRequested,
     });
 
@@ -196,7 +196,7 @@ export const createHostelBookingHandler = async (
     const booking = await bookingService.createBooking({
       checkIn: bookingData.checkIn,
       checkOut: bookingData.checkOut,
-      rooms: bookingData.rooms,
+      rooms: bookingData.rooms.map((r) => ({ roomId: r.roomId, hostelBeds: r.bedsCount, preferredBedIds: r.preferredBedIds })),
       guest: {
         full_name: fullName,
         email: bookingData.guest.email,

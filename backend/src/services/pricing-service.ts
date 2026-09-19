@@ -16,7 +16,7 @@ import { getSeasonType } from './season-type';
 interface PricingRequest {
   checkInDate: string;
   checkOutDate: string;
-  rooms: Array<{ roomId: string; bedsCount?: number }>;
+  rooms: Array<{ roomId: string; hostelBeds?: number }>;
   totalBeds: number;
 }
 
@@ -72,13 +72,13 @@ export class PricingService {
     let basePrice = 0;
     let preDiscountTotal = 0;
     for (const room of request.rooms) {
-      const { rows } = await query<{ base_price: string }>(
-        `SELECT base_price FROM room_types WHERE id = $1`,
+      const { rows } = await query<{ base_price: string; property_type: string }>(
+        `SELECT base_price, property_type FROM room_types WHERE id = $1`,
         [room.roomId]
       );
       if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);
       const roomBasePrice = parseFloat(rows[0].base_price);
-      const beds = room.bedsCount ?? 1;
+      const beds = rows[0].property_type === 'apartment' ? 1 : (room.hostelBeds ?? 1);
       basePrice += roomBasePrice * nights * beds;
 
       const { rows: priceRows } = await query<{ p: string }>(

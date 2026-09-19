@@ -277,7 +277,7 @@ export const api = {
 type BookingCreateBase = {
   checkIn: string;
   checkOut: string;
-  rooms: Array<{ roomId: string; bedsCount?: number; preferredBedIds?: string[] }>;
+  rooms: Array<{ roomId: string }>;
   guest: {
     firstName: string;
     lastName: string;
@@ -301,7 +301,8 @@ type BookingCreateBase = {
 };
 
 /** Payload para reservas de hostel (camas compartidas). */
-type HostelBookingData = BookingCreateBase & {
+type HostelBookingData = Omit<BookingCreateBase, 'rooms'> & {
+  rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
   guestGender?: 'mixed' | 'female';
 };
 

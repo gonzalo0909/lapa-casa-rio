@@ -104,6 +104,16 @@ export const createApartmentBookingHandler = async (
              WHERE rbl.room_type_id = $1
                AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($2::date, $3::date, '[)')
            )
+           AND NOT EXISTS (
+             SELECT 1 FROM (
+               SELECT period_start, period_end
+               FROM apartment_holiday_periods(EXTRACT(YEAR FROM $2::date)::int)
+               UNION ALL
+               SELECT period_start, period_end
+               FROM apartment_holiday_periods(EXTRACT(YEAR FROM $2::date)::int + 1)
+             ) hp
+             WHERE daterange(hp.period_start, hp.period_end, '[)') && daterange($2::date, $3::date, '[)')
+           )
          ) AS available`,
         [room.roomId, bookingData.checkIn, bookingData.checkOut],
       );

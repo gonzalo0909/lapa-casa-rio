@@ -72,7 +72,7 @@ interface CreateBookingInput {
    * la reserva, se completa el resto con las primeras camas disponibles
    * de esa habitación, igual que siempre. La verificación real bajo lock
    * (más abajo) sigue siendo la única autoridad anti-overbooking. */
-  rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
+  rooms: Array<{ roomId: string; bedsCount?: number; preferredBedIds?: string[] }>;
   guest: {
     full_name: string;
     email: string;
@@ -117,11 +117,10 @@ const pickAvailableBedsInRoom = async (
   roomTypeId: string,
   checkIn: string,
   checkOut: string,
-  count: number,
   gender: 'mixed' | 'female' | 'male',
+  hostelBedsCount?: number,
   preferredBedIds: string[] = [],
 ): Promise<string[]> => {
-  // Detectar si la habitación es un apartamento
   const { rows: typeRows } = await client.query<{ property_type: string }>(
     `SELECT property_type FROM room_types WHERE id = $1`,
     [roomTypeId],
@@ -129,8 +128,7 @@ const pickAvailableBedsInRoom = async (
   const isApartment = typeRows[0]?.property_type === 'apartment';
 
   if (isApartment) {
-    // Apartamentos: elegir la cama si no tiene reserva activa solapada.
-    // Sin filtro de género — un apartamento es una unidad completa.
+    // Apartamentos: unidad completa — siempre 1 cama, sin filtro de género.
     const { rows } = await client.query(
       `SELECT b.id AS bed_id
        FROM beds b
@@ -143,13 +141,14 @@ const pickAvailableBedsInRoom = async (
              AND res.status != 'cancelled'
              AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
          )
-       LIMIT $4`,
-      [roomTypeId, checkIn, checkOut, count],
+       LIMIT 1`,
+      [roomTypeId, checkIn, checkOut],
     );
     return rows.map((r: any) => r.bed_id);
   }
 
   // Habitaciones del hostel: usar check_availability() con filtro de género.
+  const count = hostelBedsCount ?? 1;
   const { rows } = await client.query(
     `SELECT bed_id FROM check_availability($1::date, $2::date, $3::bed_gender)
      WHERE room_type_id = $4::uuid AND is_gender_eligible = true AND is_available = true
@@ -195,14 +194,15 @@ export class BookingService {
           room.roomId,
           data.checkIn,
           data.checkOut,
-          room.bedsCount,
           guestGender,
+          room.bedsCount,
           room.preferredBedIds,
         );
-        if (beds.length < room.bedsCount) {
+        const expectedBeds = room.bedsCount ?? 1;
+        if (beds.length < expectedBeds) {
           throw new InsufficientAvailabilityError({
             roomId: room.roomId,
-            requested: room.bedsCount,
+            requested: expectedBeds,
             found: beds.length,
           });
         }

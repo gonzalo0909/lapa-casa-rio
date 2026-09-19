@@ -118,7 +118,7 @@ export const createApartmentBookingHandler = async (
     const pricingDetails = await pricingService.calculateTotalPrice({
       checkInDate: bookingData.checkIn,
       checkOutDate: bookingData.checkOut,
-      rooms: bookingData.rooms.map((r) => ({ roomId: r.roomId, bedsCount: 1 })),
+      rooms: bookingData.rooms,
       totalBeds: bookingData.rooms.length,
     });
 
@@ -237,7 +237,7 @@ export const createApartmentBookingHandler = async (
     const booking = await bookingService.createBooking({
       checkIn: bookingData.checkIn,
       checkOut: bookingData.checkOut,
-      rooms: bookingData.rooms.map((r) => ({ roomId: r.roomId, bedsCount: 1 })),
+      rooms: bookingData.rooms,
       guest: {
         full_name: fullName,
         email: bookingData.guest.email,

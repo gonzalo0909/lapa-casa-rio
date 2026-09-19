@@ -72,7 +72,7 @@ interface CreateBookingInput {
    * la reserva, se completa el resto con las primeras camas disponibles
    * de esa habitación, igual que siempre. La verificación real bajo lock
    * (más abajo) sigue siendo la única autoridad anti-overbooking. */
-  rooms: Array<{ roomId: string; bedsCount: number; preferredBedIds?: string[] }>;
+  rooms: Array<{ roomId: string; bedsCount?: number; preferredBedIds?: string[] }>;
   guest: {
     full_name: string;
     email: string;
@@ -190,19 +190,20 @@ export class BookingService {
       const guestGender = data.guestGender ?? 'mixed';
       const candidateBedIds: string[] = [];
       for (const room of data.rooms) {
+        const bedsCount = room.bedsCount ?? 1;
         const beds = await pickAvailableBedsInRoom(
           client,
           room.roomId,
           data.checkIn,
           data.checkOut,
-          room.bedsCount,
+          bedsCount,
           guestGender,
           room.preferredBedIds,
         );
-        if (beds.length < room.bedsCount) {
+        if (beds.length < bedsCount) {
           throw new InsufficientAvailabilityError({
             roomId: room.roomId,
-            requested: room.bedsCount,
+            requested: bedsCount,
             found: beds.length,
           });
         }

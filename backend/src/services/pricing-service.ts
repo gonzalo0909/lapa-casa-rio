@@ -16,7 +16,7 @@ import { getSeasonType } from './season-type';
 interface PricingRequest {
   checkInDate: string;
   checkOutDate: string;
-  rooms: Array<{ roomId: string; bedsCount: number }>;
+  rooms: Array<{ roomId: string; bedsCount?: number }>;
   totalBeds: number;
 }
 
@@ -78,11 +78,12 @@ export class PricingService {
       );
       if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);
       const roomBasePrice = parseFloat(rows[0].base_price);
-      basePrice += roomBasePrice * nights * room.bedsCount;
+      const beds = room.bedsCount ?? 1;
+      basePrice += roomBasePrice * nights * beds;
 
       const { rows: priceRows } = await query<{ p: string }>(
         `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
-        [roomBasePrice, nights, room.bedsCount, request.checkInDate, bookingDate]
+        [roomBasePrice, nights, beds, request.checkInDate, bookingDate]
       );
       preDiscountTotal += parseFloat(priceRows[0].p);
     }

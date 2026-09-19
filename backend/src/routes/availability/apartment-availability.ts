@@ -139,11 +139,10 @@ export const checkApartmentAvailabilityHandler = async (
     const fullPaymentRequired = hoursUntilCheckIn < 48;
 
     // Pricing en batch: todos los apartamentos comparten las mismas fechas y
-    // totalBeds=1, así que season/group-discount/min-nights son idénticos para
-    // cada uno. Se hacen 4 queries totales en lugar de 7×N.
+    // totalBeds=1, así que season/min-nights son idénticos para cada uno.
+    // Se hacen 3 queries totales en lugar de 7×N.
     let seasonMultiplier = 1;
     let seasonType: string = 'media';
-    let groupDiscount = 0;
     let depositPercent = 0.3;
     let pricingFailed = false;
     const finalPriceById = new Map<string, number>();
@@ -154,16 +153,12 @@ export const checkApartmentAvailabilityHandler = async (
       // 1) Valores compartidos — una sola query por aspecto estacional
       const [
         { rows: seasonRows },
-        { rows: groupDiscountRows },
         { rows: depositPctRows },
       ] = await Promise.all([
         query<{ multiplier: string; season_type: string }>(
           `SELECT calculate_season_multiplier($1::date) AS multiplier,
                   get_season_type($1::date) AS season_type`,
           [checkIn]
-        ),
-        query<{ calculate_group_discount: string }>(
-          `SELECT calculate_group_discount(1) AS calculate_group_discount`
         ),
         // totalBeds=1 → deposit_percent es constante; precio ficticio para obtener el %
         query<{ deposit_percent: string }>(
@@ -173,7 +168,6 @@ export const checkApartmentAvailabilityHandler = async (
 
       seasonMultiplier = parseFloat(seasonRows[0].multiplier);
       seasonType = seasonRows[0].season_type;
-      groupDiscount = parseFloat(groupDiscountRows[0].calculate_group_discount);
       depositPercent = parseFloat(depositPctRows[0].deposit_percent);
 
       // 2) calculate_final_price en batch para todos los apartamentos a la vez
@@ -187,9 +181,7 @@ export const checkApartmentAvailabilityHandler = async (
           [nights, checkIn, bookingDate, aptIds, basePrices]
         );
         for (const row of priceRows) {
-          const preDiscount = parseFloat(row.final_price);
-          const discountAmount = Math.round(preDiscount * groupDiscount * 100) / 100;
-          finalPriceById.set(row.apt_id, Math.round((preDiscount - discountAmount) * 100) / 100);
+          finalPriceById.set(row.apt_id, Math.round(parseFloat(row.final_price) * 100) / 100);
         }
       }
     } catch (pricingError) {

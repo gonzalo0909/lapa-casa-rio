@@ -662,7 +662,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                           </button>
                         </div>
                         {/* Botones de compartir */}
-                        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '.5rem' }}>
                           <a
                             href={`https://wa.me/?text=${encodeURIComponent(t('referralShareMsg', { code: booking.referralCode ?? '' }))}`}
                             target="_blank"
@@ -703,6 +703,9 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                             {t('referralShareEmail')}
                           </a>
                         </div>
+                        <p style={{ fontSize: '.72rem', color: 'var(--fg-muted)', margin: '.25rem 0 0', lineHeight: 1.5 }}>
+                          {t('referralConditions')}
+                        </p>
                       </div>
                     )}
                     <button

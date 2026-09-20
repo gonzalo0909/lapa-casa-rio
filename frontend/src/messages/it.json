@@ -647,7 +647,8 @@
     "viewMapLabel": "Vista mappa",
     "errorReadingPhoto": "Errore nella lettura della foto del documento",
     "errorNoBookingId": "Nessun ID di prenotazione ricevuto dal server",
-    "errorNoPricing": "Il server non ha restituito il prezzo della prenotazione"
+    "errorNoPricing": "Il server non ha restituito il prezzo della prenotazione",
+    "referralConditions": "Valido fino al 31/12/2026 · Non valido nei giorni festivi nazionali · Ogni codice è utilizzabile una volta per ospite"
   },
   "guestForm": {
     "title": "Informazioni Ospite",
@@ -947,6 +948,7 @@
     "cntES": "Spagna",
     "cntIT": "Italia",
     "tNightAbbr": "nt",
-    "tSubtotal": "Subtotale"
+    "tSubtotal": "Subtotale",
+    "referralConditions": "Valido fino al 31/12/2026 · Non valido nei giorni festivi nazionali · Ogni codice è utilizzabile una volta per ospite"
   }
 }

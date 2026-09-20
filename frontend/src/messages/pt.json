@@ -647,7 +647,8 @@
     "viewMapLabel": "Vista no mapa",
     "errorReadingPhoto": "Erro ao ler a foto do documento",
     "errorNoBookingId": "ID de reserva não recebido do servidor",
-    "errorNoPricing": "O servidor não retornou o preço da reserva"
+    "errorNoPricing": "O servidor não retornou o preço da reserva",
+    "referralConditions": "Válido até 31/12/2026 · Não se aplica a datas festivas nacionais · Cada código pode ser usado uma vez por hóspede"
   },
   "guestForm": {
     "title": "Informações do Hóspede",
@@ -947,6 +948,7 @@
     "cntES": "Espanha",
     "cntIT": "Itália",
     "tNightAbbr": "nt",
-    "tSubtotal": "Subtotal"
+    "tSubtotal": "Subtotal",
+    "referralConditions": "Válido até 31/12/2026 · Não se aplica a datas festivas nacionais · Cada código pode ser usado uma vez por hóspede"
   }
 }

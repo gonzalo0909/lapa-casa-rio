@@ -234,6 +234,9 @@ export function HostelSuccessPanel({
                 )}
               </button>
             </div>
+            <p style={{ fontSize: '.72rem', color: 'rgba(240,237,224,.55)', margin: '.5rem 0 0', lineHeight: 1.5 }}>
+              {t.referralConditions}
+            </p>
           </div>
         )}
         {onSwitchMethod && (

@@ -647,7 +647,8 @@
     "viewMapLabel": "Kartenansicht",
     "errorReadingPhoto": "Fehler beim Lesen des Dokumentfotos",
     "errorNoBookingId": "Keine Buchungs-ID vom Server erhalten",
-    "errorNoPricing": "Server hat keinen Buchungspreis zurückgegeben"
+    "errorNoPricing": "Server hat keinen Buchungspreis zurückgegeben",
+    "referralConditions": "Gültig bis 31.12.2026 · Nicht gültig an nationalen Feiertagen · Jeder Code ist pro Gast einmal einlösbar"
   },
   "guestForm": {
     "title": "Gastinformationen",
@@ -947,6 +948,7 @@
     "cntES": "Spanien",
     "cntIT": "Italien",
     "tNightAbbr": "N.",
-    "tSubtotal": "Zwischensumme"
+    "tSubtotal": "Zwischensumme",
+    "referralConditions": "Gültig bis 31.12.2026 · Nicht gültig an nationalen Feiertagen · Jeder Code ist pro Gast einmal einlösbar"
   }
 }

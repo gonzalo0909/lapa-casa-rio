@@ -34,6 +34,9 @@ interface PartnersContent {
   benefits: string[];
   contractNoteTitle: string;
   contractNote: string;
+  referralProgramTitle: string;
+  referralProgramNote: string;
+  referralProgramItems: string[];
   formTitle: string;
   formBody: string;
   labelName: string;
@@ -77,6 +80,15 @@ const CONTENT: Record<string, PartnersContent> = {
     contractNoteTitle: 'E o contrato?',
     contractNote:
       'O contrato vem depois, não antes. Primeiro conversamos e resolvemos suas dúvidas — só enviamos para assinatura quando você tiver certeza.',
+    referralProgramTitle: 'Programa de indicação de hóspedes',
+    referralProgramNote: 'Cada hóspede que se hospeda no Lapa Casa Rio recebe um código pessoal de desconto (10%) para compartilhar. Quando o amigo indicado conclui a estadia, o hóspede titular recebe R$5 para uma próxima reserva. Condições:',
+    referralProgramItems: [
+      'Códigos válidos até 31/12/2026',
+      'Não aplicável em reservas que incluam feriados nacionais do Brasil',
+      'Cada código pode ser usado uma vez por hóspede',
+      'Não é permitido auto-indicação',
+      'O benefício de R$5 é creditado após o check-out confirmado da reserva do amigo',
+    ],
     formTitle: 'Quero listar minha propriedade',
     formBody: 'Conte um pouco sobre seu apartamento e entraremos em contato.',
     labelName: 'Nome completo',
@@ -118,6 +130,15 @@ const CONTENT: Record<string, PartnersContent> = {
     contractNoteTitle: '¿Y el contrato?',
     contractNote:
       'El contrato llega después, no antes. Primero conversamos y resolvemos tus dudas — recién te lo mandamos para firmar cuando estés seguro.',
+    referralProgramTitle: 'Programa de recomendación de huéspedes',
+    referralProgramNote: 'Cada huésped que se aloja en Lapa Casa Rio recibe un código de descuento personal (10%) para compartir. Cuando el amigo referido completa su estadía, el huésped titular recibe R$5 para una próxima reserva. Condiciones:',
+    referralProgramItems: [
+      'Códigos válidos hasta el 31/12/2026',
+      'No aplicable en reservas que incluyan feriados nacionales de Brasil',
+      'Cada código puede usarse una vez por huésped',
+      'No se permite la auto-recomendación',
+      'El beneficio de R$5 se acredita tras el check-out confirmado de la reserva del amigo',
+    ],
     formTitle: 'Quiero listar mi propiedad',
     formBody: 'Cuéntanos cómo es tu apartamento y nos pondremos en contacto.',
     labelName: 'Nombre completo',
@@ -159,6 +180,15 @@ const CONTENT: Record<string, PartnersContent> = {
     contractNoteTitle: 'What about the contract?',
     contractNote:
       "The contract comes later, not first. Let's talk and answer your questions — we'll only send it for signature once you're sure.",
+    referralProgramTitle: 'Guest referral programme',
+    referralProgramNote: 'Every guest who stays at Lapa Casa Rio receives a personal discount code (10%) to share with friends. When the referred friend completes their stay, the original guest earns R$5 toward a future booking. Conditions:',
+    referralProgramItems: [
+      'Codes valid until 31 Dec 2026',
+      'Not applicable to bookings that include Brazilian national public holidays',
+      'Each code may be used once per guest',
+      'Self-referral is not allowed',
+      "The R$5 credit is applied after the friend's booking check-out is confirmed",
+    ],
     formTitle: 'I want to list my property',
     formBody: "Tell us about your apartment and we'll get in touch.",
     labelName: 'Full name',
@@ -200,6 +230,15 @@ const CONTENT: Record<string, PartnersContent> = {
     contractNoteTitle: 'Und der Vertrag?',
     contractNote:
       'Der Vertrag kommt später, nicht zuerst. Lassen Sie uns zunächst sprechen und Ihre Fragen klären — wir schicken ihn erst zur Unterschrift, wenn Sie sicher sind.',
+    referralProgramTitle: 'Gäste-Empfehlungsprogramm',
+    referralProgramNote: 'Jeder Gast, der im Lapa Casa Rio übernachtet, erhält einen persönlichen Rabattcode (10%), den er mit Freunden teilen kann. Wenn der empfohlene Freund seinen Aufenthalt abschließt, erhält der ursprüngliche Gast R$5 Guthaben für eine nächste Buchung. Bedingungen:',
+    referralProgramItems: [
+      'Codes gültig bis 31.12.2026',
+      'Nicht anwendbar auf Buchungen, die brasilianische Feiertage beinhalten',
+      'Jeder Code ist pro Gast einmal einlösbar',
+      'Selbst-Empfehlung ist nicht erlaubt',
+      'Das R$5-Guthaben wird nach dem bestätigten Check-out der Buchung des Freundes gutgeschrieben',
+    ],
     formTitle: 'Ich möchte meine Immobilie eintragen',
     formBody: 'Erzählen Sie uns von Ihrer Wohnung, wir melden uns bei Ihnen.',
     labelName: 'Vollständiger Name',
@@ -242,6 +281,15 @@ const CONTENT: Record<string, PartnersContent> = {
     contractNoteTitle: 'Et le contrat ?',
     contractNote:
       "Le contrat arrive après, pas avant. Parlons-en d'abord et répondons à vos questions — on ne vous l'envoie pour signature que lorsque vous êtes sûr.",
+    referralProgramTitle: 'Programme de parrainage des voyageurs',
+    referralProgramNote: "Chaque voyageur séjournant au Lapa Casa Rio reçoit un code de réduction personnel (10%) à partager avec ses amis. Lorsque l'ami parrainé termine son séjour, le voyageur titulaire gagne R$5 pour une prochaine réservation. Conditions :",
+    referralProgramItems: [
+      'Codes valables jusqu\'au 31/12/2026',
+      'Non applicable aux réservations incluant des jours fériés nationaux brésiliens',
+      'Chaque code est utilisable une fois par voyageur',
+      'L\'auto-parrainage n\'est pas autorisé',
+      'Le crédit de R$5 est attribué après le check-out confirmé de la réservation de l\'ami',
+    ],
     formTitle: 'Je veux inscrire mon bien',
     formBody: 'Parlez-nous de votre appartement, on vous recontacte.',
     labelName: 'Nom complet',
@@ -283,6 +331,15 @@ const CONTENT: Record<string, PartnersContent> = {
     contractNoteTitle: 'E il contratto?',
     contractNote:
       'Il contratto arriva dopo, non prima. Parliamone prima e rispondiamo alle tue domande — te lo inviamo per la firma solo quando sei sicuro.',
+    referralProgramTitle: 'Programma referral ospiti',
+    referralProgramNote: 'Ogni ospite che soggiorna al Lapa Casa Rio riceve un codice sconto personale (10%) da condividere con gli amici. Quando l\'amico referito completa il soggiorno, l\'ospite titolare riceve R$5 di credito per una futura prenotazione. Condizioni:',
+    referralProgramItems: [
+      'Codici validi fino al 31/12/2026',
+      'Non applicabile a prenotazioni che includono festività nazionali brasiliane',
+      'Ogni codice può essere utilizzato una volta per ospite',
+      'L\'auto-referral non è consentito',
+      'Il credito di R$5 viene accreditato dopo il check-out confermato della prenotazione dell\'amico',
+    ],
     formTitle: 'Voglio inserire il mio immobile',
     formBody: 'Raccontaci del tuo appartamento, ti ricontattiamo.',
     labelName: 'Nome completo',
@@ -456,6 +513,22 @@ export function PartnerContractPage({ locale }: Props) {
           </h2>
           <ul className="space-y-3">
             {c.benefits.map((item, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm text-foreground">
+                <span className="text-primary mt-0.5 flex-shrink-0">→</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ── Programa de referidos ── */}
+        <section className="py-12 border-b border-border">
+          <h2 className="text-xl font-display font-semibold text-foreground mb-3">
+            {c.referralProgramTitle}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{c.referralProgramNote}</p>
+          <ul className="space-y-2">
+            {c.referralProgramItems.map((item, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-foreground">
                 <span className="text-primary mt-0.5 flex-shrink-0">→</span>
                 <span>{item}</span>

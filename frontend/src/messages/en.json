@@ -647,7 +647,8 @@
     "viewMapLabel": "Map view",
     "errorReadingPhoto": "Error reading document photo",
     "errorNoBookingId": "No booking ID returned by server",
-    "errorNoPricing": "Server did not return booking price"
+    "errorNoPricing": "Server did not return booking price",
+    "referralConditions": "Valid until 31 Dec 2026 · Not valid on national public holidays · Each code may be used once per guest"
   },
   "guestForm": {
     "title": "Guest Information",
@@ -947,6 +948,7 @@
     "cntES": "Spain",
     "cntIT": "Italy",
     "tNightAbbr": "nt",
-    "tSubtotal": "Subtotal"
+    "tSubtotal": "Subtotal",
+    "referralConditions": "Valid until 31 Dec 2026 · Not valid on national public holidays · Each code may be used once per guest"
   }
 }

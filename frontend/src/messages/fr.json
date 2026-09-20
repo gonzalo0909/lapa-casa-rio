@@ -647,7 +647,8 @@
     "viewMapLabel": "Vue carte",
     "errorReadingPhoto": "Erreur lors de la lecture de la photo du document",
     "errorNoBookingId": "Aucun ID de réservation reçu du serveur",
-    "errorNoPricing": "Le serveur n'a pas retourné le prix de la réservation"
+    "errorNoPricing": "Le serveur n'a pas retourné le prix de la réservation",
+    "referralConditions": "Valable jusqu'au 31/12/2026 · Non applicable les jours fériés nationaux · Chaque code est utilisable une fois par client"
   },
   "guestForm": {
     "title": "Informations du Client",
@@ -947,6 +948,7 @@
     "cntES": "Espagne",
     "cntIT": "Italie",
     "tNightAbbr": "nt",
-    "tSubtotal": "Sous-total"
+    "tSubtotal": "Sous-total",
+    "referralConditions": "Valable jusqu'au 31/12/2026 · Non applicable les jours fériés nationaux · Chaque code est utilisable une fois par client"
   }
 }

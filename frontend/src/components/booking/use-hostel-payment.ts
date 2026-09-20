@@ -193,8 +193,7 @@ export function useHostelPayment({
       } else {
         setPaymentLinkError(true);
       }
-    } catch (err) {
-      console.error('handleRetryPaymentLink failed', err);
+    } catch {
       setPaymentLinkError(true);
     } finally {
       setIsRetryingPayment(false);

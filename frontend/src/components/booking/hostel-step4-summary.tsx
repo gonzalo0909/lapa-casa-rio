@@ -78,8 +78,8 @@ export function HostelStep4Summary({
           <div className="he-sum-row total">
             <span>{t.tTotal}</span>
             <span>
-              {fmtMoney(price.total)}
-              {currency && <span className="he-conv-inline">{convertBRL(price.total, currency)}</span>}
+              {fmtMoney(Math.round(price.total * mult))}
+              {currency && <span className="he-conv-inline">{convertBRL(Math.round(price.total * mult), currency)}</span>}
             </span>
           </div>
         </div>

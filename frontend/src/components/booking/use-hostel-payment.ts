@@ -60,7 +60,6 @@ export function useHostelPayment({
   const [groupAmountPerBed, setGroupAmountPerBed] = useState(0);
   const [groupTotalBeds, setGroupTotalBeds]     = useState(0);
 
-  useEffect(() => { if (form.country !== 'BR') { setPayMethod('card'); } }, [form.country]);
 
   useEffect(() => () => { if (timerRef.current) { clearInterval(timerRef.current); } }, []);
 
@@ -159,7 +158,6 @@ export function useHostelPayment({
   const handleSwitchPayMethod = useCallback(async () => {
     if (!reservationId) { return; }
     const nextMethod: PayMethod = payMethod === 'pix' ? 'card' : 'pix';
-    if (nextMethod === 'pix' && form.country !== 'BR') { return; }
     setIsProcessing(true);
     setBookingError('');
     setPaymentInitFailed(false);

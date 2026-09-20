@@ -114,15 +114,14 @@ export function HostelStep4Summary({
       </div>
 
       <div className="he-pay-methods">
-        {/* ── PIX — visible a todos, seleccionable solo para BR ── */}
-        <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}${form.country !== 'BR' ? ' he-pay-m-disabled' : ''}`} onClick={() => form.country === 'BR' && onPayMethodChange('pix')} disabled={form.country !== 'BR'}>
+        {/* ── PIX ── */}
+        <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => onPayMethodChange('pix')}>
           <input type="radio" name="he-pay" value="pix" checked={payMethod === 'pix'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
           <div className="he-pm-info">
             <div className="he-pm-name">
               <Zap size={13} aria-hidden />{t.pmPix}
             </div>
             <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
-            {form.country !== 'BR' && <div className="he-pm-unavail">{t.pmPixUnavailable}</div>}
           </div>
         </button>
         {/* ── Tarjeta ── */}

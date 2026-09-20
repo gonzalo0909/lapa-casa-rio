@@ -113,8 +113,8 @@ export function HostelCalendar({
           if (inRng)                            {cls += ' in-range';}
           if (isToday)                          {cls += ' is-today';}
           if (isHoliday)                        {cls += ' s-holiday';}
-          else if (s?.label === 'Alta Temporada')       {cls += ' s-alta';}
-          else if (s?.label === 'Baixa Temporada') {cls += ' s-baixa';}
+          else if (s?.kind === 'alta')  {cls += ' s-alta';}
+          else if (s?.kind === 'baixa') {cls += ' s-baixa';}
 
           return (
             <div key={i} className={cls}>

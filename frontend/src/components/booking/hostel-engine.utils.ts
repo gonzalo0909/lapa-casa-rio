@@ -49,9 +49,9 @@ export function isBrazilHoliday(date: Date): boolean {
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
   const m = date.getMonth();
-  if (m===11||m===0||m===1||m===6||m===7) {return { mult:1.5, label:'Alta Temporada', minNights:1 };}
-  if (m===5||m===8)                        {return { mult:0.8, label:'Baixa Temporada', minNights:1 };}
-  return { mult:1.0, label:'Média Temporada', minNights:1 };
+  if (m===11||m===0||m===1||m===6||m===7) {return { kind: 'alta'  as const, mult:1.5, label:'Alta Temporada',  minNights:1 };}
+  if (m===5||m===8)                        {return { kind: 'baixa' as const, mult:0.8, label:'Baixa Temporada', minNights:1 };}
+  return                                          { kind: 'media' as const, mult:1.0, label:'Média Temporada', minNights:1 };
 }
 
 // ─── Validación y formateo CPF ─────────────────────────────

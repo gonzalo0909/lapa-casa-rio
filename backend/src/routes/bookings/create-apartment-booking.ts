@@ -23,6 +23,7 @@ import {
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
   calcCheckInBounds,
+  isBrazilHoliday,
 } from './create-booking.shared';
 import { type CreateApartmentBookingRequest } from '../../middleware/validation';
 
@@ -189,8 +190,7 @@ export const createApartmentBookingHandler = async (
             const { rows: usedRows } = await query<{ count: string }>(
               `SELECT COUNT(*) AS count FROM reservations r
                JOIN guests g ON r.guest_id = g.id
-               JOIN apartment_offers ao ON r.applied_offer_code = ao.code
-               WHERE ao.referral_owner_guest_id IS NOT NULL
+               WHERE r.applied_offer_code = $3
                  AND r.status != 'cancelled'
                  AND (
                    LOWER(g.email) = LOWER($1)
@@ -198,7 +198,7 @@ export const createApartmentBookingHandler = async (
                        AND REGEXP_REPLACE(g.document, '[^A-Za-z0-9]', '', 'g')
                            = REGEXP_REPLACE($2, '[^A-Za-z0-9]', '', 'g'))
                  )`,
-              [bookingData.guest.email.trim(), docTrimmed],
+              [bookingData.guest.email.trim(), docTrimmed, offer.code],
             );
             if (parseInt(usedRows[0]?.count ?? '0') > 0) {
               alreadyUsedReferral = true;
@@ -290,13 +290,11 @@ export const createApartmentBookingHandler = async (
         ownReferralCode = existing[0]!.code;
       } else {
         ownReferralCode = generateReferralCode();
-        const validTo = new Date();
-        validTo.setFullYear(validTo.getFullYear() + 1);
         await query(
           `INSERT INTO apartment_offers
              (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-           VALUES ($1, 'Código de referido', 10, NULL, now()::date, $2::date, true, $3)`,
-          [ownReferralCode, validTo.toISOString().slice(0, 10), booking.guest_id],
+           VALUES ($1, 'Código de referido', 10, NULL, now()::date, '2026-12-31', true, $2)`,
+          [ownReferralCode, booking.guest_id],
         );
       }
     } catch (error) {

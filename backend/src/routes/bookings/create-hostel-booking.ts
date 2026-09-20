@@ -185,20 +185,22 @@ export const createHostelBookingHandler = async (
     try {
       const { rows: existing } = await query<{ code: string }>(
         `SELECT code FROM apartment_offers
-         WHERE referral_owner_guest_id = $1 AND is_active = true LIMIT 1`,
+         WHERE referral_owner_guest_id = $1
+           AND label = 'Código de referido'
+           AND is_active = true
+         ORDER BY created_at ASC
+         LIMIT 1`,
         [booking.guest_id],
       );
       if (existing.length > 0) {
         ownReferralCode = existing[0]!.code;
       } else {
         ownReferralCode = generateReferralCode();
-        const validTo = new Date();
-        validTo.setFullYear(validTo.getFullYear() + 1);
         await query(
           `INSERT INTO apartment_offers
              (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-           VALUES ($1, 'Código de referido', 10, NULL, now()::date, $2::date, true, $3)`,
-          [ownReferralCode, validTo.toISOString().slice(0, 10), booking.guest_id],
+           VALUES ($1, 'Código de referido', 10, NULL, now()::date, '2026-12-31', true, $2)`,
+          [ownReferralCode, booking.guest_id],
         );
       }
     } catch (error) {

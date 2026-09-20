@@ -105,7 +105,7 @@ export const createHostelBookingHandler = async (
     // Cupón de descuento (hostel puede usar cupones generales, no códigos de referido)
     let appliedOffer: {
       id: string; code: string; label: string; discount_percent: number;
-      discount_amount: number | null;
+      discount_amount: number | null; monthly_limit: number | null;
     } | null = null;
     if (bookingData.offerCode) {
       const today = bookingData.checkIn;

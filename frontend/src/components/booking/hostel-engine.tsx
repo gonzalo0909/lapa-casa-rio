@@ -46,9 +46,11 @@ interface HostelEngineProps {
   locale?: string;
 }
 
+const SUPPORTED_LOCALES: BookingLocale[] = ['pt', 'es', 'en', 'fr', 'de', 'it'];
+
 // ─── Component ────────────────────────────────────────────
 export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
-  const initLang: BookingLocale = (['pt', 'es', 'en', 'fr', 'de', 'it'] as BookingLocale[]).includes(locale as BookingLocale)
+  const initLang: BookingLocale = SUPPORTED_LOCALES.includes(locale as BookingLocale)
     ? (locale as BookingLocale)
     : 'pt';
   const [lang, setLang] = useState<BookingLocale>(initLang);
@@ -795,7 +797,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
             <span>Hostel</span>
           </h1>
           <div className="he-lang-sw">
-            {(['pt', 'es', 'en', 'fr', 'de', 'it'] as BookingLocale[]).map((l) => (
+            {SUPPORTED_LOCALES.map((l) => (
               <button
                 key={l}
                 className={`he-lang-btn${lang === l ? ' active' : ''}`}

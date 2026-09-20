@@ -210,7 +210,25 @@ export const createApartmentBookingHandler = async (
           }
         }
 
-        if (aptOk && !selfReferral && !alreadyUsedReferral) {
+        // Códigos de referido no aplican en fechas festivas
+        let holidayConflict = false;
+        if (aptOk && !selfReferral && !alreadyUsedReferral && offer.referral_owner_guest_id) {
+          const ci = new Date(bookingData.checkIn);
+          const co = new Date(bookingData.checkOut);
+          const cursor = new Date(ci);
+          while (cursor < co) {
+            if (isBrazilHoliday(cursor)) {
+              holidayConflict = true;
+              break;
+            }
+            cursor.setDate(cursor.getDate() + 1);
+          }
+          if (holidayConflict) {
+            logger.info('Código de referido rechazado -- fecha festiva', { offerCode: offer.code });
+          }
+        }
+
+        if (aptOk && !selfReferral && !alreadyUsedReferral && !holidayConflict) {
           appliedOffer = offer;
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);

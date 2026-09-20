@@ -1,4 +1,4 @@
-// email de cancelación vía notificationService.notify('cancellation', ...); de paso corrige un bug real que rompía esta ruta (booking.final_price llegaba como Decimal de Prisma a un parámetro de pg crudo)
+// Cancela una reserva, calcula el reembolso proporcional y envía el email de cancelación vía notificationService.
 
 import type { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';
@@ -62,7 +62,7 @@ export const cancelBookingHandler = async (
 
     const payments = await paymentService.getPaymentsByReservation(id);
     const completedPayments = payments.filter(p => p.status === 'succeeded');
-    const totalPaid = completedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const totalPaid = completedPayments.reduce((sum, p) => sum + (p.provider_metadata?.base_amount ?? Number(p.amount)), 0);
 
     // El monto real a reembolsar está limitado por lo que efectivamente pagó el huésped
     const actualRefund = Math.min(refundAmount, totalPaid);

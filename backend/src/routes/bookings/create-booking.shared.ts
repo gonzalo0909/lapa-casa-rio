@@ -7,48 +7,16 @@ import { query } from '../../config/database';
 import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
 import { logger } from '../../utils/logger';
+import { isBrazilHoliday as _isBrazilHolidayStr } from '../../utils/brazil-holidays';
 
 // ── Feriados nacionais do Brasil ──────────────────────────────────────────────
 
-function easterDate(year: number): Date {
-  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
-  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4), k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m2 = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m2 + 114) / 31) - 1;
-  const day   = ((h + l - 7 * m2 + 114) % 31) + 1;
-  return new Date(year, month, day);
-}
-
-
-function getHolidaysForYear(y: number): Date[] {
-  const fixed: [number, number][] = [
-    [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
-  ];
-  const holidays = fixed.map(([m, d]) => new Date(y, m - 1, d));
-  const easter = easterDate(y);
-  const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
-  const carnivalSat = new Date(easter); carnivalSat.setDate(easter.getDate() - 50);
-  const carnivalSun = new Date(easter); carnivalSun.setDate(easter.getDate() - 49);
-  const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
-  const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
-  const corpusChristi = new Date(easter); corpusChristi.setDate(easter.getDate() + 60);
-  holidays.push(easter, goodFriday, carnivalSat, carnivalSun, carnivalMon, carnivalTue, corpusChristi);
-  holidays.push(new Date(y, 11, 31)); // Réveillon
-  return holidays;
-}
-
-function dateOnly(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
+/** Wrapper Date→string para mantener compatibilidad con los callers existentes. */
 export function isBrazilHoliday(date: Date): boolean {
   const y = date.getFullYear();
-  const t = dateOnly(date).getTime();
-  const holidays = getHolidaysForYear(y);
-  return holidays.some(h => dateOnly(h).getTime() === t);
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return _isBrazilHolidayStr(`${y}-${m}-${d}`);
 }
 
 // ── Request type ─────────────────────────────────────────────────────────────

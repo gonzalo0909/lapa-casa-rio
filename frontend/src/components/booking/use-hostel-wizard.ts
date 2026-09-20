@@ -45,6 +45,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   });
 
   // Fetch room availability when dates change
+  const errAvail = t.tErrAvail;
   useEffect(() => {
     if (!checkIn || !checkOut) return;
     setRoomsLoaded(false);
@@ -54,7 +55,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {
         const apiRooms: ApiRoom[] = res.data?.rooms || [];
-        if (!apiRooms.length) { showToast(t.tErrAvail); return; }
+        if (!apiRooms.length) { showToast(errAvail); return; }
         setRooms(
           DEFAULT_ROOMS.map((dr) => {
             const match = apiRooms.find((ar) => ar.code === dr.code);
@@ -64,8 +65,8 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
         );
         setRoomsLoaded(true);
       })
-      .catch(() => showToast(t.tErrAvail));
-  }, [checkIn, checkOut]);
+      .catch(() => showToast(errAvail));
+  }, [checkIn, checkOut, errAvail]);
 
   const scrollToCard = useCallback(() => {
     setTimeout(() => {

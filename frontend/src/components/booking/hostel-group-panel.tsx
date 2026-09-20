@@ -33,9 +33,13 @@ export function HostelGroupPanel({
         <div className="he-glink-desc">{t.gpDesc}</div>
 
         <div className="he-glink-btns">
-          <a href={groupWaUrl} target="_blank" rel="noopener noreferrer" className="he-glink-wa">
-            {t.gpShareWa}
-          </a>
+          {groupWaUrl ? (
+            <a href={groupWaUrl} target="_blank" rel="noopener noreferrer" className="he-glink-wa">
+              {t.gpShareWa}
+            </a>
+          ) : (
+            <span>WhatsApp no disponible</span>
+          )}
         </div>
 
         <div className="he-glink-meta">

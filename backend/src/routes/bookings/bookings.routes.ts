@@ -26,19 +26,9 @@ import { generateConfirmationToken } from '../../utils/confirmation-token';
 
 const router = Router();
 
-/**
- * Create New Booking
- * @route POST /bookings
- * @group Bookings - Booking management operations
- * @param {BookingCreateRequest.model} booking.body.required - Booking details
- * @returns {Booking.model} 201 - Created booking
- * @returns {Error} 400 - Validation error
- * @returns {Error} 409 - Availability conflict
- * @returns {Error} 500 - Server error
- */
+// POST /bookings — crea una reserva de hostel; delega en createHostelBookingHandler
 router.post(
   '/',
-  // H-01: usar el middleware real con el schema Zod — validationMiddleware era no-op
   validate(bookingSchemas.create),
   createHostelBookingHandler
 );
@@ -96,7 +86,6 @@ router.delete(
  */
 router.get(
   '/',
-  // H-03: el listado completo incluye PII — solo accesible con token admin
   authenticateToken,
   requireRole(['admin']),
   async (req, res, next) => {

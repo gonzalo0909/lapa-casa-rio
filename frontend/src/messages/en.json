@@ -883,6 +883,7 @@
     "otaVs": "vs Airbnb/Booking",
     "directBanner": "Best rate guaranteed · No platform fees · Instant confirmation",
     "errorBooking": "Error creating booking. Please try again.",
+    "errFemaleRoom": "The exclusive female room cannot be combined with other rooms.",
     "waGreet": "Hello! I would like to book at Lapa Casa Rio.",
     "waAwait": "Looking forward to your confirmation. Thank you!",
     "waArrival": "Arrival time",

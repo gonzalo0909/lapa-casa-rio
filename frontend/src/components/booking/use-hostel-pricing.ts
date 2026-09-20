@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { RoomDef, Translations } from './hostel-engine.types';
+import { FALLBACK_BED_PRICE_BRL } from './hostel-engine.types';
 import { getSeason, fmtMoney } from './hostel-engine.utils';
 import { availabilityAPI } from '@/lib/api';
 
@@ -79,7 +80,7 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
     }
     if (checkIn && !checkOut) { return { main: t.tSelectCheckout, sub: t.tClickCheckout }; }
     const s = getSeason(new Date());
-    return { main: fmtMoney(85 * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
+    return { main: fmtMoney(FALLBACK_BED_PRICE_BRL * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
   })();
 
   return { price, cardSurchargeMult, footerPrice, season };

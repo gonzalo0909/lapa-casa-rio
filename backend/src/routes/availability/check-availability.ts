@@ -42,7 +42,7 @@ export const checkAvailabilityHandler = async (
       res.status(400).json(ApiResponse.error('Fechas inválidas'));
       return;
     }
-    if (checkInDate < now) {
+    if (checkInDate < new Date(Date.now() - 3 * 60 * 60 * 1000)) {
       res.status(400).json(ApiResponse.error('Check-in date cannot be in the past'));
       return;
     }
@@ -210,5 +210,5 @@ function generateAllocationOptions(
     if (remaining === 0 && option2.length > 0) {options.push({ option: 2, totalRooms: option2.length, rooms: option2 });}
   }
 
-  return options.slice(0, 3);
+  return options.slice(0, 2);
 }

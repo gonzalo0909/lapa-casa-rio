@@ -100,6 +100,13 @@ export function useHostelPayment({
       const lastName = nameParts.slice(1).join(' ') || firstName;
       const selectedRooms = rooms.filter((r) => (beds[r.id] ?? 0) > 0);
       const c6 = beds['cuarto6'] ?? 0;
+
+      if (c6 > 0 && totalBeds > c6) {
+        setBookingError(t.errFemaleRoom);
+        setIsProcessing(false);
+        return;
+      }
+
       const gender = c6 > 0 && totalBeds === c6 ? 'female' : 'mixed';
 
       const response = await bookingAPI.create({

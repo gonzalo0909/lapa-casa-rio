@@ -108,7 +108,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               boxShadow: '0 1px 6px rgba(0,0,0,.35)',
             }}
           >
-            ← Home
+            {t.navHome}
           </Link>
           <Link
             href={`/${lang}/santa-teresa`}

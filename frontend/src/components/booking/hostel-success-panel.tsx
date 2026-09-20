@@ -157,7 +157,7 @@ export function HostelSuccessPanel({
                   rel="noopener noreferrer"
                   className="he-stripe-link"
                 >
-                  {t.cardGoToPayment ?? 'Ir al pago con tarjeta →'}
+                  {t.cardGoToPayment}
                 </a>
               ) : !paymentInitFailed ? (
                 <>

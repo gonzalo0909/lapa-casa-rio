@@ -71,7 +71,7 @@ export function useHostelPayment({
     timerRef.current = setInterval(() => {
       secs--;
       setTimerSecs(secs);
-      if (secs <= 0) { clearInterval(timerRef.current!); setPhase('expired'); }
+      if (secs <= 0) { clearInterval(timerRef.current!); setPixData(null); setStripeUrl(null); setPhase('expired'); }
     }, 1000);
   }, []);
 

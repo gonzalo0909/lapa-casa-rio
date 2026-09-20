@@ -47,13 +47,8 @@ function dateOnly(d: Date): Date {
 export function isBrazilHoliday(date: Date): boolean {
   const y = date.getFullYear();
   const t = dateOnly(date).getTime();
-  const WEEK = 7 * 24 * 60 * 60 * 1000;
-  const holidays = [
-    ...getHolidaysForYear(y - 1),
-    ...getHolidaysForYear(y),
-    ...getHolidaysForYear(y + 1),
-  ];
-  return holidays.some(h => Math.abs(dateOnly(h).getTime() - t) <= WEEK);
+  const holidays = getHolidaysForYear(y);
+  return holidays.some(h => dateOnly(h).getTime() === t);
 }
 
 // ── Request type ─────────────────────────────────────────────────────────────
@@ -101,13 +96,12 @@ export function normalizeCPF(doc: string): string {
 export async function anyDocumentBlocked(documents: string[]): Promise<boolean> {
   const cpfs = documents.map(normalizeCPF).filter((d) => /^\d{11}$/.test(d));
   if (cpfs.length === 0) return false;
-  const placeholders = cpfs.map((_, i) => `$${i + 1}`).join(', ');
   const result = await query<{ id: string }>(
     `SELECT g.id FROM guests g
      WHERE g.blocked = true
-       AND g.document_number = ANY(ARRAY[${placeholders}])
+       AND g.document_number = ANY($1::text[])
      LIMIT 1`,
-    cpfs,
+    [cpfs],
   );
   return (result.rowCount ?? 0) > 0;
 }

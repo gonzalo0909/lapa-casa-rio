@@ -127,7 +127,7 @@ const pickAvailableBedsInRoom = async (
 
   if (isApartment) {
     // Apartamentos: unidad completa — siempre 1 cama, sin filtro de género.
-    const { rows } = await client.query(
+    const { rows } = await client.query<{ bed_id: string }>(
       `SELECT b.id AS bed_id
        FROM beds b
        WHERE b.room_type_id = $1
@@ -142,12 +142,12 @@ const pickAvailableBedsInRoom = async (
        LIMIT 1`,
       [roomTypeId, checkIn, checkOut],
     );
-    return rows.map((r: any) => r.bed_id);
+    return rows.map((r) => r.bed_id);
   }
 
   // Habitaciones del hostel: usar check_availability() con filtro de género.
   const count = hostelBedsCount ?? 1;
-  const { rows } = await client.query(
+  const { rows } = await client.query<{ bed_id: string }>(
     `SELECT bed_id FROM check_availability($1::date, $2::date, $3::bed_gender)
      WHERE room_type_id = $4::uuid AND is_gender_eligible = true AND is_available = true
      ORDER BY
@@ -157,7 +157,7 @@ const pickAvailableBedsInRoom = async (
      LIMIT $5`,
     [checkIn, checkOut, gender, roomTypeId, count, preferredBedIds],
   );
-  return rows.map((r: any) => r.bed_id);
+  return rows.map((r) => r.bed_id);
 };
 
 export class BookingService {

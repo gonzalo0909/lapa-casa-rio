@@ -2,44 +2,68 @@ import React from 'react';
 import { BCP47 } from '@/lib/utils';
 
 // ─── Feriados nacionais do Brasil ────────────────────────
+// Duplica la lógica de backend/src/utils/brazil-holidays.ts (mismo algoritmo de
+// Butcher, mismo conjunto de feriados). No se puede importar del backend al frontend.
 function easterDate(year: number): Date {
-  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
-  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4), k = c % 4;
+  // Algoritmo de Butcher
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
   const l = (32 + 2 * e + 2 * i - h - k) % 7;
   const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
-  const day   = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month, day);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
 }
 
 function getHolidaysForYear(y: number): Date[] {
-  const fixed: [number, number][] = [
-    [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
-  ];
-  const holidays = fixed.map(([m, d]) => new Date(y, m - 1, d));
   const easter = easterDate(y);
-  const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
-  const carnivalSat = new Date(easter); carnivalSat.setDate(easter.getDate() - 50);
-  const carnivalSun = new Date(easter); carnivalSun.setDate(easter.getDate() - 49);
-  const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
-  const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
-  const corpusChristi = new Date(easter); corpusChristi.setDate(easter.getDate() + 60);
-  holidays.push(easter, goodFriday, carnivalSat, carnivalSun, carnivalMon, carnivalTue, corpusChristi);
-  holidays.push(new Date(y, 11, 31)); // Réveillon
-  return holidays;
+  const addDays = (base: Date, n: number) => {
+    const r = new Date(base); r.setDate(r.getDate() + n); return r;
+  };
+  return [
+    new Date(y, 0, 1),          // Año Nuevo
+    addDays(easter, -48),       // Carnaval lunes
+    addDays(easter, -47),       // Carnaval martes
+    addDays(easter, -2),        // Viernes Santo
+    new Date(easter),           // Pascua
+    new Date(y, 3, 21),         // Tiradentes
+    new Date(y, 4, 1),          // Día del Trabajo
+    addDays(easter, 60),        // Corpus Christi
+    new Date(y, 8, 7),          // Independencia
+    new Date(y, 9, 12),         // N.S. Aparecida
+    new Date(y, 10, 2),         // Finados
+    new Date(y, 10, 15),        // Proclamação da República
+    new Date(y, 10, 20),        // Consciência Negra
+    new Date(y, 11, 25),        // Navidad
+  ];
+}
+
+const fmtDate_ = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Devuelve un Set de strings YYYY-MM-DD con los feriados del año dado (± 1 año).
+ *  Útil para memoizar la comprobación en renders de calendario. */
+export function getBrazilHolidaySet(year: number): Set<string> {
+  const dates = [
+    ...getHolidaysForYear(year - 1),
+    ...getHolidaysForYear(year),
+    ...getHolidaysForYear(year + 1),
+  ];
+  return new Set(dates.map(fmtDate_));
 }
 
 export function isBrazilHoliday(date: Date): boolean {
   const y = date.getFullYear();
-  const t = dateOnly(date).getTime();
-  const holidays = [
-    ...getHolidaysForYear(y - 1),
-    ...getHolidaysForYear(y),
-    ...getHolidaysForYear(y + 1),
-  ];
-  return holidays.some(h => dateOnly(h).getTime() === t);
+  const set = getBrazilHolidaySet(y);
+  return set.has(fmtDate_(date));
 }
 
 // ─── Temporada ────────────────────────────────────────────

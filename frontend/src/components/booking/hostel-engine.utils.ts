@@ -30,6 +30,8 @@ function getHolidaysForYear(y: number): Date[] {
   };
   return [
     new Date(y, 0, 1),          // Año Nuevo
+    addDays(easter, -50),       // Carnaval sábado
+    addDays(easter, -49),       // Carnaval domingo
     addDays(easter, -48),       // Carnaval lunes
     addDays(easter, -47),       // Carnaval martes
     addDays(easter, -2),        // Viernes Santo
@@ -43,27 +45,34 @@ function getHolidaysForYear(y: number): Date[] {
     new Date(y, 10, 15),        // Proclamação da República
     new Date(y, 10, 20),        // Consciência Negra
     new Date(y, 11, 25),        // Navidad
+    new Date(y, 11, 31),        // Réveillon
   ];
 }
 
 const fmtDate_ = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-/** Devuelve un Set de strings YYYY-MM-DD con los feriados del año dado (± 1 año).
- *  Útil para memoizar la comprobación en renders de calendario. */
+/** Devuelve un Set con todos los días bloqueados: cada feriado ± 7 días.
+ *  Cubre año-1, año y año+1 para no perder períodos en los bordes. */
 export function getBrazilHolidaySet(year: number): Set<string> {
-  const dates = [
+  const holidays = [
     ...getHolidaysForYear(year - 1),
     ...getHolidaysForYear(year),
     ...getHolidaysForYear(year + 1),
   ];
-  return new Set(dates.map(fmtDate_));
+  const blocked = new Set<string>();
+  for (const h of holidays) {
+    for (let i = -7; i <= 7; i++) {
+      const d = new Date(h);
+      d.setDate(d.getDate() + i);
+      blocked.add(fmtDate_(d));
+    }
+  }
+  return blocked;
 }
 
 export function isBrazilHoliday(date: Date): boolean {
-  const y = date.getFullYear();
-  const set = getBrazilHolidaySet(y);
-  return set.has(fmtDate_(date));
+  return getBrazilHolidaySet(date.getFullYear()).has(fmtDate_(date));
 }
 
 // ─── Temporada ────────────────────────────────────────────

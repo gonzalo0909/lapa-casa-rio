@@ -33,6 +33,8 @@ export function getBrazilHolidays(year: number): string[] {
 
   return [
     `${year}-01-01`, // Año Nuevo
+    fmt(addDays(easter, -50)), // Carnaval sábado
+    fmt(addDays(easter, -49)), // Carnaval domingo
     fmt(addDays(easter, -48)), // Carnaval lunes
     fmt(addDays(easter, -47)), // Carnaval martes
     fmt(addDays(easter, -2)),  // Viernes Santo
@@ -46,15 +48,21 @@ export function getBrazilHolidays(year: number): string[] {
     `${year}-11-15`, // Proclamação da República
     `${year}-11-20`, // Consciência Negra
     `${year}-12-25`, // Navidad
+    `${year}-12-31`, // Réveillon
   ];
 }
 
 export function isBrazilHoliday(dateStr: string): boolean {
   const year = parseInt(dateStr.substring(0, 4), 10);
-  const holidays = new Set([
+  const checkDate = new Date(dateStr + 'T00:00:00');
+  const holidays = [
     ...getBrazilHolidays(year - 1),
     ...getBrazilHolidays(year),
     ...getBrazilHolidays(year + 1),
-  ]);
-  return holidays.has(dateStr);
+  ];
+  return holidays.some(h => {
+    const hDate = new Date(h + 'T00:00:00');
+    const diffDays = Math.round(Math.abs(checkDate.getTime() - hDate.getTime()) / 86400000);
+    return diffDays <= 7;
+  });
 }

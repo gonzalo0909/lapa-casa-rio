@@ -1,12 +1,6 @@
-//
-// REQUISITO CRITICO #1 (prompt Maestro v1.5): acquire_bed_locks() +
-// check_availability() + el INSERT de reservation_beds deben correr
-// dentro de la MISMA transaccion (pg_advisory_xact_lock solo protege
-// dentro de la misma conexion fisica). La version anterior de este
-// archivo creaba la fila en `reservations` pero NUNCA insertaba en
-// `reservation_beds` -- ninguna cama quedaba realmente bloqueada y el
-// constraint EXCLUDE (autoridad final anti-overbooking) nunca llegaba a
-// intervenir. Corregido acá.
+// acquire_bed_locks() + check_availability() + INSERT reservation_beds deben
+// correr en la MISMA transaccion: pg_advisory_xact_lock solo protege dentro
+// de la misma conexion fisica. Sin esto el constraint EXCLUDE nunca interviene.
 
 import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../config/database';

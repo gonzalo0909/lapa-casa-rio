@@ -287,13 +287,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     undefined,
                     wizard.checkIn ? wizard.checkIn.toISOString().slice(0, 10) : '',
                   );
-                  return res.data as {
-                    valid: boolean;
-                    discount_percent?: number;
-                    label?: string;
-                    code?: string;
-                    message?: string;
-                  };
+                  return res.data;
                 }}
               />
             )}

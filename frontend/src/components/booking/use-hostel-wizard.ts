@@ -9,7 +9,7 @@ import {
 } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
 import { getSeason, validateCPF } from './hostel-engine.utils';
-import { availabilityAPI } from '@/lib/api';
+import { availabilityAPI, type ApiRoom } from '@/lib/api';
 
 export function useHostelWizard(lang: BookingLocale, t: Translations) {
   const [step, setStep]             = useState(1);
@@ -53,11 +53,11 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     availabilityAPI
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {
-        const apiRooms: any[] = res.data?.rooms || [];
+        const apiRooms: ApiRoom[] = res.data?.rooms || [];
         if (!apiRooms.length) { showToast(t.tErrAvail); return; }
         setRooms(
           DEFAULT_ROOMS.map((dr) => {
-            const match = apiRooms.find((ar: any) => ar.code === dr.code);
+            const match = apiRooms.find((ar) => ar.code === dr.code);
             if (!match) return dr;
             return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice };
           }),

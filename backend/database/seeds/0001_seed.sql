@@ -57,10 +57,9 @@ INSERT INTO channels (code, name, commission_rate, has_webhook, ical_enabled) VA
 -- rate_plans: multiplicador de temporada + minimo de noches
 -- ============================================================
 INSERT INTO rate_plans (season_type, multiplier, min_nights, description) VALUES
-  ('alta',     1.5000, 3, 'Alta temporada (Dic-Mar)'),
-  ('media',    1.0000, 2, 'Media temporada (Abr-May, Oct-Nov)'),
-  ('baja',     0.8000, 1, 'Baja temporada (Jun-Sep)'),
-  ('carnaval', 2.0000, 5, 'Carnaval (fechas moviles, ver system_config.carnival_dates)');
+  ('alta',  1.5000, 3, 'Alta temporada (Dic-Mar)'),
+  ('media', 1.0000, 2, 'Media temporada (Abr-May, Oct-Nov)'),
+  ('baja',  0.8000, 1, 'Baja temporada (Jun-Sep)');
 
 -- ============================================================
 -- cancellation_policies
@@ -93,15 +92,7 @@ INSERT INTO system_config (key, value, description) VALUES
   ('timezone', '"America/Sao_Paulo"', 'Zona horaria operativa unica del sistema'),
   ('pending_payment_timeout_minutes', '5', 'Timeout de reservas directas con pago pendiente'),
   ('flexible_conversion_hours', '48', 'Horas antes del check-in en que se evalua la conversion de Flexible 7'),
-  ('no_show_release_time', '"23:59"', 'Hora local (America/Sao_Paulo) de liberacion automatica por no-show'),
-  (
-    'carnival_dates',
-    '[
-      {"year": 2026, "start_date": "2026-02-14", "end_date": "2026-02-18"},
-      {"year": 2027, "start_date": "2027-02-06", "end_date": "2027-02-10"}
-    ]',
-    'IMPORTANTE: fechas moviles de Carnaval, requieren verificacion y mantenimiento anual (ver Maestro, MINIMO DE NOCHES POR TEMPORADA, y checklist de Ventana 6). Los valores de ejemplo aca cargados deben confirmarse contra el calendario oficial antes de cada temporada.'
-  );
+  ('no_show_release_time', '"23:59"', 'Hora local (America/Sao_Paulo) de liberacion automatica por no-show');
 
 -- ============================================================
 -- exchange_rates: baseline ilustrativo, requiere sincronizacion real

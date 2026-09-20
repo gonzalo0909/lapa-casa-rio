@@ -1,12 +1,6 @@
-//
-// REQUISITO CRITICO #1 (prompt Maestro v1.5): acquire_bed_locks() +
-// check_availability() + el INSERT de reservation_beds deben correr
-// dentro de la MISMA transaccion (pg_advisory_xact_lock solo protege
-// dentro de la misma conexion fisica). La version anterior de este
-// archivo creaba la fila en `reservations` pero NUNCA insertaba en
-// `reservation_beds` -- ninguna cama quedaba realmente bloqueada y el
-// constraint EXCLUDE (autoridad final anti-overbooking) nunca llegaba a
-// intervenir. Corregido acá.
+// acquire_bed_locks() + check_availability() + INSERT reservation_beds deben
+// correr en la MISMA transaccion: pg_advisory_xact_lock solo protege dentro
+// de la misma conexion fisica. Sin esto el constraint EXCLUDE nunca interviene.
 
 import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../config/database';
@@ -287,11 +281,9 @@ export class BookingService {
       const reservation = reservationRows[0];
 
       try {
-        // Sección 9 auditoría 17 secciones: batch con unnest() en vez de un
-        // INSERT por cama en un loop -- N round-trips a la base por 1. El
-        // constraint EXCLUDE/trigger anti-overbooking se sigue evaluando
-        // por fila igual que antes (mismos códigos de error 23505/23P01),
-        // así que isOverbookingError() de abajo no cambia.
+        // batch con unnest() en vez de un INSERT por cama: N round-trips → 1.
+        // El constraint EXCLUDE/trigger anti-overbooking se evalúa por fila
+        // igual (mismos códigos 23505/23P01), isOverbookingError() no cambia.
         await client.query(
           `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
            SELECT $1, bed_id, $3::date, $4::date

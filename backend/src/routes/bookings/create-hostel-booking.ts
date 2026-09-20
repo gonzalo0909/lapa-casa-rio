@@ -18,13 +18,14 @@ import { generateConfirmationToken } from '../../utils/confirmation-token';
 import { GuestRepository } from '../../database/repositories/guest-repository';
 import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
+import { generateReferralCode } from '../../utils/encryption';
 import {
   type CreateBookingRequest,
-  isHolidayDate,
   anyDocumentBlocked,
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
   calcCheckInBounds,
+  isBrazilHoliday,
 } from './create-booking.shared';
 
 const guestRepo = new GuestRepository();
@@ -66,6 +67,18 @@ export const createHostelBookingHandler = async (
       return;
     }
 
+    // Bloqueo total de feriados nacionais do Brasil
+    const cursor = new Date(checkIn);
+    while (cursor < checkOut) {
+      if (isBrazilHoliday(cursor)) {
+        res.status(422).json(ApiResponse.error(
+          'Las fechas seleccionadas incluyen un feriado nacional de Brasil y no están disponibles para reserva.',
+        ));
+        return;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
     const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     const totalBedsRequested = bookingData.rooms.reduce((sum, r) => sum + r.bedsCount, 0);
 
@@ -80,25 +93,6 @@ export const createHostelBookingHandler = async (
         reservationEmail: bookingData.guest.email,
       });
       res.status(409).json(ApiResponse.error('No hay disponibilidad para las fechas seleccionadas'));
-      return;
-    }
-
-    // Verificación de disponibilidad general (hostel-centric, usa is_gender_eligible)
-    const availability = await availabilityService.checkAvailability({
-      checkIn: bookingData.checkIn,
-      checkOut: bookingData.checkOut,
-      bedsNeeded: totalBedsRequested,
-    });
-    if (!availability.available) {
-      logger.warn('Insufficient availability', {
-        requested: totalBedsRequested,
-        available: availability.availableBeds,
-      });
-      res.status(409).json(ApiResponse.error('Insufficient availability for requested dates', {
-        availableBeds: availability.availableBeds,
-        requestedBeds: totalBedsRequested,
-        alternativeDates: availability.alternativeDates,
-      }));
       return;
     }
 
@@ -118,7 +112,7 @@ export const createHostelBookingHandler = async (
     if (bookingData.offerCode) {
       const today = bookingData.checkIn;
       const { rows: offerRows } = await query(
-        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit, block_holidays,
+        `SELECT id, code, label, discount_percent, discount_amount, monthly_limit,
                 referral_owner_guest_id
          FROM apartment_offers
          WHERE code = $1
@@ -134,25 +128,7 @@ export const createHostelBookingHandler = async (
         if (offer.referral_owner_guest_id) {
           logger.info('Código de referido rechazado para hostel', { offerCode: offer.code });
         } else {
-          let blocked = false;
-          if (offer.block_holidays && isHolidayDate(bookingData.checkIn)) {
-            blocked = true;
-            logger.info('Código de oferta rechazado -- feriado', { offerCode: offer.code });
-          }
-          if (!blocked && offer.monthly_limit != null) {
-            const { rows: usageRows } = await query<{ count: string }>(
-              `SELECT COUNT(*) AS count FROM reservations
-               WHERE applied_offer_code = $1
-                 AND date_trunc('month', created_at) = date_trunc('month', now())
-                 AND status != 'cancelled'`,
-              [offer.code],
-            );
-            if (parseInt(usageRows[0]?.count ?? '0') >= offer.monthly_limit) {
-              blocked = true;
-              logger.info('Código de oferta rechazado -- límite mensual', { offerCode: offer.code });
-            }
-          }
-          if (!blocked) {
+          {
             appliedOffer = offer;
             if (offer.discount_amount != null && offer.discount_amount > 0) {
               const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);
@@ -208,6 +184,8 @@ export const createHostelBookingHandler = async (
       nights,
       totalBeds: totalBedsRequested,
       pricing: pricingDetails,
+      appliedOfferCode: appliedOffer?.code,
+      offerMonthlyLimit: appliedOffer?.monthly_limit ?? null,
       specialRequests: [
         bookingData.arrivalTime
           ? `Horario de llegada: ${bookingData.arrivalTime.includes('-') ? bookingData.arrivalTime.replace('-', ':00 – ') + ':00' : bookingData.arrivalTime}`
@@ -222,10 +200,30 @@ export const createHostelBookingHandler = async (
 
     logger.info('Hostel booking created', { bookingId: booking.id, totalPrice: pricingDetails.totalPrice });
 
-    // Registra oferta aplicada
-    if (appliedOffer) {
-      query(`UPDATE reservations SET applied_offer_code = $1 WHERE id = $2`, [appliedOffer.code, booking.id])
-        .catch((err) => logger.error('No se pudo registrar applied_offer_code', { bookingId: booking.id, error: String(err) }));
+    // Programa de referidos: generar o recuperar código propio del huésped
+    let ownReferralCode: string | null = null;
+    try {
+      const { rows: existing } = await query<{ code: string }>(
+        `SELECT code FROM apartment_offers
+         WHERE referral_owner_guest_id = $1 AND is_active = true LIMIT 1`,
+        [booking.guest_id],
+      );
+      if (existing.length > 0) {
+        ownReferralCode = existing[0]!.code;
+      } else {
+        ownReferralCode = generateReferralCode();
+        const validTo = new Date();
+        validTo.setFullYear(validTo.getFullYear() + 1);
+        await query(
+          `INSERT INTO apartment_offers
+             (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
+           VALUES ($1, 'Código de referido', 10, NULL, now()::date, $2::date, true, $3)`,
+          [ownReferralCode, validTo.toISOString().slice(0, 10), booking.guest_id],
+        );
+      }
+    } catch (error) {
+      logger.error('No se pudo obtener/generar el código de referido', { bookingId: booking.id, error: String(error) });
+      ownReferralCode = null;
     }
 
     // Foto del documento del titular
@@ -263,7 +261,7 @@ export const createHostelBookingHandler = async (
           language: (['pt', 'en', 'es'] as string[]).includes(guest.guest.language ?? '') ? (guest.guest.language as 'pt' | 'en' | 'es') : 'en',
         }).catch((err) => logger.error('Failed to send WhatsApp notification', { bookingId: booking.id, error: err.message }));
       }
-      return notificationService.notify('booking_confirmation', guest, { referralCode: null });
+      return notificationService.notify('booking_confirmation', guest, { referralCode: ownReferralCode });
     }).catch((err) => logger.error('Failed to send confirmation email', { bookingId: booking.id, error: err.message }));
 
     res.status(201).json(ApiResponse.success({
@@ -276,7 +274,7 @@ export const createHostelBookingHandler = async (
         nights,
         rooms: bookingData.rooms,
         guest: { name: fullName, email: bookingData.guest.email },
-        referralCode: null,
+        referralCode: ownReferralCode,
         pricing: {
           subtotal: pricingDetails.basePrice,
           groupDiscount: pricingDetails.discountAmount,
@@ -304,6 +302,10 @@ export const createHostelBookingHandler = async (
     if (error instanceof InsufficientAvailabilityError) {
       logger.warn('Insufficient availability during createHostelBooking', { details: error.details });
       res.status(409).json(ApiResponse.error(error.message, error.details));
+      return;
+    }
+    if (error instanceof Error && error.message === 'OFFER_MONTHLY_LIMIT_EXCEEDED') {
+      res.status(409).json(ApiResponse.error('El código de oferta ya alcanzó su límite mensual'));
       return;
     }
     logger.error('Error creating hostel booking', {

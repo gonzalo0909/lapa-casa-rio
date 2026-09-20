@@ -219,17 +219,17 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
                   type="button"
                   className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
                   onClick={() => setViewMode('list')}
-                  aria-label="Vista lista"
+                  aria-label={t('viewListLabel')}
                 >
-                  <List size={15} /> Lista
+                  <List size={15} /> {t('viewList')}
                 </button>
                 <button
                   type="button"
                   className={`${styles.viewToggleBtn} ${viewMode === 'map' ? styles.viewToggleBtnActive : ''}`}
                   onClick={() => setViewMode('map')}
-                  aria-label="Vista mapa"
+                  aria-label={t('viewMapLabel')}
                 >
-                  <Map size={15} /> Mapa
+                  <Map size={15} /> {t('viewMap')}
                 </button>
               </div>
             </div>

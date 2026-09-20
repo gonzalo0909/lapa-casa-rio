@@ -38,25 +38,25 @@ export function PropertySelectorHero() {
               href={hostelHref}
               className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
             >
-              Hostel
+              {t('navHostel')}
             </Link>
             <Link
               href={apartmentsHref}
               className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
             >
-              Apartamentos
+              {t('navApartments')}
             </Link>
             <a
               href={`/${locale}/parceiros`}
               className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
             >
-              Parceiros
+              {t('navPartners')}
             </a>
             <a
               href={`/${locale}/guardavolumes`}
               className="hidden sm:inline-flex rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
             >
-              Guardavolumes
+              {t('navLuggage')}
             </a>
             <LanguageSwitcher currentLocale={locale} />
           </nav>

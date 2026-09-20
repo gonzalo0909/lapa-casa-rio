@@ -38,6 +38,8 @@ export interface ApartmentAvailability {
   capacity: number;
   basePrice: number;
   priceTotal: number;
+  seasonMultiplier: number;
+  seasonType: 'alta' | 'media' | 'baja';
   depositAmount: number;
   available: boolean;
   photos: ApartmentPhoto[];

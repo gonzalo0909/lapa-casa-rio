@@ -106,15 +106,29 @@ async function getRoomTypeById(roomTypeId: string): Promise<RoomTypeRow | null> 
 }
 
 /** Mapea un ID/nombre externo de habitacion de OTA al room_type real, por UUID, `code` exacto, o alias de nombre (config/channels.ts). */
-async function mapExternalRoomId(externalRoomIdOrName: string, _channelId?: string): Promise<RoomTypeRow | null> {
+async function mapExternalRoomId(externalRoomIdOrName: string, channelId?: string): Promise<RoomTypeRow | null> {
   if (!externalRoomIdOrName) {return null;}
 
+  // 1) Buscar en la tabla de mapeos por canal (más específico)
+  if (channelId) {
+    const { rows: mapped } = await query<RoomTypeRow>(
+      `SELECT rt.id, rt.code, rt.name
+       FROM channel_room_mappings crm
+       JOIN room_types rt ON rt.id = crm.room_type_id
+       WHERE crm.channel_id = $1 AND crm.external_room_id = $2`,
+      [channelId, externalRoomIdOrName]
+    );
+    if (mapped.length > 0) {return mapped[0];}
+  }
+
+  // 2) Intentar match directo por UUID o code
   const { rows: direct } = await query<RoomTypeRow>(
     `SELECT id, code, name FROM room_types WHERE id::text = $1 OR code = $1`,
     [externalRoomIdOrName]
   );
   if (direct.length > 0) {return direct[0];}
 
+  // 3) Fallback: resolver por nombre libre
   const code = resolveRoomCodeFromName(externalRoomIdOrName);
   if (!code) {return null;}
   const { rows } = await query<RoomTypeRow>(`SELECT id, code, name FROM room_types WHERE code = $1`, [code]);

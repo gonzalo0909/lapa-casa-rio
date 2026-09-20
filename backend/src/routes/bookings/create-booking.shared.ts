@@ -8,6 +8,54 @@ import { uploadDocumentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { decodeBase64Image } from '../../utils/decode-base64-image';
 import { logger } from '../../utils/logger';
 
+// ── Feriados nacionais do Brasil ──────────────────────────────────────────────
+
+function easterDate(year: number): Date {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m2 = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m2 + 114) / 31) - 1;
+  const day   = ((h + l - 7 * m2 + 114) % 31) + 1;
+  return new Date(year, month, day);
+}
+
+
+function getHolidaysForYear(y: number): Date[] {
+  const fixed: [number, number][] = [
+    [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
+  ];
+  const holidays = fixed.map(([m, d]) => new Date(y, m - 1, d));
+  const easter = easterDate(y);
+  const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
+  const carnivalSat = new Date(easter); carnivalSat.setDate(easter.getDate() - 50);
+  const carnivalSun = new Date(easter); carnivalSun.setDate(easter.getDate() - 49);
+  const carnivalMon = new Date(easter); carnivalMon.setDate(easter.getDate() - 48);
+  const carnivalTue = new Date(easter); carnivalTue.setDate(easter.getDate() - 47);
+  const corpusChristi = new Date(easter); corpusChristi.setDate(easter.getDate() + 60);
+  holidays.push(easter, goodFriday, carnivalSat, carnivalSun, carnivalMon, carnivalTue, corpusChristi);
+  holidays.push(new Date(y, 11, 31)); // Réveillon
+  return holidays;
+}
+
+function dateOnly(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+export function isBrazilHoliday(date: Date): boolean {
+  const y = date.getFullYear();
+  const t = dateOnly(date).getTime();
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  const holidays = [
+    ...getHolidaysForYear(y - 1),
+    ...getHolidaysForYear(y),
+    ...getHolidaysForYear(y + 1),
+  ];
+  return holidays.some(h => Math.abs(dateOnly(h).getTime() - t) <= WEEK);
+}
+
 // ── Request type ─────────────────────────────────────────────────────────────
 
 export interface CreateBookingRequest {
@@ -40,46 +88,6 @@ export interface CreateBookingRequest {
   source?: string;
   guestGender?: 'mixed' | 'female' | 'male';
   offerCode?: string;
-}
-
-// ── Holiday helpers (usados por el motor del hostel) ─────────────────────────
-
-/** Devuelve la fecha de Pascua (algoritmo de Meeus/Jones/Butcher). */
-export function easterDate(year: number): Date {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month - 1, day);
-}
-
-/** true si la fecha (YYYY-MM-DD) cae en feriado nacional brasileño o Carnaval. */
-export function isHolidayDate(ds: string): boolean {
-  const [y, m, d] = ds.split('-').map(Number);
-  const mmdd = ds.slice(5);
-  const fixed = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '12-25', '12-31'];
-  if (fixed.includes(mmdd)) return true;
-  const easter = easterDate(y);
-  for (let offset = 51; offset >= 47; offset--) {
-    const carnival = new Date(easter.getTime() - offset * 86400000);
-    const cvds = carnival.getFullYear() +
-      '-' + String(carnival.getMonth() + 1).padStart(2, '0') +
-      '-' + String(carnival.getDate()).padStart(2, '0');
-    if (cvds === ds) return true;
-  }
-  if (m === 12 && d >= 28) return true;
-  if (m === 1 && d <= 2) return true;
-  return false;
 }
 
 // ── Blocklist helpers ────────────────────────────────────────────────────────

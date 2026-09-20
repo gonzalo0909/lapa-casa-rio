@@ -1,7 +1,10 @@
-// renombrado desde notification-service.ts. Nada en el repo
-// importaba este archivo (WHATSAPP_ENABLED nunca se prendio), asi que el
-// nombre quedaba libre para el servicio de notificaciones por email que
-// pide esta ventana (notify/scheduleNotification/getNotificationHistory).
+// TODO: activar WhatsApp Business API cuando esté listo.
+// Pasos para activar:
+//   1. Crear cuenta en Meta for Developers y obtener credenciales de WhatsApp Business API
+//   2. Configurar variable de entorno WHATSAPP_ENABLED=true en el servidor
+//   3. Configurar las credenciales en whatsapp-client.ts
+//   4. Actualizar ADMIN_PHONES con el número real de administrador
+// Mientras tanto el servicio está deshabilitado y todas las llamadas devuelven { success: false }.
 
 import { logger } from '../utils/logger';
 

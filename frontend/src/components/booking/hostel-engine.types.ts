@@ -10,8 +10,6 @@ import deH from '@/messages/de.json';
 import itH from '@/messages/it.json';
 
 // ─── Tipos base ─────────────────────────────────────────
-/** Re-export del tipo compartido; los componentes del hostel importan de aquí para no cambiar sus imports. */
-export type Lang = BookingLocale;
 export type Phase = 'wizard' | 'success' | 'expired' | 'group';
 export type PayMethod = 'pix' | 'card';
 
@@ -71,7 +69,7 @@ export const T = {
   it: itH.hostel,
 } as const;
 
-export type Translations = (typeof T)[Lang];
+export type Translations = (typeof T)[BookingLocale];
 
 export interface PriceQuote {
   nights: number;
@@ -83,56 +81,17 @@ export interface PriceQuote {
   deposit: number;
 }
 
-// ─── Cuartos por defecto (fallback si la API no responde) ─
+// ─── Pares de overflow: cuarto principal → cuarto extra que se revela al llenarse ─
+export const OVERFLOW_PAIRS: ReadonlyArray<{ readonly primary: string; readonly overflow: string }> = [
+  { primary: 'cuarto1', overflow: 'cuarto3' },
+  { primary: 'cuarto4', overflow: 'cuarto5' },
+];
+
+// ─── Estructura de cuartos (sin precios — los precios siempre vienen de la API) ─
 export const DEFAULT_ROOMS: RoomDef[] = [
-  {
-    id: 'cuarto1',
-    code: 'mixto_12a',
-    name: 'Cuarto 1',
-    type: 'mixed',
-    capacity: 12,
-    available: 12,
-    price: 85,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto3',
-    code: 'mixto_12b',
-    name: 'Cuarto 3',
-    type: 'mixed',
-    capacity: 12,
-    available: 12,
-    price: 85,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto4',
-    code: 'mixto_7',
-    name: 'Cuarto 4',
-    type: 'mixed',
-    capacity: 7,
-    available: 7,
-    price: 85,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto5',
-    code: 'mixto_7c',
-    name: 'Cuarto 5',
-    type: 'mixed',
-    capacity: 7,
-    available: 7,
-    price: 85,
-    isFlexible: false,
-  },
-  {
-    id: 'cuarto6',
-    code: 'flexible_7',
-    name: 'Cuarto 6',
-    type: 'female',
-    capacity: 7,
-    available: 7,
-    price: 85,
-    isFlexible: true,
-  },
+  { id: 'cuarto1', code: 'mixto_12a',  name: 'Cuarto 1', type: 'mixed',  capacity: 12, available: 12, price: 0, isFlexible: false },
+  { id: 'cuarto3', code: 'mixto_12b',  name: 'Cuarto 3', type: 'mixed',  capacity: 12, available: 12, price: 0, isFlexible: false },
+  { id: 'cuarto4', code: 'mixto_7',    name: 'Cuarto 4', type: 'mixed',  capacity: 7,  available: 7,  price: 0, isFlexible: false },
+  { id: 'cuarto5', code: 'mixto_7c',   name: 'Cuarto 5', type: 'mixed',  capacity: 7,  available: 7,  price: 0, isFlexible: false },
+  { id: 'cuarto6', code: 'flexible_7', name: 'Cuarto 6', type: 'female', capacity: 7,  available: 7,  price: 0, isFlexible: true  },
 ];

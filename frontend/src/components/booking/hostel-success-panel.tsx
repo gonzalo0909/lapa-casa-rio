@@ -36,6 +36,8 @@ interface HostelSuccessPanelProps {
   isRetryingPayment?: boolean;
   /** Callback para reintentar la generación del link de pago con tarjeta. */
   onRetryPaymentLink?: () => void;
+  /** Multiplicador de recargo por tarjeta (ej. 1.10). Se aplica al depósito mostrado en el panel de tarjeta. */
+  cardSurchargeMult?: number;
 }
 
 export function HostelSuccessPanel({
@@ -55,6 +57,7 @@ export function HostelSuccessPanel({
   paymentLinkError,
   isRetryingPayment,
   onRetryPaymentLink,
+  cardSurchargeMult = 1,
 }: HostelSuccessPanelProps) {
   const [referralCopied, setReferralCopied] = useState(false);
   const handleReferralCopy = () => {
@@ -121,10 +124,10 @@ export function HostelSuccessPanel({
                         aria-hidden
                         style={{ display: 'inline', verticalAlign: '-2px', marginRight: '.3em' }}
                       />
-                      Código copiado
+                      {t.pixCopied}
                     </>
                   ) : (
-                    'Copiar código PIX'
+                    t.pixCopyBtn
                   )}
                 </button>
               )}
@@ -139,7 +142,7 @@ export function HostelSuccessPanel({
               <div style={{ margin: '.4rem 0', display: 'flex', justifyContent: 'center' }}>
                 <CreditCard size={40} color="#7BC47F" aria-hidden />
               </div>
-              <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
+              <div className="he-pix-amt">{price ? fmtMoney(Math.round(price.deposit * cardSurchargeMult)) : ''}</div>
               {paymentInitFailed && <div className="he-min-warn">{t.payInitFailedMsg}</div>}
               {paymentLinkError && !stripeUrl && (
                 <div className="he-min-warn" style={{ marginBottom: '.6rem' }}>
@@ -175,7 +178,7 @@ export function HostelSuccessPanel({
                       disabled={isRetryingPayment}
                       onClick={onRetryPaymentLink}
                     >
-                      {isRetryingPayment ? '...' : 'Reintentar'}
+                      {isRetryingPayment ? '...' : t.btnRetry}
                     </button>
                   )}
                 </>

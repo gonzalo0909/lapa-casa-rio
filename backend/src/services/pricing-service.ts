@@ -117,7 +117,7 @@ export class PricingService {
     };
   }
 
-  async getRateForDates(roomTypeId: string, checkInDate: string, _checkOutDate: string): Promise<number> {
+  async getRateForDates(roomTypeId: string, checkInDate: string): Promise<number> {
     const { rows } = await query<{ base_price: string }>(
       `SELECT base_price FROM room_types WHERE id = $1`,
       [roomTypeId]
@@ -176,7 +176,7 @@ export class PricingService {
   }
 
   /** determineSeason: usado por rutas para mostrar info de temporada -- via SQL, no tabla hardcodeada. */
-  async determineSeason(checkIn: string, _checkOut: string): Promise<{ type: string; multiplier: number }> {
+  async determineSeason(checkIn: string): Promise<{ type: string; multiplier: number }> {
     const [type, multiplier] = await Promise.all([
       getSeasonType(checkIn),
       this.getSeasonMultiplier(checkIn),

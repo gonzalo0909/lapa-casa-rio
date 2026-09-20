@@ -4,11 +4,12 @@
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
-import { type Lang, type RoomDef, T } from './hostel-engine.types';
+import type { BookingLocale } from '@/types/global';
+import { type RoomDef, T } from './hostel-engine.types';
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelRoomSelectorProps {
-  lang: Lang;
+  lang: BookingLocale;
   /** Cuartos ya filtrados (visibleRooms del orquestador) */
   rooms: RoomDef[];
   beds: Record<string, number>;
@@ -45,11 +46,11 @@ export function HostelRoomSelector({
                 <div className="he-rn">{r.name}</div>
                 <div className="he-rm">
                   <span className={`he-rbadge ${r.type === 'female' ? 'he-rbadge-f' : 'he-rbadge-m'}`}>
-                    {r.id === 'cuarto6' ? 'Solo Mujeres' : r.type === 'female' ? 'Feminino' : 'Misto'}
+                    {r.id === 'cuarto6' ? t.roomFemaleOnly : r.type === 'female' ? t.roomFemale : t.roomMixed}
                   </span>
-                  <span className="he-ravail">{r.available} de {r.capacity} disp.</span>
+                  <span className="he-ravail">{r.available} {t.roomAvailOf} {r.capacity} {t.roomAvailLabel}</span>
                 </div>
-                <div className="he-rprice">R$ <strong>{pbn}</strong>/cama/noite</div>
+                <div className="he-rprice">R$ <strong>{pbn}</strong>{t.roomPerBedNight}</div>
               </div>
               <div className="he-stepper">
                 <button

@@ -4,13 +4,14 @@
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
 import React from 'react';
-import { type Lang, T } from './hostel-engine.types';
-import { getSeason, fmtDate, sameDay, dayBefore, inRange, weekdayLabels, monthLabel } from './hostel-engine.utils';
+import type { BookingLocale } from '@/types/global';
+import { T } from './hostel-engine.types';
+import { getSeason, fmtDate, sameDay, inRange, weekdayLabels, monthLabel, isBrazilHoliday } from './hostel-engine.utils';
 import { minCheckInDs } from '@/lib/utils';
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelCalendarProps {
-  lang: Lang;
+  lang: BookingLocale;
   calMonth: Date;
   checkIn: Date | null;
   checkOut: Date | null;
@@ -93,7 +94,8 @@ export function HostelCalendar({
           // Bloquea pasado Y el día de hoy si ya pasaron las 12:00 BRT (misma regla que el backend y el motor de apartamentos).
           const minDs   = minCheckInDs();
           const dateDs  = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
-          const isPast  = dateDs < minDs;
+          const isPast    = dateDs < minDs;
+          const isHoliday = isBrazilHoliday(date);
           const isToday = sameDay(date, today);
           const isStart = sameDay(date, checkIn);
           const isEnd   = sameDay(date, checkOut);
@@ -102,22 +104,24 @@ export function HostelCalendar({
           const isHover = selectingEnd && sameDay(date, hoverDate);
           const s       = !isPast ? getSeason(date) : null;
 
+          const isBlocked = isPast || isHoliday;
+
           let cls = 'he-cal-cell';
           if (isStart)                          {cls += ' in-range range-start';}
           if (isEnd)                            {cls += ' in-range range-end';}
           if (isHover && !isStart)              {cls += ' in-range range-end';}
           if (inRng)                            {cls += ' in-range';}
           if (isToday)                          {cls += ' is-today';}
-          if (s?.label === 'Alta Temporada')    {cls += ' s-alta';}
-          else if (s?.label === 'Carnaval')     {cls += ' s-carnaval';}
-          else if (s?.label === 'Baixa Temporada') {cls += ' s-baixa';}
+          if (isHoliday)                        {cls += ' s-holiday';}
+          else if (s?.kind === 'alta')  {cls += ' s-alta';}
+          else if (s?.kind === 'baixa') {cls += ' s-baixa';}
 
           return (
             <div key={i} className={cls}>
               <button
                 className="he-cal-day"
-                disabled={isPast}
-                onClick={() => !isPast && onCalClick(date)}
+                disabled={isBlocked}
+                onClick={() => !isBlocked && onCalClick(date)}
                 onMouseEnter={() => selectingEnd && onHoverDate(date)}
                 onMouseLeave={() => selectingEnd && onHoverDate(null)}
               >

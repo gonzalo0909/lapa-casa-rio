@@ -92,7 +92,7 @@ export function useHostelPayment({
     try { ct = sessionStorage.getItem(`ct_${resId}`) ?? undefined; } catch {}
     const checkout = await paymentAPI.stripeCheckout(resId, origin, ct);
     const url: string | undefined = checkout.data?.url;
-    if (url) { window.open(url, '_blank', 'noopener'); return { stripeUrl: url }; }
+    if (url) { window.open(url, '_blank', 'noopener,noreferrer'); return { stripeUrl: url }; }
     return null;
   }, []);
 
@@ -240,7 +240,7 @@ export function useHostelPayment({
     } finally {
       setIsWaLoading(false);
     }
-    window.open(buildWaMsg(stripeLink), '_blank');
+    window.open(buildWaMsg(stripeLink), '_blank', 'noopener,noreferrer');
   }, [price, cardSurchargeMult, form.email, buildWaMsg]);
 
   const handleGroupSession = useCallback(async () => {

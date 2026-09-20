@@ -1,5 +1,4 @@
 'use client';
-// frontend/src/components/booking/hostel-engine.tsx
 // Orquestador slim — setup de idioma, llama a los 3 hooks, renderiza JSX.
 
 import React, { useState } from 'react';

@@ -28,7 +28,7 @@ interface HostelSuccessPanelProps {
   onNewBooking: () => void;
   onSwitchMethod?: () => void;
   paymentInitFailed?: boolean;
-  /** Código de referido propio, generado al confirmar (idea #49, roadmap.html). */
+  /** Código de referido propio, generado al confirmar. */
   referralCode?: string | null;
   /** Error al generar el link de pago con tarjeta — habilita botón de reintento. */
   paymentLinkError?: boolean;

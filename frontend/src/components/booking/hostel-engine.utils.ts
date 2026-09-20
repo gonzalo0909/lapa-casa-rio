@@ -1,5 +1,3 @@
-// frontend/src/components/booking/hostel-engine.utils.ts
-
 import React from 'react';
 import { BCP47 } from '@/lib/utils';
 

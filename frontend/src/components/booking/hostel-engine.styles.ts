@@ -1,4 +1,3 @@
-// frontend/src/components/booking/hostel-engine.styles.ts
 // CSS global del motor de reservas (hostel-engine y sus sub-componentes).
 // Se inyecta como <style> crudo en hostel-engine.tsx (dangerouslySetInnerHTML);
 // el aislamiento del resto del sitio es por convención de nombres (todo

@@ -84,7 +84,7 @@ interface HostelGuestFormProps {
   onEmailFb: (v: FieldFeedback | null) => void;
   onPhoneFb: (v: FieldFeedback | null) => void;
   onCancelToggle: () => void;
-  /** Cupón/código de referido aplicado (idea #49, roadmap.html) -- null = sin código. */
+  /** Cupón/código de referido aplicado — null = sin código. */
   appliedCoupon?: AppliedCoupon | null;
   onCouponApply?: (coupon: AppliedCoupon) => void;
   onCouponRemove?: () => void;
@@ -473,7 +473,6 @@ export function HostelGuestForm({
         {formErrors.restriction && <div className="he-ferr">{formErrors.restriction}</div>}
       </div>
 
-      {/* Cupón / código de referido (idea #49, roadmap.html) */}
       {onValidateCoupon && (
         <div className="he-rules">
           <div className="he-rules-title">

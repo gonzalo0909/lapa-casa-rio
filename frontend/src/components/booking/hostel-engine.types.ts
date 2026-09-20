@@ -1,4 +1,3 @@
-// frontend/src/components/booking/hostel-engine.types.ts
 // Tipos TypeScript · DEFAULT_ROOMS
 
 import type { BookingLocale } from '@/types/global';

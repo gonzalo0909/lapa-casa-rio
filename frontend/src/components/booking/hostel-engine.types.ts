@@ -81,6 +81,12 @@ export interface PriceQuote {
   deposit: number;
 }
 
+// ─── Pares de overflow: cuarto principal → cuarto extra que se revela al llenarse ─
+export const OVERFLOW_PAIRS: ReadonlyArray<{ readonly primary: string; readonly overflow: string }> = [
+  { primary: 'cuarto1', overflow: 'cuarto3' },
+  { primary: 'cuarto4', overflow: 'cuarto5' },
+];
+
 // ─── Estructura de cuartos (sin precios — los precios siempre vienen de la API) ─
 export const DEFAULT_ROOMS: RoomDef[] = [
   { id: 'cuarto1', code: 'mixto_12a',  name: 'Cuarto 1', type: 'mixed',  capacity: 12, available: 12, price: 0, isFlexible: false },

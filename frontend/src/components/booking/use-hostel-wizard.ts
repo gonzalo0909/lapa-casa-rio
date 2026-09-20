@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { BookingLocale } from '@/types/global';
 import {
   type RoomDef, type FormState, type FormErrors, type FieldFeedback,
-  type Translations, DEFAULT_ROOMS,
+  type Translations, DEFAULT_ROOMS, OVERFLOW_PAIRS,
 } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
 import { getSeason, validateCPF } from './hostel-engine.utils';
@@ -92,27 +92,36 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   }, []);
 
   const changeBeds = useCallback((id: string, delta: number) => {
-    const r1  = rooms.find((r) => r.id === 'cuarto1');
-    const r4  = rooms.find((r) => r.id === 'cuarto4');
-    const cur = beds[id] ?? 0;
+    const cur  = beds[id] ?? 0;
     const room = rooms.find((r) => r.id === id)!;
     const newBeds = { ...beds };
-    const newRev  = { ...revealed };
+    const rev     = { ...revealed } as Record<string, boolean>;
 
     if (delta > 0) {
-      if (cur < room.available)              { newBeds[id] = cur + 1; }
-      else if (id === 'cuarto1' && !newRev.cuarto3) { newRev.cuarto3 = true; }
-      else if (id === 'cuarto4' && !newRev.cuarto5) { newRev.cuarto5 = true; }
+      if (cur < room.available) {
+        newBeds[id] = cur + 1;
+      } else {
+        const pair = OVERFLOW_PAIRS.find((p) => p.primary === id);
+        if (pair && !rev[pair.overflow]) { rev[pair.overflow] = true; }
+      }
     } else {
       newBeds[id] = Math.max(0, cur - 1);
     }
 
-    if ((newBeds['cuarto1'] ?? 0) < (r1?.available ?? 12)) { newRev.cuarto3 = false; newBeds['cuarto3'] = 0; }
-    if ((newBeds['cuarto4'] ?? 0) < (r4?.available ?? 7))  { newRev.cuarto5 = false; newBeds['cuarto5'] = 0; }
-    if (id === 'cuarto5' && delta < 0 && (newBeds['cuarto5'] ?? 0) === 0) { newRev.cuarto5 = false; }
+    // Colapsar overflow si el cuarto principal baja de su capacidad
+    for (const { primary, overflow } of OVERFLOW_PAIRS) {
+      const r = rooms.find((r) => r.id === primary);
+      if ((newBeds[primary] ?? 0) < (r?.available ?? 0)) {
+        rev[overflow] = false;
+        newBeds[overflow] = 0;
+      }
+    }
+    // Colapsar overflow cuando el huésped lo baja manualmente a 0
+    const overflowPair = OVERFLOW_PAIRS.find((p) => p.overflow === id);
+    if (overflowPair && delta < 0 && (newBeds[id] ?? 0) === 0) { rev[id] = false; }
 
     setBeds(newBeds);
-    setRevealed(newRev);
+    setRevealed(rev as typeof revealed);
   }, [rooms, beds, revealed]);
 
   const handleFormChange = useCallback((patch: Partial<FormState>) => {

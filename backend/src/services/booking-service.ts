@@ -54,8 +54,8 @@ const isOverbookingError = (error: unknown): boolean => {
   return code === '23505' || code === '23P01';
 };
 
-const generateReservationNumber = (): string =>
-  `LCA-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+const generateReservationNumber = (prefix = 'LCA'): string =>
+  `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
 interface CreateBookingInput {
   checkIn: string;
@@ -96,6 +96,8 @@ interface CreateBookingInput {
   appliedOfferCode?: string;
   /** Límite mensual de la oferta -- se re-verifica dentro de la transacción con row lock para evitar race conditions. */
   offerMonthlyLimit?: number | null;
+  /** Prefijo del número de reserva: 'LCH' para hostel, 'LCA' para apartamento (default). */
+  bookingPrefix?: string;
 }
 
 /**
@@ -236,7 +238,7 @@ export class BookingService {
       );
       const earlyBirdDiscount = parseFloat(earlyBirdRows[0].d);
 
-      const reservationNumber = generateReservationNumber();
+      const reservationNumber = generateReservationNumber(data.bookingPrefix);
       const initialStatus = data.status ?? 'pending_payment';
 
       const { rows: reservationRows } = await client.query(

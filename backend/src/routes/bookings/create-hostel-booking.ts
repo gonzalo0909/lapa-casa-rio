@@ -175,6 +175,7 @@ export const createHostelBookingHandler = async (
       language: bookingData.language || 'pt',
       status: 'pending_payment',
       guestGender: bookingData.guestGender || 'mixed',
+      bookingPrefix: 'LCH',
     });
 
     logger.info('Hostel booking created', { bookingId: booking.id, totalPrice: pricingDetails.totalPrice });

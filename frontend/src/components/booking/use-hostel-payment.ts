@@ -146,6 +146,7 @@ export function useHostelPayment({
       } catch {
         setPaymentInitFailed(true);
       }
+      setForm((f) => ({ ...f, docPhotoBase64: '' }));
       setPhase('success');
       startTimer();
     } catch {

@@ -98,7 +98,7 @@ export function HostelStep4Summary({
           <div className="he-dep-lbl">70% {t.tAtCheckin}</div>
           <div className="he-dep-amt">{fmtMoney(remaining)}</div>
           {currency && <div className="he-conv">{convertBRL(remaining, currency)}</div>}
-          <div className="he-dep-note">Check-in</div>
+          <div className="he-dep-note">{t.checkin}</div>
         </div>
       </div>
 
@@ -142,11 +142,11 @@ export function HostelStep4Summary({
       {bookingError && <div className="he-toast" style={{ margin: '0 0 .75rem' }}>{bookingError}</div>}
 
       <button className="he-btn-confirm" onClick={onConfirm} disabled={isProcessing}>
-        {isProcessing ? '...' : t.btnConfirm}
+        {isProcessing ? '…' : t.btnConfirm}
       </button>
       <button className="he-btn-wa" onClick={onWaClick} disabled={isWaLoading}>
         <MessageCircle size={16} aria-hidden />
-        {isWaLoading ? '...' : t.btnWhatsApp}
+        {isWaLoading ? '…' : t.btnWhatsApp}
       </button>
     </div>
   );

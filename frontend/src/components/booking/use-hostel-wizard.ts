@@ -19,7 +19,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   const [hoverDate, setHoverDate]   = useState<Date | null>(null);
   const [selectingEnd, setSelectingEnd] = useState(false);
   const [beds, setBeds]             = useState<Record<string, number>>({ cuarto1: 0, cuarto3: 0, cuarto4: 0, cuarto5: 0, cuarto6: 0 });
-  const [revealed, setRevealed]     = useState({ cuarto3: false, cuarto5: false });
+  const [revealed, setRevealed]     = useState<Record<string, boolean>>({ cuarto3: false, cuarto5: false });
   const [rooms, setRooms]           = useState<RoomDef[]>(DEFAULT_ROOMS);
   const [roomsLoaded, setRoomsLoaded] = useState(false);
   const [toast, setToast]           = useState('');
@@ -39,8 +39,8 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
 
   const totalBeds    = Object.values(beds).reduce((s, n) => s + n, 0);
   const visibleRooms = rooms.filter((r) => {
-    if (r.id === 'cuarto3') return revealed.cuarto3;
-    if (r.id === 'cuarto5') return revealed.cuarto5;
+    if (r.id === 'cuarto3') return !!revealed['cuarto3'];
+    if (r.id === 'cuarto5') return !!revealed['cuarto5'];
     return true;
   });
 
@@ -95,7 +95,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     const cur  = beds[id] ?? 0;
     const room = rooms.find((r) => r.id === id)!;
     const newBeds = { ...beds };
-    const rev     = { ...revealed } as Record<string, boolean>;
+    const rev     = { ...revealed };
 
     if (delta > 0) {
       if (cur < room.available) {
@@ -121,7 +121,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     if (overflowPair && delta < 0 && (newBeds[id] ?? 0) === 0) { rev[id] = false; }
 
     setBeds(newBeds);
-    setRevealed(rev as typeof revealed);
+    setRevealed(rev);
   }, [rooms, beds, revealed]);
 
   const handleFormChange = useCallback((patch: Partial<FormState>) => {

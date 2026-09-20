@@ -59,6 +59,7 @@ export function HostelSuccessPanel({
   onRetryPaymentLink,
   cardSurchargeMult = 1,
 }: HostelSuccessPanelProps) {
+  const COPY_FEEDBACK_MS = 3_000;
   const [referralCopied, setReferralCopied] = useState(false);
   const handleReferralCopy = () => {
     if (!referralCode) {
@@ -66,7 +67,7 @@ export function HostelSuccessPanel({
     }
     navigator.clipboard.writeText(referralCode).catch(() => {});
     setReferralCopied(true);
-    setTimeout(() => setReferralCopied(false), 3000);
+    setTimeout(() => setReferralCopied(false), COPY_FEEDBACK_MS);
   };
   return (
     <div className="he-card">
@@ -178,7 +179,7 @@ export function HostelSuccessPanel({
                       disabled={isRetryingPayment}
                       onClick={onRetryPaymentLink}
                     >
-                      {isRetryingPayment ? '...' : t.btnRetry}
+                      {isRetryingPayment ? '…' : t.btnRetry}
                     </button>
                   )}
                 </>
@@ -190,12 +191,6 @@ export function HostelSuccessPanel({
           )}
         </div>
         <div className="he-success-note">
-          {payMethod === 'pix' && (
-            <>
-              {t.pixKey}
-              <br />
-            </>
-          )}
           {t.restNote}
         </div>
         {referralCode && (

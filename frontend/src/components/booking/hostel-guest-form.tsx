@@ -43,20 +43,23 @@ function FieldFb({ fb }: { fb: FieldFeedback | null }) {
   );
 }
 
-// Redimensiona la foto del documento a max 900px de ancho antes de mandarla
-// -- evita subir la foto de un celular a resolución completa.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DOC_PHOTO_MAX_PX = 900;
+const DOC_PHOTO_JPEG_QUALITY = 0.82;
+
+// Redimensiona la foto del documento antes de mandarla — evita subir la foto de un celular a resolución completa.
 function resizeDocPhoto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, 900 / img.width);
+        const scale = Math.min(1, DOC_PHOTO_MAX_PX / img.width);
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
+        resolve(canvas.toDataURL('image/jpeg', DOC_PHOTO_JPEG_QUALITY));
       };
       img.onerror = reject;
       img.src = e.target?.result as string;
@@ -94,7 +97,7 @@ interface HostelGuestFormProps {
 }
 
 // ─── Iconos de reglas de la casa (Lucide) ────────────────
-const RULE_ICONS = [KeyRound, DoorOpen, FileText, Ban, CigaretteOff, Accessibility] as const;
+const RULE_ICONS = [KeyRound, DoorOpen, FileText, CigaretteOff, Ban, Accessibility] as const;
 
 // ─── Component ────────────────────────────────────────────
 export function HostelGuestForm({
@@ -179,7 +182,7 @@ export function HostelGuestForm({
         </label>
         <input
           id="he-f-email"
-          className={`he-inp${formErrors.email ? ' err' : !formErrors.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? ' ok' : ''}`}
+          className={`he-inp${formErrors.email ? ' err' : !formErrors.email && EMAIL_RE.test(form.email) ? ' ok' : ''}`}
           type="email"
           value={form.email}
           placeholder={t.emailPlaceholder}
@@ -187,7 +190,7 @@ export function HostelGuestForm({
           onPaste={(e) => e.preventDefault()}
           onChange={(e) => onFormChange({ email: e.target.value })}
           onBlur={() => {
-            const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+            const ok = EMAIL_RE.test(form.email);
             onEmailFb(form.email ? { text: ok ? t.fbEmailOk : t.fbEmailErr, ok } : null);
             onFormErrors({ email: !ok ? t.errEmail : undefined });
           }}

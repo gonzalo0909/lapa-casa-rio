@@ -1,15 +1,3 @@
-//
-// FIX (auditoría 2026-08-30): reescrito de Prisma a SQL directo (pg) --
-// era la única pieza de todo el backend que hablaba con la base por un
-// ORM aparte, con su propio pool de conexiones, mientras el resto (incluida
-// la transacción crítica de creación de reserva en booking-service.ts) usa
-// siempre config/database.ts contra el mismo pool. Se eliminaron además 14
-// de los 16 métodos que tenía esta clase (create, findById, findByEmail,
-// findByPhone, updateStats, search, findAll, findTop, findRecent,
-// findInactive, countByNationality, getStatistics, delete, merge): cero
-// callers reales en toda la base de código -- vestigios de una capa
-// CRUD+analytics genérica que nadie llegó a usar.
-
 import type { PoolClient } from 'pg';
 import { query } from '../../config/database';
 import type { Guest } from '../../types/database';

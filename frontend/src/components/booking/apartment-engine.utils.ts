@@ -80,9 +80,6 @@ export function rankApartments(
 }
 
 // ─── Validadores y formateadores de datos del huésped ────────────────────────
-// FIX (auditoría 2026-08-30): validateCPF/formatCPF vivían acá duplicadas
-// (idénticas) con hostel-engine.utils.ts -- consolidadas en @/lib/utils,
-// re-exportadas de vuelta para no tener que tocar cada import existente.
 export { validateCPF, formatCPF } from '@/lib/utils';
 
 /** Devuelve true si el string tiene formato de e-mail válido. */

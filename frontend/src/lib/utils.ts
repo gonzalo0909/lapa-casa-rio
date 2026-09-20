@@ -1,15 +1,4 @@
 
-/**
- * Utility Functions Library
- *
- * Common utility functions for Lapa Casa application.
- * Includes class name management and CPF validation/formatting.
- *
- * @module lib/utils
- * @requires clsx
- * @requires tailwind-merge
- */
-
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -28,32 +17,6 @@ import { twMerge } from 'tailwind-merge';
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
-
-// FIX (auditoría 2026-08-30): calculateNights duplicada acá sin ningún
-// import externo -- la versión real en uso es lib/pricing.ts (usada
-// internamente por calculateTotalPrice/etc ahí mismo).
-
-// FIX (auditoría 2026-08-30): formatPhone duplicada acá sin ningún import
-// externo -- la versión real en uso (con soporte de "+55" en vivo
-// mientras se tipea) es components/booking/hostel-engine.utils.ts. No es
-// el mismo algoritmo (esta era una versión más simple para exactamente
-// 10-11 dígitos), así que no se puede fusionar sin decidir cuál
-// comportamiento es el correcto -- se elimina la que nadie usa.
-
-// FIX (auditoría 17 secciones, sección 13): se eliminan 18 funciones más
-// sin ningún import externo (formatCurrency, formatDate, generateId,
-// debounce, throttle, sleep, capitalize, truncate, parseQueryString,
-// buildQueryString, isEmpty, deepClone, compareDates, isDateInRange,
-// getDateRange, toDateOnly, splitFullName, getNestedValue) -- verificado
-// con knip + grep manual de cada candidato (3 "usos" que aparecían en el
-// grep inicial eran falsos positivos: una función local con el mismo
-// nombre en otro archivo, la clase CSS `capitalize` de Tailwind, y una key
-// de objeto `isEmpty` sin relación).
-
-// FIX (auditoría 2026-08-30): validateCPF/formatCPF estaban duplicadas
-// -- byte por byte el mismo algoritmo, solo con estilo distinto -- en
-// components/booking/apartment-engine.utils.ts y hostel-engine.utils.ts.
-// Se consolidan acá; ambos motores ahora importan de este único lugar.
 
 /**
  * Fecha mínima de check-in (YYYY-MM-DD) según la hora actual en São Paulo.

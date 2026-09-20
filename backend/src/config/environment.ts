@@ -68,10 +68,8 @@ const env = {
 };
 
 if (!env.DATABASE_URL) {
-  // Auditoría 17 secciones, sección 15: antes solo advertía y dejaba
-  // arrancar el proceso -- fail-fast en producción, consistente con
-  // JWT_SECRET/ENCRYPTION_KEY/ADMIN_PASSWORD_HASH de acá abajo, en vez de
-  // levantar un servidor que va a fallar en el primer query real.
+  // fail-fast en producción -- consistente con JWT_SECRET/ENCRYPTION_KEY/ADMIN_PASSWORD_HASH,
+  // en vez de levantar un servidor que va a fallar en el primer query real.
   if (isProd) {
     throw new Error('[ENV] DATABASE_URL es obligatorio en producción');
   }

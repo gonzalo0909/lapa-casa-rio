@@ -66,7 +66,7 @@ export class PaymentService {
     if (!reservation) {throw new AppError('Reserva no encontrada', 404);}
 
     const currency = data.currency || 'BRL';
-    // L-04: el proveedor viene siempre en el payload (provider: 'stripe' | 'mercadopago').
+    // El proveedor viene siempre en el payload (provider: 'stripe' | 'mercadopago').
     // Se eliminó la heurística por dominio de email — asignaba Stripe a
     // brasileños con Gmail/Outlook, causando fricción innecesaria y
     // comisiones más altas. Si no viene provider, default a mercadopago (Brasil).
@@ -361,7 +361,7 @@ export class PaymentService {
   }
 
   // usado por el flujo de cobro de saldo (3 reintentos cada 24h,
-  // ver Prompt Maestro / POLITICAS OPERATIVAS) una vez que el proveedor
+  // ver políticas operativas) una vez que el proveedor
   // confirma el cargo del saldo. A diferencia del deposito, pagar el saldo
   // no cambia el status de la reserva -- ya esta 'confirmed' desde que se
   // pago el deposito -- solo marca el registro de pago como succeeded.
@@ -410,10 +410,7 @@ export class PaymentService {
     return this.paymentRepo.getStatistics();
   }
 
-  // L-04: isInternationalEmail eliminada — ver comentario en createPaymentIntent
-
-  // Sección 7 auditoría 17 secciones: antes armada inline en la ruta
-  // POST /payments/stripe-wa-link -- flujo WhatsApp, genera un link de pago
+  // flujo WhatsApp, genera un link de pago
   // sin reserva previa (el titular no llegó a completar el wizard).
   async createWhatsappCheckoutLink(data: {
     amountBRL: number;
@@ -435,8 +432,7 @@ export class PaymentService {
     return { url: session.url };
   }
 
-  // Sección 7 auditoría 17 secciones: antes armada inline en la ruta
-  // POST /payments/stripe-checkout -- Checkout Session de tarjeta para una
+  // Checkout Session de tarjeta para una
   // reserva ya creada (el 404/cancelada se valida en la ruta antes de
   // llamar acá, por eso recibe el booking ya resuelto).
   async createBookingCheckoutSession(

@@ -95,10 +95,6 @@ router.get('/dashboard', async (req, res, next) => {
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
 
-    // FIX (auditoría 2026-08-30): antes traía acá un top-10 de próximos
-    // check-ins con una query que no seleccionaba check_out_date ni
-    // status (el frontend los mostraba vacíos/rotos). Esa vista ahora la
-    // cubre GET /admin/bookings/upcoming, con las columnas completas.
     const [bookingStats, occupancy, revenue, channels, groups] = await Promise.all([
       bookingService.getBookingStats(
         `${year}-${String(month).padStart(2, '0')}-01`,

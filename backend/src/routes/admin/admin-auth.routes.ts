@@ -131,7 +131,7 @@ router.post('/', validate(LoginSchema), async (req, res, next) => {
     // mismo body (nunca en cookie), y no existe ningún endpoint /refresh
     // que lo consuma -- era una pieza de un flujo de refresh que nunca se
     // terminó de construir. El default de JWT_EXPIRES_IN ya se acortó de
-    // 90d a 24h (ver sección 8 auditoría 17 secciones) para que un olvido
+    // 90d a 24h para que un olvido
     // de configurar la env var en los secrets de Fly.io falle corto, no
     // largo. Un flujo de refresh completo (endpoint dedicado + cookie
     // propia, para poder tener un access token de vida aún más corta sin
@@ -206,11 +206,9 @@ router.post('/logout', authenticateToken, verifyCsrf('lch_admin_csrf'), async (r
     const token = (authHeader && authHeader.split(' ')[1]) || cookieToken;
 
     if (token) {
-      // TTL de la blacklist = TTL real del JWT (auditoría 17 secciones,
-      // sección 15): antes estaba fijo en 86400s (24h) sin importar
-      // JWT_EXPIRES_IN -- si ese valor se configura a más de 24h, el token
-      // "revocado" volvía a ser válido apenas la entrada de Redis expiraba,
-      // aunque el JWT real siguiera vigente.
+      // TTL de la blacklist = TTL real del JWT -- antes estaba fijo en 86400s (24h)
+      // sin importar JWT_EXPIRES_IN. Si ese valor se configura a más de 24h, el token
+      // "revocado" volvería a ser válido apenas la entrada de Redis expirara.
       await redisCache.set(
         `${REVOKED_PREFIX}${token}`,
         '1',

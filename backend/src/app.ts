@@ -42,7 +42,7 @@ app.use(helmet({
 // helmet v5+ ya no incluye Permissions-Policy por defecto -- se agrega acá
 // a mano (mismos valores que ya usa el frontend en next.config.js) para que
 // /admin y /group-payment, servidas directo por este Express, no queden
-// sin este header (auditoría 17 secciones, sección 15).
+// sin este header.
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
@@ -151,7 +151,7 @@ app.get('/health', async (req: Request, res: Response) => {
   }
 });
 
-// L-03: health check extendido protegido con auth admin — expone topología
+// health check extendido protegido con auth admin — expone topología
 // interna (Redis, colas, Stripe, MP, email). El /health público de arriba
 // (solo DB) se mantiene sin auth porque Fly.io lo usa como healthCheckPath.
 app.get('/api/health', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {

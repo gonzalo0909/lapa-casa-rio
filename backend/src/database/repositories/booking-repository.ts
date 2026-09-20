@@ -1,14 +1,3 @@
-//
-// FIX (auditoría 2026-08-30): reescrito de Prisma a SQL directo (pg) para
-// no mantener dos capas de persistencia distintas sobre las mismas tablas
-// -- el resto del código (booking-service.ts, migrations, triggers) ya
-// trabaja 100% en SQL crudo contra el mismo pool de config/database.ts.
-// Se eliminaron además 8 métodos sin ningún caller real (findByGuest,
-// findByDateRange, findByStatus, findUpcoming, findPendingPayment,
-// getStatistics, getOccupancyRate, getRevenueByDateRange) -- vestigios de
-// una capa CRUD+analytics genérica que nadie llegó a usar (las stats reales
-// las calcula booking-service.getBookingStats() con su propio SQL).
-
 import { query } from '../../config/database';
 import type { Reservation, BookingStatus } from '../../types/database';
 

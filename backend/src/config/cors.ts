@@ -1,30 +1,7 @@
-//
-// FIX (auditoría 2026-08-30): se eliminaron 5 exports sin ningún uso
-// (strictCorsOptions, publicCorsOptions, createCorsMiddleware,
-// corsErrorHandler, securityHeadersMiddleware, originLoggerMiddleware)
-// -- app.ts aplica CORS directamente con `cors(corsOptions)`, nunca usó
-// la fábrica ni el default export de este archivo. corsOptions es el
-// único export real en uso.
-
 import type { CorsOptions } from 'cors';
 import { env, isProduction } from './environment';
 import { logger } from '../utils/logger';
 
-/**
- * CORS Configuration
- * Cross-Origin Resource Sharing setup for Lapa Casa API
- *
- * Features:
- * - Environment-based origin whitelisting
- * - Credentials support
- * - Preflight caching
- * - Custom headers support
- * - Dynamic origin validation
- */
-
-/**
- * Allowed origins based on environment
- */
 const getAllowedOrigins = (): string[] => {
   if (!isProduction()) {
     // Development: Allow localhost and common dev ports
@@ -60,11 +37,6 @@ const getAllowedOrigins = (): string[] => {
 
 const allowedOrigins = getAllowedOrigins();
 
-/**
- * Dynamic origin validation
- * @param origin - Request origin
- * @param callback - CORS callback function
- */
 const originValidator = (
   origin: string | undefined,
   callback: (err: Error | null, allow?: boolean) => void
@@ -108,9 +80,6 @@ const originValidator = (
   callback(new Error(`Origin ${origin} not allowed by CORS policy`));
 };
 
-/**
- * CORS options configuration
- */
 export const corsOptions: CorsOptions = {
   origin: originValidator,
 

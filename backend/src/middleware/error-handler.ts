@@ -29,9 +29,9 @@ export const errorHandler = (
 
   const statusCode = (error as any).statusCode || (error as any).status || 500;
 
-  // Sección 8 auditoría 17 secciones: unificar formato de error -- antes
-  // este handler devolvía {error,message,timestamp} (sin success:false),
-  // distinto del {success:false,error,timestamp} que usan las ~30 rutas
+  // Formato de error unificado -- antes este handler devolvía
+  // {error,message,timestamp} (sin success:false), distinto del
+  // {success:false,error,timestamp} que usan las ~30 rutas
   // vía ApiResponse.error(). Solo los 500 (errores no esperados) ocultan
   // el mensaje real en producción; un AppError 400/404/409/503 con
   // mensaje pensado para el usuario (ej. "Reserva no encontrada") se

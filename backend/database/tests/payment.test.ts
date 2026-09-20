@@ -187,12 +187,6 @@ describe('PaymentRepository - findByStripeIntent / findByMPId', () => {
     });
   });
 
-  // FIX (sección 13 auditoría 17 secciones): PaymentRepository nunca tuvo
-  // findByStripeIntent()/findByMPId() -- este test quedó desactualizado
-  // tras un refactor que unificó ambos lookups en un solo método genérico
-  // (misma tabla "payments", mismo campo provider_payment_id para
-  // cualquier proveedor). El test no compilaba, rompiendo el resto del
-  // suite de payment.test.ts junto con él.
   it('findByProviderPaymentId() retorna el pago stripe correcto', async () => {
     const p = await paymentRepo.findByProviderPaymentId(stripePaymentId);
     expect(p).not.toBeNull();

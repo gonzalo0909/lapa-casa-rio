@@ -1,21 +1,3 @@
-//
-// FIX (auditoría de seguridad 2026-08-30): este archivo era un stub 100%
-// en memoria (un Map por proceso) que nunca se conectaba a Redis real,
-// pese a que lo usan piezas de seguridad críticas: revocación de tokens
-// admin (middleware/auth.ts, admin-auth.routes.ts) y rate-limiting
-// (middleware/rate-limiter.ts). En un deploy con más de una instancia,
-// cada una tenía su propio Map aislado:
-// el rate-limit de login se podía eludir repartiendo requests entre
-// instancias, un logout en una instancia no revocaba el token en las
-// demás, y los locks no eran realmente distribuidos.
-//
-// Ya existe un cliente Redis real y correcto en cache/redis-client.ts
-// (ioredis, con timeout duro por operación y fallback en memoria si
-// REDIS_URL falta o Redis está caído) -- pero solo lo usaba la lógica de
-// negocio (cache-strategies.ts). Este archivo ahora delega en ese mismo
-// cliente compartido, manteniendo los nombres/firmas de método que ya
-// usan los 5 callers de arriba para no tener que tocarlos.
-
 import redisClient from '../cache/redis-client';
 import { logger } from '../utils/logger';
 

@@ -1,16 +1,4 @@
 
-/**
- * API Client Library
- *
- * HTTP client for Lapa Casa backend API.
- * Handles requests, responses, errors, and authentication.
- *
- * @module lib/api
- */
-
-/**
- * API configuration
- */
 const API_CONFIG = {
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
   timeout: 30000,
@@ -573,7 +561,3 @@ export function handleAPIError(
   return text.unexpected;
 }
 
-// FIX (auditoría 17 secciones, sección 13): se eliminan roomsAPI,
-// isNetworkError, isTimeoutError y el `export default api` (duplicaba el
-// export nombrado `api` de arriba) -- sin ningún import externo, verificado
-// con knip + grep manual.

@@ -1,14 +1,3 @@
-/**
- * Main API Routes Index
- * Lapa Casa Channel Manager
- *
- * Centralizes all API route modules and applies global middleware
- * Implements versioning, rate limiting, and security headers
- *
- * @module routes/index
- * @requires express
- */
-
 import { Router, type Request, type Response } from 'express';
 import { bookingsRouter } from './bookings/bookings.routes';
 import { apartmentBookingsRouter } from './bookings/apartment-bookings.routes';
@@ -150,16 +139,8 @@ router.use(
   adminAuthRouter,
 );
 
-/**
- * Admin Routes (Authentication + rol admin requeridos)
- *
- * FIX (auditoría de seguridad 2026-08-30): este montaje nunca aplicaba
- * authenticateToken/requireRole pese a que el comentario de arriba y los
- * comentarios de varios sub-routers (admin.routes.ts, guests.routes.ts,
- * etc.) afirmaban que sí -- todo /api/v1/admin/* quedaba accesible sin
- * ninguna credencial. Se agrega acá, en el punto de montaje, para cubrir
- * todos los sub-routers de una sola vez.
- */
+// Admin Routes — authentication + rol admin aplicado en el punto de montaje
+// para cubrir todos los sub-routers de una sola vez.
 router.use(
   '/admin',
   rateLimiter({ max: 30, windowMs: 1000, prefix: 'admin' }),
@@ -205,16 +186,5 @@ router.use('*', (req: Request, res: Response) => {
     }),
   );
 });
-
-// Sección 8 auditoría 17 secciones: se elimina el error handler local que
-// estaba acá. Contrario a lo que decía un diagnóstico previo ("nunca se
-// alcanza en la práctica"), este handler SÍ se alcanzaba -- verificado con
-// un test aislado de Express replicando este mismo anidado de routers --
-// y ese era el problema real: siempre devolvía 500 sin leer
-// error.statusCode, así que cualquier AppError con código propio
-// (404 "Reserva no encontrada", 400 "El pago ya fue confirmado", 503
-// "Pago con tarjeta no disponible", etc. -- 16+ lugares en services/)
-// le llegaba al cliente como un 500 genérico. Se deja que el error
-// burbujee al errorHandler de app.ts, que sí respeta el statusCode real.
 
 export default router;

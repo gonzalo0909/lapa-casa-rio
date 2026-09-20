@@ -170,7 +170,7 @@ router.get(
       const depositAmount = Number(booking.deposit_amount);
       const finalPrice = Number(booking.final_price);
 
-      // L-02: QR generado localmente como data URI PNG.
+      // QR generado localmente como data URI PNG.
       const qrCode = await QRCode.toDataURL(booking.reservation_number, { width: 200 });
 
       res.status(200).json(ApiResponse.success({

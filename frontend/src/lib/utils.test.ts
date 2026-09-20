@@ -1,11 +1,3 @@
-//
-// Sección 13 auditoría de 17 secciones: primer test real del frontend --
-// el script "test" ya existía en package.json pero no había ningún
-// archivo .test.ts en todo el proyecto. Se prueban validateCPF/formatCPF
-// (lib/utils.ts) por ser funciones puras con lógica de negocio real
-// (dígito verificador de CPF, módulo 11) que ambos motores de reserva
-// consumen para validar el documento del huésped.
-
 import { validateCPF, formatCPF } from './utils';
 
 describe('validateCPF', () => {

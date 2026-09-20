@@ -1,12 +1,6 @@
-//
-// Auditoría 17 secciones, sección 15: los 3 endpoints de upload de imagen
-// (guest photos, room-type photos, foto de documento en base64) validaban
-// el archivo por el Content-Type/prefijo que declara el cliente
-// (multer fileFilter solo ve `file.mimetype`, nunca el contenido -- el
-// buffer recién existe después de terminar el upload) -- un atacante podía
-// subir cualquier binario etiquetado "image/jpeg". Esto chequea los magic
-// bytes reales contra los 4 formatos que el resto del código acepta
-// (jpeg/png/webp/gif), sin agregar una dependencia nueva al proyecto.
+// multer fileFilter solo ve `file.mimetype`, nunca el contenido -- el buffer
+// recién existe después de terminar el upload. Esto chequea los magic bytes
+// reales contra los 4 formatos aceptados (jpeg/png/webp/gif).
 
 const SIGNATURES: { name: string; check: (buf: Buffer) => boolean }[] = [
   { name: 'jpeg', check: (buf) => buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff },

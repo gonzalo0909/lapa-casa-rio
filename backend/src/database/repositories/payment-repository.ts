@@ -1,11 +1,3 @@
-//
-// FIX (auditoría 2026-08-30): reescrito de Prisma a SQL directo (pg) --
-// mismo motivo que booking-repository.ts y guest-repository.ts. Se
-// eliminaron 7 métodos sin ningún caller real (findByStripeIntent,
-// findByMPId, findPending, findByDateRange, update, markSucceeded,
-// getRevenueByDateRange) -- vestigios de una capa CRUD+analytics genérica
-// que nadie llegó a usar.
-
 import { query } from '../../config/database';
 import type { Payment, PaymentProvider, PaymentStatus } from '../../types/database';
 
@@ -25,10 +17,6 @@ export class PaymentRepository {
     currency?: string;
     payment_method?: LegacyPaymentMethod;
     payment_type?: string;
-    /** FIX (auditoría 2026-08-30): antes tipado solo 'stripe'|'mercadopago' --
-     * más angosto que PaymentProvider (incluye 'cash'/'infinitypay', valores
-     * reales del enum payment_provider en la DB), lo que rompía el type-check
-     * de payment-service.createPaymentIntent() al pasar `provider` tal cual. */
     provider?: PaymentProvider;
     status?: PaymentStatus;
     stripe_payment_intent_id?: string | null;

@@ -1,11 +1,6 @@
-//
-// REQUISITO CRITICO #6 (prompt Maestro v1.5): las funciones SQL de
-// 0004_pricing_functions.sql son la UNICA implementacion de
-// las reglas de precio. Este servicio es un wrapper delgado -- nunca
-// reimplementa temporada/descuentos/deposito en JS. La version anterior
-// de este archivo lo hacia (constantes hardcodeadas, fechas de Carnaval
-// duplicadas a mano) y quedaba desincronizada de system_config/rate_plans
-// apenas alguien cambiara esas tablas sin tocar el codigo.
+// Las funciones SQL de 0004_pricing_functions.sql son la única implementación
+// de las reglas de precio. Este servicio es un wrapper delgado -- nunca
+// reimplementa temporada/descuentos/depósito en JS.
 //
 // Nota de tipado (migracion 0008): calculate_group_discount,
 // calculate_final_price y calculate_deposit piden INTEGER, no SMALLINT.

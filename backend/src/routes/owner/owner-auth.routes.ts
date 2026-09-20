@@ -75,8 +75,8 @@ router.post('/', validate(LoginSchema), async (req, res, next) => {
       ownerId: owner.id,
     };
 
-    // Sección 10 auditoría 17 secciones: access token de vida corta (15m)
-    // y refresh token de vida larga (90d) en cookie separada. El access
+    // Access token de vida corta (15m) y refresh token de vida larga (90d)
+    // en cookie separada. El access
     // token se renueva automáticamente vía POST /owner/login/refresh antes
     // de redirigir al login. El refresh token solo viaja al endpoint de
     // renovación -- nunca aparece en el body de respuesta ni en logs.

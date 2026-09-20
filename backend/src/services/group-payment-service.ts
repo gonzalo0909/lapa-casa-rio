@@ -362,8 +362,7 @@ export class GroupPaymentService {
       );
       const reservation = resRows[0];
 
-      // Sección 9 auditoría 17 secciones: batch con unnest() en vez de un
-      // INSERT por cama en un loop -- N round-trips a la base por 1.
+      // batch con unnest() en vez de un INSERT por cama en un loop -- N round-trips a la base por 1.
       await client.query(
         `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
          SELECT $1, bed_id, $3::date, $4::date
@@ -402,8 +401,7 @@ export class GroupPaymentService {
       // link de la sesión y van reclamando el próximo slot libre al pagar
       // (ver claimAndPaySlot). member_token queda null -- ya no se expone
       // ningún link individual.
-      // Sección 9 auditoría 17 secciones: batch con unnest() en vez de un
-      // INSERT por slot en el loop.
+      // batch con unnest() en vez de un INSERT por slot en el loop.
       const slotIndices: number[] = [];
       const slotBedIds: Array<string | null> = [];
 

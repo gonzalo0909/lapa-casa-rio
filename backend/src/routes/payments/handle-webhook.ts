@@ -1,12 +1,3 @@
-//
-// FIX (auditoría de seguridad 2026-08-30): este handler solo está montado
-// en POST /payments/webhook/stripe (ver payments.routes.ts), pero antes
-// aceptaba un query param `?provider=mercadopago` que lo desviaba a
-// paymentService.handleMercadoPagoWebhook(req.body) SIN verificar ninguna
-// firma -- bypass completo del HMAC que sí exige la ruta real y correcta
-// /payments/webhook/mercadopago (misma archivo, ver payments.routes.ts).
-// Se elimina esa rama: este handler procesa exclusivamente Stripe.
-
 import type { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { stripeHandler } from '../../lib/payments/stripe-handler';

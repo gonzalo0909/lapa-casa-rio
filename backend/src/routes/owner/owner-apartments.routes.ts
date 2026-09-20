@@ -547,9 +547,8 @@ router.post('/:id/blocks', validate(CreateBlockSchema), async (req, res, next) =
       typeof CreateBlockSchema
     >;
 
-    // Auditoría 17 secciones, sección 2: antes solo validaba
-    // start_date < end_date -- un owner podía bloquear fechas con una
-    // reserva confirmada ya activa ahí, sin aviso. Mismo patrón de join
+    // Se valida que no haya reserva confirmada ya activa en esas fechas,
+    // no solo start_date < end_date. Mismo patrón de join
     // que date-blocker.ts (reservations → reservation_beds → beds).
     const { rows: conflicts } = await query(
       `SELECT r.id, g.full_name AS guest_name, rb.check_in::text, rb.check_out::text

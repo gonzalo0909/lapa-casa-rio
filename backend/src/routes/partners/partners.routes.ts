@@ -1,15 +1,3 @@
-//
-// FIX (auditoría 2026-08-30): el formulario de contacto de
-// frontend/src/components/partners/partner-contract-page.tsx mostraba
-// "Mensagem enviada!" sin enviar nada -- tenía un TODO explícito
-// ("connect to real endpoint once backend route exists") y un
-// setTimeout simulando la llamada. Esta es esa ruta real.
-//
-// POST /api/v1/partners/contact — público, sin autenticación (lo llama
-// cualquier administrador de propiedad interesado, antes de tener
-// cuenta). Envía un email al admin vía emailService.sendAdminAlert(),
-// el mismo mecanismo ya usado para otras alertas internas.
-
 import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../../middleware/validation';

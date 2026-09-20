@@ -76,9 +76,8 @@ router.post('/', upload.single('photo'), validate(UploadGuestPhotoSchema), async
       res.status(400).json(ApiResponse.error('Falta el archivo de imagen (campo "photo")'));
       return;
     }
-    // Auditoría 17 secciones, sección 15: multer.fileFilter solo vio el
-    // Content-Type declarado; acá ya tenemos el buffer real, así que se
-    // valida contra los magic bytes reales antes de subir a Cloudinary.
+    // multer.fileFilter solo ve el Content-Type declarado; acá ya tenemos el
+    // buffer real, así que se valida contra los magic bytes antes de subir a Cloudinary.
     if (!isRealImage(req.file.buffer)) {
       res.status(400).json(ApiResponse.error('El archivo no es una imagen válida'));
       return;

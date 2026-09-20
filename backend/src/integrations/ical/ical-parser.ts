@@ -3,15 +3,6 @@ import ical, { type VEvent } from 'node-ical';
 import { promises as dns } from 'dns';
 import { isIP } from 'net';
 
-/**
- * @module ICalParser
- * @description Parses iCal feeds from OTAs and extracts booking information
- */
-
-/**
- * @interface ParsedBooking
- * @description Standardized booking data extracted from iCal events
- */
 export interface ParsedBooking {
   externalId: string;
   guestName: string;
@@ -234,7 +225,7 @@ export class ICalParser {
    * @method isBlockedAddress
    * @description Checks whether a resolved IP (v4 or v6) falls in a
    * loopback/private/link-local/cloud-metadata range that a feed URL must
-   * never be allowed to reach (SSRF hardening -- FIX auditoría 2026-08-30).
+   * never be allowed to reach (SSRF hardening).
    * @param {string} ip - Literal IP address (already resolved via DNS)
    */
   private isBlockedAddress(ip: string): boolean {
@@ -336,9 +327,8 @@ export class ICalParser {
     try {
       const response = await fetch(url, {
         signal: controller.signal,
-        // FIX (auditoría 2026-08-30): sin esto, un feed configurado por un
-        // admin podía redirigir (3xx) hacia una IP interna y `fetch` lo
-        // seguiría solo, evadiendo la validación de validateUrl().
+        // sin esto, un feed puede redirigir (3xx) hacia una IP interna y
+        // `fetch` lo seguiría, evadiendo la validación de validateUrl().
         redirect: 'manual',
         headers: {
           'User-Agent': 'Lapa-Casa-Hostel/1.0',
@@ -651,4 +641,3 @@ export function createParser(): ICalParser {
   return new ICalParser();
 }
 
-// ✅ Archivo 2/10 completado

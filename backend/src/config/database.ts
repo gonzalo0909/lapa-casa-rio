@@ -7,13 +7,9 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required (see backend/.env)');
 }
 
-// rejectUnauthorized:true (auditoría 2026-08-30) asumía que el certificado de
-// Supabase valida contra una CA pública ya confiable para Node -- en la
-// práctica no fue así (SELF_SIGNED_CERT_IN_CHAIN en producción real, caída
-// confirmada). Se había revertido a rejectUnauthorized:false como parche de
-// emergencia, pero eso vuelve a dejar la conexión sin verificar el
-// certificado del servidor (vulnerable a MITM). En vez de eso, se fija
-// explícitamente la CA real de Supabase y se mantiene rejectUnauthorized:true.
+// rejectUnauthorized:true sin la CA correcta de Supabase falla en producción
+// (SELF_SIGNED_CERT_IN_CHAIN). Se fija explícitamente la CA real de Supabase
+// para mantener rejectUnauthorized:true sin depender de una CA pública.
 //
 // El certificado NO es un secreto -- es la CA pública de Supabase (cualquiera
 // la baja del dashboard), así que va commiteada como código en

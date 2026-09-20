@@ -1,16 +1,3 @@
-//
-// FIX (auditoría 2026-08-30): se eliminaron ~19 exports sin ningún uso
-// en las 30 rutas que sí importan de este archivo -- todas usan
-// exclusivamente ApiResponse.success()/ApiResponse.error(). El resto
-// (successResponse, errorResponse, createdResponse, noContentResponse,
-// paginatedResponse, bookingResponses, paymentResponses,
-// availabilityResponses, authResponses, validationResponses,
-// rateLimitResponse, notFoundResponse, serverErrorResponse,
-// badRequestResponse, conflictResponse, serviceUnavailableResponse,
-// maintenanceResponse, healthCheckResponse, PaginationParams) era un
-// segundo diseño de helpers de respuesta que nunca se conectó a ninguna
-// ruta real.
-
 /**
  * Standard API Response Interface
  */

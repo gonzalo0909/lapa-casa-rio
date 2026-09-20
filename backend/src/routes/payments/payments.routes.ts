@@ -167,9 +167,8 @@ router.post('/group-session', validate(GroupSessionSchema), async (req, res, nex
       titular, specialRequests, appBaseUrl: baseUrl,
     });
 
-    // Sección 10 auditoría 17 secciones: result.token es la credencial
-    // bearer del titular (URL /group-payment/:token, sin login) -- se
-    // trunca en el log por la misma razón que memberToken más abajo.
+    // result.token es la credencial bearer del titular (URL /group-payment/:token,
+    // sin login) -- se trunca en el log por la misma razón que memberToken más abajo.
     logger.info('Sesión de pago grupal creada', {
       sessionId: result.sessionId, tokenPrefix: result.token.slice(0, 8), totalBeds,
     });
@@ -208,10 +207,9 @@ router.post('/group/:token/pay', validate(GroupClaimPaySchema), async (req, res,
     const result = await groupPaymentService.claimAndPaySlot({
       sessionToken: token, guest, paymentMethod, documentPhotoBase64,
     });
-    // Sección 10 auditoría 17 secciones: token es una credencial bearer --
-    // quien lo tiene puede pagar en esta sesión sin ningún otro login. Se
-    // trunca a un prefijo en el log, suficiente para trazabilidad sin que
-    // el log sea, en sí mismo, un vector de robo.
+    // token es una credencial bearer -- quien lo tiene puede pagar en esta
+    // sesión sin ningún otro login. Se trunca a un prefijo en el log para
+    // no convertir el log en un vector de robo.
     logger.info('Pago de invitado grupal iniciado', {
       tokenPrefix: token.slice(0, 8),
       memberId: result.memberId,

@@ -1,18 +1,3 @@
-//
-// FIX (auditoría 2026-08-30): se eliminaron 13 exports sin ningún uso en
-// todo el repo (hashPassword, verifyToken, generateRefreshToken,
-// encryptData, decryptData, generateRandomToken, generateApiKey,
-// hashData, maskSensitiveData, maskEmail, generateConfirmationCode,
-// generateResetToken, verifyResetToken) -- scaffolding de funciones de
-// auth/cifrado/reset-de-password que nunca se conectó a ningún flujo
-// real (no existe cambio ni reset de contraseña admin: se valida contra
-// ADMIN_PASSWORD_HASH vía env var). Quedan solo las 3 en uso real.
-//
-// hashPassword y generateTempPassword vuelven a agregarse acá (0031_
-// apartment_owner_login.sql): a diferencia del admin único, cada
-// administrador de apartamento SÍ necesita que la plataforma le genere
-// una contraseña real al crearlo (ver apartment-owners.routes.ts).
-
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -24,11 +9,9 @@ interface JWTPayload {
   ownerId?: string;
 }
 
-// Sección 10 auditoría 17 secciones: los access y refresh tokens no deben
-// compartir el mismo TTL. Access token: vida corta (15 minutos) para
-// minimizar la ventana de ataque si se filtra. Refresh token: vida larga
-// (90 días) para no forzar re-login diario, almacenado en cookie httpOnly
-// separada y solo enviado al endpoint /refresh.
+// Access token: vida corta (15 minutos) para minimizar la ventana de ataque
+// si se filtra. Refresh token: vida larga (90 días) para no forzar re-login
+// diario, almacenado en cookie httpOnly separada y solo enviado al endpoint /refresh.
 export const ACCESS_TOKEN_TTL = '15m';
 export const REFRESH_TOKEN_TTL = '90d';
 
@@ -78,7 +61,7 @@ export function generateReferralCode(): string {
 // Convierte '24h'/'7d'/'90d' (mismo formato que JWT_EXPIRES_IN) a ms/segundos.
 // Compartido entre admin-auth.routes.ts y owner-auth.routes.ts para que un
 // TTL de cookie/blacklist no pueda quedar corregido en un panel y
-// desactualizado en el otro (auditoría 17 secciones, hallazgo sección 15).
+// desactualizado en el otro.
 export function durationToMs(duration: string, fallbackMs: number): number {
   const match = /^(\d+)(d|h|m)$/.exec(duration.trim());
   if (!match) {

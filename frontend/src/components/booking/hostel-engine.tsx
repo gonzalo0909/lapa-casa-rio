@@ -17,7 +17,7 @@ import { HostelInfoBanner } from './hostel-info-banner';
 import { useHostelWizard } from './use-hostel-wizard';
 import { useHostelPricing } from './use-hostel-pricing';
 import { useHostelPayment } from './use-hostel-payment';
-import { fmtMoney } from './hostel-engine.utils';
+import { fmtMoney, toBackendLang } from './hostel-engine.utils';
 
 const HostelStep4Summary = dynamic(() =>
   import('./hostel-step4-summary').then((m) => m.HostelStep4Summary),
@@ -44,8 +44,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     : 'pt';
   const [lang, setLang] = useState<BookingLocale>(initLang);
   const t = T[lang];
-  // Email/WA backend solo soporta pt/en/es — de/fr/it caen a 'en'
-  const backendLang = (lang === 'de' || lang === 'fr' || lang === 'it' ? 'en' : lang) as 'pt' | 'en' | 'es';
+  const backendLang = toBackendLang(lang);
   const currency = useCurrency();
 
   const wizard = useHostelWizard(lang, t);

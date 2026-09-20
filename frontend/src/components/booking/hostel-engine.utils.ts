@@ -93,6 +93,12 @@ export function parseBold(str: string): React.ReactNode[] {
   return parts.map((p, i) => i % 2 === 1 ? React.createElement('strong', { key: i }, p) : p);
 }
 
+// ─── Idioma backend (solo acepta pt/en/es) ───────────────
+export function toBackendLang(lang: string): 'pt' | 'en' | 'es' {
+  if (lang === 'pt' || lang === 'es') return lang;
+  return 'en';
+}
+
 // ─── Labels de calendario (Intl API) ─────────────────────
 export { weekdayLabels } from '@/lib/utils';
 

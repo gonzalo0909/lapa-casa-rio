@@ -34,14 +34,12 @@ function getHolidaysForYear(y: number): Date[] {
 export function isBrazilHoliday(date: Date): boolean {
   const y = date.getFullYear();
   const t = dateOnly(date).getTime();
-  const WEEK = 7 * 24 * 60 * 60 * 1000;
-  // Incluye año anterior y siguiente para fechas cerca de límites de año
   const holidays = [
     ...getHolidaysForYear(y - 1),
     ...getHolidaysForYear(y),
     ...getHolidaysForYear(y + 1),
   ];
-  return holidays.some(h => Math.abs(dateOnly(h).getTime() - t) <= WEEK);
+  return holidays.some(h => dateOnly(h).getTime() === t);
 }
 
 // ─── Temporada ────────────────────────────────────────────

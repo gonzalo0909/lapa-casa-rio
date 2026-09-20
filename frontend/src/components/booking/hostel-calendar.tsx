@@ -44,16 +44,6 @@ export function HostelCalendar({
 
   const MS_PER_DAY = 86_400_000;
 
-  // Advertencia de noches mínimas
-  const minNightsWarn = (() => {
-    if (!checkIn || !checkOut) {return null;}
-    const n = Math.round((checkOut.getTime() - checkIn.getTime()) / MS_PER_DAY);
-    const s = getSeason(checkIn);
-    if (s.minNights > 1 && n < s.minNights)
-      {return `📅 ${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`;}
-    return null;
-  })();
-
   const monthName = monthLabel(calMonth.getMonth(), lang);
 
   return (
@@ -154,9 +144,6 @@ export function HostelCalendar({
           </div>
         </div>
       )}
-
-      {/* Advertencia noches mínimas */}
-      {minNightsWarn && <div className="he-min-warn">{minNightsWarn}</div>}
 
     </div>
   );

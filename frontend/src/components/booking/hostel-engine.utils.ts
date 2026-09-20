@@ -55,10 +55,6 @@ export function getSeason(date: Date) {
 }
 
 // ─── Validación y formateo CPF ─────────────────────────────
-// FIX (auditoría 2026-08-30): validateCPF/formatCPF vivían acá duplicadas
-// (mismo algoritmo, distinto estilo) con apartment-engine.utils.ts --
-// consolidadas en @/lib/utils, re-exportadas de vuelta para no tener que
-// tocar cada import existente.
 export { validateCPF, formatCPF } from '@/lib/utils';
 
 export { formatBRPhone as formatPhone } from '@/lib/utils';

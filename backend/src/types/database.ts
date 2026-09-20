@@ -1,20 +1,8 @@
 
-export type BookingStatus =
-  | 'pending_payment'
-  | 'confirmed'
-  | 'pending_ota_confirmation'
-  | 'cancelled'
-  | 'no_show'
-  | 'completed';
-
-export type PaymentStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed'
-  | 'refunded'
-  | 'partially_refunded';
-
-export type PaymentMethod = 'card' | 'pix' | 'bank_transfer' | 'cash';
+// BookingStatus, PaymentStatus, and PaymentMethod are the canonical types defined in api.ts.
+// Import from there to avoid duplication.
+import type { BookingStatus, PaymentStatus, PaymentMethod } from './api';
+export type { BookingStatus, PaymentStatus, PaymentMethod };
 
 export type BedGender = 'mixed' | 'female' | 'male';
 

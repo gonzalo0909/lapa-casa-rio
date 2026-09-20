@@ -55,13 +55,15 @@ export interface CreatePaymentIntentRequest {
 export type BookingStatus =
   | 'pending_payment'
   | 'confirmed'
+  | 'pending_ota_confirmation'
   | 'cancelled'
   | 'no_show'
   | 'completed';
 
 export type PaymentStatus =
   | 'pending'
-  | 'completed'
+  | 'succeeded'
+  | 'in_process'
   | 'failed'
   | 'refunded'
   | 'cancelled';

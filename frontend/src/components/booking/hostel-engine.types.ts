@@ -80,6 +80,8 @@ export interface PriceQuote {
   deposit: number;
 }
 
+export const FALLBACK_BED_PRICE_BRL = 85;
+
 // ─── Pares de overflow: cuarto principal → cuarto extra que se revela al llenarse ─
 export const OVERFLOW_PAIRS: ReadonlyArray<{ readonly primary: string; readonly overflow: string }> = [
   { primary: 'cuarto1', overflow: 'cuarto3' },

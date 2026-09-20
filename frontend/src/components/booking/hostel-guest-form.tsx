@@ -54,7 +54,10 @@ function resizeDocPhoto(file: File): Promise<string> {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, DOC_PHOTO_MAX_PX / img.width);
+        const DOC_PHOTO_MAX_HEIGHT = 1200;
+        const scale = img.width > 900 || img.height > DOC_PHOTO_MAX_HEIGHT
+          ? Math.min(DOC_PHOTO_MAX_PX / img.width, DOC_PHOTO_MAX_HEIGHT / img.height)
+          : 1;
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);

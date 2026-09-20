@@ -1,5 +1,4 @@
 'use client';
-// frontend/src/components/booking/hostel-engine.tsx
 // Orquestador slim — setup de idioma, llama a los 3 hooks, renderiza JSX.
 
 import React, { useState } from 'react';
@@ -109,7 +108,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
               boxShadow: '0 1px 6px rgba(0,0,0,.35)',
             }}
           >
-            ← Home
+            {t.navHome}
           </Link>
           <Link
             href={`/${lang}/santa-teresa`}
@@ -288,13 +287,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     undefined,
                     wizard.checkIn ? wizard.checkIn.toISOString().slice(0, 10) : '',
                   );
-                  return res.data as {
-                    valid: boolean;
-                    discount_percent?: number;
-                    label?: string;
-                    code?: string;
-                    message?: string;
-                  };
+                  return res.data;
                 }}
               />
             )}

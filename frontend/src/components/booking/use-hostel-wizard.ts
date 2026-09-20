@@ -9,7 +9,7 @@ import {
 } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
 import { getSeason, validateCPF } from './hostel-engine.utils';
-import { availabilityAPI } from '@/lib/api';
+import { availabilityAPI, type ApiRoom } from '@/lib/api';
 
 export function useHostelWizard(lang: BookingLocale, t: Translations) {
   const [step, setStep]             = useState(1);
@@ -19,7 +19,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   const [hoverDate, setHoverDate]   = useState<Date | null>(null);
   const [selectingEnd, setSelectingEnd] = useState(false);
   const [beds, setBeds]             = useState<Record<string, number>>({ cuarto1: 0, cuarto3: 0, cuarto4: 0, cuarto5: 0, cuarto6: 0 });
-  const [revealed, setRevealed]     = useState({ cuarto3: false, cuarto5: false });
+  const [revealed, setRevealed]     = useState<Record<string, boolean>>({ cuarto3: false, cuarto5: false });
   const [rooms, setRooms]           = useState<RoomDef[]>(DEFAULT_ROOMS);
   const [roomsLoaded, setRoomsLoaded] = useState(false);
   const [toast, setToast]           = useState('');
@@ -39,8 +39,8 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
 
   const totalBeds    = Object.values(beds).reduce((s, n) => s + n, 0);
   const visibleRooms = rooms.filter((r) => {
-    if (r.id === 'cuarto3') return revealed.cuarto3;
-    if (r.id === 'cuarto5') return revealed.cuarto5;
+    if (r.id === 'cuarto3') return !!revealed['cuarto3'];
+    if (r.id === 'cuarto5') return !!revealed['cuarto5'];
     return true;
   });
 
@@ -53,11 +53,11 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     availabilityAPI
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {
-        const apiRooms: any[] = res.data?.rooms || [];
+        const apiRooms: ApiRoom[] = res.data?.rooms || [];
         if (!apiRooms.length) { showToast(t.tErrAvail); return; }
         setRooms(
           DEFAULT_ROOMS.map((dr) => {
-            const match = apiRooms.find((ar: any) => ar.code === dr.code);
+            const match = apiRooms.find((ar) => ar.code === dr.code);
             if (!match) return dr;
             return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice };
           }),
@@ -80,7 +80,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   }, []);
 
   const handleCalClick = useCallback((date: Date) => {
-    if (!checkIn || (checkIn && checkOut) || date < checkIn) {
+    if (!checkIn || (checkIn && checkOut) || date <= checkIn) {
       setCheckIn(date); setCheckOut(null); setSelectingEnd(true);
     } else {
       setCheckOut(date); setSelectingEnd(false); setHoverDate(null);
@@ -95,7 +95,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     const cur  = beds[id] ?? 0;
     const room = rooms.find((r) => r.id === id)!;
     const newBeds = { ...beds };
-    const rev     = { ...revealed } as Record<string, boolean>;
+    const rev     = { ...revealed };
 
     if (delta > 0) {
       if (cur < room.available) {
@@ -121,7 +121,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     if (overflowPair && delta < 0 && (newBeds[id] ?? 0) === 0) { rev[id] = false; }
 
     setBeds(newBeds);
-    setRevealed(rev as typeof revealed);
+    setRevealed(rev);
   }, [rooms, beds, revealed]);
 
   const handleFormChange = useCallback((patch: Partial<FormState>) => {

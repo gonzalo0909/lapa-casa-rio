@@ -13,7 +13,7 @@ interface HostelRoomSelectorProps {
   /** Cuartos ya filtrados (visibleRooms del orquestador) */
   rooms: RoomDef[];
   beds: Record<string, number>;
-  revealed: { cuarto3: boolean; cuarto5: boolean };
+  revealed: Record<string, boolean>;
   season: { mult: number; label: string; minNights: number };
   onChangeBeds: (id: string, delta: number) => void;
 }
@@ -34,10 +34,10 @@ export function HostelRoomSelector({
           const cnt = beds[r.id] ?? 0;
           const pbn = (r.price * season.mult).toFixed(2).replace('.', ',');
 
-          const plusDisabled =
-            r.id === 'cuarto1' ? (cnt >= r.available && revealed.cuarto3) :
-            r.id === 'cuarto4' ? (cnt >= r.available && revealed.cuarto5) :
-            cnt >= r.available;
+          const overflowId = r.id === 'cuarto1' ? 'cuarto3' : r.id === 'cuarto4' ? 'cuarto5' : null;
+          const plusDisabled = overflowId
+            ? (cnt >= r.available && !!revealed[overflowId])
+            : cnt >= r.available;
 
           return (
             <div key={r.id} className={`he-room${cnt > 0 ? ' has-beds' : ''}`}>

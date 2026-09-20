@@ -28,7 +28,7 @@ interface HostelSuccessPanelProps {
   onNewBooking: () => void;
   onSwitchMethod?: () => void;
   paymentInitFailed?: boolean;
-  /** Código de referido propio, generado al confirmar (idea #49, roadmap.html). */
+  /** Código de referido propio, generado al confirmar. */
   referralCode?: string | null;
   /** Error al generar el link de pago con tarjeta — habilita botón de reintento. */
   paymentLinkError?: boolean;
@@ -59,6 +59,7 @@ export function HostelSuccessPanel({
   onRetryPaymentLink,
   cardSurchargeMult = 1,
 }: HostelSuccessPanelProps) {
+  const COPY_FEEDBACK_MS = 3_000;
   const [referralCopied, setReferralCopied] = useState(false);
   const handleReferralCopy = () => {
     if (!referralCode) {
@@ -66,7 +67,7 @@ export function HostelSuccessPanel({
     }
     navigator.clipboard.writeText(referralCode).catch(() => {});
     setReferralCopied(true);
-    setTimeout(() => setReferralCopied(false), 3000);
+    setTimeout(() => setReferralCopied(false), COPY_FEEDBACK_MS);
   };
   return (
     <div className="he-card">
@@ -156,7 +157,7 @@ export function HostelSuccessPanel({
                   rel="noopener noreferrer"
                   className="he-stripe-link"
                 >
-                  {t.cardGoToPayment ?? 'Ir al pago con tarjeta →'}
+                  {t.cardGoToPayment}
                 </a>
               ) : !paymentInitFailed ? (
                 <>
@@ -178,7 +179,7 @@ export function HostelSuccessPanel({
                       disabled={isRetryingPayment}
                       onClick={onRetryPaymentLink}
                     >
-                      {isRetryingPayment ? '...' : t.btnRetry}
+                      {isRetryingPayment ? '…' : t.btnRetry}
                     </button>
                   )}
                 </>
@@ -190,12 +191,6 @@ export function HostelSuccessPanel({
           )}
         </div>
         <div className="he-success-note">
-          {payMethod === 'pix' && (
-            <>
-              {t.pixKey}
-              <br />
-            </>
-          )}
           {t.restNote}
         </div>
         {referralCode && (

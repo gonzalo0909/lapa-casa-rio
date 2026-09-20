@@ -50,8 +50,8 @@ export function HostelStep4Summary({
         <div className="he-sum-head">{t.sumDatesHead}</div>
         <div className="he-sum-rows">
           {[
-            ['Check-in',  fmtDate(checkIn)],
-            ['Check-out', fmtDate(checkOut)],
+            [t.checkin,  fmtDate(checkIn)],
+            [t.checkout, fmtDate(checkOut)],
             [t.tNights, String(price.nights)],
             ...selR.map((r): [string, string] => {
               const cnt = beds[r.id] ?? 0;
@@ -78,8 +78,8 @@ export function HostelStep4Summary({
           <div className="he-sum-row total">
             <span>{t.tTotal}</span>
             <span>
-              {fmtMoney(price.total)}
-              {currency && <span className="he-conv-inline">{convertBRL(price.total, currency)}</span>}
+              {fmtMoney(Math.round(price.total * mult))}
+              {currency && <span className="he-conv-inline">{convertBRL(Math.round(price.total * mult), currency)}</span>}
             </span>
           </div>
         </div>
@@ -91,14 +91,14 @@ export function HostelStep4Summary({
           <div className="he-dep-amt">{fmtMoney(depositAmt)}</div>
           {currency && <div className="he-conv">{convertBRL(depositAmt, currency)}</div>}
           <div className="he-dep-note">
-            {payMethod === 'card' ? t.pmCardTotal : '30%'}
+            {payMethod === 'card' ? t.pmCardTotal : `${Math.round((price.deposit / price.total) * 100)}%`}
           </div>
         </div>
         <div className="he-dep-half">
-          <div className="he-dep-lbl">70% {t.tAtCheckin}</div>
+          <div className="he-dep-lbl">{100 - Math.round((price.deposit / price.total) * 100)}% {t.tAtCheckin}</div>
           <div className="he-dep-amt">{fmtMoney(remaining)}</div>
           {currency && <div className="he-conv">{convertBRL(remaining, currency)}</div>}
-          <div className="he-dep-note">Check-in</div>
+          <div className="he-dep-note">{t.checkin}</div>
         </div>
       </div>
 
@@ -142,11 +142,11 @@ export function HostelStep4Summary({
       {bookingError && <div className="he-toast" style={{ margin: '0 0 .75rem' }}>{bookingError}</div>}
 
       <button className="he-btn-confirm" onClick={onConfirm} disabled={isProcessing}>
-        {isProcessing ? '...' : t.btnConfirm}
+        {isProcessing ? '…' : t.btnConfirm}
       </button>
       <button className="he-btn-wa" onClick={onWaClick} disabled={isWaLoading}>
         <MessageCircle size={16} aria-hidden />
-        {isWaLoading ? '...' : t.btnWhatsApp}
+        {isWaLoading ? '…' : t.btnWhatsApp}
       </button>
     </div>
   );

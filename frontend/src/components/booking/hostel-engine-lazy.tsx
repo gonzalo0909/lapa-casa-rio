@@ -4,8 +4,7 @@
 // `next/dynamic` sin `ssr:false` en una Server Component (hostel/page.tsx)
 // no separa nada de verdad: Next igual necesita renderizar el motor durante
 // el SSR de esa página, así que su JS termina en el mismo chunk que el
-// resto de la página de todos modos (idea #28, roadmap.html -- se probó,
-// el build no bajaba de tamaño). `ssr:false` sí lo saca del bundle
+// resto de la página de todos modos; `ssr:false` sí lo saca del bundle
 // inicial, pero Next no permite pasarlo directo en un Server Component --
 // de ahí este wrapper cliente, que es lo único que la página importa.
 //

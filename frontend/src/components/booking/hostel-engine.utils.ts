@@ -1,5 +1,3 @@
-// frontend/src/components/booking/hostel-engine.utils.ts
-
 import React from 'react';
 import { BCP47 } from '@/lib/utils';
 
@@ -36,20 +34,18 @@ function getHolidaysForYear(y: number): Date[] {
 export function isBrazilHoliday(date: Date): boolean {
   const y = date.getFullYear();
   const t = dateOnly(date).getTime();
-  const WEEK = 7 * 24 * 60 * 60 * 1000;
-  // Incluye año anterior y siguiente para fechas cerca de límites de año
   const holidays = [
     ...getHolidaysForYear(y - 1),
     ...getHolidaysForYear(y),
     ...getHolidaysForYear(y + 1),
   ];
-  return holidays.some(h => Math.abs(dateOnly(h).getTime() - t) <= WEEK);
+  return holidays.some(h => dateOnly(h).getTime() === t);
 }
 
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
   const m = date.getMonth();
-  if (m===11||m===0||m===1||m===6||m===7) {return { kind: 'alta'  as const, mult:1.5, label:'Alta Temporada',  minNights:1 };}
+  if (m===11||m===0||m===1||m===6||m===7) {return { kind: 'alta'  as const, mult:1.5, label:'Alta Temporada',  minNights:2 };}
   if (m===5||m===8)                        {return { kind: 'baixa' as const, mult:0.8, label:'Baixa Temporada', minNights:1 };}
   return                                          { kind: 'media' as const, mult:1.0, label:'Média Temporada', minNights:1 };
 }

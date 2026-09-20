@@ -340,12 +340,19 @@ export const bookingAPI = {
 /**
  * Availability API endpoints — alineados con backend/src/routes/availability/
  */
+export interface ApiRoom {
+  roomId: string;
+  code: string;
+  availableBeds?: number;
+  basePrice: number;
+}
+
 export const availabilityAPI = {
   /**
    * Check availability for date range (devuelve las 5 habitaciones reales + pricing)
    */
   check: (params: { checkIn: string; checkOut: string; beds: number }) =>
-    api.get(
+    api.get<{ rooms: ApiRoom[] }>(
       `/availability/check?checkIn=${params.checkIn}&checkOut=${params.checkOut}&beds=${params.beds}`,
     ),
 
@@ -480,17 +487,23 @@ export const photosAPI = {
   list: () => api.get('/photos'),
 };
 
+export interface ValidateCouponResponse {
+  valid: boolean;
+  discount_percent?: number;
+  label?: string;
+  code?: string;
+  message?: string;
+}
+
 /**
  * Offers API — validación pública de códigos de descuento de apartamentos.
  * Ruta pública: POST /api/v1/offers/validate
  */
 export const offersAPI = {
   // apartmentId opcional -- el hostel también usa este endpoint para
-  // validar códigos de referido (idea #49), sin apartamento asociado.
-  // El backend (POST /offers/validate) ya trata apartmentId como
-  // opcional, solo el tipo acá no lo reflejaba.
+  // validar códigos de referido, sin apartamento asociado.
   validate: (code: string, apartmentId: string | undefined, checkIn: string, checkOut?: string) =>
-    api.post('/offers/validate', { code, apartmentId, checkIn, checkOut }),
+    api.post<ValidateCouponResponse>('/offers/validate', { code, apartmentId, checkIn, checkOut }),
 };
 
 /**

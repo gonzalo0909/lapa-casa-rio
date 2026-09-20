@@ -7,8 +7,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { bookingAPI, availabilityAPI, paymentAPI, offersAPI } from '@/lib/api';
 import { useCurrency, convertBRL } from '@/hooks/use-currency';
+import type { BookingLocale } from '@/types/global';
 import {
-  type Lang,
   type Phase,
   type PayMethod,
   type RoomDef,
@@ -48,10 +48,10 @@ interface HostelEngineProps {
 
 // ─── Component ────────────────────────────────────────────
 export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
-  const initLang: Lang = (['pt', 'es', 'en', 'fr', 'de', 'it'] as Lang[]).includes(locale as Lang)
-    ? (locale as Lang)
+  const initLang: BookingLocale = (['pt', 'es', 'en', 'fr', 'de', 'it'] as BookingLocale[]).includes(locale as BookingLocale)
+    ? (locale as BookingLocale)
     : 'pt';
-  const [lang, setLang] = useState<Lang>(initLang);
+  const [lang, setLang] = useState<BookingLocale>(initLang);
   const t = T[lang];
   // Email/WA backend solo soporta pt/en/es — de/fr/it caen a 'en'
   const backendLang = (lang === 'de' || lang === 'fr' || lang === 'it' ? 'en' : lang) as 'pt' | 'en' | 'es';
@@ -795,7 +795,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
             <span>Hostel</span>
           </h1>
           <div className="he-lang-sw">
-            {(['pt', 'es', 'en', 'fr', 'de', 'it'] as Lang[]).map((l) => (
+            {(['pt', 'es', 'en', 'fr', 'de', 'it'] as BookingLocale[]).map((l) => (
               <button
                 key={l}
                 className={`he-lang-btn${lang === l ? ' active' : ''}`}

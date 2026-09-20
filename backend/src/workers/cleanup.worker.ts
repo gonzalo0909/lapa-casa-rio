@@ -179,7 +179,7 @@ async function grantPostCheckoutReferralRewards(): Promise<void> {
         );
       } else {
         rewardCode = generateReferralCode();
-        rewardValidTo = new Date('2026-12-31');
+        rewardValidTo = new Date(process.env.REFERRAL_CODE_VALID_UNTIL ?? '2099-12-31');
         await query(
           `INSERT INTO apartment_offers
              (code, label, discount_percent, discount_amount,

@@ -9,11 +9,6 @@ import { fmtMoney } from './hostel-engine.utils';
 
 type Price = PriceQuote | null;
 
-// PIX QR pattern decorativo — fallback si Mercado Pago no devuelve un QR real.
-const PIX_PAT = [
-  0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1,
-  1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1,
-];
 
 interface HostelSuccessPanelProps {
   t: Translations;
@@ -91,29 +86,6 @@ export function HostelSuccessPanel({
                   alt="QR PIX"
                   className="he-pix-qr-img"
                 />
-              ) : !paymentInitFailed ? (
-                /* fallback decorativo mientras se genera el QR real */
-                <div className="he-pix-qr">
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(7,8px)',
-                      gridTemplateRows: 'repeat(7,8px)',
-                      gap: '1px',
-                    }}
-                  >
-                    {PIX_PAT.map((b, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          background: b ? '#fff' : 'transparent',
-                          width: '8px',
-                          height: '8px',
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
               ) : null}
               <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
               {pixData?.qrCode && (

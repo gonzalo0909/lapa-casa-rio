@@ -1,4 +1,4 @@
-// email de cancelación vía notificationService.notify('cancellation', ...); de paso corrige un bug real que rompía esta ruta (booking.final_price llegaba como Decimal de Prisma a un parámetro de pg crudo)
+// Cancela una reserva, calcula el reembolso proporcional y envía el email de cancelación vía notificationService.
 
 import type { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';

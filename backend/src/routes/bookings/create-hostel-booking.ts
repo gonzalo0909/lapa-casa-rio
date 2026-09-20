@@ -236,6 +236,7 @@ export const createHostelBookingHandler = async (
       if (!bookingWithGuest?.guest) return;
       const guest = bookingWithGuest as BookingWithGuest;
       if (guest.guest.phone) {
+        // nota: envío directo porque notification-service no cubre canal WhatsApp (solo email)
         whatsappNotificationService.sendBookingNotification({
           phone: guest.guest.phone,
           bookingId: guest.reservation_number,

@@ -123,31 +123,6 @@ export class PricingService {
     return Math.round(basePrice * multiplier * 100) / 100;
   }
 
-  async calculateFinalPrice(
-    checkInDate: string,
-    checkOutDate: string,
-    totalBeds: number,
-    roomTypeId: string
-  ): Promise<{ totalPrice: number; depositAmount: number; remainingAmount: number; nights: number }> {
-    const nights = nightsBetween(checkInDate, checkOutDate);
-    const { rows } = await query<{ base_price: string }>(
-      `SELECT base_price FROM room_types WHERE id = $1`,
-      [roomTypeId]
-    );
-    if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${roomTypeId}`);
-    const basePrice = parseFloat(rows[0].base_price);
-    const bookingDate = todayDate();
-    const { rows: priceRows } = await query<{ p: string }>(
-      `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
-      [basePrice, nights, totalBeds, checkInDate, bookingDate]
-    );
-    const preDiscountTotal = parseFloat(priceRows[0].p);
-    const groupDiscount = await this.getGroupDiscountRate(totalBeds);
-    const totalPrice = Math.round(preDiscountTotal * (1 - groupDiscount) * 100) / 100;
-    const deposit = await this.calculateDeposit(totalPrice, totalBeds);
-    return { totalPrice, depositAmount: deposit.amount, remainingAmount: deposit.remaining, nights };
-  }
-
   /** calculate_group_discount() -- nunca hardcodear los tramos en JS; los tramos viven en group_discount_tiers, editables desde el admin. */
   async calculateGroupDiscount(totalBeds: number): Promise<{ discount: number; name: string }> {
     const discount = await this.getGroupDiscountRate(totalBeds);

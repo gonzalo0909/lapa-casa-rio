@@ -210,5 +210,5 @@ function generateAllocationOptions(
     if (remaining === 0 && option2.length > 0) {options.push({ option: 2, totalRooms: option2.length, rooms: option2 });}
   }
 
-  return options.slice(0, 3);
+  return options.slice(0, 2);
 }

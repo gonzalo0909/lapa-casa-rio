@@ -7,6 +7,7 @@ import { BookingRepository } from '../database/repositories/booking-repository';
 import { StripeHandler } from '../lib/payments/stripe-handler';
 import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
 import { notificationService } from './notification-service';
+import { availabilityService } from './availability-service';
 import { scheduleRemainingPayment, scheduleApartmentRemainingPayment } from '../queues/remaining-payment.queue';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
 import { query } from '../config/database';
@@ -236,6 +237,10 @@ export class PaymentService {
         return;
       }
       const bookingWithGuest = booking as BookingWithGuest;
+
+      // Invalidar cache de disponibilidad: la reserva ya está confirmada y
+      // las camas ocupadas no deben mostrarse como disponibles.
+      availabilityService.clearCache().catch(() => {});
 
       await notificationService.notify('payment_received', bookingWithGuest, { amount: Number(payment.amount) });
       enqueueSheetsExport(bookingWithGuest.id).catch(err =>

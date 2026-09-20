@@ -148,8 +148,8 @@ export function useHostelPayment({
       }
       setPhase('success');
       startTimer();
-    } catch (err: any) {
-      setBookingError(err?.response?.data?.error || err?.message || t.errorBooking);
+    } catch {
+      setBookingError(t.errorBooking);
     } finally {
       setIsProcessing(false);
     }
@@ -172,9 +172,9 @@ export function useHostelPayment({
       }
       setPayMethod(nextMethod);
       startTimer();
-    } catch (err: any) {
+    } catch {
       setPaymentInitFailed(true);
-      setBookingError(err?.response?.data?.error || err?.message || t.errorBooking);
+      setBookingError(t.errorBooking);
     } finally {
       setIsProcessing(false);
     }
@@ -279,8 +279,8 @@ export function useHostelPayment({
       setGroupAmountPerBed(payload.amountPerBed ?? 0);
       setGroupTotalBeds(payload.totalBeds ?? Math.max(0, totalBeds - 1));
       setPhase('group');
-    } catch (err: any) {
-      setGroupError(err?.response?.data?.error || err?.message || t.gpErrGeneric);
+    } catch {
+      setGroupError(t.gpErrGeneric);
     } finally {
       setIsGroupLoading(false);
     }

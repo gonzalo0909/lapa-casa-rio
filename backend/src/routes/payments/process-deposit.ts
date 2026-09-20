@@ -47,11 +47,6 @@ export const processDepositHandler = async (
       return;
     }
 
-    if (provider === 'mercadopago' && booking.guest?.country !== 'BR') {
-      res.status(400).json(ApiResponse.error('PIX está disponible solo para residentes de Brasil'));
-      return;
-    }
-
     const existingPayments = await paymentService.getPaymentsByReservation(reservationId);
     const depositPayment = existingPayments.find(
       p => p.payment_type === 'deposit' &&

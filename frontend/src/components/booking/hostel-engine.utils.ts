@@ -61,7 +61,7 @@ export function fmtDate(d: Date): string {
 }
 
 export function fmtMoney(v: number): string {
-  return 'R$ ' + v.toFixed(2).replace('.', ',');
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ─── Helpers de fecha ─────────────────────────────────────

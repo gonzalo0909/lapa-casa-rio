@@ -126,24 +126,22 @@ export const createHostelBookingHandler = async (
         if (offer.referral_owner_guest_id) {
           logger.info('Código de referido rechazado para hostel', { offerCode: offer.code });
         } else {
-          {
-            appliedOffer = offer;
-            if (offer.discount_amount != null && offer.discount_amount > 0) {
-              const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);
-              pricingDetails.totalPrice = Math.round((pricingDetails.totalPrice - discount) * 100) / 100;
-              const depositRatio = pricingDetails.depositAmount / (pricingDetails.depositAmount + pricingDetails.remainingAmount || 1);
-              const depositDiscount = Math.round(discount * depositRatio * 100) / 100;
-              const remainingDiscount = Math.round((discount - depositDiscount) * 100) / 100;
-              pricingDetails.depositAmount = Math.max(0, Math.round((pricingDetails.depositAmount - depositDiscount) * 100) / 100);
-              pricingDetails.remainingAmount = Math.max(0, Math.round((pricingDetails.remainingAmount - remainingDiscount) * 100) / 100);
-            } else {
-              const discountFactor = 1 - offer.discount_percent / 100;
-              pricingDetails.totalPrice = Math.round(pricingDetails.totalPrice * discountFactor * 100) / 100;
-              pricingDetails.depositAmount = Math.round(pricingDetails.depositAmount * discountFactor * 100) / 100;
-              pricingDetails.remainingAmount = Math.round(pricingDetails.remainingAmount * discountFactor * 100) / 100;
-            }
-            logger.info('Oferta aplicada a reserva de hostel', { offerCode: offer.code });
+          appliedOffer = offer;
+          if (offer.discount_amount != null && offer.discount_amount > 0) {
+            const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);
+            pricingDetails.totalPrice = Math.round((pricingDetails.totalPrice - discount) * 100) / 100;
+            const depositRatio = pricingDetails.depositAmount / (pricingDetails.depositAmount + pricingDetails.remainingAmount || 1);
+            const depositDiscount = Math.round(discount * depositRatio * 100) / 100;
+            const remainingDiscount = Math.round((discount - depositDiscount) * 100) / 100;
+            pricingDetails.depositAmount = Math.max(0, Math.round((pricingDetails.depositAmount - depositDiscount) * 100) / 100);
+            pricingDetails.remainingAmount = Math.max(0, Math.round((pricingDetails.remainingAmount - remainingDiscount) * 100) / 100);
+          } else {
+            const discountFactor = 1 - offer.discount_percent / 100;
+            pricingDetails.totalPrice = Math.round(pricingDetails.totalPrice * discountFactor * 100) / 100;
+            pricingDetails.depositAmount = Math.round(pricingDetails.depositAmount * discountFactor * 100) / 100;
+            pricingDetails.remainingAmount = Math.round(pricingDetails.remainingAmount * discountFactor * 100) / 100;
           }
+          logger.info('Oferta aplicada a reserva de hostel', { offerCode: offer.code });
         }
       }
     }

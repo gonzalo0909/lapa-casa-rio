@@ -171,7 +171,7 @@ export function useHostelPayment({
     } finally {
       setIsProcessing(false);
     }
-  }, [reservationId, payMethod, form.country, t, initPaymentLink, startTimer]);
+  }, [reservationId, payMethod, t, initPaymentLink, startTimer]);
 
   const handleRetryPaymentLink = useCallback(async () => {
     if (!reservationId || isRetryingPayment) { return; }
@@ -274,7 +274,7 @@ export function useHostelPayment({
     } finally {
       setIsGroupLoading(false);
     }
-  }, [checkIn, checkOut, price, beds, totalBeds, form, gpName, gpEmail, lang, backendLang, t]);
+  }, [checkIn, checkOut, price, beds, totalBeds, form, gpName, gpEmail, backendLang, t]);
 
   const handlePixCopy = useCallback(() => {
     if (!pixData?.qrCode) { return; }

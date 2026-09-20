@@ -80,7 +80,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   }, []);
 
   const handleCalClick = useCallback((date: Date) => {
-    if (!checkIn || (checkIn && checkOut) || date < checkIn) {
+    if (!checkIn || (checkIn && checkOut) || date <= checkIn) {
       setCheckIn(date); setCheckOut(null); setSelectingEnd(true);
     } else {
       setCheckOut(date); setSelectingEnd(false); setHoverDate(null);

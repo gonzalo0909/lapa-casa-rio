@@ -125,7 +125,7 @@ export function useHostelPayment({
       const newReservationId: string = response.data?.booking?.id || response.data?.bookingId || '';
       const displayCode = newReservationId
         ? 'LCH-' + newReservationId.substring(0, 8).toUpperCase()
-        : 'LCH-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+        : '';
       setBookingCode(displayCode);
       setReservationId(newReservationId);
       setOwnReferralCode(response.data?.booking?.referralCode ?? null);

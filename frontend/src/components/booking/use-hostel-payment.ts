@@ -217,9 +217,10 @@ export function useHostelPayment({
       : `• ${t.waCard} (+${surchargePct}%): ${fmtMoney(depCard)}`;
     const arrivalLine = form.arrival ? `\n${t.waArrival}: ${form.arrival}` : '';
     const msg = encodeURIComponent(
-      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}${arrivalLine}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\n${t.waDeposit}:\n• PIX: ${fmtMoney(depPix)} → ${process.env.NEXT_PUBLIC_PIX_KEY ?? 'lapalandiarj@gmail.com'}\n${cardLine}\n\n${t.waRemain}:\n• PIX: ${fmtMoney(remPix)}\n• ${t.waCard} (+${surchargePct}%): ${fmtMoney(remCard)}\n\n${t.waAwait}`,
+      `${t.waGreet}\n\nCheck-in: ${fmtDate(checkIn)}${arrivalLine}\nCheck-out: ${fmtDate(checkOut)}\n${price.nights} ${price.nights > 1 ? t.tNights2 : t.tNight} · ${roomsStr}\n\n${t.tTotal}: ${fmtMoney(price.total)}\n\n${t.waDeposit}:\n• PIX: ${fmtMoney(depPix)} → ${process.env.NEXT_PUBLIC_PIX_KEY ?? ''}\n${cardLine}\n\n${t.waRemain}:\n• PIX: ${fmtMoney(remPix)}\n• ${t.waCard} (+${surchargePct}%): ${fmtMoney(remCard)}\n\n${t.waAwait}`,
     );
-    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5521977157530';
+    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+    if (!waNumber) { return '#'; }
     return `https://wa.me/${waNumber}?text=${msg}`;
   }, [checkIn, checkOut, price, rooms, beds, cardSurchargeMult, form.arrival, t]);
 

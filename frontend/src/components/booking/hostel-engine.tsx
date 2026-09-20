@@ -71,6 +71,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     gpEmail: wizard.gpEmail,
     setForm: wizard.setForm,
     setStep: wizard.setStep,
+    resetWizard: wizard.resetWizard,
   });
 
   // ─── JSX ────────────────────────────────────────────────

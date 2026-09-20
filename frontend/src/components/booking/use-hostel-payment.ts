@@ -3,14 +3,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { bookingAPI, paymentAPI } from '@/lib/api';
 import type { BookingLocale } from '@/types/global';
-import type { PayMethod, Phase, RoomDef, FormState, Translations } from './hostel-engine.types';
+import type { PayMethod, Phase, RoomDef, FormState, Translations, PriceQuote } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
 import { fmtDate, fmtMoney } from './hostel-engine.utils';
-
-type PriceQuote = {
-  nights: number; beds: number; season: { mult: number; label: string; minNights: number };
-  pbn: number; subtotal: number; total: number; deposit: number;
-};
 
 interface PaymentInput {
   lang: BookingLocale;
@@ -29,12 +24,13 @@ interface PaymentInput {
   gpEmail: string;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
   setStep: React.Dispatch<React.SetStateAction<number>>;
+  resetWizard: () => void;
 }
 
 export function useHostelPayment({
   lang, t, backendLang, price, cardSurchargeMult,
   form, beds, rooms, checkIn, checkOut, totalBeds,
-  appliedCoupon, gpName, gpEmail, setForm, setStep,
+  appliedCoupon, gpName, gpEmail, setForm, setStep, resetWizard,
 }: PaymentInput) {
   const [payMethod, setPayMethod]               = useState<PayMethod>('pix');
   const [phase, setPhase]                       = useState<Phase>('wizard');
@@ -287,7 +283,31 @@ export function useHostelPayment({
     setTimeout(() => setPixCopied(false), 3000);
   }, [pixData]);
 
-  const handleNewBooking = useCallback(() => { window.location.reload(); }, []);
+  const handleNewBooking = useCallback(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); }
+    resetWizard();
+    setPayMethod('pix');
+    setPhase('wizard');
+    setBookingCode('');
+    setReservationId('');
+    setOwnReferralCode(null);
+    setTimerSecs(300);
+    setIsProcessing(false);
+    setBookingError('');
+    setIsWaLoading(false);
+    setPixData(null);
+    setPixCopied(false);
+    setStripeUrl(null);
+    setPaymentInitFailed(false);
+    setPaymentLinkError(false);
+    setIsRetryingPayment(false);
+    setIsGroupLoading(false);
+    setGroupError('');
+    setGroupWaUrl('');
+    setGroupResNum('');
+    setGroupAmountPerBed(0);
+    setGroupTotalBeds(0);
+  }, [resetWizard]);
 
   const handleBookOwnBed = useCallback(() => {
     setForm((f) => ({ ...f, name: f.name || gpName, email: f.email || gpEmail }));

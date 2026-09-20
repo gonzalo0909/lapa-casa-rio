@@ -167,6 +167,30 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     return true;
   }, [form, t]);
 
+  const resetWizard = useCallback(() => {
+    const now = new Date();
+    setStep(1);
+    setCalMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    setCheckIn(null);
+    setCheckOut(null);
+    setHoverDate(null);
+    setSelectingEnd(false);
+    setBeds({ cuarto1: 0, cuarto3: 0, cuarto4: 0, cuarto5: 0, cuarto6: 0 });
+    setRevealed({ cuarto3: false, cuarto5: false });
+    setRooms(DEFAULT_ROOMS);
+    setRoomsLoaded(false);
+    setToast('');
+    setCancelOpen(false);
+    setAppliedCoupon(null);
+    setGpName('');
+    setGpEmail('');
+    setForm({ name: '', email: '', email2: '', phone: '', country: 'BR', doc: '', arrival: '', requests: '', docPhotoBase64: '', restrictionAccepted: false });
+    setFormErrors({});
+    setDocFeedback(null);
+    setEmailFb(null);
+    setPhoneFb(null);
+  }, []);
+
   const goNext = useCallback(() => {
     if (step === 1) {
       if (!checkIn)  { showToast(t.tToastCheckin);  scrollToCard(); return; }
@@ -197,5 +221,6 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
     totalBeds, visibleRooms,
     handleCalClick, handleMonthChange, changeBeds,
     showToast, scrollToCard, handleFormChange, handleFormErrors, validateForm, goNext,
+    resetWizard,
   };
 }

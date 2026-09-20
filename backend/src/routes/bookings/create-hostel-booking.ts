@@ -6,7 +6,6 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { BookingService, InsufficientAvailabilityError } from '../../services/booking-service';
-import { AvailabilityService } from '../../services/availability-service';
 import { PricingService } from '../../services/pricing-service';
 import { notificationService } from '../../services/notification-service';
 import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
@@ -30,7 +29,6 @@ import {
 
 const guestRepo = new GuestRepository();
 const bookingService = new BookingService();
-const availabilityService = new AvailabilityService();
 const pricingService = new PricingService();
 
 export const createHostelBookingHandler = async (
@@ -147,23 +145,6 @@ export const createHostelBookingHandler = async (
             logger.info('Oferta aplicada a reserva de hostel', { offerCode: offer.code });
           }
         }
-      }
-    }
-
-    // Verificación por habitación (hostel usa checkRoomAvailability)
-    for (const room of bookingData.rooms) {
-      const roomAvail = await availabilityService.checkRoomAvailability(
-        room.roomId,
-        bookingData.checkIn,
-        bookingData.checkOut,
-      );
-      if (roomAvail.availableBeds < room.bedsCount) {
-        res.status(409).json(ApiResponse.error(`Insufficient beds in room ${room.roomId}`, {
-          roomId: room.roomId,
-          requested: room.bedsCount,
-          available: roomAvail.availableBeds,
-        }));
-        return;
       }
     }
 

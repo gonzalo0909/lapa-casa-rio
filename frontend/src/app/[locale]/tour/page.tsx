@@ -673,7 +673,7 @@ export default async function TourPage({ params }: { params: { locale: string } 
         {/* imagen de fondo — la misma que usa el header del motor de hostel */}
         <div className="absolute inset-0">
           <Image
-            src="/img/arcos-lapa.png"
+            src="/img/arcos-lapa.jpg"
             alt="Arcos da Lapa, Rio de Janeiro"
             fill
             priority

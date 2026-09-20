@@ -269,6 +269,11 @@ async function mpWebhookHandler(req: any, res: any): Promise<void> {
     }
 
     const ts = tsMatch[1];
+    if (Math.abs(Date.now() - parseInt(ts, 10) * 1000) > 5 * 60 * 1000) {
+      logger.warn('Webhook MP: timestamp demasiado antiguo o del futuro', { ts });
+      res.status(401).json(ApiResponse.error('Webhook timestamp too old'));
+      return;
+    }
     const receivedHmac = v1Match[1];
     const xRequestId = req.headers['x-request-id'] as string | undefined ?? '';
 

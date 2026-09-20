@@ -67,7 +67,13 @@ export function startRemainingPaymentRetriesWorker(): Worker<RemainingPaymentRet
         return;
       }
 
-      await notificationService.notify('payment_reminder', booking as BookingWithGuest);
+      try {
+        await notificationService.notify('payment_reminder', booking as BookingWithGuest);
+      } catch (notifyErr) {
+        logger.warn('remaining-payment-retries: fallo al notificar, se continúa con scheduleNextRetry', {
+          reservationId, attemptNumber, error: (notifyErr as Error).message,
+        });
+      }
       await scheduleNextRetry(reservationId, (attemptNumber + 1) as 2 | 3);
     },
     { connection: getQueueConnection() }

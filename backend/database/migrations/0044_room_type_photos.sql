@@ -1,4 +1,4 @@
--- 0033_room_type_photos.sql
+-- 0044_room_type_photos.sql
 --
 -- Crea la tabla room_type_photos, que el código ya usaba en varios
 -- lugares (admin/room-type-photos.routes.ts, owner/owner-apartments.routes.ts,

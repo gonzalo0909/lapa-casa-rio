@@ -108,7 +108,7 @@ export class MercadoPagoPaymentHandler {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': `lca-${Date.now()}`,
+        'X-Idempotency-Key': `lca-${data.metadata?.reservation_id ?? 'noid'}-${data.paymentMethod ?? 'pix'}`,
       },
       body: JSON.stringify(body),
     });
@@ -203,7 +203,7 @@ export class MercadoPagoPaymentHandler {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': `lch-card-${data.reservationId}-${Date.now()}`,
+        'X-Idempotency-Key': `lch-card-${data.reservationId}-${data.paymentType}`,
       },
       body: JSON.stringify(body),
     });

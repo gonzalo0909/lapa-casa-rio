@@ -53,7 +53,6 @@ const getAllowedOrigins = (): string[] => {
     // Deployments de Vercel: producción (lapa-casa.vercel.app) y previews
     // (lapa-casa-git-<branch>-lapa-casa.vercel.app, lapa-casa-<hash>-lapa-casa.vercel.app).
     'https://lapa-casa.vercel.app',
-    'https://lapa-casa-*.vercel.app',
     ...origins
   ].filter(origin => origin !== '*');
 };

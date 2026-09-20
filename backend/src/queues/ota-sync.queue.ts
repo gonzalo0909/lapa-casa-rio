@@ -14,7 +14,10 @@ export interface OtaSyncJobData {
   triggeredBy?: 'scheduler' | 'manual';
 }
 
-export const otaSyncQueue = createSafeQueue<OtaSyncJobData>('ota-sync', { attempts: 3 });
+export const otaSyncQueue = createSafeQueue<OtaSyncJobData>('ota-sync', {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 30_000 },
+});
 
 const SCHEDULER_ID = 'ota-sync-every-5-min';
 

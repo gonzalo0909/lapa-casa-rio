@@ -38,13 +38,16 @@ function sendTelegramMessage(text: string): void {
 }
 
 function verifySignature(rawBody: Buffer, signature: string | undefined): boolean {
-  if (!env.SENTRY_WEBHOOK_SECRET) { return true; }
+  if (!env.SENTRY_WEBHOOK_SECRET) { return false; }
   if (!signature) { return false; }
   const expected = crypto
     .createHmac('sha256', env.SENTRY_WEBHOOK_SECRET)
     .update(rawBody)
     .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  const sigBuf = Buffer.from(signature, 'hex');
+  const expBuf = Buffer.from(expected, 'hex');
+  if (sigBuf.length !== expBuf.length) { return false; }
+  return crypto.timingSafeEqual(sigBuf, expBuf);
 }
 
 router.post('/', (req: Request, res: Response): void => {

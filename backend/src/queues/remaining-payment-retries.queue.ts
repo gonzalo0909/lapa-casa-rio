@@ -23,7 +23,8 @@ export interface RemainingPaymentRetryJobData {
 }
 
 export const remainingPaymentRetriesQueue = createSafeQueue<RemainingPaymentRetryJobData>('remaining-payment-retries', {
-  attempts: 1
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 30_000 },
 });
 
 export async function scheduleNextRetry(reservationId: string, attemptNumber: 1 | 2 | 3): Promise<void> {

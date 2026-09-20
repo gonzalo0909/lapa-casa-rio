@@ -18,7 +18,8 @@ export interface RemainingPaymentJobData {
 }
 
 export const remainingPaymentQueue = createSafeQueue<RemainingPaymentJobData>('remaining-payment', {
-  attempts: 1
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 30_000 },
 });
 
 /** Encola el cobro de saldo para 7 dias antes del check-in (o de inmediato si esa fecha ya paso).

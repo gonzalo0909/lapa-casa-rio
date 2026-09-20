@@ -1,4 +1,4 @@
--- 0021_external_ratings.sql
+-- 0041_external_ratings.sql
 -- Campos opcionales para mostrar puntuaciones de plataformas externas
 -- (Airbnb, Booking.com) en la tarjeta de cada apartamento.
 -- Se rellenan manualmente; vacíos no muestran nada en la UI.

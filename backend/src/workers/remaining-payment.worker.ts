@@ -55,7 +55,13 @@ export function startRemainingPaymentWorker(): Worker<RemainingPaymentJobData> {
         provider
       });
 
-      await notificationService.notify('payment_reminder', booking as BookingWithGuest);
+      try {
+        await notificationService.notify('payment_reminder', booking as BookingWithGuest);
+      } catch (notifyErr) {
+        logger.warn('remaining-payment: fallo al notificar, se continúa con scheduleNextRetry', {
+          reservationId, error: (notifyErr as Error).message,
+        });
+      }
       await scheduleNextRetry(reservationId, 1);
 
       logger.info('remaining-payment: payment intent creado y recordatorio enviado', { reservationId, provider });

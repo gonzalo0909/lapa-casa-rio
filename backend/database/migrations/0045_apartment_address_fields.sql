@@ -1,4 +1,4 @@
--- 0034_apartment_address_fields.sql
+-- 0045_apartment_address_fields.sql
 -- Agrega campos de dirección a room_types para que los administradores
 -- de apartamento (owners) puedan completar la dirección completa desde
 -- su panel propio.

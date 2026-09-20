@@ -20,6 +20,7 @@ import {
   generateCsrfToken, ACCESS_TOKEN_TTL,
 } from '../../utils/encryption';
 import { authenticateOwnerToken, type AuthPayload } from '../../middleware/auth';
+import { verifyCsrf } from '../../middleware/csrf';
 import { redisCache } from '../../config/redis';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -261,6 +262,7 @@ router.post('/refresh', async (req, res, next) => {
 router.post(
   '/change-password',
   authenticateOwnerToken,
+  verifyCsrf('lch_owner_csrf'),
   validate(ChangePasswordSchema),
   async (req, res, next) => {
     try {
@@ -289,7 +291,7 @@ router.post(
 
 // ─── POST /owner-auth/logout ──────────────────────────────────────────────────
 
-router.post('/logout', authenticateOwnerToken, async (req, res, next) => {
+router.post('/logout', authenticateOwnerToken, verifyCsrf('lch_owner_csrf'), async (req, res, next) => {
   try {
     const cookies = req.cookies as Record<string, string> | undefined;
     const authHeader = req.headers['authorization'];

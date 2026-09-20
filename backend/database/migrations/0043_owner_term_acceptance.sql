@@ -1,4 +1,4 @@
--- 0033_owner_term_acceptance.sql
+-- 0043_owner_term_acceptance.sql
 --
 -- Registro del aceite del Termo de Adesão por el administrador.
 -- term_accepted_at NULL = no aceptó todavía → el panel lo bloquea

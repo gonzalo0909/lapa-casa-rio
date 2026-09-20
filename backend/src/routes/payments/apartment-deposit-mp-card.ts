@@ -6,7 +6,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
 import { mercadoPagoHandler } from '../../lib/payments/mercado-pago-handler';
-import { query } from '../../config/database';
+import { query, withTransaction } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -55,11 +55,17 @@ export const apartmentDepositMpCardHandler = async (
       return;
     }
 
-    const existingPayments = await paymentService.getPaymentsByReservation(reservationId);
-    const depositPaid = existingPayments.find(
-      p => p.payment_type === 'deposit' &&
-           ['succeeded', 'pending', 'in_process'].includes(p.status)
-    );
+    const depositPaid = await withTransaction(async (client) => {
+      await client.query('SELECT id FROM reservations WHERE id = $1 FOR UPDATE', [reservationId]);
+      const { rows } = await client.query<{ id: string }>(
+        `SELECT id FROM payments
+         WHERE reservation_id = $1 AND payment_type = 'deposit'
+           AND status IN ('succeeded', 'pending', 'in_process')
+         LIMIT 1`,
+        [reservationId],
+      );
+      return rows[0] ?? null;
+    });
     if (depositPaid) {
       res.status(409).json(ApiResponse.error('O depósito já foi pago', { paymentId: depositPaid.id }));
       return;

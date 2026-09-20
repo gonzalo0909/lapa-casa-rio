@@ -54,11 +54,22 @@ export const processDepositHandler = async (
     );
 
     if (depositPayment) {
-      res.status(409).json(
-        ApiResponse.error('El depósito ya fue pagado', {
-          paymentId: depositPayment.id,
-          paidAt: depositPayment.paid_at,
-        })
+      const isSettled = depositPayment.status === 'succeeded';
+      res.status(isSettled ? 409 : 200).json(
+        isSettled
+          ? ApiResponse.error('El depósito ya fue pagado', {
+              paymentId: depositPayment.id,
+              paidAt: depositPayment.paid_at,
+            })
+          : ApiResponse.success({
+              payment: {
+                paymentId: depositPayment.id,
+                type: 'deposit',
+                status: depositPayment.status,
+                provider: depositPayment.provider,
+                alreadyInitiated: true,
+              },
+            }, 'Pago ya iniciado — aguardá la confirmación o revisá tu app de pagos')
       );
       return;
     }

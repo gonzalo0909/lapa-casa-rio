@@ -2,8 +2,16 @@
 import type { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
+import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
+
+async function getCardSurchargePercent(): Promise<number> {
+  const { rows } = await query<{ value: number }>(
+    `SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`
+  );
+  return rows[0]?.value ?? 0;
+}
 
 interface CreatePaymentIntentRequest {
   reservationId: string;
@@ -60,9 +68,16 @@ export const createPaymentIntentHandler = async (
       return;
     }
 
-    const amount = paymentType === 'deposit'
+    const baseAmount = paymentType === 'deposit'
       ? Number(booking.deposit_amount)
       : Number(booking.remaining_amount);
+
+    const cardSurchargePercent = (provider === 'stripe' && paymentType === 'deposit')
+      ? await getCardSurchargePercent()
+      : 0;
+    const amount = cardSurchargePercent > 0
+      ? Math.round(baseAmount * (1 + cardSurchargePercent / 100) * 100) / 100
+      : baseAmount;
 
     const guestEmail = booking.guest?.email ?? '';
 
@@ -70,6 +85,7 @@ export const createPaymentIntentHandler = async (
       reservation_id: reservationId,
       guest_id: booking.guest_id,
       amount,
+      baseAmount,
       currency,
       guest_email: guestEmail,
       payment_type: paymentType,
@@ -84,6 +100,8 @@ export const createPaymentIntentHandler = async (
           providerPaymentId: paymentIntent.provider_payment_id,
           clientSecret: paymentIntent.client_secret,
           amount,
+          baseAmount,
+          cardSurchargePercent,
           currency,
           type: paymentType,
           provider,

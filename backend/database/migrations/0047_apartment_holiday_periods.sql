@@ -1,4 +1,4 @@
--- 0039_apartment_holiday_periods.sql
+-- 0047_apartment_holiday_periods.sql
 --
 -- Bloqueo automático de feriados para apartamentos: ±7 días alrededor de
 -- cada feriado nacional brasileño (incluyendo Carnaval y Semana Santa).

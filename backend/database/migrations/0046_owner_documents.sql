@@ -1,4 +1,4 @@
--- 0034_owner_documents.sql
+-- 0046_owner_documents.sql
 --
 -- Documentos de verificación del administrador de apartamento.
 -- El dueño sube CPF/CNPJ + comprobante de propiedad desde su panel.

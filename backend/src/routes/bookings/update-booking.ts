@@ -152,10 +152,25 @@ export const updateBookingHandler = async (
       const nights = Math.round(
         (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
       );
+      // Si se cambiaron fechas pero no se proveyeron habitaciones explícitamente,
+      // se obtienen las habitaciones actuales de la reserva desde DB.
+      let roomsForPricing = updates.rooms;
+      if (!roomsForPricing && datesChanged) {
+        const { rows: currentBedRows } = await query<{ room_type_id: string; bed_count: number }>(
+          `SELECT b.room_type_id, COUNT(*)::int AS bed_count
+           FROM reservation_beds rb
+           JOIN beds b ON b.id = rb.bed_id
+           WHERE rb.reservation_id = $1
+           GROUP BY b.room_type_id`,
+          [id]
+        );
+        roomsForPricing = currentBedRows.map(r => ({ roomId: r.room_type_id, bedsCount: r.bed_count }));
+      }
+
       const newPricing = await pricingService.calculateTotalPrice({
         checkInDate: newCheckIn,
         checkOutDate: newCheckOut,
-        rooms: updates.rooms || [],
+        rooms: roomsForPricing || [],
         totalBeds,
       });
 

@@ -62,7 +62,7 @@ export const cancelBookingHandler = async (
 
     const payments = await paymentService.getPaymentsByReservation(id);
     const completedPayments = payments.filter(p => p.status === 'succeeded');
-    const totalPaid = completedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const totalPaid = completedPayments.reduce((sum, p) => sum + (p.provider_metadata?.base_amount ?? Number(p.amount)), 0);
 
     // El monto real a reembolsar está limitado por lo que efectivamente pagó el huésped
     const actualRefund = Math.min(refundAmount, totalPaid);

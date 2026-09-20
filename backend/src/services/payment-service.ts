@@ -279,22 +279,41 @@ export class PaymentService {
 
   async processRefund(data: RefundDTO): Promise<Payment> {
     const payments = await this.paymentRepo.findByReservation(data.reservation_id);
-    const successfulPayment = payments.find(p => p.status === 'succeeded');
-    if (!successfulPayment) {throw new AppError('No hay pago completado para reembolsar', 400);}
+    const successfulPayments = payments.filter(p => p.status === 'succeeded');
+    if (successfulPayments.length === 0) {throw new AppError('No hay pago completado para reembolsar', 400);}
 
-    if (successfulPayment.provider === 'stripe' && successfulPayment.provider_payment_id) {
-      await this.stripeHandler.createRefund({
-        paymentIntentId: successfulPayment.provider_payment_id,
-        amount: data.amount,
-        reason: data.reason,
-      });
-    } else if (successfulPayment.provider === 'mercadopago' && successfulPayment.provider_payment_id) {
-      await this.mpHandler.createRefund({
-        paymentId: successfulPayment.provider_payment_id,
-        amount: data.amount,
-      });
+    const totalPaid = successfulPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    let remainingRefund = data.amount;
+    let lastRefundRecord: Payment | null = null;
+
+    for (const payment of successfulPayments) {
+      if (remainingRefund <= 0) {break;}
+      // Reembolsar proporcionalmente según el monto de cada pago
+      const paymentAmount = Number(payment.amount);
+      const refundForThis = totalPaid > 0
+        ? Math.min(paymentAmount, Math.round((paymentAmount / totalPaid) * data.amount * 100) / 100)
+        : paymentAmount;
+      const actualRefund = Math.min(refundForThis, remainingRefund);
+      if (actualRefund <= 0) {continue;}
+
+      if (payment.provider === 'stripe' && payment.provider_payment_id) {
+        await this.stripeHandler.createRefund({
+          paymentIntentId: payment.provider_payment_id,
+          amount: actualRefund,
+          reason: data.reason,
+        });
+      } else if (payment.provider === 'mercadopago' && payment.provider_payment_id) {
+        await this.mpHandler.createRefund({
+          paymentId: payment.provider_payment_id,
+          amount: actualRefund,
+        });
+      }
+      lastRefundRecord = await this.paymentRepo.processRefund(payment.id, actualRefund);
+      remainingRefund -= actualRefund;
     }
-    return this.paymentRepo.processRefund(successfulPayment.id, data.amount);
+
+    if (!lastRefundRecord) {throw new AppError('No se pudo procesar el reembolso', 500);}
+    return lastRefundRecord;
   }
 
   async handleStripeWebhook(event: Stripe.Event): Promise<void> {

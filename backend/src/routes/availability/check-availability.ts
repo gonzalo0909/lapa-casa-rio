@@ -42,7 +42,7 @@ export const checkAvailabilityHandler = async (
       res.status(400).json(ApiResponse.error('Fechas inválidas'));
       return;
     }
-    if (checkInDate < now) {
+    if (checkInDate < new Date(Date.now() - 3 * 60 * 60 * 1000)) {
       res.status(400).json(ApiResponse.error('Check-in date cannot be in the past'));
       return;
     }

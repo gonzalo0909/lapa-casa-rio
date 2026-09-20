@@ -130,7 +130,7 @@ export const createHostelBookingHandler = async (
           if (offer.discount_amount != null && offer.discount_amount > 0) {
             const discount = Math.min(offer.discount_amount, pricingDetails.totalPrice);
             pricingDetails.totalPrice = Math.round((pricingDetails.totalPrice - discount) * 100) / 100;
-            const depositRatio = pricingDetails.depositAmount / (pricingDetails.depositAmount + pricingDetails.remainingAmount || 1);
+            const depositRatio = pricingDetails.depositAmount / ((pricingDetails.depositAmount + pricingDetails.remainingAmount) || 1);
             const depositDiscount = Math.round(discount * depositRatio * 100) / 100;
             const remainingDiscount = Math.round((discount - depositDiscount) * 100) / 100;
             pricingDetails.depositAmount = Math.max(0, Math.round((pricingDetails.depositAmount - depositDiscount) * 100) / 100);
@@ -199,8 +199,8 @@ export const createHostelBookingHandler = async (
         await query(
           `INSERT INTO apartment_offers
              (code, label, discount_percent, apartment_ids, valid_from, valid_to, is_active, referral_owner_guest_id)
-           VALUES ($1, 'Código de referido', 10, NULL, now()::date, '2026-12-31', true, $2)`,
-          [ownReferralCode, booking.guest_id],
+           VALUES ($1, 'Código de referido', 10, NULL, now()::date, $3, true, $2)`,
+          [ownReferralCode, booking.guest_id, process.env.REFERRAL_CODE_VALID_UNTIL ?? '2099-12-31'],
         );
       }
     } catch (error) {

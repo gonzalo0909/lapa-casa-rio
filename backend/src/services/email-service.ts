@@ -24,7 +24,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'lapaland
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Lapa Casa';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'lapalandiarj@gmail.com';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lapacasario.com';
-const WHATSAPP_CONTACT_URL = 'https://wa.me/5521977157530';
+const WHATSAPP_CONTACT_URL = `https://wa.me/${process.env.WHATSAPP_PHONE_NUMBER ?? '5521977157530'}`;
 
 // ---- Dirección física del hostel (configurable via variables de entorno) ----
 const HOSTEL_STREET   = process.env.HOSTEL_STREET   || 'Rua Silvio Romero, 22';

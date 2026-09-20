@@ -248,11 +248,7 @@ export function useHostelPayment({
     const titularName  = form.name.trim()  || gpName.trim();
     const titularEmail = form.email.trim() || gpEmail.trim();
     if (!titularName || !titularEmail) {
-      setGroupError(
-        lang === 'pt' ? 'Nome e e-mail são obrigatórios.'
-          : lang === 'es' ? 'Nombre y email son requeridos.'
-          : 'Name and email are required.',
-      );
+      setGroupError(t.gpErrRequired);
       return;
     }
     setIsGroupLoading(true);

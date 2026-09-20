@@ -905,6 +905,7 @@
     "gpCopied": "Copiado",
     "gpShareWa": "Compartir por WhatsApp",
     "gpExpire": "El link expira en 10 minutos. Todos los integrantes deben pagar en ese plazo.",
+    "gpErrRequired": "Nombre y email son requeridos.",
     "gpErrGeneric": "Error al generar el link. Intentá de nuevo.",
     "couponTitle": "¿Tenés un código de descuento?",
     "couponApplied": "Código [[{code}]] aplicado ({pct}% off)",

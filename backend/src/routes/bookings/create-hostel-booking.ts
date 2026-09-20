@@ -96,25 +96,6 @@ export const createHostelBookingHandler = async (
       return;
     }
 
-    // Verificación de disponibilidad general (hostel-centric, usa is_gender_eligible)
-    const availability = await availabilityService.checkAvailability({
-      checkIn: bookingData.checkIn,
-      checkOut: bookingData.checkOut,
-      bedsNeeded: totalBedsRequested,
-    });
-    if (!availability.available) {
-      logger.warn('Insufficient availability', {
-        requested: totalBedsRequested,
-        available: availability.availableBeds,
-      });
-      res.status(409).json(ApiResponse.error('Insufficient availability for requested dates', {
-        availableBeds: availability.availableBeds,
-        requestedBeds: totalBedsRequested,
-        alternativeDates: availability.alternativeDates,
-      }));
-      return;
-    }
-
     // Pricing
     const pricingDetails = await pricingService.calculateTotalPrice({
       checkInDate: bookingData.checkIn,

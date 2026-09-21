@@ -1,5 +1,3 @@
-// Cancela una reserva, calcula el reembolso proporcional y envía el email de cancelación vía notificationService.
-
 import type { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';
 import { paymentService } from '../../services/payment-service';

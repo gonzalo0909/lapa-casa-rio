@@ -198,6 +198,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
       if (!checkIn)  { showToast(t.tToastCheckin);  scrollToCard(); return; }
       if (!checkOut) { showToast(t.tToastCheckout); scrollToCard(); return; }
       const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000);
+      if (nights <= 0) { showToast(t.tToastCheckout); scrollToCard(); return; }
       const s = getSeason(checkIn);
       if (s.minNights > 1 && nights < s.minNights) {
         showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);

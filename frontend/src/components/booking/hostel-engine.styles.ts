@@ -5,6 +5,8 @@
 //
 
 export const HOSTEL_ENGINE_CSS = `
+.he-nav-bar{width:100%;max-width:500px;padding:.6rem 0 .1rem;display:flex;align-items:center;gap:.6rem}
+.he-nav-link{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;color:#fff;text-decoration:none;font-weight:700;letter-spacing:.04em;background:rgba(0,0,0,.42);border-radius:999px;padding:.28em .85em;border:1.5px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);box-shadow:0 1px 6px rgba(0,0,0,.35)}
 .he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:url('/img/adoquines.jpg') center/cover;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}
 .he-header{background:url('/img/arcos-lapa.jpg') center/cover;color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 18px 18px;position:relative;overflow:hidden}
 .he-header::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.18),rgba(0,0,0,.32));z-index:0;pointer-events:none}

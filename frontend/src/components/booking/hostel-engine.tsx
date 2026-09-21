@@ -80,57 +80,9 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
       <style dangerouslySetInnerHTML={{ __html: HOSTEL_ENGINE_CSS }} />
       <div className="he-wrap">
         {/* Volver al home */}
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 500,
-            padding: '.6rem 0 .1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '.6rem',
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '.3rem',
-              fontSize: '.78rem',
-              color: '#fff',
-              textDecoration: 'none',
-              fontWeight: 700,
-              letterSpacing: '.04em',
-              background: 'rgba(0,0,0,.42)',
-              borderRadius: '999px',
-              padding: '.28em .85em',
-              border: '1.5px solid rgba(255,255,255,.25)',
-              backdropFilter: 'blur(6px)',
-              boxShadow: '0 1px 6px rgba(0,0,0,.35)',
-            }}
-          >
-            {t.navHome}
-          </Link>
-          <Link
-            href={`/${lang}/santa-teresa`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              fontSize: '.78rem',
-              color: '#fff',
-              textDecoration: 'none',
-              fontWeight: 700,
-              letterSpacing: '.04em',
-              background: 'rgba(0,0,0,.42)',
-              borderRadius: '999px',
-              padding: '.28em .85em',
-              border: '1.5px solid rgba(255,255,255,.25)',
-              backdropFilter: 'blur(6px)',
-              boxShadow: '0 1px 6px rgba(0,0,0,.35)',
-            }}
-          >
-            Santa Teresa
-          </Link>
+        <div className="he-nav-bar">
+          <Link href="/" className="he-nav-link">{t.navHome}</Link>
+          <Link href={`/${lang}/santa-teresa`} className="he-nav-link">Santa Teresa</Link>
         </div>
 
         {/* Header */}

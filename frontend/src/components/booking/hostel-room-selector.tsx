@@ -14,13 +14,12 @@ interface HostelRoomSelectorProps {
   rooms: RoomDef[];
   beds: Record<string, number>;
   revealed: Record<string, boolean>;
-  season: { mult: number; label: string; minNights: number };
   onChangeBeds: (id: string, delta: number) => void;
 }
 
 // ─── Component ────────────────────────────────────────────
 export function HostelRoomSelector({
-  lang, rooms, beds, revealed, season, onChangeBeds,
+  lang, rooms, beds, revealed, onChangeBeds,
 }: HostelRoomSelectorProps) {
   const t = T[lang];
 
@@ -32,7 +31,7 @@ export function HostelRoomSelector({
       <div className="he-rooms">
         {rooms.map(r => {
           const cnt = beds[r.id] ?? 0;
-          const pbn = (r.price * season.mult).toFixed(2).replace('.', ',');
+          const pbn = r.price.toFixed(2).replace('.', ',');
 
           const overflowId = r.id === 'cuarto1' ? 'cuarto3' : r.id === 'cuarto4' ? 'cuarto5' : null;
           const plusDisabled = overflowId

@@ -209,7 +209,6 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                     rooms={wizard.visibleRooms}
                     beds={wizard.beds}
                     revealed={wizard.revealed}
-                    season={season}
                     onChangeBeds={wizard.changeBeds}
                   />
                 )}

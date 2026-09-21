@@ -56,11 +56,12 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
       .then((res) => {
         const apiRooms: ApiRoom[] = res.data?.rooms || [];
         if (!apiRooms.length) { showToast(errAvail); return; }
+        const seasonMult: number = res.data?.allocationOptions?.[0]?.pricing?.seasonalMultiplier ?? 1;
         setRooms(
           DEFAULT_ROOMS.map((dr) => {
             const match = apiRooms.find((ar) => ar.code === dr.code);
             if (!match) return dr;
-            return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice };
+            return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice * seasonMult };
           }),
         );
         setRoomsLoaded(true);

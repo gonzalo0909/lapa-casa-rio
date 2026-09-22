@@ -6,6 +6,7 @@
 import React from 'react';
 import type { BookingLocale } from '@/types/global';
 import { type RoomDef, T } from './hostel-engine.types';
+import { HostelPhotoGallery } from './hostel-photo-gallery';
 
 // ─── Props ────────────────────────────────────────────────
 interface HostelRoomSelectorProps {
@@ -27,6 +28,8 @@ export function HostelRoomSelector({
     <div className="he-panel">
       <div className="he-panel-title">{t.p2title}</div>
       <div className="he-panel-sub">{t.p2sub}</div>
+
+      <HostelPhotoGallery lang={lang} />
 
       <div className="he-rooms">
         {rooms.map(r => {

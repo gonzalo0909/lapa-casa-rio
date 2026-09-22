@@ -214,7 +214,7 @@ export async function generateICalFeed(roomTypeId: string): Promise<string> {
   const room = rows[0];
 
   const calendar = ical({
-    name: `Lapa Casa - ${room.name}`,
+    name: `Lapa Casa Rio - ${room.name}`,
     description: `Disponibilidad de ${room.name}`,
     timezone: 'America/Sao_Paulo',
     url: `https://lapacasario.com/api/v1/ical/export/${roomTypeId}`,
@@ -234,7 +234,7 @@ export async function generateAllFeeds(): Promise<string> {
   );
 
   const calendar = ical({
-    name: 'Lapa Casa - Todas las habitaciones',
+    name: 'Lapa Casa Rio - Todas las habitaciones',
     description: 'Disponibilidad combinada de las 5 habitaciones',
     timezone: 'America/Sao_Paulo',
     url: 'https://lapacasario.com/api/v1/ical/export',
@@ -259,7 +259,7 @@ export async function generateApartmentICalFeed(roomTypeId: string): Promise<str
   const apt = rows[0];
 
   const calendar = ical({
-    name: `Lapa Casa - ${apt.name}`,
+    name: `Lapa Casa Rio - ${apt.name}`,
     description: `Disponibilidad de ${apt.name}`,
     timezone: 'America/Sao_Paulo',
     url: `https://lapacasario.com/api/v1/ical/apartment/export/${roomTypeId}`,
@@ -279,7 +279,7 @@ export async function generateAllApartmentFeeds(): Promise<string> {
   );
 
   const calendar = ical({
-    name: 'Lapa Casa - Apartamentos',
+    name: 'Lapa Casa Rio - Apartamentos',
     description: 'Disponibilidad combinada de todos los apartamentos',
     timezone: 'America/Sao_Paulo',
     url: 'https://lapacasario.com/api/v1/ical/apartment/export',

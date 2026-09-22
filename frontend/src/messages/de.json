@@ -326,6 +326,8 @@
     "hostelDescription": "Buchen Sie Betten in gemischten und Frauenschlafräumen im Herzen von Santa Teresa, Rio de Janeiro. Gruppenrabatte verfügbar. Bestpreis garantiert.",
     "apartmentsTitle": "Private Apartments in Santa Teresa · Lapa Casa",
     "apartmentsDescription": "Private Apartments mit Küchenzeile in Santa Teresa, Rio de Janeiro. Lapa Loft, Vista do Arco, Chalé da Rua und mehr. Direkt buchen zum besten Preis.",
+    "partnersTitle": "Partner-Verwalter werden · Lapa Casa",
+    "partnersDescription": "Registrieren Sie Ihre Unterkunft auf der Lapa Casa Plattform und empfangen Sie Gäste sicher. Transparenter Vertrag, 5% Provision, volle Unterstützung.",
     "galleryTitle": "Gästegalerie · Lapa Casa Rio",
     "galleryDescription": "Echte Fotos von Gästen des Lapa Casa Rio in Santa Teresa, Rio de Janeiro. Entdecken Sie das Hostel aus der Sicht derer, die schon dort waren."
   },
@@ -469,6 +471,7 @@
     "directBooking": "Direktbuchung · Bester Preis garantiert",
     "navHostel": "Hostel",
     "navApartments": "Apartments",
+    "navPartners": "Partner",
     "navLuggage": "Gepäckaufbewahrung"
   },
   "apartments": {

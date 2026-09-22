@@ -6,6 +6,7 @@ import { availabilityRouter } from './availability/availability.routes';
 import { paymentsRouter } from './payments/payments.routes';
 import { roomsRouter } from './rooms/rooms.routes';
 import { offersRouter } from './offers/offers.routes';
+import { partnersRouter } from './partners/partners.routes';
 import { adminRouter } from './admin/admin.routes';
 import { adminAuthRouter } from './admin/admin-auth.routes';
 import { ownerAuthRouter } from './owner/owner-auth.routes';
@@ -79,6 +80,7 @@ router.use(
 router.use('/rooms', rateLimiter({ max: 60, windowMs: 60000, prefix: 'rooms' }), roomsRouter);
 router.use('/photos', rateLimiter({ max: 60, windowMs: 60000, prefix: 'photos' }), photosRouter);
 router.use('/offers', rateLimiter({ max: 30, windowMs: 60000, prefix: 'offers' }), offersRouter);
+router.use('/partners', partnersRouter);
 
 /**
  * iCal: export publico de disponibilidad + config/sync de

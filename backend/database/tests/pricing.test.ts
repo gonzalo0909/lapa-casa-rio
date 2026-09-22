@@ -35,13 +35,18 @@ describe('pricingService: wrapper delgado sobre las funciones SQL (bit a bit)', 
     }
   });
 
-  it.each(seasonDates)('calculateFinalPrice(%s) coincide con calculate_final_price() + calculate_group_discount() SQL', async (checkIn) => {
+  it.each(seasonDates)('calculateTotalPrice(%s) coincide con calculate_final_price() + calculate_group_discount() SQL', async (checkIn) => {
     const checkOut = new Date(new Date(checkIn).getTime() + 3 * 86400000).toISOString().slice(0, 10);
     for (const beds of bedCounts) {
       const nights = 3;
       const bookingDate = new Date().toISOString().slice(0, 10);
 
-      const service = await pricingService.calculateFinalPrice(checkIn, checkOut, beds, roomId);
+      const service = await pricingService.calculateTotalPrice({
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        rooms: [{ roomId, hostelBeds: beds }],
+        totalBeds: beds,
+      });
       const { rows: priceRows } = await pool.query(
         `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
         [roomBasePrice, nights, beds, checkIn, bookingDate]
@@ -64,15 +69,13 @@ describe('pricingService: wrapper delgado sobre las funciones SQL (bit a bit)', 
     expect(service.remaining).toBe(parseFloat(rows[0].remaining_amount));
   });
 
-  it('determineSeason coincide con get_season_type()/calculate_season_multiplier()/get_min_nights() SQL para cada fecha de referencia', async () => {
+  it('determineSeason coincide con get_season_type()/calculate_season_multiplier() SQL para cada fecha de referencia', async () => {
     for (const date of seasonDates) {
-      const service = await pricingService.determineSeason(date, date);
+      const service = await pricingService.determineSeason(date);
       const { rows: typeRows } = await pool.query(`SELECT get_season_type($1::date) AS t`, [date]);
       const { rows: multRows } = await pool.query(`SELECT calculate_season_multiplier($1::date) AS m`, [date]);
-      const { rows: minRows } = await pool.query(`SELECT get_min_nights($1::date) AS n`, [date]);
       expect(service.type).toBe(typeRows[0].t);
       expect(service.multiplier).toBe(parseFloat(multRows[0].m));
-      expect(service.minNights).toBe(minRows[0].n);
     }
   });
 
@@ -95,7 +98,7 @@ describe('pricingService: wrapper delgado sobre las funciones SQL (bit a bit)', 
     const result = await pricingService.calculateTotalPrice({
       checkInDate: checkIn,
       checkOutDate: checkOut,
-      rooms: [{ roomId, bedsCount: 2 }],
+      rooms: [{ roomId, hostelBeds: 2 }],
       totalBeds: 2
     });
     const { rows: sqlRows } = await pool.query(

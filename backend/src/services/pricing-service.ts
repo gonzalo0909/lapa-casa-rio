@@ -64,9 +64,9 @@ export class PricingService {
         `SELECT base_price, property_type FROM room_types WHERE id = $1`,
         [room.roomId]
       );
-      if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);
+      if (!rows[0]) {throw new Error(`Tipo de cuarto no encontrado: ${room.roomId}`);}
       const isApartment = rows[0].property_type === 'apartment';
-      if (!isApartment) allApartments = false;
+      if (!isApartment) {allApartments = false;}
       const roomBasePrice = parseFloat(rows[0].base_price);
       const beds = isApartment ? 1 : (room.hostelBeds ?? 1);
       basePrice += roomBasePrice * nights * beds;
@@ -117,7 +117,7 @@ export class PricingService {
       `SELECT base_price FROM room_types WHERE id = $1`,
       [roomTypeId]
     );
-    if (!rows[0]) throw new Error(`Tipo de cuarto no encontrado: ${roomTypeId}`);
+    if (!rows[0]) {throw new Error(`Tipo de cuarto no encontrado: ${roomTypeId}`);}
     const basePrice = parseFloat(rows[0].base_price);
     const multiplier = await this.getSeasonMultiplier(checkInDate);
     return Math.round(basePrice * multiplier * 100) / 100;

@@ -40,10 +40,10 @@ const NEIGHBORHOOD_COORDS: Record<string, [number, number]> = {
 const RIO_DEFAULT: [number, number] = [-22.9068, -43.1729];
 
 function getCoords(apt: ApartmentAvailability): [number, number] {
-  if (apt.lat !== undefined && apt.lng !== undefined) return [apt.lat, apt.lng];
+  if (apt.lat !== undefined && apt.lng !== undefined) { return [apt.lat, apt.lng]; }
   if (apt.neighborhood) {
     const coords = NEIGHBORHOOD_COORDS[apt.neighborhood];
-    if (coords) return coords;
+    if (coords) { return coords; }
   }
   return RIO_DEFAULT;
 }
@@ -76,7 +76,7 @@ export default function ApartmentMap({
     }).format(n);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current || mapInstanceRef.current) { return; }
 
     // Leaflet CSS
     if (!document.getElementById('leaflet-css')) {
@@ -88,7 +88,7 @@ export default function ApartmentMap({
     }
 
     import('leaflet').then((L) => {
-      if (!mapRef.current || mapInstanceRef.current) return;
+      if (!mapRef.current || mapInstanceRef.current) { return; }
 
       // Centro inicial: promedio de coordenadas de los apartamentos
       const allCoords = apartments.map(getCoords);
@@ -120,9 +120,9 @@ export default function ApartmentMap({
   }, []);
 
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current) { return; }
     import('leaflet').then((L) => {
-      if (!mapInstanceRef.current) return;
+      if (!mapInstanceRef.current) { return; }
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       renderMarkers(L.default, mapInstanceRef.current, apartments, selectedApartment);
@@ -185,7 +185,7 @@ export default function ApartmentMap({
 
       marker.on('popupopen', () => {
         const btn = document.getElementById(`map-select-${apt.id}`);
-        if (btn) btn.addEventListener('click', () => onSelect(apt));
+        if (btn) { btn.addEventListener('click', () => onSelect(apt)); }
       });
 
       return marker;

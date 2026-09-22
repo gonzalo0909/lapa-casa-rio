@@ -55,7 +55,15 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
       </div>
 
       {openIndex !== null && PHOTOS[openIndex] && typeof document !== 'undefined' && createPortal(
-        <div className="he-photo-lightbox" role="dialog" aria-modal="true" onClick={close}>
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- backdrop click-to-close is a convenience on top of the close button and Escape key below, not the only way to dismiss
+        <div
+          className="he-photo-lightbox"
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          onClick={(e) => { if (e.target === e.currentTarget) { close(); } }}
+          onKeyDown={(e) => { if (e.key === 'Escape') { close(); } }}
+        >
           <button
             type="button"
             className="he-photo-lb-close"
@@ -72,7 +80,7 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
           >
             <ChevronLeft size={24} />
           </button>
-          <div className="he-photo-lb-img" onClick={(e) => e.stopPropagation()}>
+          <div className="he-photo-lb-img">
             <Image
               src={PHOTOS[openIndex].src}
               alt={PHOTOS[openIndex].alt}

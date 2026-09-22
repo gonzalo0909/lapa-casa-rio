@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { RoomDef, Translations } from './hostel-engine.types';
-import { FALLBACK_BED_PRICE_BRL } from './hostel-engine.types';
+import { FALLBACK_BED_PRICE_BRL, type RoomDef, type Translations } from './hostel-engine.types';
 import { getSeason, fmtMoney } from './hostel-engine.utils';
 import { availabilityAPI } from '@/lib/api';
 

@@ -2,13 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { bookingAPI, paymentAPI } from '@/lib/api';
-import type { BookingLocale } from '@/types/global';
 import type { PayMethod, Phase, RoomDef, FormState, Translations, PriceQuote } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
 import { fmtDate, fmtMoney } from './hostel-engine.utils';
 
 interface PaymentInput {
-  lang: BookingLocale;
   t: Translations;
   backendLang: 'pt' | 'en' | 'es';
   price: PriceQuote | null;
@@ -28,7 +26,7 @@ interface PaymentInput {
 }
 
 export function useHostelPayment({
-  lang, t, backendLang, price, cardSurchargeMult,
+  t, backendLang, price, cardSurchargeMult,
   form, beds, rooms, checkIn, checkOut, totalBeds,
   appliedCoupon, gpName, gpEmail, setForm, setStep, resetWizard,
 }: PaymentInput) {

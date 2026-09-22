@@ -38,14 +38,14 @@ describe('cancelBooking: trg_release_beds_on_status_change libera las camas sin 
     const pricing = await pricingService.calculateTotalPrice({
       checkInDate: CHECK_IN,
       checkOutDate: CHECK_OUT,
-      rooms: [{ roomId, bedsCount: 2 }],
+      rooms: [{ roomId, hostelBeds: 2 }],
       totalBeds: 2
     });
 
     const booking = await bookingService.createBooking({
       checkIn: CHECK_IN,
       checkOut: CHECK_OUT,
-      rooms: [{ roomId, bedsCount: 2 }],
+      rooms: [{ roomId, hostelBeds: 2 }],
       guest: { full_name: 'Cancel Me', email: randomEmail() },
       nights: 2,
       totalBeds: 2,
@@ -80,7 +80,7 @@ describe('cancelBooking: trg_release_beds_on_status_change libera las camas sin 
     const pricing = await pricingService.calculateTotalPrice({
       checkInDate: CHECK_IN,
       checkOutDate: CHECK_OUT,
-      rooms: [{ roomId, bedsCount: 2 }],
+      rooms: [{ roomId, hostelBeds: 2 }],
       totalBeds: 2
     });
 
@@ -89,7 +89,7 @@ describe('cancelBooking: trg_release_beds_on_status_change libera las camas sin 
     const booking = await bookingService.createBooking({
       checkIn: CHECK_IN,
       checkOut: CHECK_OUT,
-      rooms: [{ roomId, bedsCount: 2 }],
+      rooms: [{ roomId, hostelBeds: 2 }],
       guest: { full_name: 'Second Guest', email: randomEmail() },
       nights: 2,
       totalBeds: 2,

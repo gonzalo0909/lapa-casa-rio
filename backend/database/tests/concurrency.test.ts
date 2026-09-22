@@ -78,7 +78,7 @@ describe('Concurrencia real: N createBooking() simultaneos por la ultima cama di
     const pricing = await pricingService.calculateTotalPrice({
       checkInDate: CHECK_IN,
       checkOutDate: CHECK_OUT,
-      rooms: [{ roomId, bedsCount: 1 }],
+      rooms: [{ roomId, hostelBeds: 1 }],
       totalBeds: 1
     });
 
@@ -86,7 +86,7 @@ describe('Concurrencia real: N createBooking() simultaneos por la ultima cama di
       bookingService.createBooking({
         checkIn: CHECK_IN,
         checkOut: CHECK_OUT,
-        rooms: [{ roomId, bedsCount: 1 }],
+        rooms: [{ roomId, hostelBeds: 1 }],
         guest: { full_name: 'Racer', email: randomEmail() },
         nights: 2,
         totalBeds: 1,

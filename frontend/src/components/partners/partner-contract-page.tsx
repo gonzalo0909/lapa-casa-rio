@@ -32,8 +32,6 @@ interface PartnersContent {
   whatsappMessage: string;
   howWeWorkTitle: string;
   benefits: string[];
-  contractNoteTitle: string;
-  contractNote: string;
   referralProgramTitle: string;
   referralProgramNote: string;
   referralProgramItems: string[];
@@ -77,9 +75,6 @@ const CONTENT: Record<string, PartnersContent> = {
       'Pessoa física ou jurídica: o processo é o mesmo',
       'Tratamos os dados dos seus hóspedes com o cuidado exigido pela LGPD',
     ],
-    contractNoteTitle: 'E o contrato?',
-    contractNote:
-      'O contrato vem depois, não antes. Primeiro conversamos e resolvemos suas dúvidas — só enviamos para assinatura quando você tiver certeza.',
     referralProgramTitle: 'Programa de indicação de hóspedes',
     referralProgramNote: 'Cada hóspede que se hospeda no Lapa Casa Rio recebe um código pessoal de desconto (10%) para compartilhar. Quando o amigo indicado conclui a estadia, o hóspede titular recebe R$5 para uma próxima reserva. Condições:',
     referralProgramItems: [
@@ -127,9 +122,6 @@ const CONTENT: Record<string, PartnersContent> = {
       'Persona física o empresa: el proceso es el mismo',
       'Tratamos los datos de tus huéspedes con el cuidado que exige la LGPD',
     ],
-    contractNoteTitle: '¿Y el contrato?',
-    contractNote:
-      'El contrato llega después, no antes. Primero conversamos y resolvemos tus dudas — recién te lo mandamos para firmar cuando estés seguro.',
     referralProgramTitle: 'Programa de recomendación de huéspedes',
     referralProgramNote: 'Cada huésped que se aloja en Lapa Casa Rio recibe un código de descuento personal (10%) para compartir. Cuando el amigo referido completa su estadía, el huésped titular recibe R$5 para una próxima reserva. Condiciones:',
     referralProgramItems: [
@@ -177,9 +169,6 @@ const CONTENT: Record<string, PartnersContent> = {
       'Individual or registered business: same process either way',
       "We handle your guests' data with the care required by data protection law (LGPD)",
     ],
-    contractNoteTitle: 'What about the contract?',
-    contractNote:
-      "The contract comes later, not first. Let's talk and answer your questions — we'll only send it for signature once you're sure.",
     referralProgramTitle: 'Guest referral programme',
     referralProgramNote: 'Every guest who stays at Lapa Casa Rio receives a personal discount code (10%) to share with friends. When the referred friend completes their stay, the original guest earns R$5 toward a future booking. Conditions:',
     referralProgramItems: [
@@ -227,9 +216,6 @@ const CONTENT: Record<string, PartnersContent> = {
       'Privatperson oder Unternehmen: derselbe Ablauf für alle',
       'Wir behandeln die Daten Ihrer Gäste mit der von der LGPD geforderten Sorgfalt',
     ],
-    contractNoteTitle: 'Und der Vertrag?',
-    contractNote:
-      'Der Vertrag kommt später, nicht zuerst. Lassen Sie uns zunächst sprechen und Ihre Fragen klären — wir schicken ihn erst zur Unterschrift, wenn Sie sicher sind.',
     referralProgramTitle: 'Gäste-Empfehlungsprogramm',
     referralProgramNote: 'Jeder Gast, der im Lapa Casa Rio übernachtet, erhält einen persönlichen Rabattcode (10%), den er mit Freunden teilen kann. Wenn der empfohlene Freund seinen Aufenthalt abschließt, erhält der ursprüngliche Gast R$5 Guthaben für eine nächste Buchung. Bedingungen:',
     referralProgramItems: [
@@ -278,9 +264,6 @@ const CONTENT: Record<string, PartnersContent> = {
       'Particulier ou société : la même démarche pour tous',
       'On traite les données de vos voyageurs avec la rigueur exigée par le RGPD/LGPD',
     ],
-    contractNoteTitle: 'Et le contrat ?',
-    contractNote:
-      "Le contrat arrive après, pas avant. Parlons-en d'abord et répondons à vos questions — on ne vous l'envoie pour signature que lorsque vous êtes sûr.",
     referralProgramTitle: 'Programme de parrainage des voyageurs',
     referralProgramNote: "Chaque voyageur séjournant au Lapa Casa Rio reçoit un code de réduction personnel (10%) à partager avec ses amis. Lorsque l'ami parrainé termine son séjour, le voyageur titulaire gagne R$5 pour une prochaine réservation. Conditions :",
     referralProgramItems: [
@@ -328,9 +311,6 @@ const CONTENT: Record<string, PartnersContent> = {
       'Persona fisica o azienda: la stessa procedura per tutti',
       'Trattiamo i dati dei tuoi ospiti con la cura richiesta dalla normativa (LGPD)',
     ],
-    contractNoteTitle: 'E il contratto?',
-    contractNote:
-      'Il contratto arriva dopo, non prima. Parliamone prima e rispondiamo alle tue domande — te lo inviamo per la firma solo quando sei sicuro.',
     referralProgramTitle: 'Programma referral ospiti',
     referralProgramNote: 'Ogni ospite che soggiorna al Lapa Casa Rio riceve un codice sconto personale (10%) da condividere con gli amici. Quando l\'amico referito completa il soggiorno, l\'ospite titolare riceve R$5 di credito per una futura prenotazione. Condizioni:',
     referralProgramItems: [
@@ -535,16 +515,6 @@ export function PartnerContractPage({ locale }: Props) {
               </li>
             ))}
           </ul>
-        </section>
-
-        {/* ── Nota sobre el contrato ── */}
-        <section className="py-12 border-b border-border">
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h2 className="text-lg font-display font-semibold text-foreground mb-2">
-              {c.contractNoteTitle}
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">{c.contractNote}</p>
-          </div>
         </section>
 
         {/* ── Formulario de contacto ── */}

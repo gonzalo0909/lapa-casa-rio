@@ -115,17 +115,13 @@ export function HostelStep4Summary({
 
       <div className="he-pay-methods">
         {/* ── PIX ── */}
-        <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => onPayMethodChange('pix')} disabled={form.country !== 'BR'}>
+        <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => onPayMethodChange('pix')}>
           <input type="radio" name="he-pay" value="pix" checked={payMethod === 'pix'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
           <div className="he-pm-info">
             <div className="he-pm-name">
               <Zap size={13} aria-hidden />{t.pmPix}
             </div>
-            <div className="he-pm-detail">
-              {form.country === 'BR'
-                ? `${fmtMoney(price.deposit)} · ${fmtMoney(price.total - price.deposit)} ${t.tAtCheckin}`
-                : t.pmPixUnavailable}
-            </div>
+            <div className="he-pm-detail">{fmtMoney(price.deposit)} · {fmtMoney(price.total - price.deposit)} {t.tAtCheckin}</div>
           </div>
         </button>
         {/* ── Tarjeta ── */}

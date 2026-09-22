@@ -127,7 +127,6 @@ export const HOSTEL_ENGINE_CSS = `
 .he-pay-methods{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.5rem}
 .he-pay-m{display:flex;align-items:center;gap:.75rem;border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.65rem .9rem;cursor:pointer;transition:border-color .22s ease,background .22s ease,box-shadow .22s ease;background:rgba(255,255,255,.06);width:100%;text-align:left;font-family:inherit}
 .he-pay-m.selected{border-color:#7BC47F;background:rgba(123,196,127,.06);box-shadow:0 0 0 2px rgba(123,196,127,.12)}
-.he-pay-m:disabled{opacity:.48;cursor:not-allowed}
 .he-pm-note{font-size:.68rem;color:rgba(255,255,255,.58);margin-bottom:.85rem;padding:0 .1rem}
 .he-pm-info{flex:1;min-width:0}
 .he-pm-name{font-size:.82rem;font-weight:700;color:hsl(var(--primary-foreground));display:flex;align-items:center;gap:.35rem}

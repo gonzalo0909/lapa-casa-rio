@@ -57,6 +57,11 @@ export function useHostelPayment({
 
   useEffect(() => () => { if (timerRef.current) { clearInterval(timerRef.current); } }, []);
 
+  // PIX es un sistema de pago doméstico brasileño: fuera de Brasil solo se ofrece tarjeta.
+  useEffect(() => {
+    if (form.country !== 'BR' && payMethod === 'pix') { setPayMethod('card'); }
+  }, [form.country, payMethod]);
+
   const startTimer = useCallback(() => {
     let secs = 300;
     setTimerSecs(300);

@@ -16,6 +16,7 @@ const NAV_LINKS = [
   { href: '/owner', label: 'Apartamentos' },
   { href: '/owner/documents', label: 'Documentos' },
   { href: '/owner/contract', label: 'Contrato' },
+  { href: '/owner/parceiros', label: 'Parceria' },
 ];
 
 export function OwnerNav({ fullName }: OwnerNavProps) {

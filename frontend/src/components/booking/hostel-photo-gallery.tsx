@@ -3,6 +3,7 @@
 // Step 2 — Fotos reales dos quartos e banheiros, com lightbox simples.
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { BookingLocale } from '@/types/global';
@@ -53,7 +54,7 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
         ))}
       </div>
 
-      {openIndex !== null && PHOTOS[openIndex] && (
+      {openIndex !== null && PHOTOS[openIndex] && typeof document !== 'undefined' && createPortal(
         <div className="he-photo-lightbox" role="dialog" aria-modal="true" onClick={close}>
           <button
             type="button"
@@ -88,7 +89,8 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
           >
             <ChevronRight size={24} />
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

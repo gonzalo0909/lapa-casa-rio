@@ -861,6 +861,7 @@
     "btnBack": "Voltar",
     "btnNext": "Próximo",
     "flexibleNotice": "Cuarto 6 — Solo Mujeres: quarto feminino por padrão. Converte para misto 48h antes do check-in se necessário.",
+    "overflowNotice": "{primary} está completo. Este é o {overflow}: mesmas condições e valor por cama.",
     "tNights": "Noites",
     "tTotalBeds": "Total de camas",
     "tTotal": "Total",

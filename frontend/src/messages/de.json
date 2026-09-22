@@ -843,7 +843,7 @@
     "cardDepLabel": "Kartenzahlung",
     "cardInstruction": "Sie erhalten den Zahlungslink per E-Mail.",
     "timerLabel": "Läuft ab in",
-    "pixKey": "PIX-Schlüssel: lapalandiarj@gmail.com",
+    "pixKey": "PIX-Schlüssel: {key}",
     "restNote": "Die verbleibenden 70% werden beim Check-in bar oder per Karte bezahlt.",
     "referralTitle": "Freund empfehlen, Rabatt bekommen",
     "referralBody": "Teilen Sie diesen Code: Ihr Freund erhält 10% Rabatt, und sobald er bucht, bekommen Sie einen weiteren 10%-Code für Ihren nächsten Aufenthalt.",

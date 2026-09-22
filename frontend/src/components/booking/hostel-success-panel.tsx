@@ -104,7 +104,7 @@ export function HostelSuccessPanel({
                   )}
                 </button>
               )}
-              <div className="he-pix-key">{t.pixKey}</div>
+              <div className="he-pix-key">{t.pixKey.replace('{key}', process.env.NEXT_PUBLIC_PIX_KEY ?? '')}</div>
               <div className="he-timer">
                 {t.timerLabel}: <strong>{timerStr}</strong>
               </div>

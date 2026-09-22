@@ -843,7 +843,7 @@
     "cardDepLabel": "Card payment",
     "cardInstruction": "You will receive the payment link by email.",
     "timerLabel": "Expires in",
-    "pixKey": "PIX key: lapalandiarj@gmail.com",
+    "pixKey": "PIX key: {key}",
     "restNote": "The remaining 70% is due at check-in, in cash or by card.",
     "referralTitle": "Refer a friend, get a discount",
     "referralBody": "Share this code: your friend gets 10% off and, once they book, you get another 10% code for your next stay.",

@@ -843,7 +843,7 @@
     "cardDepLabel": "Pago con tarjeta",
     "cardInstruction": "Recibirás el enlace de pago por e-mail.",
     "timerLabel": "Expira en",
-    "pixKey": "Clave PIX: lapalandiarj@gmail.com",
+    "pixKey": "Clave PIX: {key}",
     "restNote": "El resto (70%) se paga en el check-in, en efectivo o tarjeta.",
     "referralTitle": "Recomienda a un amigo, gana un descuento",
     "referralBody": "Comparte este código: tu amigo tiene 10% de descuento y, cuando reserve, tú recibes otro código de 10% para tu próxima estadía.",

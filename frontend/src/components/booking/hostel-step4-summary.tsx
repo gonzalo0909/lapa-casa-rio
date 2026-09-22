@@ -114,7 +114,7 @@ export function HostelStep4Summary({
       </div>
 
       <div className="he-pay-methods">
-        {/* ── PIX ── */}
+        {/* ── PIX ── (habilitado para cualquier país — no restringir por form.country) */}
         <button type="button" className={`he-pay-m${payMethod === 'pix' ? ' selected' : ''}`} onClick={() => onPayMethodChange('pix')}>
           <input type="radio" name="he-pay" value="pix" checked={payMethod === 'pix'} readOnly style={{ flexShrink: 0, accentColor: '#2A5234' }} />
           <div className="he-pm-info">

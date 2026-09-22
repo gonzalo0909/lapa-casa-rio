@@ -30,6 +30,8 @@ export function useHostelPayment({
   form, beds, rooms, checkIn, checkOut, totalBeds,
   appliedCoupon, gpName, gpEmail, setForm, setStep, resetWizard,
 }: PaymentInput) {
+  // PIX está habilitado para huéspedes de cualquier país (decisión de negocio
+  // confirmada) — no restringir por form.country ni forzar 'card' para no-BR.
   const [payMethod, setPayMethod]               = useState<PayMethod>('pix');
   const [phase, setPhase]                       = useState<Phase>('wizard');
   const [bookingCode, setBookingCode]           = useState('');

@@ -495,20 +495,6 @@ export const offersAPI = {
 };
 
 /**
- * Partners API — formulario de contacto de la página pública de partners.
- * Ruta pública: POST /api/v1/partners/contact
- */
-export const partnersAPI = {
-  contact: (data: {
-    name: string;
-    email: string;
-    phone?: string;
-    property: string;
-    message?: string;
-  }) => api.post('/partners/contact', data),
-};
-
-/**
  * Handle API errors globally
  *
  * @param error - Error object

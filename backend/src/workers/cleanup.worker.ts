@@ -156,7 +156,7 @@ async function grantPostCheckoutReferralRewards(): Promise<void> {
         [row.referral_owner_guest_id],
       );
       const referrer = referrerRows[0];
-      if (!referrer) continue;
+      if (!referrer) {continue;}
 
       // Busca saldo acumulado activo para este referidor
       const { rows: existingRows } = await query<{ id: number; code: string; valid_to: string }>(

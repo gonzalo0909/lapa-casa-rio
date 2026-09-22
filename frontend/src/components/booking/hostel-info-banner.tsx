@@ -27,7 +27,7 @@ export function HostelInfoBanner({ lang }: HostelInfoBannerProps) {
       </div>
       <div className="he-info-grid">
         {rules.map((text, i) => {
-          const Icon = ICONS[i];
+          const Icon = ICONS[i]!;
           return (
             <div key={i} className="he-info-item">
               <Icon size={14} aria-hidden />

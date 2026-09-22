@@ -340,9 +340,12 @@ export const availabilityAPI = {
    * Check availability for date range (devuelve las 5 habitaciones reales + pricing)
    */
   check: (params: { checkIn: string; checkOut: string; beds: number }) =>
-    api.get<{ rooms: ApiRoom[] }>(
-      `/availability/check?checkIn=${params.checkIn}&checkOut=${params.checkOut}&beds=${params.beds}`,
-    ),
+    api.get<{
+      data: {
+        rooms: ApiRoom[];
+        allocationOptions?: Array<{ pricing?: { seasonalMultiplier?: number } }>;
+      };
+    }>(`/availability/check?checkIn=${params.checkIn}&checkOut=${params.checkOut}&beds=${params.beds}`),
 
   /**
    * Monthly calendar of occupancy
@@ -491,7 +494,7 @@ export const offersAPI = {
   // apartmentId opcional -- el hostel también usa este endpoint para
   // validar códigos de referido, sin apartamento asociado.
   validate: (code: string, apartmentId: string | undefined, checkIn: string, checkOut?: string) =>
-    api.post<ValidateCouponResponse>('/offers/validate', { code, apartmentId, checkIn, checkOut }),
+    api.post<{ data: ValidateCouponResponse }>('/offers/validate', { code, apartmentId, checkIn, checkOut }),
 };
 
 /**

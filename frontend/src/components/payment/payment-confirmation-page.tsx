@@ -150,7 +150,7 @@ export const PaymentConfirmationPage: React.FC<PaymentConfirmationPageProps> = (
             <p className="text-muted-foreground">{t('guest')}</p>
             <p className="font-medium text-foreground">{booking.guestName}</p>
           </div>
-          {booking.bedsCount != null && (
+          {booking.bedsCount !== undefined && (
             <div>
               <p className="text-muted-foreground">{tb('beds')}</p>
               <p className="font-medium text-foreground">{booking.bedsCount}</p>

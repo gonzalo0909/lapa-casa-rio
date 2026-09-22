@@ -63,7 +63,7 @@ export function normalizeCPF(doc: string): string {
  *  Pasaportes y documentos con letras se saltan silenciosamente. */
 export async function anyDocumentBlocked(documents: string[]): Promise<boolean> {
   const cpfs = documents.map(normalizeCPF).filter((d) => /^\d{11}$/.test(d));
-  if (cpfs.length === 0) return false;
+  if (cpfs.length === 0) {return false;}
   const result = await query<{ id: string }>(
     `SELECT g.id FROM guests g
      WHERE g.blocked = true
@@ -122,7 +122,7 @@ export async function uploadAdditionalGuestPhotos(
 ): Promise<Array<{ fullName: string; document: string; documentType?: string; photoUrl?: string; photoPublicId?: string }>> {
   return Promise.all(
     additionalGuests.map(async (g) => {
-      if (!g.documentPhotoBase64) return g;
+      if (!g.documentPhotoBase64) {return g;}
       try {
         const photoBuffer = decodeBase64Image(g.documentPhotoBase64);
         const photo = await uploadDocumentPhoto(photoBuffer);
@@ -142,7 +142,7 @@ export async function uploadAdditionalGuestPhotos(
 
 /** Calcula el mínimo check-in permitido según la hora actual en São Paulo.
  *  Devuelve { minCheckIn: 'YYYY-MM-DD', hoursUntilCheckIn: number } */
-export function calcCheckInBounds(checkInDs: string): {
+export function calcCheckInBounds(): {
   minCheckIn: string;
   hourBrt: number;
   todayInSaoPaulo: string;

@@ -9,7 +9,7 @@ import { BookingService, InsufficientAvailabilityError } from '../../services/bo
 import { PricingService } from '../../services/pricing-service';
 import { notificationService } from '../../services/notification-service';
 import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
-import { emailService, type BookingWithGuest } from '../../services/email-service';
+import type { BookingWithGuest } from '../../services/email-service';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -49,7 +49,7 @@ export const createApartmentBookingHandler = async (
     const now = new Date();
 
     // Validación de fecha mínima de check-in (corte 12h BRT)
-    const { minCheckIn, todayInSaoPaulo } = calcCheckInBounds(bookingData.checkIn);
+    const { minCheckIn, todayInSaoPaulo } = calcCheckInBounds();
     if (bookingData.checkIn < minCheckIn) {
       res.status(400).json(ApiResponse.error(
         bookingData.checkIn === todayInSaoPaulo
@@ -345,7 +345,7 @@ export const createApartmentBookingHandler = async (
 
     // Notificaciones (no bloqueante)
     bookingService.getBooking(booking.id).then((bookingWithGuest) => {
-      if (!bookingWithGuest?.guest) return;
+      if (!bookingWithGuest?.guest) {return;}
       const guest = bookingWithGuest as BookingWithGuest;
       if (guest.guest.phone) {
         whatsappNotificationService.sendBookingNotification({

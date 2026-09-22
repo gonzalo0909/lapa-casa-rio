@@ -46,7 +46,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   const backendLang = toBackendLang(lang);
   const currency = useCurrency();
 
-  const wizard = useHostelWizard(lang, t);
+  const wizard = useHostelWizard(t);
 
   const { price, cardSurchargeMult, footerPrice } = useHostelPricing({
     checkIn: wizard.checkIn,
@@ -58,7 +58,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
   });
 
   const payment = useHostelPayment({
-    lang, t, backendLang,
+    t, backendLang,
     price, cardSurchargeMult,
     form: wizard.form,
     beds: wizard.beds,

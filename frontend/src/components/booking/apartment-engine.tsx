@@ -75,8 +75,8 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [maxAptGuests, setMaxAptGuests] = useState<number>(MAX_APT_GUESTS);
   useEffect(() => {
     availabilityAPI.getApartmentConfig().then((res: any) => {
-      if (res?.data?.checkinTimes?.length) setCheckinTimes(res.data.checkinTimes);
-      if (res?.data?.maxGuests) setMaxAptGuests(res.data.maxGuests);
+      if (res?.data?.checkinTimes?.length) { setCheckinTimes(res.data.checkinTimes); }
+      if (res?.data?.maxGuests) { setMaxAptGuests(res.data.maxGuests); }
     }).catch(() => { /* fallback a los valores por defecto */ });
   }, []);
 
@@ -321,7 +321,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       if (b.confirmationToken) {
         try { sessionStorage.setItem(`ct_${b.id}`, b.confirmationToken); } catch {}
       }
-      if (b.pricing?.total == null || b.payment?.depositAmount == null) {
+      if (b.pricing?.total === undefined || b.pricing?.total === null || b.payment?.depositAmount === undefined || b.payment?.depositAmount === null) {
         throw new Error(t('errorNoPricing'));
       }
       setBooking({

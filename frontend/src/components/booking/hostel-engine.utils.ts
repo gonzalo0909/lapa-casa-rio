@@ -124,7 +124,7 @@ export function parseBold(str: string): React.ReactNode[] {
 
 // ─── Idioma backend (solo acepta pt/en/es) ───────────────
 export function toBackendLang(lang: string): 'pt' | 'en' | 'es' {
-  if (lang === 'pt' || lang === 'es') return lang;
+  if (lang === 'pt' || lang === 'es') { return lang; }
   return 'en';
 }
 

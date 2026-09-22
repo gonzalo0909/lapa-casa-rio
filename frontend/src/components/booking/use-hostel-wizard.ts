@@ -2,7 +2,6 @@
 // Wizard state: step navigation, calendar, rooms/beds, form, group fields.
 
 import { useState, useCallback, useEffect } from 'react';
-import type { BookingLocale } from '@/types/global';
 import {
   type RoomDef, type FormState, type FormErrors, type FieldFeedback,
   type Translations, DEFAULT_ROOMS, OVERFLOW_PAIRS,
@@ -11,7 +10,7 @@ import type { AppliedCoupon } from './hostel-guest-form';
 import { getSeason, validateCPF } from './hostel-engine.utils';
 import { availabilityAPI, type ApiRoom } from '@/lib/api';
 
-export function useHostelWizard(lang: BookingLocale, t: Translations) {
+export function useHostelWizard(t: Translations) {
   const [step, setStep]             = useState(1);
   const [calMonth, setCalMonth]     = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
   const [checkIn, setCheckIn]       = useState<Date | null>(null);
@@ -39,15 +38,15 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
 
   const totalBeds    = Object.values(beds).reduce((s, n) => s + n, 0);
   const visibleRooms = rooms.filter((r) => {
-    if (r.id === 'cuarto3') return !!revealed['cuarto3'];
-    if (r.id === 'cuarto5') return !!revealed['cuarto5'];
+    if (r.id === 'cuarto3') { return !!revealed['cuarto3']; }
+    if (r.id === 'cuarto5') { return !!revealed['cuarto5']; }
     return true;
   });
 
   // Fetch room availability when dates change
   const errAvail = t.tErrAvail;
   useEffect(() => {
-    if (!checkIn || !checkOut) return;
+    if (!checkIn || !checkOut) { return; }
     setRoomsLoaded(false);
     const ci = checkIn.toISOString().slice(0, 10);
     const co = checkOut.toISOString().slice(0, 10);
@@ -60,7 +59,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
         setRooms(
           DEFAULT_ROOMS.map((dr) => {
             const match = apiRooms.find((ar) => ar.code === dr.code);
-            if (!match) return dr;
+            if (!match) { return dr; }
             return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice * seasonMult };
           }),
         );
@@ -72,7 +71,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
   const scrollToCard = useCallback(() => {
     setTimeout(() => {
       const el = document.querySelector('.he-steps') as HTMLElement | null;
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     }, 40);
   }, []);
 
@@ -209,7 +208,7 @@ export function useHostelWizard(lang: BookingLocale, t: Translations) {
       if (totalBeds === 0) { showToast(t.tToastBeds); scrollToCard(); return; }
       setStep(3);
     } else if (step === 3) {
-      if (!validateForm()) return;
+      if (!validateForm()) { return; }
       setStep(4);
     }
     scrollToCard();

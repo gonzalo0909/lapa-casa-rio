@@ -109,7 +109,11 @@ export function useHostelWizard(t: Translations) {
       newBeds[id] = Math.max(0, cur - 1);
     }
 
-    // Colapsar overflow si el cuarto principal baja de su capacidad
+    // Colapsar overflow si el cuarto principal baja de su capacidad — a propósito:
+    // el overflow solo existe mientras el principal está al 100%, así que si el
+    // huésped quiere bajar la cantidad de camas lo hace directamente desde el
+    // cuarto overflow (cuarto3/cuarto5), no desde el principal. No "arreglar"
+    // esto para preservar camas del overflow al bajar el principal.
     for (const { primary, overflow } of OVERFLOW_PAIRS) {
       const r = rooms.find((r) => r.id === primary);
       if ((newBeds[primary] ?? 0) < (r?.available ?? 0)) {

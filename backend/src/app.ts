@@ -107,7 +107,18 @@ app.use(metricsMiddleware);
 // paginas piden datos a /api/v1/admin/* con el JWT guardado en
 // localStorage -- servir estos archivos no expone nada, la proteccion
 // real vive en las rutas de la API (authenticateToken + requireRole).
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+//
+// no-store explícito: sin esto, un deploy puede dejar el HTML de una
+// página actualizado en el navegador pero su CSS/JS todavía en caché
+// (cada archivo revalida independiente) -- pantallas rotas a medias
+// hasta que alguien piensa en borrar caché a mano. Es un panel interno
+// de bajo tráfico, perder cacheo no cuesta nada; que nunca quede una
+// versión mezclada sí importa.
+app.use('/admin', express.static(path.join(__dirname, 'admin'), {
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store');
+  },
+}));
 
 // Feature 2 v3: página pública de pago grupal — un solo link compartido,
 // cada invitado que lo abre reclama su propia cama.

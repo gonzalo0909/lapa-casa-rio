@@ -1,17 +1,12 @@
 .root {
-  /* Misma paleta que el motor de hostel (hostel-engine.styles.ts): fondo
-     verde bosque #12160f, tarjetas #1A2E1E, dorado #C8870A como color
-     principal -- para que ambos motores de reserva se vean como una sola
-     marca en vez de dos estilos distintos (este era el único que quedaba
-     siempre en modo claro). */
-  --bg: #12160f; --bg-subtle: #1A2E1E; --bg-card: #1A2E1E;
-  --fg: #EDE8DC; --fg-muted: rgba(237,232,220,.65); --border: rgba(255,255,255,.16);
-  --primary: #C8870A; --primary-fg: #FFFFFF; --primary-soft: rgba(200,135,10,.18);
-  --accent: #C8870A;
-  --success-bg: #052E14; --success-fg: #4ADE80;
-  --unavail-bg: rgba(255,255,255,.06); --unavail-fg: rgba(237,232,220,.55);
-  --warn-bg: rgba(226,155,114,.14); --warn-border: #E29B72; --warn-fg: #E8B65A;
-  --step-done: #2A5234; --step-active: #C8870A; --step-todo: rgba(255,255,255,.3);
+  --bg: #FFFFFF; --bg-subtle: #F5F5F5; --bg-card: #FFFFFF;
+  --fg: #111111; --fg-muted: #555555; --border: #E0E0E0;
+  --primary: #2C4A8C; --primary-fg: #FFFFFF; --primary-soft: #D5DFF5;
+  --accent: #F0B429;
+  --success-bg: #D5E8D4; --success-fg: #1E5E40;
+  --unavail-bg: #EEE9DC; --unavail-fg: #6A6058;
+  --warn-bg: #FBE9DB; --warn-border: #E29B72; --warn-fg: #9A4A28;
+  --step-done: #2C4A8C; --step-active: #F0B429; --step-todo: #D8D0BC;
 
   background: var(--bg);
   color: var(--fg);
@@ -19,6 +14,7 @@
   line-height: 1.5;
   min-height: 100vh;
 }
+/* Motor de reservas: siempre modo claro — los colores de marca no se invierten */
 
 .root * { box-sizing: border-box; }
 .root button { cursor: pointer; font-family: inherit; }
@@ -26,7 +22,7 @@
 
 /* ── Hero ────────────────────────────────────────────── */
 .hero {
-  background: linear-gradient(160deg, var(--primary), #1A2E1E);
+  background: linear-gradient(160deg, var(--primary), #1E3578/* TODO: agregar token (azul marino oscuro hostel, variante de --primary local) */);
   color: #fff;
   padding: 3rem 2rem 3.4rem;
   text-align: center;
@@ -273,7 +269,13 @@
 .inputInvalid { border-color: #FCA5A5 !important; }
 .feedback { font-size: .72rem; min-height: .85rem; margin-top: .2rem; display: inline-flex; align-items: center; gap: .28rem; }
 .feedbackOk { color: var(--success-fg); }
-.feedbackErr { color: #FCA5A5; }
+.feedbackErr { color: #991B1B; }
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme='light'])) .feedbackOk { color: #4ADE80; }
+  :global(:root:not([data-theme='light'])) .feedbackErr { color: #FCA5A5; }
+}
+:global([data-theme='dark']) .feedbackOk { color: #4ADE80; }
+:global([data-theme='dark']) .feedbackErr { color: #FCA5A5; }
 
 /* ── Declaración de hóspedes (booking_guests) ───────────────────────────── */
 .guestsDeclaration { background: var(--bg-subtle); border: 1.5px solid var(--border); border-radius: 10px; padding: .85rem 1rem; margin-top: 1.25rem; }
@@ -305,7 +307,9 @@
 .docUploadBtn { flex: 1; display: flex; align-items: center; gap: .5rem; padding: .55rem .85rem; border-radius: 8px; border: 1.5px dashed var(--border); background: var(--bg-card); color: var(--fg-muted); font-size: .82rem; cursor: pointer; transition: border-color .15s, background .15s; text-align: left; }
 .docUploadBtn:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
 .docUploadSlotFilled .docUploadBtn { border-style: solid; border-color: var(--success-border, #16a34a); background: var(--success-bg); color: var(--success-fg); }
-.docUploadSlotError .docUploadBtn { border-style: solid; border-color: #FCA5A5; color: #FCA5A5; }
+.docUploadSlotError .docUploadBtn { border-style: solid; border-color: #FCA5A5; color: #991B1B; }
+:global(:root:not([data-theme='light'])) .docUploadSlotError .docUploadBtn { border-color: #FCA5A5; color: #FCA5A5; }
+:global([data-theme='dark']) .docUploadSlotError .docUploadBtn { border-color: #FCA5A5; color: #FCA5A5; }
 .docUploadCheckIcon { color: var(--success-fg); flex-shrink: 0; }
 .docUploadFileName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
 .docUploadClear { flex-shrink: 0; padding: .35rem; border: none; background: none; color: var(--fg-muted); cursor: pointer; border-radius: 4px; }
@@ -331,11 +335,21 @@
 .pmTag { margin-left: auto; font-size: .68rem; font-weight: 700; padding: .15rem .5rem; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: .2rem; }
 .pmTagRecommended { background: var(--success-bg); color: var(--success-fg); }
 
-.promoBanner { background: linear-gradient(135deg, #052E14, #063D20); border: 2px solid #166534; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: .85rem; }
+.promoBanner { background: linear-gradient(135deg, #DCFCE7, #BBF7D0); border: 2px solid #86EFAC; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: .85rem; }
+@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .promoBanner { background: linear-gradient(135deg, #052E14, #063D20); border-color: #166534; } }
+:global([data-theme='dark']) .promoBanner { background: linear-gradient(135deg, #052E14, #063D20); border-color: #166534; }
 .promoIcon { font-size: 2rem; flex-shrink: 0; line-height: 1; }
-.promoLabel { font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #4ADE80; margin-bottom: .15rem; }
-.promoHeadline { font-size: 1rem; font-weight: 700; color: #86EFAC; line-height: 1.2; }
-.promoSub { font-size: .78rem; color: #4ADE80; margin-top: .2rem; }
+.promoLabel { font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #15803D; margin-bottom: .15rem; }
+.promoHeadline { font-size: 1rem; font-weight: 700; color: #14532D; line-height: 1.2; }
+.promoSub { font-size: .78rem; color: #166534; margin-top: .2rem; }
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme='light'])) .promoLabel { color: #4ADE80; }
+  :global(:root:not([data-theme='light'])) .promoHeadline { color: #86EFAC; }
+  :global(:root:not([data-theme='light'])) .promoSub { color: #4ADE80; }
+}
+:global([data-theme='dark']) .promoLabel { color: #4ADE80; }
+:global([data-theme='dark']) .promoHeadline { color: #86EFAC; }
+:global([data-theme='dark']) .promoSub { color: #4ADE80; }
 
 .otaBanner { background: var(--bg-subtle); border: 1px dashed var(--border); border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1.25rem; font-size: .82rem; color: var(--fg-muted); display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
 .otaBanner strong { color: var(--success-fg); }
@@ -357,7 +371,9 @@
 .cancelRows { display: flex; flex-direction: column; gap: .55rem; }
 .cancelRow { display: flex; align-items: flex-start; gap: .75rem; font-size: .82rem; color: var(--fg); }
 .cancelBadge { display: inline-flex; align-items: center; gap: .25rem; padding: .2rem .6rem; border-radius: 999px; font-size: .7rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-.cancelBadgeRed { background: #3B1111; color: #FCA5A5; }
+.cancelBadgeRed { background: #FEE2E2; color: #991B1B; }
+@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .cancelBadgeRed { background: #3B1111; color: #FCA5A5; } }
+:global([data-theme='dark']) .cancelBadgeRed { background: #3B1111; color: #FCA5A5; }
 
 /* ── Actions ─────────────────────────────────────────────── */
 .actions { display: flex; justify-content: space-between; align-items: center; padding-top: .75rem; }
@@ -399,7 +415,9 @@
 .paySuccessRef { font-family: SFMono-Regular, Consolas, monospace; font-size: .8rem; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px; padding: .35rem .75rem; display: inline-block; margin: .5rem 0 1rem; color: var(--fg); }
 .paySuccessMsg { font-size: .85rem; color: var(--fg-muted); line-height: 1.55; }
 
-.errorBanner { background: #3B1111; border: 1.5px solid #7F1D1D; color: #FCA5A5; border-radius: 10px; padding: .85rem 1.1rem; font-size: .85rem; margin-bottom: 1.25rem; }
+.errorBanner { background: #FEE2E2; border: 1.5px solid #FCA5A5; color: #991B1B; border-radius: 10px; padding: .85rem 1.1rem; font-size: .85rem; margin-bottom: 1.25rem; }
+@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .errorBanner { background: #3B1111; border-color: #7F1D1D; color: #FCA5A5; } }
+:global([data-theme='dark']) .errorBanner { background: #3B1111; border-color: #7F1D1D; color: #FCA5A5; }
 
 .spinnerWrap { display: flex; justify-content: center; padding: 4rem 0; }
 .loadingInline { font-size: .8rem; color: var(--fg-muted); padding: .3rem 0; }

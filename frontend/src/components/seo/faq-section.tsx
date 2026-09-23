@@ -37,7 +37,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
-      answer: 'Aceitamos cartão de crédito e PIX. Não trabalhamos com parcelamento.',
+      answer: 'Aceitamos cartão de crédito e PIX.',
     },
     {
       question: 'Vocês oferecem descontos para grupos?',
@@ -76,7 +76,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: '¿Qué métodos de pago aceptan?',
-      answer: 'Aceptamos tarjeta de crédito y PIX. No trabajamos con cuotas.',
+      answer: 'Aceptamos tarjeta de crédito y PIX.',
     },
     {
       question: '¿Ofrecen descuentos para grupos?',
@@ -115,7 +115,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept credit card and PIX. Installment payments are not available.',
+      answer: 'We accept credit card and PIX.',
     },
     {
       question: 'Do you offer group discounts?',
@@ -153,7 +153,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
-      answer: 'Wir akzeptieren Kreditkarte und PIX. Ratenzahlung ist nicht verfügbar.',
+      answer: 'Wir akzeptieren Kreditkarte und PIX.',
     },
     {
       question: 'Bieten Sie Gruppenrabatte an?',
@@ -193,7 +193,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Quels modes de paiement acceptez-vous ?',
       answer:
-        "Nous acceptons la carte de crédit et le PIX. Le paiement en plusieurs fois n'est pas disponible.",
+        'Nous acceptons la carte de crédit et le PIX.',
     },
     {
       question: 'Proposez-vous des remises de groupe ?',
@@ -232,7 +232,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Quali metodi di pagamento accettate?',
-      answer: 'Accettiamo carta di credito e PIX. Il pagamento rateale non è disponibile.',
+      answer: 'Accettiamo carta di credito e PIX.',
     },
     {
       question: 'Offrite sconti per gruppi?',
@@ -276,7 +276,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
-      answer: 'Aceitamos cartão de crédito e PIX. Não trabalhamos com parcelamento.',
+      answer: 'Aceitamos cartão de crédito e PIX.',
     },
     {
       question: 'Os apartamentos têm Wi-Fi?',
@@ -305,7 +305,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: '¿Qué métodos de pago aceptan?',
-      answer: 'Aceptamos tarjeta de crédito y PIX. No trabajamos con cuotas.',
+      answer: 'Aceptamos tarjeta de crédito y PIX.',
     },
     {
       question: '¿Los apartamentos tienen Wi-Fi?',
@@ -334,7 +334,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept credit card and PIX. Installment payments are not available.',
+      answer: 'We accept credit card and PIX.',
     },
     {
       question: 'Do the apartments have Wi-Fi?',
@@ -363,7 +363,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
-      answer: 'Wir akzeptieren Kreditkarte und PIX. Ratenzahlung ist nicht verfügbar.',
+      answer: 'Wir akzeptieren Kreditkarte und PIX.',
     },
     {
       question: 'Haben die Apartments WLAN?',
@@ -393,7 +393,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Quels modes de paiement acceptez-vous ?',
       answer:
-        "Nous acceptons la carte de crédit et le PIX. Le paiement en plusieurs fois n'est pas disponible.",
+        'Nous acceptons la carte de crédit et le PIX.',
     },
     {
       question: 'Les appartements ont-ils le Wi-Fi ?',
@@ -422,7 +422,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Quali metodi di pagamento accettate?',
-      answer: 'Accettiamo carta di credito e PIX. Il pagamento rateale non è disponibile.',
+      answer: 'Accettiamo carta di credito e PIX.',
     },
     {
       question: 'Gli appartamenti hanno il Wi-Fi?',

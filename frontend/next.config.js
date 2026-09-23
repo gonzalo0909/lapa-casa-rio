@@ -159,6 +159,24 @@ const nextConfig = {
         destination: '/hostel',
         permanent: true,
       },
+      // /precios existió como página propia y quedó indexada/enlazada
+      // externamente antes de eliminarse (#85) -- sin este redirect,
+      // ese tráfico caía en un 404. Los precios reales viven en el
+      // motor de reservas de /hostel. localePrefix:'always' hace que la
+      // URL real siempre lleve el locale (/pt/precios, /es/precios...),
+      // así que hace falta la variante con :locale además de la bare --
+      // el middleware de next-intl intercepta /pt/precios antes de que
+      // este redirect sin locale pueda matchear.
+      {
+        source: '/precios',
+        destination: '/hostel',
+        permanent: true,
+      },
+      {
+        source: '/:locale(pt|es|en|fr|de|it)/precios',
+        destination: '/:locale/hostel',
+        permanent: true,
+      },
     ];
   },
 

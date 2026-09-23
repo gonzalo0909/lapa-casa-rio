@@ -29,7 +29,7 @@ async function loadRoomOptions() {
 
 async function loadBlocks() {
   try {
-    const data = await apiFetch('/admin/blocked-dates');
+    const data = await apiFetch(`/admin/blocked-dates?propertyType=${PROPERTY_TYPE}`);
     renderBlocks(data.blocks);
   } catch (err) {
     showMsg('blocks-msg', err.message, 'error');

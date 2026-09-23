@@ -25,29 +25,28 @@ const BlockDatesSchema = z.object({
   notes: z.string().optional(),
 });
 
-/** GET /admin/blocked-dates — todos los bloqueos, con nombre de habitación */
-router.get('/', async (_req, res, next) => {
+/** GET /admin/blocked-dates?propertyType=hostel|apartment — bloqueos, con nombre de habitación.
+ *  Sin propertyType devuelve todos (uso interno); las pantallas de hostel y
+ *  apartamentos ya mandan el filtro para no mezclar bloqueos de una unidad
+ *  con los de la otra. */
+router.get('/', async (req, res, next) => {
   try {
-    const [blocks, roomTypes] = await Promise.all([
-      dateBlocker.getAllBlockedDates(),
-      query<{ id: string; name: string }>(`SELECT id, name FROM room_types`)
-    ]);
-    const roomNames = new Map(roomTypes.rows.map((r) => [r.id, r.name]));
+    const propertyType = req.query.propertyType;
+    const params: string[] = [];
+    let sql = `
+      SELECT rb.id, rb.room_type_id AS "roomTypeId", rt.name AS "roomName",
+             rb.start_date::text AS "startDate", rb.end_date::text AS "endDate",
+             rb.block_type AS "blockType", rb.reason, rb.notes
+      FROM room_blocks rb
+      JOIN room_types rt ON rt.id = rb.room_type_id`;
+    if (propertyType === 'hostel' || propertyType === 'apartment') {
+      params.push(propertyType);
+      sql += ` WHERE rt.property_type = $1`;
+    }
+    sql += ` ORDER BY rb.start_date`;
 
-    res.status(200).json(
-      ApiResponse.success({
-        blocks: blocks.map((b) => ({
-          id: b.id,
-          roomTypeId: b.roomId,
-          roomName: roomNames.get(b.roomId) ?? 'Desconocido',
-          startDate: b.startDate.toISOString().slice(0, 10),
-          endDate: b.endDate.toISOString().slice(0, 10),
-          blockType: b.blockType,
-          reason: b.reason ?? null,
-          notes: b.notes ?? null
-        }))
-      })
-    );
+    const { rows } = await query(sql, params);
+    res.status(200).json(ApiResponse.success({ blocks: rows }));
   } catch (error) {
     next(error);
   }

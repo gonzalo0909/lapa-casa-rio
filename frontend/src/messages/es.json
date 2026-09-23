@@ -861,7 +861,6 @@
     "btnBack": "Volver",
     "btnNext": "Siguiente",
     "flexibleNotice": "Cuarto 6 — Solo Mujeres: habitación femenina por defecto. Se convierte a mixto 48h antes del check-in si es necesario.",
-    "overflowNotice": "No quedan camas disponibles en el {primary}. Este es el {overflow}: mismas condiciones y precio por cama.",
     "tNights": "Noches",
     "tTotalBeds": "Total de camas",
     "tTotal": "Total",

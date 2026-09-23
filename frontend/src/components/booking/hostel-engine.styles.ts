@@ -78,7 +78,6 @@ export const HOSTEL_ENGINE_CSS = `
 .he-sbtn:disabled{color:rgba(255,255,255,.2);cursor:not-allowed}
 .he-scnt{font-size:.95rem;font-weight:700;min-width:1.25rem;text-align:center;color:hsl(var(--primary-foreground))}
 .he-flex-notice{background:rgba(42,82,52,.25);border:1px solid rgba(123,196,127,.25);border-radius:8px;padding:.6rem .8rem;font-size:.72rem;color:#A7DFB8;margin-top:.5rem}
-.he-overflow-notice{background:rgba(200,135,10,.14);border:1px solid rgba(200,135,10,.35);border-radius:8px;padding:.6rem .8rem;font-size:.72rem;color:#E8B65A;font-weight:600}
 .he-photos{margin-bottom:1.1rem}
 .he-photos-title{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-bottom:.5rem}
 .he-photos-strip{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.2rem;scrollbar-width:thin}

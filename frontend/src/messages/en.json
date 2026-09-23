@@ -861,7 +861,6 @@
     "btnBack": "Back",
     "btnNext": "Next",
     "flexibleNotice": "Room 6 — Women Only: female dorm by default. Converts to mixed 48h before check-in if needed.",
-    "overflowNotice": "No more beds available in {primary}. This is {overflow}: same conditions and price per bed.",
     "tNights": "Nights",
     "tTotalBeds": "Total beds",
     "tTotal": "Total",

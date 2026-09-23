@@ -160,7 +160,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// ─── GET /owner/apartments/holiday-presets — feriados con rango ±7 días ──────
+// ─── GET /owner/apartments/holiday-presets — feriados con su fecha exacta ────
 // Va antes de /:id a propósito: si no, Express la matchearía como
 // GET /owner/apartments/:id con id="holiday-presets" y ownsRoomType la
 // rechazaría con 404.

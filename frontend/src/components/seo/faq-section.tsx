@@ -36,11 +36,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
         'O check-in é a partir das 14h. O check-out é até as 12h. Não aceitamos chegadas antes do horário nem saídas após o horário.',
     },
     {
-      question: 'E se eu chegar depois das 22h?',
-      answer:
-        'A recepção atende até as 22h. Não é possível chegar depois desse horário -- escolha um horário de chegada entre 14h e 22h ao fazer a reserva.',
-    },
-    {
       question: 'Quais métodos de pagamento vocês aceitam?',
       answer: 'Aceitamos cartão de crédito e PIX. Não trabalhamos com parcelamento.',
     },
@@ -78,11 +73,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
         'El check-in es a partir de las 14:00. El check-out es hasta las 12:00. No aceptamos llegadas antes del horario ni salidas después.',
-    },
-    {
-      question: '¿Qué pasa si llego después de las 22h?',
-      answer:
-        'La recepción atiende hasta las 22h. No es posible llegar después de ese horario -- elegí una hora de llegada entre las 14h y las 22h al reservar.',
     },
     {
       question: '¿Qué métodos de pago aceptan?',
@@ -124,11 +114,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
         'Check-in is from 2:00 PM. Check-out is by 12:00 PM. We do not accept early arrivals or late departures outside these times.',
     },
     {
-      question: 'What if I arrive after 10 PM?',
-      answer:
-        'Reception is open until 10 PM. Arrivals after that time are not possible -- choose an arrival time between 2 PM and 10 PM when booking.',
-    },
-    {
       question: 'What payment methods do you accept?',
       answer: 'We accept credit card and PIX. Installment payments are not available.',
     },
@@ -165,11 +150,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
       question: 'Wann sind Check-in und Check-out?',
       answer:
         'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr. Frühankünfte oder Spätabreisen außerhalb dieser Zeiten werden nicht akzeptiert.',
-    },
-    {
-      question: 'Was passiert, wenn ich nach 22 Uhr ankomme?',
-      answer:
-        'Die Rezeption ist bis 22 Uhr geöffnet. Eine Ankunft nach dieser Zeit ist nicht möglich -- wählen Sie bei der Buchung eine Ankunftszeit zwischen 14 und 22 Uhr.',
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
@@ -211,11 +191,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
         "L'arrivée est à partir de 14h00. Le départ est avant 12h00. Nous n'acceptons pas les arrivées anticipées ni les départs tardifs.",
     },
     {
-      question: "Que se passe-t-il si j'arrive après 22h ?",
-      answer:
-        "La réception est ouverte jusqu'à 22h. Il n'est pas possible d'arriver après cette heure -- choisissez une heure d'arrivée entre 14h et 22h lors de la réservation.",
-    },
-    {
       question: 'Quels modes de paiement acceptez-vous ?',
       answer:
         "Nous acceptons la carte de crédit et le PIX. Le paiement en plusieurs fois n'est pas disponible.",
@@ -254,11 +229,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
         'Il check-in è dalle 14:00. Il check-out è entro le 12:00. Non accettiamo arrivi anticipati o partenze tardive.',
-    },
-    {
-      question: 'Cosa succede se arrivo dopo le 22?',
-      answer:
-        "La reception è aperta fino alle 22. Non è possibile arrivare dopo quell'orario -- scegli un orario di arrivo tra le 14 e le 22 al momento della prenotazione.",
     },
     {
       question: 'Quali metodi di pagamento accettate?',

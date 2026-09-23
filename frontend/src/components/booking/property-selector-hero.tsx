@@ -192,35 +192,35 @@ function WindowsPattern() {
 // y los Arcos da Lapa. Mismo estilo de trazo fino que BedsPattern/WindowsPattern.
 function SantaTeresaScene() {
   return (
-    <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
-      {/* Colina */}
+    <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
+      {/* Fiação do bonde */}
+      <path d="M0 34 Q 200 10 400 34" stroke="currentColor" strokeWidth="1" opacity="0.55" fill="none" />
+      {/* Colina (contorno) */}
       <path
-        d="M0 210 Q 90 160 190 195 T 400 175 V 400 H 0 Z"
+        d="M0 100 Q 100 78 200 92 T 400 82"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.4"
       />
       {/* Casas en la colina */}
       <g stroke="currentColor" strokeWidth="1.2" fill="none">
-        <path d="M40 195 h34 v26 h-34 z M40 195 l17 -14 l17 14" />
-        <rect x="49" y="205" width="8" height="10" opacity="0.6" />
-        <path d="M108 178 h30 v24 h-30 z M108 178 l15 -13 l15 13" />
-        <rect x="116" y="188" width="7" height="9" opacity="0.6" />
-        <path d="M178 190 h36 v28 h-36 z M178 190 l18 -15 l18 15" />
-        <rect x="188" y="201" width="8" height="10" opacity="0.6" />
-        <path d="M252 172 h30 v24 h-30 z M252 172 l15 -13 l15 13" />
-        <rect x="260" y="182" width="7" height="9" opacity="0.6" />
-        <path d="M312 188 h34 v26 h-34 z M312 188 l17 -14 l17 14" />
-        <rect x="321" y="198" width="8" height="10" opacity="0.6" />
+        <path d="M28 78 h28 v22 h-28 z M28 78 l14 -12 l14 12" />
+        <rect x="36" y="88" width="7" height="9" opacity="0.6" />
+        <path d="M98 72 h26 v20 h-26 z M98 72 l13 -11 l13 11" />
+        <rect x="105" y="81" width="6" height="8" opacity="0.6" />
+        <path d="M168 82 h30 v24 h-30 z M168 82 l15 -13 l15 13" />
+        <rect x="177" y="92" width="7" height="9" opacity="0.6" />
+        <path d="M242 70 h26 v20 h-26 z M242 70 l13 -11 l13 11" />
+        <rect x="249" y="79" width="6" height="8" opacity="0.6" />
+        <path d="M310 80 h28 v22 h-28 z M310 80 l14 -12 l14 12" />
+        <rect x="318" y="90" width="7" height="9" opacity="0.6" />
       </g>
-      {/* Fiação do bonde */}
-      <path d="M0 168 Q 200 130 400 168" stroke="currentColor" strokeWidth="1" opacity="0.55" fill="none" />
       {/* Arcos da Lapa */}
-      <g stroke="currentColor" strokeWidth="1.4" fill="none" opacity="0.85">
-        {Array.from({ length: 6 }, (_, i) => 30 + i * 58).map((cx) => (
-          <path key={cx} d={`M${cx} 320 v-46 a20 20 0 0 1 40 0 v46`} />
+      <g stroke="currentColor" strokeWidth="1.4" fill="none" opacity="0.9">
+        {Array.from({ length: 6 }, (_, i) => 24 + i * 62).map((cx) => (
+          <path key={cx} d={`M${cx} 190 v-40 a18 18 0 0 1 36 0 v40`} />
         ))}
-        <line x1="10" y1="320" x2="390" y2="320" strokeWidth="1.6" />
+        <line x1="8" y1="190" x2="392" y2="190" strokeWidth="1.6" />
       </g>
     </svg>
   )

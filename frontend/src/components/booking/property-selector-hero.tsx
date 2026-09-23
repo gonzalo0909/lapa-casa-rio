@@ -65,10 +65,6 @@ export function PropertySelectorHero() {
 
       {/* Hero */}
       <main className="mx-auto max-w-6xl px-6 pb-8 pt-8 text-center">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-foreground/60">
-          <MapPin className="h-3 w-3 text-primary" />
-          Rio de Janeiro
-        </div>
         <h1 className="mx-auto max-w-2xl text-balance font-serif text-3xl leading-tight sm:text-4xl">
           {t('heroTitle')}
         </h1>
@@ -99,7 +95,12 @@ export function PropertySelectorHero() {
           />
         </div>
 
-        <p className="mt-5 text-xs text-foreground/40">
+        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-foreground/60">
+          <MapPin className="h-3 w-3 text-primary" />
+          Rio de Janeiro
+        </div>
+
+        <p className="mt-3 text-xs text-foreground/40">
           {t('directBooking')}
         </p>
       </main>

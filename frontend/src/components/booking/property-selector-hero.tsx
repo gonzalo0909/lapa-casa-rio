@@ -154,15 +154,15 @@ function PropertyPanel({
         <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
           {icon}
         </span>
-        <span className="block font-serif text-2xl">{title}</span>
-        <span className="mt-0.5 inline-flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-foreground/70">
-          <MapPin className="h-2.5 w-2.5" />
-          {location}
-        </span>
+        <span className={`block font-serif ${pattern === "santa-teresa" ? "text-5xl" : "text-2xl"}`}>{title}</span>
         <span className="mt-1.5 block max-w-[28ch] text-sm leading-snug text-foreground/85">{description}</span>
         <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
           {cta}
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+        </span>
+        <span className="mt-1.5 inline-flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-foreground/70">
+          <MapPin className="h-2.5 w-2.5" />
+          {location}
         </span>
       </span>
     </Link>

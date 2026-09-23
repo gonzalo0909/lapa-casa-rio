@@ -861,6 +861,7 @@
     "btnBack": "Indietro",
     "btnNext": "Avanti",
     "flexibleNotice": "Camera 6 — Solo Donne: dormitorio femminile per impostazione predefinita. Diventa misto 48h prima del check-in se necessario.",
+    "overflowNotice": "Non ci sono più letti disponibili nella {primary}. Questa è {overflow}: stesse condizioni e prezzo per letto.",
     "tNights": "Notti",
     "tTotalBeds": "Letti totali",
     "tTotal": "Totale",

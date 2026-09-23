@@ -158,6 +158,11 @@ form.stack button:hover { opacity: 0.9; }
 .inner-panel.active { display: block; }
 .embed-frame { width: 100%; min-height: 900px; border: none; }
 
+/* Bloqueos + Períodos especiales lado a lado -- misma pantalla, dos
+   iframes independientes (cada uno con su propio JS aislado). */
+.embed-columns { display: flex; gap: 16px; align-items: flex-start; }
+.embed-columns .embed-frame { flex: 1; min-width: 0; }
+
 /* Mobile -- el panel se pensó para desktop (nav de 11 links en una fila,
    tablas anchas, grids fijos): sin esto, en el teléfono la barra de nav
    desborda horizontalmente la pantalla entera y las tablas se aplastan
@@ -189,6 +194,8 @@ form.stack button:hover { opacity: 0.9; }
     -webkit-overflow-scrolling: touch;
   }
   .inner-tab-btn { flex-shrink: 0; white-space: nowrap; }
+
+  .embed-columns { flex-direction: column; }
 
   main { padding: 14px; }
   .card { padding: 14px; }

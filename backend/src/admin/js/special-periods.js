@@ -38,7 +38,8 @@ async function loadHolidayPresets() {
       apiFetch(`/admin/holiday-blocks/presets?year=${year}`),
       apiFetch(`/admin/holiday-blocks/presets?year=${year + 1}`)
     ]);
-    holidayPresets = [...thisYear.presets, ...nextYear.presets];
+    const today = new Date().toISOString().slice(0, 10);
+    holidayPresets = [...thisYear.presets, ...nextYear.presets].filter((p) => p.endDate >= today);
     const select = document.getElementById('rule-holiday');
     select.innerHTML = '<option value="">— Elegir fechas manualmente —</option>'
       + holidayPresets.map((p) =>

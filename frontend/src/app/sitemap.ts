@@ -19,7 +19,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '', changeFrequency: 'weekly', priority: 1.0 },
     { path: '/hostel', changeFrequency: 'weekly', priority: 0.9 },
     { path: '/apartamentos', changeFrequency: 'weekly', priority: 0.9 },
-    { path: '/precios', changeFrequency: 'daily', priority: 0.8 },
     // Long-tail SEO + AEO content pages
     { path: '/santa-teresa', changeFrequency: 'monthly', priority: 0.8 },
     { path: '/grupos', changeFrequency: 'monthly', priority: 0.8 },

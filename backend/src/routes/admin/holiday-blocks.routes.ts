@@ -89,4 +89,48 @@ router.post('/apply', validate(ApplySchema), async (req, res, next) => {
   }
 });
 
+const RemoveSchema = z.object({
+  name: z.string().trim().min(1),
+  propertyType: z.enum(['all', 'hostel', 'apartment']).default('all'),
+});
+
+/** POST /admin/holiday-blocks/remove — el "desbloquear todo": saca el bloqueo
+ *  del feriado elegido de todas las unidades del tipo elegido (busca por
+ *  reason exacto, el mismo texto que graba /apply y las migraciones de
+ *  siembra por default). */
+router.post('/remove', validate(RemoveSchema), async (req, res, next) => {
+  try {
+    const { name, propertyType } = req.body as z.infer<typeof RemoveSchema>;
+
+    const params: any[] = [name];
+    let sql = `
+      DELETE FROM room_blocks rb
+      USING room_types rt
+      WHERE rb.room_type_id = rt.id AND rb.reason = $1`;
+    if (propertyType !== 'all') {
+      params.push(propertyType);
+      sql += ` AND rt.property_type = $2`;
+    }
+    sql += ` RETURNING rb.id`;
+
+    const { rows } = await query(sql, params);
+
+    if (rows.length > 0) {
+      await auditLogService.log({
+        entity_type: 'room_block',
+        entity_id: rows[0].id,
+        operation: 'ADMIN_DELETE',
+        new_data: { reason: name, propertyType, count: rows.length },
+      });
+    }
+
+    redisClient.invalidateCache('availability:*').catch(() => {});
+    res.status(200).json(
+      ApiResponse.success({ removedCount: rows.length }, `${rows.length} bloqueo(s) removido(s) de ${name}`)
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
 export { router as adminHolidayBlocksRouter };

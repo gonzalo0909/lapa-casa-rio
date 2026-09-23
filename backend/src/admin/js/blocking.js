@@ -119,19 +119,34 @@ document.getElementById('holiday-form').addEventListener('submit', async (event)
   const name = preset ? preset.name : document.getElementById('holiday-preset').value;
   const startDate = document.getElementById('holiday-start').value;
   const endDate = document.getElementById('holiday-end').value;
-  const propertyType = document.getElementById('holiday-scope').value;
   const notes = document.getElementById('holiday-notes').value;
 
   try {
     const data = await apiFetch('/admin/holiday-blocks/apply', {
       method: 'POST',
-      body: JSON.stringify({ name, startDate, endDate, propertyType, notes })
+      body: JSON.stringify({ name, startDate, endDate, propertyType: PROPERTY_TYPE, notes })
     });
     const conflicts = data.results.filter((r) => r.status === 'conflict');
     const summary = conflicts.length
       ? `${data.blockedCount} bloqueadas. ${conflicts.length} con conflicto: ${conflicts.map((c) => c.roomName).join(', ')}.`
       : `${data.blockedCount} habitación(es) bloqueada(s) para ${name}.`;
     showMsg('holiday-msg', summary, conflicts.length ? 'error' : 'success');
+    loadBlocks();
+  } catch (err) {
+    showMsg('holiday-msg', err.message, 'error');
+  }
+});
+
+document.getElementById('holiday-unblock-btn').addEventListener('click', async () => {
+  const preset = holidayPresets.find((p) => p.key === document.getElementById('holiday-preset').value);
+  const name = preset ? preset.name : document.getElementById('holiday-preset').value;
+
+  try {
+    const data = await apiFetch('/admin/holiday-blocks/remove', {
+      method: 'POST',
+      body: JSON.stringify({ name, propertyType: PROPERTY_TYPE })
+    });
+    showMsg('holiday-msg', `${data.removedCount} bloqueo(s) removido(s) de ${name}.`, 'success');
     loadBlocks();
   } catch (err) {
     showMsg('holiday-msg', err.message, 'error');

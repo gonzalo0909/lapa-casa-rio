@@ -12,7 +12,7 @@
 <main>
   <div class="card">
     <h2>Bloques festivos</h2>
-    <p style="font-size:13px;color:#888;">Bloquea un feriado completo (Carnaval, Réveillon, etc.) en todas las unidades de un click. Las fechas se calculan solas pero se pueden editar antes de aplicar.</p>
+    <p style="font-size:13px;color:#888;">Bloquea o desbloquea un feriado completo (Carnaval, Réveillon, etc.) en todas las unidades de esta sección con un click. Las fechas se calculan solas pero se pueden editar antes de aplicar. Solo afecta a las unidades de esta pestaña (hostel y apartamentos nunca se mezclan).</p>
     <div id="holiday-msg"></div>
     <form class="stack" id="holiday-form">
       <label>Año
@@ -27,17 +27,13 @@
       <label>Hasta
         <input type="date" id="holiday-end" required>
       </label>
-      <label>Aplicar a
-        <select id="holiday-scope">
-          <option value="all">Habitaciones + apartamentos</option>
-          <option value="hostel">Solo habitaciones</option>
-          <option value="apartment">Solo apartamentos</option>
-        </select>
-      </label>
       <label>Notas (opcional)
         <input type="text" id="holiday-notes" placeholder="...">
       </label>
-      <button type="submit">Bloquear todo</button>
+      <div style="display:flex;gap:8px;">
+        <button type="submit">Bloquear todo</button>
+        <button type="button" id="holiday-unblock-btn">Desbloquear todo</button>
+      </div>
     </form>
   </div>
 

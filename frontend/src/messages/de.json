@@ -861,7 +861,7 @@
     "btnBack": "Zurück",
     "btnNext": "Weiter",
     "flexibleNotice": "Zimmer 6 — Nur Frauen: standardmäßig Frauenschlafraum. Wird 48h vor dem Check-in bei Bedarf gemischt.",
-    "overflowNotice": "{primary} ist voll. Das ist {overflow}: gleiche Bedingungen und Preis pro Bett.",
+    "overflowNotice": "Im {primary} sind keine Betten mehr verfügbar. Das ist {overflow}: gleiche Bedingungen und Preis pro Bett.",
     "tNights": "Nächte",
     "tTotalBeds": "Betten gesamt",
     "tTotal": "Gesamt",

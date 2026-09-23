@@ -861,7 +861,7 @@
     "btnBack": "Retour",
     "btnNext": "Suivant",
     "flexibleNotice": "Chambre 6 — Femmes uniquement: dortoir féminin par défaut. Converti en mixte 48h avant le check-in si nécessaire.",
-    "overflowNotice": "{primary} est complet. Voici {overflow} : mêmes conditions et prix par lit.",
+    "overflowNotice": "Il n'y a plus de lits disponibles dans le {primary}. Voici {overflow} : mêmes conditions et prix par lit.",
     "tNights": "Nuits",
     "tTotalBeds": "Total des lits",
     "tTotal": "Total",

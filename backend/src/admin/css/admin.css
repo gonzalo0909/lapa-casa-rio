@@ -145,6 +145,19 @@ form.stack button:hover { opacity: 0.9; }
 
 #login-screen { max-width: 360px; margin: 80px auto; }
 
+/* Sub-pestañas dentro de una página (Cuartos/Bloqueos/Ofertas/... en
+   rooms.html y apartments.html) -- estaba duplicado inline en ambos
+   archivos, se centraliza acá para no arreglar el mismo bug dos veces. */
+.inner-tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.inner-tab-btn { padding: 7px 14px; border: none; background: none; cursor: pointer; font-size: 13px;
+                 color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+                 font-weight: 500; }
+.inner-tab-btn:hover { color: var(--text); }
+.inner-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.inner-panel { display: none; }
+.inner-panel.active { display: block; }
+.embed-frame { width: 100%; min-height: 900px; border: none; }
+
 /* Mobile -- el panel se pensó para desktop (nav de 11 links en una fila,
    tablas anchas, grids fijos): sin esto, en el teléfono la barra de nav
    desborda horizontalmente la pantalla entera y las tablas se aplastan
@@ -169,6 +182,13 @@ form.stack button:hover { opacity: 0.9; }
     scrollbar-width: thin;
   }
   nav.tabs a { flex-shrink: 0; white-space: nowrap; }
+
+  .inner-tab-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .inner-tab-btn { flex-shrink: 0; white-space: nowrap; }
 
   main { padding: 14px; }
   .card { padding: 14px; }

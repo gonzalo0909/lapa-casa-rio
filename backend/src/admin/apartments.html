@@ -21,16 +21,6 @@
                  background: var(--border); color: var(--text-muted); }
   .photo-badge.has-photos { background: #dcfce7; color: #166534; }
 
-  /* Tabs dentro del editor */
-  .inner-tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-  .inner-tab-btn { padding: 7px 14px; border: none; background: none; cursor: pointer; font-size: 13px;
-                   color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
-                   font-weight: 500; }
-  .inner-tab-btn:hover { color: var(--text); }
-  .inner-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-  .inner-panel { display: none; }
-  .inner-panel.active { display: block; }
-
   /* Formulario datos */
   .field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
   .field-grid label, .field-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
@@ -83,6 +73,11 @@
   .outer-panel { display: none; }
   .outer-panel.active { display: block; }
   .embed-frame { width: 100%; min-height: 900px; border: none; }
+
+  @media (max-width: 720px) {
+    .outer-tab-bar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .outer-tab-btn { flex-shrink: 0; white-space: nowrap; }
+  }
 </style>
 </head>
 <body>

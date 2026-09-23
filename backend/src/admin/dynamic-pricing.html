@@ -12,6 +12,10 @@
   .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
+  @media (max-width: 720px) {
+    .tab-bar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab-btn { flex-shrink: 0; white-space: nowrap; }
+  }
   .units-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-bottom:20px; }
   .unit-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
   .unit-name { font-weight:600; font-size:14px; margin-bottom:2px; }

@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { BookingService, InsufficientAvailabilityError } from '../../services/booking-service';
-import { PricingService } from '../../services/pricing-service';
+import { PricingService, MinNightsRequiredError } from '../../services/pricing-service';
 import { notificationService } from '../../services/notification-service';
 import { whatsappNotificationService } from '../../services/whatsapp-notification-service';
 import type { BookingWithGuest } from '../../services/email-service';
@@ -385,6 +385,10 @@ export const createApartmentBookingHandler = async (
       },
     }, 'Apartment booking created successfully'));
   } catch (error) {
+    if (error instanceof MinNightsRequiredError) {
+      res.status(422).json(ApiResponse.error(error.message, { minNights: error.minNights, label: error.label, roomId: error.roomId }));
+      return;
+    }
     if (error instanceof InsufficientAvailabilityError) {
       logger.warn('Insufficient availability during createApartmentBooking', { details: error.details });
       res.status(409).json(ApiResponse.error('El apartamento ya no está disponible para esas fechas', error.details));

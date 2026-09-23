@@ -2,7 +2,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../../services/booking-service';
 import { AvailabilityService } from '../../services/availability-service';
-import { PricingService } from '../../services/pricing-service';
+import { PricingService, MinNightsRequiredError } from '../../services/pricing-service';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -246,6 +246,10 @@ export const updateBookingHandler = async (
       }, 'Reserva actualizada exitosamente')
     );
   } catch (error) {
+    if (error instanceof MinNightsRequiredError) {
+      res.status(422).json(ApiResponse.error(error.message, { minNights: error.minNights, label: error.label, roomId: error.roomId }));
+      return;
+    }
     logger.error('Error al actualizar reserva', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,

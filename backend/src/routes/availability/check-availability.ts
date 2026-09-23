@@ -7,7 +7,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database';
 import { AvailabilityService } from '../../services/availability-service';
-import { PricingService } from '../../services/pricing-service';
+import { PricingService, MinNightsRequiredError } from '../../services/pricing-service';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -108,39 +108,59 @@ export const checkAvailabilityHandler = async (
       ? generateAllocationOptions(bedsNeeded, roomsAvailability)
       : [];
 
-    const pricedOptions = await Promise.all(
+    // Un período especial (0045) puede exigir más noches de las pedidas para
+    // una habitación puntual -- esa opción de asignación queda afuera (no
+    // reventamos todo el chequeo de disponibilidad), pero se avisa el
+    // mínimo real para que el huésped pueda ajustar las fechas.
+    let minNightsNotice: { minNights: number; label: string | null } | null = null;
+
+    const pricedOptionsRaw = await Promise.all(
       allocationOptions.map(async (option) => {
-        const pricing = await pricingService.calculateTotalPrice({
-          checkInDate: checkIn,
-          checkOutDate: checkOut,
-          rooms: option.rooms.map(r => ({ roomId: r.roomId, bedsCount: r.bedsAllocated })),
-          totalBeds: bedsNeeded
-        });
-        return {
-          ...option,
-          pricing: {
-            subtotal: pricing.basePrice,
-            groupDiscount: pricing.discountAmount,
-            groupDiscountPercentage: pricing.groupDiscountPercent,
-            seasonalAdjustment: pricing.priceAfterSeason - pricing.priceAfterDiscount,
-            seasonalMultiplier: pricing.seasonMultiplier,
-            total: pricing.totalPrice,
-            deposit: pricing.depositAmount,
-            pricePerBed: pricing.totalPrice / bedsNeeded,
-            currency: 'BRL'
+        try {
+          const pricing = await pricingService.calculateTotalPrice({
+            checkInDate: checkIn,
+            checkOutDate: checkOut,
+            rooms: option.rooms.map(r => ({ roomId: r.roomId, bedsCount: r.bedsAllocated })),
+            totalBeds: bedsNeeded
+          });
+          return {
+            ...option,
+            pricing: {
+              subtotal: pricing.basePrice,
+              groupDiscount: pricing.discountAmount,
+              groupDiscountPercentage: pricing.groupDiscountPercent,
+              seasonalAdjustment: pricing.priceAfterSeason - pricing.priceAfterDiscount,
+              seasonalMultiplier: pricing.seasonMultiplier,
+              total: pricing.totalPrice,
+              deposit: pricing.depositAmount,
+              pricePerBed: pricing.totalPrice / bedsNeeded,
+              currency: 'BRL'
+            }
+          };
+        } catch (error) {
+          if (error instanceof MinNightsRequiredError) {
+            if (!minNightsNotice || error.minNights > minNightsNotice.minNights) {
+              minNightsNotice = { minNights: error.minNights, label: error.label };
+            }
+            return null;
           }
-        };
+          throw error;
+        }
       })
     );
+    const pricedOptions = pricedOptionsRaw.filter((o): o is NonNullable<typeof o> => o !== null);
+
+    const availableAfterMinNights = available && pricedOptions.length > 0;
 
     let alternativeDates: any[] = [];
-    if (!available) {
+    if (!availableAfterMinNights) {
       alternativeDates = await availabilityService.findAlternativeDates(checkIn, checkOut, bedsNeeded);
     }
 
     res.status(200).json(
       ApiResponse.success({
-        available,
+        available: availableAfterMinNights,
+        minNightsNotice,
         checkIn,
         checkOut,
         nights,
@@ -165,7 +185,7 @@ export const checkAvailabilityHandler = async (
           hoursUntilCheckIn,
           willAutoConvert: hoursUntilCheckIn <= 48 && (flexibleRoom?.occupiedBeds ?? 1) === 0
         }
-      }, available ? 'Rooms available' : 'Insufficient availability')
+      }, availableAfterMinNights ? 'Rooms available' : 'Insufficient availability')
     );
   } catch (error) {
     logger.error('Error checking availability', {

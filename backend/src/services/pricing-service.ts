@@ -38,6 +38,19 @@ const nightsBetween = (checkIn: string, checkOut: string): number =>
 
 const todayDate = (): string => new Date().toISOString().slice(0, 10);
 
+/** La reserva pisa un período especial (special_period_rules, 0045) que exige
+ *  más noches de las pedidas -- ej. mínimo 5 noches para Carnaval. */
+export class MinNightsRequiredError extends Error {
+  constructor(public readonly minNights: number, public readonly label: string | null, public readonly roomId: string) {
+    super(
+      label
+        ? `${label} exige un mínimo de ${minNights} noches para esa habitación`
+        : `Esas fechas exigen un mínimo de ${minNights} noches para esa habitación`
+    );
+    this.name = 'MinNightsRequiredError';
+  }
+}
+
 export class PricingService {
   /**
    * Precio final via calculate_final_price() -- suma por habitacion (cada
@@ -70,6 +83,23 @@ export class PricingService {
       const roomBasePrice = parseFloat(rows[0].base_price);
       const beds = isApartment ? 1 : (room.hostelBeds ?? 1);
       basePrice += roomBasePrice * nights * beds;
+
+      // Período especial (0045): pisa el precio de temporada normal para
+      // esta habitación en este rango -- exige el mínimo de noches y usa
+      // su propio precio por noche en vez de calculate_final_price.
+      const { rows: ruleRows } = await query<{ min_nights: number; price_per_night: string; label: string | null }>(
+        `SELECT * FROM get_special_period_rule($1, $2::date)`,
+        [room.roomId, request.checkInDate]
+      );
+      const rule = ruleRows[0];
+
+      if (rule) {
+        if (nights < rule.min_nights) {
+          throw new MinNightsRequiredError(rule.min_nights, rule.label, room.roomId);
+        }
+        preDiscountTotal += parseFloat(rule.price_per_night) * nights * beds;
+        continue;
+      }
 
       const { rows: priceRows } = await query<{ p: string }>(
         `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,

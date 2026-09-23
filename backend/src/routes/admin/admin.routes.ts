@@ -27,6 +27,7 @@ import { adminConflictsRouter } from './conflicts.routes';
 import { adminPhotosRouter } from './photos.routes';
 import { adminBlockedDatesRouter } from './blocked-dates.routes';
 import { adminHolidayBlocksRouter } from './holiday-blocks.routes';
+import { adminSpecialPeriodRulesRouter } from './special-period-rules.routes';
 import { roomTypePhotosRouter } from './room-type-photos.routes';
 import { apartmentOwnersRouter } from './apartment-owners.routes';
 import { dynamicPricingRouter } from './dynamic-pricing.routes';
@@ -61,6 +62,13 @@ router.use('/photos', adminPhotosRouter);
  * (mantenimiento/evento privado), ver blocked-dates.routes.ts
  */
 router.use('/blocked-dates', adminBlockedDatesRouter);
+
+/**
+ * /admin/special-period-rules — mínimo de noches + precio propio para un
+ * rango de fechas puntual (sigue disponible, no es un bloqueo), ver
+ * special-period-rules.routes.ts
+ */
+router.use('/special-period-rules', adminSpecialPeriodRulesRouter);
 
 /**
  * /admin/holiday-blocks — bloqueo masivo de feriados (Carnaval, Réveillon,

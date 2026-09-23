@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Períodos especiales — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Período especial (mínimo de noches + precio propio)</h2>
+    <p style="font-size:13px;color:#888;">La habitación sigue disponible para reservar en este rango -- no es un bloqueo. El huésped va a tener que elegir el mínimo de noches indicado, a este precio por noche en vez del precio normal de temporada.</p>
+    <div id="rule-msg"></div>
+    <form class="stack" id="rule-form">
+      <label>Habitación
+        <select id="rule-room" required></select>
+      </label>
+      <label>Feriado (opcional, autocompleta las fechas)
+        <select id="rule-holiday">
+          <option value="">— Elegir fechas manualmente —</option>
+        </select>
+      </label>
+      <label>Desde
+        <input type="date" id="rule-start" required>
+      </label>
+      <label>Hasta
+        <input type="date" id="rule-end" required>
+      </label>
+      <label>Mínimo de noches
+        <input type="number" id="rule-minnights" min="1" step="1" required>
+      </label>
+      <label>Precio por noche (R$)
+        <input type="number" id="rule-price" min="0" step="0.01" required>
+      </label>
+      <label>Nombre (opcional, ej. "Carnaval 2027")
+        <input type="text" id="rule-label" placeholder="...">
+      </label>
+      <button type="submit">Crear regla</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Reglas activas</h2>
+    <p style="font-size:13px;color:#888;">Editá cualquier valor directo en la fila y tocá "Guardar".</p>
+    <div id="rules-msg"></div>
+    <table id="rules-table">
+      <thead><tr><th>Habitación</th><th>Desde</th><th>Hasta</th><th>Mín. noches</th><th>Precio/noche</th><th>Nombre</th><th colspan="2"></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/special-periods.js"></script>
+</body>
+</html>

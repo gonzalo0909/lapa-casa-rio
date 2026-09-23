@@ -33,7 +33,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'O check-in é a partir das 14h. O check-out é até as 12h. Não aceitamos chegadas antes do horário nem saídas após o horário.',
+        'O check-in é a partir das 14h. O check-out é até as 12h.',
     },
     {
       question: 'E se eu chegar depois das 22h?',
@@ -42,12 +42,11 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
-      answer: 'Aceitamos cartão de crédito e PIX. Não trabalhamos com parcelamento.',
+      answer: 'Aceitamos cartão de crédito e PIX.',
     },
     {
       question: 'Vocês oferecem descontos para grupos?',
-      answer:
-        'Sim! Grupos com 6 ou mais camas têm 10% de desconto. Grupos com 10 ou mais camas têm 15% de desconto.',
+      answer: 'Sim, entra em contato com a nossa equipe para mais detalhes.',
     },
     {
       question: 'Como funciona a reserva para grupos grandes?',
@@ -77,7 +76,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00. No aceptamos llegadas antes del horario ni salidas después.',
+        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00.',
     },
     {
       question: '¿Qué pasa si llego después de las 22h?',
@@ -86,12 +85,11 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: '¿Qué métodos de pago aceptan?',
-      answer: 'Aceptamos tarjeta de crédito y PIX. No trabajamos con cuotas.',
+      answer: 'Aceptamos tarjeta de crédito y PIX.',
     },
     {
       question: '¿Ofrecen descuentos para grupos?',
-      answer:
-        '¡Sí! Grupos de 6 o más camas tienen 10% de descuento. Grupos de 10 o más camas tienen 15% de descuento.',
+      answer: 'Sí, contactá a nuestro equipo para más detalles.',
     },
     {
       question: '¿Cómo funciona la reserva para grupos grandes?',
@@ -121,7 +119,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is from 2:00 PM. Check-out is by 12:00 PM. We do not accept early arrivals or late departures outside these times.',
+        'Check-in is from 2:00 PM. Check-out is by 12:00 PM.',
     },
     {
       question: 'What if I arrive after 10 PM?',
@@ -130,11 +128,11 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept credit card and PIX. Installment payments are not available.',
+      answer: 'We accept credit card and PIX.',
     },
     {
       question: 'Do you offer group discounts?',
-      answer: 'Yes! Groups of 6 or more beds get 10% off. Groups of 10 or more beds get 15% off.',
+      answer: 'Yes, contact our team for more details.',
     },
     {
       question: 'How does booking work for large groups?',
@@ -164,7 +162,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr. Frühankünfte oder Spätabreisen außerhalb dieser Zeiten werden nicht akzeptiert.',
+        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr.',
     },
     {
       question: 'Was passiert, wenn ich nach 22 Uhr ankomme?',
@@ -173,12 +171,11 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
-      answer: 'Wir akzeptieren Kreditkarte und PIX. Ratenzahlung ist nicht verfügbar.',
+      answer: 'Wir akzeptieren Kreditkarte und PIX.',
     },
     {
       question: 'Bieten Sie Gruppenrabatte an?',
-      answer:
-        'Ja! Gruppen ab 6 Betten erhalten 10% Rabatt. Gruppen ab 10 Betten erhalten 15% Rabatt.',
+      answer: 'Ja, kontaktieren Sie unser Team für weitere Details.',
     },
     {
       question: 'Wie funktioniert die Buchung für große Gruppen?',
@@ -208,7 +205,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "L'arrivée est à partir de 14h00. Le départ est avant 12h00. Nous n'acceptons pas les arrivées anticipées ni les départs tardifs.",
+        "L'arrivée est à partir de 14h00. Le départ est avant 12h00.",
     },
     {
       question: "Que se passe-t-il si j'arrive après 22h ?",
@@ -218,12 +215,11 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Quels modes de paiement acceptez-vous ?',
       answer:
-        "Nous acceptons la carte de crédit et le PIX. Le paiement en plusieurs fois n'est pas disponible.",
+        'Nous acceptons la carte de crédit et le PIX.',
     },
     {
       question: 'Proposez-vous des remises de groupe ?',
-      answer:
-        'Oui ! Les groupes de 6 lits ou plus bénéficient de 10% de réduction. Les groupes de 10 lits ou plus ont 15% de réduction.',
+      answer: 'Oui, contactez notre équipe pour plus de détails.',
     },
     {
       question: 'Comment fonctionne la réservation pour les grands groupes ?',
@@ -253,7 +249,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Il check-in è dalle 14:00. Il check-out è entro le 12:00. Non accettiamo arrivi anticipati o partenze tardive.',
+        'Il check-in è dalle 14:00. Il check-out è entro le 12:00.',
     },
     {
       question: 'Cosa succede se arrivo dopo le 22?',
@@ -262,12 +258,11 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Quali metodi di pagamento accettate?',
-      answer: 'Accettiamo carta di credito e PIX. Il pagamento rateale non è disponibile.',
+      answer: 'Accettiamo carta di credito e PIX.',
     },
     {
       question: 'Offrite sconti per gruppi?',
-      answer:
-        'Sì! Gruppi di 6 o più letti hanno il 10% di sconto. Gruppi di 10 o più letti hanno il 15% di sconto.',
+      answer: 'Sì, contatta il nostro team per maggiori dettagli.',
     },
     {
       question: 'Come funziona la prenotazione per gruppi numerosi?',
@@ -302,11 +297,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'O check-in é a partir das 14h. O check-out é até as 12h. Não aceitamos chegadas antes do horário nem saídas após o horário.',
+        'O check-in é a partir das 14h. O check-out é até as 12h.',
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
-      answer: 'Aceitamos cartão de crédito e PIX. Não trabalhamos com parcelamento.',
+      answer: 'Aceitamos cartão de crédito e PIX.',
     },
     {
       question: 'Os apartamentos têm Wi-Fi?',
@@ -331,11 +326,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00. No aceptamos llegadas antes del horario ni salidas después.',
+        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00.',
     },
     {
       question: '¿Qué métodos de pago aceptan?',
-      answer: 'Aceptamos tarjeta de crédito y PIX. No trabajamos con cuotas.',
+      answer: 'Aceptamos tarjeta de crédito y PIX.',
     },
     {
       question: '¿Los apartamentos tienen Wi-Fi?',
@@ -360,11 +355,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is from 2:00 PM. Check-out is by 12:00 PM. We do not accept early arrivals or late departures.',
+        'Check-in is from 2:00 PM. Check-out is by 12:00 PM.',
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept credit card and PIX. Installment payments are not available.',
+      answer: 'We accept credit card and PIX.',
     },
     {
       question: 'Do the apartments have Wi-Fi?',
@@ -389,11 +384,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr. Frühankünfte oder Spätabreisen werden nicht akzeptiert.',
+        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr.',
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
-      answer: 'Wir akzeptieren Kreditkarte und PIX. Ratenzahlung ist nicht verfügbar.',
+      answer: 'Wir akzeptieren Kreditkarte und PIX.',
     },
     {
       question: 'Haben die Apartments WLAN?',
@@ -418,12 +413,12 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "L'arrivée est à partir de 14h00. Le départ est avant 12h00. Nous n'acceptons pas les arrivées anticipées ni les départs tardifs.",
+        "L'arrivée est à partir de 14h00. Le départ est avant 12h00.",
     },
     {
       question: 'Quels modes de paiement acceptez-vous ?',
       answer:
-        "Nous acceptons la carte de crédit et le PIX. Le paiement en plusieurs fois n'est pas disponible.",
+        'Nous acceptons la carte de crédit et le PIX.',
     },
     {
       question: 'Les appartements ont-ils le Wi-Fi ?',
@@ -448,11 +443,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Il check-in è dalle 14:00. Il check-out è entro le 12:00. Non accettiamo arrivi anticipati o partenze tardive.',
+        'Il check-in è dalle 14:00. Il check-out è entro le 12:00.',
     },
     {
       question: 'Quali metodi di pagamento accettate?',
-      answer: 'Accettiamo carta di credito e PIX. Il pagamento rateale non è disponibile.',
+      answer: 'Accettiamo carta di credito e PIX.',
     },
     {
       question: 'Gli appartamenti hanno il Wi-Fi?',

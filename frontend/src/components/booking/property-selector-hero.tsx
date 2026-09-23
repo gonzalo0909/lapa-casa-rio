@@ -84,7 +84,7 @@ export function PropertySelectorHero() {
             cta={t('hostelCta')}
             icon={<BedDouble className="h-5 w-5" />}
             tone="foliage"
-            pattern="beds"
+            pattern="santa-teresa"
             href={hostelHref}
           />
           <PropertyPanel
@@ -123,7 +123,7 @@ function PropertyPanel({
   cta: string
   icon: React.ReactNode
   tone: "foliage" | "azulejo"
-  pattern: "beds" | "windows"
+  pattern: "beds" | "windows" | "santa-teresa"
   href: string
 }) {
   const bg =
@@ -134,11 +134,11 @@ function PropertyPanel({
   return (
     <Link
       href={href}
-      className="group relative flex min-h-[180px] flex-col justify-end overflow-hidden rounded-2xl p-5 text-left text-foreground transition-transform duration-300 hover:-translate-y-1"
+      className="group relative flex min-h-[180px] flex-col items-center justify-center overflow-hidden rounded-2xl p-5 text-center text-foreground transition-transform duration-300 hover:-translate-y-1"
       style={{ background: bg }}
     >
       <span className="pointer-events-none absolute inset-0 text-foreground opacity-40 transition-opacity duration-300 group-hover:opacity-70">
-        {pattern === "beds" ? <BedsPattern /> : <WindowsPattern />}
+        {pattern === "beds" ? <BedsPattern /> : pattern === "windows" ? <WindowsPattern /> : <SantaTeresaScene />}
       </span>
       <span className="relative z-10">
         <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
@@ -184,6 +184,44 @@ function WindowsPattern() {
         </pattern>
       </defs>
       <rect width="400" height="400" fill="url(#psh-windows)" />
+    </svg>
+  )
+}
+
+// Ilustración de línea (no foto): colina de Santa Teresa con casas coloniales
+// y los Arcos da Lapa. Mismo estilo de trazo fino que BedsPattern/WindowsPattern.
+function SantaTeresaScene() {
+  return (
+    <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
+      {/* Colina */}
+      <path
+        d="M0 210 Q 90 160 190 195 T 400 175 V 400 H 0 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      {/* Casas en la colina */}
+      <g stroke="currentColor" strokeWidth="1.2" fill="none">
+        <path d="M40 195 h34 v26 h-34 z M40 195 l17 -14 l17 14" />
+        <rect x="49" y="205" width="8" height="10" opacity="0.6" />
+        <path d="M108 178 h30 v24 h-30 z M108 178 l15 -13 l15 13" />
+        <rect x="116" y="188" width="7" height="9" opacity="0.6" />
+        <path d="M178 190 h36 v28 h-36 z M178 190 l18 -15 l18 15" />
+        <rect x="188" y="201" width="8" height="10" opacity="0.6" />
+        <path d="M252 172 h30 v24 h-30 z M252 172 l15 -13 l15 13" />
+        <rect x="260" y="182" width="7" height="9" opacity="0.6" />
+        <path d="M312 188 h34 v26 h-34 z M312 188 l17 -14 l17 14" />
+        <rect x="321" y="198" width="8" height="10" opacity="0.6" />
+      </g>
+      {/* Fiação do bonde */}
+      <path d="M0 168 Q 200 130 400 168" stroke="currentColor" strokeWidth="1" opacity="0.55" fill="none" />
+      {/* Arcos da Lapa */}
+      <g stroke="currentColor" strokeWidth="1.4" fill="none" opacity="0.85">
+        {Array.from({ length: 6 }, (_, i) => 30 + i * 58).map((cx) => (
+          <path key={cx} d={`M${cx} 320 v-46 a20 20 0 0 1 40 0 v46`} />
+        ))}
+        <line x1="10" y1="320" x2="390" y2="320" strokeWidth="1.6" />
+      </g>
     </svg>
   )
 }

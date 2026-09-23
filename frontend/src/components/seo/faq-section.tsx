@@ -40,10 +40,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
       answer: 'Aceitamos cartão de crédito e PIX.',
     },
     {
-      question: 'Vocês oferecem descontos para grupos?',
-      answer: 'Sim, fale com a nossa equipe.',
-    },
-    {
       question: 'Como funciona a reserva para grupos grandes?',
       answer:
         'Grupos podem reservar dormitórios inteiros e o responsável preenche os dados uma única vez para todo o grupo. Também é possível dividir o pagamento entre os integrantes com um link compartilhável.',
@@ -76,10 +72,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: '¿Qué métodos de pago aceptan?',
       answer: 'Aceptamos tarjeta de crédito y PIX.',
-    },
-    {
-      question: '¿Ofrecen descuentos para grupos?',
-      answer: 'Sí, hablá con nuestro equipo.',
     },
     {
       question: '¿Cómo funciona la reserva para grupos grandes?',
@@ -116,10 +108,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
       answer: 'We accept credit card and PIX.',
     },
     {
-      question: 'Do you offer group discounts?',
-      answer: 'Yes, talk to our team.',
-    },
-    {
       question: 'How does booking work for large groups?',
       answer:
         'Groups can book entire dorms, and the organizer fills in the details once for the whole group. Payment can also be split among members with a shareable link.',
@@ -152,10 +140,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
       answer: 'Wir akzeptieren Kreditkarte und PIX.',
-    },
-    {
-      question: 'Bieten Sie Gruppenrabatte an?',
-      answer: 'Ja, sprechen Sie mit unserem Team.',
     },
     {
       question: 'Wie funktioniert die Buchung für große Gruppen?',
@@ -193,10 +177,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
         'Nous acceptons la carte de crédit et le PIX.',
     },
     {
-      question: 'Proposez-vous des remises de groupe ?',
-      answer: 'Oui, contactez notre équipe.',
-    },
-    {
       question: 'Comment fonctionne la réservation pour les grands groupes ?',
       answer:
         "Les groupes peuvent réserver des dortoirs entiers, et l'organisateur remplit les informations une seule fois pour tout le groupe. Le paiement peut aussi être partagé entre les membres via un lien.",
@@ -229,10 +209,6 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Quali metodi di pagamento accettate?',
       answer: 'Accettiamo carta di credito e PIX.',
-    },
-    {
-      question: 'Offrite sconti per gruppi?',
-      answer: 'Sì, parla con il nostro team.',
     },
     {
       question: 'Come funziona la prenotazione per gruppi numerosi?',

@@ -88,5 +88,57 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
   }
 });
 
+let holidayPresets = [];
+
+async function loadHolidayPresets() {
+  const year = document.getElementById('holiday-year').value;
+  try {
+    const data = await apiFetch(`/admin/holiday-blocks/presets?year=${year}`);
+    holidayPresets = data.presets;
+    const select = document.getElementById('holiday-preset');
+    select.innerHTML = holidayPresets.map((p) => `<option value="${p.key}">${p.name}</option>`).join('');
+    applyPresetDates();
+  } catch (err) {
+    showMsg('holiday-msg', err.message, 'error');
+  }
+}
+
+function applyPresetDates() {
+  const preset = holidayPresets.find((p) => p.key === document.getElementById('holiday-preset').value);
+  if (!preset) return;
+  document.getElementById('holiday-start').value = preset.startDate;
+  document.getElementById('holiday-end').value = preset.endDate;
+}
+
+document.getElementById('holiday-year').addEventListener('change', loadHolidayPresets);
+document.getElementById('holiday-preset').addEventListener('change', applyPresetDates);
+
+document.getElementById('holiday-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const preset = holidayPresets.find((p) => p.key === document.getElementById('holiday-preset').value);
+  const name = preset ? preset.name : document.getElementById('holiday-preset').value;
+  const startDate = document.getElementById('holiday-start').value;
+  const endDate = document.getElementById('holiday-end').value;
+  const propertyType = document.getElementById('holiday-scope').value;
+  const notes = document.getElementById('holiday-notes').value;
+
+  try {
+    const data = await apiFetch('/admin/holiday-blocks/apply', {
+      method: 'POST',
+      body: JSON.stringify({ name, startDate, endDate, propertyType, notes })
+    });
+    const conflicts = data.results.filter((r) => r.status === 'conflict');
+    const summary = conflicts.length
+      ? `${data.blockedCount} bloqueadas. ${conflicts.length} con conflicto: ${conflicts.map((c) => c.roomName).join(', ')}.`
+      : `${data.blockedCount} habitación(es) bloqueada(s) para ${name}.`;
+    showMsg('holiday-msg', summary, conflicts.length ? 'error' : 'success');
+    loadBlocks();
+  } catch (err) {
+    showMsg('holiday-msg', err.message, 'error');
+  }
+});
+
+document.getElementById('holiday-year').value = new Date().getFullYear();
+loadHolidayPresets();
 loadRoomOptions();
 loadBlocks();

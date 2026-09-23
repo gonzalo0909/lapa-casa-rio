@@ -107,16 +107,6 @@ export const checkApartmentAvailabilityHandler = async (
              WHERE rbl.room_type_id = rt.id
                AND daterange(rbl.start_date, rbl.end_date, '[)') && daterange($1::date, $2::date, '[)')
            )
-           AND NOT EXISTS (
-             SELECT 1 FROM (
-               SELECT period_start, period_end
-               FROM apartment_holiday_periods(EXTRACT(YEAR FROM $1::date)::int)
-               UNION ALL
-               SELECT period_start, period_end
-               FROM apartment_holiday_periods(EXTRACT(YEAR FROM $1::date)::int + 1)
-             ) hp
-             WHERE daterange(hp.period_start, hp.period_end, '[)') && daterange($1::date, $2::date, '[)')
-           )
          ) AS available
        FROM room_types rt
        WHERE rt.property_type = 'apartment'

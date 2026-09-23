@@ -61,6 +61,23 @@ export interface OwnerBooking {
   transferPending: boolean;
 }
 
+export interface ApartmentBlock {
+  id: string;
+  start_date: string;
+  end_date: string;
+  block_type: string;
+  reason: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface HolidayBlockPreset {
+  key: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
 export interface ApartmentPhoto {
   id: string;
   image_url: string;
@@ -168,6 +185,26 @@ export const ownerApartmentsAPI = {
 
   listBookings: (id: string) =>
     api.get<{ success: boolean; data: { bookings: OwnerBooking[] } }>(`/owner/apartments/${id}/bookings`),
+
+  listBlocks: (id: string) =>
+    api.get<{ success: boolean; data: ApartmentBlock[] }>(`/owner/apartments/${id}/blocks`),
+
+  createBlock: (
+    id: string,
+    data: { start_date: string; end_date: string; block_type?: string; reason?: string; notes?: string },
+  ) =>
+    api.post<{ success: boolean; data: ApartmentBlock; message: string }>(
+      `/owner/apartments/${id}/blocks`,
+      data,
+    ),
+
+  deleteBlock: (blockId: string) =>
+    api.delete<{ success: boolean; message: string }>(`/owner/apartments/blocks/${blockId}`),
+
+  holidayPresets: (year: number) =>
+    api.get<{ success: boolean; data: { presets: HolidayBlockPreset[] } }>(
+      `/owner/apartments/holiday-presets?year=${year}`,
+    ),
 };
 
 export const ownerDocumentsAPI = {

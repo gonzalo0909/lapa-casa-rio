@@ -16,7 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useOwnerAuth } from '@/lib/use-owner-auth';
-import { ownerApartmentsAPI, type Apartment, type ApartmentPhoto } from '@/lib/owner-api';
+import {
+  ownerApartmentsAPI,
+  type Apartment,
+  type ApartmentPhoto,
+  type ApartmentBlock,
+  type HolidayBlockPreset,
+} from '@/lib/owner-api';
 import { handleAPIError } from '@/lib/api';
 
 // ─── ViaCEP lookup ───────────────────────────────────────────────────────────
@@ -67,6 +73,22 @@ export default function OwnerApartmentEditPage() {
   const [cepError, setCepError] = useState<string | null>(null);
   const [savingPricing, setSavingPricing] = useState(false);
   const [pricingMessage, setPricingMessage] = useState<string | null>(null);
+
+  // Bloqueios de datas
+  const [blocks, setBlocks] = useState<ApartmentBlock[] | null>(null);
+  const [blockError, setBlockError] = useState<string | null>(null);
+  const [blockStart, setBlockStart] = useState('');
+  const [blockEnd, setBlockEnd] = useState('');
+  const [blockReason, setBlockReason] = useState('');
+  const [savingBlock, setSavingBlock] = useState(false);
+
+  // Bloques festivos (Carnaval, Réveillon, etc.)
+  const [holidayYear, setHolidayYear] = useState(new Date().getFullYear());
+  const [holidayPresets, setHolidayPresets] = useState<HolidayBlockPreset[]>([]);
+  const [holidayPresetKey, setHolidayPresetKey] = useState('');
+  const [holidayStart, setHolidayStart] = useState('');
+  const [holidayEnd, setHolidayEnd] = useState('');
+  const [applyingHoliday, setApplyingHoliday] = useState(false);
 
   // Form state — informações gerais
   const [aptName, setAptName] = useState('');
@@ -123,6 +145,88 @@ export default function OwnerApartmentEditPage() {
     if (!profile) {return;}
     loadData();
   }, [profile, loadData]);
+
+  const loadBlocks = useCallback(async () => {
+    try {
+      const res = await ownerApartmentsAPI.listBlocks(params.id);
+      setBlocks(res.data);
+    } catch (err) {
+      setBlockError(handleAPIError(err, 'pt'));
+    }
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!profile) {return;}
+    loadBlocks();
+  }, [profile, loadBlocks]);
+
+  useEffect(() => {
+    ownerApartmentsAPI.holidayPresets(holidayYear).then((res) => {
+      setHolidayPresets(res.data.presets);
+      setHolidayPresetKey((prev) => prev || res.data.presets[0]?.key || '');
+    }).catch((err) => setBlockError(handleAPIError(err, 'pt')));
+  }, [holidayYear]);
+
+  useEffect(() => {
+    const preset = holidayPresets.find((p) => p.key === holidayPresetKey);
+    if (preset) {
+      setHolidayStart(preset.startDate);
+      setHolidayEnd(preset.endDate);
+    }
+  }, [holidayPresetKey, holidayPresets]);
+
+  const handleCreateBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBlockError(null);
+    setSavingBlock(true);
+    try {
+      await ownerApartmentsAPI.createBlock(params.id, {
+        start_date: blockStart,
+        end_date: blockEnd,
+        block_type: 'other',
+        reason: blockReason || undefined,
+      });
+      setBlockStart('');
+      setBlockEnd('');
+      setBlockReason('');
+      await loadBlocks();
+    } catch (err) {
+      setBlockError(handleAPIError(err, 'pt'));
+    } finally {
+      setSavingBlock(false);
+    }
+  };
+
+  const handleApplyHoliday = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBlockError(null);
+    setApplyingHoliday(true);
+    try {
+      const preset = holidayPresets.find((p) => p.key === holidayPresetKey);
+      await ownerApartmentsAPI.createBlock(params.id, {
+        start_date: holidayStart,
+        end_date: holidayEnd,
+        block_type: 'seasonal',
+        reason: preset?.name ?? holidayPresetKey,
+      });
+      await loadBlocks();
+    } catch (err) {
+      setBlockError(handleAPIError(err, 'pt'));
+    } finally {
+      setApplyingHoliday(false);
+    }
+  };
+
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!confirm('Remover este bloqueio? O apartamento voltará a ficar disponível nessas datas.')) {return;}
+    setBlockError(null);
+    try {
+      await ownerApartmentsAPI.deleteBlock(blockId);
+      setBlocks((prev) => prev?.filter((b) => b.id !== blockId) ?? null);
+    } catch (err) {
+      setBlockError(handleAPIError(err, 'pt'));
+    }
+  };
 
   // Auto-fill address from CEP using ViaCEP
   const handleCepChange = (value: string) => {
@@ -452,6 +556,125 @@ export default function OwnerApartmentEditPage() {
                   {savingPricing ? 'Salvando...' : 'Salvar configuração de preços'}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Bloqueios de datas */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle size="sm">Datas bloqueadas</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <p className="text-sm text-neutral-500">
+                Por padrão, seu apartamento fica bloqueado ±7 dias ao redor de cada feriado
+                (Carnaval, Réveillon, etc.). Remova um bloqueio abaixo se quiser aceitar
+                reservas nessas datas.
+              </p>
+
+              {blockError && (
+                <Alert variant="danger">
+                  <AlertDescription>{blockError}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Bloque festivo de un click */}
+              <form onSubmit={handleApplyHoliday} className="flex flex-col gap-3 rounded-lg border p-4">
+                <p className="text-sm font-medium">Bloquear feriado</p>
+                <div className="grid grid-cols-[auto_1fr] gap-3">
+                  <div className="w-24">
+                    <Input
+                      label="Ano"
+                      type="number"
+                      value={holidayYear}
+                      onChange={(e) => setHolidayYear(parseInt(e.target.value, 10) || holidayYear)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="holiday-preset" className="text-sm font-medium">Feriado</label>
+                    <select
+                      id="holiday-preset"
+                      value={holidayPresetKey}
+                      onChange={(e) => setHolidayPresetKey(e.target.value)}
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {holidayPresets.map((p) => (
+                        <option key={p.key} value={p.key}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Desde"
+                    type="date"
+                    value={holidayStart}
+                    onChange={(e) => setHolidayStart(e.target.value)}
+                  />
+                  <Input
+                    label="Até"
+                    type="date"
+                    value={holidayEnd}
+                    onChange={(e) => setHolidayEnd(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={applyingHoliday || !holidayStart || !holidayEnd} className="w-full justify-center">
+                  {applyingHoliday ? 'Bloqueando...' : 'Bloquear estas datas'}
+                </Button>
+              </form>
+
+              {/* Bloqueo manual */}
+              <form onSubmit={handleCreateBlock} className="flex flex-col gap-3 rounded-lg border p-4">
+                <p className="text-sm font-medium">Bloquear outras datas</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Desde"
+                    type="date"
+                    value={blockStart}
+                    onChange={(e) => setBlockStart(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Até"
+                    type="date"
+                    value={blockEnd}
+                    onChange={(e) => setBlockEnd(e.target.value)}
+                    required
+                  />
+                </div>
+                <Input
+                  label="Motivo (opcional)"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  placeholder="Manutenção, uso próprio..."
+                />
+                <Button type="submit" disabled={savingBlock} className="w-full justify-center">
+                  {savingBlock ? 'Bloqueando...' : 'Bloquear'}
+                </Button>
+              </form>
+
+              {/* Lista de bloqueios */}
+              <div className="flex flex-col gap-2">
+                {blocks === null && <p className="text-sm text-neutral-500">Carregando...</p>}
+                {blocks?.length === 0 && (
+                  <p className="text-sm text-neutral-500">Nenhuma data bloqueada.</p>
+                )}
+                {blocks?.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <span>
+                      {new Date(`${b.start_date}T00:00:00`).toLocaleDateString('pt-BR')} –{' '}
+                      {new Date(`${b.end_date}T00:00:00`).toLocaleDateString('pt-BR')}
+                      {b.reason && <span className="text-neutral-500"> · {b.reason}</span>}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteBlock(b.id)}
+                      className="text-xs font-medium text-red-600 hover:underline"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 

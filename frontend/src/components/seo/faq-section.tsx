@@ -46,8 +46,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Vocês oferecem descontos para grupos?',
-      answer:
-        'Sim! Grupos com 6 ou mais camas têm 10% de desconto. Grupos com 10 ou mais camas têm 15% de desconto.',
+      answer: 'Sim, entra em contato com a nossa equipe para mais detalhes.',
     },
     {
       question: 'Como funciona a reserva para grupos grandes?',
@@ -90,8 +89,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: '¿Ofrecen descuentos para grupos?',
-      answer:
-        '¡Sí! Grupos de 6 o más camas tienen 10% de descuento. Grupos de 10 o más camas tienen 15% de descuento.',
+      answer: 'Sí, contactá a nuestro equipo para más detalles.',
     },
     {
       question: '¿Cómo funciona la reserva para grupos grandes?',
@@ -134,7 +132,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Do you offer group discounts?',
-      answer: 'Yes! Groups of 6 or more beds get 10% off. Groups of 10 or more beds get 15% off.',
+      answer: 'Yes, contact our team for more details.',
     },
     {
       question: 'How does booking work for large groups?',
@@ -177,8 +175,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Bieten Sie Gruppenrabatte an?',
-      answer:
-        'Ja! Gruppen ab 6 Betten erhalten 10% Rabatt. Gruppen ab 10 Betten erhalten 15% Rabatt.',
+      answer: 'Ja, kontaktieren Sie unser Team für weitere Details.',
     },
     {
       question: 'Wie funktioniert die Buchung für große Gruppen?',
@@ -222,8 +219,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Proposez-vous des remises de groupe ?',
-      answer:
-        'Oui ! Les groupes de 6 lits ou plus bénéficient de 10% de réduction. Les groupes de 10 lits ou plus ont 15% de réduction.',
+      answer: 'Oui, contactez notre équipe pour plus de détails.',
     },
     {
       question: 'Comment fonctionne la réservation pour les grands groupes ?',
@@ -266,8 +262,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     },
     {
       question: 'Offrite sconti per gruppi?',
-      answer:
-        'Sì! Gruppi di 6 o più letti hanno il 10% di sconto. Gruppi di 10 o più letti hanno il 15% di sconto.',
+      answer: 'Sì, contatta il nostro team per maggiori dettagli.',
     },
     {
       question: 'Come funziona la prenotazione per gruppi numerosi?',

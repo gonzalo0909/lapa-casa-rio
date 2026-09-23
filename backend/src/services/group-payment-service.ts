@@ -113,6 +113,27 @@ const generateToken = (): string => crypto.randomBytes(32).toString('hex');
 const generateReservationNumber = (): string =>
   `LCH-G-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
+// El timer de 10 minutos arranca en el único momento que la plataforma puede
+// observar: cuando se genera este mensaje (al crear la sesión), no cuando
+// cada invitado lo abre (eso no se puede saber). "A partir de agora" deja
+// eso inequívoco -- evitar volver a redactarlo como "desde que abrí/abrís
+// este link", que un invitado que lo abre tarde puede malinterpretar como
+// si el plazo arrancara recién en ese momento.
+const WA_GROUP_INVITE_MSG: Record<'pt' | 'en' | 'es', (url: string) => string> = {
+  pt: (url) =>
+    `Olá! Te convido a pagar sua cama para o nosso grupo no Lapa Casa Hostel. Cada um paga a sua:\n${url}\n\nVocê tem 10 minutos a partir de agora para pagar.`,
+  en: (url) =>
+    `Hi! I'm inviting you to pay for your bed for our group at Lapa Casa Hostel. Everyone pays their own:\n${url}\n\nYou have 10 minutes from now to pay.`,
+  es: (url) =>
+    `Hola! Te invito a pagar tu cama para nuestro grupo en Lapa Casa Hostel. Cada uno paga la suya:\n${url}\n\nTenés 10 minutos a partir de ahora para pagar.`,
+};
+
+// Mismo criterio que toBackendLang en el frontend (hostel-engine.utils.ts):
+// solo pt/es son idiomas propios, cualquier otro cae a en.
+function resolveWaLanguage(lang?: string): 'pt' | 'en' | 'es' {
+  return lang === 'pt' || lang === 'es' ? lang : 'en';
+}
+
 async function getCardSurchargePercent(): Promise<number> {
   const { rows } = await query<{ value: number }>(
     `SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`,
@@ -374,8 +395,9 @@ export class GroupPaymentService {
       // reenviándolo a cada invitado (uno por uno, mismo link).
       const sessionToken = generateToken();
       const groupPaymentUrl = `${input.appBaseUrl}/group-payment/${sessionToken}`;
+      const waLang = resolveWaLanguage(input.titular.language);
       const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
-        `Hola! Te invito a pagar tu cama para nuestro grupo en Lapa Casa Hostel. Cada uno paga la suya:\n${groupPaymentUrl}\n\nTenés 10 minutos desde que abrí este link.`,
+        WA_GROUP_INVITE_MSG[waLang](groupPaymentUrl),
       )}`;
 
       const { rows: sessionRows } = await client.query(

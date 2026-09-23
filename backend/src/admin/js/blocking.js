@@ -86,7 +86,7 @@ const REASON_OPTIONS = Object.entries(REASON_LABELS)
 function renderBlocks(blocks) {
   const tbody = document.querySelector('#blocks-table tbody');
   if (blocks.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:#888;">Sin fechas bloqueadas</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#888;">Sin fechas bloqueadas</td></tr>';
     return;
   }
   tbody.innerHTML = blocks.map((b) => `
@@ -98,6 +98,7 @@ function renderBlocks(blocks) {
         <select class="row-blocktype">${REASON_OPTIONS}</select>
         <input type="text" class="row-reason" value="${b.reason || ''}" placeholder="Motivo (texto)" style="margin-top:4px;">
       </td>
+      <td><input type="number" class="row-price" min="0" step="0.01" value="${b.specialPrice ?? ''}" placeholder="normal" style="width:90px;"></td>
       <td><button data-action="save">Guardar</button></td>
       <td><button data-action="unblock">Quitar</button></td>
     </tr>
@@ -122,11 +123,13 @@ async function saveRow(row) {
   const endDate = row.querySelector('.row-end').value;
   const blockType = row.querySelector('.row-blocktype').value;
   const reason = row.querySelector('.row-reason').value;
+  const priceValue = row.querySelector('.row-price').value;
+  const specialPrice = priceValue === '' ? null : parseFloat(priceValue);
 
   try {
     await apiFetch(`/admin/blocked-dates/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ startDate, endDate, blockType, reason })
+      body: JSON.stringify({ startDate, endDate, blockType, reason, specialPrice })
     });
     showMsg('blocks-msg', 'Bloqueo actualizado.', 'success');
     loadBlocks();
@@ -152,6 +155,8 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
   const endDate = document.getElementById('block-end').value;
   const blockType = document.getElementById('block-reason').value;
   const notes = document.getElementById('block-notes').value;
+  const priceValue = document.getElementById('block-price').value;
+  const specialPrice = priceValue === '' ? null : parseFloat(priceValue);
   const holidayValue = document.getElementById('block-holiday').value;
   const holidayPreset = holidayPresets.find((p) => holidayValue === `${p.key}-${p.startDate.slice(0, 4)}`);
   const reason = holidayPreset ? holidayPreset.name : REASON_LABELS[blockType];
@@ -159,7 +164,7 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
   try {
     await apiFetch('/admin/blocked-dates', {
       method: 'POST',
-      body: JSON.stringify({ roomTypeId, startDate, endDate, blockType, reason, notes })
+      body: JSON.stringify({ roomTypeId, startDate, endDate, blockType, reason, notes, specialPrice })
     });
     showMsg('block-msg', 'Fechas bloqueadas.', 'success');
     document.getElementById('block-form').reset();

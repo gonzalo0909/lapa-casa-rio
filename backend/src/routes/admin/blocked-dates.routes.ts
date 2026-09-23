@@ -23,6 +23,7 @@ const BlockDatesSchema = z.object({
   blockType: z.enum(['maintenance', 'owner', 'seasonal', 'other']).optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
+  specialPrice: z.number().positive().nullable().optional(),
 });
 
 /** GET /admin/blocked-dates?propertyType=hostel|apartment — bloqueos, con nombre de habitación.
@@ -36,7 +37,7 @@ router.get('/', async (req, res, next) => {
     let sql = `
       SELECT rb.id, rb.room_type_id AS "roomTypeId", rt.name AS "roomName",
              rb.start_date::text AS "startDate", rb.end_date::text AS "endDate",
-             rb.block_type AS "blockType", rb.reason, rb.notes
+             rb.block_type AS "blockType", rb.reason, rb.notes, rb.special_price AS "specialPrice"
       FROM room_blocks rb
       JOIN room_types rt ON rt.id = rb.room_type_id`;
     if (propertyType === 'hostel' || propertyType === 'apartment') {
@@ -55,7 +56,7 @@ router.get('/', async (req, res, next) => {
 /** POST /admin/blocked-dates — bloquea un rango de fechas para una habitación */
 router.post('/', validate(BlockDatesSchema), async (req, res, next) => {
   try {
-    const { roomTypeId, startDate, endDate, blockType, reason, notes } =
+    const { roomTypeId, startDate, endDate, blockType, reason, notes, specialPrice } =
       req.body as z.infer<typeof BlockDatesSchema>;
 
     const blockId = await dateBlocker.blockDates({
@@ -64,7 +65,8 @@ router.post('/', validate(BlockDatesSchema), async (req, res, next) => {
       endDate: new Date(endDate),
       reason,
       notes,
-      blockType: blockType ?? 'other'
+      blockType: blockType ?? 'other',
+      specialPrice
     });
 
     await auditLogService.log({
@@ -96,6 +98,7 @@ const UpdateBlockSchema = z.object({
   blockType: z.enum(['maintenance', 'owner', 'seasonal', 'other']).optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
+  specialPrice: z.number().positive().nullable().optional(),
 });
 
 /** PUT /admin/blocked-dates/:id — edita fechas/motivo de un bloqueo existente
@@ -103,7 +106,7 @@ const UpdateBlockSchema = z.object({
 router.put('/:id', validate(UpdateBlockSchema), async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { startDate, endDate, blockType, reason, notes } =
+    const { startDate, endDate, blockType, reason, notes, specialPrice } =
       req.body as z.infer<typeof UpdateBlockSchema>;
 
     const { rows: existing } = await query<{ room_type_id: string }>(
@@ -137,11 +140,11 @@ router.put('/:id', validate(UpdateBlockSchema), async (req, res, next) => {
 
     const { rows } = await query(
       `UPDATE room_blocks
-       SET start_date = $1, end_date = $2, block_type = $3, reason = $4, notes = $5, updated_at = now()
-       WHERE id = $6
+       SET start_date = $1, end_date = $2, block_type = $3, reason = $4, notes = $5, special_price = $6, updated_at = now()
+       WHERE id = $7
        RETURNING id, room_type_id AS "roomTypeId", start_date::text AS "startDate",
-                 end_date::text AS "endDate", block_type AS "blockType", reason, notes`,
-      [startDate, endDate, blockType ?? 'other', reason ?? null, notes ?? null, id]
+                 end_date::text AS "endDate", block_type AS "blockType", reason, notes, special_price AS "specialPrice"`,
+      [startDate, endDate, blockType ?? 'other', reason ?? null, notes ?? null, specialPrice ?? null, id]
     );
 
     await auditLogService.log({

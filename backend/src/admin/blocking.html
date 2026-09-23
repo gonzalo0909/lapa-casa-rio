@@ -40,6 +40,9 @@
       <label>Notas (opcional)
         <input type="text" id="block-notes" placeholder="...">
       </label>
+      <label>Precio especial R$/noche (opcional)
+        <input type="number" id="block-price" min="0" step="0.01" placeholder="Dejar vacío = precio normal">
+      </label>
       <div style="display:flex;gap:8px;">
         <button type="submit">Bloquear</button>
         <button type="button" id="block-unblock-btn">Desbloquear</button>
@@ -49,10 +52,10 @@
 
   <div class="card">
     <h2>Fechas bloqueadas</h2>
-    <p style="font-size:13px;color:#888;">Editá la fecha o el motivo directo en la fila y tocá "Guardar".</p>
+    <p style="font-size:13px;color:#888;">Editá la fecha, el motivo o el precio directo en la fila y tocá "Guardar".</p>
     <div id="blocks-msg"></div>
     <table id="blocks-table">
-      <thead><tr><th>Habitación</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th colspan="2"></th></tr></thead>
+      <thead><tr><th>Habitación</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Precio R$</th><th colspan="2"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>

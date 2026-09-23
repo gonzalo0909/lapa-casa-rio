@@ -13,6 +13,10 @@ export interface BlockDateOptions {
   reason?: string;
   notes?: string;
   blockType?: 'maintenance' | 'owner' | 'seasonal' | 'other';
+  /** Precio a mostrar para ese rango (ej. para dejarlo cargado para cuando
+   *  se desbloquee) -- no cambia la disponibilidad, la habitación sigue
+   *  bloqueada mientras exista la fila. */
+  specialPrice?: number | null;
 }
 
 export interface BlockedPeriod {
@@ -28,7 +32,7 @@ export interface BlockedPeriod {
 
 export class DateBlocker {
   async blockDates(options: BlockDateOptions): Promise<string> {
-    const { roomId, startDate, endDate, reason, notes, blockType = 'other' } = options;
+    const { roomId, startDate, endDate, reason, notes, blockType = 'other', specialPrice } = options;
     this.validateDates(startDate, endDate);
 
     const { rows: roomRows } = await pool.query(`SELECT id FROM room_types WHERE id = $1`, [roomId]);
@@ -43,9 +47,9 @@ export class DateBlocker {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO room_blocks (room_type_id, start_date, end_date, block_type, reason, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [roomId, startDate, endDate, blockType, reason ?? null, notes ?? null]
+      `INSERT INTO room_blocks (room_type_id, start_date, end_date, block_type, reason, notes, special_price)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [roomId, startDate, endDate, blockType, reason ?? null, notes ?? null, specialPrice ?? null]
     );
     return rows[0].id;
   }

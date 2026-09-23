@@ -386,7 +386,7 @@ export const createApartmentBookingHandler = async (
     }, 'Apartment booking created successfully'));
   } catch (error) {
     if (error instanceof MinNightsRequiredError) {
-      res.status(422).json(ApiResponse.error(error.message, { minNights: error.minNights, label: error.label, roomId: error.roomId }));
+      res.status(422).json(ApiResponse.error(error.message, { minNights: error.minNights, label: error.label, roomId: error.roomId, pricePerNight: error.pricePerNight }));
       return;
     }
     if (error instanceof InsufficientAvailabilityError) {

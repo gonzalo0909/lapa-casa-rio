@@ -37,6 +37,7 @@ export function useHostelWizard(t: Translations) {
   const [revealed, setRevealed]     = useState<Record<string, boolean>>({ cuarto3: false, cuarto5: false });
   const [rooms, setRooms]           = useState<RoomDef[]>(() => localizeRoomNames(DEFAULT_ROOMS, t));
   const [roomsLoaded, setRoomsLoaded] = useState(false);
+  const [minNightsNotice, setMinNightsNotice] = useState<{ minNights: number; label: string | null; pricePerNight: number } | null>(null);
   const [toast, setToast]           = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -64,6 +65,7 @@ export function useHostelWizard(t: Translations) {
   useEffect(() => {
     if (!checkIn || !checkOut) { return; }
     setRoomsLoaded(false);
+    setMinNightsNotice(null);
     const ci = checkIn.toISOString().slice(0, 10);
     const co = checkOut.toISOString().slice(0, 10);
     availabilityAPI
@@ -71,6 +73,7 @@ export function useHostelWizard(t: Translations) {
       .then((res) => {
         const apiRooms: ApiRoom[] = res.data?.rooms || [];
         if (!apiRooms.length) { showToast(errAvail); return; }
+        setMinNightsNotice(res.data?.minNightsNotice ?? null);
         const seasonMult: number = res.data?.allocationOptions?.[0]?.pricing?.seasonalMultiplier ?? 1;
         setRooms(
           localizeRoomNames(
@@ -203,6 +206,7 @@ export function useHostelWizard(t: Translations) {
     setRevealed({ cuarto3: false, cuarto5: false });
     setRooms(localizeRoomNames(DEFAULT_ROOMS, t));
     setRoomsLoaded(false);
+    setMinNightsNotice(null);
     setToast('');
     setCancelOpen(false);
     setAppliedCoupon(null);
@@ -221,6 +225,14 @@ export function useHostelWizard(t: Translations) {
       if (!checkOut) { showToast(t.tToastCheckout); scrollToCard(); return; }
       const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000);
       if (nights <= 0) { showToast(t.tToastCheckout); scrollToCard(); return; }
+      // El mínimo real (special_period_rules, ej. Carnaval) viene del servidor y
+      // puede exigir más noches que el mínimo genérico de temporada -- se
+      // valida primero porque es el dato correcto para la fecha elegida.
+      if (minNightsNotice && nights < minNightsNotice.minNights) {
+        const label = minNightsNotice.label ? `${minNightsNotice.label}: ` : '';
+        showToast(`${label}${t.tToastMinNights} ${minNightsNotice.minNights} ${t.tToastNights}`);
+        scrollToCard(); return;
+      }
       const s = getSeason(checkIn);
       if (s.minNights > 1 && nights < s.minNights) {
         showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
@@ -235,11 +247,11 @@ export function useHostelWizard(t: Translations) {
       setStep(4);
     }
     scrollToCard();
-  }, [step, checkIn, checkOut, totalBeds, t, showToast, validateForm, scrollToCard]);
+  }, [step, checkIn, checkOut, totalBeds, minNightsNotice, t, showToast, validateForm, scrollToCard]);
 
   return {
     step, setStep, calMonth, checkIn, checkOut, hoverDate, setHoverDate,
-    selectingEnd, beds, revealed, rooms, roomsLoaded, toast, cancelOpen, setCancelOpen,
+    selectingEnd, beds, revealed, rooms, roomsLoaded, minNightsNotice, toast, cancelOpen, setCancelOpen,
     appliedCoupon, setAppliedCoupon, gpName, setGpName, gpEmail, setGpEmail,
     form, setForm, formErrors, docFeedback, setDocFeedback,
     emailFb, setEmailFb, phoneFb, setPhoneFb,

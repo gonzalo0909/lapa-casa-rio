@@ -112,7 +112,7 @@ export const checkAvailabilityHandler = async (
     // una habitación puntual -- esa opción de asignación queda afuera (no
     // reventamos todo el chequeo de disponibilidad), pero se avisa el
     // mínimo real para que el huésped pueda ajustar las fechas.
-    let minNightsNotice: { minNights: number; label: string | null } | null = null;
+    let minNightsNotice: { minNights: number; label: string | null; pricePerNight: number } | null = null;
 
     const pricedOptionsRaw = await Promise.all(
       allocationOptions.map(async (option) => {
@@ -140,7 +140,7 @@ export const checkAvailabilityHandler = async (
         } catch (error) {
           if (error instanceof MinNightsRequiredError) {
             if (!minNightsNotice || error.minNights > minNightsNotice.minNights) {
-              minNightsNotice = { minNights: error.minNights, label: error.label };
+              minNightsNotice = { minNights: error.minNights, label: error.label, pricePerNight: error.pricePerNight };
             }
             return null;
           }

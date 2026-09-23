@@ -344,6 +344,7 @@ export const availabilityAPI = {
       data: {
         rooms: ApiRoom[];
         allocationOptions?: Array<{ pricing?: { seasonalMultiplier?: number } }>;
+        minNightsNotice: { minNights: number; label: string | null; pricePerNight: number } | null;
       };
     }>(`/availability/check?checkIn=${params.checkIn}&checkOut=${params.checkOut}&beds=${params.beds}`),
 

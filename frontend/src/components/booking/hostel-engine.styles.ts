@@ -10,7 +10,7 @@ export const HOSTEL_ENGINE_CSS = `
 .he-wrap{font-family:var(--font-inter),-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:url('/img/adoquines.jpg') center/cover;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 1rem 3rem}
 .he-header{background:url('/img/arcos-lapa.jpg') center/cover;color:#fff;padding:1.5rem 1.5rem 1.25rem;text-align:center;width:100%;max-width:500px;margin-bottom:1.5rem;border-radius:0 0 18px 18px;position:relative;overflow:hidden}
 .he-header::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.18),rgba(0,0,0,.32));z-index:0;pointer-events:none}
-.he-brand-top{font-family:var(--font-cormorant),Georgia,serif;font-weight:300;font-style:italic;text-transform:none;color:#000;font-size:1.4rem;letter-spacing:.06em;margin-bottom:.15em;position:relative;z-index:1;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.he-brand-top{font-family:var(--font-cormorant),Georgia,serif;font-weight:300;font-style:italic;text-transform:none;color:#000;font-size:clamp(1.8rem,4.5vw,2.4rem);letter-spacing:.06em;margin-bottom:.15em;position:relative;z-index:1;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .he-brand-loc{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:.65rem;position:relative;z-index:1;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .he-brand{font-family:var(--font-cormorant),Georgia,serif;font-size:clamp(2.4rem,6vw,3.8rem);font-weight:600;letter-spacing:.01em;line-height:1.0;margin-bottom:0;position:relative;z-index:1;text-transform:none;text-shadow:0 2px 12px rgba(0,0,0,.8)}
 .he-lang-sw{display:flex;gap:.3rem;margin-top:1.1rem;justify-content:center;position:relative;z-index:1}

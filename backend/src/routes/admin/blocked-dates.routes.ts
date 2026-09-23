@@ -90,6 +90,78 @@ router.post('/', validate(BlockDatesSchema), async (req, res, next) => {
   }
 });
 
+const UpdateBlockSchema = z.object({
+  startDate: z.string().trim().min(1),
+  endDate: z.string().trim().min(1),
+  blockType: z.enum(['maintenance', 'owner', 'seasonal', 'other']).optional(),
+  reason: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+/** PUT /admin/blocked-dates/:id — edita fechas/motivo de un bloqueo existente
+ *  (misma habitación; para cambiar de habitación hay que borrar y crear uno nuevo) */
+router.put('/:id', validate(UpdateBlockSchema), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate, blockType, reason, notes } =
+      req.body as z.infer<typeof UpdateBlockSchema>;
+
+    const { rows: existing } = await query<{ room_type_id: string }>(
+      `SELECT room_type_id FROM room_blocks WHERE id = $1`,
+      [id]
+    );
+    if (existing.length === 0) {
+      res.status(404).json(ApiResponse.error('Bloqueo no encontrado'));
+      return;
+    }
+    const roomTypeId = existing[0].room_type_id;
+
+    // Mismo criterio de conflicto que al crear: no permitir un rango que
+    // pise una reserva real confirmada/pendiente.
+    const { rows: conflicts } = await query(
+      `SELECT g.full_name AS guest_name, rb.check_in::text, rb.check_out::text
+       FROM reservations r
+       JOIN guests g ON g.id = r.guest_id
+       JOIN reservation_beds rb ON rb.reservation_id = r.id
+       JOIN beds b ON b.id = rb.bed_id
+       WHERE b.room_type_id = $1 AND r.status IN ('confirmed', 'pending_payment')
+         AND rb.check_in < $3 AND rb.check_out > $2`,
+      [roomTypeId, startDate, endDate]
+    );
+    if (conflicts.length > 0) {
+      res.status(409).json(
+        ApiResponse.error(`No se puede editar: hay ${conflicts.length} reserva(s) confirmada(s) en ese rango de fechas`)
+      );
+      return;
+    }
+
+    const { rows } = await query(
+      `UPDATE room_blocks
+       SET start_date = $1, end_date = $2, block_type = $3, reason = $4, notes = $5, updated_at = now()
+       WHERE id = $6
+       RETURNING id, room_type_id AS "roomTypeId", start_date::text AS "startDate",
+                 end_date::text AS "endDate", block_type AS "blockType", reason, notes`,
+      [startDate, endDate, blockType ?? 'other', reason ?? null, notes ?? null, id]
+    );
+
+    await auditLogService.log({
+      entity_type: 'room_block',
+      entity_id: id,
+      operation: 'ADMIN_UPDATE_SETTINGS',
+      new_data: { startDate, endDate, reason }
+    });
+
+    redisClient.invalidateCache('availability:*').catch(() => {});
+    res.status(200).json(ApiResponse.success(rows[0], 'Bloqueo actualizado'));
+  } catch (error: any) {
+    if (error?.code === '23514') {
+      res.status(400).json(ApiResponse.error('La fecha de fin debe ser posterior a la de inicio'));
+      return;
+    }
+    next(error);
+  }
+});
+
 /** DELETE /admin/blocked-dates/:id — quita un bloqueo */
 router.delete('/:id', async (req, res, next) => {
   try {

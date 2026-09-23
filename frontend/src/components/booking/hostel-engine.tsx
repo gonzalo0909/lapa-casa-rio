@@ -79,9 +79,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     <>
       <style dangerouslySetInnerHTML={{ __html: HOSTEL_ENGINE_CSS }} />
       <div className="he-wrap">
-        {/* Volver al home */}
         <div className="he-nav-bar">
-          <Link href="/" className="he-nav-link">{t.navHome}</Link>
           <Link href={`/${lang}/santa-teresa`} className="he-nav-link">Santa Teresa</Link>
         </div>
 

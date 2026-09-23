@@ -26,6 +26,7 @@ import { ApiResponse } from '../../utils/responses';
 import { adminConflictsRouter } from './conflicts.routes';
 import { adminPhotosRouter } from './photos.routes';
 import { adminBlockedDatesRouter } from './blocked-dates.routes';
+import { adminHolidayBlocksRouter } from './holiday-blocks.routes';
 import { roomTypePhotosRouter } from './room-type-photos.routes';
 import { apartmentOwnersRouter } from './apartment-owners.routes';
 import { dynamicPricingRouter } from './dynamic-pricing.routes';
@@ -60,6 +61,12 @@ router.use('/photos', adminPhotosRouter);
  * (mantenimiento/evento privado), ver blocked-dates.routes.ts
  */
 router.use('/blocked-dates', adminBlockedDatesRouter);
+
+/**
+ * /admin/holiday-blocks — bloqueo masivo de feriados (Carnaval, Réveillon,
+ * etc.) en todas las unidades de un click, ver holiday-blocks.routes.ts
+ */
+router.use('/holiday-blocks', adminHolidayBlocksRouter);
 
 /**
  * /admin/room-types — gestión de fotos por apartamento

@@ -7,7 +7,7 @@ import { checkApartmentAvailabilityHandler } from './apartment-availability';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 import { availabilityService } from '../../services/availability-service';
-import { pricingService } from '../../services/pricing-service';
+import { pricingService, MinNightsRequiredError } from '../../services/pricing-service';
 import { query } from '../../config/database';
 import { validate } from '../../middleware/validation';
 
@@ -83,6 +83,12 @@ router.post('/quote', validate(QuoteSchema), async (req, res, next) => {
       cardSurchargePercent: surchargeConfig.rows[0]?.value ?? 10,
     }, 'Quote calculated'));
   } catch (error) {
+    if (error instanceof MinNightsRequiredError) {
+      res.status(422).json(ApiResponse.error(error.message, {
+        minNights: error.minNights, label: error.label, roomId: error.roomId, pricePerNight: error.pricePerNight
+      }));
+      return;
+    }
     logger.error('Error calculating quote', {
       error: error instanceof Error ? error.message : 'Unknown error'
     });

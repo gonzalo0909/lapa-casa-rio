@@ -23,9 +23,10 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
     pricePerBed: number;
     cardSurchargePercent: number;
   } | null>(null);
+  const [minNightsError, setMinNightsError] = useState<{ minNights: number; label: string | null } | null>(null);
 
   useEffect(() => {
-    if (!checkIn || !checkOut || totalBeds === 0) { setQuote(null); return; }
+    if (!checkIn || !checkOut || totalBeds === 0) { setQuote(null); setMinNightsError(null); return; }
     const selected = rooms.filter((r) => (beds[r.id] ?? 0) > 0);
     if (selected.some((r) => !r.realId)) { return; }
     const payload = {
@@ -39,6 +40,7 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
         .quote(payload)
         .then((res) => {
           if (cancelled || !res.data) { return; }
+          setMinNightsError(null);
           const p = res.data;
           setQuote({
             nights: p.nights,
@@ -49,7 +51,18 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
             cardSurchargePercent: p.cardSurchargePercent ?? 10,
           });
         })
-        .catch(() => { if (!cancelled) { setQuote(null); } });
+        .catch((err) => {
+          if (cancelled) { return; }
+          setQuote(null);
+          // 422: el cuarto elegido tiene un período especial (0045) que exige
+          // más noches de las pedidas -- se avisa en vez de dejar el precio en blanco.
+          const details = err?.details?.data;
+          setMinNightsError(
+            err?.statusCode === 422 && details?.minNights
+              ? { minNights: details.minNights, label: details.label ?? null }
+              : null
+          );
+        });
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [checkIn, checkOut, beds, rooms]);
@@ -71,6 +84,10 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
   const cardSurchargeMult = 1 + (quote?.cardSurchargePercent ?? 10) / 100;
 
   const footerPrice = (() => {
+    if (minNightsError) {
+      const label = minNightsError.label ? `${minNightsError.label}: ` : '';
+      return { main: '—', sub: `${label}${t.tToastMinNights} ${minNightsError.minNights} ${t.tToastNights}` };
+    }
     if (price) {
       return {
         main: fmtMoney(price.total),
@@ -82,5 +99,5 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
     return { main: fmtMoney(FALLBACK_BED_PRICE_BRL * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
   })();
 
-  return { price, cardSurchargeMult, footerPrice, season };
+  return { price, cardSurchargeMult, footerPrice, season, minNightsError };
 }

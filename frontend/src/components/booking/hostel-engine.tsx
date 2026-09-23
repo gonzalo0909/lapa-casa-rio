@@ -48,7 +48,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
 
   const wizard = useHostelWizard(t);
 
-  const { price, cardSurchargeMult, footerPrice } = useHostelPricing({
+  const { price, cardSurchargeMult, footerPrice, minNightsError } = useHostelPricing({
     checkIn: wizard.checkIn,
     checkOut: wizard.checkOut,
     beds: wizard.beds,
@@ -286,7 +286,11 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   </button>
                 )}
                 {wizard.step < 4 && (
-                  <button className="he-btn-next" onClick={wizard.goNext}>
+                  <button
+                    className="he-btn-next"
+                    onClick={wizard.goNext}
+                    disabled={wizard.step === 2 && wizard.totalBeds > 0 && !!minNightsError}
+                  >
                     {t.btnNext}
                   </button>
                 )}

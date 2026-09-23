@@ -41,7 +41,12 @@ const todayDate = (): string => new Date().toISOString().slice(0, 10);
 /** La reserva pisa un período especial (special_period_rules, 0045) que exige
  *  más noches de las pedidas -- ej. mínimo 5 noches para Carnaval. */
 export class MinNightsRequiredError extends Error {
-  constructor(public readonly minNights: number, public readonly label: string | null, public readonly roomId: string) {
+  constructor(
+    public readonly minNights: number,
+    public readonly label: string | null,
+    public readonly roomId: string,
+    public readonly pricePerNight: number
+  ) {
     super(
       label
         ? `${label} exige un mínimo de ${minNights} noches para esa habitación`
@@ -95,7 +100,7 @@ export class PricingService {
 
       if (rule) {
         if (nights < rule.min_nights) {
-          throw new MinNightsRequiredError(rule.min_nights, rule.label, room.roomId);
+          throw new MinNightsRequiredError(rule.min_nights, rule.label, room.roomId, parseFloat(rule.price_per_night));
         }
         preDiscountTotal += parseFloat(rule.price_per_night) * nights * beds;
         continue;

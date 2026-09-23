@@ -144,3 +144,51 @@ form.stack button:hover { opacity: 0.9; }
 .room-row button { padding: 6px 12px; border: 1px solid var(--border); background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
 #login-screen { max-width: 360px; margin: 80px auto; }
+
+/* Mobile -- el panel se pensó para desktop (nav de 11 links en una fila,
+   tablas anchas, grids fijos): sin esto, en el teléfono la barra de nav
+   desborda horizontalmente la pantalla entera y las tablas se aplastan
+   ilegibles. Se deja que la nav y las tablas scrolleen horizontalmente
+   por su cuenta en vez de forzar todo a una columna angosta. */
+@media (max-width: 720px) {
+  header.topbar {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding: 12px 16px;
+  }
+  header.topbar .brand { font-size: 15px; }
+
+  nav.tabs {
+    order: 3;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+    -ms-overflow-style: none;
+    scrollbar-width: thin;
+  }
+  nav.tabs a { flex-shrink: 0; white-space: nowrap; }
+
+  main { padding: 14px; }
+  .card { padding: 14px; }
+
+  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .kpi { padding: 12px; }
+  .kpi .value { font-size: 20px; }
+
+  table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+
+  form.stack { max-width: 100%; }
+
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters input, .filters select { width: 100%; }
+
+  .room-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .room-row input[type=number] { width: 100%; }
+
+  .chart-row { gap: 16px; }
+  .chart-box { min-width: 0; width: 100%; }
+
+  .conflict-row .conflict-actions input[type=text] { min-width: 0; width: 100%; }
+}

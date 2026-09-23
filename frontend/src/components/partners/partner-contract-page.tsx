@@ -464,7 +464,7 @@ export function PartnerContractPage({ locale }: Props) {
           <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-4">
             {c.eyebrow}
           </p>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6 leading-tight">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-6 leading-tight">
             {c.heroTitle}
           </h1>
           <div className="space-y-4 max-w-2xl mb-6">
@@ -488,7 +488,7 @@ export function PartnerContractPage({ locale }: Props) {
       <div className="max-w-3xl mx-auto px-4">
         {/* ── Cómo trabajamos (info práctica, sin tono de venta) ── */}
         <section className="py-12 border-b border-border">
-          <h2 className="text-xl font-display font-semibold text-foreground mb-6">
+          <h2 className="text-xl font-serif font-semibold text-foreground mb-6">
             {c.howWeWorkTitle}
           </h2>
           <ul className="space-y-3">
@@ -503,7 +503,7 @@ export function PartnerContractPage({ locale }: Props) {
 
         {/* ── Programa de referidos ── */}
         <section className="py-12 border-b border-border">
-          <h2 className="text-xl font-display font-semibold text-foreground mb-3">
+          <h2 className="text-xl font-serif font-semibold text-foreground mb-3">
             {c.referralProgramTitle}
           </h2>
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{c.referralProgramNote}</p>
@@ -520,7 +520,7 @@ export function PartnerContractPage({ locale }: Props) {
         {/* ── Formulario de contacto ── */}
         <section className="py-12">
           <div className="bg-card border border-border rounded-xl p-6 sm:p-8">
-            <h2 className="text-xl font-display font-semibold text-foreground mb-2">
+            <h2 className="text-xl font-serif font-semibold text-foreground mb-2">
               {c.formTitle}
             </h2>
             <p className="text-sm text-muted-foreground mb-6">{c.formBody}</p>

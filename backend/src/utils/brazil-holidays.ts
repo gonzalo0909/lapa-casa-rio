@@ -59,10 +59,16 @@ export interface HolidayBlockPreset {
   endDate: string;
 }
 
-/** Presets de bloqueo masivo para el admin: un feriado nombrado con su
- *  ventana ±7 días ya calculada (mismo buffer que apartment_holiday_periods,
- *  0039/0041), para que el admin bloquee todas las habitaciones de un click
- *  y solo tenga que editar el rango si quiere algo distinto. */
+/** Presets de bloqueo masivo para el admin: la fecha exacta de cada feriado
+ *  (o, para Carnaval/Semana Santa/Réveillon, su tramo real de días), para
+ *  que el admin bloquee todas las habitaciones de un click y solo tenga
+ *  que editar el rango si además quiere sumar días antes o después.
+ *
+ *  startDate/endDate usan el mismo criterio que room_blocks/special_period_rules
+ *  en toda la base: end_date es el checkout, exclusivo (CHECK end_date > start_date)
+ *  -- un feriado de un solo día (ej. Tiradentes) todavía necesita esa noche
+ *  bloqueada, así que endDate es siempre el día siguiente al último día del
+ *  feriado, nunca el mismo día que startDate. */
 export function getHolidayBlockPresets(year: number): HolidayBlockPreset[] {
   const easter = easterDate(year);
   const addDays = (d: Date, n: number) => {
@@ -72,27 +78,28 @@ export function getHolidayBlockPresets(year: number): HolidayBlockPreset[] {
   };
   const fmt = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const around = (d: Date) => ({ startDate: fmt(addDays(d, -7)), endDate: fmt(addDays(d, 7)) });
+  /** d es el único día del feriado -- bloquea esa noche (checkout al día siguiente). */
+  const single = (d: Date) => ({ startDate: fmt(d), endDate: fmt(addDays(d, 1)) });
 
   const carnivalStart = addDays(easter, -50); // sábado
-  const carnivalEnd = addDays(easter, -47);   // terça-feira
+  const carnivalEnd = addDays(easter, -47);   // terça-feira, último día del feriado
   const goodFriday = addDays(easter, -2);
   const newYearsEve = new Date(year, 11, 31);
 
   return [
-    { key: 'ano_novo', name: `Ano Novo ${year}`, ...around(new Date(year, 0, 1)) },
-    { key: 'carnaval', name: `Carnaval ${year}`, startDate: fmt(addDays(carnivalStart, -7)), endDate: fmt(addDays(carnivalEnd, 7)) },
-    { key: 'semana_santa', name: `Semana Santa ${year}`, startDate: fmt(addDays(goodFriday, -7)), endDate: fmt(addDays(easter, 7)) },
-    { key: 'tiradentes', name: `Tiradentes ${year}`, ...around(new Date(year, 3, 21)) },
-    { key: 'trabalho', name: `Día del Trabajo ${year}`, ...around(new Date(year, 4, 1)) },
-    { key: 'corpus_christi', name: `Corpus Christi ${year}`, ...around(addDays(easter, 60)) },
-    { key: 'independencia', name: `Independência ${year}`, ...around(new Date(year, 8, 7)) },
-    { key: 'aparecida', name: `N.S. Aparecida ${year}`, ...around(new Date(year, 9, 12)) },
-    { key: 'finados', name: `Finados ${year}`, ...around(new Date(year, 10, 2)) },
-    { key: 'republica', name: `Proclamação da República ${year}`, ...around(new Date(year, 10, 15)) },
-    { key: 'consciencia_negra', name: `Consciência Negra ${year}`, ...around(new Date(year, 10, 20)) },
-    { key: 'natal', name: `Natal ${year}`, ...around(new Date(year, 11, 25)) },
-    { key: 'reveillon', name: `Réveillon ${year}`, startDate: fmt(addDays(newYearsEve, -7)), endDate: fmt(addDays(newYearsEve, 7)) },
+    { key: 'ano_novo', name: `Ano Novo ${year}`, ...single(new Date(year, 0, 1)) },
+    { key: 'carnaval', name: `Carnaval ${year}`, startDate: fmt(carnivalStart), endDate: fmt(addDays(carnivalEnd, 1)) },
+    { key: 'semana_santa', name: `Semana Santa ${year}`, startDate: fmt(goodFriday), endDate: fmt(addDays(easter, 1)) },
+    { key: 'tiradentes', name: `Tiradentes ${year}`, ...single(new Date(year, 3, 21)) },
+    { key: 'trabalho', name: `Día del Trabajo ${year}`, ...single(new Date(year, 4, 1)) },
+    { key: 'corpus_christi', name: `Corpus Christi ${year}`, ...single(addDays(easter, 60)) },
+    { key: 'independencia', name: `Independência ${year}`, ...single(new Date(year, 8, 7)) },
+    { key: 'aparecida', name: `N.S. Aparecida ${year}`, ...single(new Date(year, 9, 12)) },
+    { key: 'finados', name: `Finados ${year}`, ...single(new Date(year, 10, 2)) },
+    { key: 'republica', name: `Proclamação da República ${year}`, ...single(new Date(year, 10, 15)) },
+    { key: 'consciencia_negra', name: `Consciência Negra ${year}`, ...single(new Date(year, 10, 20)) },
+    { key: 'natal', name: `Natal ${year}`, ...single(new Date(year, 11, 25)) },
+    { key: 'reveillon', name: `Réveillon ${year}`, startDate: fmt(newYearsEve), endDate: fmt(addDays(newYearsEve, 1)) },
   ];
 }
 

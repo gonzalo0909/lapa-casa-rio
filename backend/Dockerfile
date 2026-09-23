@@ -103,6 +103,12 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=build --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=build --chown=nodejs:nodejs /app/package*.json ./
+# npm start corre migrate.js y seed.js (database/scripts/*.js, leen
+# database/migrations/*.sql y database/seeds/*.sql) -- sin esta carpeta
+# fallan con MODULE_NOT_FOUND en cada arranque. npm start los encadena
+# con ";" no "&&", así que ese fallo nunca frenaba el deploy ni se veía:
+# la app arrancaba igual, pero ninguna migración nueva se aplicaba nunca.
+COPY --from=build --chown=nodejs:nodejs /app/database ./database
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app/logs

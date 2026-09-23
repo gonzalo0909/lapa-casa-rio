@@ -272,16 +272,17 @@ describe('BookingRepository - update() y confirmReservation()', () => {
 });
 
 describe('SQL: calculate_cancellation_refund()', () => {
-  // Politica vigente (0014_no_refund_cancellation_policy.sql): el
-  // deposito no es reembolsable en ningun caso, sin importar la
-  // antelacion -- se prueban los mismos 3 puntos que antes tenian
-  // 100%/50%/0% para confirmar que ahora los tres dan 0%.
-  it('reembolso 0% cancelando con mas de 168h de anticipacion', async () => {
+  // Politica vigente (0046_restore_flexible_cancellation_policy.sql):
+  // reembolso 100% cancelando con 168h (7 dias) o mas de anticipacion;
+  // 0% por debajo de ese umbral, sin importar cuanto -- se prueban los
+  // mismos 3 puntos que antes tenian 100%/50%/0% para confirmar el
+  // nuevo criterio de 2 tramos.
+  it('reembolso 100% cancelando con mas de 168h de anticipacion', async () => {
     const { rows } = await pool.query(
       `SELECT calculate_cancellation_refund($1::numeric, $2::date, $3::timestamptz) AS refund`,
       [360.00, '2028-12-01', '2028-11-20T12:00:00Z']
     );
-    expect(Number(rows[0].refund)).toBe(0.00);
+    expect(Number(rows[0].refund)).toBe(360.00);
   });
 
   it('reembolso 0% entre 48h y 168h', async () => {

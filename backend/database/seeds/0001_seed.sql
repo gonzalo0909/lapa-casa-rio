@@ -67,21 +67,21 @@ INSERT INTO rate_plans (season_type, multiplier, min_nights, description) VALUES
 -- FIX (sección 13 auditoría 17 secciones): estos 3 tramos (100%/50%/0%)
 -- eran la política ORIGINAL. 0014_no_refund_cancellation_policy.sql
 -- cambió la política real a "el depósito se pierde siempre, sin
--- ventana de gracia" haciendo UPDATE ... SET refund_percent = 0 -- pero
--- ese UPDATE corre sobre esta misma tabla, y las migraciones siempre
--- corren antes que los seeds. En una base ya sembrada (producción) el
--- UPDATE encontró las filas y las corrigió; en cualquier instalación
--- nueva (CI, un dev nuevo, un restore desde cero: migrate -> seed en
--- ese orden) el UPDATE de la migración 0014 se ejecuta primero sobre
--- una tabla todavía vacía (no-op), y este INSERT llega después con los
--- porcentajes viejos -- dejando la política real (sin reembolso) sin
--- aplicar. Se corrige acá en el origen: el seed ya inserta la política
+-- ventana de gracia"; 0046_restore_flexible_cancellation_policy.sql
+-- volvió a habilitar el reembolso para el tramo de 7+ dias antes del
+-- check-in. Esos UPDATE corren sobre esta misma tabla, y las
+-- migraciones siempre corren antes que los seeds. En una base ya
+-- sembrada (producción) los UPDATE encontraron las filas y las
+-- corrigieron; en cualquier instalación nueva (CI, un dev nuevo, un
+-- restore desde cero: migrate -> seed en ese orden) esos UPDATE se
+-- ejecutan primero sobre una tabla todavía vacía (no-op), y este
+-- INSERT llega después -- por eso el seed ya inserta la política
 -- vigente, no la histórica. Se mantienen las 3 filas (con sus
 -- min_hours_before distintos) porque calculate_cancellation_refund()
 -- las usa para elegir el tramo -- solo cambia refund_percent.
 -- ============================================================
 INSERT INTO cancellation_policies (label, min_hours_before, refund_percent) VALUES
-  ('full_refund',    168, 0.0000),  -- +7 dias antes
+  ('full_refund',    168, 1.0000),  -- +7 dias antes
   ('partial_refund',  48, 0.0000),  -- 7 a 2 dias antes
   ('no_refund',        0, 0.0000);  -- menos de 48h / no-show
 

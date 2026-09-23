@@ -132,7 +132,7 @@ const CONTENT: Record<string, Content> = {
       'O depósito no ato da reserva é de 30% do valor total (50% para grupos de 15+ pessoas). O restante é pago no check-in, em dinheiro ou cartão. Aceitamos cartão de crédito e PIX.',
     cancelTitle: 'Política de cancelamento',
     cancelBody:
-      'O depósito pago na reserva não é reembolsável em nenhuma circunstância -- cancelamento a qualquer momento ou no-show, independentemente da antecedência.',
+      'O depósito pago na reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show, não têm direito a reembolso.',
     errorBody:
       'Não foi possível carregar os preços em tempo real agora. Veja os preços atualizados diretamente no motor de reservas.',
     ctaTitle: 'Ver disponibilidade e reservar',
@@ -164,7 +164,7 @@ const CONTENT: Record<string, Content> = {
       'El depósito al reservar es del 30% del total (50% para grupos de 15+ personas). El resto se paga en el check-in, en efectivo o tarjeta. Aceptamos tarjeta de crédito y PIX.',
     cancelTitle: 'Política de cancelación',
     cancelBody:
-      'El depósito abonado en la reserva no es reembolsable bajo ninguna circunstancia -- cancelación en cualquier momento o no-show, sin importar la anticipación.',
+      'El depósito abonado en la reserva es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show, no tienen derecho a reembolso.',
     errorBody:
       'No pudimos cargar los precios en tiempo real ahora. Mirá los precios actualizados directo en el motor de reservas.',
     ctaTitle: 'Ver disponibilidad y reservar',
@@ -196,7 +196,7 @@ const CONTENT: Record<string, Content> = {
       'The deposit at booking is 30% of the total (50% for groups of 15+ people). The remainder is paid at check-in, in cash or by card. We accept credit card and PIX.',
     cancelTitle: 'Cancellation policy',
     cancelBody:
-      'The deposit paid at booking is non-refundable under any circumstance -- cancellation at any time or no-show, regardless of notice.',
+      'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
     errorBody:
       'We could not load live prices right now. See up-to-date prices directly in the booking engine.',
     ctaTitle: 'Check availability and book',
@@ -228,7 +228,7 @@ const CONTENT: Record<string, Content> = {
       'Die Anzahlung bei der Buchung beträgt 30% des Gesamtbetrags (50% für Gruppen ab 15 Personen). Der Rest wird beim Check-in bar oder per Karte bezahlt. Wir akzeptieren Kreditkarte und PIX.',
     cancelTitle: 'Stornierungsrichtlinie',
     cancelBody:
-      'Die bei der Buchung gezahlte Anzahlung ist unter keinen Umständen erstattungsfähig -- Stornierung zu jedem Zeitpunkt oder Nichterscheinen, unabhängig von der Vorlaufzeit.',
+      'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
     errorBody:
       'Die Live-Preise konnten gerade nicht geladen werden. Aktuelle Preise direkt im Buchungssystem ansehen.',
     ctaTitle: 'Verfügbarkeit prüfen und buchen',
@@ -260,7 +260,7 @@ const CONTENT: Record<string, Content> = {
       "L'acompte à la réservation est de 30% du total (50% pour les groupes de 15+ personnes). Le solde est payé au check-in, en espèces ou par carte. Nous acceptons la carte de crédit et le PIX.",
     cancelTitle: "Politique d'annulation",
     cancelBody:
-      "L'acompte versé lors de la réservation n'est remboursable en aucune circonstance -- annulation à tout moment ou non-présentation, quel que soit le délai de préavis.",
+      "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation, ne donnent pas droit à un remboursement.",
     errorBody:
       'Impossible de charger les prix en direct pour le moment. Consultez les prix à jour directement dans le moteur de réservation.',
     ctaTitle: 'Vérifier la disponibilité et réserver',
@@ -292,7 +292,7 @@ const CONTENT: Record<string, Content> = {
       'La caparra al momento della prenotazione è il 30% del totale (50% per gruppi di 15+ persone). Il resto si paga al check-in, in contanti o con carta. Accettiamo carta di credito e PIX.',
     cancelTitle: 'Politica di cancellazione',
     cancelBody:
-      'La caparra pagata al momento della prenotazione non è rimborsabile in nessuna circostanza -- cancellazione in qualsiasi momento o no-show, indipendentemente dal preavviso.',
+      'La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
     errorBody:
       'Non è stato possibile caricare i prezzi in tempo reale ora. Guarda i prezzi aggiornati direttamente nel motore di prenotazione.',
     ctaTitle: 'Controlla disponibilità e prenota',

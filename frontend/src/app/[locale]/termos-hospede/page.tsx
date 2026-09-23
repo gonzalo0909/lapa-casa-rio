@@ -6,8 +6,9 @@
 // de 17 secciones).
 //
 // Contenido basado únicamente en políticas verificadas en el código real:
-// - Depósito no reembolsable ante cancelación o no-show, sin excepción
-//   (migración backend/database/migrations/0014_no_refund_cancellation_policy.sql)
+// - Depósito reembolsable si se cancela con 7+ días de antecedencia al
+//   check-in; sin reembolso dentro de esos 7 días o por no-show
+//   (migración backend/database/migrations/0046_restore_flexible_cancellation_policy.sql)
 // - Horarios y reglas de check-in/check-out (hostel-info-banner.tsx)
 // No incluye cláusulas que no se pudieron verificar en el sistema real.
 
@@ -18,7 +19,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
-const LAST_UPDATED = '2026-08-31';
+const LAST_UPDATED = '2026-09-23';
 
 const META: Record<Locale, { title: string; description: string }> = {
   pt: {
@@ -96,7 +97,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: '2. Política de cancelamento e no-show',
-        body: 'O depósito pago no ato da reserva não é reembolsável em nenhuma circunstância — seja por cancelamento a qualquer momento, seja por no-show (não comparecimento) —, independentemente da antecedência do aviso.',
+        body: 'O depósito pago no ato da reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso.',
       },
       {
         title: '3. Check-in e check-out',
@@ -155,7 +156,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: '2. Política de cancelación y no-show',
-        body: 'El depósito abonado al reservar no es reembolsable bajo ninguna circunstancia — ya sea por cancelación en cualquier momento o por no-show (no presentarse) —, sin importar la anticipación del aviso.',
+        body: 'El depósito abonado al reservar es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso.',
       },
       {
         title: '3. Check-in y check-out',
@@ -214,7 +215,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: '2. Cancellation and no-show policy',
-        body: 'The deposit paid at booking is non-refundable under any circumstance — whether due to cancellation at any time or no-show — regardless of how much notice is given.',
+        body: 'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
       },
       {
         title: '3. Check-in and check-out',
@@ -273,7 +274,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: '2. Stornierungs- und No-Show-Richtlinie',
-        body: 'Die bei der Buchung gezahlte Anzahlung ist unter keinen Umständen erstattungsfähig — weder bei Stornierung zu irgendeinem Zeitpunkt noch bei Nichterscheinen —, unabhängig von der Vorlaufzeit der Mitteilung.',
+        body: 'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
       },
       {
         title: '3. Check-in und Check-out',
@@ -332,7 +333,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Politique d'annulation et de non-présentation",
-        body: "L'acompte versé lors de la réservation n'est remboursable en aucune circonstance — que ce soit en cas d'annulation à tout moment ou de non-présentation (no-show) —, quel que soit le délai de préavis.",
+        body: "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement.",
       },
       {
         title: '3. Arrivée et départ',
@@ -391,7 +392,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: '2. Politica di cancellazione e no-show',
-        body: 'La caparra pagata al momento della prenotazione non è rimborsabile in nessuna circostanza — sia in caso di cancellazione in qualsiasi momento sia in caso di no-show —, indipendentemente dal preavviso.',
+        body: 'La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
       },
       {
         title: '3. Check-in e check-out',

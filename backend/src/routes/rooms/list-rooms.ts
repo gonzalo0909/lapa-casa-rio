@@ -110,15 +110,13 @@ export const listRoomsHandler = async (
           policies: {
             checkIn: '14:00',
             checkOut: '12:00',
-            // El depósito no es reembolsable bajo ninguna circunstancia --
-            // cancelación en cualquier momento o no-show, sin importar la
-            // anticipación (mismo texto que /termos-hospede y el FAQ, las
-            // dos fuentes visibles para el huésped; este campo tenía una
-            // política vieja, con tramos de reembolso parcial, que ya no
-            // rige y contradecía a las otras dos).
+            // El depósito es reembolsable si se cancela con 7+ días de
+            // antecedencia al check-in; sin reembolso dentro de esos 7 días
+            // o por no-show (mismo texto que /termos-hospede y el FAQ, las
+            // dos fuentes visibles para el huésped).
             cancellation: {
               policy:
-                'Non-refundable under any circumstance, regardless of notice (cancellation or no-show)',
+                'Fully refundable if cancelled 7 or more days before check-in; not eligible for a refund within 7 days of check-in or in case of no-show',
             },
             deposit: {
               standard: '30% of total booking',

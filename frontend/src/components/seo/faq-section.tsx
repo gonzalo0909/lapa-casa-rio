@@ -56,7 +56,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Qual é a política de cancelamento?',
       answer:
-        'O depósito pago na reserva não é reembolsável em caso de cancelamento ou no-show, independentemente da antecedência.',
+        'O depósito pago na reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show, não têm direito a reembolso.',
     },
     {
       question: 'Tem Wi-Fi grátis?',
@@ -99,7 +99,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es la política de cancelación?',
       answer:
-        'El depósito abonado en la reserva no es reembolsable en caso de cancelación o no-show, sin importar la anticipación.',
+        'El depósito abonado en la reserva es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show, no tienen derecho a reembolso.',
     },
     {
       question: '¿Hay Wi-Fi gratis?',
@@ -142,7 +142,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'What is the cancellation policy?',
       answer:
-        'The deposit paid at booking is non-refundable in case of cancellation or no-show, regardless of notice.',
+        'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
     },
     {
       question: 'Is there free Wi-Fi?',
@@ -185,7 +185,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Wie lautet die Stornierungsrichtlinie?',
       answer:
-        'Die bei der Buchung gezahlte Anzahlung ist bei Stornierung oder Nichterscheinen nicht erstattungsfähig, unabhängig von der Vorlaufzeit.',
+        'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
     },
     {
       question: 'Gibt es kostenloses WLAN?',
@@ -229,7 +229,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: "Quelle est la politique d'annulation ?",
       answer:
-        "L'acompte versé lors de la réservation n'est pas remboursable en cas d'annulation ou de non-présentation, quel que soit le délai de préavis.",
+        "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation, ne donnent pas droit à un remboursement.",
     },
     {
       question: 'Y a-t-il le Wi-Fi gratuit ?',
@@ -272,7 +272,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Qual è la politica di cancellazione?',
       answer:
-        'Il deposito pagato al momento della prenotazione non è rimborsabile in caso di cancellazione o no-show, indipendentemente dal preavviso.',
+        'Il deposito pagato al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
     },
     {
       question: "C'è il Wi-Fi gratuito?",
@@ -314,7 +314,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é a política de cancelamento?',
       answer:
-        'O depósito pago na reserva não é reembolsável em caso de cancelamento ou no-show, independentemente da antecedência.',
+        'O depósito pago na reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show, não têm direito a reembolso.',
     },
     {
       question: 'Tem estacionamento?',
@@ -343,7 +343,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es la política de cancelación?',
       answer:
-        'El depósito abonado en la reserva no es reembolsable en caso de cancelación o no-show, sin importar la anticipación.',
+        'El depósito abonado en la reserva es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show, no tienen derecho a reembolso.',
     },
     {
       question: '¿Hay estacionamiento?',
@@ -372,7 +372,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What is the cancellation policy?',
       answer:
-        'The deposit paid at booking is non-refundable in case of cancellation or no-show, regardless of notice.',
+        'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
     },
     {
       question: 'Is there parking?',
@@ -401,7 +401,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wie lautet die Stornierungsrichtlinie?',
       answer:
-        'Die bei der Buchung gezahlte Anzahlung ist bei Stornierung oder Nichterscheinen nicht erstattungsfähig, unabhängig von der Vorlaufzeit.',
+        'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
     },
     {
       question: 'Gibt es Parkplätze?',
@@ -431,7 +431,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quelle est la politique d'annulation ?",
       answer:
-        "L'acompte versé lors de la réservation n'est pas remboursable en cas d'annulation ou de non-présentation, quel que soit le délai de préavis.",
+        "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation, ne donnent pas droit à un remboursement.",
     },
     {
       question: 'Y a-t-il un parking ?',
@@ -461,7 +461,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual è la politica di cancellazione?',
       answer:
-        'Il deposito pagato al momento della prenotazione non è rimborsabile in caso di cancellazione o no-show, indipendentemente dal preavviso.',
+        'Il deposito pagato al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
     },
     {
       question: "C'è un parcheggio?",

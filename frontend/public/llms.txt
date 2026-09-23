@@ -9,7 +9,7 @@ Lapa Casa offers two independent booking flows on the same site: shared hostel d
 - Check-in: from 2:00 PM. Check-out: by 12:00 PM. Reception is open until 10:00 PM; arrivals must be scheduled between 2 PM and 10 PM.
 - Payment methods: credit card and PIX (PIX available for Brazilian residents). No installment payments.
 - Group discounts: 10% off for 6+ beds, 15% off for 10+ beds. Groups can book entire dorms and split payment among members via a shareable link.
-- Cancellation policy: the deposit paid at booking is non-refundable under any circumstance -- cancellation or no-show, regardless of notice.
+- Cancellation policy: the deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.
 - Free high-speed WiFi throughout. Shared kitchen available (breakfast is not included).
 
 ## Pages

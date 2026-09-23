@@ -24,6 +24,7 @@ import { z } from 'zod';
 import { query } from '../../config/database';
 import { uploadApartmentPhoto, deleteApartmentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { dynamicPricingService } from '../../services/dynamic-pricing-service';
+import { getHolidayBlockPresets } from '../../utils/brazil-holidays';
 import { auditLogService } from '../../services/audit-log-service';
 import { ApiResponse } from '../../utils/responses';
 import { validate } from '../../middleware/validation';
@@ -154,6 +155,20 @@ router.get('/', async (req, res, next) => {
       [ownerId],
     );
     res.status(200).json(ApiResponse.success({ apartments: rows }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── GET /owner/apartments/holiday-presets — feriados con rango ±7 días ──────
+// Va antes de /:id a propósito: si no, Express la matchearía como
+// GET /owner/apartments/:id con id="holiday-presets" y ownsRoomType la
+// rechazaría con 404.
+
+router.get('/holiday-presets', async (req, res, next) => {
+  try {
+    const year = parseInt(String(req.query.year), 10) || new Date().getFullYear();
+    res.status(200).json(ApiResponse.success({ presets: getHolidayBlockPresets(year) }));
   } catch (error) {
     next(error);
   }

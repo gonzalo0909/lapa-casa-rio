@@ -33,7 +33,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'O check-in é a partir das 14h. O check-out é até as 12h. Não aceitamos chegadas antes do horário nem saídas após o horário.',
+        'O check-in é a partir das 14h. O check-out é até as 12h.',
     },
     {
       question: 'E se eu chegar depois das 22h?',
@@ -77,7 +77,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00. No aceptamos llegadas antes del horario ni salidas después.',
+        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00.',
     },
     {
       question: '¿Qué pasa si llego después de las 22h?',
@@ -121,7 +121,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is from 2:00 PM. Check-out is by 12:00 PM. We do not accept early arrivals or late departures outside these times.',
+        'Check-in is from 2:00 PM. Check-out is by 12:00 PM.',
     },
     {
       question: 'What if I arrive after 10 PM?',
@@ -164,7 +164,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr. Frühankünfte oder Spätabreisen außerhalb dieser Zeiten werden nicht akzeptiert.',
+        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr.',
     },
     {
       question: 'Was passiert, wenn ich nach 22 Uhr ankomme?',
@@ -208,7 +208,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "L'arrivée est à partir de 14h00. Le départ est avant 12h00. Nous n'acceptons pas les arrivées anticipées ni les départs tardifs.",
+        "L'arrivée est à partir de 14h00. Le départ est avant 12h00.",
     },
     {
       question: "Que se passe-t-il si j'arrive après 22h ?",
@@ -253,7 +253,7 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Il check-in è dalle 14:00. Il check-out è entro le 12:00. Non accettiamo arrivi anticipati o partenze tardive.',
+        'Il check-in è dalle 14:00. Il check-out è entro le 12:00.',
     },
     {
       question: 'Cosa succede se arrivo dopo le 22?',
@@ -302,7 +302,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'O check-in é a partir das 14h. O check-out é até as 12h. Não aceitamos chegadas antes do horário nem saídas após o horário.',
+        'O check-in é a partir das 14h. O check-out é até as 12h.',
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
@@ -331,7 +331,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00. No aceptamos llegadas antes del horario ni salidas después.',
+        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00.',
     },
     {
       question: '¿Qué métodos de pago aceptan?',
@@ -360,7 +360,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is from 2:00 PM. Check-out is by 12:00 PM. We do not accept early arrivals or late departures.',
+        'Check-in is from 2:00 PM. Check-out is by 12:00 PM.',
     },
     {
       question: 'What payment methods do you accept?',
@@ -389,7 +389,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr. Frühankünfte oder Spätabreisen werden nicht akzeptiert.',
+        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr.',
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
@@ -418,7 +418,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "L'arrivée est à partir de 14h00. Le départ est avant 12h00. Nous n'acceptons pas les arrivées anticipées ni les départs tardifs.",
+        "L'arrivée est à partir de 14h00. Le départ est avant 12h00.",
     },
     {
       question: 'Quels modes de paiement acceptez-vous ?',
@@ -448,7 +448,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Il check-in è dalle 14:00. Il check-out è entro le 12:00. Non accettiamo arrivi anticipati o partenze tardive.',
+        'Il check-in è dalle 14:00. Il check-out è entro le 12:00.',
     },
     {
       question: 'Quali metodi di pagamento accettate?',

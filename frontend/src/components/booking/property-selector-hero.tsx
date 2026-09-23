@@ -137,9 +137,18 @@ function PropertyPanel({
       className="group relative flex min-h-[180px] flex-col items-center justify-center overflow-hidden rounded-2xl p-5 text-center text-foreground transition-transform duration-300 hover:-translate-y-1"
       style={{ background: bg }}
     >
-      <span className="pointer-events-none absolute inset-0 text-foreground opacity-40 transition-opacity duration-300 group-hover:opacity-70">
-        {pattern === "beds" ? <BedsPattern /> : pattern === "windows" ? <WindowsPattern /> : <SantaTeresaScene />}
-      </span>
+      {pattern === "santa-teresa" ? (
+        <>
+          <span className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
+            <SantaTeresaScene />
+          </span>
+          <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+        </>
+      ) : (
+        <span className="pointer-events-none absolute inset-0 text-foreground opacity-40 transition-opacity duration-300 group-hover:opacity-70">
+          {pattern === "beds" ? <BedsPattern /> : <WindowsPattern />}
+        </span>
+      )}
       <span className="relative z-10">
         <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
           {icon}
@@ -188,39 +197,62 @@ function WindowsPattern() {
   )
 }
 
-// Ilustración de línea (no foto): colina de Santa Teresa con casas coloniales
-// y los Arcos da Lapa. Mismo estilo de trazo fino que BedsPattern/WindowsPattern.
+// Ilustración con color (no foto): atardecer sobre la colina de Santa Teresa,
+// casas coloridas y los Arcos da Lapa. Dibujada a mano en SVG.
 function SantaTeresaScene() {
+  const houses: { x: number; y: number; w: number; h: number; wall: string; roof: string }[] = [
+    { x: 24, y: 76, w: 30, h: 24, wall: "#E7B84C", roof: "#A8492E" },
+    { x: 96, y: 68, w: 28, h: 22, wall: "#E6E1CE", roof: "#8B3A2B" },
+    { x: 168, y: 80, w: 32, h: 26, wall: "#7FA9C4", roof: "#6E2E22" },
+    { x: 242, y: 66, w: 28, h: 22, wall: "#D97A54", roof: "#5C2A20" },
+    { x: 308, y: 78, w: 30, h: 24, wall: "#EFE7C9", roof: "#A8492E" },
+  ]
+
   return (
     <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
+      <defs>
+        <linearGradient id="psh-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F6C57B" />
+          <stop offset="55%" stopColor="#E68A5C" />
+          <stop offset="100%" stopColor="#8E4B63" />
+        </linearGradient>
+        <linearGradient id="psh-hill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2E5C42" />
+          <stop offset="100%" stopColor="#1B3D2A" />
+        </linearGradient>
+      </defs>
+
+      {/* Cielo */}
+      <rect width="400" height="200" fill="url(#psh-sky)" />
+      {/* Sol */}
+      <circle cx="336" cy="34" r="20" fill="#FCE7A8" opacity="0.9" />
+
       {/* Fiação do bonde */}
-      <path d="M0 34 Q 200 10 400 34" stroke="currentColor" strokeWidth="1" opacity="0.55" fill="none" />
-      {/* Colina (contorno) */}
-      <path
-        d="M0 100 Q 100 78 200 92 T 400 82"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-      />
-      {/* Casas en la colina */}
-      <g stroke="currentColor" strokeWidth="1.2" fill="none">
-        <path d="M28 78 h28 v22 h-28 z M28 78 l14 -12 l14 12" />
-        <rect x="36" y="88" width="7" height="9" opacity="0.6" />
-        <path d="M98 72 h26 v20 h-26 z M98 72 l13 -11 l13 11" />
-        <rect x="105" y="81" width="6" height="8" opacity="0.6" />
-        <path d="M168 82 h30 v24 h-30 z M168 82 l15 -13 l15 13" />
-        <rect x="177" y="92" width="7" height="9" opacity="0.6" />
-        <path d="M242 70 h26 v20 h-26 z M242 70 l13 -11 l13 11" />
-        <rect x="249" y="79" width="6" height="8" opacity="0.6" />
-        <path d="M310 80 h28 v22 h-28 z M310 80 l14 -12 l14 12" />
-        <rect x="318" y="90" width="7" height="9" opacity="0.6" />
-      </g>
+      <path d="M0 42 Q 200 18 400 42" stroke="#3B2A22" strokeWidth="1.2" opacity="0.5" fill="none" />
+
+      {/* Colina */}
+      <path d="M0 100 Q 100 76 200 92 T 400 80 V200 H0 Z" fill="url(#psh-hill)" />
+
+      {/* Casas coloridas */}
+      {houses.map((h, i) => (
+        <g key={i}>
+          <rect x={h.x} y={h.y} width={h.w} height={h.h} fill={h.wall} stroke="#2A1B12" strokeWidth="1" />
+          <path
+            d={`M${h.x - 2} ${h.y} L${h.x + h.w / 2} ${h.y - 13} L${h.x + h.w + 2} ${h.y}`}
+            fill={h.roof}
+            stroke="#2A1B12"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          />
+          <rect x={h.x + h.w / 2 - 4} y={h.y + h.h - 12} width="8" height="9" fill="#2A1B12" opacity="0.85" />
+        </g>
+      ))}
+
       {/* Arcos da Lapa */}
-      <g stroke="currentColor" strokeWidth="1.4" fill="none" opacity="0.9">
+      <g fill="#E4D6AE" stroke="#8A6F3E" strokeWidth="1.2">
         {Array.from({ length: 6 }, (_, i) => 24 + i * 62).map((cx) => (
-          <path key={cx} d={`M${cx} 190 v-40 a18 18 0 0 1 36 0 v40`} />
+          <path key={cx} d={`M${cx} 200 V158 a18 18 0 0 1 36 0 V200 Z`} />
         ))}
-        <line x1="8" y1="190" x2="392" y2="190" strokeWidth="1.6" />
       </g>
     </svg>
   )

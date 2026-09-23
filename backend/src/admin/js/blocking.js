@@ -69,7 +69,6 @@ document.getElementById('block-holiday').addEventListener('change', (event) => {
 });
 
 let currentBlocks = [];
-let editingId = null;
 
 async function loadBlocks() {
   try {
@@ -81,6 +80,9 @@ async function loadBlocks() {
   }
 }
 
+const REASON_OPTIONS = Object.entries(REASON_LABELS)
+  .map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+
 function renderBlocks(blocks) {
   const tbody = document.querySelector('#blocks-table tbody');
   if (blocks.length === 0) {
@@ -90,53 +92,53 @@ function renderBlocks(blocks) {
   tbody.innerHTML = blocks.map((b) => `
     <tr data-id="${b.id}">
       <td>${b.roomName}</td>
-      <td>${fmtDate(b.startDate)}</td>
-      <td>${fmtDate(b.endDate)}</td>
-      <td>${b.reason || REASON_LABELS[b.blockType] || b.blockType}${b.notes ? ` — ${b.notes}` : ''}</td>
-      <td><button data-action="edit">Editar</button></td>
+      <td><input type="date" class="row-start" value="${b.startDate}"></td>
+      <td><input type="date" class="row-end" value="${b.endDate}"></td>
+      <td>
+        <select class="row-blocktype">${REASON_OPTIONS}</select>
+        <input type="text" class="row-reason" value="${b.reason || ''}" placeholder="Motivo (texto)" style="margin-top:4px;">
+      </td>
+      <td><button data-action="save">Guardar</button></td>
       <td><button data-action="unblock">Quitar</button></td>
     </tr>
   `).join('');
 
+  tbody.querySelectorAll('tr').forEach((row) => {
+    const block = blocks.find((b) => b.id === row.dataset.id);
+    row.querySelector('.row-blocktype').value = block.blockType;
+  });
+
   tbody.querySelectorAll('button[data-action="unblock"]').forEach((btn) => {
     btn.addEventListener('click', () => unblock(btn.closest('tr').dataset.id));
   });
-  tbody.querySelectorAll('button[data-action="edit"]').forEach((btn) => {
-    btn.addEventListener('click', () => startEdit(btn.closest('tr').dataset.id));
+  tbody.querySelectorAll('button[data-action="save"]').forEach((btn) => {
+    btn.addEventListener('click', () => saveRow(btn.closest('tr')));
   });
 }
 
-function startEdit(id) {
-  const block = currentBlocks.find((b) => b.id === id);
-  if (!block) return;
-  editingId = id;
-  document.getElementById('block-room').value = block.roomTypeId;
-  document.getElementById('block-holiday').value = '';
-  document.getElementById('block-start').value = block.startDate;
-  document.getElementById('block-end').value = block.endDate;
-  document.getElementById('block-reason').value = block.blockType;
-  document.getElementById('block-notes').value = block.notes || '';
-  document.getElementById('block-submit-btn').textContent = 'Guardar cambios';
-  document.getElementById('block-cancel-edit-btn').classList.remove('hidden');
-  showMsg('block-editing-msg', `Editando el bloqueo de ${block.roomName} (${fmtDate(block.startDate)} – ${fmtDate(block.endDate)}).`, 'info');
-  document.getElementById('block-form').scrollIntoView({ behavior: 'smooth' });
-}
+async function saveRow(row) {
+  const id = row.dataset.id;
+  const startDate = row.querySelector('.row-start').value;
+  const endDate = row.querySelector('.row-end').value;
+  const blockType = row.querySelector('.row-blocktype').value;
+  const reason = row.querySelector('.row-reason').value;
 
-function cancelEdit() {
-  editingId = null;
-  document.getElementById('block-form').reset();
-  document.getElementById('block-submit-btn').textContent = 'Bloquear';
-  document.getElementById('block-cancel-edit-btn').classList.add('hidden');
-  showMsg('block-editing-msg', '', '');
+  try {
+    await apiFetch(`/admin/blocked-dates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ startDate, endDate, blockType, reason })
+    });
+    showMsg('blocks-msg', 'Bloqueo actualizado.', 'success');
+    loadBlocks();
+  } catch (err) {
+    showMsg('blocks-msg', err.message, 'error');
+  }
 }
-
-document.getElementById('block-cancel-edit-btn').addEventListener('click', cancelEdit);
 
 async function unblock(id) {
   try {
     await apiFetch(`/admin/blocked-dates/${id}`, { method: 'DELETE' });
     showMsg('blocks-msg', 'Bloqueo eliminado.', 'success');
-    if (editingId === id) cancelEdit();
     loadBlocks();
   } catch (err) {
     showMsg('blocks-msg', err.message, 'error');
@@ -155,21 +157,12 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
   const reason = holidayPreset ? holidayPreset.name : REASON_LABELS[blockType];
 
   try {
-    if (editingId) {
-      await apiFetch(`/admin/blocked-dates/${editingId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ startDate, endDate, blockType, reason, notes })
-      });
-      showMsg('block-msg', 'Bloqueo actualizado.', 'success');
-      cancelEdit();
-    } else {
-      await apiFetch('/admin/blocked-dates', {
-        method: 'POST',
-        body: JSON.stringify({ roomTypeId, startDate, endDate, blockType, reason, notes })
-      });
-      showMsg('block-msg', 'Fechas bloqueadas.', 'success');
-      document.getElementById('block-form').reset();
-    }
+    await apiFetch('/admin/blocked-dates', {
+      method: 'POST',
+      body: JSON.stringify({ roomTypeId, startDate, endDate, blockType, reason, notes })
+    });
+    showMsg('block-msg', 'Fechas bloqueadas.', 'success');
+    document.getElementById('block-form').reset();
     loadBlocks();
   } catch (err) {
     showMsg('block-msg', err.message, 'error');
@@ -186,7 +179,7 @@ document.getElementById('block-unblock-btn').addEventListener('click', async () 
   );
 
   if (matches.length === 0) {
-    showMsg('block-msg', 'No hay un bloqueo con esa habitación y esas fechas exactas -- fijate en "Fechas bloqueadas" abajo y usá "Editar" o "Quitar" en la fila correcta.', 'error');
+    showMsg('block-msg', 'No hay un bloqueo con esa habitación y esas fechas exactas -- fijate en "Fechas bloqueadas" abajo y editá la fila correcta directo.', 'error');
     return;
   }
 

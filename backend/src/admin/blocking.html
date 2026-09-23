@@ -8,14 +8,8 @@
 </head>
 <body>
 
-<style>
-  .blocking-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  @media (max-width: 800px) { .blocking-layout { grid-template-columns: 1fr; } }
-</style>
-
 <div id="nav-root"></div>
 <main>
-<div class="blocking-layout">
   <div class="card">
     <h2>Bloquear fechas</h2>
     <p style="font-size:13px;color:#888;">Saca una habitación de circulación por mantenimiento, evento privado o feriado. Si ya hay una reserva confirmada o pendiente en ese rango, no te va a dejar bloquear -- primero hay que reubicar o cancelar esa reserva.</p>
@@ -46,25 +40,22 @@
       <label>Notas (opcional)
         <input type="text" id="block-notes" placeholder="...">
       </label>
-      <div id="block-editing-msg"></div>
       <div style="display:flex;gap:8px;">
-        <button type="submit" id="block-submit-btn">Bloquear</button>
+        <button type="submit">Bloquear</button>
         <button type="button" id="block-unblock-btn">Desbloquear</button>
-        <button type="button" id="block-cancel-edit-btn" class="hidden">Cancelar edición</button>
       </div>
     </form>
   </div>
 
   <div class="card">
     <h2>Fechas bloqueadas</h2>
-    <p style="font-size:13px;color:#888;">Click en "Editar" para cargar un bloqueo en el formulario de la izquierda y cambiarle las fechas o el motivo.</p>
+    <p style="font-size:13px;color:#888;">Editá la fecha o el motivo directo en la fila y tocá "Guardar".</p>
     <div id="blocks-msg"></div>
     <table id="blocks-table">
       <thead><tr><th>Habitación</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th colspan="2"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
-</div>
 </main>
 
 <script src="/admin/js/api.js"></script>

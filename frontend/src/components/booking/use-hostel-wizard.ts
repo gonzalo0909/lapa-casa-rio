@@ -10,6 +10,22 @@ import type { AppliedCoupon } from './hostel-guest-form';
 import { getSeason, validateCPF } from './hostel-engine.utils';
 import { availabilityAPI, type ApiRoom } from '@/lib/api';
 
+// El "name" de DEFAULT_ROOMS ("Cuarto 1", etc.) es solo la clave de fallback --
+// el nombre que se muestra siempre sale de esta traducción, para no mezclar
+// "Cuarto" (hardcodeado) con oraciones en otros idiomas.
+const ROOM_NAME_KEY: Record<string, keyof Translations> = {
+  cuarto1: 'roomName1', cuarto3: 'roomName3', cuarto4: 'roomName4',
+  cuarto5: 'roomName5', cuarto6: 'roomName6',
+};
+
+function localizeRoomNames(rooms: RoomDef[], t: Translations): RoomDef[] {
+  return rooms.map((r) => {
+    const key = ROOM_NAME_KEY[r.id];
+    const localized = key ? t[key] : undefined;
+    return typeof localized === 'string' ? { ...r, name: localized } : r;
+  });
+}
+
 export function useHostelWizard(t: Translations) {
   const [step, setStep]             = useState(1);
   const [calMonth, setCalMonth]     = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
@@ -19,7 +35,7 @@ export function useHostelWizard(t: Translations) {
   const [selectingEnd, setSelectingEnd] = useState(false);
   const [beds, setBeds]             = useState<Record<string, number>>({ cuarto1: 0, cuarto3: 0, cuarto4: 0, cuarto5: 0, cuarto6: 0 });
   const [revealed, setRevealed]     = useState<Record<string, boolean>>({ cuarto3: false, cuarto5: false });
-  const [rooms, setRooms]           = useState<RoomDef[]>(DEFAULT_ROOMS);
+  const [rooms, setRooms]           = useState<RoomDef[]>(() => localizeRoomNames(DEFAULT_ROOMS, t));
   const [roomsLoaded, setRoomsLoaded] = useState(false);
   const [toast, setToast]           = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -57,16 +73,19 @@ export function useHostelWizard(t: Translations) {
         if (!apiRooms.length) { showToast(errAvail); return; }
         const seasonMult: number = res.data?.allocationOptions?.[0]?.pricing?.seasonalMultiplier ?? 1;
         setRooms(
-          DEFAULT_ROOMS.map((dr) => {
-            const match = apiRooms.find((ar) => ar.code === dr.code);
-            if (!match) { return dr; }
-            return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice * seasonMult };
-          }),
+          localizeRoomNames(
+            DEFAULT_ROOMS.map((dr) => {
+              const match = apiRooms.find((ar) => ar.code === dr.code);
+              if (!match) { return dr; }
+              return { ...dr, realId: match.roomId, available: match.availableBeds ?? dr.available, price: match.basePrice * seasonMult };
+            }),
+            t,
+          ),
         );
         setRoomsLoaded(true);
       })
       .catch(() => showToast(errAvail));
-  }, [checkIn, checkOut, errAvail]);
+  }, [checkIn, checkOut, errAvail, t]);
 
   const scrollToCard = useCallback(() => {
     setTimeout(() => {
@@ -182,7 +201,7 @@ export function useHostelWizard(t: Translations) {
     setSelectingEnd(false);
     setBeds({ cuarto1: 0, cuarto3: 0, cuarto4: 0, cuarto5: 0, cuarto6: 0 });
     setRevealed({ cuarto3: false, cuarto5: false });
-    setRooms(DEFAULT_ROOMS);
+    setRooms(localizeRoomNames(DEFAULT_ROOMS, t));
     setRoomsLoaded(false);
     setToast('');
     setCancelOpen(false);
@@ -194,7 +213,7 @@ export function useHostelWizard(t: Translations) {
     setDocFeedback(null);
     setEmailFb(null);
     setPhoneFb(null);
-  }, []);
+  }, [t]);
 
   const goNext = useCallback(() => {
     if (step === 1) {

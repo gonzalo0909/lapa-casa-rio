@@ -89,7 +89,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
         <div className="he-header">
           <div className="he-brand-loc">Santa Teresa · Rio de Janeiro</div>
           <h1 className="he-brand">
-            Lapa Casa
+            Lapa Casa Rio
             <span>Hostel</span>
           </h1>
           <div className="he-lang-sw">

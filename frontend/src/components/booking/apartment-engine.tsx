@@ -62,6 +62,11 @@ const PaymentProcessor = dynamic(
   },
 );
 
+// Motor de reservas de apartamentos temporalmente restringido: la página
+// sigue visible (SEO, hero, notices) pero el wizard de fechas/pago no se
+// muestra. Volver a `true` cuando el flujo esté listo para reabrir.
+const APARTMENTS_BOOKING_ENABLED = false;
+
 export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
@@ -408,6 +413,30 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   ];
 
   // ── Render ───────────────────────────────────────────────────────────────
+  if (!APARTMENTS_BOOKING_ENABLED) {
+    return (
+      <div className={styles.root}>
+        <div className={styles.hero}>
+          <div className={styles.heroLocation}>{t('heroLocation')}</div>
+          <h1 className={styles.heroBrand}>
+            Lapa Casa<span>{t('heroApartmentsWord')}</span>
+          </h1>
+          <p className={styles.heroSub}>{t('heroSubtitle')}</p>
+        </div>
+        <div className={styles.section}>
+          <div className={styles.notices}>
+            <div className={styles.noticesTitle}>
+              <AlertTriangle size={15} strokeWidth={2.2} /> {t('bookingComingSoonTitle')}
+            </div>
+            <p style={{ margin: 0, fontSize: '.9rem', lineHeight: 1.5 }}>
+              {t('bookingComingSoonMessage')}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.root}>
       {/* Hero */}

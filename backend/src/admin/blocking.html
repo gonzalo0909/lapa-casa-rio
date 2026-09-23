@@ -11,39 +11,17 @@
 <div id="nav-root"></div>
 <main>
   <div class="card">
-    <h2>Bloques festivos</h2>
-    <p style="font-size:13px;color:#888;">Bloquea o desbloquea un feriado completo (Carnaval, Réveillon, etc.) en todas las unidades de esta sección con un click. Las fechas se calculan solas pero se pueden editar antes de aplicar. Solo afecta a las unidades de esta pestaña (hostel y apartamentos nunca se mezclan).</p>
-    <div id="holiday-msg"></div>
-    <form class="stack" id="holiday-form">
-      <label>Año
-        <input type="number" id="holiday-year" required>
-      </label>
-      <label>Feriado
-        <select id="holiday-preset" required></select>
-      </label>
-      <label>Desde
-        <input type="date" id="holiday-start" required>
-      </label>
-      <label>Hasta
-        <input type="date" id="holiday-end" required>
-      </label>
-      <label>Notas (opcional)
-        <input type="text" id="holiday-notes" placeholder="...">
-      </label>
-      <div style="display:flex;gap:8px;">
-        <button type="submit">Bloquear todo</button>
-        <button type="button" id="holiday-unblock-btn">Desbloquear todo</button>
-      </div>
-    </form>
-  </div>
-
-  <div class="card">
     <h2>Bloquear fechas</h2>
-    <p style="font-size:13px;color:#888;">Saca una habitación de circulación por mantenimiento o evento privado. Si ya hay una reserva confirmada o pendiente en ese rango, no te va a dejar bloquear -- primero hay que reubicar o cancelar esa reserva.</p>
+    <p style="font-size:13px;color:#888;">Saca una habitación de circulación por mantenimiento, evento privado o feriado. Si ya hay una reserva confirmada o pendiente en ese rango, no te va a dejar bloquear -- primero hay que reubicar o cancelar esa reserva.</p>
     <div id="block-msg"></div>
     <form class="stack" id="block-form">
       <label>Habitación
         <select id="block-room" required></select>
+      </label>
+      <label>Feriado (opcional, autocompleta las fechas)
+        <select id="block-holiday">
+          <option value="">— Elegir fechas manualmente —</option>
+        </select>
       </label>
       <label>Desde
         <input type="date" id="block-start" required>

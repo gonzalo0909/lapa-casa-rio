@@ -3,6 +3,10 @@
 // esta misma página se embebe (vía iframe) tanto dentro de Habitaciones
 // (?type=hostel) como dentro de Apartamentos (?type=apartment). Sin el
 // parámetro, muestra hostel por default (uso directo de la página).
+//
+// El bloqueo es siempre por habitación y por fecha, elegidos a mano --
+// "Feriado" solo autocompleta Desde/Hasta/Motivo para no tener que
+// calcularlos, no aplica nada por su cuenta a otras habitaciones.
 
 requireAuth();
 renderNav('blocking');
@@ -26,6 +30,35 @@ async function loadRoomOptions() {
   const select = document.getElementById('block-room');
   select.innerHTML = units.map((r) => `<option value="${r.id}">${r.name}</option>`).join('');
 }
+
+let holidayPresets = [];
+
+async function loadHolidayPresets() {
+  const year = new Date().getFullYear();
+  try {
+    const [thisYear, nextYear] = await Promise.all([
+      apiFetch(`/admin/holiday-blocks/presets?year=${year}`),
+      apiFetch(`/admin/holiday-blocks/presets?year=${year + 1}`)
+    ]);
+    holidayPresets = [...thisYear.presets, ...nextYear.presets];
+    const select = document.getElementById('block-holiday');
+    select.innerHTML = '<option value="">— Elegir fechas manualmente —</option>'
+      + holidayPresets.map((p) => `<option value="${p.key}-${p.startDate.slice(0, 4)}">${p.name}</option>`).join('');
+  } catch {
+    // el formulario sigue funcionando sin el autocompletado de feriados
+  }
+}
+
+document.getElementById('block-holiday').addEventListener('change', (event) => {
+  const value = event.target.value;
+  if (!value) return;
+  const [key, year] = value.split(/-(\d{4})$/);
+  const preset = holidayPresets.find((p) => p.key === key && p.startDate.startsWith(year));
+  if (!preset) return;
+  document.getElementById('block-start').value = preset.startDate;
+  document.getElementById('block-end').value = preset.endDate;
+  document.getElementById('block-reason').value = 'seasonal';
+});
 
 async function loadBlocks() {
   try {
@@ -74,11 +107,14 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
   const endDate = document.getElementById('block-end').value;
   const blockType = document.getElementById('block-reason').value;
   const notes = document.getElementById('block-notes').value;
+  const holidayValue = document.getElementById('block-holiday').value;
+  const holidayPreset = holidayPresets.find((p) => holidayValue === `${p.key}-${p.startDate.slice(0, 4)}`);
+  const reason = holidayPreset ? holidayPreset.name : REASON_LABELS[blockType];
 
   try {
     await apiFetch('/admin/blocked-dates', {
       method: 'POST',
-      body: JSON.stringify({ roomTypeId, startDate, endDate, blockType, reason: REASON_LABELS[blockType], notes })
+      body: JSON.stringify({ roomTypeId, startDate, endDate, blockType, reason, notes })
     });
     showMsg('block-msg', 'Fechas bloqueadas.', 'success');
     document.getElementById('block-form').reset();
@@ -88,72 +124,6 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
   }
 });
 
-let holidayPresets = [];
-
-async function loadHolidayPresets() {
-  const year = document.getElementById('holiday-year').value;
-  try {
-    const data = await apiFetch(`/admin/holiday-blocks/presets?year=${year}`);
-    holidayPresets = data.presets;
-    const select = document.getElementById('holiday-preset');
-    select.innerHTML = holidayPresets.map((p) => `<option value="${p.key}">${p.name}</option>`).join('');
-    applyPresetDates();
-  } catch (err) {
-    showMsg('holiday-msg', err.message, 'error');
-  }
-}
-
-function applyPresetDates() {
-  const preset = holidayPresets.find((p) => p.key === document.getElementById('holiday-preset').value);
-  if (!preset) return;
-  document.getElementById('holiday-start').value = preset.startDate;
-  document.getElementById('holiday-end').value = preset.endDate;
-}
-
-document.getElementById('holiday-year').addEventListener('change', loadHolidayPresets);
-document.getElementById('holiday-preset').addEventListener('change', applyPresetDates);
-
-document.getElementById('holiday-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const preset = holidayPresets.find((p) => p.key === document.getElementById('holiday-preset').value);
-  const name = preset ? preset.name : document.getElementById('holiday-preset').value;
-  const startDate = document.getElementById('holiday-start').value;
-  const endDate = document.getElementById('holiday-end').value;
-  const notes = document.getElementById('holiday-notes').value;
-
-  try {
-    const data = await apiFetch('/admin/holiday-blocks/apply', {
-      method: 'POST',
-      body: JSON.stringify({ name, startDate, endDate, propertyType: PROPERTY_TYPE, notes })
-    });
-    const conflicts = data.results.filter((r) => r.status === 'conflict');
-    const summary = conflicts.length
-      ? `${data.blockedCount} bloqueadas. ${conflicts.length} con conflicto: ${conflicts.map((c) => c.roomName).join(', ')}.`
-      : `${data.blockedCount} habitación(es) bloqueada(s) para ${name}.`;
-    showMsg('holiday-msg', summary, conflicts.length ? 'error' : 'success');
-    loadBlocks();
-  } catch (err) {
-    showMsg('holiday-msg', err.message, 'error');
-  }
-});
-
-document.getElementById('holiday-unblock-btn').addEventListener('click', async () => {
-  const preset = holidayPresets.find((p) => p.key === document.getElementById('holiday-preset').value);
-  const name = preset ? preset.name : document.getElementById('holiday-preset').value;
-
-  try {
-    const data = await apiFetch('/admin/holiday-blocks/remove', {
-      method: 'POST',
-      body: JSON.stringify({ name, propertyType: PROPERTY_TYPE })
-    });
-    showMsg('holiday-msg', `${data.removedCount} bloqueo(s) removido(s) de ${name}.`, 'success');
-    loadBlocks();
-  } catch (err) {
-    showMsg('holiday-msg', err.message, 'error');
-  }
-});
-
-document.getElementById('holiday-year').value = new Date().getFullYear();
 loadHolidayPresets();
 loadRoomOptions();
 loadBlocks();

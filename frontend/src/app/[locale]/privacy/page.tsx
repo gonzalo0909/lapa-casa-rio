@@ -261,7 +261,7 @@ export default function PrivacyPage({ params }: { params: { locale: string } }) 
     <main className="min-h-screen bg-background">
       <section className="border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-16">
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3 leading-tight">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-3 leading-tight">
             {c.headline}
           </h1>
           <p className="text-xs text-muted-foreground mb-6">
@@ -280,7 +280,7 @@ export default function PrivacyPage({ params }: { params: { locale: string } }) 
 
         {c.sections.map((section, i) => (
           <section key={i} className="py-10 border-b border-border">
-            <h2 className="text-xl font-display font-semibold text-foreground mb-3 flex items-center gap-2">
+            <h2 className="text-xl font-serif font-semibold text-foreground mb-3 flex items-center gap-2">
               {section.title}
               {section.pending && (
                 <span className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 border border-amber-600 dark:border-amber-400 rounded-full px-2 py-0.5">

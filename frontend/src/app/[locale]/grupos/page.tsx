@@ -3,6 +3,9 @@
 
 import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ChevronLeft } from 'lucide-react';
 import { StructuredData, HOSTEL_GEO } from '@/components/seo/structured-data';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -849,20 +852,51 @@ export default async function GruposPage({ params }: { params: { locale: string 
       <StructuredData data={buildGroupHowToSchema(locale)} />
       <StructuredData data={buildGroupFAQSchema(locale)} />
 
-      {/* Hero */}
-      <section className="bg-primary/10 border-b border-primary/20 py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          {/* Eyebrow */}
-          <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3 speakable">
+      {/* Hero con imagen de los Arcos da Lapa — la misma que usa el header del motor de hostel */}
+      <section className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0">
+          <Image
+            src="/img/arcos-lapa.jpg"
+            alt="Arcos da Lapa, Rio de Janeiro"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 to-black/65" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto px-4 pt-6">
+          <Link
+            href={`/${locale}/hostel`}
+            className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            {locale === 'pt'
+              ? 'Voltar'
+              : locale === 'en'
+                ? 'Back'
+                : locale === 'es'
+                  ? 'Volver'
+                  : locale === 'de'
+                    ? 'Zurück'
+                    : locale === 'it'
+                      ? 'Indietro'
+                      : 'Retour'}
+          </Link>
+        </div>
+
+        <div className="relative max-w-3xl mx-auto px-4 pb-14 pt-6 text-center">
+          <p className="text-xs font-display font-semibold uppercase tracking-widest text-white/60 mb-5 speakable">
             Lapa Casa Rio · Santa Teresa · Rio de Janeiro
           </p>
           <h1
-            className="text-3xl md:text-5xl font-bold leading-tight mb-5 speakable"
+            className="font-serif font-semibold leading-[1.1] text-white mb-5 speakable"
+            style={{ fontSize: 'clamp(2.4rem, 6vw, 3.6rem)' }}
             data-speakable
           >
             {c.headline}
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 speakable">
+          <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8 speakable">
             {c.intro}
           </p>
           {/* Discount badges */}
@@ -873,7 +907,7 @@ export default async function GruposPage({ params }: { params: { locale: string 
             <span className="bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-full">
               10+ pessoas → 15% OFF
             </span>
-            <span className="bg-secondary text-secondary-foreground text-sm font-semibold px-4 py-2 rounded-full">
+            <span className="bg-white/15 text-white text-sm font-semibold px-4 py-2 rounded-full backdrop-blur">
               20+ → cotação especial
             </span>
           </div>

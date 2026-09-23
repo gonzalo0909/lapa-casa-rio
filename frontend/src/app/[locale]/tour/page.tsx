@@ -680,7 +680,7 @@ export default async function TourPage({ params }: { params: { locale: string } 
             className="object-cover object-center"
           />
           {/* overlay oscuro para legibilidad del texto */}
-          <div className="absolute inset-0 bg-foreground/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 to-black/65" />
         </div>
 
         {/* back link */}

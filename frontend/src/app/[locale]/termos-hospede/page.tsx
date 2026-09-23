@@ -446,7 +446,7 @@ export default function TermsPage({ params }: { params: { locale: string } }) {
     <main className="min-h-screen bg-background">
       <section className="border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-16">
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3 leading-tight">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-3 leading-tight">
             {c.headline}
           </h1>
           <p className="text-xs text-muted-foreground mb-6">
@@ -461,7 +461,7 @@ export default function TermsPage({ params }: { params: { locale: string } }) {
       <div className="max-w-3xl mx-auto px-4">
         {c.sections.map((section, i) => (
           <section key={i} className="py-10 border-b border-border">
-            <h2 className="text-xl font-display font-semibold text-foreground mb-3">
+            <h2 className="text-xl font-serif font-semibold text-foreground mb-3">
               {section.title}
             </h2>
             <p className="text-muted-foreground mb-4">{section.body}</p>

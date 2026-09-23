@@ -37,7 +37,10 @@ export const GuestGallery: React.FC<GuestGalleryProps> = ({ locale = 'pt' }) => 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+        <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
+          Santa Teresa · Rio de Janeiro
+        </p>
+        <h1 className="text-3xl font-serif font-bold text-foreground mb-2">{t('title')}</h1>
         <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 

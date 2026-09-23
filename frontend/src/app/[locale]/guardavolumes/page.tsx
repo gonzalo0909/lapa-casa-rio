@@ -8,6 +8,7 @@
 import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Luggage, Clock, Wallet } from 'lucide-react';
 import { StructuredData } from '@/components/seo/structured-data';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -115,23 +116,39 @@ export default async function GuardavolumesPage({ params }: { params: { locale: 
     <main className="min-h-screen bg-background">
       <StructuredData data={schema} />
 
-      {/* ── Hero ── */}
-      <section className="border-b border-border">
-        <div className="max-w-3xl mx-auto px-4 py-16">
+      {/* ── Hero con imagen de los Arcos da Lapa — la misma que usa el header del motor de hostel ── */}
+      <section className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0">
+          <Image
+            src="/img/arcos-lapa.jpg"
+            alt="Arcos da Lapa, Rio de Janeiro"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 to-black/65" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto px-4 pt-6">
           <Link
             href={`/${locale}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Home
           </Link>
-          <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-4">
+        </div>
+        <div className="relative max-w-3xl mx-auto px-4 pb-14 pt-6">
+          <p className="text-xs font-display font-semibold tracking-widest uppercase text-white/60 mb-5">
             Santa Teresa · Rio de Janeiro
           </p>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+          <h1
+            className="font-serif font-semibold leading-[1.1] text-white mb-5"
+            style={{ fontSize: 'clamp(2.4rem, 6vw, 3.6rem)' }}
+          >
             ¿Tienes que dejar la maleta en algún lado?
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
+          <p className="text-lg text-white/80 leading-relaxed max-w-2xl">
             No hace falta ser huésped de Lapa Casa. Te guardamos el equipaje en Santa Teresa estés
             yendo, viniendo, o simplemente dando una vuelta por Rio — para que camines liviano y
             disfrutes el día sin cargar nada.

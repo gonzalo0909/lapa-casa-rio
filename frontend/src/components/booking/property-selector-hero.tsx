@@ -25,36 +25,36 @@ export function PropertySelectorHero() {
   const apartmentsHref = `/${locale}/apartamentos`
 
   return (
-    <div className="bg-[#12160f] text-cream">
+    <div className="bg-[#12160f] text-foreground">
       {/* Nav */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#12160f]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="font-serif text-xl tracking-tight text-cream">Lapa Casa</span>
-            <span className="hidden text-xs uppercase tracking-[0.2em] text-cream/50 sm:inline">Rio de Janeiro</span>
+            <span className="font-serif text-xl tracking-tight text-foreground">Lapa Casa</span>
+            <span className="hidden text-xs uppercase tracking-[0.2em] text-foreground/50 sm:inline">Rio de Janeiro</span>
           </div>
           <nav className="flex flex-wrap items-center gap-1.5">
             <Link
               href={hostelHref}
-              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
+              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navHostel')}
             </Link>
             <Link
               href={apartmentsHref}
-              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
+              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navApartments')}
             </Link>
             <a
               href={`/${locale}/parceiros`}
-              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
+              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navPartners')}
             </a>
             <a
               href={`/${locale}/guardavolumes`}
-              className="hidden sm:inline-flex rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-cream/70 transition-colors hover:border-white/40 hover:text-cream"
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navLuggage')}
             </a>
@@ -65,14 +65,14 @@ export function PropertySelectorHero() {
 
       {/* Hero */}
       <main className="mx-auto max-w-6xl px-6 pb-8 pt-8 text-center">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-cream/60">
-          <MapPin className="h-3 w-3 text-gold" />
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-foreground/60">
+          <MapPin className="h-3 w-3 text-primary" />
           Rio de Janeiro
         </div>
         <h1 className="mx-auto max-w-2xl text-balance font-serif text-3xl leading-tight sm:text-4xl">
           {t('heroTitle')}
         </h1>
-        <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-cream/60 hidden sm:block">
+        <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-foreground/60 hidden sm:block">
           {t('heroSubtitle')}
         </p>
 
@@ -99,7 +99,7 @@ export function PropertySelectorHero() {
           />
         </div>
 
-        <p className="mt-5 text-xs text-cream/40">
+        <p className="mt-5 text-xs text-foreground/40">
           {t('directBooking')}
         </p>
       </main>
@@ -134,22 +134,22 @@ function PropertyPanel({
   return (
     <Link
       href={href}
-      className="group relative flex min-h-[180px] flex-col justify-end overflow-hidden rounded-2xl p-5 text-left text-cream transition-transform duration-300 hover:-translate-y-1"
+      className="group relative flex min-h-[180px] flex-col justify-end overflow-hidden rounded-2xl p-5 text-left text-foreground transition-transform duration-300 hover:-translate-y-1"
       style={{ background: bg }}
     >
-      <span className="pointer-events-none absolute inset-0 text-cream opacity-40 transition-opacity duration-300 group-hover:opacity-70">
+      <span className="pointer-events-none absolute inset-0 text-foreground opacity-40 transition-opacity duration-300 group-hover:opacity-70">
         {pattern === "beds" ? <BedsPattern /> : <WindowsPattern />}
       </span>
       <span className="relative z-10">
-        <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cream/15 text-cream backdrop-blur">
+        <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
           {icon}
         </span>
         <span className="block font-serif text-2xl">{title}</span>
-        <span className="mt-0.5 inline-flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-cream/70">
+        <span className="mt-0.5 inline-flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-foreground/70">
           <MapPin className="h-2.5 w-2.5" />
           {location}
         </span>
-        <span className="mt-1.5 block max-w-[28ch] text-sm leading-snug text-cream/85">{description}</span>
+        <span className="mt-1.5 block max-w-[28ch] text-sm leading-snug text-foreground/85">{description}</span>
         <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
           {cta}
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />

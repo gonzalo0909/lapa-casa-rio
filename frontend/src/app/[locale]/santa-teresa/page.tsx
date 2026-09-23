@@ -11,6 +11,8 @@
 import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
+import Image from 'next/image';
+import { ChevronLeft } from 'lucide-react';
 import { StructuredData } from '@/components/seo/structured-data';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { locales, defaultLocale, type Locale } from '@/i18n';
@@ -591,14 +593,25 @@ export default async function SantaTeresaPage({ params }: { params: { locale: st
       <StructuredData data={TouristDestinationSchema} />
       <StructuredData data={faqSchema} />
 
-      {/* ── Hero ── */}
-      <section className="border-b border-border">
-        <div className="max-w-3xl mx-auto px-4 pt-6">
+      {/* ── Hero con imagen de los Arcos da Lapa — la misma que usa el header del motor de hostel ── */}
+      <section className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0">
+          <Image
+            src="/img/arcos-lapa.jpg"
+            alt="Arcos da Lapa, Rio de Janeiro"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 to-black/65" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto px-4 pt-6">
           <Link
             href={`/${locale}/hostel`}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
           >
-            ←{' '}
+            <ChevronLeft className="h-3.5 w-3.5" />
             {locale === 'pt'
               ? 'Voltar'
               : locale === 'en'
@@ -612,14 +625,17 @@ export default async function SantaTeresaPage({ params }: { params: { locale: st
                       : 'Retour'}
           </Link>
         </div>
-        <div className="max-w-3xl mx-auto px-4 py-16 pt-6">
-          <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-4">
+        <div className="relative max-w-3xl mx-auto px-4 pb-14 pt-6">
+          <p className="text-xs font-display font-semibold tracking-widest uppercase text-white/60 mb-5">
             Rio de Janeiro · Brasil
           </p>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+          <h1
+            className="font-serif font-semibold leading-[1.1] text-white mb-5"
+            style={{ fontSize: 'clamp(2.4rem, 6vw, 3.6rem)' }}
+          >
             {c.headline}
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">{c.intro}</p>
+          <p className="text-lg text-white/80 leading-relaxed max-w-2xl">{c.intro}</p>
         </div>
       </section>
 

@@ -60,10 +60,13 @@ document.getElementById('block-holiday').addEventListener('change', (event) => {
   document.getElementById('block-reason').value = 'seasonal';
 });
 
+let currentBlocks = [];
+
 async function loadBlocks() {
   try {
     const data = await apiFetch(`/admin/blocked-dates?propertyType=${PROPERTY_TYPE}`);
-    renderBlocks(data.blocks);
+    currentBlocks = data.blocks;
+    renderBlocks(currentBlocks);
   } catch (err) {
     showMsg('blocks-msg', err.message, 'error');
   }
@@ -118,6 +121,31 @@ document.getElementById('block-form').addEventListener('submit', async (event) =
     });
     showMsg('block-msg', 'Fechas bloqueadas.', 'success');
     document.getElementById('block-form').reset();
+    loadBlocks();
+  } catch (err) {
+    showMsg('block-msg', err.message, 'error');
+  }
+});
+
+document.getElementById('block-unblock-btn').addEventListener('click', async () => {
+  const roomTypeId = document.getElementById('block-room').value;
+  const startDate = document.getElementById('block-start').value;
+  const endDate = document.getElementById('block-end').value;
+
+  const matches = currentBlocks.filter((b) =>
+    b.roomTypeId === roomTypeId && b.startDate === startDate && b.endDate === endDate
+  );
+
+  if (matches.length === 0) {
+    showMsg('block-msg', 'No hay un bloqueo con esa habitación y esas fechas exactas -- fijate en "Fechas bloqueadas" abajo y usá "Quitar" en la fila correcta.', 'error');
+    return;
+  }
+
+  try {
+    for (const match of matches) {
+      await apiFetch(`/admin/blocked-dates/${match.id}`, { method: 'DELETE' });
+    }
+    showMsg('block-msg', 'Bloqueo eliminado.', 'success');
     loadBlocks();
   } catch (err) {
     showMsg('block-msg', err.message, 'error');

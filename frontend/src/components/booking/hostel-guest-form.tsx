@@ -20,12 +20,13 @@ import {
 } from 'lucide-react';
 import type { BookingLocale } from '@/types/global';
 import { type FormState, type FormErrors, type FieldFeedback, T } from './hostel-engine.types';
-import { validateCPF, formatCPF, formatPhone, parseBold } from './hostel-engine.utils';
+import { validateCPF, formatCPF, formatPhone, parseBold, fmtMoney } from './hostel-engine.utils';
 
 export interface AppliedCoupon {
   code: string;
   label: string;
   discount_percent: number;
+  discount_amount: number | null;
 }
 
 function FieldFb({ fb }: { fb: FieldFeedback | null }) {
@@ -94,7 +95,7 @@ interface HostelGuestFormProps {
   onValidateCoupon?: (
     code: string,
   ) => Promise<
-    | { valid: boolean; discount_percent?: number; label?: string; code?: string; message?: string }
+    | { valid: boolean; discount_percent?: number; discount_amount?: number; label?: string; code?: string; message?: string }
     | undefined
   >;
 }
@@ -138,11 +139,14 @@ export function HostelGuestForm({
     setCouponError(null);
     try {
       const result = await onValidateCoupon?.(code);
-      if (result?.valid && result.discount_percent) {
+      // discount_percent puede ser 0 en códigos de referido que descuentan
+      // por discount_amount fijo -- un cupón válido no se descarta por eso.
+      if (result?.valid) {
         onCouponApply?.({
           code: result.code ?? code,
           label: result.label ?? code,
-          discount_percent: result.discount_percent,
+          discount_percent: result.discount_percent ?? 0,
+          discount_amount: result.discount_amount ?? null,
         });
         setCouponInput('');
       } else {
@@ -493,9 +497,13 @@ export function HostelGuestForm({
             >
               <span className="he-rule">
                 {parseBold(
-                  t.couponApplied
-                    .replace('{code}', appliedCoupon.code)
-                    .replace('{pct}', String(appliedCoupon.discount_percent)),
+                  appliedCoupon.discount_percent > 0
+                    ? t.couponApplied
+                        .replace('{code}', appliedCoupon.code)
+                        .replace('{pct}', String(appliedCoupon.discount_percent))
+                    : t.couponAppliedAmount
+                        .replace('{code}', appliedCoupon.code)
+                        .replace('{amount}', fmtMoney(appliedCoupon.discount_amount ?? 0)),
                 )}
               </span>
               <button

@@ -37,9 +37,12 @@ export function HostelRoomSelector({
           const pbn = r.price.toFixed(2).replace('.', ',');
 
           const overflowId = r.id === 'cuarto1' ? 'cuarto3' : r.id === 'cuarto4' ? 'cuarto5' : null;
-          const plusDisabled = overflowId
+          // Si el código de habitación desapareció de la respuesta de
+          // disponibilidad (!r.realId), no hay a qué habitación real mapear
+          // la cama -- bloquear el "+" evita camas "fantasma" sin realId.
+          const plusDisabled = !r.realId || (overflowId
             ? (cnt >= r.available && !!revealed[overflowId])
-            : cnt >= r.available;
+            : cnt >= r.available);
 
           const overflowPair = OVERFLOW_PAIRS.find((p) => p.overflow === r.id);
           const primaryRoom = overflowPair ? rooms.find((pr) => pr.id === overflowPair.primary) : null;

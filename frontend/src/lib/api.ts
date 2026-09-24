@@ -482,6 +482,7 @@ export const photosAPI = {
 export interface ValidateCouponResponse {
   valid: boolean;
   discount_percent?: number;
+  discount_amount?: number;
   label?: string;
   code?: string;
   message?: string;

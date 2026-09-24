@@ -438,6 +438,108 @@ export class BookingService {
     return result;
   }
 
+  /**
+   * Cambia fechas y/o composición de camas de una reserva existente.
+   * reservation_beds es la fuente de verdad usada por el constraint EXCLUDE,
+   * el trigger de liberación y check_availability() -- un UPDATE que solo
+   * toque `reservations` deja esas camas "fantasma" (siguen bloqueadas en
+   * las fechas viejas, nunca se bloquean en las nuevas: double-booking real).
+   * Por eso todo corre en UNA transacción, igual que createBooking(): borrar
+   * las filas viejas, re-verificar disponibilidad bajo lock con el mismo
+   * mecanismo (pickAvailableBedsInRoom + acquireLock + re-check), insertar
+   * las nuevas, y solo entonces actualizar `reservations`. Si la
+   * disponibilidad falla, la transacción se revierte entera: no se persiste
+   * el cambio de fechas sin las camas que lo respaldan.
+   */
+  async updateBookingRoomsAndDates(
+    id: string,
+    params: {
+      checkIn: string;
+      checkOut: string;
+      nightsCount: number;
+      rooms: Array<{ roomId: string; bedsCount: number }>;
+      guestGender: 'mixed' | 'female' | 'male';
+      pricing: {
+        finalPrice: number;
+        depositAmount: number;
+        remainingAmount: number;
+        groupDiscount?: number;
+        seasonMultiplier?: number;
+      };
+    },
+  ): Promise<Reservation> {
+    const result = await withTransaction(async (client) => {
+      await client.query(`DELETE FROM reservation_beds WHERE reservation_id = $1`, [id]);
+
+      const candidateBedIds: string[] = [];
+      let totalBeds = 0;
+      for (const room of params.rooms) {
+        const beds = await pickAvailableBedsInRoom(
+          client, room.roomId, params.checkIn, params.checkOut, params.guestGender, room.bedsCount,
+        );
+        if (beds.length < room.bedsCount) {
+          throw new InsufficientAvailabilityError({
+            roomId: room.roomId, requested: room.bedsCount, found: beds.length,
+          });
+        }
+        candidateBedIds.push(...beds);
+        totalBeds += room.bedsCount;
+      }
+
+      await acquireLock(client, candidateBedIds);
+
+      const { rows: stillOccupied } = await client.query(
+        `SELECT rb.bed_id
+         FROM reservation_beds rb
+         JOIN reservations res ON res.id = rb.reservation_id
+         WHERE rb.bed_id = ANY($1::uuid[])
+           AND res.status != 'cancelled'
+           AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')`,
+        [candidateBedIds, params.checkIn, params.checkOut],
+      );
+      if (stillOccupied.length > 0) {
+        throw new InsufficientAvailabilityError({
+          conflictingBeds: stillOccupied.map((r: any) => r.bed_id),
+        });
+      }
+
+      try {
+        await client.query(
+          `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
+           SELECT $1, bed_id, $3::date, $4::date
+           FROM unnest($2::uuid[]) AS bed_id`,
+          [id, candidateBedIds, params.checkIn, params.checkOut],
+        );
+      } catch (error) {
+        if (isOverbookingError(error)) {
+          throw new InsufficientAvailabilityError({ reason: 'overbooking_detected_at_insert' });
+        }
+        throw error;
+      }
+
+      const { rows } = await client.query<Reservation>(
+        `UPDATE reservations
+         SET check_in_date = $2::date, check_out_date = $3::date, nights_count = $4, beds_count = $5,
+             final_price = $6, deposit_amount = $7, remaining_amount = $8,
+             group_discount = COALESCE($9, group_discount),
+             season_multiplier = COALESCE($10, season_multiplier),
+             updated_at = now()
+         WHERE id = $1
+         RETURNING *`,
+        [
+          id, params.checkIn, params.checkOut, params.nightsCount, totalBeds,
+          params.pricing.finalPrice, params.pricing.depositAmount, params.pricing.remainingAmount,
+          params.pricing.groupDiscount ?? null, params.pricing.seasonMultiplier ?? null,
+        ],
+      );
+      return rows[0];
+    });
+
+    exportToSheetsAsync(id);
+    invalidateAvailabilityCache();
+    return result;
+  }
+
   async updateGuest(
     guestId: string,
     data: Partial<{

@@ -276,6 +276,16 @@ async function mpWebhookHandler(req: any, res: any): Promise<void> {
       .update(signedPayload)
       .digest('hex');
 
+    // timingSafeEqual() explota con RangeError si los buffers tienen largo
+    // distinto -- un v1= con longitud inválida (no son 64 chars hex de un
+    // sha256) debe responder 401 acá, no caer al catch genérico que
+    // devuelve 200 y deja pasar el webhook sin verificar.
+    if (receivedHmac.length !== expectedHmac.length) {
+      logger.warn('Webhook MP: firma con longitud inválida');
+      res.status(401).json(ApiResponse.error('Invalid signature'));
+      return;
+    }
+
     const sigOk = timingSafeEqual(
       Buffer.from(receivedHmac),
       Buffer.from(expectedHmac),

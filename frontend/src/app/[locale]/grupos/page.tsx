@@ -652,7 +652,7 @@ function buildGroupLodgingSchema() {
     '@type': 'LodgingBusiness',
     name: 'Lapa Casa Rio',
     description:
-      'Hostel boutique in Santa Teresa, Rio de Janeiro offering group accommodations with discounts for 6+ people.',
+      'Hostel in Santa Teresa, Rio de Janeiro offering group accommodations with discounts for 6+ people.',
     url: `${SITE_URL}/grupos`,
     image: `${SITE_URL}/og-image.jpg`,
     telephone: '+55-21-97715-7530',

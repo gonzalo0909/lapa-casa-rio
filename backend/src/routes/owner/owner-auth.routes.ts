@@ -13,6 +13,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../config/prisma';
 import {
@@ -24,8 +25,10 @@ import { redisCache } from '../../config/redis';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 import { validate } from '../../middleware/validation';
+import { emailService } from '../../services/email-service';
 
 const REVOKED_PREFIX = 'revoked_token:';
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 const LoginSchema = z.object({
   email: z.string().trim().email(),
@@ -35,6 +38,22 @@ const LoginSchema = z.object({
 const ChangePasswordSchema = z.object({
   newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
 });
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+const ResetPasswordSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+});
+
+// SHA-256 alcanza acá -- a diferencia de password_hash (bcrypt, pensado
+// para resistir fuerza bruta offline sobre una contraseña elegida por un
+// humano), el token de reset ya nace con 256 bits de entropía aleatoria
+// (crypto.randomBytes), así que no hace falta un hash lento.
+const hashResetToken = (token: string): string =>
+  crypto.createHash('sha256').update(token).digest('hex');
 
 const router = Router();
 
@@ -251,6 +270,94 @@ router.post('/refresh', async (req, res, next) => {
 
     logger.info('Access token de administrador renovado', { ownerId: decoded.ownerId });
     res.status(200).json(ApiResponse.success({ csrfToken: newCsrfToken }, 'Token renovado'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── POST /owner-auth/forgot-password — pide el link de reset ─────────────────
+//
+// Respuesta genérica siempre (exista o no el email, esté activa o no la
+// cuenta) para no confirmar qué emails están registrados -- mismo patrón
+// que el login de arriba. El token viaja en texto plano solo en el email;
+// en la base se guarda su hash SHA-256 (ver hashResetToken).
+
+router.post('/forgot-password', validate(ForgotPasswordSchema), async (req, res, next) => {
+  try {
+    const { email } = req.body as z.infer<typeof ForgotPasswordSchema>;
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const owner = await prisma.apartmentOwner.findUnique({ where: { email: normalizedEmail } });
+
+    if (owner && owner.isActive) {
+      const token = crypto.randomBytes(32).toString('hex');
+      await prisma.apartmentOwner.update({
+        where: { id: owner.id },
+        data: {
+          resetTokenHash: hashResetToken(token),
+          resetTokenExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+        },
+      });
+
+      const frontendUrl = process.env.FRONTEND_URL || 'https://www.lapacasario.com';
+      const resetUrl = `${frontendUrl}/owner/reset-password?token=${token}`;
+
+      try {
+        await emailService.sendOwnerPasswordReset(owner.email, owner.fullName, resetUrl);
+      } catch (emailError) {
+        logger.error('Falló el envío del email de reset de contraseña de administrador', {
+          ownerId: owner.id,
+          error: emailError,
+        });
+      }
+
+      logger.info('Pedido de reset de contraseña de administrador', { ownerId: owner.id });
+    } else {
+      logger.warn('Pedido de reset de contraseña para email inexistente/inactivo', { email: normalizedEmail });
+    }
+
+    res.status(200).json(
+      ApiResponse.success(
+        null,
+        'Se o email existir na nossa base, você vai receber um link para redefinir sua senha.'
+      )
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── POST /owner-auth/reset-password — consome el token y setea la nueva contraseña ──
+
+router.post('/reset-password', validate(ResetPasswordSchema), async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body as z.infer<typeof ResetPasswordSchema>;
+    const tokenHash = hashResetToken(token);
+
+    const owner = await prisma.apartmentOwner.findFirst({
+      where: { resetTokenHash: tokenHash },
+    });
+
+    if (!owner || !owner.isActive || !owner.resetTokenExpiresAt || owner.resetTokenExpiresAt < new Date()) {
+      res.status(400).json(ApiResponse.error('Link inválido ou expirado. Solicite um novo.'));
+      return;
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+
+    await prisma.apartmentOwner.update({
+      where: { id: owner.id },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        resetTokenHash: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+
+    logger.info('Administrador redefiniu a senha via link de reset', { ownerId: owner.id });
+
+    res.status(200).json(ApiResponse.success(null, 'Senha redefinida com sucesso. Você já pode entrar.'));
   } catch (error) {
     next(error);
   }

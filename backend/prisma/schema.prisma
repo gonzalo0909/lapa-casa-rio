@@ -50,6 +50,10 @@ model ApartmentOwner {
   passwordHash           String?                 @map("password_hash")
   mustChangePassword     Boolean                 @default(true) @map("must_change_password")
   lastLoginAt            DateTime?               @map("last_login_at")
+  // 0048_owner_password_reset.sql -- "esqueci minha senha". Hash SHA-256
+  // del token (nunca el token en texto plano) + expiración de 1h.
+  resetTokenHash         String?                 @map("reset_token_hash")
+  resetTokenExpiresAt    DateTime?               @map("reset_token_expires_at")
   // 0033_owner_term_acceptance.sql -- registro del aceite del Termo de Adesão.
   // NULL = no aceptó todavía → el panel bloquea el acceso hasta aceptar.
   termAcceptedAt         DateTime?               @map("term_accepted_at")

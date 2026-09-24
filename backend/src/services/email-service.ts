@@ -1255,6 +1255,18 @@ export class EmailService {
 
     return dispatch(ADMIN_EMAIL, `[ADMIN] ${type}`, html);
   }
+
+  /** "Esqueci minha senha" do painel do proprietário (0048_owner_password_reset.sql) -- sempre em português, painel próprio sem i18n. */
+  async sendOwnerPasswordReset(to: string, ownerName: string, resetUrl: string): Promise<SendResult> {
+    const html = renderEmailTemplate('owner-password-reset', {
+      emailTitle: 'Redefinir senha',
+      labelTitle: 'Redefinir senha',
+      ownerName,
+      resetUrl,
+    });
+
+    return dispatch(to, 'Redefinir senha — Painel do Proprietário', html);
+  }
 }
 
 export const emailService = new EmailService();

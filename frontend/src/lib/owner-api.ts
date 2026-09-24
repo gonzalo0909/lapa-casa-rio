@@ -99,6 +99,15 @@ export const ownerAuthAPI = {
       newPassword,
     }),
 
+  forgotPassword: (email: string) =>
+    api.post<{ success: boolean; message: string }>('/owner/login/forgot-password', { email }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    api.post<{ success: boolean; message: string }>('/owner/login/reset-password', {
+      token,
+      newPassword,
+    }),
+
   logout: () => api.post<{ success: boolean; message: string }>('/owner/login/logout'),
 
   me: () => api.get<{ success: boolean; data: OwnerProfile }>('/owner/me'),

@@ -112,7 +112,7 @@ export function PropertySelectorHero() {
 
         <a
           href={`/${locale}/galeria`}
-          className="mt-6 inline-block text-xs text-foreground/50 hover:text-foreground hover:underline"
+          className="mt-10 inline-block text-[0.94rem] text-foreground/50 hover:text-foreground hover:underline"
         >
           {tf('gallery')}
         </a>

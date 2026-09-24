@@ -189,10 +189,32 @@ export class PaymentService {
 
     const confirmedPayment = await this.paymentRepo.markCompleted(payment.id);
     if (payment.payment_type === 'deposit') {
-      await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
+      await this.confirmReservationIfEligible(payment.reservation_id, providerPaymentId);
     }
     await this.handlePaymentSucceeded(confirmedPayment);
     return confirmedPayment;
+  }
+
+  // Marca la reserva como confirmed solo si su estado actual lo permite --
+  // un webhook tardío sobre una reserva ya cancelada (camas liberadas) no debe
+  // resucitarla sin camas asociadas; un webhook duplicado sobre una reserva ya
+  // confirmed tampoco debe reprocesarse.
+  private async confirmReservationIfEligible(reservationId: string, providerPaymentId: string): Promise<void> {
+    const booking = await this.bookingRepo.findById(reservationId);
+    if (!booking) {
+      logger.warn('confirmReservationIfEligible: reserva no encontrada', { reservationId, providerPaymentId });
+      return;
+    }
+    if (booking.status === 'cancelled') {
+      logger.warn('Pago confirmado para reserva ya cancelada -- webhook tardío, no se resucita la reserva', {
+        reservationId, providerPaymentId,
+      });
+      return;
+    }
+    if (booking.status === 'confirmed') {
+      return;
+    }
+    await this.bookingRepo.updateStatus(reservationId, 'confirmed');
   }
 
   // Confirma un pago por payment.id interno (usado por la ruta confirm-payment)
@@ -211,7 +233,7 @@ export class PaymentService {
 
     const confirmed = await this.paymentRepo.markCompleted(paymentId);
     if (payment.payment_type === 'deposit') {
-      await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
+      await this.confirmReservationIfEligible(payment.reservation_id, payment.provider_payment_id ?? paymentId);
     }
     await this.handlePaymentSucceeded(confirmed);
     return confirmed;
@@ -386,11 +408,11 @@ export class PaymentService {
   // confirma el cargo del saldo. A diferencia del deposito, pagar el saldo
   // no cambia el status de la reserva -- ya esta 'confirmed' desde que se
   // pago el deposito -- solo marca el registro de pago como succeeded.
-  async markRemainingPaid(reservationId: string): Promise<Payment> {
+  async markRemainingPaid(reservationId: string, paymentId: string): Promise<Payment> {
     const payments = await this.paymentRepo.findByReservation(reservationId);
-    const remainingPayment = payments.find(p => p.payment_type === 'remaining');
+    const remainingPayment = payments.find(p => p.id === paymentId && p.payment_type === 'remaining');
     if (!remainingPayment) {
-      throw new AppError('No existe un pago de saldo (remaining) para esta reserva', 404);
+      throw new AppError('No existe un pago de saldo (remaining) con ese id para esta reserva', 404);
     }
     if (remainingPayment.status === 'succeeded') {
       throw new AppError('El saldo ya fue pagado', 400);

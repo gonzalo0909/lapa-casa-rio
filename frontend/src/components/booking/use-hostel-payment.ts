@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { bookingAPI, paymentAPI } from '@/lib/api';
 import type { PayMethod, Phase, RoomDef, FormState, Translations, PriceQuote } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
-import { fmtDate, fmtMoney } from './hostel-engine.utils';
+import { fmtDate, fmtMoney, toLocalISODate } from './hostel-engine.utils';
 
 interface PaymentInput {
   t: Translations;
@@ -110,8 +110,8 @@ export function useHostelPayment({
       const gender = c6 > 0 && totalBeds === c6 ? 'female' : 'mixed';
 
       const response = await bookingAPI.create({
-        checkIn: checkIn!.toISOString().slice(0, 10),
-        checkOut: checkOut!.toISOString().slice(0, 10),
+        checkIn: toLocalISODate(checkIn!),
+        checkOut: toLocalISODate(checkOut!),
         rooms: selectedRooms.map((r) => ({ roomId: r.realId || r.id, bedsCount: beds[r.id] ?? 0 })),
         guest: {
           firstName, lastName, email: form.email, phone: form.phone,
@@ -231,7 +231,7 @@ export function useHostelPayment({
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const depCard = Math.round(price.deposit * cardSurchargeMult);
       const res = await paymentAPI.stripeWaLink(
-        depCard, `Depósito reserva — Lapa Casa Rio`, form.email || undefined, origin,
+        depCard, t.waStripeDesc, form.email || undefined, origin,
       );
       stripeLink = res.data?.url;
     } catch {
@@ -240,7 +240,7 @@ export function useHostelPayment({
       setIsWaLoading(false);
     }
     window.open(buildWaMsg(stripeLink), '_blank', 'noopener,noreferrer');
-  }, [price, cardSurchargeMult, form.email, buildWaMsg]);
+  }, [price, cardSurchargeMult, form.email, buildWaMsg, t]);
 
   const handleGroupSession = useCallback(async () => {
     if (!checkIn || !checkOut || !price) { return; }
@@ -250,14 +250,18 @@ export function useHostelPayment({
       setGroupError(t.gpErrRequired);
       return;
     }
+    const c6 = beds['cuarto6'] ?? 0;
+    if (c6 > 0 && totalBeds > c6) {
+      setGroupError(t.errFemaleRoom);
+      return;
+    }
     setIsGroupLoading(true);
     setGroupError('');
     try {
-      const c6 = beds['cuarto6'] ?? 0;
       const gender: 'mixed' | 'female' | 'male' = c6 > 0 && totalBeds === c6 ? 'female' : 'mixed';
       const result = await paymentAPI.createGroupSession({
-        checkIn:  checkIn.toISOString().slice(0, 10),
-        checkOut: checkOut.toISOString().slice(0, 10),
+        checkIn:  toLocalISODate(checkIn),
+        checkOut: toLocalISODate(checkOut),
         totalBeds,
         nights: price.nights,
         guestGender: gender,

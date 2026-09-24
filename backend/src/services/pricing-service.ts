@@ -113,6 +113,28 @@ export class PricingService {
       preDiscountTotal += parseFloat(priceRows[0].p);
     }
 
+    // rate_plans.min_nights (editable desde el panel admin) -- antes solo se
+    // aplicaba el mínimo de special_period_rules; este mínimo genérico por
+    // temporada nunca se validaba server-side, solo en el frontend
+    // (getSeason() en hostel-engine.utils.ts), así que se podía saltear
+    // llamando la API directo. No aplica a apartamentos (unidad completa,
+    // fuera de este alcance -- mismo criterio que el descuento grupal abajo).
+    if (!allApartments) {
+      const { rows: seasonRows } = await query<{ min_nights: number; description: string | null }>(
+        `SELECT min_nights, description FROM rate_plans WHERE season_type = get_season_type($1::date)`,
+        [request.checkInDate]
+      );
+      const seasonMinNights = seasonRows[0]?.min_nights ?? 1;
+      if (seasonMinNights > 1 && nights < seasonMinNights) {
+        throw new MinNightsRequiredError(
+          seasonMinNights,
+          seasonRows[0]?.description ?? null,
+          request.rooms[0]?.roomId ?? '',
+          0,
+        );
+      }
+    }
+
     // Apartamentos se reservan como unidad completa — descuento grupal no aplica.
     const groupDiscount = allApartments ? 0 : await this.getGroupDiscountRate(request.totalBeds);
     const discountAmount = Math.round(preDiscountTotal * groupDiscount * 100) / 100;

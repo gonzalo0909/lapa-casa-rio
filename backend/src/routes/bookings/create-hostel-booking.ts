@@ -48,9 +48,12 @@ export const createHostelBookingHandler = async (
     const checkIn = new Date(bookingData.checkIn);
     const checkOut = new Date(bookingData.checkOut);
 
-    // Validación de fecha mínima de check-in (corte 12h BRT)
+    // Validación de fecha mínima de check-in (corte 12h BRT) -- comparación
+    // de Date consistente con el resto de los checks de este handler (no
+    // mezclar con comparación de string, que rompe si el formato difiere
+    // en padding aunque represente la misma fecha).
     const { minCheckIn, todayInSaoPaulo } = calcCheckInBounds();
-    if (bookingData.checkIn < minCheckIn) {
+    if (checkIn < new Date(minCheckIn)) {
       res.status(400).json(ApiResponse.error(
         bookingData.checkIn === todayInSaoPaulo
           ? 'Las reservas para hoy solo se aceptan antes de las 12h'

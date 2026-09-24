@@ -68,7 +68,7 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
             type="button"
             className="he-photo-lb-close"
             onClick={close}
-            aria-label="Close"
+            aria-label={t.photoLbClose}
           >
             <X size={20} />
           </button>
@@ -76,7 +76,7 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
             type="button"
             className="he-photo-lb-nav he-photo-lb-prev"
             onClick={(e) => { e.stopPropagation(); prev(); }}
-            aria-label="Previous"
+            aria-label={t.photoLbPrev}
           >
             <ChevronLeft size={24} />
           </button>
@@ -93,7 +93,7 @@ export function HostelPhotoGallery({ lang }: HostelPhotoGalleryProps) {
             type="button"
             className="he-photo-lb-nav he-photo-lb-next"
             onClick={(e) => { e.stopPropagation(); next(); }}
-            aria-label="Next"
+            aria-label={t.photoLbNext}
           >
             <ChevronRight size={24} />
           </button>

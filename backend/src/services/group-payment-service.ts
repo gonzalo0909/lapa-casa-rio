@@ -698,46 +698,56 @@ export class GroupPaymentService {
     providerPaymentId: string;
     bedId?: string;
   }): Promise<{ reservationConfirmed: boolean }> {
-    const { rows: memberRows } = await query<{
-      id: string;
-      session_id: string;
-      status: string;
-    }>(`SELECT id, session_id, status FROM group_payment_members WHERE id = $1`, [params.memberId]);
+    // UPDATE...WHERE status='pending' RETURNING es atómico: si dos webhooks
+    // duplicados llegan a la vez, solo uno obtiene la fila y solo ese
+    // incrementa paid_beds. Un SELECT-then-UPDATE previo permitía que ambos
+    // pasaran el chequeo de estado antes de que cualquiera escribiera.
+    const session = await withTransaction(async (client) => {
+      const { rows: memberRows } = await client.query<{ id: string; session_id: string }>(
+        `UPDATE group_payment_members
+         SET status = 'paid', paid_at = now(),
+             provider_payment_id = $2,
+             ${params.bedId ? 'bed_id = $3::uuid,' : ''}
+             updated_at = now()
+         WHERE id = $1 AND status = 'pending'
+         RETURNING id, session_id`,
+        params.bedId
+          ? [params.memberId, params.providerPaymentId, params.bedId]
+          : [params.memberId, params.providerPaymentId],
+      );
 
-    if (memberRows.length === 0) {
-      throw new Error('Miembro no encontrado');
-    }
-    const member = memberRows[0];
-    if (member.status === 'paid') {
+      if (memberRows.length === 0) {
+        // Ya estaba 'paid' (webhook duplicado) o el miembro no existe.
+        const { rows: existing } = await client.query<{ id: string }>(
+          `SELECT id FROM group_payment_members WHERE id = $1`,
+          [params.memberId],
+        );
+        if (existing.length === 0) {
+          throw new Error('Miembro no encontrado');
+        }
+        return null;
+      }
+      const member = memberRows[0];
+
+      const { rows: sessionRows } = await client.query<{
+        id: string;
+        total_beds: number;
+        paid_beds: number;
+        reservation_id: string;
+      }>(
+        `UPDATE group_payment_sessions
+         SET paid_beds = paid_beds + 1, updated_at = now()
+         WHERE id = $1
+         RETURNING id, total_beds, paid_beds, reservation_id`,
+        [member.session_id],
+      );
+
+      return sessionRows[0];
+    });
+
+    if (!session) {
       return { reservationConfirmed: false };
     }
-
-    await query(
-      `UPDATE group_payment_members
-       SET status = 'paid', paid_at = now(),
-           provider_payment_id = $2,
-           ${params.bedId ? 'bed_id = $3::uuid,' : ''}
-           updated_at = now()
-       WHERE id = $1`,
-      params.bedId
-        ? [params.memberId, params.providerPaymentId, params.bedId]
-        : [params.memberId, params.providerPaymentId],
-    );
-
-    const { rows: sessionRows } = await query<{
-      id: string;
-      total_beds: number;
-      paid_beds: number;
-      reservation_id: string;
-    }>(
-      `UPDATE group_payment_sessions
-       SET paid_beds = paid_beds + 1, updated_at = now()
-       WHERE id = $1
-       RETURNING id, total_beds, paid_beds, reservation_id`,
-      [member.session_id],
-    );
-
-    const session = sessionRows[0];
     if (session.paid_beds >= session.total_beds) {
       await this.autoConfirmGroup(session.id, session.reservation_id);
       return { reservationConfirmed: true };

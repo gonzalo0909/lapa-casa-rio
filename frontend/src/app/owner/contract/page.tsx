@@ -20,6 +20,31 @@ const LANG_LABELS: Record<Lang, string> = {
   fr: 'Français',
 };
 
+// Chrome da página (título, data de aceite) -- o único conteúdo que
+// realmente muda com o seletor de idioma é o corpo do contrato (ContractPT/
+// ContractES/ContractFR), mas deixar o resto fixo em PT criava uma janela
+// com idiomas misturados quando o administrador trocava para ES/FR.
+const PAGE_TEXT: Record<Lang, { title: string; acceptedLabel: (date: string, version: string) => string }> = {
+  pt: {
+    title: 'Termo de Adesão',
+    acceptedLabel: (date, version) => `✓ Aceito em ${date} · Versão ${version}`,
+  },
+  es: {
+    title: 'Contrato de Adhesión',
+    acceptedLabel: (date, version) => `✓ Aceptado el ${date} · Versión ${version}`,
+  },
+  fr: {
+    title: "Conditions d'Adhésion",
+    acceptedLabel: (date, version) => `✓ Accepté le ${date} · Version ${version}`,
+  },
+};
+
+const DATE_LOCALE: Record<Lang, string> = {
+  pt: 'pt-BR',
+  es: 'es-ES',
+  fr: 'fr-FR',
+};
+
 export default function OwnerContractPage() {
   const { profile, loading } = useOwnerAuth();
   const [lang, setLang] = useState<Lang>('pt');
@@ -35,7 +60,7 @@ export default function OwnerContractPage() {
   if (!profile) {return null;}
 
   const acceptedAt = profile.termAcceptedAt
-    ? new Date(profile.termAcceptedAt).toLocaleString('pt-BR', {
+    ? new Date(profile.termAcceptedAt).toLocaleString(DATE_LOCALE[lang], {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -49,10 +74,10 @@ export default function OwnerContractPage() {
       <OwnerNav fullName={profile.fullName} />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Termo de Adesão</h1>
+        <h1 className="text-2xl font-semibold">{PAGE_TEXT[lang].title}</h1>
         {acceptedAt && (
           <p className="mt-1 text-sm text-green-700 font-medium">
-            ✓ Aceito em {acceptedAt} · Versão {profile.termVersion ?? CURRENT_TERM_VERSION}
+            {PAGE_TEXT[lang].acceptedLabel(acceptedAt, profile.termVersion ?? CURRENT_TERM_VERSION)}
           </p>
         )}
       </div>

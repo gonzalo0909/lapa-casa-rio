@@ -7,7 +7,7 @@ import {
   type Translations, DEFAULT_ROOMS, OVERFLOW_PAIRS,
 } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
-import { getSeason, validateCPF } from './hostel-engine.utils';
+import { getSeason, validateCPF, toLocalISODate } from './hostel-engine.utils';
 import { availabilityAPI, type ApiRoom } from '@/lib/api';
 
 // El "name" de DEFAULT_ROOMS ("Cuarto 1", etc.) es solo la clave de fallback --
@@ -66,11 +66,13 @@ export function useHostelWizard(t: Translations) {
     if (!checkIn || !checkOut) { return; }
     setRoomsLoaded(false);
     setMinNightsNotice(null);
-    const ci = checkIn.toISOString().slice(0, 10);
-    const co = checkOut.toISOString().slice(0, 10);
+    const ci = toLocalISODate(checkIn);
+    const co = toLocalISODate(checkOut);
+    let cancelled = false;
     availabilityAPI
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {
+        if (cancelled) { return; }
         const apiRooms: ApiRoom[] = res.data?.rooms || [];
         if (!apiRooms.length) { showToast(errAvail); return; }
         setMinNightsNotice(res.data?.minNightsNotice ?? null);
@@ -87,7 +89,8 @@ export function useHostelWizard(t: Translations) {
         );
         setRoomsLoaded(true);
       })
-      .catch(() => showToast(errAvail));
+      .catch(() => { if (!cancelled) { showToast(errAvail); } });
+    return () => { cancelled = true; };
   }, [checkIn, checkOut, errAvail, t]);
 
   const scrollToCard = useCallback(() => {
@@ -235,19 +238,27 @@ export function useHostelWizard(t: Translations) {
       }
       const s = getSeason(checkIn);
       if (s.minNights > 1 && nights < s.minNights) {
-        showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
+        // s.label es fijo en portugués (interno, no traducido) -- el nombre de
+        // temporada que se muestra sale siempre de t, según el kind.
+        const seasonName = s.kind === 'alta' ? t.seasonAltaName : s.kind === 'baixa' ? t.seasonBaixaName : t.seasonMediaName;
+        showToast(`${seasonName}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
         scrollToCard(); return;
       }
       setStep(2);
     } else if (step === 2) {
       if (totalBeds === 0) { showToast(t.tToastBeds); scrollToCard(); return; }
+      // Un cuarto puede haber desaparecido de la última respuesta de
+      // disponibilidad (sin realId) -- avanzar igual llevaría a un paso 4
+      // sin datos reales para esa habitación.
+      const hasUnavailableRoom = rooms.some((r) => (beds[r.id] ?? 0) > 0 && !r.realId);
+      if (hasUnavailableRoom) { showToast(t.tToastRoomUnavailable); scrollToCard(); return; }
       setStep(3);
     } else if (step === 3) {
       if (!validateForm()) { return; }
       setStep(4);
     }
     scrollToCard();
-  }, [step, checkIn, checkOut, totalBeds, minNightsNotice, t, showToast, validateForm, scrollToCard]);
+  }, [step, checkIn, checkOut, totalBeds, minNightsNotice, rooms, beds, t, showToast, validateForm, scrollToCard]);
 
   return {
     step, setStep, calMonth, checkIn, checkOut, hoverDate, setHoverDate,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FALLBACK_BED_PRICE_BRL, type RoomDef, type Translations } from './hostel-engine.types';
-import { getSeason, fmtMoney } from './hostel-engine.utils';
+import { getSeason, fmtMoney, toLocalISODate } from './hostel-engine.utils';
 import { availabilityAPI } from '@/lib/api';
 
 interface PricingInput {
@@ -30,8 +30,8 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
     const selected = rooms.filter((r) => (beds[r.id] ?? 0) > 0);
     if (selected.some((r) => !r.realId)) { return; }
     const payload = {
-      checkIn: checkIn.toISOString().slice(0, 10),
-      checkOut: checkOut.toISOString().slice(0, 10),
+      checkIn: toLocalISODate(checkIn),
+      checkOut: toLocalISODate(checkOut),
       rooms: selected.map((r) => ({ roomId: r.realId!, bedsCount: beds[r.id] ?? 0 })),
     };
     let cancelled = false;

@@ -16,7 +16,7 @@ import { HostelInfoBanner } from './hostel-info-banner';
 import { useHostelWizard } from './use-hostel-wizard';
 import { useHostelPricing } from './use-hostel-pricing';
 import { useHostelPayment } from './use-hostel-payment';
-import { fmtMoney, toBackendLang } from './hostel-engine.utils';
+import { fmtMoney, toBackendLang, toLocalISODate } from './hostel-engine.utils';
 
 const HostelStep4Summary = dynamic(() =>
   import('./hostel-step4-summary').then((m) => m.HostelStep4Summary),
@@ -235,7 +235,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                   const res = await offersAPI.validate(
                     code,
                     undefined,
-                    wizard.checkIn ? wizard.checkIn.toISOString().slice(0, 10) : '',
+                    wizard.checkIn ? toLocalISODate(wizard.checkIn) : '',
                   );
                   return res.data;
                 }}

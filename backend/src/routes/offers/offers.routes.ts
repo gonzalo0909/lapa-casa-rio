@@ -33,7 +33,7 @@ router.post('/validate', validate(ValidateOfferSchema), async (req, res, next) =
     const today = checkIn ?? new Date().toISOString().slice(0, 10);
 
     const { rows } = await query(
-      `SELECT id, code, label, discount_percent, apartment_ids, valid_from, valid_to
+      `SELECT id, code, label, discount_percent, discount_amount, apartment_ids, valid_from, valid_to
        FROM apartment_offers
        WHERE code = $1
          AND is_active = true
@@ -71,6 +71,7 @@ router.post('/validate', validate(ValidateOfferSchema), async (req, res, next) =
       code: offer.code,
       label: offer.label,
       discount_percent: offer.discount_percent,
+      discount_amount: offer.discount_amount,
     }));
   } catch (error) {
     next(error);

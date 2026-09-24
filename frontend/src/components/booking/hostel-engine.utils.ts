@@ -93,6 +93,13 @@ export function fmtDate(d: Date): string {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
 }
 
+// checkIn/checkOut se construyen en medianoche local; toISOString() convierte
+// a UTC antes de cortar, lo que resta un día para usuarios en timezone UTC+.
+// Usar siempre esta función (componentes locales) para serializar a 'YYYY-MM-DD'.
+export function toLocalISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function fmtMoney(v: number): string {
   return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

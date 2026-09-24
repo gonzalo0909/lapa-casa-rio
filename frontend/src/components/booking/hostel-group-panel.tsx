@@ -38,7 +38,7 @@ export function HostelGroupPanel({
               {t.gpShareWa}
             </a>
           ) : (
-            <span>WhatsApp no disponible</span>
+            <span>{t.gpWaNotAvailable}</span>
           )}
         </div>
 

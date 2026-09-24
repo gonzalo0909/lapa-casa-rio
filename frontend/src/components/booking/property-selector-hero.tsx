@@ -141,7 +141,7 @@ function PropertyPanel({
       <span className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
         {pattern === "santa-teresa" ? <SantaTeresaScene /> : <ApartmentScene />}
       </span>
-      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/30 to-black/30" />
       <span className="relative z-10">
         <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
           {icon}
@@ -238,9 +238,9 @@ function ApartmentScene() {
     <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
       <defs>
         <linearGradient id="psh-apt-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#F3D9A8" />
-          <stop offset="45%" stopColor="#5D93AE" />
-          <stop offset="100%" stopColor="#163A52" />
+          <stop offset="0%" stopColor="#C88F4E" />
+          <stop offset="45%" stopColor="#3E7690" />
+          <stop offset="100%" stopColor="#122E44" />
         </linearGradient>
       </defs>
 

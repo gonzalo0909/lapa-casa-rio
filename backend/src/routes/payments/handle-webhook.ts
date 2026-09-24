@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../../services/payment-service';
 import { stripeHandler } from '../../lib/payments/stripe-handler';
+import { tryMarkWebhookProcessed } from '../../database/webhook-idempotency';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
 
@@ -34,6 +35,14 @@ export const handleWebhookHandler = async (
       res.status(400).json(ApiResponse.error('Webhook inválido'));
       return;
     }
+
+    const isNewEvent = await tryMarkWebhookProcessed('stripe', event.id);
+    if (!isNewEvent) {
+      logger.info('Stripe webhook duplicado, ya procesado', { eventId: event.id });
+      res.status(200).json({ received: true });
+      return;
+    }
+
     await paymentService.handleStripeWebhook(event);
 
     res.status(200).json({ received: true });

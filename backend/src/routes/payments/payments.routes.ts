@@ -14,6 +14,7 @@ import { handleWebhookHandler } from './handle-webhook';
 import releaseDepositRouter from './release-deposit';
 import markReceivedAtDeskRouter from './mark-received-at-desk';
 import { query } from '../../config/database';
+import { tryMarkWebhookProcessed } from '../../database/webhook-idempotency';
 import { paymentService } from '../../services/payment-service';
 import { bookingService } from '../../services/booking-service';
 import { groupPaymentService } from '../../services/group-payment-service';
@@ -301,6 +302,20 @@ async function mpWebhookHandler(req: any, res: any): Promise<void> {
       type: (req.body as any)?.type,
       dataId,
     });
+
+    // El id de notificación de MP (distinto del id del pago en data.id) es
+    // único por entrega -- si no viene, se arma una clave con type+dataId.
+    const notificationId = (req.body as any)?.id;
+    const eventId = notificationId != null
+      ? String(notificationId)
+      : `${(req.body as any)?.type ?? 'unknown'}:${dataId}`;
+    const isNewEvent = await tryMarkWebhookProcessed('mercadopago', eventId);
+    if (!isNewEvent) {
+      logger.info('Webhook MP duplicado, ya procesado', { eventId });
+      res.status(200).json({ received: true });
+      return;
+    }
+
     await paymentService.handleMercadoPagoWebhook(req.body);
     res.status(200).json({ received: true });
   } catch (error) {

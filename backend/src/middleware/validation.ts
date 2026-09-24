@@ -112,10 +112,16 @@ export const apartmentBookingSchema = z.object({
 
 export type CreateApartmentBookingRequest = z.infer<typeof apartmentBookingSchema>;
 
+// 'YYYY-MM-DD' estricto -- un formato inválido (ej. '2025-1-5') pasa la
+// validación de string no vacío pero después mezcla mal con comparaciones
+// de Date en create-hostel-booking.ts y degrada a un error 500 en vez de
+// un 400 claro acá.
+const dateOnlyString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido, use YYYY-MM-DD');
+
 export const bookingSchemas = {
   create: z.object({
-    checkIn: z.string().min(1),
-    checkOut: z.string().min(1),
+    checkIn: dateOnlyString,
+    checkOut: dateOnlyString,
     rooms: z.array(z.object({
       roomId: z.string().min(1),
       bedsCount: z.number().int().positive(),

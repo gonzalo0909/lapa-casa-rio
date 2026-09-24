@@ -109,6 +109,13 @@ export function PropertySelectorHero() {
         <p className="mt-4 text-[0.9rem] text-foreground/40">
           {t('directBooking')}
         </p>
+
+        <a
+          href={`/${locale}/galeria`}
+          className="mt-6 inline-block text-xs text-foreground/50 hover:text-foreground hover:underline"
+        >
+          {tf('gallery')}
+        </a>
       </main>
     </div>
   )

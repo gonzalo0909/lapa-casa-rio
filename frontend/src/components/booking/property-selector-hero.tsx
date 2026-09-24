@@ -64,10 +64,10 @@ export function PropertySelectorHero() {
 
       {/* Hero */}
       <main className="mx-auto max-w-6xl px-6 pb-8 pt-8 text-center">
-        <h1 className="mx-auto max-w-2xl text-balance font-serif text-3xl leading-tight sm:text-4xl">
+        <h1 className="mx-auto max-w-2xl text-balance font-serif text-4xl leading-tight sm:text-5xl">
           {t('heroTitle')}
         </h1>
-        <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-foreground/60 hidden sm:block">
+        <p className="mx-auto mt-2 max-w-md text-pretty text-lg leading-relaxed text-foreground/60 hidden sm:block">
           {t('heroSubtitle')}
         </p>
 

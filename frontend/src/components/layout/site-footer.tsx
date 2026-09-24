@@ -18,9 +18,6 @@ export const SiteFooter: React.FC<SiteFooterProps> = async ({ locale = 'pt' }) =
         <p className="text-xs text-muted-foreground mt-1">{t('since')}</p>
 
         <nav className="flex flex-wrap justify-center gap-4 mt-4">
-          <Link href={`/${locale}/galeria`} className="text-xs text-primary hover:underline">
-            {t('gallery')}
-          </Link>
           <Link href={`/${locale}/santa-teresa`} className="text-xs text-primary hover:underline">
             {t('santaTeresa')}
           </Link>
@@ -35,6 +32,12 @@ export const SiteFooter: React.FC<SiteFooterProps> = async ({ locale = 'pt' }) =
           </Link>
           <Link href={`/${locale}/termos-hospede`} className="text-xs text-primary hover:underline">
             {t('terms')}
+          </Link>
+        </nav>
+
+        <nav className="flex justify-center mt-3">
+          <Link href={`/${locale}/galeria`} className="text-xs text-primary hover:underline">
+            {t('gallery')}
           </Link>
         </nav>
       </div>

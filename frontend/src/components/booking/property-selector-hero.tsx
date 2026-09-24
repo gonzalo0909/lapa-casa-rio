@@ -90,7 +90,7 @@ export function PropertySelectorHero() {
             cta={t('apartmentsCta')}
             icon={<Home className="h-5 w-5" />}
             tone="azulejo"
-            pattern="windows"
+            pattern="apartamentos"
             href={apartmentsHref}
           />
         </div>
@@ -124,7 +124,7 @@ function PropertyPanel({
   cta: string
   icon: React.ReactNode
   tone: "foliage" | "azulejo"
-  pattern: "beds" | "windows" | "santa-teresa"
+  pattern: "santa-teresa" | "apartamentos"
   href: string
 }) {
   const bg =
@@ -138,27 +138,15 @@ function PropertyPanel({
       className="group relative flex min-h-[180px] flex-col items-center justify-center overflow-hidden rounded-2xl p-5 text-center text-foreground transition-transform duration-300 hover:-translate-y-1"
       style={{ background: bg }}
     >
-      {pattern === "santa-teresa" ? (
-        <>
-          <span className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
-            <SantaTeresaScene />
-          </span>
-          <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
-        </>
-      ) : (
-        <span className="pointer-events-none absolute inset-0 text-foreground opacity-40 transition-opacity duration-300 group-hover:opacity-70">
-          {pattern === "beds" ? <BedsPattern /> : <WindowsPattern />}
-        </span>
-      )}
+      <span className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
+        {pattern === "santa-teresa" ? <SantaTeresaScene /> : <ApartmentScene />}
+      </span>
+      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
       <span className="relative z-10">
         <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
           {icon}
         </span>
-        <span
-          className={`block font-serif ${pattern === "santa-teresa" ? "-mt-4 text-5xl" : "text-2xl"}`}
-        >
-          {title}
-        </span>
+        <span className="-mt-4 block font-serif text-5xl">{title}</span>
         <span className="mt-1.5 block max-w-[28ch] text-sm leading-snug text-foreground/85">{description}</span>
         <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
           {cta}
@@ -170,35 +158,6 @@ function PropertyPanel({
         </span>
       </span>
     </Link>
-  )
-}
-
-function BedsPattern() {
-  return (
-    <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
-      <defs>
-        <pattern id="psh-beds" width="72" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)">
-          <rect x="4" y="8" width="52" height="22" rx="5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-          <line x1="4" y1="16" x2="56" y2="16" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-        </pattern>
-      </defs>
-      <rect width="400" height="400" fill="url(#psh-beds)" />
-    </svg>
-  )
-}
-
-function WindowsPattern() {
-  return (
-    <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
-      <defs>
-        <pattern id="psh-windows" width="56" height="56" patternUnits="userSpaceOnUse">
-          <rect x="8" y="8" width="34" height="34" rx="5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-          <line x1="25" y1="8" x2="25" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-          <line x1="8" y1="25" x2="42" y2="25" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-        </pattern>
-      </defs>
-      <rect width="400" height="400" fill="url(#psh-windows)" />
-    </svg>
   )
 }
 
@@ -259,6 +218,79 @@ function SantaTeresaScene() {
           <path key={cx} d={`M${cx} 200 V158 a18 18 0 0 1 36 0 V200 Z`} />
         ))}
       </g>
+    </svg>
+  )
+}
+
+// Ilustración con color (no foto): fachada de edificio de apartamentos al
+// atardecer, con balcones, plantas y el Pan de Azúcar de fondo.
+function ApartmentScene() {
+  const windows: { x: number; y: number; lit: boolean; balcony: boolean }[] = []
+  const cols = [46, 102, 158, 214, 270, 326]
+  const rows = [88, 122, 156]
+  rows.forEach((y, ri) => {
+    cols.forEach((x, ci) => {
+      windows.push({ x, y, lit: (ri + ci) % 3 !== 0, balcony: ri === rows.length - 1 })
+    })
+  })
+
+  return (
+    <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true">
+      <defs>
+        <linearGradient id="psh-apt-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F3D9A8" />
+          <stop offset="45%" stopColor="#5D93AE" />
+          <stop offset="100%" stopColor="#163A52" />
+        </linearGradient>
+      </defs>
+
+      {/* Cielo */}
+      <rect width="400" height="200" fill="url(#psh-apt-sky)" />
+
+      {/* Pan de Azúcar de fondo */}
+      <path d="M300 130 Q325 62 352 130 Z" fill="#12283A" opacity="0.55" />
+      <path d="M40 130 Q60 84 82 130 Z" fill="#12283A" opacity="0.4" />
+
+      {/* Palmera */}
+      <g stroke="#12283A" strokeWidth="2.5" opacity="0.7" fill="none" strokeLinecap="round">
+        <path d="M362 200 V128" />
+        <path d="M362 130 Q346 118 334 124" />
+        <path d="M362 130 Q378 116 392 122" />
+        <path d="M362 126 Q356 110 344 104" />
+        <path d="M362 126 Q368 110 380 104" />
+      </g>
+
+      {/* Edificio */}
+      <rect x="16" y="66" width="368" height="134" fill="#E9E2D1" stroke="#2A1B12" strokeWidth="1.2" />
+      {/* Cenefa de azulejos */}
+      <g>
+        {Array.from({ length: 23 }, (_, i) => 18 + i * 16).map((x, i) => (
+          <rect key={x} x={x} y="66" width="16" height="8" fill={i % 2 === 0 ? "#2E6F9E" : "#EFEAE0"} />
+        ))}
+      </g>
+
+      {/* Ventanas + balcones */}
+      {windows.map((w, i) => (
+        <g key={i}>
+          <rect
+            x={w.x}
+            y={w.y}
+            width="34"
+            height="26"
+            fill={w.lit ? "#F6D877" : "#173248"}
+            stroke="#2A1B12"
+            strokeWidth="1"
+          />
+          <line x1={w.x + 17} y1={w.y} x2={w.x + 17} y2={w.y + 26} stroke="#2A1B12" strokeWidth="0.8" opacity="0.6" />
+          {w.balcony && (
+            <>
+              <rect x={w.x - 3} y={w.y + 26} width="40" height="4" fill="#8A6F3E" />
+              <circle cx={w.x + 8} cy={w.y + 24} r="4" fill="#3F7D4E" />
+              <circle cx={w.x + 26} cy={w.y + 23} r="3.5" fill="#4E9660" />
+            </>
+          )}
+        </g>
+      ))}
     </svg>
   )
 }

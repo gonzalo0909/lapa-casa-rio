@@ -238,7 +238,10 @@ export function useHostelWizard(t: Translations) {
       }
       const s = getSeason(checkIn);
       if (s.minNights > 1 && nights < s.minNights) {
-        showToast(`${s.label}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
+        // s.label es fijo en portugués (interno, no traducido) -- el nombre de
+        // temporada que se muestra sale siempre de t, según el kind.
+        const seasonName = s.kind === 'alta' ? t.seasonAltaName : s.kind === 'baixa' ? t.seasonBaixaName : t.seasonMediaName;
+        showToast(`${seasonName}: ${t.tToastMinNights} ${s.minNights} ${t.tToastNights}`);
         scrollToCard(); return;
       }
       setStep(2);

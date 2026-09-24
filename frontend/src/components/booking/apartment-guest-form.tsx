@@ -184,7 +184,12 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   /** Valida el documento de un acompañante (misma lógica que el titular) */
   function docOk(doc: string): boolean | null {
     if (!doc) { return null; }
-    if (/[a-zA-Z]/.test(doc)) { return true; } // pasaporte — se acepta
+    // FIX: exigir el mismo mínimo de 5 caracteres que el titular (cpfOk) y que
+    // companionsOk en apartment-engine.tsx — antes aceptaba cualquier pasaporte
+    // de 1 carácter como válido en la UI y luego handleReserve lo rechazaba
+    // silenciosamente (sin marcar el campo), dejando al usuario sin poder
+    // enviar el formulario sin saber por qué.
+    if (/[a-zA-Z]/.test(doc)) { return doc.trim().length >= 5; } // pasaporte — mínimo 5 chars
     const digits = doc.replace(/\D/g, '');
     if (digits.length === 11) { return validateCPF(digits); }
     return false; // incompleto

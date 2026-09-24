@@ -196,7 +196,7 @@ export default function ApartmentMap({
     <div className={styles.mapContainer}>
       <div ref={mapRef} className={styles.mapLeaflet} />
       <p className={styles.mapNote}>
-        📍 Localização aproximada por bairro. O endereço completo é enviado após a reserva.
+        {t('mapNote')}
       </p>
     </div>
   );

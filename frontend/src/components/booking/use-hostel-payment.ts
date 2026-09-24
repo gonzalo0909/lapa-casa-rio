@@ -231,7 +231,7 @@ export function useHostelPayment({
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const depCard = Math.round(price.deposit * cardSurchargeMult);
       const res = await paymentAPI.stripeWaLink(
-        depCard, `Depósito reserva — Lapa Casa Rio`, form.email || undefined, origin,
+        depCard, t.waStripeDesc, form.email || undefined, origin,
       );
       stripeLink = res.data?.url;
     } catch {
@@ -240,7 +240,7 @@ export function useHostelPayment({
       setIsWaLoading(false);
     }
     window.open(buildWaMsg(stripeLink), '_blank', 'noopener,noreferrer');
-  }, [price, cardSurchargeMult, form.email, buildWaMsg]);
+  }, [price, cardSurchargeMult, form.email, buildWaMsg, t]);
 
   const handleGroupSession = useCallback(async () => {
     if (!checkIn || !checkOut || !price) { return; }

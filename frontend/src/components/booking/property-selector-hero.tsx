@@ -32,28 +32,28 @@ export function PropertySelectorHero() {
           <div className="flex items-center gap-2">
             <span className="font-serif text-3xl tracking-tight text-foreground">Lapa Casa Rio</span>
           </div>
-          <nav className="flex flex-wrap items-center gap-1.5">
+          <nav className="flex flex-wrap items-center gap-2">
             <Link
               href={hostelHref}
-              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navHostel')}
             </Link>
             <Link
               href={apartmentsHref}
-              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navApartments')}
             </Link>
             <a
               href={`/${locale}/parceiros`}
-              className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navPartners')}
             </a>
             <a
               href={`/${locale}/guardavolumes`}
-              className="hidden sm:inline-flex rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navLuggage')}
             </a>

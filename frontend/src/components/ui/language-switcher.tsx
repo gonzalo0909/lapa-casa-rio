@@ -47,11 +47,11 @@ export function LanguageSwitcher({ currentLocale, className = '' }: LanguageSwit
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+        className="flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
       >
         <span aria-hidden="true">{current.flag}</span>
         <span>{current.code.toUpperCase()}</span>
-        <span aria-hidden="true" className="text-[9px] opacity-50 ml-0.5">▾</span>
+        <span aria-hidden="true" className="text-xs opacity-50 ml-0.5">▾</span>
       </button>
 
       {open && (

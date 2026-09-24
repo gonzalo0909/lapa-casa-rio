@@ -458,6 +458,7 @@
     "other": "Autre"
   },
   "propertySelector": {
+    "cityName": "Rio de Janeiro",
     "title": "Comment souhaitez-vous séjourner ?",
     "hostelTitle": "Auberge",
     "hostelDesc": "Lits en dortoir partagé — groupes, routards, ambiance conviviale.",

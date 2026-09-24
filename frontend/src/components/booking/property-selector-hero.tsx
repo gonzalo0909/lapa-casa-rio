@@ -81,7 +81,7 @@ export function PropertySelectorHero() {
         <div className="mx-auto mt-6 grid max-w-4xl gap-4 sm:grid-cols-2">
           <PropertyPanel
             title={t('hostelTitle')}
-            location="Rio de Janeiro"
+            location={t('cityName')}
             description={t('hostelDesc')}
             cta={t('hostelCta')}
             icon={<BedDouble className="h-5 w-5" />}
@@ -91,7 +91,7 @@ export function PropertySelectorHero() {
           />
           <PropertyPanel
             title={t('apartmentsTitle')}
-            location="Rio de Janeiro"
+            location={t('cityName')}
             description={t('apartmentsDesc')}
             cta={t('apartmentsCta')}
             icon={<Home className="h-5 w-5" />}
@@ -103,7 +103,7 @@ export function PropertySelectorHero() {
 
         <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-3.5 py-1.5 text-[0.9rem] uppercase tracking-[0.18em] text-foreground/60">
           <MapPin className="h-3.5 w-3.5 text-primary" />
-          Rio de Janeiro
+          {t('cityName')}
         </div>
 
         <p className="mt-4 text-[0.9rem] text-foreground/40">

@@ -458,6 +458,7 @@
     "other": "Outro"
   },
   "propertySelector": {
+    "cityName": "Rio de Janeiro",
     "title": "Como você quer se hospedar?",
     "hostelTitle": "Hostel",
     "hostelDesc": "Camas em dormitório compartilhado — grupos, mochileiros, ambiente social.",

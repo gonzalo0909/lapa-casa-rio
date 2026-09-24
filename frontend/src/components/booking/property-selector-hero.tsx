@@ -141,7 +141,13 @@ function PropertyPanel({
       <span className="pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-300 group-hover:opacity-100">
         {pattern === "santa-teresa" ? <SantaTeresaScene /> : <ApartmentScene />}
       </span>
-      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/30 to-black/30" />
+      <span
+        className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${
+          pattern === "santa-teresa"
+            ? "from-black/65 via-black/30 to-black/30"
+            : "from-black/80 via-black/50 to-black/50"
+        }`}
+      />
       <span className="relative z-10">
         <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground/15 text-foreground backdrop-blur">
           {icon}

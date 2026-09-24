@@ -2,6 +2,19 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z, type ZodSchema } from 'zod';
 
+// 'YYYY-MM-DD' con formato y calendario reales -- un checkIn como '2026-13-45'
+// pasaba el z.string().min(1) de antes, y como los handlers a veces comparan
+// como string crudo y otras veces como Date (ver create-hostel-booking.ts),
+// una fecha inválida podía colarse hasta la capa SQL como un error 500 feo
+// en vez de un 400 claro acá.
+const isoDateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida, formato esperado YYYY-MM-DD').refine(
+  (s) => {
+    const d = new Date(`${s}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+  },
+  { message: 'Fecha de calendario inválida' },
+);
+
 export const validate = (schema: ZodSchema) => (
   req: Request,
   res: Response,
@@ -96,8 +109,8 @@ const additionalGuestBase = z.object({
 });
 
 export const apartmentBookingSchema = z.object({
-  checkIn: z.string().min(1),
-  checkOut: z.string().min(1),
+  checkIn: isoDateString,
+  checkOut: isoDateString,
   rooms: z.array(z.object({
     roomId: z.string().min(1),
   })).min(1),
@@ -114,8 +127,8 @@ export type CreateApartmentBookingRequest = z.infer<typeof apartmentBookingSchem
 
 export const bookingSchemas = {
   create: z.object({
-    checkIn: z.string().min(1),
-    checkOut: z.string().min(1),
+    checkIn: isoDateString,
+    checkOut: isoDateString,
     rooms: z.array(z.object({
       roomId: z.string().min(1),
       bedsCount: z.number().int().positive(),
@@ -131,8 +144,8 @@ export const bookingSchemas = {
     language: z.enum(['pt', 'en', 'es']).optional(),
   }),
   update: z.object({
-    checkIn: z.string().min(1).optional(),
-    checkOut: z.string().min(1).optional(),
+    checkIn: isoDateString.optional(),
+    checkOut: isoDateString.optional(),
     rooms: z.array(z.object({
       roomId: z.string().min(1),
       bedsCount: z.number().int().positive(),

@@ -37,9 +37,13 @@ export function HostelRoomSelector({
           const pbn = r.price.toFixed(2).replace('.', ',');
 
           const overflowId = r.id === 'cuarto1' ? 'cuarto3' : r.id === 'cuarto4' ? 'cuarto5' : null;
-          const plusDisabled = overflowId
+          // !r.realId: la API de disponibilidad no devolvió esta habitación para
+          // las fechas elegidas (código renombrado/borrado, anomalía de datos) --
+          // sin esto el usuario podía seguir sumando camas a un cuarto que nunca
+          // va a poder cotizarse ni reservarse, y quedar trabado en el paso 4.
+          const plusDisabled = !r.realId || (overflowId
             ? (cnt >= r.available && !!revealed[overflowId])
-            : cnt >= r.available;
+            : cnt >= r.available);
 
           const overflowPair = OVERFLOW_PAIRS.find((p) => p.overflow === r.id);
           const primaryRoom = overflowPair ? rooms.find((pr) => pr.id === overflowPair.primary) : null;

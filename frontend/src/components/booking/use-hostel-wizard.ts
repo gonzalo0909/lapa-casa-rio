@@ -247,13 +247,19 @@ export function useHostelWizard(t: Translations) {
       setStep(2);
     } else if (step === 2) {
       if (totalBeds === 0) { showToast(t.tToastBeds); scrollToCard(); return; }
+      // Defensa en profundidad: hostel-room-selector.tsx ya deshabilita "+" en
+      // cuartos sin realId, pero si igual hay camas seleccionadas en uno (ej.
+      // estado viejo antes de que cargara disponibilidad), no dejar avanzar a
+      // un paso 4 que nunca va a poder cotizar el precio.
+      const hasGhostRoom = rooms.some((r) => (beds[r.id] ?? 0) > 0 && !r.realId);
+      if (hasGhostRoom) { showToast(t.tErrAvail); scrollToCard(); return; }
       setStep(3);
     } else if (step === 3) {
       if (!validateForm()) { return; }
       setStep(4);
     }
     scrollToCard();
-  }, [step, checkIn, checkOut, totalBeds, minNightsNotice, t, showToast, validateForm, scrollToCard]);
+  }, [step, checkIn, checkOut, totalBeds, minNightsNotice, rooms, beds, t, showToast, validateForm, scrollToCard]);
 
   return {
     step, setStep, calMonth, checkIn, checkOut, hoverDate, setHoverDate,

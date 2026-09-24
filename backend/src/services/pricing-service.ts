@@ -38,6 +38,12 @@ const nightsBetween = (checkIn: string, checkOut: string): number =>
 
 const todayDate = (): string => new Date().toISOString().slice(0, 10);
 
+const SEASON_LABELS: Record<string, string> = {
+  alta: 'Temporada Alta',
+  media: 'Temporada Media',
+  baja: 'Temporada Baja',
+};
+
 /** La reserva pisa un período especial (special_period_rules, 0045) que exige
  *  más noches de las pedidas -- ej. mínimo 5 noches para Carnaval. */
 export class MinNightsRequiredError extends Error {
@@ -73,6 +79,27 @@ export class PricingService {
     }
 
     const bookingDate = todayDate();
+    const seasonType = await getSeasonType(request.checkInDate);
+
+    // Mínimo de noches por temporada general (rate_plans.min_nights, editable
+    // desde el panel admin) -- estaba definido en SQL (get_min_nights) pero
+    // nunca se llamaba desde acá, así que un admin podía configurar "Alta = 3
+    // noches mínimo" sin que se aplicara nunca. Se valida antes que
+    // get_special_period_rule() porque ese, si existe para la habitación,
+    // puede exigir un mínimo mayor todavía (ej. Carnaval) y pisa este.
+    const { rows: minNightsRows } = await query<{ get_min_nights: number }>(
+      `SELECT get_min_nights($1::date) AS get_min_nights`,
+      [request.checkInDate]
+    );
+    const seasonMinNights = minNightsRows[0]?.get_min_nights ?? 1;
+    if (seasonMinNights > 1 && nights < seasonMinNights) {
+      throw new MinNightsRequiredError(
+        seasonMinNights,
+        SEASON_LABELS[seasonType] ?? null,
+        request.rooms[0]?.roomId ?? '',
+        0,
+      );
+    }
 
     let basePrice = 0;
     let preDiscountTotal = 0;
@@ -119,7 +146,6 @@ export class PricingService {
     const finalPrice = Math.round((preDiscountTotal - discountAmount) * 100) / 100;
 
     const seasonMultiplier = await this.getSeasonMultiplier(request.checkInDate);
-    const seasonType = await getSeasonType(request.checkInDate);
 
     // preDiscountTotal ya incorpora temporada + early bird (vía SQL calculate_final_price).
     // priceAfterSeason = ese total pre-descuento de grupo; priceAfterDiscount = total real.

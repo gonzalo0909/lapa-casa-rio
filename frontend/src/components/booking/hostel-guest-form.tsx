@@ -26,6 +26,7 @@ export interface AppliedCoupon {
   code: string;
   label: string;
   discount_percent: number;
+  discount_amount?: number;
 }
 
 function FieldFb({ fb }: { fb: FieldFeedback | null }) {
@@ -94,7 +95,7 @@ interface HostelGuestFormProps {
   onValidateCoupon?: (
     code: string,
   ) => Promise<
-    | { valid: boolean; discount_percent?: number; label?: string; code?: string; message?: string }
+    | { valid: boolean; discount_percent?: number; discount_amount?: number; label?: string; code?: string; message?: string }
     | undefined
   >;
 }
@@ -138,11 +139,12 @@ export function HostelGuestForm({
     setCouponError(null);
     try {
       const result = await onValidateCoupon?.(code);
-      if (result?.valid && result.discount_percent) {
+      if (result?.valid && (result.discount_percent || result.discount_amount)) {
         onCouponApply?.({
           code: result.code ?? code,
           label: result.label ?? code,
-          discount_percent: result.discount_percent,
+          discount_percent: result.discount_percent ?? 0,
+          discount_amount: result.discount_amount,
         });
         setCouponInput('');
       } else {
@@ -495,7 +497,12 @@ export function HostelGuestForm({
                 {parseBold(
                   t.couponApplied
                     .replace('{code}', appliedCoupon.code)
-                    .replace('{pct}', String(appliedCoupon.discount_percent)),
+                    .replace(
+                      '{off}',
+                      appliedCoupon.discount_amount
+                        ? t.couponAmountOff.replace('{amount}', String(appliedCoupon.discount_amount))
+                        : t.couponPercentOff.replace('{pct}', String(appliedCoupon.discount_percent)),
+                    ),
                 )}
               </span>
               <button

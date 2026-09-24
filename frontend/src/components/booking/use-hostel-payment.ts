@@ -250,10 +250,18 @@ export function useHostelPayment({
       setGroupError(t.gpErrRequired);
       return;
     }
+    const c6 = beds['cuarto6'] ?? 0;
+    // Mismo guard que handleConfirm: cuarto6 es solo-mujeres, no se puede
+    // mezclar con otras habitaciones mixtas -- sin esto el huésped llega
+    // a un error genérico o una asignación de camas distinta a la esperada
+    // recién del lado del backend, en vez de un mensaje claro acá.
+    if (c6 > 0 && totalBeds > c6) {
+      setGroupError(t.errFemaleRoom);
+      return;
+    }
     setIsGroupLoading(true);
     setGroupError('');
     try {
-      const c6 = beds['cuarto6'] ?? 0;
       const gender: 'mixed' | 'female' | 'male' = c6 > 0 && totalBeds === c6 ? 'female' : 'mixed';
       const result = await paymentAPI.createGroupSession({
         checkIn:  toLocalISODate(checkIn),

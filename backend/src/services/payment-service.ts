@@ -333,7 +333,25 @@ export class PaymentService {
     return lastRefundRecord;
   }
 
+  // INSERT ... ON CONFLICT DO NOTHING: solo la primera entrega de un event_id
+  // dado lo "reclama" (true); una reentrega del mismo evento devuelve false
+  // y el caller no vuelve a ejecutar el efecto secundario del webhook.
+  private async claimWebhookEvent(provider: string, eventId: string): Promise<boolean> {
+    const { rows } = await query<{ event_id: string }>(
+      `INSERT INTO processed_webhook_events (provider, event_id)
+       VALUES ($1, $2)
+       ON CONFLICT (provider, event_id) DO NOTHING
+       RETURNING event_id`,
+      [provider, eventId],
+    );
+    return rows.length > 0;
+  }
+
   async handleStripeWebhook(event: Stripe.Event): Promise<void> {
+    if (!(await this.claimWebhookEvent('stripe', event.id))) {
+      logger.info('Evento Stripe duplicado, ignorado', { eventId: event.id, type: event.type });
+      return;
+    }
     switch (event.type) {
       case 'checkout.session.completed': {
         // Pago grupal: el checkout de Stripe lleva member_id y group_session_id en metadata
@@ -370,6 +388,14 @@ export class PaymentService {
   }
 
   async handleMercadoPagoWebhook(data: any): Promise<void> {
+    // MP a veces no manda un id de notificación estable en top-level --
+    // se usa como fallback una clave compuesta por tipo+id de pago, que
+    // igual deduplica reentregas idénticas del mismo webhook.
+    const eventId = data?.id != null ? `notif:${data.id}` : `${data?.type}:${data?.data?.id}`;
+    if (!(await this.claimWebhookEvent('mercadopago', String(eventId)))) {
+      logger.info('Evento MercadoPago duplicado, ignorado', { eventId });
+      return;
+    }
     if (data.type === 'payment' && data.data?.id) {
       const mpPayment = await this.mpHandler.getPayment(data.data.id.toString());
       if (mpPayment.status === 'approved') {
@@ -401,11 +427,16 @@ export class PaymentService {
   // confirma el cargo del saldo. A diferencia del deposito, pagar el saldo
   // no cambia el status de la reserva -- ya esta 'confirmed' desde que se
   // pago el deposito -- solo marca el registro de pago como succeeded.
-  async markRemainingPaid(reservationId: string): Promise<Payment> {
-    const payments = await this.paymentRepo.findByReservation(reservationId);
-    const remainingPayment = payments.find(p => p.payment_type === 'remaining');
-    if (!remainingPayment) {
-      throw new AppError('No existe un pago de saldo (remaining) para esta reserva', 404);
+  // Recibe el payment_id puntual que el proveedor confirmó -- no el
+  // reservationId. Si una reserva tiene varios intentos de cobro de saldo
+  // (ver remaining-payment.worker.ts, que crea una fila 'remaining' nueva
+  // por cada reintento), elegir "el primer remaining" de la reserva podía
+  // marcar como pagado un intento viejo/fallido en vez del que realmente
+  // se confirmó.
+  async markRemainingPaid(paymentId: string): Promise<Payment> {
+    const remainingPayment = await this.paymentRepo.findById(paymentId);
+    if (!remainingPayment || remainingPayment.payment_type !== 'remaining') {
+      throw new AppError('No existe un pago de saldo (remaining) con ese id', 404);
     }
     if (remainingPayment.status === 'succeeded') {
       throw new AppError('El saldo ya fue pagado', 400);

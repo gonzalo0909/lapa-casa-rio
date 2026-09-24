@@ -68,9 +68,14 @@ export function useHostelWizard(t: Translations) {
     setMinNightsNotice(null);
     const ci = toLocalISODate(checkIn);
     const co = toLocalISODate(checkOut);
+    let cancelled = false;
     availabilityAPI
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {
+        // Si el usuario ya cambió de fechas mientras esta respuesta viajaba,
+        // descartarla -- de lo contrario pisa precios/habitaciones de la
+        // selección actual con datos de un rango de fechas viejo.
+        if (cancelled) { return; }
         const apiRooms: ApiRoom[] = res.data?.rooms || [];
         if (!apiRooms.length) { showToast(errAvail); return; }
         setMinNightsNotice(res.data?.minNightsNotice ?? null);
@@ -87,7 +92,8 @@ export function useHostelWizard(t: Translations) {
         );
         setRoomsLoaded(true);
       })
-      .catch(() => showToast(errAvail));
+      .catch(() => { if (!cancelled) { showToast(errAvail); } });
+    return () => { cancelled = true; };
   }, [checkIn, checkOut, errAvail, t]);
 
   const scrollToCard = useCallback(() => {

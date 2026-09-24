@@ -189,10 +189,25 @@ export class PaymentService {
 
     const confirmedPayment = await this.paymentRepo.markCompleted(payment.id);
     if (payment.payment_type === 'deposit') {
-      await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
+      await this.confirmReservationIfNotCancelled(payment.reservation_id, providerPaymentId);
     }
     await this.handlePaymentSucceeded(confirmedPayment);
     return confirmedPayment;
+  }
+
+  // Un webhook tardío/reintentado puede llegar después de que la reserva ya
+  // expiró y se canceló (liberando sus camas vía trigger) -- si eso pasa, no
+  // hay que volver a 'confirmed' una reserva sin camas asociadas. Se loguea
+  // el conflicto para que soporte revise (posible reembolso).
+  private async confirmReservationIfNotCancelled(reservationId: string, providerPaymentId: string): Promise<void> {
+    const booking = await this.bookingRepo.findById(reservationId);
+    if (booking?.status === 'cancelled') {
+      logger.warn('Pago confirmado para reserva ya cancelada -- no se reactiva', {
+        reservationId, providerPaymentId,
+      });
+      return;
+    }
+    await this.bookingRepo.updateStatus(reservationId, 'confirmed');
   }
 
   // Confirma un pago por payment.id interno (usado por la ruta confirm-payment)
@@ -211,7 +226,7 @@ export class PaymentService {
 
     const confirmed = await this.paymentRepo.markCompleted(paymentId);
     if (payment.payment_type === 'deposit') {
-      await this.bookingRepo.updateStatus(payment.reservation_id, 'confirmed');
+      await this.confirmReservationIfNotCancelled(payment.reservation_id, payment.provider_payment_id ?? paymentId);
     }
     await this.handlePaymentSucceeded(confirmed);
     return confirmed;

@@ -438,6 +438,81 @@ export class BookingService {
     return result;
   }
 
+  /**
+   * Reasigna las camas de una reserva existente a nuevas fechas/habitaciones.
+   * `reservation_beds` es la única fuente de verdad para el constraint
+   * EXCLUDE/trigger anti-overbooking -- cambiar solo `reservations.check_in_date`
+   * (como hacía antes update-booking.ts) deja las camas viejas fantasma-bloqueadas
+   * y las nuevas sin ninguna protección real. Todo corre en una transacción:
+   * si no hay camas suficientes, se revierte y la reserva/camas originales
+   * quedan intactas.
+   */
+  async reallocateBeds(
+    reservationId: string,
+    checkIn: string,
+    checkOut: string,
+    rooms: Array<{ roomId: string; hostelBeds?: number; preferredBedIds?: string[] }>,
+    guestGender: 'mixed' | 'female' | 'male',
+  ): Promise<{ bedIds: string[] }> {
+    const result = await withTransaction(async (client) => {
+      await client.query(`DELETE FROM reservation_beds WHERE reservation_id = $1`, [reservationId]);
+
+      const candidateBedIds: string[] = [];
+      for (const room of rooms) {
+        const beds = await pickAvailableBedsInRoom(
+          client, room.roomId, checkIn, checkOut, guestGender, room.hostelBeds, room.preferredBedIds,
+        );
+        const expectedBeds = room.hostelBeds ?? 1;
+        if (beds.length < expectedBeds) {
+          throw new InsufficientAvailabilityError({
+            roomId: room.roomId, requested: expectedBeds, found: beds.length,
+          });
+        }
+        candidateBedIds.push(...beds);
+      }
+
+      await acquireLock(client, candidateBedIds);
+      const { rows: stillOccupied } = await client.query(
+        `SELECT rb.bed_id
+         FROM reservation_beds rb
+         JOIN reservations res ON res.id = rb.reservation_id
+         WHERE rb.bed_id = ANY($1::uuid[])
+           AND res.status != 'cancelled'
+           AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')`,
+        [candidateBedIds, checkIn, checkOut],
+      );
+      if (stillOccupied.length > 0) {
+        throw new InsufficientAvailabilityError({
+          conflictingBeds: stillOccupied.map((r: any) => r.bed_id),
+        });
+      }
+
+      try {
+        await client.query(
+          `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
+           SELECT $1, bed_id, $3::date, $4::date
+           FROM unnest($2::uuid[]) AS bed_id`,
+          [reservationId, candidateBedIds, checkIn, checkOut],
+        );
+      } catch (error) {
+        if (isOverbookingError(error)) {
+          throw new InsufficientAvailabilityError({ reason: 'overbooking_detected_at_insert' });
+        }
+        throw error;
+      }
+
+      await client.query(
+        `UPDATE reservations SET beds_count = $2, updated_at = now() WHERE id = $1`,
+        [reservationId, candidateBedIds.length],
+      );
+
+      return { bedIds: candidateBedIds };
+    });
+
+    invalidateAvailabilityCache();
+    return result;
+  }
+
   async updateGuest(
     guestId: string,
     data: Partial<{

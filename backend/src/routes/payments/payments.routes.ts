@@ -276,10 +276,13 @@ async function mpWebhookHandler(req: any, res: any): Promise<void> {
       .update(signedPayload)
       .digest('hex');
 
-    const sigOk = timingSafeEqual(
-      Buffer.from(receivedHmac),
-      Buffer.from(expectedHmac),
-    );
+    // timingSafeEqual explota (RangeError) si los buffers difieren en longitud --
+    // el hex recibido lo controla el atacante, así que un v1= corto/malformado
+    // no puede llegar ahí: se trata como firma inválida antes de comparar.
+    const receivedBuf = Buffer.from(receivedHmac, 'hex');
+    const expectedBuf = Buffer.from(expectedHmac, 'hex');
+    const sigOk = receivedBuf.length === expectedBuf.length
+      && timingSafeEqual(receivedBuf, expectedBuf);
 
     if (!sigOk) {
       logger.warn('Webhook MP: firma inválida');

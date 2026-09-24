@@ -7,7 +7,7 @@ import {
   type Translations, DEFAULT_ROOMS, OVERFLOW_PAIRS,
 } from './hostel-engine.types';
 import type { AppliedCoupon } from './hostel-guest-form';
-import { getSeason, validateCPF } from './hostel-engine.utils';
+import { getSeason, validateCPF, toLocalISODate } from './hostel-engine.utils';
 import { availabilityAPI, type ApiRoom } from '@/lib/api';
 
 // El "name" de DEFAULT_ROOMS ("Cuarto 1", etc.) es solo la clave de fallback --
@@ -66,8 +66,8 @@ export function useHostelWizard(t: Translations) {
     if (!checkIn || !checkOut) { return; }
     setRoomsLoaded(false);
     setMinNightsNotice(null);
-    const ci = checkIn.toISOString().slice(0, 10);
-    const co = checkOut.toISOString().slice(0, 10);
+    const ci = toLocalISODate(checkIn);
+    const co = toLocalISODate(checkOut);
     availabilityAPI
       .check({ checkIn: ci, checkOut: co, beds: 1 })
       .then((res) => {

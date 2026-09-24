@@ -75,6 +75,13 @@ export function isBrazilHoliday(date: Date): boolean {
   return getBrazilHolidaySet(date.getFullYear()).has(fmtDate_(date));
 }
 
+// Fecha 'YYYY-MM-DD' en componentes LOCALES (no UTC) -- toISOString() convierte
+// a UTC antes de cortar, lo que resta un día en timezones UTC+ (Europa/Asia).
+// Usar siempre esto para serializar checkIn/checkOut hacia la API.
+export function toLocalISODate(d: Date): string {
+  return fmtDate_(d);
+}
+
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
   const m = date.getMonth();

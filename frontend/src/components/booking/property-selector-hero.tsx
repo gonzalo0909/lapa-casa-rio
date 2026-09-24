@@ -94,12 +94,12 @@ export function PropertySelectorHero() {
           />
         </div>
 
-        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-foreground/60">
-          <MapPin className="h-3 w-3 text-primary" />
+        <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-3.5 py-1.5 text-[0.9rem] uppercase tracking-[0.18em] text-foreground/60">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
           Rio de Janeiro
         </div>
 
-        <p className="mt-3 text-xs text-foreground/40">
+        <p className="mt-4 text-[0.9rem] text-foreground/40">
           {t('directBooking')}
         </p>
       </main>

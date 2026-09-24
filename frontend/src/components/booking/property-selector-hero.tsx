@@ -11,6 +11,7 @@ import type { Locale } from "@/i18n"
 export function PropertySelectorHero() {
   const pathname = usePathname()
   const t = useTranslations('propertySelector')
+  const tf = useTranslations('footer')
 
   // Extract locale from path: /es, /pt, /en, /fr, /de, /it
   const localeMatch = pathname.match(/^\/([a-z]{2})\b/)
@@ -50,6 +51,18 @@ export function PropertySelectorHero() {
               className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navLuggage')}
+            </a>
+            <a
+              href={`/${locale}/grupos`}
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+            >
+              {tf('grupos')}
+            </a>
+            <a
+              href={`/${locale}/privacy`}
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+            >
+              {tf('privacy')}
             </a>
             <LanguageSwitcher currentLocale={locale} />
           </nav>

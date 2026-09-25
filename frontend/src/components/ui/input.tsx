@@ -1,6 +1,7 @@
 
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Eye, EyeOff } from 'lucide-react';
 
 /**
  * Input Component - Lapa Casa
@@ -60,6 +61,10 @@ export interface InputProps
   showCounter?: boolean;
   /** Container className */
   containerClassName?: string;
+  /** Accessible label for the "show password" toggle button (type="password" only). Override for non-Portuguese screens. */
+  showPasswordLabel?: string;
+  /** Accessible label for the "hide password" toggle button (type="password" only). Override for non-Portuguese screens. */
+  hidePasswordLabel?: string;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -81,6 +86,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       id,
       required,
       disabled,
+      showPasswordLabel = 'Mostrar senha',
+      hidePasswordLabel = 'Ocultar senha',
       ...props
     },
     ref
@@ -90,6 +97,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const hasError = !!error;
     const currentVariant = hasError ? 'error' : variant;
     const currentLength = typeof value === 'string' ? value.length : 0;
+    const isPasswordField = type === 'password';
+    const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+    const resolvedType = isPasswordField && isPasswordVisible ? 'text' : type;
 
     return (
       <div className={`flex flex-col gap-1.5 ${containerClassName || ''}`}>
@@ -117,14 +127,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            type={type}
+            type={resolvedType}
             maxLength={maxLength}
             value={value}
             disabled={disabled}
             className={inputVariants({
               variant: currentVariant,
               inputSize,
-              className: `${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''} ${className || ''}`,
+              className: `${leftIcon ? 'pl-10' : ''} ${rightIcon || isPasswordField ? 'pr-10' : ''} ${className || ''}`,
             })}
             aria-invalid={hasError}
             aria-describedby={
@@ -137,10 +147,26 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
 
-          {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {rightIcon}
-            </div>
+          {isPasswordField ? (
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible((visible) => !visible)}
+              disabled={disabled}
+              aria-label={isPasswordVisible ? hidePasswordLabel : showPasswordLabel}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPasswordVisible ? (
+                <EyeOff className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Eye className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
+          ) : (
+            rightIcon && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                {rightIcon}
+              </div>
+            )
           )}
         </div>
 

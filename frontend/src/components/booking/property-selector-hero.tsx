@@ -70,7 +70,7 @@ export function PropertySelectorHero() {
       </header>
 
       {/* Hero */}
-      <main className="mx-auto max-w-6xl px-6 pb-8 pt-8 text-center">
+      <main className="mx-auto max-w-6xl px-6 pb-24 pt-8 text-center sm:pb-8">
         <h1 className="mx-auto max-w-2xl text-balance font-serif text-4xl leading-tight sm:text-5xl">
           {t('heroTitle')}
         </h1>

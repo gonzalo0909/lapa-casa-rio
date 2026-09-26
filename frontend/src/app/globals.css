@@ -49,6 +49,19 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+    /* El botón flotante de WhatsApp es fixed y aparece en todas las
+       páginas (ver whatsapp-float-button.tsx) -- sin este espacio,
+       tapa el contenido final en pantallas chicas donde no hay texto
+       de sobra debajo (home, FAQ del hostel/apartamentos, etc). Solo
+       en mobile: desde sm: el botón muestra su label y queda más
+       lejos del contenido de forma natural. */
+    padding-bottom: 88px;
+  }
+
+  @media (min-width: 640px) {
+    body {
+      padding-bottom: 0;
+    }
   }
 
   h1, h2, h3, h4 {

@@ -1,0 +1,30 @@
+/*
+ * owner-light.css
+ * Fuerza tema claro en el panel /owner independientemente de la
+ * preferencia del sistema operativo. Se importa DESPUÉS de globals.css
+ * en owner/layout.tsx para ganar en la cascada.
+ */
+
+/* Sobreescribe el @media (prefers-color-scheme: dark) de globals.css */
+:root {
+  color-scheme: only light !important;
+  --background: 46 41% 89% !important;
+  --foreground: 150 24% 11% !important;
+  --primary: 160 42% 21% !important;
+  --primary-foreground: 46 41% 94% !important;
+  --secondary: 200 53% 36% !important;
+  --secondary-foreground: 46 41% 94% !important;
+  --destructive: 7 55% 40% !important;
+  --destructive-foreground: 46 41% 94% !important;
+  --muted: 46 20% 80% !important;
+  --muted-foreground: 150 10% 35% !important;
+  --accent: 307 86% 59% !important;
+  --accent-foreground: 46 41% 96% !important;
+  --popover: 46 41% 96% !important;
+  --popover-foreground: 150 24% 11% !important;
+  --card: 46 30% 97% !important;
+  --card-foreground: 150 24% 11% !important;
+  --border: 46 19% 79% !important;
+  --input: 46 19% 79% !important;
+  --ring: 160 42% 21% !important;
+}

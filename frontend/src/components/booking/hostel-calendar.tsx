@@ -1,0 +1,157 @@
+'use client';
+// frontend/src/components/booking/hostel-calendar.tsx
+// Step 1 — Calendario de check-in / check-out.
+// Componente puro de presentación: toda la lógica de estado queda en el orquestador.
+
+import React, { useMemo } from 'react';
+import type { BookingLocale } from '@/types/global';
+import { T } from './hostel-engine.types';
+import { getSeason, fmtDate, sameDay, inRange, weekdayLabels, monthLabel, getBrazilHolidaySet } from './hostel-engine.utils';
+import { minCheckInDs } from '@/lib/utils';
+
+// ─── Props ────────────────────────────────────────────────
+interface HostelCalendarProps {
+  lang: BookingLocale;
+  calMonth: Date;
+  checkIn: Date | null;
+  checkOut: Date | null;
+  hoverDate: Date | null;
+  selectingEnd: boolean;
+  today: Date;
+  onCalClick: (date: Date) => void;
+  onMonthChange: (delta: number) => void;
+  onHoverDate: (date: Date | null) => void;
+}
+
+// ─── Component ────────────────────────────────────────────
+export function HostelCalendar({
+  lang, calMonth, checkIn, checkOut, hoverDate, selectingEnd,
+  today, onCalClick, onMonthChange, onHoverDate,
+}: HostelCalendarProps) {
+  const t = T[lang];
+
+  // Feriados memoizados por año del mes visible (cubre año-1, año, año+1).
+  const holidaySet = useMemo(
+    () => getBrazilHolidaySet(calMonth.getFullYear()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [calMonth.getFullYear()],
+  );
+
+  // Celdas del grid
+  const calCells = (() => {
+    const firstDay    = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1).getDay();
+    const daysInMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate();
+    const cells: Array<{ day: number; date: Date; isEmpty: false } | { isEmpty: true }> = [];
+    for (let i = 0; i < firstDay; i++) {cells.push({ isEmpty: true });}
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push({ day: d, date: new Date(calMonth.getFullYear(), calMonth.getMonth(), d), isEmpty: false });
+    }
+    return cells;
+  })();
+
+  const MS_PER_DAY = 86_400_000;
+
+  const monthName = monthLabel(calMonth.getMonth(), lang);
+
+  return (
+    <div className="he-panel">
+      <div className="he-panel-title">{t.p1title}</div>
+      <div className="he-panel-sub">{t.p1sub}</div>
+
+      {/* Navegación de mes */}
+      <div className="he-cal-nav">
+        <button
+          className="he-cal-nav-btn"
+          onClick={() => onMonthChange(-1)}
+          aria-label={t.calPrev}
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div className="he-cal-month">
+          {monthName} {calMonth.getFullYear()}
+        </div>
+        <button
+          className="he-cal-nav-btn"
+          onClick={() => onMonthChange(1)}
+          aria-label={t.calNext}
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Grid de días */}
+      <div className="he-cal-grid">
+        {weekdayLabels(lang).map(d => <div key={d} className="he-cal-dlbl">{d}</div>)}
+        {calCells.map((cell, i) => {
+          if (cell.isEmpty) {return <div key={i} className="he-cal-cell" />;}
+
+          const { date } = cell;
+          // Bloquea pasado Y el día de hoy si ya pasaron las 12:00 BRT (misma regla que el backend y el motor de apartamentos).
+          const minDs   = minCheckInDs();
+          const dateDs  = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+          const isPast    = dateDs < minDs;
+          const isHoliday = holidaySet.has(dateDs);
+          const isToday = sameDay(date, today);
+          const isStart = sameDay(date, checkIn);
+          const isEnd   = sameDay(date, checkOut);
+          const refEnd  = selectingEnd && hoverDate ? hoverDate : checkOut;
+          const inRng   = inRange(date, checkIn, refEnd);
+          const isHover = selectingEnd && sameDay(date, hoverDate);
+          const s       = !isPast ? getSeason(date) : null;
+
+          const isBlocked = isPast || isHoliday;
+
+          let cls = 'he-cal-cell';
+          if (isStart)                          {cls += ' in-range range-start';}
+          if (isEnd)                            {cls += ' in-range range-end';}
+          if (isHover && !isStart)              {cls += ' in-range range-end';}
+          if (inRng)                            {cls += ' in-range';}
+          if (isToday)                          {cls += ' is-today';}
+          if (isHoliday)                        {cls += ' s-holiday';}
+          else if (s?.kind === 'alta')  {cls += ' s-alta';}
+          else if (s?.kind === 'baixa') {cls += ' s-baixa';}
+
+          return (
+            <div key={i} className={cls}>
+              <button
+                className="he-cal-day"
+                disabled={isBlocked}
+                onClick={() => !isBlocked && onCalClick(date)}
+                onMouseEnter={() => selectingEnd && onHoverDate(date)}
+                onMouseLeave={() => selectingEnd && onHoverDate(null)}
+              >
+                {cell.day}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Barra de fechas seleccionadas */}
+      {checkIn && (
+        <div className="he-dates-sel">
+          <div className="he-date-col">
+            <div className="he-date-lbl">{t.checkin}</div>
+            <div className="he-date-val">{fmtDate(checkIn)}</div>
+          </div>
+          <div className="he-nights-c">
+            {checkOut
+              ? `${Math.round((checkOut.getTime() - checkIn.getTime()) / MS_PER_DAY)} ${
+                  Math.round((checkOut.getTime() - checkIn.getTime()) / MS_PER_DAY) === 1
+                    ? t.tNight : t.tNights2}`
+              : ''}
+          </div>
+          <div className="he-date-col" style={{ textAlign: 'right' }}>
+            <div className="he-date-lbl">{t.checkout}</div>
+            <div className="he-date-val">{checkOut ? fmtDate(checkOut) : '—'}</div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

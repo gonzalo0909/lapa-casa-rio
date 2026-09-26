@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pago Grupal — Lapa Casa Hostel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f4f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* Banner */
+    .banner {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .banner h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .banner p {
+      font-size: 0.9rem;
+      color: #ccc;
+      line-height: 1.5;
+      max-width: 480px;
+      margin: 0 auto 16px;
+    }
+    /* Contenedor principal */
+    .main {
+      max-width: 520px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    /* Card de estado */
+    .status-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .hostel-name {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .status-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    /* Contador de camas */
+    .bed-counter {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .bed-numbers {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .bed-numbers span.total { color: #aaa; font-weight: 400; }
+    .bed-label { font-size: 0.85rem; color: #666; }
+
+    /* Barra de progreso */
+    .progress-bar {
+      height: 8px;
+      background: #eee;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #1a1a1a;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Countdown */
+    .countdown {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .countdown.urgent { color: #c0392b; font-weight: 600; }
+
+    /* Lista de miembros */
+    .members-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+    .member-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.88rem;
+    }
+    .member-item:last-child { border-bottom: none; }
+    .member-name { font-weight: 600; }
+    .member-method {
+      font-size: 0.78rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .member-paid {
+      font-size: 0.78rem;
+      color: #27ae60;
+      font-weight: 700;
+    }
+
+    /* Card de pago */
+    .pay-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .pay-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 7px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fff;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #1a1a1a; }
+
+    /* Selector de método de pago */
+    .payment-methods {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .method-btn {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fff;
+    }
+    .method-btn.selected {
+      border-color: #1a1a1a;
+      background: #f8f8f8;
+    }
+    .method-btn .method-name {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .method-btn .method-note {
+      display: block;
+      font-size: 0.72rem;
+      color: #888;
+    }
+
+    /* Resumen de precio */
+    .price-summary {
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      color: #555;
+    }
+    .price-row.total {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #ddd;
+      margin-bottom: 0;
+    }
+
+    /* Botón de pago */
+    .btn-pay {
+      width: 100%;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      letter-spacing: 0.2px;
+    }
+    .btn-pay:hover { background: #333; }
+    .btn-pay:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* PIX block */
+    .pix-block {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .pix-block img {
+      width: 200px;
+      height: 200px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .pix-code {
+      font-family: monospace;
+      font-size: 0.78rem;
+      word-break: break-all;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      color: #333;
+    }
+    .btn-copy {
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border: 1.5px solid #1a1a1a;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .btn-copy:hover { background: #f0f0f0; }
+
+    /* Estados */
+    .state-msg {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .state-msg h2 { font-size: 1.3rem; margin-bottom: 8px; }
+    .state-msg p { color: #666; font-size: 0.9rem; }
+    .state-confirmed h2 { color: #27ae60; }
+    .state-expired h2 { color: #c0392b; }
+
+    .error-msg {
+      color: #c0392b;
+      font-size: 0.82rem;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .loading { text-align: center; padding: 40px; color: #888; }
+
+    /* Foto del documento — obligatoria */
+    .doc-upload-wrap { position: relative; }
+    .doc-upload-input {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .doc-upload-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      border: 2px dashed #ccc; border-radius: 8px; padding: 16px 12px;
+      font-size: 0.85rem; color: #888; background: #fafafa;
+      cursor: pointer; transition: border-color .2s, background .2s;
+      text-align: center; line-height: 1.4;
+    }
+    .doc-upload-btn.has-file { border-color: #27ae60; background: #f0faf4; color: #27ae60; }
+    .doc-preview { margin-top: 8px; display: none; }
+    .doc-preview img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 7px; border: 1px solid #eee; }
+    .btn-change-doc {
+      margin-top: 6px; background: none; border: none; color: #999;
+      font-size: 0.73rem; cursor: pointer; text-decoration: underline; padding: 0;
+    }
+
+    /* Normas de la casa (incluye la restricción de edad/movilidad y su checkbox) */
+    .house-rules {
+      background: #f7f6f3;
+      border: 1.5px solid #e5e1d8;
+      border-radius: 9px;
+      padding: 14px 15px;
+      margin-bottom: 14px;
+    }
+    .house-rules-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6a6058;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .house-rule {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #444;
+      line-height: 1.5;
+      padding: 3px 0;
+    }
+    .house-rule svg { flex-shrink: 0; margin-top: 2px; color: #6a6058; }
+    .restriction-label {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: #444;
+      line-height: 1.5;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e5e1d8;
+    }
+    .restriction-input {
+      margin-top: 2px;
+      flex-shrink: 0;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: #1a1a1a;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Banner -->
+<div class="banner" id="banner" style="display:none">
+  <h2>Tu cama en el grupo</h2>
+  <p>Cualquier integrante del grupo puede abrir este mismo link. Completá tus datos, subí tu documento y pagá tu propia cama.</p>
+</div>
+
+<div class="main">
+  <div id="loading" class="loading">Cargando...</div>
+  <div id="expired-state" class="state-msg state-expired" style="display:none">
+    <h2>Tiempo expirado</h2>
+    <p>El tiempo para completar el pago grupal expiró. Los pagos parciales fueron reembolsados.</p>
+  </div>
+  <div id="confirmed-state" class="state-msg state-confirmed" style="display:none">
+    <h2>Reserva confirmada</h2>
+    <p>Todos los miembros del grupo pagaron. Recibirás un email de confirmación a la brevedad.</p>
+  </div>
+
+  <!-- Estado del grupo -->
+  <div id="status-card" class="status-card" style="display:none">
+    <div class="hostel-name">Lapa Casa Hostel</div>
+    <div class="status-title">Pago grupal</div>
+    <div class="bed-counter">
+      <div>
+        <div class="bed-numbers">
+          <span id="paid-beds">0</span><span class="total"> / <span id="total-beds">0</span></span>
+        </div>
+        <div class="bed-label">camas pagadas</div>
+      </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="countdown" id="countdown-box">
+      Tiempo restante: <strong id="countdown-text">--:--</strong>
+    </div>
+    <div id="members-section" style="display:none">
+      <div class="members-title">Ya pagaron</div>
+      <div id="members-list"></div>
+    </div>
+  </div>
+
+  <!-- Formulario de pago por miembro -->
+  <div id="pay-card" class="pay-card" style="display:none">
+    <h3>Completá tus datos y pagá tu cama</h3>
+    <form id="pay-form" autocomplete="on">
+      <div class="form-group">
+        <label>Nombre completo *</label>
+        <input type="text" id="f-name" required autocomplete="name" placeholder="Tu nombre completo">
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="f-email" required autocomplete="email" placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="tel" id="f-phone" autocomplete="tel" placeholder="+55 11 99999-9999">
+      </div>
+      <div class="form-group">
+        <label>País</label>
+        <input type="text" id="f-country" autocomplete="country-name" placeholder="Brasil">
+      </div>
+
+      <!-- Foto del documento — obligatoria -->
+      <div class="form-group">
+        <label>Foto del documento (DNI / Pasaporte) *</label>
+        <div class="doc-upload-wrap">
+          <input type="file" id="f-doc-photo" class="doc-upload-input" accept="image/*" required>
+          <div class="doc-upload-btn" id="doc-upload-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span id="doc-upload-text">Tocá para sacar foto o subir imagen</span>
+          </div>
+        </div>
+        <div class="doc-preview" id="doc-preview">
+          <img id="doc-img" src="" alt="">
+          <button type="button" class="btn-change-doc" id="btn-change-doc">Cambiar foto</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:6px; font-size:0.8rem; font-weight:600; color:#555;">
+        Forma de pago *
+      </div>
+      <div class="payment-methods">
+        <div class="method-btn selected" id="btn-pix">
+          <span class="method-name">PIX</span>
+          <span class="method-note">Sin recargo</span>
+        </div>
+        <div class="method-btn" id="btn-card">
+          <span class="method-name">Tarjeta</span>
+          <span class="method-note">+<span id="surcharge-label">10</span>% recargo</span>
+        </div>
+      </div>
+
+      <div class="price-summary">
+        <div class="price-row">
+          <span>Precio por cama</span>
+          <span id="price-base">R$ —</span>
+        </div>
+        <div class="price-row" id="surcharge-row" style="display:none">
+          <span>Recargo tarjeta</span>
+          <span id="price-surcharge">R$ —</span>
+        </div>
+        <div class="price-row total">
+          <span>Total a pagar</span>
+          <span id="price-total">R$ —</span>
+        </div>
+      </div>
+
+      <!-- Normas de la casa (incluye la restricción de edad/movilidad y su confirmación) -->
+      <div class="house-rules">
+        <div class="house-rules-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          Normas de la casa
+        </div>
+        <div class="house-rule">Check-in: 14h–22h. Check-out: hasta las 12h.</div>
+        <div class="house-rule">Documento de identidad obligatorio en el check-in.</div>
+        <div class="house-rule">Hospedaje permitido a partir de 18 años.</div>
+        <div class="house-rule">Prohibido fumar dentro del hostel.</div>
+        <div class="house-rule">Camas literas de tres pisos: no aptas para mayores de 50 años ni personas con movilidad reducida.</div>
+        <label class="restriction-label">
+          <input type="checkbox" id="restriction-check" class="restriction-input" required>
+          <span>Confirmo que leí y acepto las normas de la casa de arriba.</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-pay" id="btn-pay">Continuar con el pago</button>
+      <div id="pay-error" class="error-msg" style="display:none"></div>
+    </form>
+
+    <!-- QR de PIX (se muestra tras iniciar el pago PIX) -->
+    <div class="pix-block" id="pix-block">
+      <img id="pix-qr" src="" alt="QR PIX">
+      <div class="pix-code" id="pix-code"></div>
+      <button class="btn-copy" id="btn-copy-pix">Copiar código PIX</button>
+      <p style="margin-top:12px; font-size:0.8rem; color:#888;">Abrí tu app bancaria y escaneá el QR o pegá el código</p>
+    </div>
+  </div>
+</div>
+
+<script src="group-payment.js"></script>
+</body>
+</html>

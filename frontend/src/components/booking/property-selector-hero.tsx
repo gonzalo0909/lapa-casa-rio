@@ -4,7 +4,8 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { BedDouble, Home, MapPin, ArrowRight } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { BedDouble, Home, MapPin, ArrowRight, MoreHorizontal } from "lucide-react"
 import { LanguageSwitcher } from "@/components/ui/language-switcher"
 import type { Locale } from "@/i18n"
 
@@ -48,22 +49,23 @@ export function PropertySelectorHero() {
             </Link>
             <a
               href={`/${locale}/guardavolumes`}
-              className="inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navLuggage')}
             </a>
             <a
               href={`/${locale}/grupos`}
-              className="inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {tf('grupos')}
             </a>
             <a
               href={`/${locale}/privacy`}
-              className="inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {tf('privacy')}
             </a>
+            <MoreNavMenu locale={locale} luggageLabel={t('navLuggage')} groupsLabel={tf('grupos')} privacyLabel={tf('privacy')} />
             <LanguageSwitcher currentLocale={locale} />
           </nav>
         </div>
@@ -311,5 +313,67 @@ function ApartmentScene() {
         </g>
       ))}
     </svg>
+  )
+}
+
+// Guardavolumes/Reservas em Grupo/Privacidade se ven como pills planas en
+// desktop (hidden sm:inline-flex más arriba), pero en mobile no entran en
+// una sola línea -- envueltas en 3 filas quedan pesadas antes de que
+// arranque el contenido. Acá se juntan en un desplegable "···" solo <sm.
+function MoreNavMenu({
+  locale,
+  luggageLabel,
+  groupsLabel,
+  privacyLabel,
+}: {
+  locale: Locale
+  luggageLabel: string
+  groupsLabel: string
+  privacyLabel: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    if (open) { document.addEventListener("mousedown", handleClickOutside) }
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative sm:hidden">
+      <button
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-center rounded-full border border-white/15 h-[42px] w-[42px] text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+      >
+        <MoreHorizontal className="h-5 w-5" />
+      </button>
+
+      {open && (
+        <ul className="absolute right-0 top-full mt-1.5 z-30 min-w-[180px] rounded-xl border border-white/10 bg-[#1a1f17] py-1 shadow-xl">
+          {[
+            { href: `/${locale}/guardavolumes`, label: luggageLabel },
+            { href: `/${locale}/grupos`, label: groupsLabel },
+            { href: `/${locale}/privacy`, label: privacyLabel },
+          ].map((item) => (
+            <li key={item.href}>
+              <a
+                href={item.href}
+                className="block px-4 py-2.5 text-sm text-foreground/80 hover:bg-white/5 hover:text-foreground"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

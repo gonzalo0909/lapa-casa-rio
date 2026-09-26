@@ -1,0 +1,183 @@
+
+import { Router } from 'express';
+import { z } from 'zod';
+import { checkAvailabilityHandler } from './check-availability';
+import { roomAvailabilityHandler } from './room-availability';
+import { checkApartmentAvailabilityHandler } from './apartment-availability';
+import { logger } from '../../utils/logger';
+import { ApiResponse } from '../../utils/responses';
+import { availabilityService } from '../../services/availability-service';
+import { pricingService, MinNightsRequiredError } from '../../services/pricing-service';
+import { query } from '../../config/database';
+import { validate } from '../../middleware/validation';
+
+const router = Router();
+
+const QuoteSchema = z.object({
+  checkIn: z.string().trim().min(1),
+  checkOut: z.string().trim().min(1),
+  rooms: z.array(z.object({
+    roomId: z.string().trim().min(1),
+    bedsCount: z.number().int().positive(),
+  })).min(1),
+});
+
+router.get('/check', checkAvailabilityHandler);
+
+/** GET /availability/apartments — disponibilidad de los 10 apartamentos para un rango de fechas. */
+router.get('/apartments', checkApartmentAvailabilityHandler);
+
+/**
+ * GET /availability/apartment-config — configuración pública del motor de apartamentos:
+ * horarios de check-in y límite de huéspedes. Los valores vienen de system_config
+ * y son editables desde /admin/pricing.html.
+ */
+router.get('/apartment-config', async (req, res, next) => {
+  try {
+    const [checkinResult, maxGuestsResult] = await Promise.all([
+      query<{ value: string[] }>(`SELECT value FROM system_config WHERE key = 'checkin_times'`),
+      query<{ value: number }>(`SELECT value FROM system_config WHERE key = 'max_apt_guests'`),
+    ]);
+
+    const checkinTimes: string[] = checkinResult.rows[0]?.value ?? [
+      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+      '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
+    ];
+    const maxGuests: number = maxGuestsResult.rows[0]?.value ?? 2;
+
+    res.status(200).json(ApiResponse.success({ checkinTimes, maxGuests }, 'Apartment config retrieved'));
+  } catch (error) {
+    logger.error('Error getting apartment config', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    next(error);
+  }
+});
+
+router.get('/room/:roomId', roomAvailabilityHandler);
+
+/**
+ * POST /availability/quote — precio real (mismo camino que create-booking.ts,
+ * pricingService.calculateTotalPrice) para los cuartos/camas que el huésped
+ * ya eligió en el paso de reserva. El frontend antes recalculaba esto solo,
+ * en el navegador, con un precio base fijo (60 BRL) y tramos de descuento
+ * viejos -- ese numero podia no coincidir con lo que create-booking.ts
+ * termina cobrando de verdad.
+ */
+router.post('/quote', validate(QuoteSchema), async (req, res, next) => {
+  try {
+    const { checkIn, checkOut, rooms } = req.body as z.infer<typeof QuoteSchema>;
+
+    const totalBeds = rooms.reduce((sum, r) => sum + r.bedsCount, 0);
+    const [pricing, surchargeConfig] = await Promise.all([
+      pricingService.calculateTotalPrice({ checkInDate: checkIn, checkOutDate: checkOut, rooms, totalBeds }),
+      // Mismo valor que process-deposit.ts usa para cobrar de verdad con tarjeta
+      // (system_config.card_surcharge_percent, editable desde /admin/pricing.html)
+      // -- se expone acá para que el resumen de Step 4 no muestre un recargo
+      // fijo (10%) que puede quedar desincronizado si el dueño lo ajusta.
+      query<{ value: number }>(`SELECT value FROM system_config WHERE key = 'card_surcharge_percent'`),
+    ]);
+
+    res.status(200).json(ApiResponse.success({
+      ...pricing,
+      cardSurchargePercent: surchargeConfig.rows[0]?.value ?? 10,
+    }, 'Quote calculated'));
+  } catch (error) {
+    if (error instanceof MinNightsRequiredError) {
+      res.status(422).json(ApiResponse.error(error.message, {
+        minNights: error.minNights, label: error.label, roomId: error.roomId, pricePerNight: error.pricePerNight
+      }));
+      return;
+    }
+    logger.error('Error calculating quote', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
+  }
+});
+
+router.get('/calendar', async (req, res, next) => {
+  try {
+    const { month, roomId } = req.query as { month?: string; roomId?: string };
+
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      res.status(400).json(ApiResponse.error('month parameter required in YYYY-MM format'));
+      return;
+    }
+
+    const [year, mon] = month.split('-').map(Number);
+    const from = `${month}-01`;
+    const lastDay = new Date(year, mon, 0).getDate();
+    const to = `${month}-${String(lastDay).padStart(2, '0')}`;
+
+    logger.info('Calendar availability request', { month, from, to, roomId });
+
+    const days = await availabilityService.getDailyOccupancy(from, to, roomId);
+
+    res.status(200).json(ApiResponse.success({
+      month,
+      roomId: roomId ?? 'all',
+      from,
+      to,
+      days: days.map(d => ({
+        date: d.date,
+        availableBeds: d.available,
+        occupiedBeds: d.occupied,
+        totalBeds: d.total,
+        occupancyRate: d.total > 0 ? Math.round((d.occupied / d.total) * 100) : 0
+      }))
+    }, 'Calendar availability retrieved'));
+  } catch (error) {
+    logger.error('Error getting calendar availability', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
+  }
+});
+
+router.get('/summary', async (req, res, next) => {
+  try {
+    const { from, to } = req.query as { from?: string; to?: string };
+
+    if (!from || !to) {
+      res.status(400).json(ApiResponse.error('from and to query parameters are required (YYYY-MM-DD)'));
+      return;
+    }
+
+    logger.info('Availability summary request', { from, to });
+
+    const days = await availabilityService.getDailyOccupancy(from, to);
+    const totalBeds = days[0]?.total ?? 0;
+    const avgOccupied = days.length > 0
+      ? Math.round(days.reduce((s, d) => s + d.occupied, 0) / days.length)
+      : 0;
+    const averageOccupancy = totalBeds > 0
+      ? Math.round((avgOccupied / totalBeds) * 100)
+      : 0;
+
+    const highDemandDates = days
+      .filter(d => d.total > 0 && d.occupied / d.total >= 0.8)
+      .map(d => d.date);
+
+    const lowDemandDates = days
+      .filter(d => d.total > 0 && d.occupied / d.total <= 0.3)
+      .map(d => d.date);
+
+    res.status(200).json(ApiResponse.success({
+      period: { from, to },
+      summary: {
+        totalBeds,
+        averageOccupancy,
+        highDemandDates,
+        lowDemandDates
+      }
+    }, 'Availability summary retrieved'));
+  } catch (error) {
+    logger.error('Error getting availability summary', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    next(error);
+  }
+});
+
+export const availabilityRouter = router;

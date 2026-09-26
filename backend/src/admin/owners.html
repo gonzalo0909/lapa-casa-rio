@@ -18,6 +18,13 @@
   .badge-inactive { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
                     font-weight: 700; background: #fee2e2; color: #991b1b; }
 
+  .badge-verif-pending  { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                          font-weight: 700; background: #fef3c7; color: #92400e; }
+  .badge-verif-verified { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                          font-weight: 700; background: #dcfce7; color: #166534; }
+  .badge-verif-rejected { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                          font-weight: 700; background: #fee2e2; color: #991b1b; }
+
   .apt-chip { display: inline-block; padding: 2px 8px; border: 1px solid var(--border);
               border-radius: 99px; font-size: 11px; margin: 2px; }
 
@@ -69,6 +76,21 @@
   .apt-rename-form input { flex: 1; font-size: 13px; padding: 3px 7px; min-width: 0; }
   .apt-rename-form button { font-size: 12px; padding: 3px 9px; flex-shrink: 0; }
   .btn-rename-cancel { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+
+  /* ── Modal documentos de verificación (KYC) ───────────────────────────── */
+  .modal-box-docs { max-width: 560px; }
+  .doc-row { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px;
+             margin-bottom: 10px; }
+  .doc-row:last-child { margin-bottom: 0; }
+  .doc-row-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .doc-type-label { font-weight: 600; font-size: 13px; }
+  .doc-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .doc-review-note { font-size: 12px; margin-top: 6px; padding: 6px 8px; border-radius: 6px;
+                     background: #fef3c7; color: #92400e; }
+  .doc-actions-row { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-approve { background: var(--accent); color: #fff; border: none; }
+  .btn-reject  { background: none; border: 1px solid var(--danger); color: var(--danger); }
+  #docs-reject-notes { width: 100%; margin-top: 8px; display: none; min-height: 60px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -91,12 +113,13 @@
           <th>Nombre</th>
           <th>Email / Tel.</th>
           <th>Estado</th>
+          <th>Verificación</th>
           <th>Apartamentos asignados</th>
           <th></th>
         </tr>
       </thead>
       <tbody id="owners-body">
-        <tr><td colspan="5" class="empty">Cargando...</td></tr>
+        <tr><td colspan="6" class="empty">Cargando...</td></tr>
       </tbody>
     </table>
   </div>
@@ -116,6 +139,21 @@
     <div class="modal-actions">
       <button class="btn-cancel-modal" id="new-owner-cancel">Cancelar</button>
       <button id="new-owner-confirm">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal documentos de verificación (KYC) ─────────────────────────── -->
+<div class="modal-backdrop" id="docs-modal" style="display:none">
+  <div class="modal-box modal-box-docs">
+    <h3 id="docs-modal-title">Documentos</h3>
+    <div id="docs-modal-msg"></div>
+    <div id="docs-list"></div>
+    <textarea id="docs-reject-notes" placeholder="Motivo del rechazo (se muestra al administrador)"></textarea>
+    <div class="doc-actions-row">
+      <button class="btn-cancel-modal" id="docs-modal-close">Cerrar</button>
+      <button class="btn-reject" id="docs-reject-btn">Rechazar</button>
+      <button class="btn-approve" id="docs-approve-btn">Aprobar</button>
     </div>
   </div>
 </div>

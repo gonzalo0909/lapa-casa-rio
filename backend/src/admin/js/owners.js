@@ -14,6 +14,18 @@ const RT = '/admin/room-types';
 let allApartments = []; // {id, code, name, owner_id, ...}
 let allOwners     = []; // owners con sus apartments[] ya adjuntos
 
+const VERIF_LABELS = {
+  pending:  { label: 'Pendiente',  cls: 'badge-verif-pending' },
+  verified: { label: 'Verificado', cls: 'badge-verif-verified' },
+  rejected: { label: 'Rechazado',  cls: 'badge-verif-rejected' },
+};
+
+const DOC_TYPE_LABELS = {
+  cpf_cnpj: 'CPF / CNPJ',
+  proof_ownership: 'Comprobante de propiedad',
+  other: 'Otro documento',
+};
+
 // ── Mensajes ───────────────────────────────────────────────────────────────
 
 function showMsg(elId, text, type) {
@@ -39,7 +51,7 @@ function renderTable(owners) {
   const tbody = document.getElementById('owners-body');
 
   if (owners.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin administradores creados todavía</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin administradores creados todavía</td></tr>';
     return;
   }
 
@@ -54,6 +66,16 @@ function renderTable(owners) {
         <span class="${o.isActive ? 'badge-active' : 'badge-inactive'}">
           ${o.isActive ? 'Activo' : 'Desactivado'}
         </span>
+      </td>
+      <td>
+        <div style="margin-bottom:6px;">
+          <span class="${(VERIF_LABELS[o.verificationStatus] || VERIF_LABELS.pending).cls}">
+            ${(VERIF_LABELS[o.verificationStatus] || VERIF_LABELS.pending).label}
+          </span>
+        </div>
+        <button data-action="view-docs" style="font-size:12px;padding:3px 9px;">
+          📄 Ver documentos
+        </button>
       </td>
       <td>
         <div style="margin-bottom:6px;">
@@ -81,6 +103,9 @@ function renderTable(owners) {
       const owner = allOwners.find((o) => o.id === ownerId);
       if (owner) openAssignModal(owner);
     });
+  });
+  tbody.querySelectorAll('button[data-action="view-docs"]').forEach((btn) => {
+    btn.addEventListener('click', () => openDocsModal(btn.closest('tr').dataset.ownerId));
   });
   tbody.querySelectorAll('button[data-action="reset-password"]').forEach((btn) => {
     btn.addEventListener('click', () => resetPassword(btn.closest('tr').dataset.ownerId));
@@ -293,6 +318,117 @@ document.getElementById('assign-modal-cancel').addEventListener('click', () => {
 assignModal.addEventListener('click', (e) => {
   if (e.target === assignModal) assignModal.style.display = 'none';
 });
+
+// ── Modal documentos de verificación (KYC) ─────────────────────────────────
+
+let currentDocsOwnerId = null;
+const docsModal = document.getElementById('docs-modal');
+
+async function openDocsModal(ownerId) {
+  currentDocsOwnerId = ownerId;
+  showMsg('docs-modal-msg', '', '');
+  document.getElementById('docs-list').innerHTML = '<p class="empty">Cargando...</p>';
+  document.getElementById('docs-reject-notes').style.display = 'none';
+  document.getElementById('docs-reject-notes').value = '';
+  docsModal.style.display = 'flex';
+
+  try {
+    const data = await apiFetch(`${OW}/${ownerId}/documents`);
+    renderDocsModal(data);
+  } catch (err) {
+    showMsg('docs-modal-msg', err.message, 'error');
+    document.getElementById('docs-list').innerHTML = '';
+  }
+}
+
+function renderDocsModal(data) {
+  const { owner, documents } = data;
+  document.getElementById('docs-modal-title').textContent = `Documentos — ${owner.fullName}`;
+
+  const verifInfo = VERIF_LABELS[owner.verificationStatus] || VERIF_LABELS.pending;
+  const statusBadge = `<span class="${verifInfo.cls}">${verifInfo.label}</span>`;
+
+  if (documents.length === 0) {
+    document.getElementById('docs-list').innerHTML =
+      `<p style="margin-bottom:12px;">${statusBadge}</p>` +
+      '<p class="empty">Todavía no subió ningún documento</p>';
+    return;
+  }
+
+  const rows = documents.map((doc) => `
+    <div class="doc-row">
+      <div class="doc-row-head">
+        <div>
+          <div class="doc-type-label">${escapeHtml(DOC_TYPE_LABELS[doc.docType] || doc.docType)}</div>
+          <div class="doc-meta">
+            ${escapeHtml(doc.originalName || 'documento')} · subido ${fmtDate(doc.uploadedAt)}
+          </div>
+        </div>
+        ${doc.signedUrl
+          ? `<a href="${doc.signedUrl}" target="_blank" rel="noopener noreferrer">
+               <button style="font-size:12px;padding:4px 10px;">Ver</button>
+             </a>`
+          : ''}
+      </div>
+      ${doc.reviewNotes
+        ? `<div class="doc-review-note">Nota de revisión: ${escapeHtml(doc.reviewNotes)}</div>`
+        : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('docs-list').innerHTML =
+    `<p style="margin-bottom:12px;">${statusBadge}</p>${rows}`;
+}
+
+document.getElementById('docs-modal-close').addEventListener('click', () => {
+  docsModal.style.display = 'none';
+});
+
+docsModal.addEventListener('click', (e) => {
+  if (e.target === docsModal) docsModal.style.display = 'none';
+});
+
+document.getElementById('docs-approve-btn').addEventListener('click', async () => {
+  if (!currentDocsOwnerId) return;
+  await submitVerification('verified');
+});
+
+document.getElementById('docs-reject-btn').addEventListener('click', async () => {
+  const notesBox = document.getElementById('docs-reject-notes');
+  if (notesBox.style.display === 'none') {
+    // Primer click: mostrar el textarea para que cargue el motivo
+    notesBox.style.display = 'block';
+    notesBox.focus();
+    return;
+  }
+  const notes = notesBox.value.trim();
+  if (!notes) {
+    showMsg('docs-modal-msg', 'Escribí el motivo del rechazo', 'error');
+    return;
+  }
+  await submitVerification('rejected', notes);
+});
+
+async function submitVerification(status, notes) {
+  const approveBtn = document.getElementById('docs-approve-btn');
+  const rejectBtn = document.getElementById('docs-reject-btn');
+  approveBtn.disabled = true;
+  rejectBtn.disabled = true;
+
+  try {
+    await apiFetch(`${OW}/${currentDocsOwnerId}/verify`, {
+      method: 'PATCH',
+      body: JSON.stringify(notes ? { status, notes } : { status }),
+    });
+    docsModal.style.display = 'none';
+    await loadOwners();
+  } catch (err) {
+    showMsg('docs-modal-msg', err.message, 'error');
+  } finally {
+    approveBtn.disabled = false;
+    rejectBtn.disabled = false;
+  }
+}
 
 // ── Modal: nuevo administrador ─────────────────────────────────────────────
 

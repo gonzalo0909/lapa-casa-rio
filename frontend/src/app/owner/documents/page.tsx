@@ -245,7 +245,7 @@ export default function OwnerDocumentsPage() {
       <p className="mt-8 text-center text-xs text-muted-foreground">
         Após o envio, nossa equipe revisará os documentos em até 2 dias úteis.
         Dúvidas?{' '}
-        <Link href="mailto:lapacasa22@gmail.com" className="underline">
+        <Link href="mailto:lapalandiarj@gmail.com" className="underline">
           Entre em contato
         </Link>
         .

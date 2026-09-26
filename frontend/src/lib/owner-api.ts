@@ -230,7 +230,7 @@ export const ownerDocumentsAPI = {
 
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/owner/documents`,
-      { method: 'POST', body: formData, credentials: 'include' },
+      { method: 'POST', body: formData, credentials: 'include', headers: getCsrfHeader() },
     );
     const data = await res.json();
     if (!res.ok) {

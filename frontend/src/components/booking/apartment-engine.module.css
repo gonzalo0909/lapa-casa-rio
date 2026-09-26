@@ -16,6 +16,16 @@
 }
 /* Motor de reservas: siempre modo claro — los colores de marca no se invierten */
 
+/* .root fuerza min-height:100vh pensando en el wizard completo (4 pasos) --
+   el aviso corto de "reservas próximamente" (apartment-engine.tsx, rama
+   !APARTMENTS_BOOKING_ENABLED) hereda esa altura y deja un hueco en blanco
+   debajo. Se anula solo para ese caso. */
+.rootComingSoon { min-height: 0; }
+/* .section trae padding-bottom:6rem pensado para el wizard completo (deja
+   lugar al footer con los botones de navegación entre pasos) -- el aviso
+   corto no tiene ese footer, así que hereda un padding que no necesita. */
+.rootComingSoon .section { padding-bottom: 2.25rem; }
+
 .root * { box-sizing: border-box; }
 .root button { cursor: pointer; font-family: inherit; }
 .root input, .root textarea, .root select { font-family: inherit; }

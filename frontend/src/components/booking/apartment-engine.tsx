@@ -415,7 +415,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   // ── Render ───────────────────────────────────────────────────────────────
   if (!APARTMENTS_BOOKING_ENABLED) {
     return (
-      <div className={styles.root}>
+      <div className={`${styles.root} ${styles.rootComingSoon}`}>
         <div className={styles.hero}>
           <div className={styles.heroLocation}>{t('heroLocation')}</div>
           <h1 className={styles.heroBrand}>

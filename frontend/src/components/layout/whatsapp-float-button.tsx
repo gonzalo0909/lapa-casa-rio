@@ -9,6 +9,7 @@
 
 import { getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n';
+import { WhatsAppFloatButtonClient } from './whatsapp-float-button-client';
 
 interface WhatsAppFloatButtonProps {
   locale: Locale;
@@ -19,15 +20,6 @@ export async function WhatsAppFloatButton({ locale }: WhatsAppFloatButtonProps) 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5521977157530';
 
   return (
-    <a
-      href={`https://wa.me/${whatsappNumber}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={t('whatsapp')}
-      className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-green-500 text-white text-sm font-semibold shadow-lg hover:bg-green-600 hover:shadow-xl transition-all"
-    >
-      <span aria-hidden="true">💬</span>
-      <span className="hidden sm:inline">{t('whatsapp')}</span>
-    </a>
+    <WhatsAppFloatButtonClient href={`https://wa.me/${whatsappNumber}`} label={t('whatsapp')} />
   );
 }

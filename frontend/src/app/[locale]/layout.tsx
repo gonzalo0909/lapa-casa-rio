@@ -144,10 +144,13 @@ export default async function LocaleLayout({
             <Suspense fallback={<>{children}</>}>
               <AnalyticsProvider>{children}</AnalyticsProvider>
             </Suspense>
+
+            {/* Adentro del provider para poder ocultarse mientras el banner
+                de cookies sigue visible -- ambos son fixed/bottom y compiten
+                por la misma esquina si el usuario todavía no decidió. */}
+            <WhatsAppFloatButton locale={locale as Locale} />
           </CookieConsentProvider>
         </NextIntlClientProvider>
-
-        <WhatsAppFloatButton locale={locale as Locale} />
 
         {/* Registro del Service Worker — mejora PWA y carga offline en móviles */}
         <Script id="sw-register" strategy="afterInteractive">

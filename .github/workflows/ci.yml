@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [definitivo2026]
+  pull_request:
+    branches: [definitivo2026]
+
+jobs:
+  # Auditoría 17 secciones, sección 10: node-version del job de backend
+  # bumpeado a 22 porque node-ical@0.27+ (fix de seguridad, ver
+  # package.json) lo exige -- ver también Dockerfile (node:22-alpine).
+  backend:
+    name: Backend — type-check, lint, build, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lapa_dev
+          POSTGRES_PASSWORD: lapa_dev_pw
+          POSTGRES_DB: lapacasario
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://lapa_dev:lapa_dev_pw@localhost:5432/lapacasario
+      JWT_SECRET: ci-test-secret
+      JWT_EXPIRES_IN: 24h
+      REFRESH_TOKEN_EXPIRES_IN: 7d
+      ENCRYPTION_KEY: ci-test-encryption-key-32-chars!
+      CORS_ORIGINS: "*"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm install --include=dev
+
+      - run: npm run type-check
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - run: npm run migrate
+
+      - run: npm run seed
+
+      - run: npm test
+
+  frontend:
+    name: Frontend — type-check, lint, build, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm install --include=dev
+
+      - run: npm run type-check
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - run: npm run test:ci -- --passWithNoTests

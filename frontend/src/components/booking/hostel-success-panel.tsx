@@ -1,0 +1,230 @@
+'use client';
+// frontend/src/components/booking/hostel-success-panel.tsx
+// Panel de éxito tras confirmar la reserva: QR PIX o link de Stripe + timer de expiración.
+
+import React, { useState } from 'react';
+import { CheckCircle2, CreditCard, Check, Gift } from 'lucide-react';
+import type { PayMethod, PriceQuote, Translations } from './hostel-engine.types';
+import { fmtMoney } from './hostel-engine.utils';
+
+type Price = PriceQuote | null;
+
+
+interface HostelSuccessPanelProps {
+  t: Translations;
+  payMethod: PayMethod;
+  bookingCode: string;
+  price: Price;
+  pixData: { qrCode: string; qrCodeBase64: string } | null;
+  pixCopied: boolean;
+  onPixCopy: () => void;
+  stripeUrl: string | null;
+  timerStr: string;
+  onNewBooking: () => void;
+  onSwitchMethod?: () => void;
+  paymentInitFailed?: boolean;
+  /** Código de referido propio, generado al confirmar. */
+  referralCode?: string | null;
+  /** Error al generar el link de pago con tarjeta — habilita botón de reintento. */
+  paymentLinkError?: boolean;
+  /** Indica que se está reintentando la generación del link de pago. */
+  isRetryingPayment?: boolean;
+  /** Callback para reintentar la generación del link de pago con tarjeta. */
+  onRetryPaymentLink?: () => void;
+  /** Multiplicador de recargo por tarjeta (ej. 1.10). Se aplica al depósito mostrado en el panel de tarjeta. */
+  cardSurchargeMult?: number;
+}
+
+export function HostelSuccessPanel({
+  t,
+  payMethod,
+  bookingCode,
+  price,
+  pixData,
+  pixCopied,
+  onPixCopy,
+  stripeUrl,
+  timerStr,
+  onNewBooking,
+  onSwitchMethod,
+  paymentInitFailed,
+  referralCode,
+  paymentLinkError,
+  isRetryingPayment,
+  onRetryPaymentLink,
+  cardSurchargeMult = 1,
+}: HostelSuccessPanelProps) {
+  const COPY_FEEDBACK_MS = 3_000;
+  const [referralCopied, setReferralCopied] = useState(false);
+  const handleReferralCopy = () => {
+    if (!referralCode) {
+      return;
+    }
+    navigator.clipboard.writeText(referralCode).catch(() => {});
+    setReferralCopied(true);
+    setTimeout(() => setReferralCopied(false), COPY_FEEDBACK_MS);
+  };
+  return (
+    <div className="he-card">
+      <div className="he-success-panel">
+        <div className="he-success-check">
+          <CheckCircle2 size={28} color="#1E5E40" aria-hidden />
+        </div>
+        <div className="he-success-title">{t.successTitle}</div>
+        <div className="he-success-sub">{t.successSub}</div>
+        <div className="he-booking-code">{bookingCode}</div>
+        <div className="he-pay-box">
+          {payMethod === 'pix' ? (
+            <>
+              <div className="he-pix-lbl">{t.pixDepLabel}</div>
+              {paymentInitFailed && <div className="he-min-warn">{t.payInitFailedMsg}</div>}
+              {pixData?.qrCodeBase64 ? (
+                /* QR real de Mercado Pago */
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                  alt="QR PIX"
+                  className="he-pix-qr-img"
+                />
+              ) : null}
+              <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
+              {pixData?.qrCode && (
+                <button type="button" className="he-pix-copy-btn" onClick={onPixCopy}>
+                  {pixCopied ? (
+                    <>
+                      <Check
+                        size={13}
+                        aria-hidden
+                        style={{ display: 'inline', verticalAlign: '-2px', marginRight: '.3em' }}
+                      />
+                      {t.pixCopied}
+                    </>
+                  ) : (
+                    t.pixCopyBtn
+                  )}
+                </button>
+              )}
+              <div className="he-pix-key">{t.pixKey.replace('{key}', process.env.NEXT_PUBLIC_PIX_KEY ?? '')}</div>
+              <div className="he-timer">
+                {t.timerLabel}: <strong>{timerStr}</strong>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="he-pix-lbl">{t.cardDepLabel}</div>
+              <div style={{ margin: '.4rem 0', display: 'flex', justifyContent: 'center' }}>
+                <CreditCard size={40} color="#7BC47F" aria-hidden />
+              </div>
+              <div className="he-pix-amt">{price ? fmtMoney(Math.round(price.deposit * cardSurchargeMult)) : ''}</div>
+              {paymentInitFailed && <div className="he-min-warn">{t.payInitFailedMsg}</div>}
+              {paymentLinkError && !stripeUrl && (
+                <div className="he-min-warn" style={{ marginBottom: '.6rem' }}>
+                  {t.paymentLinkErrorMsg}
+                </div>
+              )}
+              {stripeUrl ? (
+                <a
+                  href={stripeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="he-stripe-link"
+                >
+                  {t.cardGoToPayment}
+                </a>
+              ) : !paymentInitFailed ? (
+                <>
+                  <div
+                    style={{
+                      fontSize: '.72rem',
+                      color: 'rgba(255,255,255,.7)',
+                      marginTop: '.2rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t.cardInstruction}
+                  </div>
+                  {paymentLinkError && onRetryPaymentLink && (
+                    <button
+                      type="button"
+                      className="he-btn-confirm"
+                      style={{ marginTop: '.75rem' }}
+                      disabled={isRetryingPayment}
+                      onClick={onRetryPaymentLink}
+                    >
+                      {isRetryingPayment ? '…' : t.btnRetry}
+                    </button>
+                  )}
+                </>
+              ) : null}
+              <div className="he-timer">
+                {t.timerLabel}: <strong>{timerStr}</strong>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="he-success-note">
+          {t.restNote}
+        </div>
+        {referralCode && (
+          <div className="he-rules" style={{ marginTop: '1rem', textAlign: 'left' }}>
+            <div className="he-rules-title">
+              <Gift size={14} color="#7BC47F" aria-hidden />
+              {t.referralTitle}
+            </div>
+            <p style={{ fontSize: '.78rem', color: '#F0EDE0', margin: '0 0 .6rem' }}>
+              {t.referralBody}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+              <code
+                style={{
+                  flex: 1,
+                  fontFamily: 'monospace',
+                  fontSize: '.95rem',
+                  fontWeight: 700,
+                  letterSpacing: '.05em',
+                  background: 'rgba(255,255,255,.08)',
+                  border: '1px solid rgba(255,255,255,.15)',
+                  borderRadius: '8px',
+                  padding: '.5rem .75rem',
+                  color: '#7BC47F',
+                }}
+              >
+                {referralCode}
+              </code>
+              <button type="button" className="he-pix-copy-btn" onClick={handleReferralCopy}>
+                {referralCopied ? (
+                  <>
+                    <Check
+                      size={13}
+                      aria-hidden
+                      style={{ display: 'inline', verticalAlign: '-2px', marginRight: '.3em' }}
+                    />
+                    {t.referralCopied}
+                  </>
+                ) : (
+                  t.referralCopy
+                )}
+              </button>
+            </div>
+            <p style={{ fontSize: '.72rem', color: 'rgba(240,237,224,.55)', margin: '.5rem 0 0', lineHeight: 1.5 }}>
+              {t.referralConditions}
+            </p>
+          </div>
+        )}
+        {onSwitchMethod && (
+          <button
+            type="button"
+            className="he-btn-back"
+            style={{ marginTop: '1.25rem' }}
+            onClick={onSwitchMethod}
+          >
+            {t.btnChangeMethod}
+          </button>
+        )}
+        <button className="he-btn-confirm" style={{ marginTop: '.6rem' }} onClick={onNewBooking}>
+          {t.btnNewBooking}
+        </button>
+      </div>
+    </div>
+  );
+}

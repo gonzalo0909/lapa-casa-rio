@@ -48,19 +48,19 @@ export function PropertySelectorHero() {
             </Link>
             <a
               href={`/${locale}/guardavolumes`}
-              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {t('navLuggage')}
             </a>
             <a
               href={`/${locale}/grupos`}
-              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {tf('grupos')}
             </a>
             <a
               href={`/${locale}/privacy`}
-              className="hidden sm:inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+              className="inline-flex rounded-full border border-white/15 px-4 py-2 text-base font-medium text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
             >
               {tf('privacy')}
             </a>

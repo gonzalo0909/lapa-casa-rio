@@ -60,10 +60,9 @@ export default function OwnerDocumentsPage() {
   const [documents, setDocuments] = useState<OwnerDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingType, setUploadingType] = useState<DocType | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [selectedDocType, setSelectedDocType] = useState<DocType>('cpf_cnpj');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefs = useRef<Partial<Record<DocType, HTMLInputElement | null>>>({});
 
   useEffect(() => {
     if (!profile) { return; }
@@ -77,14 +76,14 @@ export default function OwnerDocumentsPage() {
       .finally(() => setLoadingDocs(false));
   }, [profile]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (docType: DocType, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) { return; }
 
     setUploadError(null);
-    setUploading(true);
+    setUploadingType(docType);
     try {
-      await ownerDocumentsAPI.upload(file, selectedDocType);
+      await ownerDocumentsAPI.upload(file, docType);
       // Recargar lista
       const res = await ownerDocumentsAPI.list();
       setVerificationStatus(res.data.verificationStatus);
@@ -92,8 +91,9 @@ export default function OwnerDocumentsPage() {
     } catch (err) {
       setUploadError(handleAPIError(err, 'pt'));
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) { fileInputRef.current.value = ''; }
+      setUploadingType(null);
+      const input = fileInputRefs.current[docType];
+      if (input) { input.value = ''; }
     }
   };
 
@@ -150,11 +150,18 @@ export default function OwnerDocumentsPage() {
         </Alert>
       )}
 
+      {uploadError && (
+        <Alert variant="danger" className="mb-6">
+          <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Documentos requeridos */}
       <div className="mb-6 flex flex-col gap-4">
         {(Object.keys(DOC_TYPE_LABELS) as DocType[]).map((type) => {
           const info = DOC_TYPE_LABELS[type];
           const uploaded = documents.filter((d) => d.docType === type);
+          const isUploadingThis = uploadingType === type;
           return (
             <Card key={type}>
               <CardHeader>
@@ -196,65 +203,41 @@ export default function OwnerDocumentsPage() {
                   </ul>
                 </CardContent>
               )}
+
+              {canUpload && (
+                <CardContent className="pt-0">
+                  <input
+                    ref={(el) => { fileInputRefs.current[type] = el; }}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                    onChange={(e) => handleUpload(type, e)}
+                    disabled={uploadingType !== null}
+                    className="hidden"
+                    id={`doc-upload-${type}`}
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingType !== null}
+                      onClick={() => fileInputRefs.current[type]?.click()}
+                    >
+                      {isUploadingThis
+                        ? 'Enviando...'
+                        : uploaded.length > 0
+                          ? 'Enviar outro arquivo'
+                          : 'Selecionar arquivo'}
+                    </Button>
+                    {isUploadingThis && <LoadingSpinner size="sm" />}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">JPG, PNG, WEBP ou PDF · Máx. 10 MB</p>
+                </CardContent>
+              )}
             </Card>
           );
         })}
       </div>
-
-      {/* Formulario de upload */}
-      {canUpload && (
-        <Card>
-          <CardHeader>
-            <CardTitle size="sm">Enviar documento</CardTitle>
-            <CardDescription>JPG, PNG, WEBP ou PDF · Máx. 10 MB</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {/* Selector de tipo */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="doc-type" className="text-sm font-medium">Tipo de documento</label>
-              <select
-                id="doc-type"
-                value={selectedDocType}
-                onChange={(e) => setSelectedDocType(e.target.value as DocType)}
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {(Object.keys(DOC_TYPE_LABELS) as DocType[]).map((t) => (
-                  <option key={t} value={t}>
-                    {DOC_TYPE_LABELS[t].label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {uploadError && (
-              <Alert variant="danger">
-                <AlertDescription>{uploadError}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                onChange={handleUpload}
-                disabled={uploading}
-                className="hidden"
-                id="doc-upload"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploading ? 'Enviando...' : 'Selecionar arquivo'}
-              </Button>
-              {uploading && <LoadingSpinner size="sm" />}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {loadingDocs && <LoadingSpinner centered text="Carregando documentos..." />}
 

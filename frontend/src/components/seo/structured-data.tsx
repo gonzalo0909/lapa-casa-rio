@@ -123,7 +123,7 @@ export const LocalBusinessSchema = {
   '@type': 'LodgingBusiness',
   '@id': 'https://lapacasario.com/#organization',
   name: 'Lapa Casa',
-  description: 'Hostel boutique y apartamentos privados en Santa Teresa, Río de Janeiro. Reserva directa, mejor precio garantizado.',
+  description: 'Hostel y apartamentos privados en Santa Teresa, Río de Janeiro. Reserva directa, mejor precio garantizado.',
   // /images/hostel-exterior.jpg no existe en public/ (404) -- se usa
   // /og-image.jpg, que sí existe y ya es la imagen OG real del sitio.
   image: 'https://lapacasario.com/og-image.jpg',

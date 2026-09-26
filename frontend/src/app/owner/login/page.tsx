@@ -6,6 +6,7 @@
 // esta página no guarda ningún token, solo llama al endpoint y redirige.
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,13 @@ export default function OwnerLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+
+            <Link
+              href="/owner/forgot-password"
+              className="-mt-2 self-end text-sm text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Esqueceu sua senha?
+            </Link>
 
             {error && (
               <Alert variant="danger">

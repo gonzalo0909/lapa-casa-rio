@@ -169,12 +169,31 @@ export default function OwnerApartmentEditPage() {
   }, [profile, loadBlocks]);
 
   useEffect(() => {
-    ownerApartmentsAPI.holidayPresets(holidayYear).then((res) => {
+    // Trae el año elegido + el siguiente -- si solo trajera holidayYear, en
+    // la segunda mitad del año el combo se iba quedando cada vez más corto
+    // (en diciembre solo quedaría Réveillon) en vez de seguir mostrando lo
+    // que viene el año que entra.
+    Promise.all([
+      ownerApartmentsAPI.holidayPresets(holidayYear),
+      ownerApartmentsAPI.holidayPresets(holidayYear + 1),
+    ]).then(([resA, resB]) => {
+      // El "key" de cada preset (ej. "carnaval") no incluye el año -- se
+      // repite entre los dos años traídos, así que hay que hacerlo único
+      // antes de mezclarlos o el <select> y el .find() de abajo confunden
+      // Carnaval de un año con el del otro.
+      const combined = [...resA.data.presets, ...resB.data.presets].map((p) => ({
+        ...p,
+        key: `${p.startDate}-${p.key}`,
+      }));
+
       // Solo feriados que todavía no pasaron -- el combo listaba todo el año
       // elegido (ej. Carnaval en septiembre), aunque ya no tuviera sentido
       // bloquearlo.
       const today = todayLocalISODate();
-      const futurePresets = res.data.presets.filter((p) => p.startDate >= today);
+      const futurePresets = combined
+        .filter((p) => p.startDate >= today)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
       setHolidayPresets(futurePresets);
       setHolidayPresetKey((prev) =>
         futurePresets.some((p) => p.key === prev) ? prev : futurePresets[0]?.key || '',

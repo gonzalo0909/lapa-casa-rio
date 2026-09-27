@@ -110,6 +110,7 @@ export default function OwnerApartmentEditPage() {
 
   // Ref to avoid duplicate CEP lookups on rapid typing
   const cepLookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blockFormRef = useRef<HTMLFormElement>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -210,6 +211,10 @@ export default function OwnerApartmentEditPage() {
     setBlockStart(b.start_date);
     setBlockEnd(b.end_date);
     setBlockReason(b.reason ?? '');
+    // El form de edición está arriba de la lista -- sin este scroll, clickear
+    // "Editar" en un bloqueio más abajo en la lista no muestra ningún cambio
+    // visible en pantalla y parece que el botón no hizo nada.
+    blockFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   const handleCancelEditBlock = () => {
@@ -646,7 +651,13 @@ export default function OwnerApartmentEditPage() {
               </form>
 
               {/* Bloqueo manual */}
-              <form onSubmit={handleCreateBlock} className="flex flex-col gap-3 rounded-lg border p-4">
+              <form
+                ref={blockFormRef}
+                onSubmit={handleCreateBlock}
+                className={`flex flex-col gap-3 rounded-lg border p-4 ${
+                  editingBlockId ? 'border-neutral-900 ring-1 ring-neutral-900' : ''
+                }`}
+              >
                 <p className="text-sm font-medium">
                   {editingBlockId ? 'Editar bloqueio' : 'Bloquear outras datas'}
                 </p>

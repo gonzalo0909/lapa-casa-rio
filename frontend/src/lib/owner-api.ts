@@ -166,6 +166,11 @@ export const ownerApartmentsAPI = {
       data,
     ),
 
+  submitForReview: (id: string) =>
+    api.post<{ success: boolean; data: { id: string; listing_status: string; listing_submitted_at: string }; message: string }>(
+      `/owner/apartments/${id}/submit-for-review`,
+    ),
+
   getPricing: (id: string) =>
     api.get<{ success: boolean; data: { min_price_brl: number | null; max_price_brl: number | null; bot_enabled: boolean; notes: string | null } | null }>(
       `/owner/apartments/${id}/pricing`,

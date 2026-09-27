@@ -316,6 +316,41 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
   }
 });
 
+// ─── POST /owner/apartments/:id/submit-for-review ────────────────────────────
+// Botón explícito "Enviar para análise" -- a diferencia de PUT/fotos (que
+// solo vuelven a pending_review si el estado no era ya ese, para no pisar
+// listing_submitted_at en cada guardado menor), acá el owner está pidiendo
+// activamente una revisión, así que siempre actualiza la fecha de envío --
+// incluso si ya estaba pending_review, o si no cambió nada desde el
+// último guardado.
+router.post('/:id/submit-for-review', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(
+      `UPDATE room_types
+       SET listing_status = 'pending_review', listing_submitted_at = now(), listing_review_notes = NULL
+       WHERE id = $1
+       RETURNING id, listing_status, listing_submitted_at`,
+      [id],
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+      return;
+    }
+
+    await auditLogService.log({
+      entity_type: 'room_type',
+      entity_id: id,
+      operation: 'OWNER_SUBMIT_LISTING_FOR_REVIEW',
+      new_data: {},
+    });
+
+    res.status(200).json(ApiResponse.success(rows[0], 'Anúncio enviado para análise'));
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ─── Fotos ────────────────────────────────────────────────────────────────────
 
 router.get('/:id/photos', async (req, res, next) => {

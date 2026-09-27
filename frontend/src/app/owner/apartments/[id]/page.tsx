@@ -76,6 +76,8 @@ export default function OwnerApartmentEditPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [submitReviewMessage, setSubmitReviewMessage] = useState<string | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [savingPricing, setSavingPricing] = useState(false);
@@ -445,6 +447,21 @@ export default function OwnerApartmentEditPage() {
       setPhotos((prev) => prev?.filter((p) => p.id !== photoId) ?? null);
     } catch (err) {
       setError(handleAPIError(err, 'pt'));
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    setError(null);
+    setSubmitReviewMessage(null);
+    setSubmittingReview(true);
+    try {
+      const res = await ownerApartmentsAPI.submitForReview(params.id);
+      setApartment((prev) => (prev ? { ...prev, listing_status: 'pending_review', listing_review_notes: null } : prev));
+      setSubmitReviewMessage(res.message || 'Anúncio enviado para análise.');
+    } catch (err) {
+      setError(handleAPIError(err, 'pt'));
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -899,6 +916,32 @@ export default function OwnerApartmentEditPage() {
                 />
               </label>
               {uploading && <p className="mt-2 text-sm text-gray-500">Aguarde, enviando...</p>}
+            </CardContent>
+          </Card>
+
+          {/* Envío explícito a revisión -- las ediciones de arriba ya vuelven
+              el anuncio a "pendente" solas, este botón es para cuando el
+              owner terminó todo y quiere avisar/reenviar sin cambiar nada más
+              (ej. después de corregir lo que un rechazo pidió). */}
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+              <p className="text-sm text-gray-600">
+                Terminou de editar as informações, fotos e preço? Envie o anúncio inteiro para
+                nossa equipe analisar antes de publicar.
+              </p>
+              {submitReviewMessage && (
+                <Alert variant="success" className="w-full">
+                  <AlertDescription>{submitReviewMessage}</AlertDescription>
+                </Alert>
+              )}
+              <Button
+                type="button"
+                disabled={submittingReview}
+                onClick={handleSubmitForReview}
+                className="w-full justify-center sm:w-auto"
+              >
+                {submittingReview ? 'Enviando...' : 'Enviar anúncio para análise'}
+              </Button>
             </CardContent>
           </Card>
         </>

@@ -267,6 +267,21 @@
 </div>
 
 <div class="outer-panel" id="opanel-config">
+  <div class="card" style="border-color:var(--danger)">
+    <h2>Página de apartamentos</h2>
+    <div id="apt-master-msg"></div>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px">
+      Interruptor general. Apagado: la página muestra "Reservas em breve" a
+      cualquier visitante, sin importar cuántos apartamentos estén aprobados.
+      Encendido: se ve el buscador de fechas real y se pueden hacer reservas
+      pagas de verdad.
+    </p>
+    <label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600">
+      <input type="checkbox" id="apt-booking-enabled" style="width:18px;height:18px">
+      Motor de reservas de apartamentos habilitado
+    </label>
+  </div>
+
   <div class="card">
     <h2>Motor de reservas</h2>
     <div id="apt-config-msg"></div>

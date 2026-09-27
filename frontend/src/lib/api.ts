@@ -418,7 +418,7 @@ export const availabilityAPI = {
    * Configuración editable del motor de apartamentos: checkinTimes y maxGuests.
    */
   getApartmentConfig: () =>
-    api.get<{ checkinTimes: string[]; maxGuests: number }>('/availability/apartment-config'),
+    api.get<{ checkinTimes: string[]; maxGuests: number; bookingEnabled: boolean }>('/availability/apartment-config'),
 
 };
 

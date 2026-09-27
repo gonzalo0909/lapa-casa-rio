@@ -60,6 +60,10 @@ export interface Apartment {
   address: string | null;
   address_number: string | null;
   cep: string | null;
+  listing_status: 'pending_review' | 'approved' | 'rejected';
+  listing_submitted_at: string | null;
+  listing_reviewed_at: string | null;
+  listing_review_notes: string | null;
 }
 
 export interface OwnerBooking {

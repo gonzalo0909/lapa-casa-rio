@@ -72,25 +72,32 @@ export const checkApartmentAvailabilityHandler = async (
 
     // Una sola query: apartamentos + disponibilidad.
     // available = true si NO existe reserva activa solapada con las fechas.
-    // No se filtra por is_active ni por precio.
+    // No se filtra por is_active ni por precio -- sí por published_snapshot:
+    // el contenido del anuncio (nombre, barrio, dirección, fotos) requiere
+    // aprobación de un admin (0051_apartment_listing_approval.sql); un
+    // apartamento sin snapshot todavía nunca fue aprobado y no aparece acá.
+    // Se lee del snapshot, no de las columnas en vivo, para que una edición
+    // pendiente de revisión no cambie lo que ya se está mostrando.
     const { rows: apartments } = await query<{
-      id: string; code: string; name: string; capacity: number; base_price: string; available: boolean;
-      neighborhood: string | null; external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
-      address: string | null; lat: string | null; lng: string | null;
+      id: string; code: string; capacity: number; base_price: string; available: boolean;
+      external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
+      lat: string | null; lng: string | null;
+      published_snapshot: {
+        name: string; neighborhood: string | null; address: string | null;
+        photos: { id: string; image_url: string; is_primary: boolean; alt_text: string | null }[];
+      };
     }>(
       `SELECT
          rt.id,
          rt.code,
-         rt.name,
          rt.capacity,
          rt.base_price,
-         rt.neighborhood,
          rt.external_rating,
          rt.external_review_count,
          rt.external_rating_label,
-         rt.address,
          rt.lat,
          rt.lng,
+         rt.published_snapshot,
          (
            NOT EXISTS (
              SELECT 1
@@ -109,23 +116,10 @@ export const checkApartmentAvailabilityHandler = async (
            )
          ) AS available
        FROM room_types rt
-       WHERE rt.property_type = 'apartment'
-       ORDER BY rt.name`,
+       WHERE rt.property_type = 'apartment' AND rt.published_snapshot IS NOT NULL
+       ORDER BY rt.published_snapshot->>'name'`,
       [checkIn, checkOut]
     );
-
-    // Fotos de todos los apartamentos en una sola query (evitar N+1)
-    const { rows: allPhotos } = await query<{
-      room_type_id: string; id: string; image_url: string; display_order: number; is_primary: boolean; alt_text: string | null;
-    }>(
-      `SELECT room_type_id, id, image_url, display_order, is_primary, alt_text
-       FROM room_type_photos
-       ORDER BY room_type_id, display_order ASC, created_at ASC`
-    );
-    const photosByApt = allPhotos.reduce<Record<string, typeof allPhotos>>((acc, p) => {
-      (acc[p.room_type_id] ??= []).push(p);
-      return acc;
-    }, {});
 
     // Regla de pago completo (Cláusula 3 Termo de Adesão v2.1):
     // si el check-in es en menos de 48h, no hay tiempo de cobrar el saldo
@@ -188,21 +182,21 @@ export const checkApartmentAvailabilityHandler = async (
       return {
         id: apt.id,
         code: apt.code,
-        name: apt.name,
+        name: apt.published_snapshot.name,
         capacity: apt.capacity,
         // El backend confirma explícitamente si el apartamento cabe para la
         // cantidad solicitada, para que el frontend no lo recalcule por su cuenta.
         fitsGuests: apt.capacity >= guestCount,
         basePrice,
         available: apt.available,
-        neighborhood: apt.neighborhood ?? undefined,
-        street: apt.address ?? undefined,
+        neighborhood: apt.published_snapshot.neighborhood ?? undefined,
+        street: apt.published_snapshot.address ?? undefined,
         lat: apt.lat !== null ? parseFloat(apt.lat) : undefined,
         lng: apt.lng !== null ? parseFloat(apt.lng) : undefined,
         externalRating: apt.external_rating !== null ? parseFloat(apt.external_rating) : undefined,
         externalReviewCount: apt.external_review_count ?? undefined,
         externalRatingLabel: apt.external_rating_label ?? undefined,
-        photos: (photosByApt[apt.id] ?? []).map(p => ({
+        photos: (apt.published_snapshot.photos ?? []).map(p => ({
           id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
         })),
         priceTotal: finalPrice,

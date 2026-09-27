@@ -480,6 +480,38 @@ export default function OwnerApartmentEditPage() {
             </Link>
           </div>
 
+          {/* Estado de moderación del anuncio (0051_apartment_listing_approval.sql):
+              cualquier edición de contenido o de fotos manda de vuelta a
+              "pending_review" -- el site público sigue mostrando la última
+              versión aprobada hasta que un admin apruebe esta edición nueva. */}
+          <div
+            className={`mb-6 rounded-lg border px-4 py-3 text-sm font-medium ${
+              apartment.listing_status === 'approved'
+                ? 'border-green-200 bg-green-50 text-green-800'
+                : apartment.listing_status === 'rejected'
+                  ? 'border-red-200 bg-red-50 text-red-800'
+                  : 'border-amber-200 bg-amber-50 text-amber-800'
+            }`}
+          >
+            <p className="font-semibold">
+              {apartment.listing_status === 'approved'
+                ? '✓ Anúncio aprovado'
+                : apartment.listing_status === 'rejected'
+                  ? '✗ Anúncio rejeitado'
+                  : '⏳ Anúncio em revisão'}
+            </p>
+            <p className="mt-0.5 font-normal opacity-80">
+              {apartment.listing_status === 'approved'
+                ? 'Este é o conteúdo que os hóspedes veem hoje no site.'
+                : apartment.listing_status === 'rejected'
+                  ? 'Corrija o motivo abaixo e salve de novo para reenviar para revisão.'
+                  : 'Sua equipe está revisando fotos/descrição antes de publicar. Enquanto isso, o site mostra a última versão já aprovada (se houver).'}
+            </p>
+            {apartment.listing_review_notes && (
+              <p className="mt-2 italic">Motivo: {apartment.listing_review_notes}</p>
+            )}
+          </div>
+
           <Card className="mb-6">
             <CardHeader>
               <CardTitle size="sm">Informações</CardTitle>

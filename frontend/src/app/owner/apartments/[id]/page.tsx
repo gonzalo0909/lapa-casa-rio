@@ -81,6 +81,7 @@ export default function OwnerApartmentEditPage() {
   const [blockEnd, setBlockEnd] = useState('');
   const [blockReason, setBlockReason] = useState('');
   const [savingBlock, setSavingBlock] = useState(false);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
 
   // Bloques festivos (Carnaval, Réveillon, etc.)
   const [holidayYear, setHolidayYear] = useState(new Date().getFullYear());
@@ -180,6 +181,11 @@ export default function OwnerApartmentEditPage() {
     setBlockError(null);
     setSavingBlock(true);
     try {
+      // Editar = borrar el bloqueo viejo y crear uno nuevo con los valores
+      // del form -- no existe un PUT /blocks/:id en el backend.
+      if (editingBlockId) {
+        await ownerApartmentsAPI.deleteBlock(editingBlockId);
+      }
       await ownerApartmentsAPI.createBlock(params.id, {
         start_date: blockStart,
         end_date: blockEnd,
@@ -189,12 +195,28 @@ export default function OwnerApartmentEditPage() {
       setBlockStart('');
       setBlockEnd('');
       setBlockReason('');
+      setEditingBlockId(null);
       await loadBlocks();
     } catch (err) {
       setBlockError(handleAPIError(err, 'pt'));
     } finally {
       setSavingBlock(false);
     }
+  };
+
+  const handleEditBlockClick = (b: ApartmentBlock) => {
+    setBlockError(null);
+    setEditingBlockId(b.id);
+    setBlockStart(b.start_date);
+    setBlockEnd(b.end_date);
+    setBlockReason(b.reason ?? '');
+  };
+
+  const handleCancelEditBlock = () => {
+    setEditingBlockId(null);
+    setBlockStart('');
+    setBlockEnd('');
+    setBlockReason('');
   };
 
   const handleApplyHoliday = async (e: React.FormEvent) => {
@@ -223,6 +245,7 @@ export default function OwnerApartmentEditPage() {
     try {
       await ownerApartmentsAPI.deleteBlock(blockId);
       setBlocks((prev) => prev?.filter((b) => b.id !== blockId) ?? null);
+      if (editingBlockId === blockId) {handleCancelEditBlock();}
     } catch (err) {
       setBlockError(handleAPIError(err, 'pt'));
     }
@@ -624,7 +647,9 @@ export default function OwnerApartmentEditPage() {
 
               {/* Bloqueo manual */}
               <form onSubmit={handleCreateBlock} className="flex flex-col gap-3 rounded-lg border p-4">
-                <p className="text-sm font-medium">Bloquear outras datas</p>
+                <p className="text-sm font-medium">
+                  {editingBlockId ? 'Editar bloqueio' : 'Bloquear outras datas'}
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   <Input
                     label="Desde"
@@ -647,9 +672,23 @@ export default function OwnerApartmentEditPage() {
                   onChange={(e) => setBlockReason(e.target.value)}
                   placeholder="Manutenção, uso próprio..."
                 />
-                <Button type="submit" disabled={savingBlock} className="w-full justify-center">
-                  {savingBlock ? 'Bloqueando...' : 'Bloquear'}
-                </Button>
+                <div className="flex gap-3">
+                  <Button type="submit" disabled={savingBlock} className="w-full justify-center">
+                    {savingBlock
+                      ? 'Salvando...'
+                      : editingBlockId ? 'Salvar edição' : 'Bloquear'}
+                  </Button>
+                  {editingBlockId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={savingBlock}
+                      onClick={handleCancelEditBlock}
+                    >
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
               </form>
 
               {/* Lista de bloqueios */}
@@ -659,19 +698,33 @@ export default function OwnerApartmentEditPage() {
                   <p className="text-sm text-neutral-500">Nenhuma data bloqueada.</p>
                 )}
                 {blocks?.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <div
+                    key={b.id}
+                    className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm ${
+                      editingBlockId === b.id ? 'border-neutral-900' : ''
+                    }`}
+                  >
                     <span>
                       {new Date(`${b.start_date}T00:00:00`).toLocaleDateString('pt-BR')} –{' '}
                       {new Date(`${b.end_date}T00:00:00`).toLocaleDateString('pt-BR')}
                       {b.reason && <span className="text-neutral-500"> · {b.reason}</span>}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteBlock(b.id)}
-                      className="text-xs font-medium text-red-600 hover:underline"
-                    >
-                      Remover
-                    </button>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleEditBlockClick(b)}
+                        className="text-xs font-medium text-neutral-700 hover:underline"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBlock(b.id)}
+                        className="text-xs font-medium text-red-600 hover:underline"
+                      >
+                        Remover
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

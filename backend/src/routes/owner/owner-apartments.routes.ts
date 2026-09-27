@@ -20,6 +20,7 @@
 
 import { Router, type Request } from 'express';
 import multer from 'multer';
+import { createHash } from 'crypto';
 import { z } from 'zod';
 import { query } from '../../config/database';
 import { uploadApartmentPhoto, deleteApartmentPhoto } from '../../lib/cloudinary/cloudinary-client';
@@ -307,6 +308,20 @@ router.post(
       }
       const { altText } = req.body as z.infer<typeof UploadPhotoSchema>;
 
+      // Duplicado exacto (mismo archivo re-subido) -- se detecta por hash de
+      // contenido antes de gastar el upload a Cloudinary, no después.
+      const contentHash = createHash('sha256').update(req.file.buffer).digest('hex');
+      const { rows: dupRows } = await query(
+        `SELECT id FROM room_type_photos WHERE room_type_id = $1 AND content_hash = $2`,
+        [id, contentHash],
+      );
+      if (dupRows.length > 0) {
+        res
+          .status(409)
+          .json(ApiResponse.error('Esta foto ya fue subida para este apartamento', undefined, 'DUPLICATE_PHOTO'));
+        return;
+      }
+
       const { rows: existing } = await query(
         `SELECT COUNT(*)::int AS total FROM room_type_photos WHERE room_type_id = $1`,
         [id],
@@ -326,13 +341,28 @@ router.post(
         return;
       }
 
-      const { rows } = await query(
-        `INSERT INTO room_type_photos
-         (room_type_id, image_url, cloudinary_public_id, display_order, is_primary, alt_text)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, image_url, display_order, is_primary, alt_text, created_at`,
-        [id, uploaded.url, uploaded.publicId, displayOrder, isPrimary, altText ?? null],
-      );
+      let rows: any[];
+      try {
+        ({ rows } = await query(
+          `INSERT INTO room_type_photos
+           (room_type_id, image_url, cloudinary_public_id, display_order, is_primary, alt_text, content_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, image_url, display_order, is_primary, alt_text, created_at`,
+          [id, uploaded.url, uploaded.publicId, displayOrder, isPrimary, altText ?? null, contentHash],
+        ));
+      } catch (insertErr: any) {
+        // 23505 = unique_violation -- dos uploads del mismo archivo casi
+        // simultáneos (ej. dos pestañas) pueden pasar el SELECT de arriba
+        // antes de que cualquiera haga el INSERT.
+        if (insertErr?.code === '23505') {
+          await deleteApartmentPhoto(uploaded.publicId).catch(() => {});
+          res
+            .status(409)
+            .json(ApiResponse.error('Esta foto ya fue subida para este apartamento', undefined, 'DUPLICATE_PHOTO'));
+          return;
+        }
+        throw insertErr;
+      }
 
       res.status(201).json(ApiResponse.success({ photo: rows[0] }, 'Foto subida'));
     } catch (error) {

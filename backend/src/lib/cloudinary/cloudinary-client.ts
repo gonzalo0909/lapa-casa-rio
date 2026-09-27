@@ -41,7 +41,14 @@ export async function uploadApartmentPhoto(buffer: Buffer): Promise<UploadedPhot
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: 'apartment-photos',
-        transformation: [{ width: 1600, crop: 'limit' }, { quality: 'auto' }, { fetch_format: 'auto' }],
+        // effect:'improve' -- auto color/contraste/luz (gratis, parte del
+        // plan base de Cloudinary, no confundir con el add-on pago de IA).
+        transformation: [
+          { width: 1600, crop: 'limit' },
+          { effect: 'improve' },
+          { quality: 'auto' },
+          { fetch_format: 'auto' },
+        ],
       },
       (error, result) => {
         if (error || !result) {

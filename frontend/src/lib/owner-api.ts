@@ -194,6 +194,7 @@ export const ownerApartmentsAPI = {
       throw new APIError(
         responseData?.message || responseData?.error || 'Error al subir la foto',
         res.status,
+        responseData?.code,
       );
     }
     return responseData as { success: boolean; data: { photo: ApartmentPhoto }; message: string };

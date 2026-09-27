@@ -23,7 +23,7 @@ import {
   type ApartmentBlock,
   type HolidayBlockPreset,
 } from '@/lib/owner-api';
-import { handleAPIError } from '@/lib/api';
+import { handleAPIError, APIError } from '@/lib/api';
 
 // ─── ViaCEP lookup ───────────────────────────────────────────────────────────
 
@@ -392,11 +392,16 @@ export default function OwnerApartmentEditPage() {
     // que subirlas en paralelo haría que varias se lean con el mismo
     // contador y compitan por ser la primaria / el mismo display_order.
     const failedNames: string[] = [];
+    const duplicateNames: string[] = [];
     for (const file of files) {
       try {
         await ownerApartmentsAPI.uploadPhoto(params.id, file);
       } catch (err) {
-        failedNames.push(file.name);
+        if (err instanceof APIError && err.code === 'DUPLICATE_PHOTO') {
+          duplicateNames.push(file.name);
+        } else {
+          failedNames.push(file.name);
+        }
       }
       setUploadProgress((prev) => (prev ? { ...prev, done: prev.done + 1 } : prev));
     }
@@ -408,8 +413,15 @@ export default function OwnerApartmentEditPage() {
       setError(handleAPIError(err, 'pt'));
     }
 
+    const messages: string[] = [];
+    if (duplicateNames.length > 0) {
+      messages.push(`Já foram enviadas antes (puladas): ${duplicateNames.join(', ')}`);
+    }
     if (failedNames.length > 0) {
-      setError(`Não foi possível enviar: ${failedNames.join(', ')}`);
+      messages.push(`Não foi possível enviar: ${failedNames.join(', ')}`);
+    }
+    if (messages.length > 0) {
+      setError(messages.join(' · '));
     }
 
     setUploading(false);

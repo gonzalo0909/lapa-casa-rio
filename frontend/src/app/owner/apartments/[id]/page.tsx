@@ -594,7 +594,7 @@ export default function OwnerApartmentEditPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
               <p className="text-sm text-neutral-500">
-                Por padrão, seu apartamento fica bloqueado ±7 dias ao redor de cada feriado
+                Por padrão, seu apartamento fica bloqueado nas datas reais de cada feriado
                 (Carnaval, Réveillon, etc.). Remova um bloqueio abaixo se quiser aceitar
                 reservas nessas datas.
               </p>

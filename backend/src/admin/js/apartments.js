@@ -453,12 +453,34 @@
   apiFetch('/admin/pricing').then(function (data) {
     var maxEl = document.getElementById('apt-max-guests');
     var timesEl = document.getElementById('apt-checkin-times');
+    var masterEl = document.getElementById('apt-booking-enabled');
     if (maxEl) maxEl.value = data.maxAptGuests ?? 2;
     if (timesEl) {
       var times = data.checkinTimes ?? ['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
       timesEl.value = times.join('\n');
     }
+    if (masterEl) masterEl.checked = Boolean(data.apartmentsBookingEnabled);
   }).catch(function () {});
+
+  var masterEl = document.getElementById('apt-booking-enabled');
+  if (masterEl) {
+    masterEl.addEventListener('change', function () {
+      var el = document.getElementById('apt-master-msg');
+      var enabled = masterEl.checked;
+      masterEl.disabled = true;
+      apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ apartmentsBookingEnabled: enabled }) })
+        .then(function () {
+          if (el) el.innerHTML = '<div class="msg success">' +
+            (enabled ? '✓ Motor habilitado -- la página ya muestra el buscador real.' : 'Motor deshabilitado -- la página vuelve a mostrar "Reservas em breve".') +
+            '</div>';
+        })
+        .catch(function (err) {
+          masterEl.checked = !enabled; // revertir el checkbox si falló el guardado
+          if (el) el.innerHTML = '<div class="msg error">' + err.message + '</div>';
+        })
+        .finally(function () { masterEl.disabled = false; });
+    });
+  }
 
   var guestsForm = document.getElementById('apt-guests-form');
   if (guestsForm) {

@@ -118,6 +118,25 @@
       <!-- TAB DATOS ────────────────────────────────────── -->
       <div class="inner-panel active" id="itab-datos">
         <div id="datos-msg"></div>
+
+        <!-- Aprobación del anuncio (0051_apartment_listing_approval.sql) --
+             el público lee de published_snapshot, nunca de estos campos en
+             vivo -- una edición pendiente no cambia lo que ya está
+             publicado hasta que se apruebe de nuevo. -->
+        <div class="card" id="listing-review-box" style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div>
+              <span id="listing-status-badge" class="photo-badge">—</span>
+              <span id="listing-status-detail" style="font-size:12px;color:var(--text-muted);margin-left:8px"></span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="listing-reject-btn" style="background:none;border:1px solid var(--danger);color:var(--danger)">Rechazar</button>
+              <button id="listing-approve-btn">Aprobar anuncio</button>
+            </div>
+          </div>
+          <textarea id="listing-reject-notes" placeholder="Motivo del rechazo (el owner lo ve)" style="display:none;width:100%;margin-top:10px;min-height:60px"></textarea>
+        </div>
+
         <div class="field-grid">
           <div class="full-col">
             <label class="field-label">Nombre</label>

@@ -38,6 +38,31 @@ function getOwnerId(req: Request): string | null {
   return req.user?.ownerId ?? null;
 }
 
+// Campos que cuentan como "contenido" del anuncio a los fines de la
+// moderación (0051_apartment_listing_approval.sql) -- cambiar cualquiera
+// de estos, o las fotos, vuelve a mandar el apartamento a revisión.
+// base_price/lat/lng quedan afuera a propósito: no son fraude/obscenidad,
+// son ajustes operativos que el owner debe poder aplicar sin esperar a
+// que un admin repase el anuncio de nuevo.
+const LISTING_CONTENT_FIELDS = [
+  'name', 'description', 'neighborhood', 'bedrooms', 'bathrooms',
+  'amenities', 'address', 'address_number', 'cep',
+] as const;
+
+/** Vuelve a mandar el anuncio a revisión -- se llama tras cualquier
+ *  edición de contenido o de fotos en un apartamento que ya estaba
+ *  aprobado o rechazado. published_snapshot (lo que ve el público) no se
+ *  toca acá -- sigue mostrando la última versión aprobada hasta que un
+ *  admin apruebe esta edición nueva. */
+async function flagListingPendingReview(roomTypeId: string): Promise<void> {
+  await query(
+    `UPDATE room_types
+     SET listing_status = 'pending_review', listing_submitted_at = now(), listing_review_notes = NULL
+     WHERE id = $1 AND listing_status != 'pending_review'`,
+    [roomTypeId],
+  );
+}
+
 // Todas las rutas de este router requieren ownerId -- una sola guarda acá
 // en vez de repetirla en cada handler.
 router.use((req, res, next) => {
@@ -149,7 +174,8 @@ router.get('/', async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
-              external_rating_label, address, address_number, cep, lat, lng
+              external_rating_label, address, address_number, cep, lat, lng,
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types
        WHERE owner_id = $1
        ORDER BY name ASC`,
@@ -182,7 +208,8 @@ router.get('/:id', async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
-              external_rating_label, address, address_number, cep, lat, lng
+              external_rating_label, address, address_number, cep, lat, lng,
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types WHERE id = $1`,
       [req.params.id],
     );
@@ -257,12 +284,22 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
       sets.push(`base_price = ${p()}`);
     }
 
+    // Cambiar contenido del anuncio (no precio/coordenadas) manda de vuelta
+    // a revisión -- ver flagListingPendingReview más arriba.
+    const contentChanged = LISTING_CONTENT_FIELDS.some(
+      (field) => (req.body as Record<string, unknown>)[field] !== undefined,
+    );
+    if (contentChanged) {
+      sets.push(`listing_status = 'pending_review'`, `listing_submitted_at = now()`, `listing_review_notes = NULL`);
+    }
+
     params.push(id);
     const { rows } = await query(
       `UPDATE room_types SET ${sets.join(', ')}, updated_at = now()
        WHERE id = ${p()}
        RETURNING id, code, name, description, neighborhood, bedrooms, bathrooms, amenities,
-                 address, address_number, cep, lat, lng, base_price`,
+                 address, address_number, cep, lat, lng, base_price,
+                 listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes`,
       params,
     );
 
@@ -364,6 +401,8 @@ router.post(
         throw insertErr;
       }
 
+      await flagListingPendingReview(id);
+
       res.status(201).json(ApiResponse.success({ photo: rows[0] }, 'Foto subida'));
     } catch (error) {
       next(error);
@@ -414,6 +453,8 @@ router.patch('/photos/:photoId', validate(PatchPhotoSchema), async (req, res, ne
       params,
     );
 
+    await flagListingPendingReview(roomTypeId);
+
     res.status(200).json(ApiResponse.success({ photo: rows[0] }, 'Foto actualizada'));
   } catch (error) {
     next(error);
@@ -453,6 +494,8 @@ router.delete('/photos/:photoId', async (req, res, next) => {
         [roomTypeId],
       );
     }
+
+    await flagListingPendingReview(roomTypeId);
 
     res.status(200).json(ApiResponse.success(null, 'Foto eliminada'));
   } catch (error) {

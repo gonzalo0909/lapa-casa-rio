@@ -544,10 +544,13 @@ router.delete('/reviews/:reviewId', async (req, res, next) => {
 
 router.get('/:id/blocks', async (req, res, next) => {
   try {
+    // Solo bloqueos vigentes o futuros -- uno ya terminado no tiene nada para
+    // gestionar (no se puede reabrir un rango que ya pasó) y solo ensucia la
+    // lista que ve el owner.
     const { rows } = await query(
       `SELECT id, start_date::text, end_date::text, block_type, reason, notes, created_at
-       FROM room_blocks WHERE room_type_id = $1
-       ORDER BY start_date DESC`,
+       FROM room_blocks WHERE room_type_id = $1 AND end_date >= CURRENT_DATE
+       ORDER BY start_date ASC`,
       [req.params.id],
     );
     res.status(200).json(ApiResponse.success(rows));

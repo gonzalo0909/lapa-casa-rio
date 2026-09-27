@@ -49,6 +49,12 @@ async function lookupCep(cep: string): Promise<ViaCEPResult | null> {
   }
 }
 
+/** YYYY-MM-DD en hora local -- mismo formato que start_date/endDate de blocks. */
+function todayLocalISODate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function formatCep(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 8);
   if (digits.length > 5) {
@@ -164,8 +170,15 @@ export default function OwnerApartmentEditPage() {
 
   useEffect(() => {
     ownerApartmentsAPI.holidayPresets(holidayYear).then((res) => {
-      setHolidayPresets(res.data.presets);
-      setHolidayPresetKey((prev) => prev || res.data.presets[0]?.key || '');
+      // Solo feriados que todavía no pasaron -- el combo listaba todo el año
+      // elegido (ej. Carnaval en septiembre), aunque ya no tuviera sentido
+      // bloquearlo.
+      const today = todayLocalISODate();
+      const futurePresets = res.data.presets.filter((p) => p.startDate >= today);
+      setHolidayPresets(futurePresets);
+      setHolidayPresetKey((prev) =>
+        futurePresets.some((p) => p.key === prev) ? prev : futurePresets[0]?.key || '',
+      );
     }).catch((err) => setBlockError(handleAPIError(err, 'pt')));
   }, [holidayYear]);
 

@@ -6,8 +6,11 @@
 //
 // El acceso al resto del panel (GET /owner/me, /owner/apartments, etc.)
 // no está bloqueado aquí en el backend — el bloqueo es en el frontend
-// (use-owner-auth.ts redirige si termAcceptedAt === null). El campo sí
-// se expone en GET /owner/me para que el frontend tome esa decisión.
+// (use-owner-auth.ts redirige si termAcceptedAt es null O si termVersion
+// quedó desactualizada contra CURRENT_TERM_VERSION -- así una cláusula
+// nueva fuerza a re-aceptar incluso a owners que ya habían aceptado una
+// versión vieja). El campo sí se expone en GET /owner/me para que el
+// frontend tome esa decisión.
 
 import { Router } from 'express';
 import { z } from 'zod';
@@ -18,7 +21,7 @@ import { logger } from '../../utils/logger';
 
 // Versión actual del término. Incrementar cuando se publique una nueva versión
 // del Termo de Adesão para que quede registro de qué versión aceptó cada owner.
-export const CURRENT_TERM_VERSION = '2.1';
+export const CURRENT_TERM_VERSION = '2.2';
 
 const AcceptTermsSchema = z.object({
   version: z.string().min(1),

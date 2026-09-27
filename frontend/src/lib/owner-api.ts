@@ -41,7 +41,7 @@ export interface OwnerDocument {
   reviewNotes: string | null;
 }
 
-export const CURRENT_TERM_VERSION = '2.1';
+export const CURRENT_TERM_VERSION = '2.2';
 
 export interface Apartment {
   id: string;

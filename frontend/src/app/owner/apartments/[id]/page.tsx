@@ -75,6 +75,7 @@ export default function OwnerApartmentEditPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [savingPricing, setSavingPricing] = useState(false);
@@ -377,22 +378,42 @@ export default function OwnerApartmentEditPage() {
   };
 
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // Clear the input so the same file can be re-selected if needed
+    const files = Array.from(e.target.files ?? []);
+    // Clear the input so the same file(s) can be re-selected if needed
     e.target.value = '';
-    if (!file) {return;}
+    if (files.length === 0) {return;}
 
     setError(null);
     setUploading(true);
+    setUploadProgress({ done: 0, total: files.length });
+
+    // Una foto a la vez -- el backend decide is_primary/display_order según
+    // COUNT(*) al momento de cada request (owner-apartments.routes.ts), así
+    // que subirlas en paralelo haría que varias se lean con el mismo
+    // contador y compitan por ser la primaria / el mismo display_order.
+    const failedNames: string[] = [];
+    for (const file of files) {
+      try {
+        await ownerApartmentsAPI.uploadPhoto(params.id, file);
+      } catch (err) {
+        failedNames.push(file.name);
+      }
+      setUploadProgress((prev) => (prev ? { ...prev, done: prev.done + 1 } : prev));
+    }
+
     try {
-      await ownerApartmentsAPI.uploadPhoto(params.id, file);
       const photosRes = await ownerApartmentsAPI.listPhotos(params.id);
       setPhotos(photosRes.data.photos);
     } catch (err) {
       setError(handleAPIError(err, 'pt'));
-    } finally {
-      setUploading(false);
     }
+
+    if (failedNames.length > 0) {
+      setError(`Não foi possível enviar: ${failedNames.join(', ')}`);
+    }
+
+    setUploading(false);
+    setUploadProgress(null);
   };
 
   const handleSetPrimary = async (photoId: string) => {
@@ -820,11 +841,14 @@ export default function OwnerApartmentEditPage() {
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-gray-700">
-                  {uploading ? 'Enviando foto...' : 'Adicionar foto'}
+                  {uploading
+                    ? `Enviando foto ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}...`
+                    : 'Adicionar fotos'}
                 </span>
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleUploadPhoto}
                   disabled={uploading}
                   className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 disabled:opacity-50"

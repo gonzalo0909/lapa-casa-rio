@@ -71,13 +71,18 @@ export const checkApartmentAvailabilityHandler = async (
     );
 
     // Una sola query: apartamentos + disponibilidad.
-    // available = true si NO existe reserva activa solapada con las fechas.
-    // No se filtra por is_active ni por precio -- sí por published_snapshot:
-    // el contenido del anuncio (nombre, barrio, dirección, fotos) requiere
-    // aprobación de un admin (0051_apartment_listing_approval.sql); un
-    // apartamento sin snapshot todavía nunca fue aprobado y no aparece acá.
-    // Se lee del snapshot, no de las columnas en vivo, para que una edición
-    // pendiente de revisión no cambie lo que ya se está mostrando.
+    // available = true si el anuncio está aprobado (listing_status) Y no
+    // existe reserva/bloqueo solapado con las fechas -- un apartamento con
+    // listing_status != 'approved' se sigue mostrando (foto, nombre,
+    // precio) pero queda como "Indisponível" y no seleccionable, mismo
+    // mecanismo que ya usa el frontend para fechas ocupadas (no se oculta
+    // la tarjeta, ver apartment-card.tsx). No se filtra por is_active ni
+    // por precio -- sí por published_snapshot: el contenido del anuncio
+    // (nombre, barrio, dirección, fotos) requiere aprobación de un admin
+    // (0051_apartment_listing_approval.sql); un apartamento sin snapshot
+    // todavía nunca fue aprobado y no aparece acá. Se lee del snapshot, no
+    // de las columnas en vivo, para que una edición pendiente de revisión
+    // no cambie lo que ya se está mostrando.
     const { rows: apartments } = await query<{
       id: string; code: string; capacity: number; base_price: string; available: boolean;
       external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
@@ -99,7 +104,8 @@ export const checkApartmentAvailabilityHandler = async (
          rt.lng,
          rt.published_snapshot,
          (
-           NOT EXISTS (
+           rt.listing_status = 'approved'
+           AND NOT EXISTS (
              SELECT 1
              FROM reservation_beds rb
              JOIN beds b ON b.id = rb.bed_id

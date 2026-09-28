@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Períodos especiales — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .mini-cal { max-width: 280px; margin: 8px 0 16px; user-select: none; }
+  .mini-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .mini-cal-head button { background: none; border: 1px solid var(--border); border-radius: 6px;
+                           width: 26px; height: 26px; cursor: pointer; font-size: 13px; line-height: 1; }
+  .mini-cal-head span { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .mini-cal-dow { font-size: 10px; color: var(--text-muted); text-align: center; padding-bottom: 2px; }
+  .mini-cal-day { font-size: 12px; text-align: center; padding: 5px 0; border-radius: 4px;
+                  cursor: pointer; background: var(--surface); border: 1px solid transparent; }
+  .mini-cal-day:hover { border-color: var(--accent); }
+  .mini-cal-day.muted { color: var(--text-muted); opacity: .4; cursor: default; }
+  .mini-cal-day.muted:hover { border-color: transparent; }
+  .mini-cal-day.today { font-weight: 700; text-decoration: underline; }
+  .mini-cal-day.in-range { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+  .mini-cal-day.range-edge { background: var(--accent); color: #fff; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="nav-root"></div>
+<main>
+  <div class="card">
+    <h2>Período especial (mínimo de noches + precio propio)</h2>
+    <p style="font-size:13px;color:#888;">La habitación sigue disponible para reservar en este rango -- no es un bloqueo. El huésped va a tener que elegir el mínimo de noches indicado, a este precio por noche en vez del precio normal de temporada.</p>
+    <div id="rule-msg"></div>
+    <form class="stack" id="rule-form">
+      <label>Habitación
+        <select id="rule-room" required></select>
+      </label>
+      <label>Feriado (opcional, autocompleta las fechas)
+        <select id="rule-holiday">
+          <option value="">— Elegir fechas manualmente —</option>
+        </select>
+      </label>
+      <label>Desde
+        <input type="date" id="rule-start" required>
+      </label>
+      <label>Hasta
+        <input type="date" id="rule-end" required>
+      </label>
+      <div>
+        <div style="font-size:13px;color:#888;margin-bottom:4px;">Tocá un día de inicio y después uno de fin en el calendario.</div>
+        <div class="mini-cal" id="rule-calendar">
+          <div class="mini-cal-head">
+            <button type="button" id="cal-prev">‹</button>
+            <span id="cal-label"></span>
+            <button type="button" id="cal-next">›</button>
+          </div>
+          <div class="mini-cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+      <label>Mínimo de noches
+        <input type="number" id="rule-minnights" min="1" step="1" required>
+      </label>
+      <label>Precio por noche (R$)
+        <input type="number" id="rule-price" min="0" step="0.01" required>
+      </label>
+      <label>Nombre (opcional, ej. "Carnaval 2027")
+        <input type="text" id="rule-label" placeholder="...">
+      </label>
+      <button type="submit">Crear regla</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Reglas activas</h2>
+    <p style="font-size:13px;color:#888;">Editá cualquier valor directo en la fila y tocá "Guardar".</p>
+    <div id="rules-msg"></div>
+    <table id="rules-table">
+      <thead><tr><th>Habitación</th><th>Desde</th><th>Hasta</th><th>Mín. noches</th><th>Precio/noche</th><th>Nombre</th><th colspan="2"></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/special-periods.js"></script>
+</body>
+</html>

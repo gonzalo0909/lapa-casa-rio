@@ -132,39 +132,30 @@ export const checkApartmentAvailabilityHandler = async (
     const hoursUntilCheckIn = (checkInAt14hBRT.getTime() - now.getTime()) / (1000 * 60 * 60);
     const fullPaymentRequired = hoursUntilCheckIn < 48;
 
-    // Pricing en batch: todos los apartamentos comparten las mismas fechas y
-    // totalBeds=1. Se hacen 2 queries totales en lugar de 7×N.
-    // Temporadas no aplican a apartamentos (sin precios estacionales configurados).
+    // El "Preço base" que carga el owner es el precio final -- a pedido
+    // explícito, sin multiplicador de temporada ni descuento por reserva
+    // anticipada (esos vienen de calculate_final_price/rate_plans, pensados
+    // para el hostel; antes se llamaban acá igual pese al comentario de que
+    // "temporadas no aplican a apartamentos", así que sí aplicaban -- ver
+    // pricing-service.ts calculateTotalPrice, mismo criterio, es lo que de
+    // verdad cobra create-apartment-booking.ts). Solo depositPercent sigue
+    // viniendo de la función SQL (calculate_deposit), no depende de temporada.
     let depositPercent = 0.3;
     let pricingFailed = false;
     const finalPriceById = new Map<string, number>();
 
-    try {
-      const bookingDate = new Date().toISOString().slice(0, 10);
+    for (const apt of apartments) {
+      finalPriceById.set(apt.id, Math.round((parseFloat(apt.base_price) || 0) * nights * 100) / 100);
+    }
 
-      // 1) Porcentaje de depósito — constante para totalBeds=1
+    try {
       const { rows: depositPctRows } = await query<{ deposit_percent: string }>(
         `SELECT deposit_percent FROM calculate_deposit(100::numeric, 1)`
       );
       depositPercent = parseFloat(depositPctRows[0].deposit_percent);
-
-      // 2) calculate_final_price en batch para todos los apartamentos a la vez
-      if (apartments.length > 0) {
-        const aptIds = apartments.map(a => a.id);
-        const basePrices = apartments.map(a => parseFloat(a.base_price) || 0);
-        const { rows: priceRows } = await query<{ apt_id: string; final_price: string }>(
-          `SELECT t.apt_id,
-                  calculate_final_price(t.base_price::numeric, $1, 1, $2::date, $3::date) AS final_price
-           FROM UNNEST($4::uuid[], $5::numeric[]) AS t(apt_id, base_price)`,
-          [nights, checkIn, bookingDate, aptIds, basePrices]
-        );
-        for (const row of priceRows) {
-          finalPriceById.set(row.apt_id, Math.round(parseFloat(row.final_price) * 100) / 100);
-        }
-      }
     } catch (pricingError) {
       pricingFailed = true;
-      logger.warn('Apartment batch pricing unavailable for date range', {
+      logger.warn('Apartment deposit percent unavailable for date range', {
         checkIn, checkOut, error: pricingError instanceof Error ? pricingError.message : 'Unknown error',
       });
     }
@@ -205,7 +196,9 @@ export const checkApartmentAvailabilityHandler = async (
         // para que pueda mostrar una explicación clara al huésped.
         fullPaymentRequired,
         fullPaymentReason: fullPaymentRequired ? 'less_than_48h' : null,
-        // true cuando la query de pricing falló — precio es estimativa (base * noches)
+        // true cuando calculate_deposit falló -- priceTotal sigue siendo exacto
+        // (base_price × noches, ya no depende de ninguna query), solo
+        // depositAmount pudo haber usado el 30% por defecto en vez del real.
         pricingFailed: pricingFailed || undefined,
       };
     });

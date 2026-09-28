@@ -629,18 +629,8 @@ export default function OwnerApartmentEditPage() {
                   step="0.01"
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
-                  helperText="Valor usado no cálculo de novas reservas"
+                  helperText="Valor cobrado do hóspede por noite -- sem ajustes automáticos"
                 />
-                <p className="-mt-2 text-xs text-neutral-500">
-                  Este é o valor <strong>base</strong>, não o preço final que o hóspede paga: a
-                  plataforma aplica automaticamente um multiplicador por temporada (alta ×1,5,
-                  média ×1,0, baixa ×0,8) e um desconto de 5% para reservas com 30+ dias de
-                  antecedência. Detalhes na Cláusula 2.3 do{' '}
-                  <Link href="/owner/contract" className="underline">
-                    Termo de Adesão
-                  </Link>
-                  .
-                </p>
 
                 {error && (
                   <Alert variant="danger">

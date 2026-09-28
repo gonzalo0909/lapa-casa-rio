@@ -132,7 +132,6 @@ function ContractPT() {
       <Section title="CLÁUSULA 2 — OBJETO">
         <p><strong>2.1</strong> A Plataforma concede ao Administrador acesso ao painel de gestão para cadastrar, divulgar e administrar reservas do Apartamento junto a hóspedes captados pela Plataforma.</p>
         <p><strong>2.2</strong> O Administrador compromete-se a manter o Apartamento disponível, em condições adequadas de habitabilidade, e a honrar todas as reservas confirmadas pela Plataforma.</p>
-        <p><strong>2.3 Precificação por temporada.</strong> O "Preço base" cadastrado pelo Administrador no painel de gestão não é necessariamente o valor final cobrado do hóspede. A Plataforma aplica automaticamente, sobre esse valor, um multiplicador conforme a temporada da data de check-in — <strong>alta temporada</strong> (dezembro a março): ×1,5; <strong>temporada média</strong> (abril-maio, outubro-novembro): ×1,0; <strong>baixa temporada</strong> (junho a setembro): ×0,8 — além de um desconto adicional de <strong>5%</strong> para reservas feitas com 30 dias ou mais de antecedência do check-in ("early bird"). O Administrador declara estar ciente de que o valor efetivamente recebido (Cláusula 3.5) reflete a aplicação dessas regras sobre o Preço base, e não o Preço base isoladamente.</p>
       </Section>
 
       <Section title="CLÁUSULA 3 — MODELO DE PAGAMENTO">
@@ -270,7 +269,6 @@ function ContractES() {
       <Section title="CLÁUSULA 2 — OBJETO">
         <p><strong>2.1</strong> La Plataforma otorga al Administrador acceso al panel de gestión para registrar, publicar y administrar reservas del Apartamento con huéspedes captados por la Plataforma.</p>
         <p><strong>2.2</strong> El Administrador se compromete a mantener el Apartamento disponible, en condiciones adecuadas de habitabilidad, y a respetar todas las reservas confirmadas por la Plataforma.</p>
-        <p><strong>2.3 Precificación por temporada.</strong> El "Precio base" registrado por el Administrador en el panel de gestión no es necesariamente el valor final cobrado al huésped. La Plataforma aplica automáticamente, sobre ese valor, un multiplicador según la temporada de la fecha de check-in — <strong>temporada alta</strong> (diciembre a marzo): ×1,5; <strong>temporada media</strong> (abril-mayo, octubre-noviembre): ×1,0; <strong>temporada baja</strong> (junio a septiembre): ×0,8 — además de un descuento adicional del <strong>5%</strong> para reservas hechas con 30 días o más de anticipación al check-in ("early bird"). El Administrador declara estar al tanto de que el valor efectivamente recibido (Cláusula 3.5) refleja la aplicación de estas reglas sobre el Precio base, y no el Precio base aisladamente.</p>
       </Section>
 
       <Section title="CLÁUSULA 3 — MODELO DE PAGO">
@@ -408,7 +406,6 @@ function ContractFR() {
       <Section title="CLAUSE 2 — OBJET">
         <p><strong>2.1</strong> La Plateforme accorde au Gestionnaire l&apos;accès au panneau de gestion pour enregistrer, publier et administrer les réservations de l&apos;Appartement auprès des hôtes captés par la Plateforme.</p>
         <p><strong>2.2</strong> Le Gestionnaire s&apos;engage à maintenir l&apos;Appartement disponible, dans des conditions adéquates d&apos;habitabilité, et à honorer toutes les réservations confirmées par la Plateforme.</p>
-        <p><strong>2.3 Tarification saisonnière.</strong> Le « Prix de base » enregistré par le Gestionnaire dans le panneau de gestion n&apos;est pas nécessairement le montant final facturé à l&apos;hôte. La Plateforme applique automatiquement, sur ce montant, un multiplicateur selon la saison de la date de check-in — <strong>haute saison</strong> (décembre à mars) : ×1,5 ; <strong>saison moyenne</strong> (avril-mai, octobre-novembre) : ×1,0 ; <strong>basse saison</strong> (juin à septembre) : ×0,8 — ainsi qu&apos;une remise supplémentaire de <strong>5%</strong> pour les réservations effectuées au moins 30 jours avant le check-in (« early bird »). Le Gestionnaire déclare avoir connaissance que le montant effectivement reçu (Clause 3.5) reflète l&apos;application de ces règles sur le Prix de base, et non le Prix de base isolément.</p>
       </Section>
 
       <Section title="CLAUSE 3 — MODÈLE DE PAIEMENT">

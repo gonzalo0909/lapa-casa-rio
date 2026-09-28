@@ -101,7 +101,11 @@ class InMemoryCacheClient implements CacheClient {
   }
 
   async increment(key: string, amount: number = 1): Promise<number> {
-    const e = this.store.get(key);
+    // alive() borra la entrada si ya venció -- sin este chequeo un contador
+    // expirado seguía sumando para siempre (expiresAt nunca se recalculaba acá,
+    // solo expire() lo toca), por ej. el rate limiter quedaba trabado en 429
+    // permanentemente en vez de resetear la ventana.
+    const e = this.alive(key) ? this.store.get(key) : undefined;
     const n = (e ? parseInt(JSON.parse(e.value), 10) : 0) + amount;
     this.store.set(key, { value: JSON.stringify(n), expiresAt: e?.expiresAt });
     return n;

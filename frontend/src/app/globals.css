@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Lapa Casa Rio — tokens de marca en HSL (consumidos por tailwind.config.js vía hsl(var(--x))).
+       Paleta tomada directo del motor de reservas (hostel-engine.styles.ts,
+       clases .he-*: fondo #12160f, tarjetas/steps #1A2E1E, dorado #C8870A,
+       verde #2A5234) para que el resto del sitio se vea como una sola marca
+       en vez de un tema claro genérico + el motor con su propio look
+       aparte. Es el único tema -- nada en la app alterna claro/oscuro. */
+    color-scheme: dark;
+
+    --background: 94 19% 7%;       /* #12160f */
+    --foreground: 46 11% 89%;
+
+    --primary: 40 88% 41%;         /* #C8870A dorado -- CTAs, links, badges */
+    --primary-foreground: 46 41% 96%;
+
+    --secondary: 135 32% 24%;      /* #2A5234 verde -- hover/selección */
+    --secondary-foreground: 46 11% 94%;
+
+    --destructive: 7 65% 55%;
+    --destructive-foreground: 46 11% 94%;
+
+    --muted: 90 15% 18%;
+    --muted-foreground: 46 8% 65%;
+
+    --accent: 307 86% 59%;
+    --accent-foreground: 46 11% 96%;
+
+    --popover: 132 28% 14%;        /* #1A2E1E */
+    --popover-foreground: 46 11% 89%;
+
+    --card: 132 28% 14%;           /* #1A2E1E */
+    --card-foreground: 46 11% 89%;
+
+    --border: 88 15% 20%;
+    --input: 88 15% 20%;
+    --ring: 40 88% 41%;
+
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    /* El botón flotante de WhatsApp es fixed y aparece en todas las
+       páginas (ver whatsapp-float-button.tsx) -- sin este espacio,
+       tapa el contenido final en pantallas chicas donde no hay texto
+       de sobra debajo (home, FAQ del hostel/apartamentos, etc). Solo
+       en mobile: desde sm: el botón muestra su label y queda más
+       lejos del contenido de forma natural. */
+    padding-bottom: 88px;
+  }
+
+  @media (min-width: 640px) {
+    body {
+      padding-bottom: 0;
+    }
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-cormorant), Georgia, serif;
+  }
+}

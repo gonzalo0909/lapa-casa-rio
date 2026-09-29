@@ -1256,6 +1256,47 @@ export class EmailService {
     return dispatch(ADMIN_EMAIL, `[ADMIN] ${type}`, html);
   }
 
+  /** Cuenta creada por el admin (POST /apartment-owners) -- antes solo se devolvía la tempPassword en la respuesta del API y había que reenviarla a mano por WhatsApp/email. Siempre en português, painel próprio sem i18n. */
+  async sendOwnerWelcome(params: {
+    to: string;
+    ownerName: string;
+    tempPassword: string;
+    onboardingUrl?: string | null;
+  }): Promise<SendResult> {
+    const baseUrl = process.env.FRONTEND_URL ?? 'https://lapacasario.com';
+    const loginUrl = `${baseUrl}/owner/login`;
+
+    const onboardingSectionHtml = params.onboardingUrl
+      ? `<p style="margin:0 0 20px;font-size:15px;line-height:1.6;font-family:'Inter',Arial,sans-serif;">Para receber seus pagamentos, complete também o cadastro no Stripe: <a href="${escapeText(params.onboardingUrl)}" style="color:#2C4A8C;">${escapeText(params.onboardingUrl)}</a></p>`
+      : '';
+
+    const html = renderEmailTemplate('owner-welcome', {
+      emailTitle: 'Bem-vindo ao Painel do Proprietário',
+      ownerName: params.ownerName,
+      ownerEmail: params.to,
+      tempPassword: params.tempPassword,
+      loginUrl,
+      onboardingSectionHtml,
+    });
+
+    return dispatch(params.to, 'Bem-vindo ao Painel do Proprietário — Lapa Casa', html);
+  }
+
+  /** Reset disparado por el admin (POST /apartment-owners/:id/reset-password) -- distinto del self-service sendOwnerPasswordReset (ese usa un link con token, este entrega la contraseña nueva directamente). */
+  async sendOwnerPasswordReissued(to: string, ownerName: string, tempPassword: string): Promise<SendResult> {
+    const baseUrl = process.env.FRONTEND_URL ?? 'https://lapacasario.com';
+    const loginUrl = `${baseUrl}/owner/login`;
+
+    const html = renderEmailTemplate('owner-password-reissued', {
+      emailTitle: 'Nova senha temporária',
+      ownerName,
+      tempPassword,
+      loginUrl,
+    });
+
+    return dispatch(to, 'Nova senha temporária — Painel do Proprietário', html);
+  }
+
   /** "Esqueci minha senha" do painel do proprietário (0048_owner_password_reset.sql) -- sempre em português, painel próprio sem i18n. */
   async sendOwnerPasswordReset(to: string, ownerName: string, resetUrl: string): Promise<SendResult> {
     const html = renderEmailTemplate('owner-password-reset', {

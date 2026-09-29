@@ -20,6 +20,7 @@
 
 import { Router, type Request } from 'express';
 import multer from 'multer';
+import { createHash } from 'crypto';
 import { z } from 'zod';
 import { query } from '../../config/database';
 import { uploadApartmentPhoto, deleteApartmentPhoto } from '../../lib/cloudinary/cloudinary-client';
@@ -35,6 +36,31 @@ const router = Router();
 
 function getOwnerId(req: Request): string | null {
   return req.user?.ownerId ?? null;
+}
+
+// Campos que cuentan como "contenido" del anuncio a los fines de la
+// moderación (0051_apartment_listing_approval.sql) -- cambiar cualquiera
+// de estos, o las fotos, vuelve a mandar el apartamento a revisión.
+// base_price/lat/lng quedan afuera a propósito: no son fraude/obscenidad,
+// son ajustes operativos que el owner debe poder aplicar sin esperar a
+// que un admin repase el anuncio de nuevo.
+const LISTING_CONTENT_FIELDS = [
+  'name', 'description', 'neighborhood', 'bedrooms', 'bathrooms',
+  'amenities', 'address', 'address_number', 'cep',
+] as const;
+
+/** Vuelve a mandar el anuncio a revisión -- se llama tras cualquier
+ *  edición de contenido o de fotos en un apartamento que ya estaba
+ *  aprobado o rechazado. published_snapshot (lo que ve el público) no se
+ *  toca acá -- sigue mostrando la última versión aprobada hasta que un
+ *  admin apruebe esta edición nueva. */
+async function flagListingPendingReview(roomTypeId: string): Promise<void> {
+  await query(
+    `UPDATE room_types
+     SET listing_status = 'pending_review', listing_submitted_at = now(), listing_review_notes = NULL
+     WHERE id = $1 AND listing_status != 'pending_review'`,
+    [roomTypeId],
+  );
 }
 
 // Todas las rutas de este router requieren ownerId -- una sola guarda acá
@@ -148,7 +174,8 @@ router.get('/', async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
-              external_rating_label, address, address_number, cep, lat, lng
+              external_rating_label, address, address_number, cep, lat, lng,
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types
        WHERE owner_id = $1
        ORDER BY name ASC`,
@@ -181,7 +208,8 @@ router.get('/:id', async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
-              external_rating_label, address, address_number, cep, lat, lng
+              external_rating_label, address, address_number, cep, lat, lng,
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types WHERE id = $1`,
       [req.params.id],
     );
@@ -256,12 +284,22 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
       sets.push(`base_price = ${p()}`);
     }
 
+    // Cambiar contenido del anuncio (no precio/coordenadas) manda de vuelta
+    // a revisión -- ver flagListingPendingReview más arriba.
+    const contentChanged = LISTING_CONTENT_FIELDS.some(
+      (field) => (req.body as Record<string, unknown>)[field] !== undefined,
+    );
+    if (contentChanged) {
+      sets.push(`listing_status = 'pending_review'`, `listing_submitted_at = now()`, `listing_review_notes = NULL`);
+    }
+
     params.push(id);
     const { rows } = await query(
       `UPDATE room_types SET ${sets.join(', ')}, updated_at = now()
        WHERE id = ${p()}
        RETURNING id, code, name, description, neighborhood, bedrooms, bathrooms, amenities,
-                 address, address_number, cep, lat, lng, base_price`,
+                 address, address_number, cep, lat, lng, base_price,
+                 listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes`,
       params,
     );
 
@@ -273,6 +311,41 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
     });
 
     res.status(200).json(ApiResponse.success(rows[0], 'Apartamento actualizado'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── POST /owner/apartments/:id/submit-for-review ────────────────────────────
+// Botón explícito "Enviar para análise" -- a diferencia de PUT/fotos (que
+// solo vuelven a pending_review si el estado no era ya ese, para no pisar
+// listing_submitted_at en cada guardado menor), acá el owner está pidiendo
+// activamente una revisión, así que siempre actualiza la fecha de envío --
+// incluso si ya estaba pending_review, o si no cambió nada desde el
+// último guardado.
+router.post('/:id/submit-for-review', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(
+      `UPDATE room_types
+       SET listing_status = 'pending_review', listing_submitted_at = now(), listing_review_notes = NULL
+       WHERE id = $1
+       RETURNING id, listing_status, listing_submitted_at`,
+      [id],
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+      return;
+    }
+
+    await auditLogService.log({
+      entity_type: 'room_type',
+      entity_id: id,
+      operation: 'OWNER_SUBMIT_LISTING_FOR_REVIEW',
+      new_data: {},
+    });
+
+    res.status(200).json(ApiResponse.success(rows[0], 'Anúncio enviado para análise'));
   } catch (error) {
     next(error);
   }
@@ -307,6 +380,20 @@ router.post(
       }
       const { altText } = req.body as z.infer<typeof UploadPhotoSchema>;
 
+      // Duplicado exacto (mismo archivo re-subido) -- se detecta por hash de
+      // contenido antes de gastar el upload a Cloudinary, no después.
+      const contentHash = createHash('sha256').update(req.file.buffer).digest('hex');
+      const { rows: dupRows } = await query(
+        `SELECT id FROM room_type_photos WHERE room_type_id = $1 AND content_hash = $2`,
+        [id, contentHash],
+      );
+      if (dupRows.length > 0) {
+        res
+          .status(409)
+          .json(ApiResponse.error('Esta foto ya fue subida para este apartamento', undefined, 'DUPLICATE_PHOTO'));
+        return;
+      }
+
       const { rows: existing } = await query(
         `SELECT COUNT(*)::int AS total FROM room_type_photos WHERE room_type_id = $1`,
         [id],
@@ -326,13 +413,30 @@ router.post(
         return;
       }
 
-      const { rows } = await query(
-        `INSERT INTO room_type_photos
-         (room_type_id, image_url, cloudinary_public_id, display_order, is_primary, alt_text)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, image_url, display_order, is_primary, alt_text, created_at`,
-        [id, uploaded.url, uploaded.publicId, displayOrder, isPrimary, altText ?? null],
-      );
+      let rows: any[];
+      try {
+        ({ rows } = await query(
+          `INSERT INTO room_type_photos
+           (room_type_id, image_url, cloudinary_public_id, display_order, is_primary, alt_text, content_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, image_url, display_order, is_primary, alt_text, created_at`,
+          [id, uploaded.url, uploaded.publicId, displayOrder, isPrimary, altText ?? null, contentHash],
+        ));
+      } catch (insertErr: any) {
+        // 23505 = unique_violation -- dos uploads del mismo archivo casi
+        // simultáneos (ej. dos pestañas) pueden pasar el SELECT de arriba
+        // antes de que cualquiera haga el INSERT.
+        if (insertErr?.code === '23505') {
+          await deleteApartmentPhoto(uploaded.publicId).catch(() => {});
+          res
+            .status(409)
+            .json(ApiResponse.error('Esta foto ya fue subida para este apartamento', undefined, 'DUPLICATE_PHOTO'));
+          return;
+        }
+        throw insertErr;
+      }
+
+      await flagListingPendingReview(id);
 
       res.status(201).json(ApiResponse.success({ photo: rows[0] }, 'Foto subida'));
     } catch (error) {
@@ -384,6 +488,8 @@ router.patch('/photos/:photoId', validate(PatchPhotoSchema), async (req, res, ne
       params,
     );
 
+    await flagListingPendingReview(roomTypeId);
+
     res.status(200).json(ApiResponse.success({ photo: rows[0] }, 'Foto actualizada'));
   } catch (error) {
     next(error);
@@ -423,6 +529,8 @@ router.delete('/photos/:photoId', async (req, res, next) => {
         [roomTypeId],
       );
     }
+
+    await flagListingPendingReview(roomTypeId);
 
     res.status(200).json(ApiResponse.success(null, 'Foto eliminada'));
   } catch (error) {
@@ -544,10 +652,13 @@ router.delete('/reviews/:reviewId', async (req, res, next) => {
 
 router.get('/:id/blocks', async (req, res, next) => {
   try {
+    // Solo bloqueos vigentes o futuros -- uno ya terminado no tiene nada para
+    // gestionar (no se puede reabrir un rango que ya pasó) y solo ensucia la
+    // lista que ve el owner.
     const { rows } = await query(
       `SELECT id, start_date::text, end_date::text, block_type, reason, notes, created_at
-       FROM room_blocks WHERE room_type_id = $1
-       ORDER BY start_date DESC`,
+       FROM room_blocks WHERE room_type_id = $1 AND end_date >= CURRENT_DATE
+       ORDER BY start_date ASC`,
       [req.params.id],
     );
     res.status(200).json(ApiResponse.success(rows));

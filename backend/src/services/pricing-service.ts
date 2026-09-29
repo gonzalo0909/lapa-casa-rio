@@ -106,6 +106,17 @@ export class PricingService {
         continue;
       }
 
+      if (isApartment) {
+        // El "Preço base" que carga el owner es el precio final -- a
+        // pedido explícito, sin multiplicador de temporada ni descuento
+        // por reserva anticipada (eso queda para rate_plans/hostel, ver
+        // calculate_final_price). Si el owner algún día quiere ofrecer un
+        // descuento, lo decide él mismo bajando el Preço base o usando un
+        // período especial (special_period_rules) -- no algo forzado acá.
+        preDiscountTotal += roomBasePrice * nights * beds;
+        continue;
+      }
+
       const { rows: priceRows } = await query<{ p: string }>(
         `SELECT calculate_final_price($1::numeric, $2, $3, $4::date, $5::date) AS p`,
         [roomBasePrice, nights, beds, request.checkInDate, bookingDate]

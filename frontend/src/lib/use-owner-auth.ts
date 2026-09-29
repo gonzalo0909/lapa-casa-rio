@@ -14,7 +14,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { APIError } from './api';
-import { ownerAuthAPI, type OwnerProfile } from './owner-api';
+import { ownerAuthAPI, CURRENT_TERM_VERSION, type OwnerProfile } from './owner-api';
+
+/** También hay que re-aceptar si el owner ya había aceptado una versión
+ *  vieja del Termo de Adesão (ej. subió CURRENT_TERM_VERSION porque se
+ *  agregó una cláusula nueva) -- antes esto solo miraba termAcceptedAt,
+ *  así que un owner que ya había aceptado v2.1 nunca veía la v2.2 nueva. */
+function needsTermsAcceptance(profile: Pick<OwnerProfile, 'termAcceptedAt' | 'termVersion'>): boolean {
+  return !profile.termAcceptedAt || profile.termVersion !== CURRENT_TERM_VERSION;
+}
 
 export function useOwnerAuth() {
   const router = useRouter();
@@ -32,7 +40,7 @@ export function useOwnerAuth() {
           router.replace('/owner/change-password');
           return;
         }
-        if (!res.data.termAcceptedAt) {
+        if (needsTermsAcceptance(res.data)) {
           router.replace('/owner/accept-terms');
           return;
         }
@@ -56,7 +64,7 @@ export function useOwnerAuth() {
               router.replace('/owner/change-password');
               return;
             }
-            if (!retried.data.termAcceptedAt) {
+            if (needsTermsAcceptance(retried.data)) {
               router.replace('/owner/accept-terms');
               return;
             }

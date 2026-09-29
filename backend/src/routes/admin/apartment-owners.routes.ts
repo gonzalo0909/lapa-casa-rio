@@ -36,6 +36,7 @@ import { prisma } from '../../config/prisma';
 import { query } from '../../config/database';
 import { stripeConnectHandler } from '../../lib/payments/stripe-connect';
 import { auditLogService } from '../../services/audit-log-service';
+import { emailService } from '../../services/email-service';
 import { hashPassword, generateTempPassword } from '../../utils/encryption';
 import { ApiResponse } from '../../utils/responses';
 import { logger } from '../../utils/logger';
@@ -185,13 +186,35 @@ router.post('/', validate(CreateOwnerSchema), async (req, res, next) => {
       stripeAccountId,
     });
 
+    // El email de bienvenida es best-effort: si falla (proveedor caído, etc.)
+    // la cuenta ya quedó creada igual -- no tiene sentido devolver 500 acá.
+    // tempPassword sigue en la respuesta como respaldo para reenviarla a mano.
+    let welcomeEmailSent = false;
+    try {
+      await emailService.sendOwnerWelcome({
+        to: owner.email,
+        ownerName: owner.fullName,
+        tempPassword,
+        onboardingUrl,
+      });
+      welcomeEmailSent = true;
+    } catch (emailError: any) {
+      logger.warn('No se pudo enviar el email de bienvenida al administrador', {
+        ownerId: owner.id,
+        email,
+        error: emailError.message,
+      });
+    }
+
     res
       .status(201)
       .json(
         ApiResponse.success(
           { ...owner, tempPassword },
-          'Administrador creado. Compartile la contraseña temporal (tempPassword) y el link de ' +
-            'onboarding de Stripe por fuera (WhatsApp/email) -- no vuelven a mostrarse. ' +
+          (welcomeEmailSent
+            ? 'Administrador creado. Le enviamos por email la contraseña temporal y el link de acceso. '
+            : 'Administrador creado, pero el email de bienvenida falló -- compartile la contraseña ' +
+              'temporal (tempPassword) por fuera (WhatsApp/email). ') +
             (onboardingUrl
               ? ''
               : 'Aún no se pudo generar el link de Stripe; use el endpoint /onboarding-link cuando esté disponible.'),
@@ -394,12 +417,25 @@ router.post('/:id/reset-password', async (req, res, next) => {
 
     logger.info('Contraseña de administrador reseteada', { ownerId: id });
 
+    let resetEmailSent = false;
+    try {
+      await emailService.sendOwnerPasswordReissued(owner.email, owner.fullName, tempPassword);
+      resetEmailSent = true;
+    } catch (emailError: any) {
+      logger.warn('No se pudo enviar el email de contraseña reseteada al administrador', {
+        ownerId: id,
+        error: emailError.message,
+      });
+    }
+
     res
       .status(200)
       .json(
         ApiResponse.success(
           { ...owner, tempPassword },
-          'Contraseña temporal generada. Compartila con el administrador por fuera -- no vuelve a mostrarse.',
+          resetEmailSent
+            ? 'Contraseña temporal generada y enviada por email al administrador.'
+            : 'Contraseña temporal generada, pero el email falló -- compartila con el administrador por fuera.',
         ),
       );
   } catch (error) {

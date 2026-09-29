@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Períodos especiales — Admin Lapa Casa</title>
 <link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .mini-cal { max-width: 280px; margin: 8px 0 16px; user-select: none; }
+  .mini-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .mini-cal-head button { background: none; border: 1px solid var(--border); border-radius: 6px;
+                           width: 26px; height: 26px; cursor: pointer; font-size: 13px; line-height: 1; }
+  .mini-cal-head span { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .mini-cal-dow { font-size: 10px; color: var(--text-muted); text-align: center; padding-bottom: 2px; }
+  .mini-cal-day { font-size: 12px; text-align: center; padding: 5px 0; border-radius: 4px;
+                  cursor: pointer; background: var(--surface); border: 1px solid transparent; }
+  .mini-cal-day:hover { border-color: var(--accent); }
+  .mini-cal-day.muted { color: var(--text-muted); opacity: .4; cursor: default; }
+  .mini-cal-day.muted:hover { border-color: transparent; }
+  .mini-cal-day.today { font-weight: 700; text-decoration: underline; }
+  .mini-cal-day.in-range { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+  .mini-cal-day.range-edge { background: var(--accent); color: #fff; font-weight: 700; }
+</style>
 </head>
 <body>
 
@@ -29,6 +46,17 @@
       <label>Hasta
         <input type="date" id="rule-end" required>
       </label>
+      <div>
+        <div style="font-size:13px;color:#888;margin-bottom:4px;">Tocá un día de inicio y después uno de fin en el calendario.</div>
+        <div class="mini-cal" id="rule-calendar">
+          <div class="mini-cal-head">
+            <button type="button" id="cal-prev">‹</button>
+            <span id="cal-label"></span>
+            <button type="button" id="cal-next">›</button>
+          </div>
+          <div class="mini-cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
       <label>Mínimo de noches
         <input type="number" id="rule-minnights" min="1" step="1" required>
       </label>

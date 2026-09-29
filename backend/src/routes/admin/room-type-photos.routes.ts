@@ -89,6 +89,7 @@ router.get('/', async (_req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT rt.id, rt.code, rt.name, rt.capacity, rt.base_price, rt.owner_id,
+              rt.listing_status,
               COUNT(rtp.id)::int AS photo_count,
               (SELECT rtp2.image_url FROM room_type_photos rtp2
                WHERE rtp2.room_type_id = rt.id AND rtp2.is_primary = true LIMIT 1) AS primary_photo
@@ -297,7 +298,8 @@ router.get('/:id', async (req, res, next) => {
       `SELECT id, code, name, capacity, base_price, property_type,
               description, neighborhood, amenities, bedrooms, bathrooms,
               external_rating, external_review_count, external_rating_label,
-              is_flexible, created_at, updated_at
+              is_flexible, created_at, updated_at,
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types
        WHERE id = $1 AND property_type = 'apartment'`,
       [req.params.id],

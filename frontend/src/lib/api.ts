@@ -102,14 +102,44 @@ export interface APIResponse<T = any> {
   statusCode?: number;
 }
 
+// El access token del panel de owners dura 15 minutos (ver use-owner-auth.ts).
+// Antes, solo el chequeo /owner/me al cargar la página lo renovaba -- cualquier
+// otra llamada (guardar el formulario de un apartamento, crear un bloqueo,
+// etc.) que cayera después de esos 15 minutos fallaba con un 401 crudo
+// ("Access token required", sin traducir) aunque la sesión siguiera siendo
+// válida vía el refresh token. Acá se renueva y reintenta una vez para
+// cualquier request a /owner/* (menos /owner/login/*, para no recursar).
+let ownerRefreshPromise: Promise<boolean> | null = null;
+
+function isOwnerAuthedEndpoint(endpoint: string): boolean {
+  return endpoint.startsWith('/owner/') && !endpoint.startsWith('/owner/login');
+}
+
+export async function tryRefreshOwnerToken(): Promise<boolean> {
+  if (!ownerRefreshPromise) {
+    ownerRefreshPromise = request('/owner/login/refresh', { method: 'POST', retry: false })
+      .then(() => true)
+      .catch(() => false)
+      .finally(() => {
+        ownerRefreshPromise = null;
+      });
+  }
+  return ownerRefreshPromise;
+}
+
 /**
  * Make HTTP request with retry logic
  *
  * @param endpoint - API endpoint
  * @param options - Request options
+ * @param afterRefresh - uso interno: ya se reintentó una vez tras renovar el token
  * @returns Response data
  */
-async function request<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+async function request<T = any>(
+  endpoint: string,
+  options: RequestOptions = {},
+  afterRefresh = false,
+): Promise<T> {
   const {
     method = 'GET',
     body,
@@ -205,6 +235,18 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
       return responseData as T;
     } catch (error) {
       lastError = error as Error;
+
+      if (
+        error instanceof APIError &&
+        error.statusCode === 401 &&
+        !afterRefresh &&
+        isOwnerAuthedEndpoint(endpoint)
+      ) {
+        const refreshed = await tryRefreshOwnerToken();
+        if (refreshed) {
+          return request<T>(endpoint, options, true);
+        }
+      }
 
       if (error instanceof APIError && error.statusCode && error.statusCode < 500) {
         throw error;
@@ -376,7 +418,7 @@ export const availabilityAPI = {
    * Configuración editable del motor de apartamentos: checkinTimes y maxGuests.
    */
   getApartmentConfig: () =>
-    api.get<{ checkinTimes: string[]; maxGuests: number }>('/availability/apartment-config'),
+    api.get<{ checkinTimes: string[]; maxGuests: number; bookingEnabled: boolean }>('/availability/apartment-config'),
 
 };
 

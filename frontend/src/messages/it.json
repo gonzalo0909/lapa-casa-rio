@@ -616,7 +616,7 @@
     "cardCapacity": "fino a {count} ospite/i",
     "insufficientCapacity": "Capacità insufficiente",
     "shareWhatsApp": "Condividi su WhatsApp",
-    "fullPaymentRequired48h": "Pagamento completo alla prenotazione — il check-in è tra meno di 48 ore e non c'è tempo per riscuotere il saldo rimanente.",
+    "fullPaymentRequired48h": "Pagamento completo alla prenotazione.",
     "checking": "Verifica in corso…",
     "apartmentOccupied": "Questo appartamento è occupato in queste date — altri potrebbero essere disponibili",
     "checkAvailabilityError": "Impossibile verificare la disponibilità — riprova",

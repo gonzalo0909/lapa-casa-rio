@@ -4,7 +4,23 @@
 // (credentials: 'include' ya está seteado en api.ts) -- este cliente
 // nunca maneja el token directamente.
 
-import { api, APIError, getCsrfHeader } from './api';
+import { api, APIError, getCsrfHeader, tryRefreshOwnerToken } from './api';
+
+/**
+ * Para los dos endpoints que arman su propio FormData/fetch en vez de pasar
+ * por request() de api.ts (uploadPhoto, ownerDocumentsAPI.upload) -- ese
+ * archivo sí reintenta solo una vez tras renovar el access token en un 401,
+ * pero un fetch manual no pasa por ahí. Mismo fix, aplicado acá.
+ */
+async function fetchWithOwnerRetry(url: string, init: RequestInit): Promise<Response> {
+  const res = await fetch(url, init);
+  if (res.status !== 401) {return res;}
+
+  const refreshed = await tryRefreshOwnerToken();
+  if (!refreshed) {return res;}
+
+  return fetch(url, { ...init, headers: { ...init.headers, ...getCsrfHeader() } });
+}
 
 export interface OwnerProfile {
   fullName: string;
@@ -44,6 +60,10 @@ export interface Apartment {
   address: string | null;
   address_number: string | null;
   cep: string | null;
+  listing_status: 'pending_review' | 'approved' | 'rejected';
+  listing_submitted_at: string | null;
+  listing_reviewed_at: string | null;
+  listing_review_notes: string | null;
 }
 
 export interface OwnerBooking {
@@ -146,6 +166,11 @@ export const ownerApartmentsAPI = {
       data,
     ),
 
+  submitForReview: (id: string) =>
+    api.post<{ success: boolean; data: { id: string; listing_status: string; listing_submitted_at: string }; message: string }>(
+      `/owner/apartments/${id}/submit-for-review`,
+    ),
+
   getPricing: (id: string) =>
     api.get<{ success: boolean; data: { min_price_brl: number | null; max_price_brl: number | null; bot_enabled: boolean; notes: string | null } | null }>(
       `/owner/apartments/${id}/pricing`,
@@ -169,7 +194,7 @@ export const ownerApartmentsAPI = {
       formData.append('altText', altText);
     }
 
-    const res = await fetch(
+    const res = await fetchWithOwnerRetry(
       `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/owner/apartments/${id}/photos`,
       { method: 'POST', body: formData, credentials: 'include', headers: getCsrfHeader() },
     );
@@ -178,6 +203,7 @@ export const ownerApartmentsAPI = {
       throw new APIError(
         responseData?.message || responseData?.error || 'Error al subir la foto',
         res.status,
+        responseData?.code,
       );
     }
     return responseData as { success: boolean; data: { photo: ApartmentPhoto }; message: string };
@@ -228,9 +254,9 @@ export const ownerDocumentsAPI = {
     formData.append('document', file);
     formData.append('docType', docType);
 
-    const res = await fetch(
+    const res = await fetchWithOwnerRetry(
       `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/owner/documents`,
-      { method: 'POST', body: formData, credentials: 'include' },
+      { method: 'POST', body: formData, credentials: 'include', headers: getCsrfHeader() },
     );
     const data = await res.json();
     if (!res.ok) {

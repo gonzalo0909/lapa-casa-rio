@@ -650,11 +650,143 @@ router.put('/rooms/:id/settings', validate(RoomSettingsSchema), async (req, res,
 });
 
 /**
+ * Moderación de anuncios de apartamento (0051_apartment_listing_approval.sql):
+ * el owner sube fotos/descripción/etc. desde /owner/apartments/:id, pero
+ * eso solo queda como borrador (listing_status) -- el público lee de
+ * published_snapshot, que solo se actualiza acá al aprobar. Antes de esto
+ * no había ninguna revisión: lo que el owner cargaba salía en vivo al
+ * instante.
+ */
+
+// GET /admin/apartments/listings?status=pending_review — default: solo
+// pendientes (lo que un admin necesita ver para trabajar); status=all trae
+// todo, útil para auditar aprobados/rechazados.
+router.get('/apartments/listings', async (req, res, next) => {
+  try {
+    const status = typeof req.query.status === 'string' ? req.query.status : 'pending_review';
+    const validStatuses = ['pending_review', 'approved', 'rejected'];
+
+    const { rows: apartments } = await query(
+      `SELECT id, code, name, description, neighborhood, bedrooms, bathrooms, amenities,
+              address, address_number, cep, base_price, owner_id,
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes,
+              (published_snapshot IS NOT NULL) AS was_ever_published
+       FROM room_types
+       WHERE property_type = 'apartment'
+         AND ($1 = 'all' OR listing_status = $1)
+       ORDER BY listing_submitted_at ASC NULLS LAST`,
+      [validStatuses.includes(status) ? status : 'pending_review'],
+    );
+
+    if (apartments.length === 0) {
+      res.status(200).json(ApiResponse.success({ apartments: [] }));
+      return;
+    }
+
+    const { rows: allPhotos } = await query(
+      `SELECT room_type_id, id, image_url, display_order, is_primary, alt_text
+       FROM room_type_photos
+       WHERE room_type_id = ANY($1::uuid[])
+       ORDER BY room_type_id, display_order ASC, created_at ASC`,
+      [apartments.map((a) => a.id)],
+    );
+    const photosByApt = allPhotos.reduce<Record<string, typeof allPhotos>>((acc, p) => {
+      (acc[p.room_type_id] ??= []).push(p);
+      return acc;
+    }, {});
+
+    res.status(200).json(
+      ApiResponse.success({
+        apartments: apartments.map((a) => ({ ...a, photos: photosByApt[a.id] ?? [] })),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+const ListingReviewSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  notes: z.string().optional(),
+});
+
+// PATCH /admin/apartments/:id/listing-review — aprobar publica el
+// contenido en vivo como published_snapshot (lo que ve el público desde
+// ese momento); rechazar deja el snapshot anterior tal cual (si nunca se
+// aprobó, sigue sin aparecer en el sitio).
+router.patch(
+  '/apartments/:id/listing-review',
+  validate(ListingReviewSchema),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { status, notes } = req.body as z.infer<typeof ListingReviewSchema>;
+
+      const { rows: aptRows } = await query(
+        `SELECT id, name, description, neighborhood, bedrooms, bathrooms, amenities,
+                address, address_number, cep
+         FROM room_types WHERE id = $1 AND property_type = 'apartment'`,
+        [id],
+      );
+      if (aptRows.length === 0) {
+        res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+        return;
+      }
+
+      let publishedSnapshot: string | null = null;
+      if (status === 'approved') {
+        const { rows: photoRows } = await query(
+          `SELECT id, image_url, display_order, is_primary, alt_text
+           FROM room_type_photos WHERE room_type_id = $1
+           ORDER BY display_order ASC, created_at ASC`,
+          [id],
+        );
+        const apt = aptRows[0]!;
+        publishedSnapshot = JSON.stringify({
+          name: apt.name,
+          description: apt.description,
+          neighborhood: apt.neighborhood,
+          bedrooms: apt.bedrooms,
+          bathrooms: apt.bathrooms,
+          amenities: apt.amenities,
+          address: apt.address,
+          address_number: apt.address_number,
+          cep: apt.cep,
+          photos: photoRows,
+        });
+      }
+
+      const { rows } = await query(
+        `UPDATE room_types
+         SET listing_status = $1,
+             listing_reviewed_at = now(),
+             listing_review_notes = $2,
+             published_snapshot = COALESCE($3::jsonb, published_snapshot)
+         WHERE id = $4
+         RETURNING id, listing_status, listing_reviewed_at, listing_review_notes`,
+        [status, notes ?? null, publishedSnapshot, id],
+      );
+
+      await auditLogService.log({
+        entity_type: 'room_type',
+        entity_id: id,
+        operation: status === 'approved' ? 'ADMIN_APPROVE_LISTING' : 'ADMIN_REJECT_LISTING',
+        new_data: { status, notes },
+      });
+
+      res.status(200).json(ApiResponse.success(rows[0], 'Anuncio actualizado'));
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
  * GET /admin/pricing — estado actual de rate_plans, para poblar el formulario del panel
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests] =
+    const [ratePlans, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests, apartmentsBookingEnabled] =
       await Promise.all([
         query(
           `SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`,
@@ -666,6 +798,7 @@ router.get('/pricing', async (req, res, next) => {
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'luggage_storage'`),
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'checkin_times'`),
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'max_apt_guests'`),
+        query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'apartments_booking_enabled'`),
       ]);
     res.status(200).json(
       ApiResponse.success({
@@ -681,6 +814,7 @@ router.get('/pricing', async (req, res, next) => {
         },
         checkinTimes: checkinTimes.rows[0]?.value ?? ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'],
         maxAptGuests: maxAptGuests.rows[0]?.value ?? 2,
+        apartmentsBookingEnabled: apartmentsBookingEnabled.rows[0]?.value ?? false,
       }),
     );
   } catch (error) {
@@ -707,11 +841,14 @@ const PricingUpdateSchema = z.object({
     .optional(),
   checkinTimes: z.array(z.string().regex(/^\d{2}:\d{2}$/, 'Formato esperado HH:MM')).min(1).optional(),
   maxAptGuests: z.number().int().min(1).max(20).optional(),
+  // Interruptor general del motor de reservas de apartamentos -- ver
+  // 0052_apartments_booking_enabled_config.sql.
+  apartmentsBookingEnabled: z.boolean().optional(),
 });
 
 router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => {
   try {
-    const { seasonType, multiplier, minNights, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests } =
+    const { seasonType, multiplier, minNights, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests, apartmentsBookingEnabled } =
       req.body as z.infer<typeof PricingUpdateSchema>;
 
     const updated: Record<string, any> = {};
@@ -782,12 +919,20 @@ router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => 
       updated.maxAptGuests = rows[0];
     }
 
+    if (apartmentsBookingEnabled !== undefined) {
+      const { rows } = await query(
+        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'apartments_booking_enabled' RETURNING *`,
+        [JSON.stringify(apartmentsBookingEnabled)],
+      );
+      updated.apartmentsBookingEnabled = rows[0];
+    }
+
     if (Object.keys(updated).length === 0) {
       res
         .status(400)
         .json(
           ApiResponse.error(
-            'Nada para actualizar: seasonType+multiplier/minNights, carnival, cardSurchargePercent, luggageStorage, checkinTimes, o maxAptGuests',
+            'Nada para actualizar: seasonType+multiplier/minNights, carnival, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests, o apartmentsBookingEnabled',
           ),
         );
       return;

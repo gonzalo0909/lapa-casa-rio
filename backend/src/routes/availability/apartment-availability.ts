@@ -71,28 +71,41 @@ export const checkApartmentAvailabilityHandler = async (
     );
 
     // Una sola query: apartamentos + disponibilidad.
-    // available = true si NO existe reserva activa solapada con las fechas.
-    // No se filtra por is_active ni por precio.
+    // available = true si el anuncio está aprobado (listing_status) Y no
+    // existe reserva/bloqueo solapado con las fechas -- un apartamento con
+    // listing_status != 'approved' se sigue mostrando (foto, nombre,
+    // precio) pero queda como "Indisponível" y no seleccionable, mismo
+    // mecanismo que ya usa el frontend para fechas ocupadas (no se oculta
+    // la tarjeta, ver apartment-card.tsx). No se filtra por is_active ni
+    // por precio -- sí por published_snapshot: el contenido del anuncio
+    // (nombre, barrio, dirección, fotos) requiere aprobación de un admin
+    // (0051_apartment_listing_approval.sql); un apartamento sin snapshot
+    // todavía nunca fue aprobado y no aparece acá. Se lee del snapshot, no
+    // de las columnas en vivo, para que una edición pendiente de revisión
+    // no cambie lo que ya se está mostrando.
     const { rows: apartments } = await query<{
-      id: string; code: string; name: string; capacity: number; base_price: string; available: boolean;
-      neighborhood: string | null; external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
-      address: string | null; lat: string | null; lng: string | null;
+      id: string; code: string; capacity: number; base_price: string; available: boolean;
+      external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
+      lat: string | null; lng: string | null;
+      published_snapshot: {
+        name: string; neighborhood: string | null; address: string | null;
+        photos: { id: string; image_url: string; is_primary: boolean; alt_text: string | null }[];
+      };
     }>(
       `SELECT
          rt.id,
          rt.code,
-         rt.name,
          rt.capacity,
          rt.base_price,
-         rt.neighborhood,
          rt.external_rating,
          rt.external_review_count,
          rt.external_rating_label,
-         rt.address,
          rt.lat,
          rt.lng,
+         rt.published_snapshot,
          (
-           NOT EXISTS (
+           rt.listing_status = 'approved'
+           AND NOT EXISTS (
              SELECT 1
              FROM reservation_beds rb
              JOIN beds b ON b.id = rb.bed_id
@@ -109,23 +122,10 @@ export const checkApartmentAvailabilityHandler = async (
            )
          ) AS available
        FROM room_types rt
-       WHERE rt.property_type = 'apartment'
-       ORDER BY rt.name`,
+       WHERE rt.property_type = 'apartment' AND rt.published_snapshot IS NOT NULL
+       ORDER BY rt.published_snapshot->>'name'`,
       [checkIn, checkOut]
     );
-
-    // Fotos de todos los apartamentos en una sola query (evitar N+1)
-    const { rows: allPhotos } = await query<{
-      room_type_id: string; id: string; image_url: string; display_order: number; is_primary: boolean; alt_text: string | null;
-    }>(
-      `SELECT room_type_id, id, image_url, display_order, is_primary, alt_text
-       FROM room_type_photos
-       ORDER BY room_type_id, display_order ASC, created_at ASC`
-    );
-    const photosByApt = allPhotos.reduce<Record<string, typeof allPhotos>>((acc, p) => {
-      (acc[p.room_type_id] ??= []).push(p);
-      return acc;
-    }, {});
 
     // Regla de pago completo (Cláusula 3 Termo de Adesão v2.1):
     // si el check-in es en menos de 48h, no hay tiempo de cobrar el saldo
@@ -138,39 +138,30 @@ export const checkApartmentAvailabilityHandler = async (
     const hoursUntilCheckIn = (checkInAt14hBRT.getTime() - now.getTime()) / (1000 * 60 * 60);
     const fullPaymentRequired = hoursUntilCheckIn < 48;
 
-    // Pricing en batch: todos los apartamentos comparten las mismas fechas y
-    // totalBeds=1. Se hacen 2 queries totales en lugar de 7×N.
-    // Temporadas no aplican a apartamentos (sin precios estacionales configurados).
+    // El "Preço base" que carga el owner es el precio final -- a pedido
+    // explícito, sin multiplicador de temporada ni descuento por reserva
+    // anticipada (esos vienen de calculate_final_price/rate_plans, pensados
+    // para el hostel; antes se llamaban acá igual pese al comentario de que
+    // "temporadas no aplican a apartamentos", así que sí aplicaban -- ver
+    // pricing-service.ts calculateTotalPrice, mismo criterio, es lo que de
+    // verdad cobra create-apartment-booking.ts). Solo depositPercent sigue
+    // viniendo de la función SQL (calculate_deposit), no depende de temporada.
     let depositPercent = 0.3;
     let pricingFailed = false;
     const finalPriceById = new Map<string, number>();
 
-    try {
-      const bookingDate = new Date().toISOString().slice(0, 10);
+    for (const apt of apartments) {
+      finalPriceById.set(apt.id, Math.round((parseFloat(apt.base_price) || 0) * nights * 100) / 100);
+    }
 
-      // 1) Porcentaje de depósito — constante para totalBeds=1
+    try {
       const { rows: depositPctRows } = await query<{ deposit_percent: string }>(
         `SELECT deposit_percent FROM calculate_deposit(100::numeric, 1)`
       );
       depositPercent = parseFloat(depositPctRows[0].deposit_percent);
-
-      // 2) calculate_final_price en batch para todos los apartamentos a la vez
-      if (apartments.length > 0) {
-        const aptIds = apartments.map(a => a.id);
-        const basePrices = apartments.map(a => parseFloat(a.base_price) || 0);
-        const { rows: priceRows } = await query<{ apt_id: string; final_price: string }>(
-          `SELECT t.apt_id,
-                  calculate_final_price(t.base_price::numeric, $1, 1, $2::date, $3::date) AS final_price
-           FROM UNNEST($4::uuid[], $5::numeric[]) AS t(apt_id, base_price)`,
-          [nights, checkIn, bookingDate, aptIds, basePrices]
-        );
-        for (const row of priceRows) {
-          finalPriceById.set(row.apt_id, Math.round(parseFloat(row.final_price) * 100) / 100);
-        }
-      }
     } catch (pricingError) {
       pricingFailed = true;
-      logger.warn('Apartment batch pricing unavailable for date range', {
+      logger.warn('Apartment deposit percent unavailable for date range', {
         checkIn, checkOut, error: pricingError instanceof Error ? pricingError.message : 'Unknown error',
       });
     }
@@ -188,21 +179,21 @@ export const checkApartmentAvailabilityHandler = async (
       return {
         id: apt.id,
         code: apt.code,
-        name: apt.name,
+        name: apt.published_snapshot.name,
         capacity: apt.capacity,
         // El backend confirma explícitamente si el apartamento cabe para la
         // cantidad solicitada, para que el frontend no lo recalcule por su cuenta.
         fitsGuests: apt.capacity >= guestCount,
         basePrice,
         available: apt.available,
-        neighborhood: apt.neighborhood ?? undefined,
-        street: apt.address ?? undefined,
+        neighborhood: apt.published_snapshot.neighborhood ?? undefined,
+        street: apt.published_snapshot.address ?? undefined,
         lat: apt.lat !== null ? parseFloat(apt.lat) : undefined,
         lng: apt.lng !== null ? parseFloat(apt.lng) : undefined,
         externalRating: apt.external_rating !== null ? parseFloat(apt.external_rating) : undefined,
         externalReviewCount: apt.external_review_count ?? undefined,
         externalRatingLabel: apt.external_rating_label ?? undefined,
-        photos: (photosByApt[apt.id] ?? []).map(p => ({
+        photos: (apt.published_snapshot.photos ?? []).map(p => ({
           id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
         })),
         priceTotal: finalPrice,
@@ -211,7 +202,9 @@ export const checkApartmentAvailabilityHandler = async (
         // para que pueda mostrar una explicación clara al huésped.
         fullPaymentRequired,
         fullPaymentReason: fullPaymentRequired ? 'less_than_48h' : null,
-        // true cuando la query de pricing falló — precio es estimativa (base * noches)
+        // true cuando calculate_deposit falló -- priceTotal sigue siendo exacto
+        // (base_price × noches, ya no depende de ninguna query), solo
+        // depositAmount pudo haber usado el 30% por defecto en vez del real.
         pricingFailed: pricingFailed || undefined,
       };
     });

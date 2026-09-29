@@ -62,11 +62,6 @@ const PaymentProcessor = dynamic(
   },
 );
 
-// Motor de reservas de apartamentos temporalmente restringido: la página
-// sigue visible (SEO, hero, notices) pero el wizard de fechas/pago no se
-// muestra. Volver a `true` cuando el flujo esté listo para reabrir.
-const APARTMENTS_BOOKING_ENABLED = false;
-
 export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' }) => {
   const t = useTranslations('apartments');
   const tc = useTranslations('common');
@@ -75,14 +70,22 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Config editable desde /admin/pricing.html ────────────────────────────
+  // ── Config editable desde /admin/apartments.html (pestaña Configuración) ──
   const [checkinTimes, setCheckinTimes] = useState<string[]>(CHECKIN_TIMES);
   const [maxAptGuests, setMaxAptGuests] = useState<number>(MAX_APT_GUESTS);
+  // Interruptor general del motor -- arranca en false (falla cerrado) hasta
+  // que se confirme el valor real desde system_config, para no mostrarle el
+  // wizard a nadie ni una fracción de segundo si el admin lo tiene apagado.
+  const [bookingEnabled, setBookingEnabled] = useState<boolean>(false);
+  const [bookingEnabledLoaded, setBookingEnabledLoaded] = useState(false);
   useEffect(() => {
     availabilityAPI.getApartmentConfig().then((res: any) => {
       if (res?.data?.checkinTimes?.length) { setCheckinTimes(res.data.checkinTimes); }
       if (res?.data?.maxGuests) { setMaxAptGuests(res.data.maxGuests); }
-    }).catch(() => { /* fallback a los valores por defecto */ });
+      setBookingEnabled(Boolean(res?.data?.bookingEnabled));
+    }).catch(() => {
+      /* fallback a los valores por defecto -- bookingEnabled queda en false */
+    }).finally(() => setBookingEnabledLoaded(true));
   }, []);
 
   // ── Paso 1: fechas y huéspedes ───────────────────────────────────────────
@@ -413,7 +416,22 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   ];
 
   // ── Render ───────────────────────────────────────────────────────────────
-  if (!APARTMENTS_BOOKING_ENABLED) {
+  // Mientras se confirma el valor real de system_config, se muestra un
+  // loading corto en vez de "reservas em breve" -- bookingEnabled ya arranca
+  // en false (falla cerrado), pero no hace falta mostrarle ese aviso a un
+  // huésped real si el motor está habilitado y la config tarda 200ms en
+  // llegar.
+  if (!bookingEnabledLoaded) {
+    return (
+      <div className={`${styles.root} ${styles.rootComingSoon}`}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem 0' }}>
+          <LoadingSpinner size="md" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!bookingEnabled) {
     return (
       <div className={`${styles.root} ${styles.rootComingSoon}`}>
         <div className={styles.hero}>

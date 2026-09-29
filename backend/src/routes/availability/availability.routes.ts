@@ -34,9 +34,10 @@ router.get('/apartments', checkApartmentAvailabilityHandler);
  */
 router.get('/apartment-config', async (req, res, next) => {
   try {
-    const [checkinResult, maxGuestsResult] = await Promise.all([
+    const [checkinResult, maxGuestsResult, bookingEnabledResult] = await Promise.all([
       query<{ value: string[] }>(`SELECT value FROM system_config WHERE key = 'checkin_times'`),
       query<{ value: number }>(`SELECT value FROM system_config WHERE key = 'max_apt_guests'`),
+      query<{ value: boolean }>(`SELECT value FROM system_config WHERE key = 'apartments_booking_enabled'`),
     ]);
 
     const checkinTimes: string[] = checkinResult.rows[0]?.value ?? [
@@ -44,8 +45,13 @@ router.get('/apartment-config', async (req, res, next) => {
       '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
     ];
     const maxGuests: number = maxGuestsResult.rows[0]?.value ?? 2;
+    // Sin fila en system_config (falta la migración 0052 todavía, ej. en un
+    // ambiente que no corrió migraciones nuevas), se falla cerrado (false) --
+    // mejor mostrar "reservas em breve" de más que abrir el motor sin haber
+    // sido una decisión explícita de un admin.
+    const bookingEnabled: boolean = bookingEnabledResult.rows[0]?.value ?? false;
 
-    res.status(200).json(ApiResponse.success({ checkinTimes, maxGuests }, 'Apartment config retrieved'));
+    res.status(200).json(ApiResponse.success({ checkinTimes, maxGuests, bookingEnabled }, 'Apartment config retrieved'));
   } catch (error) {
     logger.error('Error getting apartment config', {
       error: error instanceof Error ? error.message : 'Unknown error',

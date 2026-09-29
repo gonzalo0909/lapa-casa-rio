@@ -61,7 +61,114 @@ document.getElementById('rule-holiday').addEventListener('change', (event) => {
   if (!document.getElementById('rule-label').value) {
     document.getElementById('rule-label').value = preset.name;
   }
+  jumpCalendarTo(preset.startDate);
 });
+
+// --- Mini calendario para elegir Desde/Hasta tocando los días ---
+
+const MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const DOW_NAMES = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
+function toDateStr(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function parseDateStr(value) {
+  const [y, m, d] = value.split('-').map(Number);
+  return { y, m: m - 1, d };
+}
+
+const todayStr = (() => {
+  const now = new Date();
+  return toDateStr(now.getFullYear(), now.getMonth(), now.getDate());
+})();
+
+let calMonth = new Date();
+calMonth.setDate(1);
+
+function jumpCalendarTo(dateStr) {
+  const { y, m } = parseDateStr(dateStr);
+  calMonth = new Date(y, m, 1);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-label').textContent =
+    `${MONTH_NAMES[calMonth.getMonth()]} ${calMonth.getFullYear()}`;
+
+  const year = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const startDate = document.getElementById('rule-start').value;
+  const endDate = document.getElementById('rule-end').value;
+
+  let cells = DOW_NAMES.map((d) => `<div class="mini-cal-dow">${d}</div>`).join('');
+
+  for (let i = 0; i < 42; i++) {
+    const dayOffset = i - firstDow;
+    let y = year, m = month, d, muted = false;
+    if (dayOffset < 0) {
+      d = daysInPrevMonth + dayOffset + 1;
+      m = month - 1;
+      if (m < 0) { m = 11; y = year - 1; }
+      muted = true;
+    } else if (dayOffset >= daysInMonth) {
+      d = dayOffset - daysInMonth + 1;
+      m = month + 1;
+      if (m > 11) { m = 0; y = year + 1; }
+      muted = true;
+    } else {
+      d = dayOffset + 1;
+    }
+    const dateStr = toDateStr(y, m, d);
+
+    let cls = 'mini-cal-day';
+    if (muted) cls += ' muted';
+    if (dateStr === todayStr) cls += ' today';
+    if (startDate && endDate && dateStr >= startDate && dateStr <= endDate) cls += ' in-range';
+    if (dateStr === startDate || dateStr === endDate) cls += ' range-edge';
+
+    cells += `<div class="${cls}" data-date="${dateStr}">${d}</div>`;
+  }
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = cells;
+  grid.querySelectorAll('.mini-cal-day').forEach((cell) => {
+    cell.addEventListener('click', () => onCalendarDayClick(cell.dataset.date));
+  });
+}
+
+function onCalendarDayClick(dateStr) {
+  const startInput = document.getElementById('rule-start');
+  const endInput = document.getElementById('rule-end');
+  const start = startInput.value;
+  const end = endInput.value;
+
+  if (!start || (start && end)) {
+    startInput.value = dateStr;
+    endInput.value = '';
+  } else if (dateStr < start) {
+    startInput.value = dateStr;
+  } else {
+    endInput.value = dateStr;
+  }
+  renderCalendar();
+}
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  calMonth.setMonth(calMonth.getMonth() - 1);
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  calMonth.setMonth(calMonth.getMonth() + 1);
+  renderCalendar();
+});
+document.getElementById('rule-start').addEventListener('change', renderCalendar);
+document.getElementById('rule-end').addEventListener('change', renderCalendar);
 
 let currentRules = [];
 
@@ -148,6 +255,7 @@ document.getElementById('rule-form').addEventListener('submit', async (event) =>
     });
     showMsg('rule-msg', 'Regla creada.', 'success');
     document.getElementById('rule-form').reset();
+    renderCalendar();
     loadRules();
   } catch (err) {
     showMsg('rule-msg', err.message, 'error');
@@ -157,3 +265,4 @@ document.getElementById('rule-form').addEventListener('submit', async (event) =>
 loadHolidayPresets();
 loadRoomOptions();
 loadRules();
+renderCalendar();

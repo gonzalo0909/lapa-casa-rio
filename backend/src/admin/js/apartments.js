@@ -46,14 +46,19 @@
           btn.className = 'apt-item';
           btn.dataset.id = apt.id;
           var hasPhotos = apt.photo_count > 0;
+          var statusBadge = apt.listing_status && apt.listing_status !== 'approved'
+            ? '<span class="photo-badge" style="background:#fef3c7;color:#92400e;margin-right:4px">' +
+              (apt.listing_status === 'pending_review' ? 'Pendiente' : 'Rechazado') + '</span>'
+            : '';
           btn.innerHTML =
             '<div>' +
               '<div class="apt-item-name">' + esc(apt.name) + '</div>' +
               '<div class="apt-item-sub">' + esc(apt.code) + ' · ' + apt.capacity + ' huésp.</div>' +
             '</div>' +
+            '<span>' + statusBadge +
             '<span class="photo-badge' + (hasPhotos ? ' has-photos' : '') + '">' +
               apt.photo_count + ' foto' + (apt.photo_count !== 1 ? 's' : '') +
-            '</span>';
+            '</span></span>';
           btn.addEventListener('click', function () { selectApt(apt.id, apt.name); });
           el.appendChild(btn);
         });
@@ -95,8 +100,72 @@
         setVal('r-rating',  apt.external_rating       != null ? apt.external_rating : '');
         setVal('r-count',   apt.external_review_count != null ? apt.external_review_count : '');
         setVal('r-label',   apt.external_rating_label || '');
+        renderListingStatus(apt);
       })
       .catch(function (e) { showMsg('datos-msg', 'Error: ' + e.message, 'error'); });
+  }
+
+  // ── Aprobación del anuncio ────────────────────────────────────────────────
+
+  var LISTING_STATUS_LABEL = {
+    pending_review: 'Pendiente de revisión',
+    approved: 'Aprobado',
+    rejected: 'Rechazado',
+  };
+
+  function renderListingStatus(apt) {
+    var badge = document.getElementById('listing-status-badge');
+    var detail = document.getElementById('listing-status-detail');
+    badge.textContent = LISTING_STATUS_LABEL[apt.listing_status] || apt.listing_status;
+    badge.className = 'photo-badge' + (apt.listing_status === 'approved' ? ' has-photos' : '');
+
+    var detailParts = [];
+    if (apt.listing_review_notes) detailParts.push('Nota: ' + apt.listing_review_notes);
+    detail.textContent = detailParts.join(' · ');
+
+    document.getElementById('listing-approve-btn').disabled = apt.listing_status === 'approved';
+    document.getElementById('listing-reject-notes').style.display = 'none';
+    document.getElementById('listing-reject-notes').value = '';
+  }
+
+  document.getElementById('listing-approve-btn').addEventListener('click', function () {
+    if (!currentId) return;
+    submitListingReview('approved');
+  });
+
+  document.getElementById('listing-reject-btn').addEventListener('click', function () {
+    var notesBox = document.getElementById('listing-reject-notes');
+    if (notesBox.style.display === 'none') {
+      notesBox.style.display = 'block';
+      notesBox.focus();
+      return;
+    }
+    var notes = notesBox.value.trim();
+    if (!notes) {
+      showMsg('datos-msg', 'Escribí el motivo del rechazo', 'error');
+      return;
+    }
+    submitListingReview('rejected', notes);
+  });
+
+  function submitListingReview(status, notes) {
+    var approveBtn = document.getElementById('listing-approve-btn');
+    var rejectBtn = document.getElementById('listing-reject-btn');
+    approveBtn.disabled = true;
+    rejectBtn.disabled = true;
+    apiFetch('/admin/apartments/' + currentId + '/listing-review', {
+      method: 'PATCH',
+      body: JSON.stringify(notes ? { status: status, notes: notes } : { status: status }),
+    })
+      .then(function () {
+        showMsg('datos-msg', status === 'approved' ? '✓ Anuncio aprobado y publicado' : 'Anuncio rechazado', 'success');
+        return loadDatos();
+      })
+      .catch(function (e) { showMsg('datos-msg', e.message, 'error'); })
+      .finally(function () {
+        approveBtn.disabled = false;
+        rejectBtn.disabled = false;
+      });
   }
 
   function renderAmenities() {
@@ -384,12 +453,34 @@
   apiFetch('/admin/pricing').then(function (data) {
     var maxEl = document.getElementById('apt-max-guests');
     var timesEl = document.getElementById('apt-checkin-times');
+    var masterEl = document.getElementById('apt-booking-enabled');
     if (maxEl) maxEl.value = data.maxAptGuests ?? 2;
     if (timesEl) {
       var times = data.checkinTimes ?? ['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
       timesEl.value = times.join('\n');
     }
+    if (masterEl) masterEl.checked = Boolean(data.apartmentsBookingEnabled);
   }).catch(function () {});
+
+  var masterEl = document.getElementById('apt-booking-enabled');
+  if (masterEl) {
+    masterEl.addEventListener('change', function () {
+      var el = document.getElementById('apt-master-msg');
+      var enabled = masterEl.checked;
+      masterEl.disabled = true;
+      apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ apartmentsBookingEnabled: enabled }) })
+        .then(function () {
+          if (el) el.innerHTML = '<div class="msg success">' +
+            (enabled ? '✓ Motor habilitado -- la página ya muestra el buscador real.' : 'Motor deshabilitado -- la página vuelve a mostrar "Reservas em breve".') +
+            '</div>';
+        })
+        .catch(function (err) {
+          masterEl.checked = !enabled; // revertir el checkbox si falló el guardado
+          if (el) el.innerHTML = '<div class="msg error">' + err.message + '</div>';
+        })
+        .finally(function () { masterEl.disabled = false; });
+    });
+  }
 
   var guestsForm = document.getElementById('apt-guests-form');
   if (guestsForm) {

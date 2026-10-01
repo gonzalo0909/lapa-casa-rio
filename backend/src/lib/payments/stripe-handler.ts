@@ -4,6 +4,9 @@ import Stripe from 'stripe';
 import { logger } from '../../utils/logger';
 import { AppError } from '../../middleware/error-handler';
 
+/** El QR de Pix vence a los 5 minutos, igual que el hold de la reserva pendiente. */
+const PIX_EXPIRES_SECONDS = 300;
+
 interface CreatePaymentIntentInput {
   amount: number;
   currency: string;
@@ -88,7 +91,7 @@ export class StripeHandler {
         ...intentParams,
         payment_method_types: ['pix'],
         payment_method_data: { type: 'pix' },
-        payment_method_options: { pix: { expires_after_seconds: 3600 } },
+        payment_method_options: { pix: { expires_after_seconds: PIX_EXPIRES_SECONDS } },
         confirm: true,
       } as unknown as Stripe.PaymentIntentCreateParams;
       const pixIntent = await this.stripe.paymentIntents.create(pixParams);
@@ -168,7 +171,7 @@ export class StripeHandler {
     const session = await this.stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: [method],
-      ...(method === 'pix' ? { payment_method_options: { pix: { expires_after_seconds: 3600 } } } : {}),
+      ...(method === 'pix' ? { payment_method_options: { pix: { expires_after_seconds: PIX_EXPIRES_SECONDS } } } : {}),
       line_items: [{
         price_data: {
           currency: 'brl',

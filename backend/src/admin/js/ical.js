@@ -152,9 +152,16 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
     const ok   = data.successfulFeeds ?? '?';
     const fail = data.failedFeeds ?? 0;
     const imp  = data.totalImported ?? 0;
+    const results = data.results ?? [];
+    const known  = results.reduce((n, r) => n + (r.alreadyKnown ?? 0), 0);
+    const errors = results.flatMap((r) => r.errors ?? []);
+    const detail = errors.length
+      ? `<br><strong>Eventos con error (${errors.length}):</strong><br>` +
+        errors.map((e) => `• ${escapeHtml(e)}`).join('<br>')
+      : '';
     showMsg('sync-msg',
-      `Sync completada — ${ok} feed(s) OK · ${fail} error(es) · ${imp} bloqueo(s) importado(s).`,
-      'success'
+      `Sync completada — ${ok} feed(s) OK · ${fail} fallido(s) · ${imp} importado(s) nuevos · ${known} ya conocidos.${detail}`,
+      errors.length || fail ? 'error' : 'success'
     );
     loadFeeds();
     loadSyncStatus();
@@ -212,7 +219,7 @@ async function loadExportURLs() {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
-loadRoomOptions();
-loadFeeds();
+// Primero las habitaciones: loadFeeds() las usa para mostrar el nombre en vez del id.
+loadRoomOptions().then(loadFeeds);
 loadSyncStatus();
 loadExportURLs();

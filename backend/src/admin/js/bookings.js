@@ -21,12 +21,49 @@ function showMsg(elId, text, type) {
 function propertyTypeCell(b) {
   const label = b.property_type === 'apartment' ? 'Apartamento' : b.property_type === 'hostel' ? 'Hostel' : '—';
   const names = b.unit_names ? escapeHtml(b.unit_names) : '';
-  return names ? `${label}<br><small style="color:#888;">${names}</small>` : label;
+  return names
+    ? `<strong>${names}</strong><br><small style="color:#888;">${label}</small>`
+    : label;
 }
 
 const CHANNEL_LABELS = { direct: 'Directo', booking: 'Booking.com', airbnb: 'Airbnb', hostelworld: 'Hostelworld', expedia: 'Expedia' };
 function channelCell(b) {
-  return escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code || '—');
+  const label = escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code || '—');
+  return b.channel_code && b.channel_code !== 'direct'
+    ? `<span class="badge" style="background:#e6eefc;color:#2c5cc5;">${label}</span>`
+    : label;
+}
+
+function nightsOf(b) {
+  const a = Date.parse(String(b.check_in_date).slice(0, 10));
+  const z = Date.parse(String(b.check_out_date).slice(0, 10));
+  return Math.max(1, Math.round((z - a) / 86400000));
+}
+
+// Las reservas importadas por iCal traen un correo inventado (ota_xxx@booking.import):
+// no se muestra, no es un dato real del huésped.
+function guestCell(b) {
+  if (/\.import$/i.test(b.guest_email || '')) {
+    return `<span style="color:#888;">Sin datos del huésped</span><br><small style="color:#888;">el iCal de ${escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code)} no los incluye</small>`;
+  }
+  return `${escapeHtml(b.guest_name)}<br><small style="color:#888;">${escapeHtml(b.guest_email)}</small>`;
+}
+
+function stayCell(b) {
+  const n = nightsOf(b);
+  const beds = b.property_type === 'apartment' ? '' : ` · ${b.beds_count} cama${b.beds_count === 1 ? '' : 's'}`;
+  return `${fmtDate(b.check_in_date)} → ${fmtDate(b.check_out_date)}<br><small style="color:#888;">${n} noche${n === 1 ? '' : 's'}${beds}</small>`;
+}
+
+function actionsCell(b) {
+  // Una reserva de OTA se gestiona en la OTA: cancelarla acá liberaría fechas que siguen vendidas allá.
+  if (b.channel_code && b.channel_code !== 'direct') {
+    return `<small style="color:#888;">Se gestiona en ${escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code)}</small>`;
+  }
+  return `
+        <button data-action="edit" data-id="${b.id}">Editar</button>
+        <button data-action="resend" data-id="${b.id}">Reenviar email</button>
+        ${b.status !== 'cancelled' ? `<button data-action="cancel" data-id="${b.id}" data-num="${b.reservation_number}" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Cancelar</button>` : ''}`;
 }
 
 function currentFilters() {
@@ -73,22 +110,16 @@ function renderTable() {
   const tbody = document.querySelector('#bookings-table tbody');
   tbody.innerHTML = rows.map(b => `
     <tr>
-      <td>${escapeHtml(b.reservation_number)}</td>
-      <td>${propertyTypeCell(b)}</td>
+      <td style="white-space:nowrap">${escapeHtml(b.reservation_number)}</td>
       <td>${channelCell(b)}</td>
-      <td>${escapeHtml(b.guest_name)}<br><small style="color:#888;">${escapeHtml(b.guest_email)}</small></td>
-      <td>${fmtDate(b.check_in_date)}</td>
-      <td>${fmtDate(b.check_out_date)}</td>
-      <td>${b.beds_count}</td>
+      <td>${propertyTypeCell(b)}</td>
+      <td>${guestCell(b)}</td>
+      <td style="white-space:nowrap">${stayCell(b)}</td>
       <td>${b.channel_code && b.channel_code !== 'direct' ? '<span title="El iCal de la OTA no trae precio" style="color:#888">—</span>' : fmtCurrency(b.final_price)}</td>
       <td><span class="badge ${b.status}">${statusLabel(b.status)}</span></td>
-      <td>
-        <button data-action="edit" data-id="${b.id}">Editar</button>
-        <button data-action="resend" data-id="${b.id}">Reenviar email</button>
-        ${b.status !== 'cancelled' ? `<button data-action="cancel" data-id="${b.id}" data-num="${b.reservation_number}" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Cancelar</button>` : ''}
-      </td>
+      <td>${actionsCell(b)}</td>
     </tr>
-  `).join('') || '<tr><td colspan="10" style="color:#888;">Sin reservas para estos filtros</td></tr>';
+  `).join('') || '<tr><td colspan="8" style="color:#888;">Sin reservas para estos filtros</td></tr>';
 
   tbody.querySelectorAll('button[data-action="edit"]').forEach(btn =>
     btn.addEventListener('click', () => openEdit(btn.dataset.id))
@@ -138,6 +169,11 @@ async function resendConfirmation(id) {
   }
 }
 
+document.getElementById('filter-clear').addEventListener('click', () => {
+  ['filter-q', 'filter-channel', 'filter-status', 'filter-from', 'filter-to'].forEach((id) => { document.getElementById(id).value = ''; });
+  state.page = 1;
+  loadBookings();
+});
 document.getElementById('filter-apply').addEventListener('click', () => { state.page = 1; loadBookings(); });
 document.getElementById('filter-q').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { state.page = 1; loadBookings(); }

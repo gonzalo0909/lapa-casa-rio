@@ -74,18 +74,10 @@ export function useHostelPayment({
     method: PayMethod,
     resId: string,
   ): Promise<{ pixData: { qrCode: string; qrCodeBase64: string } } | { stripeUrl: string } | null> => {
-    if (method === 'pix') {
-      const dep = await paymentAPI.processDeposit(resId, 'mercadopago');
-      const p = dep.data?.payment;
-      if (p?.qrCodeBase64 || p?.qrCode) {
-        return { pixData: { qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' } };
-      }
-      return null;
-    }
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     let ct: string | undefined;
     try { ct = sessionStorage.getItem(`ct_${resId}`) ?? undefined; } catch {}
-    const checkout = await paymentAPI.stripeCheckout(resId, origin, ct);
+    const checkout = await paymentAPI.stripeCheckout(resId, origin, ct, method);
     const url: string | undefined = checkout.data?.url;
     if (url) { window.open(url, '_blank', 'noopener,noreferrer'); return { stripeUrl: url }; }
     return null;

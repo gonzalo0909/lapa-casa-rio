@@ -15,6 +15,13 @@ function showMsg(elId, text, type) {
 
 // ── Habitaciones: caché compartida entre select y renderFeeds ────────────────
 
+// ?type=hostel|apartment: cuando se embebe dentro de Hostel o Apartamentos solo muestra
+// las habitaciones, feeds y URLs de exportación de ese tipo. Sin parámetro, muestra todo.
+const PROPERTY_TYPE = (() => {
+  const t = new URLSearchParams(window.location.search).get('type');
+  return t === 'hostel' || t === 'apartment' ? t : '';
+})();
+
 let roomsCache = []; // [{ id, name }] hostel + apartamentos
 let apartmentsCache = []; // [{ id, name }]
 
@@ -30,7 +37,8 @@ async function loadApartments() {
 async function loadRoomOptions() {
   try {
     const [data] = await Promise.all([apiFetch('/rooms'), loadApartments()]);
-    const hostel = data.rooms ?? [];
+    const hostel = PROPERTY_TYPE === 'apartment' ? [] : (data.rooms ?? []);
+    if (PROPERTY_TYPE === 'hostel') { apartmentsCache = []; }
     roomsCache = [...hostel, ...apartmentsCache];
     const select = document.getElementById('feed-room');
     const opts = (list) => list.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
@@ -52,7 +60,9 @@ function roomName(roomTypeId) {
 async function loadFeeds() {
   try {
     const data = await apiFetch('/ical/feeds');
-    renderFeeds(data.feeds ?? []);
+    let feeds = data.feeds ?? [];
+    if (PROPERTY_TYPE) { feeds = feeds.filter((f) => roomsCache.some((r) => r.id === f.roomTypeId)); }
+    renderFeeds(feeds);
   } catch (err) {
     showMsg('feeds-msg', err.message, 'error');
   }
@@ -178,9 +188,10 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
 async function loadExportURLs() {
   try {
     const data = await apiFetch('/rooms');
-    if (!apartmentsCache.length) { await loadApartments(); }
+    if (PROPERTY_TYPE === 'hostel') { apartmentsCache = []; }
+    else if (!apartmentsCache.length) { await loadApartments(); }
     const rooms = [
-      ...(data.rooms ?? []).map((r) => ({ ...r, exportPath: `/api/v1/ical/export/${r.id}` })),
+      ...(PROPERTY_TYPE === 'apartment' ? [] : (data.rooms ?? [])).map((r) => ({ ...r, exportPath: `/api/v1/ical/export/${r.id}` })),
       ...apartmentsCache.map((a) => ({ ...a, name: `${a.name} (apartamento)`, exportPath: `/api/v1/ical/apartment/export/${a.id}` })),
     ];
     const base = window.location.origin;

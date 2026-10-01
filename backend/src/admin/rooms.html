@@ -17,6 +17,8 @@
     <button class="inner-tab-btn" data-tab="ofertas">Ofertas</button>
     <button class="inner-tab-btn" data-tab="preciosdin">Precios dinámicos</button>
     <button class="inner-tab-btn" data-tab="precios">Precios</button>
+    <button class="inner-tab-btn" data-tab="reservas">Reservas</button>
+    <button class="inner-tab-btn" data-tab="ical">iCal / OTAs</button>
   </div>
 
   <div class="inner-panel active" id="panel-cuartos">
@@ -48,6 +50,14 @@
       <iframe class="embed-frame" src="/admin/pricing.html?embed=1"></iframe>
       <iframe class="embed-frame" src="/admin/special-periods.html?type=hostel&embed=1"></iframe>
     </div>
+  </div>
+
+  <div class="inner-panel" id="panel-reservas">
+    <iframe class="embed-frame" src="/admin/bookings.html?type=hostel&embed=1"></iframe>
+  </div>
+
+  <div class="inner-panel" id="panel-ical">
+    <iframe class="embed-frame" src="/admin/ical.html?type=hostel&embed=1"></iframe>
   </div>
 
 </main>

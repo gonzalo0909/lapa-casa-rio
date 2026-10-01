@@ -153,6 +153,31 @@ async function pickAvailableBedsInRoom(
   return rows.map((r: { bed_id: string }) => r.bed_id);
 }
 
+/** Camas activas sin reserva superpuesta, ignorando bloqueos manuales (room_blocks) y género. Solo para importar reservas de OTA. */
+async function pickBedsIgnoringManualBlocks(
+  client: PoolClient,
+  roomTypeId: string,
+  checkIn: string,
+  checkOut: string,
+  count: number
+): Promise<string[]> {
+  const { rows } = await client.query(
+    `SELECT b.id AS bed_id
+       FROM beds b
+      WHERE b.room_type_id = $1::uuid
+        AND b.is_active
+        AND NOT EXISTS (
+          SELECT 1 FROM reservation_beds rb
+           WHERE rb.bed_id = b.id
+             AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+        )
+      ORDER BY b.bed_code
+      LIMIT $4`,
+    [roomTypeId, checkIn, checkOut, count]
+  );
+  return rows.map((r: { bed_id: string }) => r.bed_id);
+}
+
 async function findBlockingReservation(
   roomTypeId: string,
   checkIn: string,
@@ -237,7 +262,19 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
       );
       if (raceCheck.length > 0) {return { reservationId: raceCheck[0].id, deduplicated: true };}
 
-      const candidateBedIds = await pickAvailableBedsInRoom(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount, gender);
+      let candidateBedIds = await pickAvailableBedsInRoom(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount, gender);
+      if (candidateBedIds.length < bedsCount) {
+        // Una reserva de OTA ya existe en la OTA: es un hecho, no una venta nueva. Un bloqueo manual
+        // (room_blocks, pestaña Bloqueos) solo impide VENDER esas fechas, no debe impedir REGISTRARLAS.
+        // Solo una reserva real superpuesta (reservation_beds) es un conflicto de verdad.
+        candidateBedIds = await pickBedsIgnoringManualBlocks(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount);
+        if (candidateBedIds.length >= bedsCount) {
+          logger.warn('Reserva OTA registrada sobre fechas con bloqueo manual', {
+            roomTypeId: roomType.id, channelCode: channel.code,
+            checkIn: bookingData.checkIn, checkOut: bookingData.checkOut,
+          });
+        }
+      }
       if (candidateBedIds.length < bedsCount) {
         throw new OtaAvailabilityError({ roomTypeId: roomType.id, requested: bedsCount, found: candidateBedIds.length });
       }

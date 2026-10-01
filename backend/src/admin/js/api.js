@@ -120,6 +120,11 @@ function fmtCurrency(value) {
 
 function fmtDate(value) {
   if (!value) return '';
+  // Las fechas de calendario (check-in/check-out) llegan como "2026-10-19" o
+  // "2026-10-19T00:00:00.000Z": se muestran tal cual. Pasarlas por new Date()
+  // en un navegador UTC-3 las corría un día atrás (19/10 se veía 18/10).
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z)?$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   return new Date(value).toLocaleDateString('pt-BR');
 }
 

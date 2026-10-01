@@ -112,7 +112,7 @@
         <tr>
           <th>Nombre</th>
           <th>Email / Tel.</th>
-          <th>Estado</th>
+          <th>Estado / Comisiones</th>
           <th>Verificación</th>
           <th>Apartamentos asignados</th>
           <th></th>
@@ -139,6 +139,22 @@
     <div class="modal-actions">
       <button class="btn-cancel-modal" id="new-owner-cancel">Cancelar</button>
       <button id="new-owner-confirm">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal comisiones ──────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="rates-modal" style="display:none">
+  <div class="modal-box">
+    <h3 id="rates-modal-title">Comisiones</h3>
+    <div id="rates-modal-msg"></div>
+    <label>Comisión de Lapa Casa (%)</label>
+    <input type="number" step="0.01" min="0" max="100" id="rates-commission">
+    <label>Tasa de payout al transferirle (%)</label>
+    <input type="number" step="0.01" min="0" max="100" id="rates-payout">
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" id="rates-cancel">Cancelar</button>
+      <button id="rates-save">Guardar</button>
     </div>
   </div>
 </div>

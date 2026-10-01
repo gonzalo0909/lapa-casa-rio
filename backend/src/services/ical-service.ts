@@ -383,7 +383,10 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
 
     for (const event of events) {
       if (event.isOwn) { skippedOwn++; continue; }
-      if (event.isBlocked) {continue;}
+      // Booking.com exporta sus reservas como "CLOSED - Not available" y Airbnb como
+      // "Reserved": el parser las marca isBlocked, pero SON las fechas ocupadas y hay
+      // que importarlas para bloquear disponibilidad (antes se descartaban y no
+      // entraba ninguna reserva de OTA). Sin nombre real: se etiqueta con el canal.
 
       if (event.isCancelled) {
         await channelService.handleChannelCancellation(event.uid, feed.channelId);
@@ -397,7 +400,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
           {
             externalReservationId: event.uid,
             roomTypeId: feed.roomTypeId,
-            guestName: event.guestName,
+            guestName: event.isBlocked ? `${feed.channelCode} (iCal)` : event.guestName,
             checkIn: event.checkIn,
             checkOut: event.checkOut,
             bedsCount: 1,

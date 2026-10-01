@@ -22,12 +22,18 @@ interface CreatePaymentIntentInput {
    * Stripe lo retiene en la cuenta de la plataforma y transfiere el resto al admin.
    */
   applicationFeeAmountCents?: number;
+  /** 'card' (default) o 'pix'. Pix se confirma en el servidor y devuelve el QR para mostrarlo en la página. */
+  paymentMethod?: 'card' | 'pix';
 }
 
 interface PaymentIntentResult {
   paymentIntentId: string;
   clientSecret: string;
   url?: string;
+  /** Solo Pix: código copia-y-pega, QR en base64 PNG y vencimiento. */
+  qrCode?: string;
+  qrCodeBase64?: string;
+  expiresAt?: Date;
 }
 
 interface RefundInput {
@@ -74,6 +80,40 @@ export class StripeHandler {
       if (data.applicationFeeAmountCents !== undefined) {
         intentParams.application_fee_amount = data.applicationFeeAmountCents;
       }
+    }
+
+    if (data.paymentMethod === 'pix') {
+      // Los tipos de stripe-node 14 no incluyen Pix: se arma el payload con cast.
+      const pixParams = {
+        ...intentParams,
+        payment_method_types: ['pix'],
+        payment_method_data: { type: 'pix' },
+        payment_method_options: { pix: { expires_after_seconds: 3600 } },
+        confirm: true,
+      } as unknown as Stripe.PaymentIntentCreateParams;
+      const pixIntent = await this.stripe.paymentIntents.create(pixParams);
+      const qr = (pixIntent.next_action as any)?.pix_display_qr_code as
+        | { data?: string; image_url_png?: string; expires_at?: number }
+        | undefined;
+      if (!qr?.data) {
+        throw new AppError('Stripe no devolvió el código PIX', 502);
+      }
+      let qrCodeBase64: string | undefined;
+      if (qr.image_url_png) {
+        try {
+          const img = await fetch(qr.image_url_png);
+          if (img.ok) { qrCodeBase64 = Buffer.from(await img.arrayBuffer()).toString('base64'); }
+        } catch (err: any) {
+          logger.warn('No se pudo descargar el QR PIX de Stripe, se usa solo el código copia-y-pega', { error: err.message });
+        }
+      }
+      return {
+        paymentIntentId: pixIntent.id,
+        clientSecret: pixIntent.client_secret!,
+        qrCode: qr.data,
+        qrCodeBase64,
+        expiresAt: qr.expires_at ? new Date(qr.expires_at * 1000) : undefined,
+      };
     }
 
     const intent = await this.stripe.paymentIntents.create(intentParams);

@@ -327,12 +327,27 @@ export class PaymentService {
         });
         break;
       }
-      case 'payment_intent.payment_failed': {
+      case 'payment_intent.payment_failed':
+      case 'payment_intent.canceled': {
+        // Incluye el vencimiento del QR de Pix. La reserva pendiente se libera sola
+        // por el cleanup (sp_cleanup_expired_pending), acá solo se cierra el pago.
         const pi = event.data.object as Stripe.PaymentIntent;
         const payment = await this.paymentRepo.findByProviderPaymentId(pi.id);
-        if (payment) {
-          await this.paymentRepo.markFailed(payment.id, pi.last_payment_error?.message);
+        if (payment && payment.status !== 'succeeded') {
+          await this.paymentRepo.markFailed(
+            payment.id,
+            pi.last_payment_error?.message ?? (event.type === 'payment_intent.canceled' ? 'Pago cancelado o vencido' : undefined)
+          );
         }
+        break;
+      }
+      case 'checkout.session.async_payment_failed':
+      case 'checkout.session.expired': {
+        const cs = event.data.object as Stripe.Checkout.Session;
+        // El slot de pago grupal se libera por el timer de 30 min (cancelExpiredSessions).
+        logger.warn('Checkout de Stripe no completado', {
+          type: event.type, sessionId: cs.id, reservationId: cs.metadata?.reservationId, memberId: cs.metadata?.member_id,
+        });
         break;
       }
     }

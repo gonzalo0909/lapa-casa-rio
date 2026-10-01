@@ -467,7 +467,8 @@ export const paymentAPI = {
     provider: 'stripe' | 'mercadopago',
     installments?: number,
     confirmationToken?: string,
-  ) => api.post('/payments/apartments/deposit', { reservationId, provider, installments, confirmationToken }),
+    paymentMethod?: 'card' | 'pix',
+  ) => api.post('/payments/apartments/deposit', { reservationId, provider, installments, confirmationToken, paymentMethod }),
 
   /**
    * Get payment status — requires reservationId + confirmationToken to prove ownership.

@@ -19,6 +19,8 @@ async function getCardSurchargePercent(): Promise<number> {
 interface ApartmentProcessDepositRequest {
   reservationId: string;
   provider: 'stripe' | 'mercadopago';
+  /** Con provider 'stripe': 'pix' devuelve QR de Pix (sin recargo); 'card' (default) usa tarjeta. */
+  paymentMethod?: 'card' | 'pix';
   installments?: number;
 }
 
@@ -29,6 +31,7 @@ export const apartmentProcessDepositHandler = async (
 ): Promise<void> => {
   try {
     const { reservationId, provider, installments = 1 } = req.body;
+    const paymentMethod = provider === 'stripe' && req.body.paymentMethod === 'pix' ? 'pix' : undefined;
 
     logger.info('Procesando depósito apartamento', { reservationId, provider });
 
@@ -68,7 +71,7 @@ export const apartmentProcessDepositHandler = async (
     const depositAmount = Number(booking.deposit_amount);
     const depositPercentage = Number(booking.deposit_percent ?? 0.30);
 
-    const cardSurchargePercent = provider === 'stripe' ? await getCardSurchargePercent() : 0;
+    const cardSurchargePercent = provider === 'stripe' && paymentMethod !== 'pix' ? await getCardSurchargePercent() : 0;
     const chargedAmount = Math.round(depositAmount * (1 + cardSurchargePercent / 100) * 100) / 100;
 
     const appUrl = process.env.APP_URL ?? 'https://api.lapacasario.com';
@@ -89,6 +92,7 @@ export const apartmentProcessDepositHandler = async (
       guest_email: booking.guest?.email ?? '',
       payment_type: 'deposit',
       provider,
+      payment_method: paymentMethod,
       installments,
       notificationUrl,
     });

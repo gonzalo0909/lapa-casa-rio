@@ -99,9 +99,13 @@ export class PaymentService {
         customerEmail: data.guest_email,
         description: `${data.payment_type === 'deposit' ? 'Deposit' : 'Remaining'} - Booking ${reservation.reservation_number}`,
         metadata: { reservation_id: data.reservation_id, payment_type: data.payment_type },
+        paymentMethod: preferredMethod === 'pix' ? 'pix' : 'card',
       });
       providerPaymentId = result.paymentIntentId;
       stripeClientSecret = result.clientSecret;
+      if (preferredMethod === 'pix') {
+        pixDetails = { qr_code: result.qrCode, qr_code_base64: result.qrCodeBase64, expires_at: result.expiresAt };
+      }
     }
 
     const payment = await this.paymentRepo.create({

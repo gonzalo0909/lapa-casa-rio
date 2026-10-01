@@ -55,8 +55,7 @@ export async function releaseHeldDeposit(
             ao.onboarding_status, ao.payout_fee_rate
        FROM reservations r
        JOIN reservation_beds rb ON rb.reservation_id = r.id
-       JOIN beds b ON b.id = rb.bed_id
-       JOIN room_types rt ON rt.id = b.room_type_id
+       JOIN room_types rt ON rt.id = rb.room_type_id
        LEFT JOIN apartment_owners ao ON ao.id = rt.owner_id
       WHERE r.id = $1 AND rt.property_type = 'apartment'
       LIMIT 1`,
@@ -182,8 +181,7 @@ export async function releaseDueOwnerPayouts(): Promise<{ released: number; skip
     `SELECT DISTINCT r.id
        FROM reservations r
        JOIN reservation_beds rb ON rb.reservation_id = r.id
-       JOIN beds b ON b.id = rb.bed_id
-       JOIN room_types rt ON rt.id = b.room_type_id
+       JOIN room_types rt ON rt.id = rb.room_type_id
        JOIN apartment_owners ao ON ao.id = rt.owner_id
       WHERE rt.property_type = 'apartment'
         AND r.status IN ('completed', 'no_show')

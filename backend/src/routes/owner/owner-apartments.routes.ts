@@ -681,8 +681,7 @@ router.post('/:id/blocks', validate(CreateBlockSchema), async (req, res, next) =
        FROM reservations r
        JOIN guests g ON g.id = r.guest_id
        JOIN reservation_beds rb ON rb.reservation_id = r.id
-       JOIN beds b ON b.id = rb.bed_id
-       WHERE b.room_type_id = $1 AND r.status IN ('confirmed', 'pending_payment')
+       WHERE rb.room_type_id = $1 AND r.status IN ('confirmed', 'pending_payment')
          AND rb.check_in < $3 AND rb.check_out > $2`,
       [req.params.id, start_date, end_date],
     );
@@ -774,8 +773,7 @@ router.get('/:id/bookings', async (req, res, next) => {
          bool_or(ot.status = 'pending')                                                                    AS transfer_pending
        FROM reservations r
        JOIN guests          g  ON g.id  = r.guest_id
-       JOIN reservation_beds rb ON rb.reservation_id = r.id
-       JOIN beds             b  ON b.id = rb.bed_id AND b.room_type_id = $1
+       JOIN reservation_beds rb ON rb.reservation_id = r.id AND rb.room_type_id = $1
        LEFT JOIN payments       p  ON p.reservation_id = r.id
        LEFT JOIN owner_transfers ot ON ot.reservation_id = r.id
        GROUP BY r.id, g.full_name

@@ -25,11 +25,4 @@ INSERT INTO room_types (code, name, capacity, default_gender, is_flexible, base_
   ('apt-10', 'Flat Cinelândia',      2, 'mixed', false, 270.00, 'apartment')
 ON CONFLICT (code) DO NOTHING;
 
--- 1 cama = 1 unidad de apartamento completa. bed_code globalmente unico
--- (VARCHAR(10)); los codigos de dormitorios existentes no usan el
--- prefijo APT-, no hay colision posible.
-INSERT INTO beds (room_type_id, bed_code)
-SELECT rt.id, 'APT-' || RIGHT(rt.code, 2)
-FROM room_types rt
-WHERE rt.property_type = 'apartment'
-ON CONFLICT (bed_code) DO NOTHING;
+-- Los apartamentos se reservan como unidad completa: no tienen camas (migracion 0058).

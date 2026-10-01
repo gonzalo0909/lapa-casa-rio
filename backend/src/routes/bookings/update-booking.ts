@@ -94,11 +94,10 @@ export const updateBookingHandler = async (
       let roomsForPricing = updates.rooms;
       if (!roomsForPricing) {
         const { rows: currentBedRows } = await query<{ room_type_id: string; bed_count: number }>(
-          `SELECT b.room_type_id, COUNT(*)::int AS bed_count
+          `SELECT rb.room_type_id, COUNT(*)::int AS bed_count
            FROM reservation_beds rb
-           JOIN beds b ON b.id = rb.bed_id
            WHERE rb.reservation_id = $1
-           GROUP BY b.room_type_id`,
+           GROUP BY rb.room_type_id`,
           [id]
         );
         roomsForPricing = currentBedRows.map(r => ({ roomId: r.room_type_id, bedsCount: r.bed_count }));

@@ -199,6 +199,40 @@ export class AvailabilityService {
   async getDailyOccupancy(from: string, to: string, roomTypeId?: string): Promise<Array<{
     date: string; occupied: number; available: number; total: number;
   }>> {
+    // Apartamento: unidad completa sin camas -> total 1, ocupado 0/1 por dia
+    // (reserva activa o bloqueo manual).
+    if (roomTypeId) {
+      const { rows: typeRows } = await query<{ property_type: string }>(
+        `SELECT property_type FROM room_types WHERE id = $1`,
+        [roomTypeId],
+      );
+      if (typeRows[0]?.property_type === 'apartment') {
+        const { rows: unitRows } = await query<{ date: string; occupied: number }>(
+          `SELECT d.date::text AS date,
+                  (EXISTS (
+                     SELECT 1 FROM reservation_beds rb
+                     JOIN reservations res ON res.id = rb.reservation_id
+                     WHERE rb.room_type_id = $3::uuid
+                       AND res.status != 'cancelled'
+                       AND daterange(rb.check_in, rb.check_out, '[)') @> d.date
+                   ) OR EXISTS (
+                     SELECT 1 FROM room_blocks rbl
+                     WHERE rbl.room_type_id = $3::uuid
+                       AND daterange(rbl.start_date, rbl.end_date, '[)') @> d.date
+                   ))::int AS occupied
+           FROM generate_series($1::date, $2::date - 1, '1 day') AS g(day)
+           CROSS JOIN LATERAL (SELECT g.day::date AS date) d
+           ORDER BY d.date`,
+          [from, to, roomTypeId],
+        );
+        return unitRows.map((r) => ({
+          date: r.date,
+          occupied: Number(r.occupied),
+          total: 1,
+          available: 1 - Number(r.occupied),
+        }));
+      }
+    }
     const { rows } = await query(
       `WITH dates AS (
          SELECT generate_series($1::date, $2::date - 1, '1 day')::date AS date

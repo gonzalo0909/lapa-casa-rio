@@ -7,6 +7,7 @@ import { query, withTransaction } from '../config/database';
 import { GuestRepository } from '../database/repositories/guest-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
 import { acquireLock } from '../database/lock-middleware';
+import { insertUnitBlock, isApartmentRoomType, isUnitOccupied } from './apartment-unit';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
 import redisClient from '../cache/redis-client';
 import { logger } from '../utils/logger';
@@ -107,10 +108,8 @@ interface CreateBookingInput {
  * pero siguen siendo candidatas nomás: la verificación real bajo lock en
  * createBooking() es la que decide si de verdad siguen libres.
  *
- * Para apartamentos se usa una query directa (NOT EXISTS) en vez de
- * check_availability(), porque esa función filtra por is_gender_eligible
- * basándose en el gender de la habitación -- un apartamento puede tener
- * default_gender != 'mixed', lo que devuelve 0 resultados aunque esté libre.
+ * Solo habitaciones del hostel: los apartamentos no tienen camas y se
+ * bloquean como unidad completa (ver apartment-unit.ts).
  */
 const pickAvailableBedsInRoom = async (
   client: PoolClient,
@@ -121,32 +120,6 @@ const pickAvailableBedsInRoom = async (
   hostelBedsCount?: number,
   preferredBedIds: string[] = [],
 ): Promise<string[]> => {
-  const { rows: typeRows } = await client.query<{ property_type: string }>(
-    `SELECT property_type FROM room_types WHERE id = $1`,
-    [roomTypeId],
-  );
-  const isApartment = typeRows[0]?.property_type === 'apartment';
-
-  if (isApartment) {
-    // Apartamentos: unidad completa — siempre 1 cama, sin filtro de género.
-    const { rows } = await client.query<{ bed_id: string }>(
-      `SELECT b.id AS bed_id
-       FROM beds b
-       WHERE b.room_type_id = $1
-         AND NOT EXISTS (
-           SELECT 1
-           FROM reservation_beds rb
-           JOIN reservations res ON res.id = rb.reservation_id
-           WHERE rb.bed_id = b.id
-             AND res.status != 'cancelled'
-             AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
-         )
-       LIMIT 1`,
-      [roomTypeId, checkIn, checkOut],
-    );
-    return rows.map((r) => r.bed_id);
-  }
-
   // Habitaciones del hostel: usar check_availability() con filtro de género.
   const count = hostelBedsCount ?? 1;
   const { rows } = await client.query<{ bed_id: string }>(
@@ -188,7 +161,15 @@ export class BookingService {
       // 1) Elegir camas candidatas por habitacion (sin lock todavia)
       const guestGender = data.guestGender ?? 'mixed';
       const candidateBedIds: string[] = [];
+      const unitRoomIds: string[] = [];
       for (const room of data.rooms) {
+        if (await isApartmentRoomType(client, room.roomId)) {
+          if (await isUnitOccupied(client, room.roomId, data.checkIn, data.checkOut)) {
+            throw new InsufficientAvailabilityError({ roomId: room.roomId, requested: 1, found: 0 });
+          }
+          unitRoomIds.push(room.roomId);
+          continue;
+        }
         const beds = await pickAvailableBedsInRoom(
           client,
           room.roomId,
@@ -210,7 +191,7 @@ export class BookingService {
       }
 
       // 2) Adquirir advisory locks de esas camas especificas, DENTRO de esta transaccion
-      await acquireLock(client, candidateBedIds);
+      await acquireLock(client, [...candidateBedIds, ...unitRoomIds]);
 
       // 3) Re-verificar bajo lock: otra transaccion pudo haber tomado alguna mientras esperabamos.
       // Se filtra status != 'cancelled' para mantener consistencia con pickAvailableBedsInRoom —
@@ -228,6 +209,11 @@ export class BookingService {
         throw new InsufficientAvailabilityError({
           conflictingBeds: stillOccupied.map((r: any) => r.bed_id),
         });
+      }
+      for (const roomId of unitRoomIds) {
+        if (await isUnitOccupied(client, roomId, data.checkIn, data.checkOut)) {
+          throw new InsufficientAvailabilityError({ roomId, requested: 1, found: 0 });
+        }
       }
 
       // 4) early_bird_discount real, via SQL (el resto del precio ya vino de pricingService)
@@ -292,6 +278,9 @@ export class BookingService {
            FROM unnest($2::uuid[]) AS bed_id`,
           [reservation.id, candidateBedIds, data.checkIn, data.checkOut],
         );
+        for (const roomId of unitRoomIds) {
+          await insertUnitBlock(client, reservation.id, roomId, data.checkIn, data.checkOut);
+        }
 
         if (data.appliedOfferCode) {
           // Lock the offer row para serializar requests concurrentes (fix race condition #3).
@@ -472,8 +461,17 @@ export class BookingService {
       await client.query(`DELETE FROM reservation_beds WHERE reservation_id = $1`, [id]);
 
       const candidateBedIds: string[] = [];
+      const unitRoomIds: string[] = [];
       let totalBeds = 0;
       for (const room of params.rooms) {
+        if (await isApartmentRoomType(client, room.roomId)) {
+          if (await isUnitOccupied(client, room.roomId, params.checkIn, params.checkOut)) {
+            throw new InsufficientAvailabilityError({ roomId: room.roomId, requested: 1, found: 0 });
+          }
+          unitRoomIds.push(room.roomId);
+          totalBeds += 1;
+          continue;
+        }
         const beds = await pickAvailableBedsInRoom(
           client, room.roomId, params.checkIn, params.checkOut, params.guestGender, room.bedsCount,
         );
@@ -486,7 +484,7 @@ export class BookingService {
         totalBeds += room.bedsCount;
       }
 
-      await acquireLock(client, candidateBedIds);
+      await acquireLock(client, [...candidateBedIds, ...unitRoomIds]);
 
       const { rows: stillOccupied } = await client.query(
         `SELECT rb.bed_id
@@ -502,6 +500,11 @@ export class BookingService {
           conflictingBeds: stillOccupied.map((r: any) => r.bed_id),
         });
       }
+      for (const roomId of unitRoomIds) {
+        if (await isUnitOccupied(client, roomId, params.checkIn, params.checkOut)) {
+          throw new InsufficientAvailabilityError({ roomId, requested: 1, found: 0 });
+        }
+      }
 
       try {
         await client.query(
@@ -510,6 +513,9 @@ export class BookingService {
            FROM unnest($2::uuid[]) AS bed_id`,
           [id, candidateBedIds, params.checkIn, params.checkOut],
         );
+        for (const roomId of unitRoomIds) {
+          await insertUnitBlock(client, id, roomId, params.checkIn, params.checkOut);
+        }
       } catch (error) {
         if (isOverbookingError(error)) {
           throw new InsufficientAvailabilityError({ reason: 'overbooking_detected_at_insert' });

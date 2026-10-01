@@ -231,8 +231,7 @@ export class PaymentService {
         const { rows: aptRows } = await query<{ count: string }>(
           `SELECT COUNT(*) AS count
            FROM reservation_beds rb
-           JOIN beds b ON b.id = rb.bed_id
-           JOIN room_types rt ON rt.id = b.room_type_id
+           JOIN room_types rt ON rt.id = rb.room_type_id
            WHERE rb.reservation_id = $1 AND rt.property_type = 'apartment'`,
           [bookingWithGuest.id]
         );

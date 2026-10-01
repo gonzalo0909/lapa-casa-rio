@@ -17,8 +17,15 @@ function propertyTypeCell(b) {
   return names ? `${label}<br><small style="color:#888;">${names}</small>` : label;
 }
 
+const CHANNEL_LABELS = { direct: 'Directo', booking: 'Booking.com', airbnb: 'Airbnb', hostelworld: 'Hostelworld', expedia: 'Expedia' };
+function channelCell(b) {
+  return escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code || '—');
+}
+
 function currentFilters() {
   return {
+    q: document.getElementById('filter-q').value.trim(),
+    channel: document.getElementById('filter-channel').value,
     status: document.getElementById('filter-status').value,
     from: document.getElementById('filter-from').value,
     to: document.getElementById('filter-to').value
@@ -29,6 +36,8 @@ async function loadBookings() {
   try {
     const f = currentFilters();
     const params = new URLSearchParams({ page: state.page, limit: state.limit });
+    if (f.q) params.set('q', f.q);
+    if (f.channel) params.set('channel', f.channel);
     if (f.status) params.set('status', f.status);
     if (f.from) params.set('from', f.from);
     if (f.to) params.set('to', f.to);
@@ -58,11 +67,12 @@ function renderTable() {
     <tr>
       <td>${escapeHtml(b.reservation_number)}</td>
       <td>${propertyTypeCell(b)}</td>
+      <td>${channelCell(b)}</td>
       <td>${escapeHtml(b.guest_name)}<br><small style="color:#888;">${escapeHtml(b.guest_email)}</small></td>
       <td>${fmtDate(b.check_in_date)}</td>
       <td>${fmtDate(b.check_out_date)}</td>
       <td>${b.beds_count}</td>
-      <td>${fmtCurrency(b.final_price)}</td>
+      <td>${b.channel_code && b.channel_code !== 'direct' ? '<span title="El iCal de la OTA no trae precio" style="color:#888">—</span>' : fmtCurrency(b.final_price)}</td>
       <td><span class="badge ${b.status}">${statusLabel(b.status)}</span></td>
       <td>
         <button data-action="edit" data-id="${b.id}">Editar</button>
@@ -70,7 +80,7 @@ function renderTable() {
         ${b.status !== 'cancelled' ? `<button data-action="cancel" data-id="${b.id}" data-num="${b.reservation_number}" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Cancelar</button>` : ''}
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="9" style="color:#888;">Sin reservas para estos filtros</td></tr>';
+  `).join('') || '<tr><td colspan="10" style="color:#888;">Sin reservas para estos filtros</td></tr>';
 
   tbody.querySelectorAll('button[data-action="edit"]').forEach(btn =>
     btn.addEventListener('click', () => openEdit(btn.dataset.id))
@@ -121,6 +131,9 @@ async function resendConfirmation(id) {
 }
 
 document.getElementById('filter-apply').addEventListener('click', () => { state.page = 1; loadBookings(); });
+document.getElementById('filter-q').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { state.page = 1; loadBookings(); }
+});
 
 document.getElementById('export-csv-btn').addEventListener('click', () => {
   const f = currentFilters();

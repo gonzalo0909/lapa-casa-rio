@@ -9,7 +9,9 @@ import { registerCleanupScheduler } from '../queues/cleanup.queue';
 import { registerFlexibleConversionScheduler } from '../queues/flexible-conversion.queue';
 import { registerOtaSyncScheduler } from '../queues/ota-sync.queue';
 import { registerMonitoringAlertsScheduler } from '../queues/monitoring-alerts.queue';
+import { registerOwnerPayoutScheduler } from '../queues/owner-payout.queue';
 import { startCleanupWorker } from './cleanup.worker';
+import { startOwnerPayoutWorker } from './owner-payout.worker';
 import { startFlexibleConversionWorker } from './flexible-conversion.worker';
 import { startRemainingPaymentWorker } from './remaining-payment.worker';
 import { startRemainingPaymentRetriesWorker } from './remaining-payment-retries.worker';
@@ -27,6 +29,7 @@ async function main(): Promise<void> {
 
   const workers = [
     startCleanupWorker(),
+    startOwnerPayoutWorker(),
     startFlexibleConversionWorker(),
     startRemainingPaymentWorker(),
     startRemainingPaymentRetriesWorker(),
@@ -39,6 +42,7 @@ async function main(): Promise<void> {
   // Los repeatable jobs son idempotentes (upsertJobScheduler con id fijo) --
   // seguro registrarlos en cada arranque del proceso de workers.
   await registerCleanupScheduler();
+  await registerOwnerPayoutScheduler();
   await registerFlexibleConversionScheduler();
   await registerOtaSyncScheduler();
   await registerMonitoringAlertsScheduler();

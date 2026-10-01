@@ -147,7 +147,7 @@ router.get('/dashboard', async (req, res, next) => {
  */
 router.get('/bookings', async (req, res, next) => {
   try {
-    const { status, from, to, channel, page, limit } = req.query as Record<string, string>;
+    const { status, from, to, channel, q, page, limit } = req.query as Record<string, string>;
 
     const conditions: string[] = [];
     const params: any[] = [];
@@ -166,6 +166,13 @@ router.get('/bookings', async (req, res, next) => {
     if (channel) {
       params.push(channel);
       conditions.push(`c.code = $${params.length}`);
+    }
+    if (q && q.trim()) {
+      // Búsqueda libre por huésped, email o número de reserva.
+      params.push(`%${q.trim().replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`);
+      conditions.push(
+        `(g.full_name ILIKE $${params.length} OR g.email ILIKE $${params.length} OR r.reservation_number ILIKE $${params.length})`,
+      );
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -200,7 +207,7 @@ router.get('/bookings', async (req, res, next) => {
         params,
       ),
       query(
-        `SELECT COUNT(*)::int AS total FROM reservations r JOIN channels c ON c.id = r.channel_id ${where}`,
+        `SELECT COUNT(*)::int AS total FROM reservations r JOIN guests g ON g.id = r.guest_id JOIN channels c ON c.id = r.channel_id ${where}`,
         params,
       ),
     ]);

@@ -124,7 +124,8 @@ export class StripeHandler {
     const amountCents = Math.round(data.amount * 100);
     const session = await this.stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'pix'],
+      payment_method_options: { pix: { expires_after_seconds: 3600 } },
       line_items: [{
         price_data: {
           currency: 'brl',

@@ -342,9 +342,12 @@ export class PaymentService {
 
   async handleStripeWebhook(event: Stripe.Event): Promise<void> {
     switch (event.type) {
-      case 'checkout.session.completed': {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded': {
         // Pago grupal: el checkout de Stripe lleva member_id y group_session_id en metadata
         const cs = event.data.object as Stripe.Checkout.Session;
+        // Pix/métodos asíncronos: no confirmar hasta que el pago esté efectivamente cobrado
+        if (cs.payment_status !== 'paid') { break; }
         const memberId = cs.metadata?.member_id;
         const groupSessionId = cs.metadata?.group_session_id;
         if (memberId && groupSessionId) {

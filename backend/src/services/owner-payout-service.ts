@@ -12,9 +12,13 @@ import { stripeConnectHandler } from '../lib/payments/stripe-connect';
 import { auditLogService } from './audit-log-service';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
+import { emailService } from './email-service';
 
 /** Horas de espera después del check-out antes de pagar al administrador. */
 const DEFAULT_HOLD_HOURS = 48;
+
+/** Intentos fallidos de transferencia por reserva antes de dejar de reintentar y alertar. */
+const MAX_PAYOUT_ATTEMPTS = 5;
 
 export interface ReleaseResult {
   transferId: string;
@@ -111,12 +115,21 @@ export async function releaseHeldDeposit(
     throw new AppError('El depósito retenido ya fue liberado (o está en proceso) para esta reserva', 409);
   }
 
-  const { rows: tr } = await query(
-    `INSERT INTO owner_transfers (reservation_id, owner_id, amount, currency, transfer_kind, status)
-     VALUES ($1, $2, $3, 'BRL', 'held_25', 'pending') RETURNING id`,
-    [reservationId, r.owner_id, adminNetAmount]
-  );
-  const transferRecordId: string = tr[0].id;
+  let transferRecordId: string;
+  try {
+    const { rows: tr } = await query(
+      `INSERT INTO owner_transfers (reservation_id, owner_id, amount, currency, transfer_kind, status)
+       VALUES ($1, $2, $3, 'BRL', 'held_25', 'pending') RETURNING id`,
+      [reservationId, r.owner_id, adminNetAmount]
+    );
+    transferRecordId = tr[0].id;
+  } catch (err: any) {
+    // 23505 = índice único uq_owner_transfers_held25_live: otro proceso ya tomó esta reserva
+    if (err?.code === '23505') {
+      throw new AppError('El depósito retenido ya fue liberado (o está en proceso) para esta reserva', 409);
+    }
+    throw err;
+  }
 
   let stripeTransferId: string;
   try {
@@ -182,8 +195,12 @@ export async function releaseDueOwnerPayouts(): Promise<{ released: number; skip
            WHERE ot.reservation_id = r.id AND ot.transfer_kind = 'held_25'
              AND ot.status IN ('succeeded', 'pending')
         )
+        AND (
+          SELECT COUNT(*) FROM owner_transfers ot
+           WHERE ot.reservation_id = r.id AND ot.transfer_kind = 'held_25' AND ot.status = 'failed'
+        ) < $2
       LIMIT 100`,
-    [holdHours]
+    [holdHours, MAX_PAYOUT_ATTEMPTS]
   );
 
   let released = 0;
@@ -195,7 +212,29 @@ export async function releaseDueOwnerPayouts(): Promise<{ released: number; skip
     } catch (err: any) {
       skipped++;
       logger.warn('Pago automático a administrador omitido', { reservationId: id, error: err.message });
+      await alertIfAttemptsExhausted(id, err.message);
     }
   }
   return { released, skipped };
+}
+
+/** Al llegar al tope de intentos fallidos avisa al admin UNA vez (el job deja de reintentar esa reserva). */
+async function alertIfAttemptsExhausted(reservationId: string, lastError: string): Promise<void> {
+  try {
+    const { rows } = await query<{ n: string }>(
+      `SELECT COUNT(*) AS n FROM owner_transfers
+        WHERE reservation_id = $1 AND transfer_kind = 'held_25' AND status = 'failed'`,
+      [reservationId]
+    );
+    if (Number(rows[0]?.n) === MAX_PAYOUT_ATTEMPTS) {
+      await emailService.sendAdminAlert('OWNER_PAYOUT_FAILED', {
+        reservationId,
+        attempts: MAX_PAYOUT_ATTEMPTS,
+        lastError,
+        action: 'Revisar el registro bancario del administrador y usar POST /payments/release-deposit',
+      });
+    }
+  } catch (err: any) {
+    logger.error('No se pudo enviar la alerta de pago fallido al administrador', { reservationId, error: err.message });
+  }
 }

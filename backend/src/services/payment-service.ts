@@ -91,59 +91,14 @@ export class PaymentService {
       pixDetails = { qr_code: result.qrCode, qr_code_base64: result.qrCodeBase64, expires_at: result.expiresAt };
       url = result.url;
     } else {
-      // Para apartamentos con administrador Stripe Connect, agregar transfer_data
-      // para que Stripe pueda enrutar los fondos correctamente.
-      let connectedAccountId: string | undefined;
-      let applicationFeeAmountCents: number | undefined;
-
-      try {
-        const { rows: aptRows } = await query(
-          `SELECT ao.stripe_account_id, ao.commission_rate, ao.onboarding_status
-           FROM reservations r
-           JOIN reservation_beds rb ON rb.reservation_id = r.id
-           JOIN beds b ON b.id = rb.bed_id
-           JOIN room_types rt ON rt.id = b.room_type_id
-           JOIN apartment_owners ao ON ao.id = rt.owner_id
-           WHERE r.id = $1
-             AND rt.property_type = 'apartment'
-             AND ao.onboarding_status = 'active'
-             AND ao.stripe_account_id IS NOT NULL
-           LIMIT 1`,
-          [data.reservation_id]
-        );
-
-        if (aptRows.length > 0) {
-          const apt = aptRows[0];
-          connectedAccountId = apt.stripe_account_id;
-          const commissionRate = parseFloat(apt.commission_rate);
-          // application_fee = comisión de Lapa Casa sobre el monto del pago
-          const feeAmount = data.amount * commissionRate;
-          applicationFeeAmountCents = Math.round(feeAmount * 100);
-
-          logger.info('Pago Stripe Connect para apartamento', {
-            reservationId: data.reservation_id,
-            connectedAccountId,
-            commissionRate,
-            applicationFeeAmountCents,
-          });
-        }
-      } catch (aptLookupError: any) {
-        // Si falla la consulta del apartamento, continuar sin Connect
-        // (el pago queda en la plataforma y el Transfer se hace manual)
-        logger.warn('No se pudo obtener cuenta Stripe del administrador, continuando sin Connect', {
-          reservationId: data.reservation_id,
-          error: aptLookupError.message,
-        });
-      }
-
+      // Los fondos de apartamentos quedan en la cuenta de la plataforma: el administrador
+      // cobra después del check-out vía owner-payout-service (no destination charge).
       const result = await this.stripeHandler.createPaymentIntent({
         amount: data.amount,
         currency,
         customerEmail: data.guest_email,
         description: `${data.payment_type === 'deposit' ? 'Deposit' : 'Remaining'} - Booking ${reservation.reservation_number}`,
         metadata: { reservation_id: data.reservation_id, payment_type: data.payment_type },
-        connectedAccountId,
-        applicationFeeAmountCents,
       });
       providerPaymentId = result.paymentIntentId;
       stripeClientSecret = result.clientSecret;

@@ -786,7 +786,7 @@ router.patch(
  */
 router.get('/pricing', async (req, res, next) => {
   try {
-    const [ratePlans, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests, apartmentsBookingEnabled] =
+    const [ratePlans, groupDiscountTiers, cardSurcharge, luggageStorage, checkinTimes, maxAptGuests, apartmentsBookingEnabled, ownerPayoutHoldHours] =
       await Promise.all([
         query(
           `SELECT season_type, multiplier, min_nights, description FROM rate_plans ORDER BY season_type`,
@@ -799,6 +799,7 @@ router.get('/pricing', async (req, res, next) => {
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'checkin_times'`),
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'max_apt_guests'`),
         query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'apartments_booking_enabled'`),
+        query<{ value: any }>(`SELECT value FROM system_config WHERE key = 'owner_payout_hold_hours'`),
       ]);
     res.status(200).json(
       ApiResponse.success({
@@ -815,6 +816,7 @@ router.get('/pricing', async (req, res, next) => {
         checkinTimes: checkinTimes.rows[0]?.value ?? ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'],
         maxAptGuests: maxAptGuests.rows[0]?.value ?? 2,
         apartmentsBookingEnabled: apartmentsBookingEnabled.rows[0]?.value ?? false,
+        ownerPayoutHoldHours: ownerPayoutHoldHours.rows[0]?.value ?? 48,
       }),
     );
   } catch (error) {
@@ -844,11 +846,13 @@ const PricingUpdateSchema = z.object({
   // Interruptor general del motor de reservas de apartamentos -- ver
   // 0052_apartments_booking_enabled_config.sql.
   apartmentsBookingEnabled: z.boolean().optional(),
+  // Horas de espera post check-out antes de pagar al administrador (0057_owner_payout_hold_hours_config.sql).
+  ownerPayoutHoldHours: z.number().int().min(0).max(720).optional(),
 });
 
 router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => {
   try {
-    const { seasonType, multiplier, minNights, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests, apartmentsBookingEnabled } =
+    const { seasonType, multiplier, minNights, cardSurchargePercent, luggageStorage, checkinTimes, maxAptGuests, apartmentsBookingEnabled, ownerPayoutHoldHours } =
       req.body as z.infer<typeof PricingUpdateSchema>;
 
     const updated: Record<string, any> = {};
@@ -925,6 +929,14 @@ router.put('/pricing', validate(PricingUpdateSchema), async (req, res, next) => 
         [JSON.stringify(apartmentsBookingEnabled)],
       );
       updated.apartmentsBookingEnabled = rows[0];
+    }
+
+    if (ownerPayoutHoldHours !== undefined) {
+      const { rows } = await query(
+        `UPDATE system_config SET value = $1::jsonb, updated_at = now() WHERE key = 'owner_payout_hold_hours' RETURNING *`,
+        [JSON.stringify(ownerPayoutHoldHours)],
+      );
+      updated.ownerPayoutHoldHours = rows[0];
     }
 
     if (Object.keys(updated).length === 0) {

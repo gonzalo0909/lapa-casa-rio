@@ -88,6 +88,7 @@
   <button class="outer-tab-btn active" data-otab="apartamentos">Apartamentos</button>
   <button class="outer-tab-btn" data-otab="bloqueos">Bloqueos</button>
   <button class="outer-tab-btn" data-otab="ofertas">Ofertas</button>
+  <button class="outer-tab-btn" data-otab="preciosbase">Precios</button>
   <button class="outer-tab-btn" data-otab="precios">Precios dinámicos</button>
   <button class="outer-tab-btn" data-otab="config">Configuración</button>
 </div>
@@ -260,6 +261,26 @@
 
 <div class="outer-panel" id="opanel-ofertas">
   <iframe class="embed-frame" src="/admin/offers.html?type=apartment&embed=1"></iframe>
+</div>
+
+<div class="outer-panel" id="opanel-preciosbase">
+  <div class="card">
+    <h2>Precio por noche de cada apartamento</h2>
+    <div id="apt-prices-msg"></div>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px">
+      Es el precio final por noche (BRL): sin multiplicador de temporada ni descuento
+      por grupo, eso es solo del hostel. Para fechas especiales (feriados, Año Nuevo,
+      mínimo de noches) usá <strong>Bloqueos → Períodos especiales</strong> o la
+      pestaña <strong>Precios dinámicos</strong>. El recargo de tarjeta, la comisión del 5% y
+      la espera de pago al administrador están en <strong>Configuración</strong>.
+    </p>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Apartamento</th><th>Código</th><th>Precio por noche (BRL)</th><th></th></tr></thead>
+        <tbody id="apt-prices-body"><tr><td colspan="4">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="outer-panel" id="opanel-precios">

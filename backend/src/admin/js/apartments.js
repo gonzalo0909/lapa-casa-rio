@@ -460,7 +460,38 @@
       timesEl.value = times.join('\n');
     }
     if (masterEl) masterEl.checked = Boolean(data.apartmentsBookingEnabled);
+    var surEl = document.getElementById('apt-card-surcharge');
+    if (surEl) surEl.value = data.cardSurchargePercent ?? 10;
+    var holdEl = document.getElementById('apt-hold-hours');
+    if (holdEl) holdEl.value = data.ownerPayoutHoldHours ?? 48;
   }).catch(function () {});
+
+  function payMsg(text, type) {
+    var el = document.getElementById('apt-pay-msg');
+    if (el) el.innerHTML = text ? '<div class="msg ' + type + '">' + text + '</div>' : '';
+  }
+
+  var surchargeForm = document.getElementById('apt-surcharge-form');
+  if (surchargeForm) {
+    surchargeForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var cardSurchargePercent = Number(document.getElementById('apt-card-surcharge').value);
+      apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ cardSurchargePercent }) })
+        .then(function () { payMsg('Recargo de tarjeta guardado: ' + cardSurchargePercent + '%.', 'success'); })
+        .catch(function (err) { payMsg(err.message, 'error'); });
+    });
+  }
+
+  var holdForm = document.getElementById('apt-hold-form');
+  if (holdForm) {
+    holdForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var ownerPayoutHoldHours = Number(document.getElementById('apt-hold-hours').value);
+      apiFetch('/admin/pricing', { method: 'PUT', body: JSON.stringify({ ownerPayoutHoldHours }) })
+        .then(function () { payMsg('Espera post check-out guardada: ' + ownerPayoutHoldHours + ' horas.', 'success'); })
+        .catch(function (err) { payMsg(err.message, 'error'); });
+    });
+  }
 
   var masterEl = document.getElementById('apt-booking-enabled');
   if (masterEl) {

@@ -88,6 +88,11 @@ export function HostelSuccessPanel({
                 />
               ) : null}
               <div className="he-pix-amt">{price ? fmtMoney(price.deposit) : ''}</div>
+              {stripeUrl && (
+                <a href={stripeUrl} target="_blank" rel="noopener noreferrer" className="he-stripe-link">
+                  {t.cardGoToPayment}
+                </a>
+              )}
               {pixData?.qrCode && (
                 <button type="button" className="he-pix-copy-btn" onClick={onPixCopy}>
                   {pixCopied ? (

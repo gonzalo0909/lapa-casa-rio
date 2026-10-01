@@ -47,6 +47,7 @@ const StripeCheckoutSchema = z.object({
   reservationId: z.string().trim().min(1),
   confirmationToken: z.string().trim().min(1),
   frontendUrl: z.string().trim().url().optional(),
+  paymentMethod: z.enum(['card', 'pix']).optional(),
 });
 
 const GroupSessionSchema = z.object({
@@ -96,7 +97,7 @@ router.post('/stripe-wa-link', authenticateToken, requireRole(['admin', 'staff']
 // POST /payments/stripe-checkout — genera una Checkout Session de Stripe (pago con tarjeta)
 router.post('/stripe-checkout', verifyBookingToken, validate(StripeCheckoutSchema), async (req, res, next) => {
   try {
-    const { reservationId, frontendUrl } = req.body as z.infer<typeof StripeCheckoutSchema>;
+    const { reservationId, frontendUrl, paymentMethod } = req.body as z.infer<typeof StripeCheckoutSchema>;
 
     const booking = await bookingService.getBooking(reservationId);
     if (!booking) {
@@ -108,7 +109,7 @@ router.post('/stripe-checkout', verifyBookingToken, validate(StripeCheckoutSchem
       return;
     }
 
-    const result = await paymentService.createBookingCheckoutSession(booking, frontendUrl);
+    const result = await paymentService.createBookingCheckoutSession(booking, frontendUrl, paymentMethod);
     res.status(200).json(ApiResponse.success(result, 'Checkout Session creada'));
   } catch (error) {
     logger.error('Error al crear Stripe Checkout Session', {

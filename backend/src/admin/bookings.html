@@ -15,6 +15,15 @@
     <div id="bookings-msg"></div>
 
     <div class="filters">
+      <input type="search" id="filter-q" placeholder="Buscar nombre, email o N° de reserva" style="min-width:260px">
+      <select id="filter-channel">
+        <option value="">Todos los canales</option>
+        <option value="direct">Directo</option>
+        <option value="booking">Booking.com</option>
+        <option value="airbnb">Airbnb</option>
+        <option value="hostelworld">Hostelworld</option>
+        <option value="expedia">Expedia</option>
+      </select>
       <select id="filter-status">
         <option value="">Todos los estados</option>
         <option value="pending_payment">Pendiente</option>
@@ -25,7 +34,7 @@
       </select>
       <input type="date" id="filter-from" title="Check-in desde">
       <input type="date" id="filter-to" title="Check-in hasta">
-      <button id="filter-apply">Filtrar</button>
+      <button id="filter-apply">Buscar</button>
       <button id="export-csv-btn" style="background:none;border:1px solid var(--border);color:var(--text-muted)">Exportar CSV</button>
     </div>
 
@@ -34,6 +43,7 @@
         <tr>
           <th data-sort="reservation_number">Reserva</th>
           <th data-sort="property_type">Tipo</th>
+          <th data-sort="channel_code">Canal</th>
           <th data-sort="guest_name">Huésped</th>
           <th data-sort="check_in_date">Check-in</th>
           <th data-sort="check_out_date">Check-out</th>

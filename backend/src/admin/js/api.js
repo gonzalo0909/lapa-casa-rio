@@ -131,7 +131,8 @@ function fmtDate(value) {
 function statusLabel(status) {
   const labels = {
     pending_payment: 'Pendiente', confirmed: 'Confirmada', cancelled: 'Cancelada',
-    no_show: 'No-show', completed: 'Completada'
+    no_show: 'No-show', completed: 'Completada',
+    pending_ota_confirmation: 'Importada de OTA'
   };
   return labels[status] || status;
 }

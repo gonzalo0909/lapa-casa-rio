@@ -32,22 +32,22 @@
         <option value="no_show">No-show</option>
         <option value="completed">Completada</option>
       </select>
-      <input type="date" id="filter-from" title="Check-in desde">
-      <input type="date" id="filter-to" title="Check-in hasta">
+      <input type="date" id="filter-from" title="Check-in desde" autocomplete="off">
+      <input type="date" id="filter-to" title="Check-in hasta" autocomplete="off">
       <button id="filter-apply">Buscar</button>
+      <button id="filter-clear" style="background:none;border:1px solid var(--border);color:var(--text-muted)">Limpiar</button>
       <button id="export-csv-btn" style="background:none;border:1px solid var(--border);color:var(--text-muted)">Exportar CSV</button>
     </div>
 
+    <div style="overflow-x:auto">
     <table id="bookings-table">
       <thead>
         <tr>
           <th data-sort="reservation_number">Reserva</th>
-          <th data-sort="property_type">Tipo</th>
           <th data-sort="channel_code">Canal</th>
+          <th data-sort="property_type">Unidad</th>
           <th data-sort="guest_name">Huésped</th>
-          <th data-sort="check_in_date">Check-in</th>
-          <th data-sort="check_out_date">Check-out</th>
-          <th data-sort="beds_count">Camas</th>
+          <th data-sort="check_in_date">Estadía</th>
           <th data-sort="final_price">Total</th>
           <th data-sort="status">Estado</th>
           <th>Acciones</th>
@@ -55,6 +55,7 @@
       </thead>
       <tbody></tbody>
     </table>
+    </div>
 
     <div class="pagination">
       <button id="page-prev">‹ Anterior</button>

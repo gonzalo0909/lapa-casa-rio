@@ -98,6 +98,7 @@ tr:hover td { background: #fafafa; }
 .badge.cancelled { background: #fdeaea; color: var(--danger); }
 .badge.no_show { background: #f0e6fa; color: #7b3fa0; }
 .badge.completed { background: #e6eefc; color: #2c5cc5; }
+.badge.pending_ota_confirmation { background: #e6eefc; color: #2c5cc5; }
 .badge.open { background: #fdeaea; color: var(--danger); }
 .badge.resolved_auto { background: #e6f6ea; color: var(--accent); }
 .badge.resolved_manual { background: #e6eefc; color: #2c5cc5; }

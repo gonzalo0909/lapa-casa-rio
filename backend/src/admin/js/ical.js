@@ -143,10 +143,19 @@ async function loadSyncStatus() {
       .sort()
       .at(-1);
 
-    el.textContent = [
-      lastSyncAt ? `Última sync: ${fmtDate(lastSyncAt)}` : 'Sin sincronizaciones aún',
-      `Feeds configurados: ${totalFeeds}`,
-    ].join(' · ');
+    const fmtDT = (iso) => new Date(iso).toLocaleString('pt-BR');
+    const channels = Object.entries(data.syncStatus ?? {});
+    const lines = channels.map(([code, st]) => {
+      const label = PLATFORM_LABELS[code] ?? code;
+      const errs = st.errors ?? [];
+      const head = `<strong>${escapeHtml(label)}</strong> — última sync ${st.lastSyncAt ? fmtDT(st.lastSyncAt) : '—'} · ` +
+        `${st.imported ?? 0} importada(s) · ${st.cancelled ?? 0} cancelada(s) · ` +
+        (errs.length ? `<span style="color:#c0392b">${errs.length} error(es)</span>` : '<span style="color:#1e8e3e">sin errores</span>');
+      const detail = errs.map((e) => `<div style="color:#c0392b;margin-left:12px;">• ${escapeHtml(e)}</div>`).join('');
+      return `<div style="margin-bottom:6px;">${head}${detail}</div>`;
+    });
+    el.innerHTML = (lastSyncAt ? '' : 'Sin sincronizaciones aún · ') + `Feeds configurados: ${totalFeeds}` +
+      (lines.length ? `<div style="margin-top:8px;">${lines.join('')}</div>` : '');
   } catch {
     // No bloquea la página si el status falla
   }

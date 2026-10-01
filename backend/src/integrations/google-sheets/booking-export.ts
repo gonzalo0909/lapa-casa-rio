@@ -23,8 +23,7 @@ async function fetchBookingRow(reservationId: string): Promise<RawBookingExportR
        r.check_out_date,
        (SELECT string_agg(DISTINCT rt.name, ', ' ORDER BY rt.name)
           FROM reservation_beds rb
-          JOIN beds b ON b.id = rb.bed_id
-          JOIN room_types rt ON rt.id = b.room_type_id
+          JOIN room_types rt ON rt.id = rb.room_type_id
           WHERE rb.reservation_id = r.id) AS room_assigned,
        r.beds_count,
        r.final_price,

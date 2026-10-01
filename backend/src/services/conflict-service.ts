@@ -209,11 +209,12 @@ async function autoResolveByPriority(conflict: BookingConflictRow): Promise<Book
  * abiertos (creados en tiempo real por channel-service.ts).
  */
 async function detectConflicts(): Promise<{ newlyDetected: number; autoResolved: number; stillOpen: number }> {
-  const { rows: overlaps } = await query<{ id_a: string; id_b: string; bed_id: string }>(
+  const { rows: overlaps } = await query<{ id_a: string; id_b: string; bed_id: string | null }>(
     `SELECT rb1.reservation_id AS id_a, rb2.reservation_id AS id_b, rb1.bed_id
      FROM reservation_beds rb1
      JOIN reservation_beds rb2
-       ON rb2.bed_id = rb1.bed_id
+       ON rb2.room_type_id = rb1.room_type_id
+      AND rb2.bed_id IS NOT DISTINCT FROM rb1.bed_id
       AND rb2.reservation_id > rb1.reservation_id
       AND daterange(rb1.check_in, rb1.check_out, '[)') && daterange(rb2.check_in, rb2.check_out, '[)')
      JOIN reservations ra ON ra.id = rb1.reservation_id AND ra.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')

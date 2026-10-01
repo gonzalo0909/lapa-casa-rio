@@ -172,8 +172,7 @@ router.get('/bookings', async (req, res, next) => {
       params.push(type);
       conditions.push(
         `EXISTS (SELECT 1 FROM reservation_beds rbt
-                   JOIN beds bt ON bt.id = rbt.bed_id
-                   JOIN room_types rtt ON rtt.id = bt.room_type_id
+                   JOIN room_types rtt ON rtt.id = rbt.room_type_id
                   WHERE rbt.reservation_id = r.id AND rtt.property_type::text = $${params.length})`,
       );
     }
@@ -207,8 +206,7 @@ router.get('/bookings', async (req, res, next) => {
              (ARRAY_AGG(DISTINCT rt.property_type::text))[1] AS property_type,
              STRING_AGG(DISTINCT rt.name, ', ') AS unit_names
            FROM reservation_beds rb
-           JOIN beds b ON b.id = rb.bed_id
-           JOIN room_types rt ON rt.id = b.room_type_id
+           JOIN room_types rt ON rt.id = rb.room_type_id
            WHERE rb.reservation_id = r.id
          ) units ON true
          ${where}
@@ -296,7 +294,8 @@ router.get('/bookings/today', async (_req, res, next) => {
             WHERE r.status = 'confirmed'
               AND r.check_in_date <= $1::date AND r.check_out_date > $1::date
            ) AS occupied,
-           (SELECT COUNT(*)::int FROM beds) AS total`,
+           (SELECT COUNT(*)::int FROM beds b JOIN room_types rt ON rt.id = b.room_type_id WHERE rt.property_type <> 'apartment')
+             + (SELECT COUNT(*)::int FROM room_types WHERE property_type = 'apartment') AS total`,
         [today],
       ),
     ]);

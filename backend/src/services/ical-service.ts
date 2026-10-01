@@ -182,8 +182,7 @@ async function fetchBookingsForRoom(roomTypeId: string): Promise<BookingRow[]> {
      FROM reservations r
      JOIN guests g ON g.id = r.guest_id
      JOIN reservation_beds rb ON rb.reservation_id = r.id
-     JOIN beds b ON b.id = rb.bed_id
-     WHERE b.room_type_id = $1
+     WHERE rb.room_type_id = $1
        AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
        AND rb.check_out >= CURRENT_DATE - INTERVAL '7 days'
      ORDER BY rb.check_in`,
@@ -348,8 +347,7 @@ async function cancelMissingReservations(channelId: string, roomTypeId: string, 
     `SELECT DISTINCT r.id, r.external_reservation_id
      FROM reservations r
      JOIN reservation_beds rb ON rb.reservation_id = r.id
-     JOIN beds b ON b.id = rb.bed_id
-     WHERE b.room_type_id = $1
+     WHERE rb.room_type_id = $1
        AND r.channel_id = $2
        AND r.status IN ('confirmed', 'pending_ota_confirmation')
        AND rb.check_out >= CURRENT_DATE
@@ -403,7 +401,6 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
             guestName: event.isBlocked ? `${feed.channelCode} (iCal)` : event.guestName,
             checkIn: event.checkIn,
             checkOut: event.checkOut,
-            bedsCount: 1,
           },
           feed.channelId
         );

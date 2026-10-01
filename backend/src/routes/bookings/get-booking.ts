@@ -69,8 +69,7 @@ export const getBookingHandler = async (
     const aptResult = await query<{ address: string | null; address_number: string | null; cep: string | null; neighborhood: string | null }>(
       `SELECT rt.address, rt.address_number, rt.cep, rt.neighborhood
        FROM room_types rt
-       JOIN beds b ON b.room_type_id = rt.id
-       JOIN reservation_beds rb ON rb.bed_id = b.id
+       JOIN reservation_beds rb ON rb.room_type_id = rt.id
        WHERE rb.reservation_id = $1
        LIMIT 1`,
       [id]

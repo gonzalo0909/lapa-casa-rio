@@ -107,8 +107,7 @@ export class StatsService {
                   END
                 ), 0) AS occupied_bed_nights
          FROM room_types rt
-         LEFT JOIN beds b ON b.room_type_id = rt.id
-         LEFT JOIN reservation_beds rb ON rb.bed_id = b.id
+         LEFT JOIN reservation_beds rb ON rb.room_type_id = rt.id
            AND rb.check_in < $2::date AND rb.check_out > $1::date
          GROUP BY rt.id, rt.code, rt.name, rt.capacity
          ORDER BY rt.name`,

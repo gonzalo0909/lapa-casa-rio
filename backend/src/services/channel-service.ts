@@ -23,6 +23,7 @@ import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../config/database';
 import guestRepo from '../database/repositories/guest-repository';
 import { acquireLock } from '../database/lock-middleware';
+import { insertUnitBlock, isApartmentRoomType, isUnitOccupied } from './apartment-unit';
 import { conflictService } from './conflict-service';
 import { resolveRoomCodeFromName } from '../config/channels';
 import { logger } from '../utils/logger';
@@ -187,9 +188,8 @@ async function findBlockingReservation(
     `SELECT r.id, c.code AS channel_code
      FROM reservation_beds rb
      JOIN reservations r ON r.id = rb.reservation_id
-     JOIN beds b ON b.id = rb.bed_id
      JOIN channels c ON c.id = r.channel_id
-     WHERE b.room_type_id = $1
+     WHERE rb.room_type_id = $1
        AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
        AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
      ORDER BY r.created_at ASC
@@ -262,33 +262,48 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
       );
       if (raceCheck.length > 0) {return { reservationId: raceCheck[0].id, deduplicated: true };}
 
-      let candidateBedIds = await pickAvailableBedsInRoom(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount, gender);
-      if (candidateBedIds.length < bedsCount) {
-        // Una reserva de OTA ya existe en la OTA: es un hecho, no una venta nueva. Un bloqueo manual
-        // (room_blocks, pestaña Bloqueos) solo impide VENDER esas fechas, no debe impedir REGISTRARLAS.
-        // Solo una reserva real superpuesta (reservation_beds) es un conflicto de verdad.
-        candidateBedIds = await pickBedsIgnoringManualBlocks(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount);
-        if (candidateBedIds.length >= bedsCount) {
-          logger.warn('Reserva OTA registrada sobre fechas con bloqueo manual', {
-            roomTypeId: roomType.id, channelCode: channel.code,
-            checkIn: bookingData.checkIn, checkOut: bookingData.checkOut,
-          });
+      // Apartamentos: unidad completa, sin camas (ver apartment-unit.ts).
+      const isApartment = await isApartmentRoomType(client, roomType.id);
+      let candidateBedIds: string[] = [];
+      if (isApartment) {
+        if (await isUnitOccupied(client, roomType.id, bookingData.checkIn, bookingData.checkOut)) {
+          throw new OtaAvailabilityError({ roomTypeId: roomType.id, requested: 1, found: 0 });
+        }
+      } else {
+        candidateBedIds = await pickAvailableBedsInRoom(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount, gender);
+        if (candidateBedIds.length < bedsCount) {
+          // Una reserva de OTA ya existe en la OTA: es un hecho, no una venta nueva. Un bloqueo manual
+          // (room_blocks, pestaña Bloqueos) solo impide VENDER esas fechas, no debe impedir REGISTRARLAS.
+          // Solo una reserva real superpuesta (reservation_beds) es un conflicto de verdad.
+          candidateBedIds = await pickBedsIgnoringManualBlocks(client, roomType.id, bookingData.checkIn, bookingData.checkOut, bedsCount);
+          if (candidateBedIds.length >= bedsCount) {
+            logger.warn('Reserva OTA registrada sobre fechas con bloqueo manual', {
+              roomTypeId: roomType.id, channelCode: channel.code,
+              checkIn: bookingData.checkIn, checkOut: bookingData.checkOut,
+            });
+          }
+        }
+        if (candidateBedIds.length < bedsCount) {
+          throw new OtaAvailabilityError({ roomTypeId: roomType.id, requested: bedsCount, found: candidateBedIds.length });
         }
       }
-      if (candidateBedIds.length < bedsCount) {
-        throw new OtaAvailabilityError({ roomTypeId: roomType.id, requested: bedsCount, found: candidateBedIds.length });
-      }
 
-      await acquireLock(client, candidateBedIds);
+      await acquireLock(client, isApartment ? [roomType.id] : candidateBedIds);
 
-      const { rows: stillOccupied } = await client.query(
-        `SELECT bed_id FROM reservation_beds
-         WHERE bed_id = ANY($1::uuid[])
-           AND daterange(check_in, check_out, '[)') && daterange($2::date, $3::date, '[)')`,
-        [candidateBedIds, bookingData.checkIn, bookingData.checkOut]
-      );
-      if (stillOccupied.length > 0) {
-        throw new OtaAvailabilityError({ conflictingBeds: stillOccupied.map((r: { bed_id: string }) => r.bed_id) });
+      if (isApartment) {
+        if (await isUnitOccupied(client, roomType.id, bookingData.checkIn, bookingData.checkOut)) {
+          throw new OtaAvailabilityError({ roomTypeId: roomType.id, requested: 1, found: 0 });
+        }
+      } else {
+        const { rows: stillOccupied } = await client.query(
+          `SELECT bed_id FROM reservation_beds
+           WHERE bed_id = ANY($1::uuid[])
+             AND daterange(check_in, check_out, '[)') && daterange($2::date, $3::date, '[)')`,
+          [candidateBedIds, bookingData.checkIn, bookingData.checkOut]
+        );
+        if (stillOccupied.length > 0) {
+          throw new OtaAvailabilityError({ conflictingBeds: stillOccupied.map((r: { bed_id: string }) => r.bed_id) });
+        }
       }
 
       const guestEmail = bookingData.guestEmail || `ota_${bookingData.externalReservationId}@${channel.code}.import`;
@@ -347,12 +362,16 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
         // patrón aplicado en booking-service.ts y group-payment-service.ts.
         // El constraint EXCLUDE/trigger anti-overbooking se evalúa por fila,
         // así que isOverbookingError() de abajo no cambia.
-        await client.query(
-          `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
-           SELECT $1, bed_id, $3::date, $4::date
-           FROM unnest($2::uuid[]) AS bed_id`,
-          [reservation.id, candidateBedIds, bookingData.checkIn, bookingData.checkOut]
-        );
+        if (isApartment) {
+          await insertUnitBlock(client, reservation.id, roomType.id, bookingData.checkIn, bookingData.checkOut);
+        } else {
+          await client.query(
+            `INSERT INTO reservation_beds (reservation_id, bed_id, check_in, check_out)
+             SELECT $1, bed_id, $3::date, $4::date
+             FROM unnest($2::uuid[]) AS bed_id`,
+            [reservation.id, candidateBedIds, bookingData.checkIn, bookingData.checkOut]
+          );
+        }
       } catch (error) {
         if (isOverbookingError(error)) {throw new OtaAvailabilityError({ reason: 'overbooking_detected_at_insert' });}
         throw error;
@@ -362,7 +381,7 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
         reservationId: reservation.id,
         channelCode: channel.code,
         externalReservationId: bookingData.externalReservationId,
-        beds: candidateBedIds.length,
+        beds: isApartment ? 0 : candidateBedIds.length,
       });
       return { reservationId: reservation.id, deduplicated: false };
     });

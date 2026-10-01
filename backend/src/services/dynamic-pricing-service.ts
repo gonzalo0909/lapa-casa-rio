@@ -236,6 +236,24 @@ class DynamicPricingService {
   private async getOccupancy(date: Date, roomTypeId: string): Promise<number> {
     const dateStr = date.toISOString().slice(0, 10);
     try {
+      // Apartamentos: unidad completa sin camas -> ocupacion 0 o 100.
+      const { rows: typeRows } = await query<{ property_type: string }>(
+        `SELECT property_type FROM room_types WHERE id = $1`,
+        [roomTypeId],
+      );
+      if (typeRows[0]?.property_type === 'apartment') {
+        const { rows: unitRows } = await query(
+          `SELECT 1
+           FROM reservation_beds rb
+           JOIN reservations r ON r.id = rb.reservation_id
+           WHERE rb.room_type_id = $2
+             AND rb.check_in <= $1::date AND rb.check_out > $1::date
+             AND r.status NOT IN ('cancelled')
+           LIMIT 1`,
+          [dateStr, roomTypeId],
+        );
+        return unitRows.length > 0 ? 100 : 0;
+      }
       const res = await query<{ total: string; occupied: string }>(
         `SELECT
            COUNT(b.id)::int AS total,

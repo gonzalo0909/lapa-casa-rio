@@ -108,9 +108,8 @@ export const checkApartmentAvailabilityHandler = async (
            AND NOT EXISTS (
              SELECT 1
              FROM reservation_beds rb
-             JOIN beds b ON b.id = rb.bed_id
              JOIN reservations res ON res.id = rb.reservation_id
-             WHERE b.room_type_id = rt.id
+             WHERE rb.room_type_id = rt.id
                AND res.status != 'cancelled'
                AND daterange(rb.check_in, rb.check_out, '[)') && daterange($1::date, $2::date, '[)')
            )

@@ -595,8 +595,7 @@ async function getRoomsBreakdown(
   const { rows } = await query<{ name: string; beds: string }>(
     `SELECT rt.name AS name, COUNT(*)::int AS beds
      FROM reservation_beds rb
-     JOIN beds b ON b.id = rb.bed_id
-     JOIN room_types rt ON rt.id = b.room_type_id
+     JOIN room_types rt ON rt.id = rb.room_type_id
      WHERE rb.reservation_id = $1
      GROUP BY rt.name
      ORDER BY rt.name`,
@@ -615,8 +614,7 @@ async function isApartmentBooking(reservationId: string): Promise<boolean> {
     const { rows } = await query<{ property_type: string }>(
       `SELECT DISTINCT rt.property_type
        FROM reservation_beds rb
-       JOIN beds b ON b.id = rb.bed_id
-       JOIN room_types rt ON rt.id = b.room_type_id
+       JOIN room_types rt ON rt.id = rb.room_type_id
        WHERE rb.reservation_id = $1
        LIMIT 1`,
       [reservationId],
@@ -640,8 +638,7 @@ async function getApartmentAddress(
     const { rows } = await query<{ name: string; address: string; address_number: string | null; cep: string | null }>(
       `SELECT rt.name, rt.address, rt.address_number, rt.cep
        FROM reservation_beds rb
-       JOIN beds b ON b.id = rb.bed_id
-       JOIN room_types rt ON rt.id = b.room_type_id
+       JOIN room_types rt ON rt.id = rb.room_type_id
        WHERE rb.reservation_id = $1
          AND rt.property_type = 'apartment'
          AND rt.address IS NOT NULL

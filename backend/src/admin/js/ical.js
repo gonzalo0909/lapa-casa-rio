@@ -15,16 +15,28 @@ function showMsg(elId, text, type) {
 
 // ── Habitaciones: caché compartida entre select y renderFeeds ────────────────
 
-let roomsCache = []; // [{ id, name }]
+let roomsCache = []; // [{ id, name }] hostel + apartamentos
+let apartmentsCache = []; // [{ id, name }]
+
+async function loadApartments() {
+  try {
+    const data = await apiFetch('/admin/room-types');
+    apartmentsCache = (data && data.apartments) ? data.apartments : [];
+  } catch {
+    apartmentsCache = [];
+  }
+}
 
 async function loadRoomOptions() {
   try {
-    const data = await apiFetch('/rooms');
-    roomsCache = data.rooms ?? [];
+    const [data] = await Promise.all([apiFetch('/rooms'), loadApartments()]);
+    const hostel = data.rooms ?? [];
+    roomsCache = [...hostel, ...apartmentsCache];
     const select = document.getElementById('feed-room');
-    select.innerHTML = roomsCache.map(
-      (r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`
-    ).join('');
+    const opts = (list) => list.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+    select.innerHTML =
+      `<optgroup label="Hostel">${opts(hostel)}</optgroup>` +
+      (apartmentsCache.length ? `<optgroup label="Apartamentos">${opts(apartmentsCache)}</optgroup>` : '');
   } catch {
     document.getElementById('feed-room').innerHTML = '<option value="">Error al cargar habitaciones</option>';
   }
@@ -159,7 +171,11 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
 async function loadExportURLs() {
   try {
     const data = await apiFetch('/rooms');
-    const rooms = data.rooms ?? [];
+    if (!apartmentsCache.length) { await loadApartments(); }
+    const rooms = [
+      ...(data.rooms ?? []).map((r) => ({ ...r, exportPath: `/api/v1/ical/export/${r.id}` })),
+      ...apartmentsCache.map((a) => ({ ...a, name: `${a.name} (apartamento)`, exportPath: `/api/v1/ical/apartment/export/${a.id}` })),
+    ];
     const base = window.location.origin;
     const el = document.getElementById('export-list');
 
@@ -169,7 +185,7 @@ async function loadExportURLs() {
     }
 
     el.innerHTML = rooms.map((r) => {
-      const url = `${base}/api/v1/ical/export/${r.id}`;
+      const url = `${base}${r.exportPath}`;
       return `
         <div style="margin-bottom:14px;" data-url="${escapeHtml(url)}">
           <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>

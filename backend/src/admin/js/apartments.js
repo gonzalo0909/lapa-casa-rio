@@ -538,7 +538,56 @@
   }
 })();
 
-// ── Pestañas externas (Apartamentos / Bloqueos / Ofertas / Precios dinámicos) ──
+// ── Precios por noche de todos los apartamentos ─────────────────────────────
+
+(function () {
+  var RT = '/admin/room-types';
+
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function pricesMsg(text, type) {
+    var el = document.getElementById('apt-prices-msg');
+    if (el) el.innerHTML = text ? '<div class="msg ' + type + '">' + text + '</div>' : '';
+  }
+
+  function loadPrices() {
+    var body = document.getElementById('apt-prices-body');
+    if (!body) return;
+    apiFetch(RT).then(function (data) {
+      var apts = (data && data.apartments) ? data.apartments : [];
+      if (!apts.length) { body.innerHTML = '<tr><td colspan="4">Sin apartamentos.</td></tr>'; return; }
+      body.innerHTML = apts.map(function (a) {
+        return '<tr data-id="' + escHtml(a.id) + '">' +
+          '<td>' + escHtml(a.name) + '</td>' +
+          '<td>' + escHtml(a.code) + '</td>' +
+          '<td><input type="number" step="0.01" min="0" class="apt-price-input" style="width:110px" value="' +
+            (a.base_price != null ? Number(a.base_price).toFixed(2) : '') + '"></td>' +
+          '<td><button class="apt-price-save">Guardar</button></td>' +
+        '</tr>';
+      }).join('');
+      body.querySelectorAll('.apt-price-save').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var row = btn.closest('tr');
+          var price = Number(row.querySelector('.apt-price-input').value);
+          if (!isFinite(price) || price < 0) { pricesMsg('Ingresá un precio válido.', 'error'); return; }
+          btn.disabled = true;
+          apiFetch(RT + '/' + row.dataset.id, { method: 'PUT', body: JSON.stringify({ base_price: price }) })
+            .then(function () { pricesMsg('✓ Precio guardado: ' + row.children[0].textContent + ' → R$ ' + price.toFixed(2), 'success'); })
+            .catch(function (err) { pricesMsg(err.message, 'error'); })
+            .finally(function () { btn.disabled = false; });
+        });
+      });
+    }).catch(function (err) { body.innerHTML = '<tr><td colspan="4">' + escHtml(err.message) + '</td></tr>'; });
+  }
+
+  loadPrices();
+})();
+
+// ── Pestañas externas (Apartamentos / Bloqueos / Ofertas / Precios / Precios dinámicos) ──
 // Fuera del IIFE de arriba porque no necesita nada de su estado interno.
 // Como archivo externo: la CSP del backend (scriptSrc: 'self', sin
 // unsafe-inline) bloquea silenciosamente cualquier <script> inline.

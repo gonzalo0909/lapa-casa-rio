@@ -147,7 +147,7 @@ router.get('/dashboard', async (req, res, next) => {
  */
 router.get('/bookings', async (req, res, next) => {
   try {
-    const { status, from, to, channel, q, page, limit } = req.query as Record<string, string>;
+    const { status, from, to, channel, q, type, page, limit } = req.query as Record<string, string>;
 
     const conditions: string[] = [];
     const params: any[] = [];
@@ -166,6 +166,16 @@ router.get('/bookings', async (req, res, next) => {
     if (channel) {
       params.push(channel);
       conditions.push(`c.code = $${params.length}`);
+    }
+    if (type === 'hostel' || type === 'apartment') {
+      // Hostel y apartamentos comparten la tabla reservations: se separan por room_types.property_type.
+      params.push(type);
+      conditions.push(
+        `EXISTS (SELECT 1 FROM reservation_beds rbt
+                   JOIN beds bt ON bt.id = rbt.bed_id
+                   JOIN room_types rtt ON rtt.id = bt.room_type_id
+                  WHERE rbt.reservation_id = r.id AND rtt.property_type::text = $${params.length})`,
+      );
     }
     if (q && q.trim()) {
       // Búsqueda libre por huésped, email o número de reserva.

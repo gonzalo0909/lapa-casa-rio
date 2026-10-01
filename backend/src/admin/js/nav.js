@@ -1,5 +1,8 @@
 // Barra de navegación compartida entre las páginas del panel.
 //
+// Reservas e iCal / OTAs también viven dentro de Hostel y de Apartamentos
+// (filtradas por tipo con ?type=hostel|apartment): los dos negocios no se mezclan.
+//
 // Bloqueos, Ofertas y Precios dinámicos dejaron de ser pestañas propias
 // acá -- ahora viven embebidos (vía iframe) dentro de Hostel y de
 // Apartamentos, cada uno filtrado a su tipo de propiedad. Precios
@@ -25,14 +28,12 @@ function renderNav(activePage) {
 
   const links = [
     { href: '/admin/index.html', label: 'Dashboard', page: 'dashboard' },
-    { href: '/admin/bookings.html', label: 'Reservas', page: 'bookings' },
     { href: '/admin/rooms.html', label: 'Hostel', page: 'rooms' },
     { href: '/admin/apartments.html', label: 'Apartamentos', page: 'apartments' },
     { href: '/admin/owners.html', label: 'Administradores', page: 'owners' },
     { href: '/admin/conflicts.html', label: 'Conflictos', page: 'conflicts' },
     { href: '/admin/photos.html', label: 'Fotos huésp.', page: 'photos' },
     { href: '/admin/gallery.html', label: 'Galería', page: 'gallery' },
-    { href: '/admin/ical.html', label: 'iCal / OTAs', page: 'ical' },
     { href: '/admin/blacklist.html', label: 'Lista negra', page: 'blacklist' },
     { href: '/admin/security.html', label: 'Seguridad', page: 'security' }
   ];

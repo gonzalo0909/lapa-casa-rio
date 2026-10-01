@@ -66,6 +66,10 @@ function renderTable(owners) {
         <span class="${o.isActive ? 'badge-active' : 'badge-inactive'}">
           ${o.isActive ? 'Activo' : 'Desactivado'}
         </span>
+        <div style="font-size:12px;color:#666;margin:6px 0;">
+          Comisión ${fmtPct(o.commissionRate)}<br>Payout ${fmtPct(o.payoutFeeRate)}
+        </div>
+        <button data-action="edit-rates" style="font-size:12px;padding:3px 9px;">% Editar</button>
       </td>
       <td>
         <div style="margin-bottom:6px;">
@@ -102,6 +106,12 @@ function renderTable(owners) {
       const ownerId = btn.closest('tr').dataset.ownerId;
       const owner = allOwners.find((o) => o.id === ownerId);
       if (owner) openAssignModal(owner);
+    });
+  });
+  tbody.querySelectorAll('button[data-action="edit-rates"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const owner = allOwners.find((o) => o.id === btn.closest('tr').dataset.ownerId);
+      if (owner) openRatesModal(owner);
     });
   });
   tbody.querySelectorAll('button[data-action="view-docs"]').forEach((btn) => {
@@ -485,3 +495,47 @@ document.getElementById('new-owner-confirm').addEventListener('click', async () 
 // ── Inicio ─────────────────────────────────────────────────────────────────
 
 refresh();
+
+// ── Comisiones por administrador ───────────────────────────────────────────
+
+// La API devuelve las tasas como fracción (0.0500 = 5%); el panel las muestra en %.
+function fmtPct(rate) {
+  const n = Number(rate);
+  return Number.isFinite(n) ? `${+(n * 100).toFixed(2)}%` : '—';
+}
+
+let ratesOwnerId = null;
+
+function openRatesModal(owner) {
+  ratesOwnerId = owner.id;
+  document.getElementById('rates-modal-title').textContent = `Comisiones — ${owner.fullName}`;
+  document.getElementById('rates-commission').value = +(Number(owner.commissionRate) * 100).toFixed(2);
+  document.getElementById('rates-payout').value = +(Number(owner.payoutFeeRate) * 100).toFixed(2);
+  document.getElementById('rates-modal-msg').innerHTML = '';
+  document.getElementById('rates-modal').style.display = 'flex';
+}
+
+document.getElementById('rates-cancel').addEventListener('click', () => {
+  document.getElementById('rates-modal').style.display = 'none';
+});
+
+document.getElementById('rates-save').addEventListener('click', async () => {
+  if (!ratesOwnerId) { return; }
+  const commissionPct = Number(document.getElementById('rates-commission').value);
+  const payoutPct = Number(document.getElementById('rates-payout').value);
+  if (![commissionPct, payoutPct].every((n) => Number.isFinite(n) && n >= 0 && n <= 100)) {
+    showMsg('rates-modal-msg', 'Ingresá porcentajes entre 0 y 100', 'error');
+    return;
+  }
+  try {
+    await apiFetch(`${OW}/${ratesOwnerId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ commissionRate: commissionPct / 100, payoutFeeRate: payoutPct / 100 }),
+    });
+    document.getElementById('rates-modal').style.display = 'none';
+    await refresh();
+    showMsg('page-msg', '✓ Comisiones actualizadas', 'success');
+  } catch (err) {
+    showMsg('rates-modal-msg', err.message, 'error');
+  }
+});

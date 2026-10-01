@@ -478,8 +478,12 @@ export const paymentAPI = {
   /**
    * Crea una Stripe Checkout Session (pago con tarjeta) y devuelve la URL de pago
    */
-  stripeCheckout: (reservationId: string, frontendUrl: string, confirmationToken?: string) =>
-    api.post('/payments/stripe-checkout', { reservationId, confirmationToken, frontendUrl }),
+  stripeCheckout: (
+    reservationId: string,
+    frontendUrl: string,
+    confirmationToken?: string,
+    paymentMethod: 'card' | 'pix' = 'card',
+  ) => api.post('/payments/stripe-checkout', { reservationId, confirmationToken, frontendUrl, paymentMethod }),
 
   /**
    * Genera un link de Stripe para el flujo WhatsApp (sin reserva previa)

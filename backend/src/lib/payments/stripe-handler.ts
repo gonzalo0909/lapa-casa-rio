@@ -111,6 +111,8 @@ export class StripeHandler {
     description: string;
     customerEmail: string;
     reservationId: string;
+    /** 'card' (default) o 'pix'. Una sesión acepta un solo método para que el recargo de tarjeta no aplique a PIX. */
+    paymentMethod?: 'card' | 'pix';
     successUrl: string;
     cancelUrl: string;
     metadata?: Record<string, string>;
@@ -122,10 +124,11 @@ export class StripeHandler {
       return { sessionId: `cs_test_${Date.now()}`, url: data.successUrl };
     }
     const amountCents = Math.round(data.amount * 100);
+    const method = data.paymentMethod ?? 'card';
     const session = await this.stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card', 'pix'],
-      payment_method_options: { pix: { expires_after_seconds: 3600 } },
+      payment_method_types: [method],
+      ...(method === 'pix' ? { payment_method_options: { pix: { expires_after_seconds: 3600 } } } : {}),
       line_items: [{
         price_data: {
           currency: 'brl',

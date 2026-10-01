@@ -483,7 +483,8 @@ export class PaymentService {
   // llamar acá, por eso recibe el booking ya resuelto).
   async createBookingCheckoutSession(
     booking: Reservation,
-    frontendUrl?: string
+    frontendUrl?: string,
+    paymentMethod: 'card' | 'pix' = 'card'
   ): Promise<{ url: string; sessionId: string; amount: number; currency: string }> {
     const baseUrl = frontendUrl || process.env.FRONTEND_URL || 'https://lapacasario.com';
     const depositAmount = Number(booking.deposit_amount);
@@ -495,6 +496,7 @@ export class PaymentService {
       description: `Depósito reserva ${displayCode} — Lapa Casa Hostel`,
       customerEmail: guestEmail,
       reservationId: booking.id,
+      paymentMethod,
       successUrl: `${baseUrl}/pt/hostel?paid=1&booking=${booking.id}`,
       cancelUrl: `${baseUrl}/pt/hostel`,
     });

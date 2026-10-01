@@ -2,6 +2,13 @@
 requireAuth();
 renderNav('bookings');
 
+// ?type=hostel|apartment: cuando la página se embebe dentro de Hostel o de Apartamentos
+// (rooms.html / apartments.html) muestra solo las reservas de ese tipo.
+const PROPERTY_TYPE = (() => {
+  const t = new URLSearchParams(window.location.search).get('type');
+  return t === 'hostel' || t === 'apartment' ? t : '';
+})();
+
 const state = { page: 1, limit: 20, total: 0, sortKey: null, sortDir: 1, rows: [] };
 
 function showMsg(elId, text, type) {
@@ -36,6 +43,7 @@ async function loadBookings() {
   try {
     const f = currentFilters();
     const params = new URLSearchParams({ page: state.page, limit: state.limit });
+    if (PROPERTY_TYPE) params.set('type', PROPERTY_TYPE);
     if (f.q) params.set('q', f.q);
     if (f.channel) params.set('channel', f.channel);
     if (f.status) params.set('status', f.status);

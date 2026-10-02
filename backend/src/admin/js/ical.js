@@ -205,6 +205,12 @@ async function loadExportURLs() {
     ];
     const base = window.location.origin;
     const el = document.getElementById('export-list');
+    const tokenData = await apiFetch('/ical/export-token');
+    if (!tokenData || !tokenData.token) {
+      el.innerHTML = '<p style="color:red;">Falta configurar ICAL_EXPORT_TOKEN en el servidor: sin él los feeds de exportación no responden.</p>';
+      return;
+    }
+    const tokenQs = `?token=${encodeURIComponent(tokenData.token)}`;
 
     if (!rooms.length) {
       el.innerHTML = '<p style="color:#888;">Sin habitaciones disponibles.</p>';
@@ -212,7 +218,7 @@ async function loadExportURLs() {
     }
 
     el.innerHTML = rooms.map((r) => {
-      const url = `${base}${r.exportPath}`;
+      const url = `${base}${r.exportPath}${tokenQs}`;
       return `
         <div style="margin-bottom:14px;" data-url="${escapeHtml(url)}">
           <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>

@@ -21,7 +21,7 @@ import { notificationService } from '../../services/notification-service';
 import { statsService } from '../../services/stats-service';
 import { auditLogService } from '../../services/audit-log-service';
 import { fullExport } from '../../integrations/google-sheets/booking-export';
-import { query } from '../../config/database';
+import { query, withTransaction } from '../../config/database';
 import { ApiResponse } from '../../utils/responses';
 import { adminConflictsRouter } from './conflicts.routes';
 import { adminPhotosRouter } from './photos.routes';
@@ -185,9 +185,12 @@ router.get('/bookings', async (req, res, next) => {
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    // Por fecha de estadia, no por fecha de carga: con un rango de fechas, las proximas primero;
-    // sin rango, las mas recientes primero.
-    const orderBy = from || to ? 'r.check_in_date ASC, r.created_at ASC' : 'r.check_in_date DESC, r.created_at DESC';
+    // Por fecha de estadia: primero las que todavia no terminaron, de la mas cercana a la mas lejana;
+    // despues las ya terminadas, de la mas reciente a la mas antigua.
+    const today = `(NOW() AT TIME ZONE 'America/Sao_Paulo')::date`;
+    const orderBy = `(r.check_out_date < ${today}) ASC,
+         CASE WHEN r.check_out_date >= ${today} THEN r.check_in_date END ASC,
+         r.check_in_date DESC, r.created_at DESC`;
 
     const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit || '20', 10) || 20));
@@ -197,6 +200,7 @@ router.get('/bookings', async (req, res, next) => {
         `SELECT r.id, r.reservation_number, r.status, r.check_in_date, r.check_out_date,
                 r.beds_count, r.final_price, r.deposit_amount, r.remaining_amount,
                 g.full_name AS guest_name, g.email AS guest_email,
+                g.phone AS guest_phone, g.country AS guest_country, r.special_requests,
                 c.code AS channel_code, r.created_at,
                 units.property_type, units.unit_names
          FROM reservations r
@@ -469,7 +473,7 @@ router.put('/bookings/:id', async (req, res, next) => {
     const { id } = req.params;
     const body = req.body as Record<string, any>;
 
-    const forbidden = ['checkIn', 'checkOut', 'check_in_date', 'check_out_date', 'rooms', 'status'];
+    const forbidden = ['check_in_date', 'check_out_date', 'rooms', 'status'];
     const attempted = forbidden.filter((f) => body[f] !== undefined);
     if (attempted.length > 0) {
       res
@@ -486,6 +490,53 @@ router.put('/bookings/:id', async (req, res, next) => {
     if (!existing) {
       res.status(404).json(ApiResponse.error('Reserva no encontrada'));
       return;
+    }
+
+    // Fechas: solo en reservas de apartamento (unidad completa). El constraint de la base rechaza
+    // cualquier superposicion con otra reserva del mismo apartamento. En el hostel (camas) sigue
+    // siendo cancelar y crear de nuevo, para no saltear el motor anti-overbooking.
+    if (body.checkIn !== undefined || body.checkOut !== undefined) {
+      const { rows: cur } = await query<{ check_in: string; check_out: string }>(
+        `SELECT check_in_date::text AS check_in, check_out_date::text AS check_out FROM reservations WHERE id = $1`,
+        [id],
+      );
+      const newCheckIn = String(body.checkIn ?? cur[0].check_in);
+      const newCheckOut = String(body.checkOut ?? cur[0].check_out);
+      const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+      if (!isoDate.test(newCheckIn) || !isoDate.test(newCheckOut) || newCheckOut <= newCheckIn) {
+        res.status(400).json(ApiResponse.error('Fechas invalidas: el check-out debe ser posterior al check-in (AAAA-MM-DD).'));
+        return;
+      }
+      const { rows: kinds } = await query<{ apt: string; total: string }>(
+        `SELECT COUNT(*) FILTER (WHERE rt.property_type = 'apartment') AS apt, COUNT(*) AS total
+         FROM reservation_beds rb JOIN room_types rt ON rt.id = rb.room_type_id
+         WHERE rb.reservation_id = $1`,
+        [id],
+      );
+      if (Number(kinds[0].total) === 0 || kinds[0].apt !== kinds[0].total) {
+        res.status(400).json(ApiResponse.error('Solo se pueden cambiar las fechas de reservas de apartamento. En el hostel: cancelar y crear una reserva nueva.'));
+        return;
+      }
+      try {
+        await withTransaction(async (client) => {
+          await client.query(
+            `UPDATE reservation_beds SET check_in = $2::date, check_out = $3::date WHERE reservation_id = $1`,
+            [id, newCheckIn, newCheckOut],
+          );
+          await client.query(
+            `UPDATE reservations
+             SET check_in_date = $2::date, check_out_date = $3::date, nights_count = ($3::date - $2::date), updated_at = now()
+             WHERE id = $1`,
+            [id, newCheckIn, newCheckOut],
+          );
+        });
+      } catch (error: any) {
+        if (error?.code === '23P01' || error?.code === '23505') {
+          res.status(409).json(ApiResponse.error('Esas fechas se superponen con otra reserva de este apartamento.'));
+          return;
+        }
+        throw error;
+      }
     }
 
     const updateData: Record<string, any> = {};
@@ -529,7 +580,7 @@ router.put('/bookings/:id', async (req, res, next) => {
       reservation_id: id,
       guest_id: existing.guest_id,
       old_data: existing as unknown as Record<string, unknown>,
-      new_data: { ...updateData, guest: body.guest },
+      new_data: { ...updateData, guest: body.guest, checkIn: body.checkIn, checkOut: body.checkOut },
     });
 
     const updated = await bookingService.getBooking(id);

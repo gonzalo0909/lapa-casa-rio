@@ -39,6 +39,14 @@ async function main(): Promise<void> {
     startMonitoringAlertsWorker()
   ];
 
+  // BullMQ emite 'error' ante cualquier fallo de conexion a Redis; sin un listener,
+  // Node lo trata como excepcion no capturada y TUMBA el proceso entero (esa era
+  // una causa de que el worker se detuviera solo). Se loguea y se sigue: ioredis
+  // reconecta por su cuenta.
+  for (const worker of workers) {
+    worker.on('error', (err) => logger.warn('Worker BullMQ: error de Redis', { queue: worker.name, message: err.message }));
+  }
+
   // Los repeatable jobs son idempotentes (upsertJobScheduler con id fijo) --
   // seguro registrarlos en cada arranque del proceso de workers.
   await registerCleanupScheduler();
@@ -57,6 +65,17 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
+
+// Una promesa rechazada sin capturar no debe matar a todos los workers: se loguea
+// y se sigue. Una excepcion no capturada deja el proceso en estado incierto: se
+// loguea y se sale para que Fly lo reinicie (fly.toml: restart policy 'always').
+process.on('unhandledRejection', (reason) => {
+  logger.error('Worker: promesa rechazada sin capturar', { reason: reason instanceof Error ? reason.message : String(reason) });
+});
+process.on('uncaughtException', (error) => {
+  logger.error('Worker: excepcion no capturada, reiniciando', { error: error.message });
+  process.exit(1);
+});
 
 main().catch(error => {
   logger.error('Error fatal iniciando workers', { error: error.message });

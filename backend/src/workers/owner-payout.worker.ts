@@ -1,5 +1,5 @@
 import { Worker, type Job } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { releaseDueOwnerPayouts } from '../services/owner-payout-service';
 import { logger } from '../utils/logger';
 
@@ -10,7 +10,7 @@ export function startOwnerPayoutWorker(): Worker {
       const res = await releaseDueOwnerPayouts();
       logger.info('owner-payout worker completado', res);
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

@@ -1,6 +1,6 @@
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { runScheduledAlertChecks } from '../monitoring/alerts';
 import { logger } from '../utils/logger';
 
@@ -12,7 +12,7 @@ export function startMonitoringAlertsWorker(): Worker {
       await runScheduledAlertChecks();
       logger.info('monitoring-alerts worker completado', { ms: Date.now() - start });
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

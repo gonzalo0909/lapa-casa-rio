@@ -60,6 +60,8 @@ export interface FeedImportResult {
   success: boolean;
   imported: number;
   alreadyKnown: number;
+  /** reservas conocidas cuyas fechas cambio la OTA y se actualizaron */
+  updated: number;
   cancelled: number;
   skippedOwn: number;
   errors: string[];
@@ -413,6 +415,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
   const farFutureLimit = toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000));
   let imported = 0;
   let alreadyKnown = 0;
+  let updated = 0;
   let skippedOwn = 0;
   let cancelledDirect = 0;
 
@@ -451,7 +454,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
           },
           feed.channelId
         );
-        if (result.deduplicated) {alreadyKnown++;} else {imported++;}
+        if (result.updated) {updated++;} else if (result.deduplicated) {alreadyKnown++;} else {imported++;}
       } catch (error) {
         errors.push(`Evento ${event.uid}: ${error instanceof Error ? error.message : 'error desconocido'}`);
       }
@@ -477,6 +480,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       success: true,
       imported,
       alreadyKnown,
+      updated,
       cancelled: cancelledDirect + cancelledByAbsence,
       skippedOwn,
       errors,
@@ -491,6 +495,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       success: false,
       imported: 0,
       alreadyKnown: 0,
+      updated: 0,
       cancelled: 0,
       skippedOwn: 0,
       errors: [message],

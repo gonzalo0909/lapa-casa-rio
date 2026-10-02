@@ -1,6 +1,6 @@
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { query } from '../config/database';
 import bookingRepo from '../database/repositories/booking-repository';
 import { notificationService } from '../services/notification-service';
@@ -233,7 +233,7 @@ export function startCleanupWorker(): Worker {
       if (cancelled > 0) {logger.info('Sesiones grupales expiradas canceladas', { count: cancelled });}
       logger.info('cleanup worker completado', { ms: Date.now() - start });
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

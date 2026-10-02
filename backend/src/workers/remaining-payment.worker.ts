@@ -7,7 +7,7 @@
 // remaining-payment-retries.worker.ts.
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import bookingRepo from '../database/repositories/booking-repository';
 import { paymentService } from '../services/payment-service';
 import { notificationService } from '../services/notification-service';
@@ -60,7 +60,7 @@ export function startRemainingPaymentWorker(): Worker<RemainingPaymentJobData> {
 
       logger.info('remaining-payment: payment intent creado y recordatorio enviado', { reservationId, provider });
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

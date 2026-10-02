@@ -5,7 +5,7 @@
 // tiene sentido reintentarlo hasta que alguien cargue las credenciales.
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { upsertBookingInSheet, deleteBookingFromSheet } from '../integrations/google-sheets/booking-export';
 import { logger } from '../utils/logger';
 import type { SheetsExportJobData } from '../queues/sheets-export.queue';
@@ -21,7 +21,7 @@ export function startSheetsExportWorker(): Worker<SheetsExportJobData> {
         await upsertBookingInSheet(reservationId);
       }
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

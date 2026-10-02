@@ -54,3 +54,14 @@ export async function closeQueueConnection(): Promise<void> {
     connection = null;
   }
 }
+
+/**
+ * Opciones comunes de todos los Worker. Un worker inactivo consulta Redis en
+ * bucle (drainDelay) y revisa jobs trabados (stalledInterval); con ~9 workers eso
+ * son decenas de miles de comandos por dia, que en planes de Redis facturados por
+ * comando (Upstash) pesa. drainDelay=10 es el maximo que permite BullMQ sobre
+ * Redis; los jobs nuevos despiertan al worker al instante igual (marker).
+ */
+export function getWorkerOptions() {
+  return { connection: getQueueConnection(), drainDelay: 10, stalledInterval: 300_000 };
+}

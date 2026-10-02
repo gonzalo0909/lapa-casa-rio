@@ -1,6 +1,6 @@
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { notificationService, type NotificationType } from '../services/notification-service';
 import { logger } from '../utils/logger';
 import type { EmailNotificationJobData } from '../queues/email-notifications.queue';
@@ -12,7 +12,7 @@ export function startEmailNotificationsWorker(): Worker<EmailNotificationJobData
       const { notificationId, reservationId, type } = job.data;
       await notificationService.processScheduled(notificationId, reservationId, type as NotificationType);
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

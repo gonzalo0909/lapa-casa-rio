@@ -7,7 +7,7 @@
 // off-session todavia, asi que "reintento" es reenviar el link de pago).
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { query } from '../config/database';
 import bookingRepo from '../database/repositories/booking-repository';
 import { paymentService } from '../services/payment-service';
@@ -70,7 +70,7 @@ export function startRemainingPaymentRetriesWorker(): Worker<RemainingPaymentRet
       await notificationService.notify('payment_reminder', booking as BookingWithGuest);
       await scheduleNextRetry(reservationId, (attemptNumber + 1) as 2 | 3);
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

@@ -5,8 +5,6 @@ import { StripeHandler } from '../lib/payments/stripe-handler';
 import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
 import { availabilityService } from './availability-service';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
-import { scheduleApartmentRemainingPayment } from '../queues/remaining-payment.queue';
-import { query } from '../config/database';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
 import type { Payment, PaymentProvider, Reservation } from '../types/database';
@@ -224,20 +222,8 @@ export class PaymentService {
       );
 
 
-      if (payment.payment_type === 'deposit' && Number(bookingWithGuest.remaining_amount) > 0) {
-        // Apartamentos: el 70% se cobra la mañana del check-in (Cláusula 3.2) y el huésped
-        // debe pagarlo. Hostel: no hay cobro automático, solo el recordatorio único.
-        const { rows: aptRows } = await query<{ count: string }>(
-          `SELECT COUNT(*) AS count
-           FROM reservation_beds rb
-           JOIN room_types rt ON rt.id = rb.room_type_id
-           WHERE rb.reservation_id = $1 AND rt.property_type = 'apartment'`,
-          [bookingWithGuest.id]
-        );
-        if (parseInt(aptRows[0]?.count ?? '0') > 0) {
-          await scheduleApartmentRemainingPayment(bookingWithGuest.id, new Date(bookingWithGuest.check_in_date));
-        }
-      }
+      // El cobro del 70% de apartamentos (8:00 del check-in) ya no se programa aca: lo detecta
+      // el planificador del worker consultando la base (workers/remaining-payment.task.ts).
     } catch (error: any) {
       logger.error('Error en efectos secundarios de pago confirmado (notificaciones)', {
         paymentId: payment.id,

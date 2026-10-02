@@ -52,3 +52,12 @@ function renderNav(activePage) {
 
   document.getElementById('logout-btn').addEventListener('click', logout);
 }
+
+// Un clic en cualquier parte de un campo de fecha abre el calendario (por defecto
+// Chrome solo lo abre con el ícono; el resto del campo edita día/mes/año).
+document.addEventListener('click', (e) => {
+  const el = e.target;
+  if (el instanceof HTMLInputElement && el.type === 'date' && !el.disabled && !el.readOnly && typeof el.showPicker === 'function') {
+    try { el.showPicker(); } catch (_) { /* ya abierto o no permitido: se deja el comportamiento nativo */ }
+  }
+});

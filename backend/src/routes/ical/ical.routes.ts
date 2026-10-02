@@ -46,6 +46,11 @@ function requireExportToken(req: Request, res: Response, next: NextFunction): vo
   next();
 }
 
+const ChannelQuerySchema = z.enum(['direct', 'booking', 'hostelworld', 'airbnb', 'expedia']).optional();
+
+/** ?channel=booking: el feed omite las reservas que vinieron de ese canal (evita el eco OTA -> Lapa -> OTA). */
+const channelOf = (req: Request) => ChannelQuerySchema.parse(req.query.channel);
+
 function sendCalendar(res: Response, filename: string, calendar: string): void {
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -57,7 +62,7 @@ function sendCalendar(res: Response, filename: string, calendar: string): void {
 /** GET /api/ical/export/:roomId — feed iCal publico de disponibilidad de UNA habitacion (room_types.id real). */
 router.get('/export/:roomId', exportLimiter, requireExportToken, async (req, res) => {
   try {
-    const calendar = await icalService.generateICalFeed(req.params.roomId);
+    const calendar = await icalService.generateICalFeed(req.params.roomId, channelOf(req));
     sendCalendar(res, `room-${req.params.roomId}.ics`, calendar);
   } catch (error) {
     res.status(404).json(ApiResponse.error('No se pudo generar el feed', error instanceof Error ? error.message : 'Error desconocido'));
@@ -65,9 +70,9 @@ router.get('/export/:roomId', exportLimiter, requireExportToken, async (req, res
 });
 
 /** GET /api/ical/export — feed iCal publico combinado con las 5 habitaciones reales. */
-router.get('/export', exportLimiter, requireExportToken, async (_req, res) => {
+router.get('/export', exportLimiter, requireExportToken, async (req, res) => {
   try {
-    const calendar = await icalService.generateAllFeeds();
+    const calendar = await icalService.generateAllFeeds(channelOf(req));
     sendCalendar(res, 'lapa-casa-hostel-all-rooms.ics', calendar);
   } catch (error) {
     res.status(500).json(ApiResponse.error('No se pudo generar el feed combinado', error instanceof Error ? error.message : 'Error desconocido'));
@@ -77,7 +82,7 @@ router.get('/export', exportLimiter, requireExportToken, async (_req, res) => {
 /** GET /api/ical/apartment/export/:roomTypeId — feed iCal público de UN apartamento. */
 router.get('/apartment/export/:roomTypeId', exportLimiter, requireExportToken, async (req, res) => {
   try {
-    const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId);
+    const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId, channelOf(req));
     sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);
   } catch (error) {
     res.status(404).json(ApiResponse.error('No se pudo generar el feed', error instanceof Error ? error.message : 'Error desconocido'));
@@ -85,9 +90,9 @@ router.get('/apartment/export/:roomTypeId', exportLimiter, requireExportToken, a
 });
 
 /** GET /api/ical/apartment/export — feed iCal público combinado de todos los apartamentos. */
-router.get('/apartment/export', exportLimiter, requireExportToken, async (_req, res) => {
+router.get('/apartment/export', exportLimiter, requireExportToken, async (req, res) => {
   try {
-    const calendar = await icalService.generateAllApartmentFeeds();
+    const calendar = await icalService.generateAllApartmentFeeds(channelOf(req));
     sendCalendar(res, 'lapa-casa-apartamentos.ics', calendar);
   } catch (error) {
     res.status(500).json(ApiResponse.error('No se pudo generar el feed combinado', error instanceof Error ? error.message : 'Error desconocido'));

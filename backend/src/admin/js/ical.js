@@ -217,18 +217,22 @@ async function loadExportURLs() {
       return;
     }
 
-    el.innerHTML = rooms.map((r) => {
-      const url = `${base}${r.exportPath}${tokenQs}`;
-      return `
-        <div style="margin-bottom:14px;" data-url="${escapeHtml(url)}">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--bg,#f5f5f5);border:1px solid #ddd;border-radius:6px;padding:8px 12px;">
+    // Un URL por OTA: cada una omite las reservas que vinieron de ella misma (evita el eco).
+    const OTAS = ['booking', 'airbnb'];
+    el.innerHTML = rooms.map((r) => `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>
+        ${OTAS.map((ota) => {
+          const url = `${base}${r.exportPath}${tokenQs}&channel=${ota}`;
+          return `
+          <div style="font-size:12px;margin:6px 0 2px;">Para pegar en ${escapeHtml(PLATFORM_LABELS[ota])}:</div>
+          <div data-url="${escapeHtml(url)}" style="display:flex;align-items:center;gap:8px;background:var(--bg,#f5f5f5);border:1px solid #ddd;border-radius:6px;padding:8px 12px;">
             <code style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(url)}</code>
             <button data-action="copy-url" style="white-space:nowrap;font-size:12px;">Copiar</button>
-          </div>
-        </div>
-      `;
-    }).join('');
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('');
 
     // onclick="..." en el HTML lo bloquea la CSP del backend (scriptSrc:
     // 'self', sin unsafe-inline) -- el botón "Copiar" nunca funcionó antes.

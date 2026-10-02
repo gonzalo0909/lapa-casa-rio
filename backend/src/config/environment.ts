@@ -49,6 +49,7 @@ const env = {
   // secret configurado, el webhook de ese canal rechaza todo con 401 en
   // vez de aceptar sin verificar (nunca "modo test que acepta todo" para
   // un endpoint que crea reservas reales).
+  ICAL_EXPORT_TOKEN: process.env.ICAL_EXPORT_TOKEN || '',
   BOOKING_WEBHOOK_SECRET: process.env.BOOKING_WEBHOOK_SECRET || '',
   BOOKING_WEBHOOK_API_KEY: process.env.BOOKING_WEBHOOK_API_KEY || '',
   BOOKING_WEBHOOK_IPS: process.env.BOOKING_WEBHOOK_IPS || '',

@@ -338,6 +338,7 @@ export async function parseICalEvents(icalText: string, platform?: string): Prom
 
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
+  const farFutureLimit = toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000));
   let imported = 0;
   let alreadyKnown = 0;
   let skippedOwn = 0;
@@ -351,6 +352,10 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
 
     for (const event of events) {
       if (event.isOwn) { skippedOwn++; continue; }
+      // Booking cierra siempre su "horizonte" (desde hoy + 1 año hasta una fecha lejana) y ese cierre
+      // se corre un dia por dia: no es una reserva, y bloquearia todas esas fechas en Lapa.
+      // Se ignoran los eventos que empiezan a mas de 360 dias.
+      if (event.checkIn > farFutureLimit) { continue; }
       // Booking.com exporta sus reservas como "CLOSED - Not available" y Airbnb como
       // "Reserved": el parser las marca isBlocked, pero SON las fechas ocupadas y hay
       // que importarlas para bloquear disponibilidad (antes se descartaban y no

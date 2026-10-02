@@ -8,8 +8,10 @@
 // en el schema real -- los feeds configurados viven en `system_config`
 // (ver services/ical-service.ts).
 
-import { Router, type Response } from 'express';
+import { timingSafeEqual } from 'crypto';
+import { Router, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
+import { env } from '../../config/environment';
 import { authenticateToken, requireRole } from '../../middleware/auth';
 import { rateLimiter } from '../../middleware/rate-limiter';
 import { icalService } from '../../services/ical-service';
@@ -29,6 +31,21 @@ const UpdateFeedSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+/** Las URLs de exportacion exigen ?token=ICAL_EXPORT_TOKEN: sin token valido no se revela nada. */
+function requireExportToken(req: Request, res: Response, next: NextFunction): void {
+  if (!env.ICAL_EXPORT_TOKEN) {
+    res.status(503).json(ApiResponse.error('Exportación iCal no configurada (falta ICAL_EXPORT_TOKEN)'));
+    return;
+  }
+  const given = Buffer.from(typeof req.query.token === 'string' ? req.query.token : '');
+  const expected = Buffer.from(env.ICAL_EXPORT_TOKEN);
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    res.status(404).json(ApiResponse.error('No encontrado'));
+    return;
+  }
+  next();
+}
+
 function sendCalendar(res: Response, filename: string, calendar: string): void {
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -38,7 +55,7 @@ function sendCalendar(res: Response, filename: string, calendar: string): void {
 }
 
 /** GET /api/ical/export/:roomId — feed iCal publico de disponibilidad de UNA habitacion (room_types.id real). */
-router.get('/export/:roomId', exportLimiter, async (req, res) => {
+router.get('/export/:roomId', exportLimiter, requireExportToken, async (req, res) => {
   try {
     const calendar = await icalService.generateICalFeed(req.params.roomId);
     sendCalendar(res, `room-${req.params.roomId}.ics`, calendar);
@@ -48,7 +65,7 @@ router.get('/export/:roomId', exportLimiter, async (req, res) => {
 });
 
 /** GET /api/ical/export — feed iCal publico combinado con las 5 habitaciones reales. */
-router.get('/export', exportLimiter, async (_req, res) => {
+router.get('/export', exportLimiter, requireExportToken, async (_req, res) => {
   try {
     const calendar = await icalService.generateAllFeeds();
     sendCalendar(res, 'lapa-casa-hostel-all-rooms.ics', calendar);
@@ -58,7 +75,7 @@ router.get('/export', exportLimiter, async (_req, res) => {
 });
 
 /** GET /api/ical/apartment/export/:roomTypeId — feed iCal público de UN apartamento. */
-router.get('/apartment/export/:roomTypeId', exportLimiter, async (req, res) => {
+router.get('/apartment/export/:roomTypeId', exportLimiter, requireExportToken, async (req, res) => {
   try {
     const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId);
     sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);
@@ -68,13 +85,18 @@ router.get('/apartment/export/:roomTypeId', exportLimiter, async (req, res) => {
 });
 
 /** GET /api/ical/apartment/export — feed iCal público combinado de todos los apartamentos. */
-router.get('/apartment/export', exportLimiter, async (_req, res) => {
+router.get('/apartment/export', exportLimiter, requireExportToken, async (_req, res) => {
   try {
     const calendar = await icalService.generateAllApartmentFeeds();
     sendCalendar(res, 'lapa-casa-apartamentos.ics', calendar);
   } catch (error) {
     res.status(500).json(ApiResponse.error('No se pudo generar el feed combinado', error instanceof Error ? error.message : 'Error desconocido'));
   }
+});
+
+/** GET /api/ical/export-token — token que el panel admin agrega a las URLs de exportacion. */
+router.get('/export-token', authenticateToken, requireRole(['admin']), (_req, res) => {
+  res.status(200).json(ApiResponse.success({ token: env.ICAL_EXPORT_TOKEN || null }));
 });
 
 /** GET /api/ical/feeds — feeds de importacion configurados (admin). */

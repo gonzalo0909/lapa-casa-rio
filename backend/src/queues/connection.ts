@@ -35,6 +35,12 @@ export function getQueueConnection(): IORedis {
       maxRetriesPerRequest: null,
       enableReadyCheck: true
     });
+    try {
+      // Solo el host (nunca usuario/clave): permite identificar el proveedor de Redis en los logs.
+      logger.info('BullMQ Redis: conectando', { host: new URL(env.REDIS_URL).hostname });
+    } catch {
+      /* REDIS_URL con formato no estandar: no se loguea nada */
+    }
     connection.on('error', (err) => {
       logger.warn('BullMQ Redis connection error', { message: err.message });
     });

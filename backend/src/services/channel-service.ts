@@ -42,8 +42,9 @@ const isOverbookingError = (error: unknown): boolean => {
   return code === '23505' || code === '23P01';
 };
 
-const generateReservationNumber = (): string =>
-  `LCH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+// LCH = hostel, LCA = apartamentos (mismo criterio que las reservas directas).
+const generateReservationNumber = (prefix: 'LCH' | 'LCA'): string =>
+  `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
 interface RoomTypeRow {
   id: string;
@@ -332,7 +333,7 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
       // (1 cuarto por reserva) bedsCount ES el total, asi que se aplica aca.
       const finalPrice = Math.round(preDiscountPrice * (1 - groupDiscount) * 100) / 100;
 
-      const reservationNumber = generateReservationNumber();
+      const reservationNumber = generateReservationNumber(isApartment ? 'LCA' : 'LCH');
 
       const { rows: reservationRows } = await client.query(
         `INSERT INTO reservations (

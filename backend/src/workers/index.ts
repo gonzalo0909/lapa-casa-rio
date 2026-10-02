@@ -4,22 +4,38 @@
 // worker:dev` (dev, tsx watch). Requiere REDIS_URL real: sin ella, los
 // workers no tienen nada que consumir (ver queues/connection.ts).
 
-import { queuesEnabled } from '../queues/connection';
+import { Queue } from 'bullmq';
+import { queuesEnabled, getQueueConnection } from '../queues/connection';
 import { registerCleanupScheduler } from '../queues/cleanup.queue';
 import { registerFlexibleConversionScheduler } from '../queues/flexible-conversion.queue';
 import { registerOtaSyncScheduler } from '../queues/ota-sync.queue';
-import { registerMonitoringAlertsScheduler } from '../queues/monitoring-alerts.queue';
 import { registerOwnerPayoutScheduler } from '../queues/owner-payout.queue';
 import { startCleanupWorker } from './cleanup.worker';
 import { startOwnerPayoutWorker } from './owner-payout.worker';
 import { startFlexibleConversionWorker } from './flexible-conversion.worker';
-import { startRemainingPaymentWorker } from './remaining-payment.worker';
-import { startRemainingPaymentRetriesWorker } from './remaining-payment-retries.worker';
 import { startEmailNotificationsWorker } from './email-notifications.worker';
 import { startSheetsExportWorker } from './sheets-export.worker';
 import { startOtaSyncWorker } from './ota-sync.worker';
-import { startMonitoringAlertsWorker } from './monitoring-alerts.worker';
 import { logger } from '../utils/logger';
+
+// Colas que ya no existen (cobro automatico del saldo, reintentos del saldo y alertas
+// al administrador). Se borran de Redis con sus jobs programados, para que no queden
+// ocupando espacio ni disparando nada. Idempotente: si ya no existen, no hace nada.
+const RETIRED_QUEUES = ['monitoring-alerts', 'remaining-payment', 'remaining-payment-retries'];
+
+async function retireLegacyQueues(): Promise<void> {
+  for (const name of RETIRED_QUEUES) {
+    const queue = new Queue(name, { connection: getQueueConnection() });
+    try {
+      await queue.obliterate({ force: true });
+      logger.info('Cola retirada eliminada de Redis', { queue: name });
+    } catch (error: any) {
+      logger.warn('No se pudo eliminar la cola retirada', { queue: name, message: error.message });
+    } finally {
+      await queue.close().catch(() => {});
+    }
+  }
+}
 
 async function main(): Promise<void> {
   if (!queuesEnabled) {
@@ -31,12 +47,9 @@ async function main(): Promise<void> {
     startCleanupWorker(),
     startOwnerPayoutWorker(),
     startFlexibleConversionWorker(),
-    startRemainingPaymentWorker(),
-    startRemainingPaymentRetriesWorker(),
     startEmailNotificationsWorker(),
     startSheetsExportWorker(),
-    startOtaSyncWorker(),
-    startMonitoringAlertsWorker()
+    startOtaSyncWorker()
   ];
 
   // BullMQ emite 'error' ante cualquier fallo de conexion a Redis; sin un listener,
@@ -47,13 +60,14 @@ async function main(): Promise<void> {
     worker.on('error', (err) => logger.warn('Worker BullMQ: error de Redis', { queue: worker.name, message: err.message }));
   }
 
+  await retireLegacyQueues();
+
   // Los repeatable jobs son idempotentes (upsertJobScheduler con id fijo) --
   // seguro registrarlos en cada arranque del proceso de workers.
   await registerCleanupScheduler();
   await registerOwnerPayoutScheduler();
   await registerFlexibleConversionScheduler();
   await registerOtaSyncScheduler();
-  await registerMonitoringAlertsScheduler();
 
   logger.info(`Workers arriba: ${workers.length} colas activas`);
 

@@ -60,6 +60,13 @@ export function createSafeQueue<DataType = any>(name: string, defaultJobOptions?
       return (q as Queue<any, any, string>).upsertJobScheduler(schedulerId, repeatOpts, jobTemplate);
     },
 
+    /** Borra un job scheduler (idempotente: si no existe, no hace nada). */
+    async removeScheduler(schedulerId: string) {
+      const q = getQueue();
+      if (!q) {return false;}
+      return (q as Queue<any, any, string>).removeJobScheduler(schedulerId);
+    },
+
     raw(): Queue<DataType> | null {
       return getQueue();
     }

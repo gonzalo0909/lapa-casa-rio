@@ -1,6 +1,4 @@
 
-import { type Job, Worker } from 'bullmq';
-import { getWorkerOptions } from '../queues/connection';
 import { query } from '../config/database';
 import bookingRepo from '../database/repositories/booking-repository';
 import { notificationService } from '../services/notification-service';
@@ -173,27 +171,16 @@ async function grantPostCheckoutReferralRewards(): Promise<void> {
   }
 }
 
-export function startCleanupWorker(): Worker {
-  const worker = new Worker(
-    'cleanup',
-    async (_job: Job) => {
-      const start = Date.now();
-      await query('CALL sp_cleanup_expired_pending()');
-      await query('CALL sp_release_no_show()');
-      await notifyCheckinReminders();
-      await notifyPostCheckoutReviews();
-      await grantPostCheckoutReferralRewards();
-      // Feature 2: cancelar sesiones de pago grupal expiradas (timer 30 min)
-      const cancelled = await groupPaymentService.cancelExpiredSessions();
-      if (cancelled > 0) {logger.info('Sesiones grupales expiradas canceladas', { count: cancelled });}
-      logger.info('cleanup worker completado', { ms: Date.now() - start });
-    },
-    getWorkerOptions()
-  );
-
-  worker.on('failed', (job, err) => {
-    logger.error('cleanup worker job falló', { jobId: job?.id, error: err.message });
-  });
-
-  return worker;
+/** Limpieza de reservas vencidas + avisos al huesped + premios de referido. Idempotente. */
+export async function runCleanup(): Promise<void> {
+  const start = Date.now();
+  await query('CALL sp_cleanup_expired_pending()');
+  await query('CALL sp_release_no_show()');
+  await notifyCheckinReminders();
+  await notifyPostCheckoutReviews();
+  await grantPostCheckoutReferralRewards();
+  // Feature 2: cancelar sesiones de pago grupal expiradas (timer 30 min)
+  const cancelled = await groupPaymentService.cancelExpiredSessions();
+  if (cancelled > 0) {logger.info('Sesiones grupales expiradas canceladas', { count: cancelled });}
+  logger.info('cleanup completado', { ms: Date.now() - start });
 }

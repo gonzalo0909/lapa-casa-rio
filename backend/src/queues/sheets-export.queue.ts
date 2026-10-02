@@ -1,24 +1,16 @@
 //
-// Estructura de la cola nada mas -- el worker real que exporta a Google
-// Sheets se implementa en el Bloque 2 de esta ventana, cuando la
-// integracion real (service account, GOOGLE_SHEETS_ID) este configurada.
-// Encolar aca ya es seguro: con safe-queue, sin worker consumidor los
-// jobs simplemente esperan en la cola sin efecto hasta que el Bloque 2
-// levante sheets-export.worker.ts.
+// Espejo DB -> Google Sheets de una reserva. Se ejecuta directo (sin cola ni Redis),
+// sin bloquear a quien lo llama: un fallo se loguea y no afecta a la reserva ni al pago.
+// Si Google Sheets no esta configurado (ver sheets-client.ts), upsertBookingInSheet /
+// deleteBookingFromSheet son no-ops que solo loguean.
 
-import { createSafeQueue } from './safe-queue';
+import { upsertBookingInSheet, deleteBookingFromSheet } from '../integrations/google-sheets/booking-export';
 
-export interface SheetsExportJobData {
-  reservationId: string;
-  action: 'upsert' | 'delete';
-}
-
-export const sheetsExportQueue = createSafeQueue<SheetsExportJobData>('sheets-export', {
-  attempts: 3,
-  backoff: { type: 'exponential', delay: 30_000 }
-});
-
-/** encola el espejo DB -> Sheets de una reserva. Llamado desde booking-service.ts y payment-service.ts tras cada cambio persistido. */
+/** Espeja la reserva en Sheets. Llamado desde booking-service.ts y payment-service.ts tras cada cambio persistido. */
 export async function enqueueSheetsExport(reservationId: string, action: 'upsert' | 'delete' = 'upsert'): Promise<void> {
-  await sheetsExportQueue.add('export-booking', { reservationId, action });
+  if (action === 'delete') {
+    await deleteBookingFromSheet(reservationId);
+  } else {
+    await upsertBookingInSheet(reservationId);
+  }
 }

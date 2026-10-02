@@ -185,6 +185,10 @@ router.get('/bookings', async (req, res, next) => {
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
+    // Por fecha de estadia, no por fecha de carga: con un rango de fechas, las proximas primero;
+    // sin rango, las mas recientes primero.
+    const orderBy = from || to ? 'r.check_in_date ASC, r.created_at ASC' : 'r.check_in_date DESC, r.created_at DESC';
+
     const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit || '20', 10) || 20));
 
@@ -210,7 +214,7 @@ router.get('/bookings', async (req, res, next) => {
            WHERE rb.reservation_id = r.id
          ) units ON true
          ${where}
-         ORDER BY r.created_at DESC
+         ORDER BY ${orderBy}
          LIMIT ${limitNum} OFFSET ${(pageNum - 1) * limitNum}`,
         params,
       ),

@@ -50,7 +50,8 @@ async function dispatchByType(type: NotificationType, booking: BookingWithGuest,
       await emailService.sendPaymentReceived(booking, data.amount);
       return;
     case 'welcome':
-      await emailService.sendWelcomeEmail(booking);
+      // Ya no se envia (el huesped recibe solo confirmacion, un recordatorio y la despedida).
+      // Queda como no-op por los jobs 'welcome' que pudieran seguir programados en Redis.
       return;
     case 'cancellation':
       await emailService.sendCancellationNotice(booking, data.refundAmount ?? 0);
@@ -62,7 +63,13 @@ async function dispatchByType(type: NotificationType, booking: BookingWithGuest,
       await emailService.sendBookingExpiredNotice(booking);
       return;
     case 'checkin_reminder':
-      await emailService.sendCheckinReminder(booking);
+      // Recordatorio UNICO antes del check-in: si falta pagar el saldo, sugiere pagar;
+      // si ya esta pago, manda los datos del check-in.
+      if (data.mode === 'pay') {
+        await emailService.sendPaymentReminder(booking);
+      } else {
+        await emailService.sendCheckinReminder(booking);
+      }
       return;
     case 'review_request':
       await emailService.sendReviewRequest(booking);

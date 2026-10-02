@@ -336,42 +336,12 @@ export async function parseICalEvents(icalText: string, platform?: string): Prom
   return { events: toParsedIcalEvents(result.bookings), errors: result.errors };
 }
 
-/**
- * Reservas activas de este canal+habitacion que YA NO aparecen en el
- * feed reimportado se consideran canceladas -- unico mecanismo real para
- * Airbnb/Hostelworld, que no tienen webhook de cancelacion (REQUISITO
- * CRITICO #4: "solo por eliminacion del evento en el feed importado").
- */
-async function cancelMissingReservations(channelId: string, roomTypeId: string, activeUids: Set<string>): Promise<number> {
-  const { rows } = await query<{ id: string; external_reservation_id: string }>(
-    `SELECT DISTINCT r.id, r.external_reservation_id
-     FROM reservations r
-     JOIN reservation_beds rb ON rb.reservation_id = r.id
-     WHERE rb.room_type_id = $1
-       AND r.channel_id = $2
-       AND r.status IN ('confirmed', 'pending_ota_confirmation')
-       AND rb.check_out >= CURRENT_DATE
-       AND r.external_reservation_id IS NOT NULL`,
-    [roomTypeId, channelId]
-  );
-
-  let cancelledCount = 0;
-  for (const row of rows) {
-    if (!activeUids.has(row.external_reservation_id)) {
-      await channelService.handleChannelCancellation(row.external_reservation_id, channelId);
-      cancelledCount++;
-    }
-  }
-  return cancelledCount;
-}
-
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   let imported = 0;
   let alreadyKnown = 0;
   let skippedOwn = 0;
   let cancelledDirect = 0;
-  const activeUids = new Set<string>();
 
   try {
     const parsed = await parser.parseFromUrl(feed.url, feed.channelCode);
@@ -392,7 +362,6 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         continue;
       }
 
-      activeUids.add(event.uid);
       try {
         const result = await channelService.handleChannelBooking(
           {
@@ -410,8 +379,10 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       }
     }
 
-    const cancelledByDiff = await cancelMissingReservations(feed.channelId, feed.roomTypeId, activeUids);
-
+    // NO se cancelan reservas por ausencia en el feed: el iCal de Booking omite reservas reales
+    // (p. ej. una confirmada en la extranet que nunca aparece en su calendario), y cancelarlas
+    // liberaba esas fechas y permitia vender dos veces. Solo se cancelan los eventos que el
+    // feed marca expresamente como cancelados (STATUS:CANCELLED).
     return {
       feedId: feed.id,
       channelCode: feed.channelCode,
@@ -419,7 +390,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       success: true,
       imported,
       alreadyKnown,
-      cancelled: cancelledDirect + cancelledByDiff,
+      cancelled: cancelledDirect,
       skippedOwn,
       errors,
     };

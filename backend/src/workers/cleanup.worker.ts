@@ -9,74 +9,30 @@ import { emailService, type BookingWithGuest } from '../services/email-service';
 import { generateReferralCode } from '../utils/encryption';
 import { logger } from '../utils/logger';
 
-async function notifyPendingNoShows(): Promise<void> {
-  // Idempotente: solo reservas no_show que todavia no tienen una notificacion
-  // 'sent' con template no_show -- no depende de una ventana de tiempo, asi
-  // que corridas superpuestas del job nunca duplican el envio.
-  const { rows } = await query<{ id: string }>(
-    `SELECT r.id FROM reservations r
-     WHERE r.status = 'no_show'
-       AND NOT EXISTS (
-         SELECT 1 FROM notifications n
-         WHERE n.reservation_id = r.id AND n.template = 'no_show' AND n.status = 'sent'
-       )`
-  );
-
-  for (const row of rows) {
-    const booking = await bookingRepo.findById(row.id);
-    if (!booking?.guest) {
-      logger.warn('Reserva no_show sin guest cargado, se omite notificación', { reservationId: row.id });
-      continue;
-    }
-    try {
-      await notificationService.notify('no_show', booking as BookingWithGuest);
-    } catch (error: any) {
-      logger.error('Error notificando no-show', { reservationId: row.id, error: error.message });
-    }
-  }
-}
-
-async function notifyExpiredPending(): Promise<void> {
-  // Mismo patron idempotente que notifyPendingNoShows(): no depende de una
-  // ventana de tiempo, asi que corridas superpuestas del job nunca
-  // duplican el envio. cancellation_reason='auto_timeout_pending_expired'
-  // es el valor que pone sp_cleanup_expired_pending() (0013_fix_pending_timeout_label.sql)
-  // -- distingue esta cancelacion automatica por hold vencido de una
-  // cancelacion pedida por el huesped, que ya tiene su propio email.
-  const { rows } = await query<{ id: string }>(
-    `SELECT r.id FROM reservations r
-     WHERE r.status = 'cancelled'
-       AND r.cancellation_reason = 'auto_timeout_pending_expired'
-       AND NOT EXISTS (
-         SELECT 1 FROM notifications n
-         WHERE n.reservation_id = r.id AND n.template = 'booking_expired' AND n.status = 'sent'
-       )`
-  );
-
-  for (const row of rows) {
-    const booking = await bookingRepo.findById(row.id);
-    if (!booking?.guest) {
-      logger.warn('Reserva expirada sin guest cargado, se omite notificación', { reservationId: row.id });
-      continue;
-    }
-    try {
-      await notificationService.notify('booking_expired', booking as BookingWithGuest);
-    } catch (error: any) {
-      logger.error('Error notificando reserva expirada', { reservationId: row.id, error: error.message });
-    }
-  }
-}
-
 /**
- * Recordatorio de check-in: reservas confirmadas con check-in entre 46h y 50h desde ahora.
- * La ventana de 4h (no 1h exacta) absorbe corridas desfasadas del cron sin
- * enviar duplicados -- el NOT EXISTS en la tabla notifications hace el trabajo real.
+ * Recordatorio UNICO antes del check-in (reemplaza los recordatorios de check-in,
+ * de pago y de bienvenida): sale 7 dias antes; si la reserva se hizo con menos de
+ * 7 dias de anticipacion, sale 1 dia antes. Si falta pagar el saldo sugiere pagar
+ * (con el link de pago); si ya esta pago manda los datos del check-in. Si no paga,
+ * no hay reintentos. Idempotente por la tabla notifications.
  */
 async function notifyCheckinReminders(): Promise<void> {
-  const { rows } = await query<{ id: string }>(
-    `SELECT r.id FROM reservations r
+  const { rows } = await query<{ id: string; unpaid: boolean }>(
+    `SELECT r.id,
+            (r.remaining_amount > 0 AND NOT EXISTS (
+               SELECT 1 FROM payments p
+               WHERE p.reservation_id = r.id AND p.payment_type = 'remaining' AND p.status = 'succeeded'
+            )) AS unpaid
+     FROM reservations r
      WHERE r.status = 'confirmed'
-       AND r.check_in_date::date = (NOW() AT TIME ZONE 'America/Sao_Paulo' + INTERVAL '2 days')::date
+       AND r.check_in_date::date >= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+       AND (
+         (r.check_in_date::date - (r.created_at AT TIME ZONE 'America/Sao_Paulo')::date >= 7
+            AND r.check_in_date::date - (NOW() AT TIME ZONE 'America/Sao_Paulo')::date <= 7)
+         OR
+         (r.check_in_date::date - (r.created_at AT TIME ZONE 'America/Sao_Paulo')::date < 7
+            AND r.check_in_date::date - (NOW() AT TIME ZONE 'America/Sao_Paulo')::date <= 1)
+       )
        AND NOT EXISTS (
          SELECT 1 FROM notifications n
          WHERE n.reservation_id = r.id AND n.template = 'checkin_reminder' AND n.status = 'sent'
@@ -90,7 +46,7 @@ async function notifyCheckinReminders(): Promise<void> {
       continue;
     }
     try {
-      await notificationService.notify('checkin_reminder', booking as BookingWithGuest);
+      await notificationService.notify('checkin_reminder', booking as BookingWithGuest, { mode: row.unpaid ? 'pay' : 'info' });
     } catch (error: any) {
       logger.error('Error enviando recordatorio de check-in', { reservationId: row.id, error: error.message });
     }
@@ -98,14 +54,15 @@ async function notifyCheckinReminders(): Promise<void> {
 }
 
 /**
- * Solicitud de reseña post-checkout: reservas completadas cuyo check-out fue ayer o avant-hier.
- * Se espera ~24h para dar tiempo al huesped de llegar a destino antes de pedirle la reseña.
+ * Despedida (con pedido de reseña) el dia del check-out, a partir de las 12:00 (hora
+ * de check-out, America/Sao_Paulo). Idempotente por la tabla notifications.
  */
 async function notifyPostCheckoutReviews(): Promise<void> {
   const { rows } = await query<{ id: string }>(
     `SELECT r.id FROM reservations r
-     WHERE r.status = 'completed'
-       AND r.check_out_date::date = (NOW() AT TIME ZONE 'America/Sao_Paulo' - INTERVAL '1 day')::date
+     WHERE r.status IN ('confirmed', 'completed')
+       AND r.check_out_date::date = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+       AND EXTRACT(HOUR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')) >= 12
        AND NOT EXISTS (
          SELECT 1 FROM notifications n
          WHERE n.reservation_id = r.id AND n.template = 'review_request' AND n.status = 'sent'
@@ -223,8 +180,6 @@ export function startCleanupWorker(): Worker {
       const start = Date.now();
       await query('CALL sp_cleanup_expired_pending()');
       await query('CALL sp_release_no_show()');
-      await notifyPendingNoShows();
-      await notifyExpiredPending();
       await notifyCheckinReminders();
       await notifyPostCheckoutReviews();
       await grantPostCheckoutReferralRewards();

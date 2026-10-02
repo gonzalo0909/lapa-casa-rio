@@ -3,11 +3,8 @@ import { PaymentRepository } from '../database/repositories/payment-repository';
 import { BookingRepository } from '../database/repositories/booking-repository';
 import { StripeHandler } from '../lib/payments/stripe-handler';
 import { MercadoPagoHandler } from '../lib/payments/mercado-pago-handler';
-import { notificationService } from './notification-service';
 import { availabilityService } from './availability-service';
-import { scheduleRemainingPayment, scheduleApartmentRemainingPayment } from '../queues/remaining-payment.queue';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
-import { query } from '../config/database';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
 import type { Payment, PaymentProvider, Reservation } from '../types/database';
@@ -220,32 +217,10 @@ export class PaymentService {
       // las camas ocupadas no deben mostrarse como disponibles.
       availabilityService.clearCache().catch(() => {});
 
-      await notificationService.notify('payment_received', bookingWithGuest, { amount: Number(payment.amount) });
       enqueueSheetsExport(bookingWithGuest.id).catch(err =>
         logger.warn('No se pudo encolar el export a Sheets tras pago confirmado', { reservationId: bookingWithGuest.id, error: err.message })
       );
 
-      if (payment.payment_type === 'deposit' && Number(bookingWithGuest.remaining_amount) > 0) {
-        // Apartamentos: el 70% se cobra la mañana del check-in (Cláusula 3.2).
-        // Hostel: se cobra 7 días antes (modelo clásico).
-        const { rows: aptRows } = await query<{ count: string }>(
-          `SELECT COUNT(*) AS count
-           FROM reservation_beds rb
-           JOIN room_types rt ON rt.id = rb.room_type_id
-           WHERE rb.reservation_id = $1 AND rt.property_type = 'apartment'`,
-          [bookingWithGuest.id]
-        );
-        const isApartment = parseInt(aptRows[0]?.count ?? '0') > 0;
-
-        if (isApartment) {
-          await scheduleApartmentRemainingPayment(bookingWithGuest.id, new Date(bookingWithGuest.check_in_date));
-        } else {
-          await scheduleRemainingPayment(bookingWithGuest.id, new Date(bookingWithGuest.check_in_date));
-        }
-
-        const oneDayBeforeCheckIn = new Date(new Date(bookingWithGuest.check_in_date).getTime() - 24 * 60 * 60 * 1000);
-        await notificationService.scheduleNotification('welcome', bookingWithGuest, oneDayBeforeCheckIn);
-      }
     } catch (error: any) {
       logger.error('Error en efectos secundarios de pago confirmado (notificaciones)', {
         paymentId: payment.id,

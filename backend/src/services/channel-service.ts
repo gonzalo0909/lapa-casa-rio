@@ -79,6 +79,8 @@ export interface IncomingOtaBooking {
 export interface ChannelBookingResult {
   reservationId: string;
   deduplicated: boolean;
+  /** true si la reserva ya existia y la OTA cambio sus fechas (se actualizaron aca). */
+  updated?: boolean;
 }
 
 export interface ChannelCancellationResult {
@@ -226,6 +228,48 @@ async function recordAvailabilityConflict(
 }
 
 /**
+ * La OTA mando una reserva ya conocida con otras fechas (el huesped las cambio): se actualizan
+ * reserva y camas/unidad. Si las fechas nuevas chocan con otra reserva, el EXCLUDE las rechaza:
+ * se deja todo como estaba (la reserva sigue bloqueando las fechas viejas) y se avisa en el log.
+ */
+async function applyOtaDateChange(
+  reservationId: string,
+  channelCode: ChannelCode,
+  checkIn: string,
+  checkOut: string
+): Promise<boolean> {
+  const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
+  try {
+    await withTransaction(async (client) => {
+      const { rows: beds } = await client.query<{ bed_id: string | null; room_type_id: string }>(
+        `SELECT bed_id, room_type_id FROM reservation_beds WHERE reservation_id = $1`,
+        [reservationId]
+      );
+      const lockIds = beds.map((b) => b.bed_id ?? b.room_type_id);
+      if (lockIds.length > 0) {await acquireLock(client, [...new Set(lockIds)]);}
+      await client.query(
+        `UPDATE reservations SET check_in_date = $2::date, check_out_date = $3::date, nights_count = $4 WHERE id = $1`,
+        [reservationId, checkIn, checkOut, nights]
+      );
+      await client.query(
+        `UPDATE reservation_beds SET check_in = $2::date, check_out = $3::date WHERE reservation_id = $1`,
+        [reservationId, checkIn, checkOut]
+      );
+    });
+    logger.info('Reserva OTA: fechas actualizadas', { reservationId, channelCode, checkIn, checkOut });
+    return true;
+  } catch (error) {
+    if (isOverbookingError(error)) {
+      logger.warn('Reserva OTA: cambio de fechas rechazado por superposicion, se conservan las fechas anteriores', {
+        reservationId, channelCode, checkIn, checkOut,
+      });
+      return false;
+    }
+    throw error;
+  }
+}
+
+/**
  * Procesa una reserva entrante de OTA (webhook Booking/Expedia, o evento
  * detectado por iCal para Airbnb/Hostelworld). Idempotente por
  * (channelId, externalReservationId).
@@ -233,12 +277,19 @@ async function recordAvailabilityConflict(
 async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: string): Promise<ChannelBookingResult> {
   const channel = await getChannelById(channelId);
 
-  const { rows: existingRows } = await query<{ id: string }>(
-    `SELECT id FROM reservations WHERE channel_id = $1 AND external_reservation_id = $2`,
+  const { rows: existingRows } = await query<{ id: string; status: string; check_in: string; check_out: string }>(
+    `SELECT id, status, check_in_date::text AS check_in, check_out_date::text AS check_out
+     FROM reservations WHERE channel_id = $1 AND external_reservation_id = $2`,
     [channelId, bookingData.externalReservationId]
   );
   if (existingRows.length > 0) {
-    return { reservationId: existingRows[0].id, deduplicated: true };
+    const existing = existingRows[0];
+    const datesChanged = existing.check_in !== bookingData.checkIn || existing.check_out !== bookingData.checkOut;
+    if (datesChanged && existing.status !== 'cancelled') {
+      const updated = await applyOtaDateChange(existing.id, channel.code, bookingData.checkIn, bookingData.checkOut);
+      return { reservationId: existing.id, deduplicated: true, updated };
+    }
+    return { reservationId: existing.id, deduplicated: true };
   }
 
   const roomType = bookingData.roomTypeId

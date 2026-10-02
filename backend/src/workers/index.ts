@@ -16,12 +16,16 @@ import { startFlexibleConversionWorker } from './flexible-conversion.worker';
 import { startEmailNotificationsWorker } from './email-notifications.worker';
 import { startSheetsExportWorker } from './sheets-export.worker';
 import { startOtaSyncWorker } from './ota-sync.worker';
+import { startRemainingPaymentWorker } from './remaining-payment.worker';
+import { startRemainingPaymentRetriesWorker } from './remaining-payment-retries.worker';
+import { scheduleApartmentRemainingPayment } from '../queues/remaining-payment.queue';
+import { query } from '../config/database';
 import { logger } from '../utils/logger';
 
-// Colas que ya no existen (cobro automatico del saldo, reintentos del saldo y alertas
-// al administrador). Se borran de Redis con sus jobs programados, para que no queden
-// ocupando espacio ni disparando nada. Idempotente: si ya no existen, no hace nada.
-const RETIRED_QUEUES = ['monitoring-alerts', 'remaining-payment', 'remaining-payment-retries'];
+// Colas que ya no existen (alertas al administrador). Se borran de Redis con sus jobs
+// programados, para que no queden ocupando espacio ni disparando nada. Idempotente:
+// si ya no existen, no hace nada.
+const RETIRED_QUEUES = ['monitoring-alerts'];
 
 async function retireLegacyQueues(): Promise<void> {
   for (const name of RETIRED_QUEUES) {
@@ -37,6 +41,34 @@ async function retireLegacyQueues(): Promise<void> {
   }
 }
 
+/**
+ * Reprograma el cobro del 70% de apartamentos (8:00 del check-in) para reservas
+ * confirmadas que todavia no lo tienen programado ni ejecutado. Idempotente: el jobId
+ * es fijo por reserva, asi que re-encolar una ya programada no la duplica, y solo
+ * toma reservas sin ningun pago 'remaining' (el cobro nunca se ejecuto). Cubre los
+ * jobs que pudieron perderse si la cola se borro de Redis.
+ */
+async function rescheduleApartmentRemainingPayments(): Promise<void> {
+  const { rows } = await query<{ id: string; check_in_date: Date }>(
+    `SELECT r.id, r.check_in_date
+     FROM reservations r
+     WHERE r.status = 'confirmed'
+       AND r.remaining_amount > 0
+       AND r.check_in_date::date >= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+       AND EXISTS (
+         SELECT 1 FROM reservation_beds rb JOIN room_types rt ON rt.id = rb.room_type_id
+         WHERE rb.reservation_id = r.id AND rt.property_type = 'apartment'
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM payments p WHERE p.reservation_id = r.id AND p.payment_type = 'remaining'
+       )`
+  );
+  for (const row of rows) {
+    await scheduleApartmentRemainingPayment(row.id, new Date(row.check_in_date));
+  }
+  logger.info('Cobros del saldo de apartamentos reprogramados', { count: rows.length });
+}
+
 async function main(): Promise<void> {
   if (!queuesEnabled) {
     logger.error('REDIS_URL no configurada -- el proceso de workers no tiene nada que hacer, saliendo.');
@@ -49,7 +81,9 @@ async function main(): Promise<void> {
     startFlexibleConversionWorker(),
     startEmailNotificationsWorker(),
     startSheetsExportWorker(),
-    startOtaSyncWorker()
+    startOtaSyncWorker(),
+    startRemainingPaymentWorker(),
+    startRemainingPaymentRetriesWorker()
   ];
 
   // BullMQ emite 'error' ante cualquier fallo de conexion a Redis; sin un listener,
@@ -61,6 +95,9 @@ async function main(): Promise<void> {
   }
 
   await retireLegacyQueues();
+  await rescheduleApartmentRemainingPayments().catch((error) =>
+    logger.error('No se pudieron reprogramar los cobros del saldo de apartamentos', { message: error.message })
+  );
 
   // Los repeatable jobs son idempotentes (upsertJobScheduler con id fijo) --
   // seguro registrarlos en cada arranque del proceso de workers.

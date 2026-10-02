@@ -39,6 +39,9 @@ const OWN_UID_PREFIX = 'lapacasa-';
 const OWN_UID_SUFFIX = '@lapacasario.com';
 const FEED_KEY_PREFIX = 'ical_feed:';
 const SYNC_STATUS_KEY_PREFIX = 'ical_sync_status:';
+const SEEN_KEY_PREFIX = 'ical_seen:';
+/** Una reserva importada se cancela solo si falta en el feed durante este tiempo seguido. */
+const ABSENCE_GRACE_MS = 24 * 60 * 60 * 1000;
 
 export interface IcalFeedConfig {
   id: string;
@@ -336,8 +339,72 @@ export async function parseICalEvents(icalText: string, platform?: string): Prom
   return { events: toParsedIcalEvents(result.bookings), errors: result.errors };
 }
 
+/**
+ * Ultima vez que cada evento (UID) se vio en el feed de un calendario, guardado en
+ * system_config (sin migracion). Permite cancelar por ausencia SOLO si el evento falta
+ * durante 24 h seguidas: el iCal de Booking omite reservas reales en algunas lecturas
+ * (cancelarlas de inmediato liberaba fechas ocupadas), pero si una reserva se cancela
+ * en Booking deja de aparecer para siempre y Lapa la libera al cabo de un dia.
+ */
+async function loadSeen(feedId: string): Promise<Record<string, string>> {
+  const { rows } = await query<{ value: Record<string, string> }>(
+    `SELECT value FROM system_config WHERE key = $1`,
+    [`${SEEN_KEY_PREFIX}${feedId}`]
+  );
+  return rows[0]?.value ?? {};
+}
+
+async function saveSeen(feedId: string, seen: Record<string, string>): Promise<void> {
+  await query(
+    `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Ultima vez que se vio cada evento en un feed iCal')
+     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+    [`${SEEN_KEY_PREFIX}${feedId}`, JSON.stringify(seen)]
+  );
+}
+
+/**
+ * Cancela las reservas importadas de este feed que faltan en el feed actual desde hace mas de
+ * ABSENCE_GRACE_MS. Una reserva sin registro previo arranca su plazo ahora (nunca se cancela
+ * en la primera lectura). Devuelve cuantas cancelo. Exportada solo para pruebas.
+ */
+export async function cancelAbsentReservations(
+  feed: IcalFeedConfig,
+  seen: Record<string, string>,
+  seenNow: Set<string>,
+  now: Date = new Date()
+): Promise<number> {
+  const { rows } = await query<{ external_reservation_id: string }>(
+    `SELECT DISTINCT r.external_reservation_id
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     WHERE rb.room_type_id = $1
+       AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND rb.check_out >= CURRENT_DATE
+       AND r.external_reservation_id IS NOT NULL`,
+    [feed.roomTypeId, feed.channelId]
+  );
+
+  let cancelled = 0;
+  for (const { external_reservation_id: uid } of rows) {
+    if (seenNow.has(uid)) {continue;}
+    const lastSeen = seen[uid] ? new Date(seen[uid]).getTime() : NaN;
+    if (Number.isNaN(lastSeen)) {
+      seen[uid] = now.toISOString(); // sin registro: empieza el plazo de gracia
+      continue;
+    }
+    if (now.getTime() - lastSeen > ABSENCE_GRACE_MS) {
+      await channelService.handleChannelCancellation(uid, feed.channelId);
+      delete seen[uid];
+      cancelled++;
+    }
+  }
+  return cancelled;
+}
+
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
+  const seenNow = new Set<string>();
   const farFutureLimit = toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000));
   let imported = 0;
   let alreadyKnown = 0;
@@ -356,6 +423,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       // se corre un dia por dia: no es una reserva, y bloquearia todas esas fechas en Lapa.
       // Se ignoran los eventos que empiezan a mas de 360 dias.
       if (event.checkIn > farFutureLimit) { continue; }
+      seenNow.add(event.uid);
       // Booking.com exporta sus reservas como "CLOSED - Not available" y Airbnb como
       // "Reserved": el parser las marca isBlocked, pero SON las fechas ocupadas y hay
       // que importarlas para bloquear disponibilidad (antes se descartaban y no
@@ -384,10 +452,19 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       }
     }
 
-    // NO se cancelan reservas por ausencia en el feed: el iCal de Booking omite reservas reales
-    // (p. ej. una confirmada en la extranet que nunca aparece en su calendario), y cancelarlas
-    // liberaba esas fechas y permitia vender dos veces. Solo se cancelan los eventos que el
-    // feed marca expresamente como cancelados (STATUS:CANCELLED).
+    // Cancelacion por ausencia: solo si el evento falta 24 h seguidas (ver cancelAbsentReservations).
+    // Los eventos que el feed marca expresamente como cancelados (STATUS:CANCELLED) se cancelan al instante.
+    const seen = await loadSeen(feed.id);
+    const nowIso = new Date().toISOString();
+    for (const uid of seenNow) {seen[uid] = nowIso;}
+    const cancelledByAbsence = await cancelAbsentReservations(feed, seen, seenNow);
+    // Se descartan registros de eventos que dejaron de verse hace mas de 7 dias.
+    const keepAfter = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    for (const [uid, at] of Object.entries(seen)) {
+      if (new Date(at).getTime() < keepAfter) {delete seen[uid];}
+    }
+    await saveSeen(feed.id, seen);
+
     return {
       feedId: feed.id,
       channelCode: feed.channelCode,
@@ -395,7 +472,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       success: true,
       imported,
       alreadyKnown,
-      cancelled: cancelledDirect,
+      cancelled: cancelledDirect + cancelledByAbsence,
       skippedOwn,
       errors,
     };

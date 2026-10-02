@@ -277,19 +277,37 @@ async function applyOtaDateChange(
 async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: string): Promise<ChannelBookingResult> {
   const channel = await getChannelById(channelId);
 
-  const { rows: existingRows } = await query<{ id: string; status: string; check_in: string; check_out: string }>(
-    `SELECT id, status, check_in_date::text AS check_in, check_out_date::text AS check_out
+  const { rows: existingRows } = await query<{
+    id: string; status: string; cancellation_reason: string | null; check_in: string; check_out: string;
+  }>(
+    `SELECT id, status, cancellation_reason, check_in_date::text AS check_in, check_out_date::text AS check_out
      FROM reservations WHERE channel_id = $1 AND external_reservation_id = $2`,
     [channelId, bookingData.externalReservationId]
   );
   if (existingRows.length > 0) {
     const existing = existingRows[0];
-    const datesChanged = existing.check_in !== bookingData.checkIn || existing.check_out !== bookingData.checkOut;
-    if (datesChanged && existing.status !== 'cancelled') {
-      const updated = await applyOtaDateChange(existing.id, channel.code, bookingData.checkIn, bookingData.checkOut);
-      return { reservationId: existing.id, deduplicated: true, updated };
+    if (existing.status === 'cancelled' && existing.cancellation_reason === 'ota_cancellation') {
+      // La reserva se cancelo aca por ausencia en el feed (o aviso de la OTA) y el evento volvio a
+      // aparecer: la OTA la sigue teniendo. Se libera su id externo (queda como historial) y se
+      // sigue de largo para crearla de nuevo con el control normal de disponibilidad. Las
+      // canceladas por un conflicto (conflict_*) NO se reactivan: el evento sigue en el feed y
+      // chocaria de nuevo en cada sync.
+      await query(
+        `UPDATE reservations SET external_reservation_id = left(external_reservation_id, 230) || '#cancelled-' || left(id::text, 8)
+         WHERE id = $1`,
+        [existing.id]
+      );
+      logger.info('Reserva OTA cancelada que reaparece en la OTA: se recrea', {
+        reservationId: existing.id, channelCode: channel.code, externalReservationId: bookingData.externalReservationId,
+      });
+    } else {
+      const datesChanged = existing.check_in !== bookingData.checkIn || existing.check_out !== bookingData.checkOut;
+      if (datesChanged && existing.status !== 'cancelled') {
+        const updated = await applyOtaDateChange(existing.id, channel.code, bookingData.checkIn, bookingData.checkOut);
+        return { reservationId: existing.id, deduplicated: true, updated };
+      }
+      return { reservationId: existing.id, deduplicated: true };
     }
-    return { reservationId: existing.id, deduplicated: true };
   }
 
   const roomType = bookingData.roomTypeId

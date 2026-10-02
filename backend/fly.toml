@@ -26,6 +26,13 @@ primary_region = 'gru'
   app = 'npm run start'
   worker = 'npm run worker'
 
+# El worker (sincronizacion iCal/OTA, emails, pagos) debe estar siempre corriendo:
+# si el proceso termina por cualquier motivo, Fly lo reinicia en vez de dejar la
+# maquina detenida.
+[[restart]]
+  policy = 'always'
+  processes = ['worker']
+
 [http_service]
   internal_port = 5000
   force_https = true

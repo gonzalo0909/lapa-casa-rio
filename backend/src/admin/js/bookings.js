@@ -43,7 +43,9 @@ function nightsOf(b) {
 // Las reservas importadas por iCal traen un correo inventado (ota_xxx@booking.import):
 // no se muestra, no es un dato real del huésped.
 function guestCell(b) {
-  if (/\.import$/i.test(b.guest_email || '')) {
+  // Reservas de OTA: el iCal no trae el huesped; si el admin cargo un nombre, se muestra.
+  const placeholderName = /\(iCal\)$|^OTA Guest$/i.test(b.guest_name || '');
+  if (/\.import$/i.test(b.guest_email || '') && placeholderName) {
     return `<span style="color:#888;">Sin datos del huésped</span><br><small style="color:#888;">el iCal de ${escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code)} no los incluye</small>`;
   }
   return `${escapeHtml(b.guest_name)}<br><small style="color:#888;">${escapeHtml(b.guest_email)}</small>`;
@@ -56,14 +58,13 @@ function stayCell(b) {
 }
 
 function actionsCell(b) {
-  // Una reserva de OTA se gestiona en la OTA: cancelarla acá liberaría fechas que siguen vendidas allá.
-  if (b.channel_code && b.channel_code !== 'direct') {
-    return `<small style="color:#888;">Se gestiona en ${escapeHtml(CHANNEL_LABELS[b.channel_code] || b.channel_code)}</small>`;
-  }
+  const isOta = b.channel_code && b.channel_code !== 'direct';
+  // Una reserva de OTA se puede completar/corregir aca, pero cancelarla libera fechas en Lapa:
+  // si sigue vigente en la OTA, esas fechas se podrian vender dos veces (el confirm lo advierte).
   return `
         <button data-action="edit" data-id="${b.id}">Editar</button>
-        <button data-action="resend" data-id="${b.id}">Reenviar email</button>
-        ${b.status !== 'cancelled' ? `<button data-action="cancel" data-id="${b.id}" data-num="${b.reservation_number}" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Cancelar</button>` : ''}`;
+        ${isOta ? '' : `<button data-action="resend" data-id="${b.id}">Reenviar email</button>`}
+        ${b.status !== 'cancelled' ? `<button data-action="cancel" data-id="${b.id}" data-num="${b.reservation_number}" data-ota="${isOta ? CHANNEL_LABELS[b.channel_code] || b.channel_code : ''}" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Cancelar</button>` : ''}`;
 }
 
 function currentFilters() {
@@ -128,12 +129,15 @@ function renderTable() {
     btn.addEventListener('click', () => resendConfirmation(btn.dataset.id))
   );
   tbody.querySelectorAll('button[data-action="cancel"]').forEach(btn =>
-    btn.addEventListener('click', () => cancelBooking(btn.dataset.id, btn.dataset.num))
+    btn.addEventListener('click', () => cancelBooking(btn.dataset.id, btn.dataset.num, btn.dataset.ota))
   );
 }
 
-async function cancelBooking(id, num) {
-  if (!confirm(`¿Cancelar la reserva ${num}? Esta acción no se puede deshacer.`)) return;
+async function cancelBooking(id, num, ota) {
+  const warning = ota
+    ? `¿Cancelar la reserva ${num}?\n\nOJO: es una reserva de ${ota}. Cancelarla acá libera esas fechas en Lapa; si sigue vigente en ${ota}, se podrían vender dos veces.\n\nEsta acción no se puede deshacer.`
+    : `¿Cancelar la reserva ${num}? Esta acción no se puede deshacer.`;
+  if (!confirm(warning)) return;
   try {
     await apiFetch(`/admin/bookings/${id}`, { method: 'DELETE' });
     showMsg('bookings-msg', `Reserva ${num} cancelada.`, 'success');
@@ -153,9 +157,22 @@ function renderPagination() {
 function openEdit(id) {
   const booking = state.rows.find(b => b.id === id);
   if (!booking) return;
+  const isApartment = booking.property_type === 'apartment';
+  const placeholder = /\(iCal\)$|^OTA Guest$/i.test(booking.guest_name || '');
   document.getElementById('edit-id').value = id;
-  document.getElementById('edit-notes').value = '';
+  document.getElementById('edit-guest-name').value = placeholder ? '' : (booking.guest_name || '');
+  document.getElementById('edit-guest-phone').value = booking.guest_phone || '';
+  document.getElementById('edit-notes').value = booking.special_requests || '';
   document.getElementById('edit-price').value = booking.final_price;
+  const ci = document.getElementById('edit-checkin');
+  const co = document.getElementById('edit-checkout');
+  ci.value = String(booking.check_in_date).slice(0, 10);
+  co.value = String(booking.check_out_date).slice(0, 10);
+  ci.disabled = co.disabled = !isApartment;
+  document.getElementById('edit-dates-hint').textContent = isApartment
+    ? ''
+    : 'Las fechas solo se pueden cambiar en reservas de apartamento. En el hostel: cancelar y crear una nueva.';
+  document.getElementById('edit-msg').innerHTML = '';
   document.getElementById('edit-panel').classList.remove('hidden');
   document.getElementById('edit-panel').scrollIntoView({ behavior: 'smooth' });
 }
@@ -204,12 +221,27 @@ document.querySelectorAll('#bookings-table th[data-sort]').forEach(th => {
 document.getElementById('edit-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const id = document.getElementById('edit-id').value;
+  const booking = state.rows.find(b => b.id === id);
+  const guestName = document.getElementById('edit-guest-name').value.trim();
+  const guestPhone = document.getElementById('edit-guest-phone').value.trim();
   const notes = document.getElementById('edit-notes').value;
   const price = document.getElementById('edit-price').value;
+  const checkIn = document.getElementById('edit-checkin');
+  const checkOut = document.getElementById('edit-checkout');
 
   const payload = {};
   if (notes) payload.specialRequests = notes;
   if (price) payload.finalPrice = Number(price);
+  if (guestName || guestPhone) {
+    payload.guest = {};
+    if (guestName) payload.guest.fullName = guestName;
+    if (guestPhone) payload.guest.phone = guestPhone;
+  }
+  // Solo se mandan las fechas si cambiaron (y el campo esta habilitado: reservas de apartamento).
+  if (!checkIn.disabled && booking) {
+    if (checkIn.value && checkIn.value !== String(booking.check_in_date).slice(0, 10)) payload.checkIn = checkIn.value;
+    if (checkOut.value && checkOut.value !== String(booking.check_out_date).slice(0, 10)) payload.checkOut = checkOut.value;
+  }
 
   try {
     await apiFetch(`/admin/bookings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });

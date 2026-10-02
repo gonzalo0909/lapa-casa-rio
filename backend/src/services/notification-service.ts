@@ -11,7 +11,6 @@
 import { query } from '../config/database';
 import bookingRepo from '../database/repositories/booking-repository';
 import { emailService, type BookingWithGuest } from './email-service';
-import { emailNotificationsQueue } from '../queues/email-notifications.queue';
 import { logger } from '../utils/logger';
 
 export type NotificationType =
@@ -81,13 +80,10 @@ async function dispatchByType(type: NotificationType, booking: BookingWithGuest,
 
 export class NotificationService {
   /**
-   * intenta el envío ya mismo, en el request actual. Si falla,
-   * se reencola en email-notifications (hasta 3 veces con backoff
-   * exponencial, ver queues/email-notifications.queue.ts) en vez de darlo
-   * por perdido -- así cumple "si un email falla, se reencola hasta 3
-   * veces" (CONSIDERACIONES ESPECIALES del prompt de esta ventana). El
-   * reintento lo procesa el mismo processScheduled() que usa
-   * scheduleNotification, así que no duplica lógica.
+   * intenta el envío ya mismo, en el request actual. Si falla, la notificación
+   * queda en estado 'failed' con un contador de intentos y la tarea periódica
+   * retryFailedNotifications() la reintenta hasta 3 veces en total (sin colas ni
+   * Redis: el estado vive en la tabla notifications).
    */
   async notify(type: NotificationType, booking: BookingWithGuest, data: Record<string, any> = {}): Promise<void> {
     const notificationId = await this.recordNotification({
@@ -102,44 +98,19 @@ export class NotificationService {
       await dispatchByType(type, booking, data);
       await this.updateNotification(notificationId, { status: 'sent', sentAt: new Date() });
     } catch (error: any) {
-      logger.error('Error enviando notificación, se reencola para reintento', {
+      logger.error('Error enviando notificación, se reintentará', {
         type,
         reservationId: booking.id,
         notificationId,
         error: error.message
       });
-      await emailNotificationsQueue.add('retry-notification', { notificationId, reservationId: booking.id, type });
-      // No relanza: el reintento queda en manos del worker, el llamador no
+      await this.markFailedAttempt(notificationId, error.message);
+      // No relanza: el reintento queda en manos de la tarea periódica, el llamador no
       // tiene por qué bloquear ni fallar la respuesta HTTP por esto.
     }
   }
 
-  /** Encola el envio para `sendAt` via BullMQ (delay). Si REDIS_URL no esta configurada, safe-queue loguea y no encola -- ver src/queues/connection.ts. */
-  async scheduleNotification(
-    type: NotificationType,
-    booking: BookingWithGuest,
-    sendAt: Date,
-    data: Record<string, any> = {}
-  ): Promise<string> {
-    const notificationId = await this.recordNotification({
-      reservationId: booking.id,
-      guestId: booking.guest.id,
-      template: type,
-      status: 'pending',
-      payload: data
-    });
-
-    const delayMs = Math.max(0, sendAt.getTime() - Date.now());
-    await emailNotificationsQueue.add(
-      'send-scheduled-notification',
-      { notificationId, reservationId: booking.id, type },
-      { delay: delayMs }
-    );
-
-    return notificationId;
-  }
-
-  /** Usado por el worker (workers/email-notifications.worker.ts) al procesar un job encolado por scheduleNotification. */
+  /** Reintenta el envío de una notificación ya registrada (usado por retryFailedNotifications). */
   async processScheduled(notificationId: string, reservationId: string, type: NotificationType): Promise<void> {
     const notification = await this.getNotificationById(notificationId);
     if (!notification) {
@@ -158,9 +129,40 @@ export class NotificationService {
       await dispatchByType(type, booking as BookingWithGuest, notification.payload ?? {});
       await this.updateNotification(notificationId, { status: 'sent', sentAt: new Date() });
     } catch (error: any) {
-      await this.updateNotification(notificationId, { status: 'failed', error: error.message });
-      throw error; // deja que BullMQ reintente segun la política de la cola
+      await this.markFailedAttempt(notificationId, error.message);
+      throw error;
     }
+  }
+
+  /** Reintenta las notificaciones fallidas de los últimos 2 días (máx. 3 intentos en total). Lo llama el planificador del worker. */
+  async retryFailedNotifications(): Promise<void> {
+    const { rows } = await query<{ id: string; reservation_id: string; template: string }>(
+      `SELECT id, reservation_id, template
+       FROM notifications
+       WHERE status = 'failed' AND channel = 'email'
+         AND reservation_id IS NOT NULL
+         AND created_at > now() - INTERVAL '2 days'
+         AND COALESCE((payload->>'_attempts')::int, 0) < 3
+       ORDER BY created_at
+       LIMIT 50`
+    );
+    for (const row of rows) {
+      try {
+        await this.processScheduled(row.id, row.reservation_id, row.template as NotificationType);
+      } catch (error: any) {
+        logger.warn('Reintento de notificación fallido', { notificationId: row.id, error: error.message });
+      }
+    }
+  }
+
+  private async markFailedAttempt(id: string, error: string): Promise<void> {
+    await query(
+      `UPDATE notifications
+       SET status = 'failed', error = $2,
+           payload = COALESCE(payload, '{}'::jsonb) || jsonb_build_object('_attempts', COALESCE((payload->>'_attempts')::int, 0) + 1)
+       WHERE id = $1`,
+      [id, error]
+    );
   }
 
   async getNotificationHistory(bookingId: string): Promise<NotificationRecord[]> {

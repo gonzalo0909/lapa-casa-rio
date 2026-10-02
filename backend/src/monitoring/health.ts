@@ -15,7 +15,6 @@
 
 import { testConnection as testDatabase } from '../config/database';
 import cacheClient from '../cache/redis-client';
-import { queuesEnabled, getQueueConnection } from '../queues/connection';
 import { env } from '../config/environment';
 
 export type ServiceStatus = 'ok' | 'degraded' | 'down' | 'not_configured';
@@ -57,32 +56,34 @@ async function checkDatabase(): Promise<ServiceHealth> {
   }
 }
 
+// Fly consulta /health cada 30 s: sin cache, cada consulta seria un PING a Redis
+// (miles de comandos por dia en un plan facturado por comando).
+const REDIS_HEALTH_CACHE_MS = 10 * 60 * 1000;
+let redisHealthCache: { at: number; value: ServiceHealth } | null = null;
+
 async function checkRedis(): Promise<ServiceHealth> {
   if (!env.REDIS_URL) {
     return { status: 'not_configured', detail: 'REDIS_URL no configurada -- usando fallback en memoria, sin estado compartido entre instancias' };
   }
+  if (redisHealthCache && Date.now() - redisHealthCache.at < REDIS_HEALTH_CACHE_MS) {
+    return redisHealthCache.value;
+  }
+  let value: ServiceHealth;
   try {
     const { result: alive, latencyMs } = await timed(() => cacheClient.ping());
-    return alive
+    value = alive
       ? { status: 'ok', latencyMs }
       : { status: 'down', detail: 'PING no respondio', latencyMs };
   } catch (error: any) {
-    return { status: 'down', detail: error?.message ?? 'error desconocido' };
+    value = { status: 'down', detail: error?.message ?? 'error desconocido' };
   }
+  redisHealthCache = { at: Date.now(), value };
+  return value;
 }
 
+// Ya no hay colas: las tareas programadas corren con un planificador dentro del proceso worker.
 async function checkQueues(): Promise<ServiceHealth> {
-  if (!queuesEnabled) {
-    return { status: 'not_configured', detail: 'REDIS_URL no configurada -- BullMQ deshabilitado, ver src/queues/connection.ts' };
-  }
-  try {
-    const { result: pong, latencyMs } = await timed(() => getQueueConnection().ping());
-    return pong === 'PONG'
-      ? { status: 'ok', latencyMs }
-      : { status: 'down', detail: `respuesta inesperada: ${pong}` };
-  } catch (error: any) {
-    return { status: 'down', detail: error?.message ?? 'error desconocido' };
-  }
+  return { status: 'ok', detail: 'sin colas -- tareas programadas en el proceso worker (workers/scheduler.ts)' };
 }
 
 function checkStripe(): ServiceHealth {

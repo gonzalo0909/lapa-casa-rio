@@ -1,7 +1,7 @@
 // POST /payments/release-deposit
 //
 // Disparo MANUAL (solo admin) del pago de la garantía retenida a un administrador.
-// El pago normal es automático: queues/owner-payout.queue.ts corre cada hora y paga
+// El pago normal es automático: workers/owner-payout.task.ts corre una vez por día (13:00) y paga
 // después del check-out + período de espera (system_config.owner_payout_hold_hours,
 // default 48h). Este endpoint sirve para adelantar o reintentar un pago puntual.
 //

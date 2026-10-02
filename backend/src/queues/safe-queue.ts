@@ -23,6 +23,8 @@ export function createSafeQueue<DataType = any>(name: string, defaultJobOptions?
           ...defaultJobOptions
         }
       });
+      // Sin un listener de 'error', un fallo de conexion a Redis tumba el proceso.
+      queue.on('error', (err) => logger.warn(`Cola "${name}": error de Redis`, { message: err.message }));
     }
     return queue;
   }

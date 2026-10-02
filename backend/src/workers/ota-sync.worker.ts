@@ -9,7 +9,7 @@
 // manualmente si la prioridad ya lo resuelve.
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { syncICalFeeds } from '../services/ical-service';
 import { conflictService } from '../services/conflict-service';
 import { logger } from '../utils/logger';
@@ -35,7 +35,7 @@ export function startOtaSyncWorker(): Worker<OtaSyncJobData> {
 
       return { sync: result, conflicts };
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

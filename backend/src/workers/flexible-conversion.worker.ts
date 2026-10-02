@@ -1,6 +1,6 @@
 
 import { type Job, Worker } from 'bullmq';
-import { getQueueConnection } from '../queues/connection';
+import { getWorkerOptions } from '../queues/connection';
 import { query } from '../config/database';
 import { logger } from '../utils/logger';
 
@@ -12,7 +12,7 @@ export function startFlexibleConversionWorker(): Worker {
       await query('CALL sp_process_flexible_conversion()');
       logger.info('flexible-conversion worker completado', { ms: Date.now() - start });
     },
-    { connection: getQueueConnection() }
+    getWorkerOptions()
   );
 
   worker.on('failed', (job, err) => {

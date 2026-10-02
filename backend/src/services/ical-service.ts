@@ -179,17 +179,23 @@ interface BookingRow {
   status: string;
 }
 
-async function fetchBookingsForRoom(roomTypeId: string): Promise<BookingRow[]> {
+/**
+ * `excludeChannel`: no se exportan las reservas que vinieron de ese mismo canal (la OTA ya las
+ * conoce; devolversela hace que las cierre y las reexporte a Lapa como "reserva nueva": bucle).
+ */
+async function fetchBookingsForRoom(roomTypeId: string, excludeChannel?: ChannelCode): Promise<BookingRow[]> {
   const { rows } = await query<BookingRow>(
     `SELECT DISTINCT r.id, g.full_name AS "guestName", rb.check_in AS "checkIn", rb.check_out AS "checkOut", r.status
      FROM reservations r
      JOIN guests g ON g.id = r.guest_id
      JOIN reservation_beds rb ON rb.reservation_id = r.id
+     JOIN channels c ON c.id = r.channel_id
      WHERE rb.room_type_id = $1
        AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
        AND rb.check_out >= CURRENT_DATE - INTERVAL '7 days'
+       AND ($2::text IS NULL OR c.code::text <> $2)
      ORDER BY rb.check_in`,
-    [roomTypeId]
+    [roomTypeId, excludeChannel ?? null]
   );
   return rows;
 }
@@ -209,7 +215,7 @@ function addBookingEvent(calendar: ReturnType<typeof ical>, booking: BookingRow,
 }
 
 /** Feed iCal publico de disponibilidad para UNA habitacion (room_types.id). */
-export async function generateICalFeed(roomTypeId: string): Promise<string> {
+export async function generateICalFeed(roomTypeId: string, excludeChannel?: ChannelCode): Promise<string> {
   const { rows } = await query<RoomTypeRow>(`SELECT id, code, name FROM room_types WHERE id = $1`, [roomTypeId]);
   if (rows.length === 0) {throw new Error(`room_type no encontrado: ${roomTypeId}`);}
   const room = rows[0];
@@ -222,14 +228,14 @@ export async function generateICalFeed(roomTypeId: string): Promise<string> {
     ttl: 3600,
   });
 
-  const bookings = await fetchBookingsForRoom(roomTypeId);
+  const bookings = await fetchBookingsForRoom(roomTypeId, excludeChannel);
   for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
 
   return calendar.toString();
 }
 
 /** Feed iCal combinado con las 5 habitaciones reales del hostel. */
-export async function generateAllFeeds(): Promise<string> {
+export async function generateAllFeeds(excludeChannel?: ChannelCode): Promise<string> {
   const { rows: rooms } = await query<RoomTypeRow>(
     `SELECT id, code, name FROM room_types WHERE property_type = 'hostel' ORDER BY code`
   );
@@ -243,7 +249,7 @@ export async function generateAllFeeds(): Promise<string> {
   });
 
   for (const room of rooms) {
-    const bookings = await fetchBookingsForRoom(room.id);
+    const bookings = await fetchBookingsForRoom(room.id, excludeChannel);
     for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
   }
 
@@ -251,7 +257,7 @@ export async function generateAllFeeds(): Promise<string> {
 }
 
 /** Feed iCal de UN apartamento — valida que sea property_type='apartment'. */
-export async function generateApartmentICalFeed(roomTypeId: string): Promise<string> {
+export async function generateApartmentICalFeed(roomTypeId: string, excludeChannel?: ChannelCode): Promise<string> {
   const { rows } = await query<RoomTypeRow>(
     `SELECT id, code, name FROM room_types WHERE id = $1 AND property_type = 'apartment'`,
     [roomTypeId]
@@ -267,14 +273,14 @@ export async function generateApartmentICalFeed(roomTypeId: string): Promise<str
     ttl: 3600,
   });
 
-  const bookings = await fetchBookingsForRoom(roomTypeId);
+  const bookings = await fetchBookingsForRoom(roomTypeId, excludeChannel);
   for (const booking of bookings) {addBookingEvent(calendar, booking, apt.name);}
 
   return calendar.toString();
 }
 
 /** Feed iCal combinado de todos los apartamentos. */
-export async function generateAllApartmentFeeds(): Promise<string> {
+export async function generateAllApartmentFeeds(excludeChannel?: ChannelCode): Promise<string> {
   const { rows: rooms } = await query<RoomTypeRow>(
     `SELECT id, code, name FROM room_types WHERE property_type = 'apartment' ORDER BY code`
   );
@@ -288,7 +294,7 @@ export async function generateAllApartmentFeeds(): Promise<string> {
   });
 
   for (const room of rooms) {
-    const bookings = await fetchBookingsForRoom(room.id);
+    const bookings = await fetchBookingsForRoom(room.id, excludeChannel);
     for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
   }
 

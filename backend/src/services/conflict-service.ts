@@ -177,28 +177,35 @@ async function resolveConflict(conflictId: string, action: ConflictResolutionAct
   return rows[0];
 }
 
-/** Resolucion automatica por prioridad de canal (CHANNEL_PRIORITY, config/channels.ts). Usada por el worker programado. */
+/**
+ * Resolucion automatica por prioridad de canal (CHANNEL_PRIORITY, config/channels.ts). Usada por el worker.
+ * Solo actua cuando la reserva perdedora es una reserva directa SIN pagar (pending_payment): es un hold
+ * que se puede soltar sin dano. Una reserva de OTA existe de verdad en la OTA, y una directa ya pagada
+ * tambien: cancelarlas aca (solo en Lapa) deja al huesped con reserva en la OTA y sin fechas en Lapa.
+ * En esos casos el conflicto queda 'open' para que el admin lo resuelva a mano (ya recibio el aviso).
+ */
 async function autoResolveByPriority(conflict: BookingConflictRow): Promise<BookingConflictRow> {
   if (conflict.status !== 'open') {return conflict;}
 
   const aWins = priorityOf(conflict.channel_a) >= priorityOf(conflict.channel_b);
-  let notes: string;
+  const loserId = aWins ? conflict.reservation_id_b : conflict.reservation_id_a;
+  if (!loserId) {return conflict;} // el intento rechazado nunca se persistio: no hay nada que cancelar
 
-  if (aWins) {
-    if (conflict.reservation_id_b) {await cancelReservation(conflict.reservation_id_b, 'conflict_auto_resolved:keep_a');}
-    notes = `Resuelto automáticamente por prioridad de canal: se mantiene "${conflict.channel_a}"`;
-  } else {
-    await cancelReservation(conflict.reservation_id_a, 'conflict_auto_resolved:keep_b');
-    notes = conflict.reservation_id_b
-      ? `Resuelto automáticamente por prioridad de canal: se mantiene "${conflict.channel_b}"`
-      : `Resuelto automáticamente por prioridad de canal: se canceló "${conflict.channel_a}"; el intento de "${conflict.channel_b}" debe recrearse manualmente si aún hay disponibilidad`;
-  }
+  const { rows } = await query<{ status: string; channel_code: ChannelCode }>(
+    `SELECT r.status, c.code AS channel_code FROM reservations r JOIN channels c ON c.id = r.channel_id WHERE r.id = $1`,
+    [loserId]
+  );
+  const loser = rows[0];
+  if (!loser || loser.channel_code !== 'direct' || loser.status !== 'pending_payment') {return conflict;}
 
-  const { rows } = await query<BookingConflictRow>(
+  await cancelReservation(loserId, aWins ? 'conflict_auto_resolved:keep_a' : 'conflict_auto_resolved:keep_b');
+  const winner = aWins ? conflict.channel_a : conflict.channel_b;
+  const notes = `Resuelto automáticamente por prioridad de canal: se mantiene "${winner}"; se canceló la reserva directa sin pagar`;
+  const { rows: updated } = await query<BookingConflictRow>(
     `UPDATE booking_conflicts SET status = 'resolved_auto', resolved_at = now(), resolution_notes = $2 WHERE id = $1 RETURNING *`,
     [conflict.id, notes]
   );
-  return rows[0];
+  return updated[0];
 }
 
 /**
@@ -242,8 +249,8 @@ async function detectConflicts(): Promise<{ newlyDetected: number; autoResolved:
   const open = await getConflictHistory({ status: 'open' });
   let autoResolved = 0;
   for (const conflict of open) {
-    await autoResolveByPriority(conflict);
-    autoResolved++;
+    const result = await autoResolveByPriority(conflict);
+    if (result.status !== 'open') {autoResolved++;}
   }
 
   return { newlyDetected, autoResolved, stillOpen: open.length - autoResolved };

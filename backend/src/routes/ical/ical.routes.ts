@@ -151,12 +151,12 @@ router.patch('/feeds/:id', authenticateToken, requireRole(['admin']), async (req
 /** DELETE /api/ical/feeds/:id */
 router.delete('/feeds/:id', authenticateToken, requireRole(['admin']), async (req, res, next) => {
   try {
-    const deleted = await icalService.deleteFeed(req.params.id);
-    if (!deleted) {
+    const result = await icalService.deleteFeed(req.params.id);
+    if (!result) {
       res.status(404).json(ApiResponse.error('Feed no encontrado'));
       return;
     }
-    res.status(200).json(ApiResponse.success({ deleted: true }, 'Feed eliminado'));
+    res.status(200).json(ApiResponse.success({ deleted: true, orphanedReservations: result.orphanedReservations }, 'Feed eliminado'));
   } catch (error) {
     next(error);
   }

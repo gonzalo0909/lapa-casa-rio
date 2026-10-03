@@ -31,6 +31,7 @@ import ical, { ICalEventStatus, ICalEventBusyStatus } from 'ical-generator';
 import { query } from '../config/database';
 import { ICalParser, type ParsedBooking } from '../integrations/ical/ical-parser';
 import { channelService } from './channel-service';
+import { emailService } from './email-service';
 import { resolveRoomCodeFromName } from '../config/channels';
 import { logger } from '../utils/logger';
 import type { ChannelCode } from '../types/database';
@@ -40,6 +41,11 @@ const OWN_UID_SUFFIX = '@lapacasario.com';
 const FEED_KEY_PREFIX = 'ical_feed:';
 const SYNC_STATUS_KEY_PREFIX = 'ical_sync_status:';
 const SEEN_KEY_PREFIX = 'ical_seen:';
+const HEALTH_KEY_PREFIX = 'ical_feed_health:';
+/** Fallos seguidos de un feed antes de avisar al admin (3 x 5 min = 15 min). */
+const ALERT_AFTER_FAILURES = 3;
+/** Mientras siga fallando, se repite el aviso cada tanto (no cada 5 min). */
+const REALERT_AFTER_MS = 12 * 60 * 60 * 1000;
 /** Una reserva importada se cancela solo si falta en el feed durante este tiempo seguido. */
 const ABSENCE_GRACE_MS = 24 * 60 * 60 * 1000;
 
@@ -130,7 +136,31 @@ export async function addFeed(input: { channelCode: ChannelCode; roomTypeId: str
   return feed;
 }
 
-export async function updateFeed(feedId: string, patch: { url?: string; isActive?: boolean }): Promise<IcalFeedConfig | null> {
+/**
+ * Reservas importadas de este canal+habitacion que siguen activas y futuras. Si ya no queda ningun
+ * feed activo para ese canal+habitacion, nadie las va a cancelar por ausencia: quedan bloqueando las
+ * fechas hasta que el admin las cancele a mano (se avisa para que no pase desapercibido).
+ */
+async function countOrphanedReservations(feed: IcalFeedConfig): Promise<number> {
+  const others = (await listFeeds()).filter(
+    (f) => f.id !== feed.id && f.isActive && f.channelId === feed.channelId && f.roomTypeId === feed.roomTypeId
+  );
+  if (others.length > 0) {return 0;}
+  const { rows } = await query<{ n: number }>(
+    `SELECT COUNT(DISTINCT r.id)::int AS n
+     FROM reservations r JOIN reservation_beds rb ON rb.reservation_id = r.id
+     WHERE rb.room_type_id = $1 AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND r.external_reservation_id IS NOT NULL AND rb.check_out >= CURRENT_DATE`,
+    [feed.roomTypeId, feed.channelId]
+  );
+  return rows[0]?.n ?? 0;
+}
+
+export async function updateFeed(
+  feedId: string,
+  patch: { url?: string; isActive?: boolean }
+): Promise<(IcalFeedConfig & { orphanedReservations?: number }) | null> {
   const existing = await getFeed(feedId);
   if (!existing) {return null;}
   const next: IcalFeedConfig = { ...existing, ...patch };
@@ -138,12 +168,69 @@ export async function updateFeed(feedId: string, patch: { url?: string; isActive
     `${FEED_KEY_PREFIX}${feedId}`,
     JSON.stringify(next),
   ]);
+  if (existing.isActive && next.isActive === false) {
+    return { ...next, orphanedReservations: await countOrphanedReservations(existing) };
+  }
   return next;
 }
 
-export async function deleteFeed(feedId: string): Promise<boolean> {
-  const { rowCount } = await query(`DELETE FROM system_config WHERE key = $1`, [`${FEED_KEY_PREFIX}${feedId}`]);
-  return (rowCount ?? 0) > 0;
+/** Devuelve null si no existia; si existia, cuantas reservas importadas quedan sin feed que las vigile. */
+export async function deleteFeed(feedId: string): Promise<{ orphanedReservations: number } | null> {
+  const existing = await getFeed(feedId);
+  if (!existing) {return null;}
+  await query(`DELETE FROM system_config WHERE key = ANY($1::text[])`, [
+    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`],
+  ]);
+  return { orphanedReservations: await countOrphanedReservations(existing) };
+}
+
+interface FeedHealth {
+  consecutiveFailures: number;
+  alertedAt: string | null;
+}
+
+/**
+ * Avisa por email al admin cuando un feed falla varias veces seguidas (URL vencida, 403, timeout):
+ * una OTA desconectada pasaba desapercibida porque el unico aviso era un log. Un solo email al
+ * llegar al umbral, otro cada 12 h si sigue caido, y uno cuando se recupera.
+ */
+async function trackFeedHealth(feed: IcalFeedConfig, result: FeedImportResult): Promise<void> {
+  const key = `${HEALTH_KEY_PREFIX}${feed.id}`;
+  const { rows } = await query<{ value: FeedHealth }>(`SELECT value FROM system_config WHERE key = $1`, [key]);
+  const health: FeedHealth = rows[0]?.value ?? { consecutiveFailures: 0, alertedAt: null };
+  const now = new Date();
+
+  if (result.success) {
+    if (health.alertedAt) {
+      await emailService
+        .sendAdminAlert('Feed iCal recuperado', { canal: feed.channelCode, habitacion: feed.roomTypeId, feed: feed.url })
+        .catch((error) => logger.warn('No se pudo avisar la recuperacion del feed', { feedId: feed.id, error: error.message }));
+    }
+    if (health.consecutiveFailures > 0 || health.alertedAt) {await query(`DELETE FROM system_config WHERE key = $1`, [key]);}
+    return;
+  }
+
+  health.consecutiveFailures += 1;
+  const lastAlert = health.alertedAt ? new Date(health.alertedAt).getTime() : 0;
+  const shouldAlert =
+    health.consecutiveFailures >= ALERT_AFTER_FAILURES && now.getTime() - lastAlert >= REALERT_AFTER_MS;
+  if (shouldAlert) {
+    await emailService
+      .sendAdminAlert('Feed iCal con errores', {
+        canal: feed.channelCode,
+        habitacion: feed.roomTypeId,
+        feed: feed.url,
+        fallosSeguidos: health.consecutiveFailures,
+        error: result.errors[0] ?? 'desconocido',
+      })
+      .then(() => { health.alertedAt = now.toISOString(); })
+      .catch((error) => logger.warn('No se pudo enviar el aviso de feed caido', { feedId: feed.id, error: error.message }));
+  }
+  await query(
+    `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Salud de un feed iCal (fallos seguidos, ultimo aviso)')
+     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+    [key, JSON.stringify(health)]
+  );
 }
 
 async function recordSyncStatus(channelCode: ChannelCode, status: {
@@ -558,6 +645,9 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
   for (const feed of feeds) {
     const result = await importICalFeed(feed);
     results.push(result);
+    await trackFeedHealth(feed, result).catch((error) =>
+      logger.warn('No se pudo registrar la salud del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
+    );
     const acc = byChannel.get(feed.channelCode) ?? { imported: 0, cancelled: 0, errors: [] };
     acc.imported += result.imported;
     acc.cancelled += result.cancelled;

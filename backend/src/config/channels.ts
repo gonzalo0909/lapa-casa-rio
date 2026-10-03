@@ -26,18 +26,6 @@ export const CHANNEL_PRIORITY: Record<ChannelCode, number> = {
 /** Canales con webhook de reservas en tiempo real (REQUISITO CRITICO #4). */
 export const WEBHOOK_CHANNELS: ChannelCode[] = ['booking', 'expedia'];
 
-/** Canales que dependen exclusivamente de importacion iCal periodica. */
-export const ICAL_ONLY_CHANNELS: ChannelCode[] = ['airbnb', 'hostelworld'];
-
-/** Intervalo de importacion iCal, en minutos (CONSIDERACIONES ESPECIALES). */
-export const ICAL_IMPORT_INTERVAL_MINUTES = 5;
-
-/** Rutas de webhook registradas -- documentacion + usadas por config/env para armar URLs completas. */
-export const WEBHOOK_PATHS: Partial<Record<ChannelCode, string>> = {
-  booking: '/api/v1/webhooks/booking',
-  expedia: '/api/v1/webhooks/expedia',
-};
-
 /**
  * Alias de nombres de habitacion usados por las OTAs para el mismo
  * room_type local (mapOTARoomToLocalRoom / mapExternalRoomId). Los

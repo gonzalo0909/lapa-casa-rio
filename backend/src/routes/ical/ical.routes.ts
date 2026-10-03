@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { env } from '../../config/environment';
 import { authenticateToken, requireRole } from '../../middleware/auth';
 import { rateLimiter } from '../../middleware/rate-limiter';
-import { icalService } from '../../services/ical-service';
+import { DuplicateFeedError, icalService } from '../../services/ical-service';
 import { ApiResponse } from '../../utils/responses';
 
 const router = Router();
@@ -121,6 +121,10 @@ router.post('/import/config', authenticateToken, requireRole(['admin']), async (
     const feed = await icalService.addFeed(data);
     res.status(201).json(ApiResponse.success({ feed }, 'Feed configurado'));
   } catch (error) {
+    if (error instanceof DuplicateFeedError) {
+      res.status(409).json(ApiResponse.error(error.message));
+      return;
+    }
     if (error instanceof z.ZodError) {
       res.status(400).json(ApiResponse.error('Validation error', error.errors));
       return;
@@ -175,8 +179,12 @@ router.post('/sync', authenticateToken, requireRole(['admin']), async (_req, res
 /** GET /api/ical/status — estado de la ultima sincronizacion por canal + feeds configurados. */
 router.get('/status', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
   try {
-    const [feeds, syncStatus] = await Promise.all([icalService.listFeeds(), icalService.getSyncStatus()]);
-    res.status(200).json(ApiResponse.success({ feeds, syncStatus }));
+    const [feeds, syncStatus, feedStatus] = await Promise.all([
+      icalService.listFeeds(),
+      icalService.getSyncStatus(),
+      icalService.getFeedStatuses(),
+    ]);
+    res.status(200).json(ApiResponse.success({ feeds, syncStatus, feedStatus }));
   } catch (error) {
     next(error);
   }

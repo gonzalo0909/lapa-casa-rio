@@ -15,7 +15,7 @@
     <h2>Feeds de importação — OTAs</h2>
     <p style="font-size:13px;color:#888;margin-bottom:12px;">
       Cada feed importa as reservas externas (Airbnb, Booking.com, Hostelworld, Expedia)
-      como bloqueios automáticos. A sincronização ocorre a cada 5 minutos via BullMQ.
+      como bloqueios automáticos. A sincronização ocorre a cada 5 minutos (tarefa agendada do worker).
     </p>
     <div id="feeds-msg"></div>
     <table id="feeds-table">
@@ -25,6 +25,7 @@
           <th>Habitação</th>
           <th>URL do feed</th>
           <th>Estado</th>
+          <th>Última leitura</th>
           <th></th>
         </tr>
       </thead>

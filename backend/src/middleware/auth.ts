@@ -7,6 +7,31 @@ import { logger } from '@/utils/logger';
 
 const REVOKED_PREFIX = 'revoked_token:';
 
+// Cada pedido autenticado consultaba Redis para saber si el token fue revocado. Se recuerda el
+// resultado en memoria unos segundos: un token que se revoca en esta instancia se marca al instante
+// (markTokenRevoked); el unico retraso posible es de REVOKED_CACHE_MS si otra instancia lo revoca.
+const REVOKED_CACHE_MS = 30_000;
+const REVOKED_CACHE_MAX = 2000;
+const revokedCache = new Map<string, { revoked: boolean; until: number }>();
+
+async function isTokenRevoked(token: string): Promise<boolean> {
+  const hit = revokedCache.get(token);
+  if (hit && hit.until > Date.now()) {return hit.revoked;}
+  const revoked = Boolean(await redisCache.get(`${REVOKED_PREFIX}${token}`));
+  if (revokedCache.size >= REVOKED_CACHE_MAX) {
+    const now = Date.now();
+    for (const [key, entry] of revokedCache) {if (entry.until <= now) {revokedCache.delete(key);}}
+    if (revokedCache.size >= REVOKED_CACHE_MAX) {revokedCache.clear();}
+  }
+  revokedCache.set(token, { revoked, until: Date.now() + REVOKED_CACHE_MS });
+  return revoked;
+}
+
+/** Llamar al revocar un token (logout, cambio de clave): lo bloquea ya mismo en esta instancia. */
+export function markTokenRevoked(token: string, ttlSeconds: number): void {
+  revokedCache.set(token, { revoked: true, until: Date.now() + ttlSeconds * 1000 });
+}
+
 export interface AuthPayload {
   userId: string;
   email: string;
@@ -62,7 +87,7 @@ export const authenticateToken = async (
     }) as AuthPayload;
 
     // M-03: rechazar tokens revocados (logout explícito)
-    const isRevoked = await redisCache.get(`${REVOKED_PREFIX}${token}`);
+    const isRevoked = await isTokenRevoked(token);
     if (isRevoked) {
       res.status(401).json({
         success: false,
@@ -150,7 +175,7 @@ export const authenticateOwnerToken = async (
       return;
     }
 
-    const isRevoked = await redisCache.get(`${REVOKED_PREFIX}${token}`);
+    const isRevoked = await isTokenRevoked(token);
     if (isRevoked) {
       res.status(401).json({
         success: false,

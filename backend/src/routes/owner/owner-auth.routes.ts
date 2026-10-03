@@ -20,7 +20,7 @@ import {
   verifyPassword, hashPassword, generateToken, generateRefreshToken,
   generateCsrfToken, ACCESS_TOKEN_TTL,
 } from '../../utils/encryption';
-import { authenticateOwnerToken, type AuthPayload } from '../../middleware/auth';
+import { authenticateOwnerToken, markTokenRevoked, type AuthPayload } from '../../middleware/auth';
 import { redisCache } from '../../config/redis';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -406,6 +406,7 @@ router.post('/logout', authenticateOwnerToken, async (req, res, next) => {
     // Revocar access token (TTL = 15 min, suficiente para que expire y Redis se limpie solo)
     if (accessToken) {
       await redisCache.set(`${REVOKED_PREFIX}${accessToken}`, '1', 15 * 60);
+      markTokenRevoked(accessToken, 15 * 60);
     }
     // Revocar refresh token (TTL = 90 días)
     if (refreshToken) {

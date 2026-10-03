@@ -591,7 +591,8 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
   let cancelledDirect = 0;
 
   try {
-    const parsed = await parser.parseFromUrl(feed.url, feed.channelCode);
+    // Parser propio por feed: guarda estado interno (errores) y ahora se leen varios feeds en paralelo.
+    const parsed = await new ICalParser().parseFromUrl(feed.url, feed.channelCode);
     if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
     const events = toParsedIcalEvents(parsed.bookings);
     errors.push(...parsed.errors);
@@ -681,20 +682,27 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
   const results: FeedImportResult[] = [];
   const byChannel = new Map<ChannelCode, { imported: number; cancelled: number; errors: string[] }>();
 
-  for (const feed of feeds) {
-    const result = await importICalFeed(feed);
-    results.push(result);
-    await recordFeedResult(feed.id, result).catch((error) =>
-      logger.warn('No se pudo guardar el resultado del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
-    );
-    await trackFeedHealth(feed, result).catch((error) =>
-      logger.warn('No se pudo registrar la salud del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
-    );
-    const acc = byChannel.get(feed.channelCode) ?? { imported: 0, cancelled: 0, errors: [] };
-    acc.imported += result.imported;
-    acc.cancelled += result.cancelled;
-    acc.errors.push(...result.errors);
-    byChannel.set(feed.channelCode, acc);
+  // De a 4 feeds a la vez: en serie, muchos apartamentos x canales (30 s de timeout cada uno)
+  // podian pasar los 5 min entre corridas del scheduler.
+  const FEED_CONCURRENCY = 4;
+  for (let i = 0; i < feeds.length; i += FEED_CONCURRENCY) {
+    const batch = feeds.slice(i, i + FEED_CONCURRENCY);
+    const batchResults = await Promise.all(batch.map((feed) => importICalFeed(feed)));
+    for (const [index, result] of batchResults.entries()) {
+      const feed = batch[index];
+      results.push(result);
+      await recordFeedResult(feed.id, result).catch((error) =>
+        logger.warn('No se pudo guardar el resultado del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
+      );
+      await trackFeedHealth(feed, result).catch((error) =>
+        logger.warn('No se pudo registrar la salud del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
+      );
+      const acc = byChannel.get(feed.channelCode) ?? { imported: 0, cancelled: 0, errors: [] };
+      acc.imported += result.imported;
+      acc.cancelled += result.cancelled;
+      acc.errors.push(...result.errors);
+      byChannel.set(feed.channelCode, acc);
+    }
   }
 
   for (const [channelCode, acc] of byChannel) {

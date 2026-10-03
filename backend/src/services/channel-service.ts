@@ -219,6 +219,19 @@ async function recordAvailabilityConflict(
     });
     return;
   }
+  // El intento rechazado no se guarda como reserva, asi que el feed lo vuelve a traer en cada sync
+  // (cada 5 min). Si ya hay un conflicto registrado para este mismo evento y fechas, no se duplica
+  // la fila ni el email al admin.
+  const { rows: already } = await query(
+    `SELECT 1 FROM booking_conflicts
+     WHERE rejected_payload->>'externalReservationId' = $1
+       AND rejected_payload->>'channelId' = $2
+       AND rejected_payload->>'checkIn' = $3
+       AND rejected_payload->>'checkOut' = $4
+     LIMIT 1`,
+    [bookingData.externalReservationId, channelId, bookingData.checkIn, bookingData.checkOut]
+  );
+  if (already.length > 0) {return;}
   await conflictService.recordConflict({
     reservationIdA: blocker.id,
     channelA: blocker.channelCode,

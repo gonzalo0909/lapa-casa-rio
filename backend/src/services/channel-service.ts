@@ -81,6 +81,11 @@ export interface ChannelBookingResult {
   deduplicated: boolean;
   /** true si la reserva ya existia y la OTA cambio sus fechas (se actualizaron aca). */
   updated?: boolean;
+  /**
+   * Si la reserva ya existia bajo OTRO id externo (misma estadia llegada por webhook e iCal), el id con el
+   * que esta guardada. Quien sincroniza feeds lo cuenta como "visto" para no cancelarla por ausencia.
+   */
+  matchedExternalId?: string;
 }
 
 export interface ChannelCancellationResult {
@@ -180,6 +185,36 @@ async function pickBedsIgnoringManualBlocks(
     [roomTypeId, checkIn, checkOut, count]
   );
   return rows.map((r: { bed_id: string }) => r.bed_id);
+}
+
+/**
+ * Un apartamento es una unidad: en un mismo canal no puede haber dos reservas activas con las mismas
+ * fechas. Booking/Expedia mandan la reserva por webhook (con su numero) y de nuevo en el iCal (con el UID
+ * del evento, que NO es ese numero): sin esto la segunda se rechaza como superposicion y deja un conflicto
+ * falso. Solo apartamentos: en un dormitorio varias reservas de la misma OTA pueden compartir fechas.
+ */
+async function findSameStayReservation(
+  roomTypeId: string,
+  channelId: string,
+  checkIn: string,
+  checkOut: string,
+  externalReservationId: string
+): Promise<{ id: string; externalId: string } | null> {
+  const { rows } = await query<{ id: string; external_reservation_id: string }>(
+    `SELECT r.id, r.external_reservation_id
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     JOIN room_types rt ON rt.id = rb.room_type_id
+     WHERE rb.room_type_id = $1 AND rt.property_type = 'apartment'
+       AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND r.check_in_date = $3::date AND r.check_out_date = $4::date
+       AND r.external_reservation_id IS NOT NULL AND r.external_reservation_id <> $5
+     ORDER BY r.created_at ASC
+     LIMIT 1`,
+    [roomTypeId, channelId, checkIn, checkOut, externalReservationId]
+  );
+  return rows[0] ? { id: rows[0].id, externalId: rows[0].external_reservation_id } : null;
 }
 
 async function findBlockingReservation(
@@ -328,6 +363,17 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
     : await mapExternalRoomId(bookingData.roomExternalId ?? '', channelId);
   if (!roomType) {
     throw new Error(`No se pudo mapear la habitación de "${channel.code}": ${bookingData.roomExternalId ?? bookingData.roomTypeId ?? '(vacío)'}`);
+  }
+
+  const sameStay = await findSameStayReservation(
+    roomType.id, channelId, bookingData.checkIn, bookingData.checkOut, bookingData.externalReservationId
+  );
+  if (sameStay) {
+    logger.info('Reserva OTA ya registrada con otro id externo (misma estadia): no se duplica', {
+      reservationId: sameStay.id, channelCode: channel.code,
+      externalReservationId: bookingData.externalReservationId, storedExternalId: sameStay.externalId,
+    });
+    return { reservationId: sameStay.id, deduplicated: true, matchedExternalId: sameStay.externalId };
   }
 
   const bedsCount = bookingData.bedsCount ?? 1;

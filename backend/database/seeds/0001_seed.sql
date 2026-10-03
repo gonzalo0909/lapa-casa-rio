@@ -95,7 +95,7 @@ INSERT INTO system_config (key, value, description) VALUES
 
 -- ============================================================
 -- exchange_rates: baseline ilustrativo, requiere sincronizacion real
--- con una API de tasas de cambio (fuera del alcance inicial).
+-- con una API de tasas de cambio (fuera del alcance de este seed).
 -- ============================================================
 INSERT INTO exchange_rates (currency_code, rate_to_brl, effective_date, source) VALUES
   ('BRL', 1.000000, CURRENT_DATE, 'manual'),

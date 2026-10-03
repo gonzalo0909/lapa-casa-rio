@@ -42,6 +42,7 @@ const FEED_KEY_PREFIX = 'ical_feed:';
 const SYNC_STATUS_KEY_PREFIX = 'ical_sync_status:';
 const SEEN_KEY_PREFIX = 'ical_seen:';
 const HEALTH_KEY_PREFIX = 'ical_feed_health:';
+const FEED_LAST_KEY_PREFIX = 'ical_feed_last:';
 /** Fallos seguidos de un feed antes de avisar al admin (3 x 5 min = 15 min). */
 const ALERT_AFTER_FAILURES = 3;
 /** Mientras siga fallando, se repite el aviso cada tanto (no cada 5 min). */
@@ -109,6 +110,13 @@ export async function getFeed(feedId: string): Promise<IcalFeedConfig | null> {
   return rows[0]?.value ?? null;
 }
 
+export class DuplicateFeedError extends Error {
+  constructor() {
+    super('Ya existe un feed con esa plataforma, habitación y URL');
+    this.name = 'DuplicateFeedError';
+  }
+}
+
 export async function addFeed(input: { channelCode: ChannelCode; roomTypeId: string; url: string }): Promise<IcalFeedConfig> {
   const { rows: channelRows } = await query<{ id: string }>(
     `SELECT id FROM channels WHERE code = $1::channel_code`,
@@ -118,6 +126,11 @@ export async function addFeed(input: { channelCode: ChannelCode; roomTypeId: str
 
   const { rows: roomRows } = await query<{ id: string }>(`SELECT id FROM room_types WHERE id = $1`, [input.roomTypeId]);
   if (roomRows.length === 0) {throw new Error(`room_type no encontrado: ${input.roomTypeId}`);}
+
+  const duplicate = (await listFeeds()).some(
+    (f) => f.channelCode === input.channelCode && f.roomTypeId === input.roomTypeId && f.url === input.url
+  );
+  if (duplicate) {throw new DuplicateFeedError();}
 
   const feed: IcalFeedConfig = {
     id: randomUUID(),
@@ -179,7 +192,7 @@ export async function deleteFeed(feedId: string): Promise<{ orphanedReservations
   const existing = await getFeed(feedId);
   if (!existing) {return null;}
   await query(`DELETE FROM system_config WHERE key = ANY($1::text[])`, [
-    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`],
+    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`, `${FEED_LAST_KEY_PREFIX}${feedId}`],
   ]);
   return { orphanedReservations: await countOrphanedReservations(existing) };
 }
@@ -245,6 +258,32 @@ async function recordSyncStatus(channelCode: ChannelCode, status: {
      ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
     [`${SYNC_STATUS_KEY_PREFIX}${channelCode}`, JSON.stringify(status)]
   );
+}
+
+/** Resultado de la ultima lectura de cada feed (para mostrarlo por feed en el panel). */
+async function recordFeedResult(feedId: string, result: FeedImportResult): Promise<void> {
+  const value = {
+    lastSyncAt: new Date().toISOString(),
+    success: result.success,
+    imported: result.imported,
+    updated: result.updated,
+    cancelled: result.cancelled,
+    errors: result.errors.slice(0, 5),
+  };
+  await query(
+    `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Ultimo resultado de lectura de un feed iCal')
+     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+    [`${FEED_LAST_KEY_PREFIX}${feedId}`, JSON.stringify(value)]
+  );
+}
+
+export async function getFeedStatuses(): Promise<Record<string, unknown>> {
+  const { rows } = await query<{ key: string; value: unknown }>(
+    `SELECT key, value FROM system_config WHERE key LIKE '${FEED_LAST_KEY_PREFIX}%'`
+  );
+  const result: Record<string, unknown> = {};
+  for (const row of rows) {result[row.key.slice(FEED_LAST_KEY_PREFIX.length)] = row.value;}
+  return result;
 }
 
 export async function getSyncStatus(): Promise<Record<string, unknown>> {
@@ -645,6 +684,9 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
   for (const feed of feeds) {
     const result = await importICalFeed(feed);
     results.push(result);
+    await recordFeedResult(feed.id, result).catch((error) =>
+      logger.warn('No se pudo guardar el resultado del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
+    );
     await trackFeedHealth(feed, result).catch((error) =>
       logger.warn('No se pudo registrar la salud del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) })
     );
@@ -723,6 +765,7 @@ export const icalService = {
   updateFeed,
   deleteFeed,
   getSyncStatus,
+  getFeedStatuses,
   generateICalFeed,
   generateAllFeeds,
   generateApartmentICalFeed,

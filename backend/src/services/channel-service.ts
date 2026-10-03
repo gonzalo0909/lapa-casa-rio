@@ -75,6 +75,12 @@ export interface IncomingOtaBooking {
   checkOut: string;
   bedsCount?: number;
   guestGender?: 'male' | 'female' | 'mixed';
+  /** De donde llega: el webhook trae el id real de la OTA, el iCal solo el UID del evento. */
+  source?: 'webhook' | 'ical';
+  /** iCal: ids de todos los eventos de la lectura actual (para reconocer una estadia con fechas cambiadas). */
+  feedExternalIds?: string[];
+  /** Cierre del propietario en la OTA (no es un huesped): se guarda sin precio y fuera de las estadisticas. */
+  ownerBlock?: boolean;
 }
 
 export interface ChannelBookingResult {
@@ -219,6 +225,35 @@ async function findSameStayReservation(
 }
 
 /** Misma regla que isUnitOccupied (apartment-unit.ts): cualquier reserva no cancelada ocupa la unidad, tambien no_show y completed. */
+/**
+ * Apartamento, mismo canal, fechas que SE SUPERPONEN y un id externo que ya no esta en el feed actual: la OTA
+ * no permite dos reservas superpuestas de la misma unidad, asi que es la misma estadia con otras fechas.
+ */
+async function findShiftedStayReservation(
+  roomTypeId: string,
+  channelId: string,
+  checkIn: string,
+  checkOut: string,
+  feedExternalIds: string[]
+): Promise<{ id: string; externalId: string } | null> {
+  const { rows } = await query<{ id: string; external_reservation_id: string }>(
+    `SELECT r.id, r.external_reservation_id
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     JOIN room_types rt ON rt.id = rb.room_type_id
+     WHERE rb.room_type_id = $1 AND rt.property_type = 'apartment'
+       AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND daterange(rb.check_in, rb.check_out, '[)') && daterange($3::date, $4::date, '[)')
+       AND r.external_reservation_id IS NOT NULL
+       AND NOT (r.external_reservation_id = ANY($5::text[]))
+     ORDER BY r.created_at ASC
+     LIMIT 1`,
+    [roomTypeId, channelId, checkIn, checkOut, feedExternalIds]
+  );
+  return rows[0] ? { id: rows[0].id, externalId: rows[0].external_reservation_id } : null;
+}
+
 async function findBlockingReservation(
   roomTypeId: string,
   checkIn: string,
@@ -405,7 +440,24 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
       reservationId: sameStay.id, channelCode: channel.code,
       externalReservationId: bookingData.externalReservationId, storedExternalId: sameStay.externalId,
     });
+    if (bookingData.source === 'webhook') {
+      // El webhook trae el id real de la OTA (el que usara para cancelar); el iCal la guardo con el UID del
+      // evento. Se adopta el id del webhook: el iCal sigue reconociendola por estadia y la cancelacion la encuentra.
+      await query(`UPDATE reservations SET external_reservation_id = $2 WHERE id = $1`, [sameStay.id, bookingData.externalReservationId]);
+      return { reservationId: sameStay.id, deduplicated: true, matchedExternalId: bookingData.externalReservationId };
+    }
     return { reservationId: sameStay.id, deduplicated: true, matchedExternalId: sameStay.externalId };
+  }
+
+  // iCal: el huesped cambio las fechas en la OTA. El evento llega con otro UID y fechas nuevas, pero la reserva
+  // guardada (con el id del webhook) ya no figura en el feed y se superpone con el: es la misma estadia.
+  if (bookingData.source === 'ical' && bookingData.feedExternalIds) {
+    const shifted = await findShiftedStayReservation(
+      roomType.id, channelId, bookingData.checkIn, bookingData.checkOut, bookingData.feedExternalIds
+    );
+    if (shifted && (await applyOtaDateChange(shifted.id, channel.code, bookingData.checkIn, bookingData.checkOut))) {
+      return { reservationId: shifted.id, deduplicated: true, updated: true, matchedExternalId: shifted.externalId };
+    }
   }
 
   const bedsCount = bookingData.bedsCount ?? 1;
@@ -491,7 +543,8 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
       // (depende del total de TODA la reserva, no de un cuarto -- ver
       // 0010_global_group_discount_tiers.sql). Para las reservas OTA
       // (1 cuarto por reserva) bedsCount ES el total, asi que se aplica aca.
-      const finalPrice = Math.round(preDiscountPrice * (1 - groupDiscount) * 100) / 100;
+      // Un cierre del propietario hecho en la OTA bloquea las fechas pero no es una venta: sin precio.
+      const finalPrice = bookingData.ownerBlock ? 0 : Math.round(preDiscountPrice * (1 - groupDiscount) * 100) / 100;
 
       const reservationNumber = generateReservationNumber(isApartment ? 'LCA' : 'LCH');
 
@@ -513,7 +566,7 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
           reservationNumber, guest.id, channelId, bookingData.externalReservationId, gender,
           bookingData.checkIn, bookingData.checkOut, nights, bedsCount,
           basePrice, seasonMultiplier, groupDiscount, earlyBirdDiscount, finalPrice,
-          channel.code,
+          bookingData.ownerBlock ? `${channel.code}_ical_block` : channel.code,
         ]
       );
       const reservation = reservationRows[0];
@@ -583,7 +636,7 @@ async function getChannelStats(channelId: string): Promise<ChannelStats> {
        COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled,
        COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) AS gross_revenue,
        COALESCE(SUM(calculate_channel_net_revenue(final_price, channel_id)) FILTER (WHERE status IN ('confirmed', 'completed')), 0) AS net_revenue
-     FROM reservations WHERE channel_id = $1`,
+     FROM reservations WHERE channel_id = $1 AND COALESCE(source, '') !~ '_ical_block$'`,
     [channelId]
   );
   const row = rows[0];

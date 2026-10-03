@@ -142,6 +142,7 @@ async function handleOtaWebhook(config: WebhookChannelConfig, req: Request, res:
         checkIn: payload.checkIn!,
         checkOut: payload.checkOut!,
         bedsCount: payload.bedsCount,
+        source: 'webhook',
       },
       channelId
     );

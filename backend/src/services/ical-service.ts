@@ -47,8 +47,22 @@ const FEED_LAST_KEY_PREFIX = 'ical_feed_last:';
 const ALERT_AFTER_FAILURES = 3;
 /** Mientras siga fallando, se repite el aviso cada tanto (no cada 5 min). */
 const REALERT_AFTER_MS = 12 * 60 * 60 * 1000;
-/** Una reserva importada se cancela solo si falta en el feed durante este tiempo seguido. */
-const ABSENCE_GRACE_MS = 24 * 60 * 60 * 1000;
+/**
+ * Una reserva importada se cancela solo si falta en el feed durante este tiempo seguido (24 h por defecto).
+ * Se puede acortar con ICAL_ABSENCE_GRACE_HOURS (minimo 1 h): menos espera libera antes las fechas de una
+ * cancelacion hecha en la OTA, pero aumenta el riesgo de liberar una reserva real que el feed omitio en una lectura.
+ */
+function absenceGraceMs(): number {
+  const hours = Number(process.env.ICAL_ABSENCE_GRACE_HOURS);
+  return (Number.isFinite(hours) && hours >= 1 ? hours : 24) * 60 * 60 * 1000;
+}
+/** Errores que no se arreglan solos (URL vencida o sin permiso): se avisa al primer fallo, no a los 15 min. */
+const PERMANENT_FEED_ERROR = /\bHTTP (401|403|404|410)\b/;
+
+/** Fallos seguidos de un feed antes de avisar al admin: 1 si el error es permanente, ALERT_AFTER_FAILURES si puede ser pasajero. */
+export function feedAlertThreshold(error?: string): number {
+  return PERMANENT_FEED_ERROR.test(error ?? '') ? 1 : ALERT_AFTER_FAILURES;
+}
 
 export interface IcalFeedConfig {
   id: string;
@@ -225,8 +239,8 @@ async function trackFeedHealth(feed: IcalFeedConfig, result: FeedImportResult): 
 
   health.consecutiveFailures += 1;
   const lastAlert = health.alertedAt ? new Date(health.alertedAt).getTime() : 0;
-  const shouldAlert =
-    health.consecutiveFailures >= ALERT_AFTER_FAILURES && now.getTime() - lastAlert >= REALERT_AFTER_MS;
+  const threshold = feedAlertThreshold(result.errors[0]);
+  const shouldAlert = health.consecutiveFailures >= threshold && now.getTime() - lastAlert >= REALERT_AFTER_MS;
   if (shouldAlert) {
     await emailService
       .sendAdminAlert('Feed iCal con errores', {
@@ -497,6 +511,8 @@ export interface ParsedIcalEvent {
   isOwn: boolean;
   isCancelled: boolean;
   isBlocked: boolean;
+  /** Airbnb marca "Not available" a un cierre hecho por el propietario (sus reservas reales dicen "Reserved"). */
+  isOwnerBlock: boolean;
   guestName: string;
   checkIn: string;
   checkOut: string;
@@ -514,11 +530,13 @@ function toParsedIcalEvents(bookings: ParsedBooking[]): ParsedIcalEvent[] {
   return bookings.map((booking) => {
     const uid = booking.rawEvent?.uid ? String(booking.rawEvent.uid) : booking.externalId;
     const rawStatus = (booking.rawEvent as unknown as { status?: string })?.status;
+    const summary = String((booking.rawEvent as unknown as { summary?: string })?.summary ?? '');
     return {
       uid,
       isOwn: uid.startsWith(OWN_UID_PREFIX),
       isCancelled: booking.status === 'cancelled' || rawStatus === 'CANCELLED',
       isBlocked: booking.status === 'blocked',
+      isOwnerBlock: booking.platform === 'airbnb' && /not available|unavailable/i.test(summary),
       guestName: booking.guestName,
       checkIn: toISODate(booking.checkIn),
       checkOut: toISODate(booking.checkOut),
@@ -585,7 +603,7 @@ export async function cancelAbsentReservations(
       seen[uid] = now.toISOString(); // sin registro: empieza el plazo de gracia
       continue;
     }
-    if (now.getTime() - lastSeen > ABSENCE_GRACE_MS) {
+    if (now.getTime() - lastSeen > absenceGraceMs()) {
       await channelService.handleChannelCancellation(uid, feed.channelId);
       delete seen[uid];
       cancelled++;
@@ -610,6 +628,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
     const events = toParsedIcalEvents(parsed.bookings);
     errors.push(...parsed.errors);
+    // Ids de todos los eventos de esta lectura: una reserva guardada cuyo id NO esta aca y que se superpone con
+    // un evento nuevo del mismo canal es la misma estadia con otras fechas (ver channel-service).
+    const feedExternalIds = events.filter((e) => !e.isOwn).map((e) => e.uid);
 
     for (const event of events) {
       if (event.isOwn) { skippedOwn++; continue; }
@@ -637,6 +658,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
             guestName: event.isBlocked ? `${feed.channelCode} (iCal)` : event.guestName,
             checkIn: event.checkIn,
             checkOut: event.checkOut,
+            source: 'ical',
+            feedExternalIds,
+            ownerBlock: event.isOwnerBlock,
           },
           feed.channelId
         );

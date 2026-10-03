@@ -156,6 +156,7 @@ export class StatsService {
        JOIN channels c ON c.id = r.channel_id
        WHERE r.status IN ('confirmed', 'completed')
          AND r.check_in_date >= $1::date AND r.check_in_date < $2::date
+         AND COALESCE(r.source, '') !~ '_ical_block$'
        GROUP BY c.id, c.code, c.name
        ORDER BY gross_revenue DESC`,
       [start, end]
@@ -186,6 +187,7 @@ export class StatsService {
        JOIN channels c ON c.id = r.channel_id
        WHERE r.check_in_date >= $1::date AND r.check_in_date < $2::date
          AND r.status != 'cancelled'
+         AND COALESCE(r.source, '') !~ '_ical_block$'
        GROUP BY c.id, c.code, c.name
        ORDER BY bookings DESC`,
       [start, end]

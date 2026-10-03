@@ -178,6 +178,47 @@ async function resolveConflict(conflictId: string, action: ConflictResolutionAct
 }
 
 /**
+ * Cierra un conflicto abierto que ya no es real, sin cancelar nada:
+ * - intento OTA rechazado (reservation_id_b nulo) cuyo evento ya existe como reserva activa: la
+ *   reserva que lo bloqueaba se libero (p. ej. la cancelacion en la otra OTA llego a Lapa tras la
+ *   espera de 24 h) y el siguiente sync lo importo bien;
+ * - conflicto entre dos reservas persistidas donde una ya esta cancelada: ya no se superponen.
+ * Devuelve el conflicto actualizado, o el mismo si sigue vigente.
+ */
+async function autoCloseStaleConflict(conflict: BookingConflictRow): Promise<BookingConflictRow> {
+  if (conflict.status !== 'open') {return conflict;}
+
+  let note: string | null = null;
+  if (conflict.reservation_id_b) {
+    const { rows } = await query(
+      `SELECT 1 FROM reservations WHERE id = ANY($1::uuid[]) AND status = 'cancelled' LIMIT 1`,
+      [[conflict.reservation_id_a, conflict.reservation_id_b]]
+    );
+    if (rows.length > 0) {note = 'Cerrado automáticamente: una de las dos reservas ya está cancelada, no hay superposición';}
+  } else {
+    const payload = conflict.rejected_payload as { externalReservationId?: string; channelId?: string } | null;
+    if (payload?.externalReservationId && payload.channelId) {
+      const { rows } = await query(
+        `SELECT 1 FROM reservations
+         WHERE channel_id = $1::uuid AND external_reservation_id = $2
+           AND status IN ('confirmed', 'pending_ota_confirmation', 'completed')
+         LIMIT 1`,
+        [payload.channelId, payload.externalReservationId]
+      );
+      if (rows.length > 0) {note = 'Cerrado automáticamente: el intento rechazado ya existe como reserva activa (la fecha se liberó)';}
+    }
+  }
+  if (!note) {return conflict;}
+
+  const { rows: updated } = await query<BookingConflictRow>(
+    `UPDATE booking_conflicts SET status = 'resolved_auto', resolved_at = now(), resolution_notes = $2
+     WHERE id = $1 AND status = 'open' RETURNING *`,
+    [conflict.id, note]
+  );
+  return updated[0] ?? conflict;
+}
+
+/**
  * Resolucion automatica por prioridad de canal (CHANNEL_PRIORITY, config/channels.ts). Usada por el worker.
  * Solo actua cuando la reserva perdedora es una reserva directa SIN pagar (pending_payment): es un hold
  * que se puede soltar sin dano. Una reserva de OTA existe de verdad en la OTA, y una directa ya pagada
@@ -250,7 +291,8 @@ async function detectConflicts(): Promise<{ newlyDetected: number; autoResolved:
   const open = await getConflictHistory({ status: 'open' });
   let autoResolved = 0;
   for (const conflict of open) {
-    const result = await autoResolveByPriority(conflict);
+    const closed = await autoCloseStaleConflict(conflict);
+    const result = closed.status === 'open' ? await autoResolveByPriority(closed) : closed;
     if (result.status !== 'open') {autoResolved++;}
   }
 
@@ -264,5 +306,6 @@ export const conflictService = {
   getConflictHistory,
   resolveConflict,
   autoResolveByPriority,
+  autoCloseStaleConflict,
   detectConflicts,
 };

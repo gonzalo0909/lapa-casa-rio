@@ -202,14 +202,17 @@ async function fetchBookingsForRoom(roomTypeId: string, excludeChannel?: Channel
   return rows;
 }
 
+/**
+ * Toda reserva activa (incluidas pending_payment y pending_ota_confirmation) se exporta CONFIRMED:
+ * varias OTAs ignoran los eventos TENTATIVE y no bloquearian esas fechas.
+ */
 function addBookingEvent(calendar: ReturnType<typeof ical>, booking: BookingRow, roomName: string): void {
-  const isPending = booking.status !== 'confirmed';
   calendar.createEvent({
     id: `${OWN_UID_PREFIX}${booking.id}${OWN_UID_SUFFIX}`,
     start: new Date(booking.checkIn),
     end: new Date(booking.checkOut),
-    summary: isPending ? `Pending - ${roomName}` : `Reserved - ${roomName}`,
-    status: isPending ? ICalEventStatus.TENTATIVE : ICalEventStatus.CONFIRMED,
+    summary: `Reserved - ${roomName}`,
+    status: ICalEventStatus.CONFIRMED,
     busystatus: ICalEventBusyStatus.BUSY,
     created: new Date(),
     lastModified: new Date(),

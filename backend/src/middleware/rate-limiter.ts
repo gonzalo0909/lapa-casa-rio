@@ -1,6 +1,8 @@
-// M-05: rate limiters con Redis store compartido entre instancias.
-// En despliegue multi-instancia (Render con >1 réplica) el contador
-// en memoria es independiente por proceso — con Redis es global.
+// Rate limiters. Por defecto cuentan en memoria del proceso: no gastan comandos de Redis (el plan
+// gratis de Upstash tiene tope mensual y antes cada pedido a /api/ costaba 2-4 comandos). La API
+// corre en una sola maquina, asi que el contador en memoria equivale al global. Solo los limites
+// de fuerza bruta (login, formulario de contacto) usan `shared: true`: Redis conserva el contador
+// aunque la API se reinicie o haya mas de una instancia, y son pocos pedidos.
 
 import rateLimit from 'express-rate-limit';
 import { redisCache } from '@/config/redis';
@@ -78,7 +80,6 @@ export const generalRateLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisRateLimitStore('rl:general', 60 * 1000) as any,
   handler: (_req: any, res: any) => {
     res.status(429).json({
       success: false,
@@ -88,16 +89,15 @@ export const generalRateLimiter = rateLimit({
   },
 });
 
-export const rateLimiter = (options: { max: number; windowMs: number; prefix?: string }) =>
+export const rateLimiter = (options: { max: number; windowMs: number; prefix?: string; shared?: boolean }) =>
   rateLimit({
     windowMs: options.windowMs,
     max: options.max,
     standardHeaders: true,
     legacyHeaders: false,
-    store: new RedisRateLimitStore(
-      `rl:${options.prefix ?? 'custom'}`,
-      options.windowMs,
-    ) as any,
+    ...(options.shared
+      ? { store: new RedisRateLimitStore(`rl:${options.prefix ?? 'custom'}`, options.windowMs) as any }
+      : {}),
     handler: (_req: any, res: any) => {
       res.status(429).json({
         success: false,

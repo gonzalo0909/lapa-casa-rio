@@ -24,7 +24,7 @@ const ContactSchema = z.object({
  */
 router.post(
   '/contact',
-  rateLimiter({ max: 5, windowMs: 60 * 60 * 1000, prefix: 'partners-contact' }),
+  rateLimiter({ max: 5, windowMs: 60 * 60 * 1000, prefix: 'partners-contact', shared: true }),
   validate(ContactSchema),
   async (req, res, next) => {
     try {

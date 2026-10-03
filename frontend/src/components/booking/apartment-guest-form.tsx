@@ -206,7 +206,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // código ya documenta más abajo ("Máximo 2 huéspedes por apartamento
   // — botón de agregar acompañante eliminado") que fue una decisión de
   // producto deliberada, no un bug. Se elimina la función junto con el
-  // Además rompía `next build` (noUnusedLocals).
+  // caso de uso. Además rompía `next build` (noUnusedLocals).
 
   function removeGuest(index: number) {
     onAdditionalGuestsChange(additionalGuests.filter((_, i) => i !== index));

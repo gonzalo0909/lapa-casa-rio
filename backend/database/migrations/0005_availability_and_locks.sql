@@ -135,8 +135,8 @@ $$ LANGUAGE sql STABLE;
 -- ============================================================
 -- acquire_bed_locks: adquiere un pg_advisory_xact_lock por cada cama en
 -- p_bed_ids, DENTRO de la transaccion actual (se libera solo al hacer
--- COMMIT/ROLLBACK -- no existe liberacion manual, ver lock-middleware en
--- src/database/lock-middleware.ts). Es una OPTIMIZACION para evitar reintentos costosos bajo
+-- COMMIT/ROLLBACK -- no existe liberacion manual, ver lock-middleware).
+-- Es una OPTIMIZACION para evitar reintentos costosos bajo
 -- alta contencion; el EXCLUDE constraint (migracion 0003) sigue siendo
 -- la autoridad final aunque este lock nunca se llamara.
 --

@@ -302,9 +302,21 @@ export async function getSyncStatus(): Promise<Record<string, unknown>> {
 interface BookingRow {
   id: string;
   guestName: string;
-  checkIn: string;
-  checkOut: string;
+  checkIn: string | Date;
+  checkOut: string | Date;
   status: string;
+}
+
+/**
+ * Las columnas DATE llegan de pg como Date a medianoche LOCAL del servidor (o como 'YYYY-MM-DD').
+ * Se reduce a medianoche local con el mismo dia calendario, para que ical-generator (allDay) emita
+ * siempre `VALUE=DATE:YYYYMMDD` correcto sin importar la zona horaria del servidor. `new Date('YYYY-MM-DD')`
+ * seria medianoche UTC y en zonas al oeste de UTC correria el dia.
+ */
+export function toCalendarDate(value: string | Date): Date {
+  if (value instanceof Date) {return new Date(value.getFullYear(), value.getMonth(), value.getDate());}
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 /**
@@ -335,8 +347,9 @@ async function fetchBookingsForRoom(roomTypeId: string, excludeChannel?: Channel
 function addBookingEvent(calendar: ReturnType<typeof ical>, booking: BookingRow, roomName: string): void {
   calendar.createEvent({
     id: `${OWN_UID_PREFIX}${booking.id}${OWN_UID_SUFFIX}`,
-    start: new Date(booking.checkIn),
-    end: new Date(booking.checkOut),
+    start: toCalendarDate(booking.checkIn),
+    end: toCalendarDate(booking.checkOut),
+    allDay: true,
     summary: `Reserved - ${roomName}`,
     status: ICalEventStatus.CONFIRMED,
     busystatus: ICalEventBusyStatus.BUSY,
@@ -347,8 +360,8 @@ function addBookingEvent(calendar: ReturnType<typeof ical>, booking: BookingRow,
 
 interface BlockRow {
   id: string;
-  checkIn: string;
-  checkOut: string;
+  checkIn: string | Date;
+  checkOut: string | Date;
 }
 
 /** Bloqueos manuales (room_blocks: mantenimiento, uso del propietario, feriados). end_date es exclusivo. */
@@ -380,8 +393,9 @@ async function addRoomEvents(
   for (const block of blocks) {
     calendar.createEvent({
       id: `${OWN_UID_PREFIX}block-${block.id}${OWN_UID_SUFFIX}`,
-      start: new Date(block.checkIn),
-      end: new Date(block.checkOut),
+      start: toCalendarDate(block.checkIn),
+      end: toCalendarDate(block.checkOut),
+      allDay: true,
       summary: `Blocked - ${room.name}`,
       status: ICalEventStatus.CONFIRMED,
       busystatus: ICalEventBusyStatus.BUSY,
@@ -626,6 +640,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
           },
           feed.channelId
         );
+        // La misma estadia ya estaba guardada con otro id (webhook): se cuenta como vista para que
+        // la cancelacion por ausencia no la elimine mientras la OTA siga publicandola.
+        if (result.matchedExternalId) {seenNow.add(result.matchedExternalId);}
         if (result.updated) {updated++;} else if (result.deduplicated) {alreadyKnown++;} else {imported++;}
       } catch (error) {
         errors.push(`Evento ${event.uid}: ${error instanceof Error ? error.message : 'error desconocido'}`);

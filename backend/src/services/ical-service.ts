@@ -216,6 +216,52 @@ function addBookingEvent(calendar: ReturnType<typeof ical>, booking: BookingRow,
   });
 }
 
+interface BlockRow {
+  id: string;
+  checkIn: string;
+  checkOut: string;
+}
+
+/** Bloqueos manuales (room_blocks: mantenimiento, uso del propietario, feriados). end_date es exclusivo. */
+async function fetchBlocksForRoom(roomTypeId: string): Promise<BlockRow[]> {
+  const { rows } = await query<BlockRow>(
+    `SELECT id, start_date AS "checkIn", end_date AS "checkOut"
+     FROM room_blocks
+     WHERE room_type_id = $1 AND end_date >= CURRENT_DATE - INTERVAL '7 days'
+     ORDER BY start_date`,
+    [roomTypeId]
+  );
+  return rows;
+}
+
+/**
+ * Reservas + bloqueos manuales de una habitacion como eventos del feed. Los bloqueos no dependen del
+ * canal: las fechas bloqueadas en Lapa se cierran en todas las OTAs. El UID empieza con `lapacasa-`,
+ * asi que si una OTA lo devuelve en su propio feed, la importacion lo descarta.
+ */
+async function addRoomEvents(
+  calendar: ReturnType<typeof ical>,
+  room: { id: string; name: string },
+  excludeChannel?: ChannelCode
+): Promise<void> {
+  const bookings = await fetchBookingsForRoom(room.id, excludeChannel);
+  for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
+
+  const blocks = await fetchBlocksForRoom(room.id);
+  for (const block of blocks) {
+    calendar.createEvent({
+      id: `${OWN_UID_PREFIX}block-${block.id}${OWN_UID_SUFFIX}`,
+      start: new Date(block.checkIn),
+      end: new Date(block.checkOut),
+      summary: `Blocked - ${room.name}`,
+      status: ICalEventStatus.CONFIRMED,
+      busystatus: ICalEventBusyStatus.BUSY,
+      created: new Date(),
+      lastModified: new Date(),
+    });
+  }
+}
+
 /** Feed iCal publico de disponibilidad para UNA habitacion (room_types.id). */
 export async function generateICalFeed(roomTypeId: string, excludeChannel?: ChannelCode): Promise<string> {
   const { rows } = await query<RoomTypeRow>(`SELECT id, code, name FROM room_types WHERE id = $1`, [roomTypeId]);
@@ -230,8 +276,7 @@ export async function generateICalFeed(roomTypeId: string, excludeChannel?: Chan
     ttl: 3600,
   });
 
-  const bookings = await fetchBookingsForRoom(roomTypeId, excludeChannel);
-  for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
+  await addRoomEvents(calendar, room, excludeChannel);
 
   return calendar.toString();
 }
@@ -251,8 +296,7 @@ export async function generateAllFeeds(excludeChannel?: ChannelCode): Promise<st
   });
 
   for (const room of rooms) {
-    const bookings = await fetchBookingsForRoom(room.id, excludeChannel);
-    for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
+    await addRoomEvents(calendar, room, excludeChannel);
   }
 
   return calendar.toString();
@@ -275,8 +319,7 @@ export async function generateApartmentICalFeed(roomTypeId: string, excludeChann
     ttl: 3600,
   });
 
-  const bookings = await fetchBookingsForRoom(roomTypeId, excludeChannel);
-  for (const booking of bookings) {addBookingEvent(calendar, booking, apt.name);}
+  await addRoomEvents(calendar, apt, excludeChannel);
 
   return calendar.toString();
 }
@@ -296,8 +339,7 @@ export async function generateAllApartmentFeeds(excludeChannel?: ChannelCode): P
   });
 
   for (const room of rooms) {
-    const bookings = await fetchBookingsForRoom(room.id, excludeChannel);
-    for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
+    await addRoomEvents(calendar, room, excludeChannel);
   }
 
   return calendar.toString();

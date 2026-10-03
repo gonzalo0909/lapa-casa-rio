@@ -44,4 +44,10 @@ const adapter = new PrismaPg(prismaPool);
 
 export const prisma = new PrismaClient({ adapter });
 
+export const disconnectPrisma = async (): Promise<void> => {
+  await prisma.$disconnect();
+  await prismaPool.end();
+  logger.info('Prisma pool closed');
+};
+
 export default prisma;

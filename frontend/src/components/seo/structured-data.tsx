@@ -167,6 +167,24 @@ export const LocalBusinessSchema = {
 };
 
 /**
+ * Generate FAQPage schema
+ */
+export function generateFAQSchema(faqs: Array<{ question: string; answer: string }>) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer
+      }
+    }))
+  };
+}
+
+/**
  * Schema para la página de Apartamentos.
  * SIN dirección física — solo área de servicio "Rio de Janeiro".
  * Las direcciones de cada apartamento nunca aparecen en la web.

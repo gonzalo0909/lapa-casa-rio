@@ -91,6 +91,17 @@ interface RequestOptions {
   token?: string;
 }
 
+/**
+ * API response interface
+ */
+export interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  statusCode?: number;
+}
+
 // El access token del panel de owners dura 15 minutos (ver use-owner-auth.ts).
 // Antes, solo el chequeo /owner/me al cargar la página lo renovaba -- cualquier
 // otra llamada (guardar el formulario de un apartamento, crear un bloqueo,

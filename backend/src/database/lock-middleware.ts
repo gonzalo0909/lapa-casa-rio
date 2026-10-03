@@ -24,6 +24,15 @@ export const acquireLock = async (client: PoolClient, bedIds: string[]): Promise
 };
 
 /**
+ * No-op documentado a proposito: un advisory lock tomado con
+ * pg_advisory_xact_lock se libera solo al terminar la transaccion
+ * (COMMIT o ROLLBACK) -- no existe un "unlock" manual posible ni
+ * necesario mientras el patron sea siempre lock -> verificar -> insertar
+ * dentro de la misma transaccion.
+ */
+export const releaseLock = async (_client: PoolClient, _bedIds: string[]): Promise<void> => {};
+
+/**
  * Ejecuta `callback` dentro de una transaccion nueva que ya tiene el
  * lock de `bedIds` tomado. Garantiza que lock, verificacion e insert
  * corren sobre el mismo PoolClient (Requisito Critico #1).

@@ -1,6 +1,8 @@
 import redisClient from '../cache/redis-client';
 import { logger } from '../utils/logger';
 
+export const getRedisClient = async () => ({ isOpen: redisClient.isClientConnected() });
+
 export const testConnection = async (): Promise<boolean> => redisClient.ping();
 
 export const disconnect = async (): Promise<void> => {
@@ -67,6 +69,16 @@ export class RedisCache {
 }
 
 export const redisCache = new RedisCache();
+
+export const CacheKeys = {
+  availability: (checkIn: string, checkOut: string) => `availability:${checkIn}:${checkOut}`,
+  roomAvailability: (roomId: string, checkIn: string, checkOut: string) => `room:${roomId}:${checkIn}:${checkOut}`,
+  booking: (bookingId: string) => `booking:${bookingId}`,
+  pricing: (roomId: string, checkIn: string, nights: number) => `pricing:${roomId}:${checkIn}:${nights}`,
+  session: (sessionId: string) => `session:${sessionId}`,
+  rateLimit: (ip: string, endpoint: string) => `ratelimit:${ip}:${endpoint}`,
+  lockAvailability: (roomId: string, date: string) => `lock:availability:${roomId}:${date}`
+};
 
 export const healthCheck = async () => {
   const start = Date.now();

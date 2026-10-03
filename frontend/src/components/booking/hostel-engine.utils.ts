@@ -71,6 +71,10 @@ export function getBrazilHolidaySet(year: number): Set<string> {
   return blocked;
 }
 
+export function isBrazilHoliday(date: Date): boolean {
+  return getBrazilHolidaySet(date.getFullYear()).has(fmtDate_(date));
+}
+
 // ─── Temporada ────────────────────────────────────────────
 export function getSeason(date: Date) {
   const m = date.getMonth();

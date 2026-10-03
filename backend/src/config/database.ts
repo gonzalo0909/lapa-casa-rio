@@ -36,6 +36,8 @@ pool.on('error', (err) => {
 export const query = <T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>> =>
   pool.query<T>(text, params);
 
+export const getClient = (): Promise<PoolClient> => pool.connect();
+
 export const withTransaction = async <T>(fn: (client: PoolClient) => Promise<T>): Promise<T> => {
   const client = await pool.connect();
   try {

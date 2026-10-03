@@ -9,7 +9,7 @@ import { BookingRepository } from '../database/repositories/booking-repository';
 import { acquireLock } from '../database/lock-middleware';
 import { insertUnitBlock, isApartmentRoomType, isUnitOccupied } from './apartment-unit';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
-import redisClient from '../cache/redis-client';
+import { availabilityCache } from '../cache/availability-cache';
 import { logger } from '../utils/logger';
 import type { Reservation, BookingStatus } from '../types/database';
 
@@ -32,11 +32,7 @@ const exportToSheetsAsync = (
 // de camas específicas. Fire-and-forget: si Redis falla acá, la reserva
 // real ya quedó guardada, no hay nada que revertir.
 const invalidateAvailabilityCache = (): void => {
-  redisClient
-    .delPattern('availability:*')
-    .catch((err) =>
-      logger.warn('No se pudo invalidar el cache de disponibilidad', { error: err.message }),
-    );
+  availabilityCache.invalidate();
 };
 
 const guestRepo = new GuestRepository();

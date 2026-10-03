@@ -24,7 +24,7 @@ import { withTransaction, query } from '../config/database';
 import { GuestRepository } from '../database/repositories/guest-repository';
 import { acquireLock } from '../database/lock-middleware';
 import { enqueueSheetsExport } from '../queues/sheets-export.queue';
-import redisClient from '../cache/redis-client';
+import { availabilityCache } from '../cache/availability-cache';
 import { logger } from '../utils/logger';
 import { getSeasonType } from './season-type';
 import { uploadDocumentPhoto } from '../lib/cloudinary/cloudinary-client';
@@ -456,7 +456,7 @@ export class GroupPaymentService {
       };
     });
 
-    redisClient.delPattern('availability:*').catch(() => {});
+    availabilityCache.invalidate();
     return result;
   }
 
@@ -798,7 +798,7 @@ export class GroupPaymentService {
     }
 
     enqueueSheetsExport(reservationId, 'upsert').catch(() => {});
-    redisClient.delPattern('availability:*').catch(() => {});
+    availabilityCache.invalidate();
     logger.info('Reserva grupal confirmada', { reservationId, sessionId });
   }
 
@@ -930,7 +930,7 @@ export class GroupPaymentService {
           }
         }
 
-        redisClient.delPattern('availability:*').catch(() => {});
+        availabilityCache.invalidate();
         processed++;
         logger.info('Sesión grupal expirada procesada', {
           sessionId: session.id,

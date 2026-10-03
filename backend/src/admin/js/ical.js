@@ -59,34 +59,89 @@ function roomName(roomTypeId) {
 
 async function loadFeeds() {
   try {
-    const data = await apiFetch('/ical/feeds');
+    // /ical/status trae los feeds y el resultado de la última lectura de cada uno.
+    const data = await apiFetch('/ical/status');
     let feeds = data.feeds ?? [];
     if (PROPERTY_TYPE) { feeds = feeds.filter((f) => roomsCache.some((r) => r.id === f.roomTypeId)); }
-    renderFeeds(feeds);
+    renderFeeds(feeds, data.feedStatus ?? {});
   } catch (err) {
-    showMsg('feeds-msg', err.message, 'error');
+    showMsg('feeds-msg', escapeHtml(err.message), 'error');
   }
 }
 
-function renderFeeds(feeds) {
+function feedStatusCell(st) {
+  if (!st) { return '<span style="color:#888;">Sin lecturas aún</span>'; }
+  const when = new Date(st.lastSyncAt).toLocaleString('pt-BR');
+  const counts = `${st.imported ?? 0} nueva(s) · ${st.updated ?? 0} actualizada(s) · ${st.cancelled ?? 0} cancelada(s)`;
+  const errs = st.errors ?? [];
+  const state = st.success
+    ? '<span style="color:#1e8e3e">OK</span>'
+    : '<span style="color:#c0392b">Falló</span>';
+  const detail = errs.map((e) => `<div style="color:#c0392b;font-size:11px;">• ${escapeHtml(e)}</div>`).join('');
+  return `${state} · ${escapeHtml(when)}<div style="font-size:11px;color:#888;">${escapeHtml(counts)}</div>${detail}`;
+}
+
+function renderFeeds(feeds, feedStatus) {
   const tbody = document.querySelector('#feeds-table tbody');
   if (!feeds.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:#888;">Sin feeds configurados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#888;">Sin feeds configurados</td></tr>';
     return;
   }
   tbody.innerHTML = feeds.map((f) => `
-    <tr data-id="${f.id}">
+    <tr data-id="${f.id}" data-url="${escapeHtml(f.url)}" data-active="${f.isActive ? '1' : '0'}">
       <td>${escapeHtml(PLATFORM_LABELS[f.channelCode] ?? f.channelCode)}</td>
       <td>${escapeHtml(roomName(f.roomTypeId))}</td>
       <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(f.url)}">${escapeHtml(f.url)}</td>
-      <td><span class="badge ${f.isActive ? 'confirmed' : 'cancelled'}">${f.isActive ? 'Activo' : 'Inactivo'}</span></td>
-      <td><button data-action="delete-feed">Quitar</button></td>
+      <td><span class="badge ${f.isActive ? 'confirmed' : 'cancelled'}">${f.isActive ? 'Activo' : 'Pausado'}</span></td>
+      <td style="font-size:12px;">${feedStatusCell(feedStatus[f.id])}</td>
+      <td style="white-space:nowrap;">
+        <button data-action="edit-feed">Editar URL</button>
+        <button data-action="toggle-feed">${f.isActive ? 'Pausar' : 'Activar'}</button>
+        <button data-action="delete-feed">Quitar</button>
+      </td>
     </tr>
   `).join('');
 
   tbody.querySelectorAll('button[data-action="delete-feed"]').forEach((btn) => {
     btn.addEventListener('click', () => deleteFeed(btn.closest('tr').dataset.id));
   });
+  tbody.querySelectorAll('button[data-action="edit-feed"]').forEach((btn) => {
+    btn.addEventListener('click', () => editFeedUrl(btn.closest('tr')));
+  });
+  tbody.querySelectorAll('button[data-action="toggle-feed"]').forEach((btn) => {
+    btn.addEventListener('click', () => toggleFeed(btn.closest('tr')));
+  });
+}
+
+async function editFeedUrl(row) {
+  const url = prompt('Nueva URL del feed .ics:', row.dataset.url);
+  if (url === null || url.trim() === '' || url.trim() === row.dataset.url) { return; }
+  try { new URL(url.trim()); } catch {
+    showMsg('feeds-msg', 'La URL no es válida.', 'error');
+    return;
+  }
+  try {
+    await apiFetch(`/ical/feeds/${row.dataset.id}`, { method: 'PATCH', body: JSON.stringify({ url: url.trim() }) });
+    showMsg('feeds-msg', 'URL actualizada.', 'success');
+    loadFeeds();
+  } catch (err) {
+    showMsg('feeds-msg', escapeHtml(err.message), 'error');
+  }
+}
+
+async function toggleFeed(row) {
+  const activate = row.dataset.active !== '1';
+  if (!activate && !confirm('¿Pausar este feed? Dejará de sincronizarse y sus reservas importadas dejarán de vigilarse.')) { return; }
+  try {
+    const data = await apiFetch(`/ical/feeds/${row.dataset.id}`, { method: 'PATCH', body: JSON.stringify({ isActive: activate }) });
+    const n = data && data.feed && data.feed.orphanedReservations ? data.feed.orphanedReservations : 0;
+    showMsg('feeds-msg', n
+      ? `Feed pausado. Quedan ${n} reserva(s) importada(s) activas que ya nadie vigila y siguen bloqueando fechas: cancélalas desde Reservas si ya no corresponden.`
+      : (activate ? 'Feed activado.' : 'Feed pausado.'), n ? 'error' : 'success');
+    loadFeeds();
+  } catch (err) {
+    showMsg('feeds-msg', escapeHtml(err.message), 'error');
+  }
 }
 
 async function deleteFeed(id) {
@@ -99,7 +154,7 @@ async function deleteFeed(id) {
       : 'Feed eliminado.', n ? 'error' : 'success');
     loadFeeds();
   } catch (err) {
-    showMsg('feeds-msg', err.message, 'error');
+    showMsg('feeds-msg', escapeHtml(err.message), 'error');
   }
 }
 
@@ -123,7 +178,7 @@ document.getElementById('add-form').addEventListener('submit', async (event) => 
     document.getElementById('add-form').reset();
     loadFeeds();
   } catch (err) {
-    showMsg('add-msg', err.message, 'error');
+    showMsg('add-msg', escapeHtml(err.message), 'error');
   }
 });
 
@@ -176,19 +231,21 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
     const imp  = data.totalImported ?? 0;
     const results = data.results ?? [];
     const known  = results.reduce((n, r) => n + (r.alreadyKnown ?? 0), 0);
+    const upd    = results.reduce((n, r) => n + (r.updated ?? 0), 0);
+    const canc   = data.totalCancelled ?? 0;
     const errors = results.flatMap((r) => r.errors ?? []);
     const detail = errors.length
       ? `<br><strong>Eventos con error (${errors.length}):</strong><br>` +
         errors.map((e) => `• ${escapeHtml(e)}`).join('<br>')
       : '';
     showMsg('sync-msg',
-      `Sync completada — ${ok} feed(s) OK · ${fail} fallido(s) · ${imp} importado(s) nuevos · ${known} ya conocidos.${detail}`,
+      `Sync completada — ${ok} feed(s) OK · ${fail} fallido(s) · ${imp} importado(s) nuevos · ${upd} actualizado(s) · ${canc} cancelado(s) · ${known} ya conocidos.${detail}`,
       errors.length || fail ? 'error' : 'success'
     );
     loadFeeds();
     loadSyncStatus();
   } catch (err) {
-    showMsg('sync-msg', err.message, 'error');
+    showMsg('sync-msg', escapeHtml(err.message), 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = '⟳ Sincronizar agora todos os feeds';

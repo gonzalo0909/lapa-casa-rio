@@ -11,7 +11,7 @@ import { createDateBlocker } from '../../lib/ical/date-blocker';
 import { auditLogService } from '../../services/audit-log-service';
 import { ApiResponse } from '../../utils/responses';
 import { validate } from '../../middleware/validation';
-import redisClient from '../../cache/redis-client';
+import { availabilityCache } from '../../cache/availability-cache';
 
 const router = Router();
 const dateBlocker = createDateBlocker();
@@ -76,7 +76,7 @@ router.post('/', validate(BlockDatesSchema), async (req, res, next) => {
       new_data: { roomTypeId, startDate, endDate, reason }
     });
 
-    redisClient.invalidateCache('availability:*').catch(() => {});
+    availabilityCache.invalidate();
     res.status(201).json(ApiResponse.success({ id: blockId }, 'Fechas bloqueadas'));
   } catch (error: any) {
     if (
@@ -153,7 +153,7 @@ router.put('/:id', validate(UpdateBlockSchema), async (req, res, next) => {
       new_data: { startDate, endDate, reason }
     });
 
-    redisClient.invalidateCache('availability:*').catch(() => {});
+    availabilityCache.invalidate();
     res.status(200).json(ApiResponse.success(rows[0], 'Bloqueo actualizado'));
   } catch (error: any) {
     if (error?.code === '23514') {

@@ -9,7 +9,7 @@
 
 import { query } from '../config/database';
 import { logger } from '../utils/logger';
-import redisClient from '../cache/redis-client';
+import { availabilityCache } from '../cache/availability-cache';
 
 interface BedAvailabilityRow {
   roomTypeId: string;
@@ -24,8 +24,6 @@ interface BedAvailabilityRow {
   isAvailable: boolean;
 }
 
-const CACHE_TTL_SECONDS = 5 * 60;
-
 export class AvailabilityService {
   /** check_availability() crudo, sin agregar -- usado por checkAvailability/checkRoomAvailability. */
   private async rawCheckAvailability(
@@ -34,8 +32,8 @@ export class AvailabilityService {
     gender: 'mixed' | 'female' | 'male' = 'mixed'
   ): Promise<BedAvailabilityRow[]> {
     const cacheKey = `availability:${checkIn}:${checkOut}:${gender}`;
-    const cached = await redisClient.get<BedAvailabilityRow[]>(cacheKey).catch(() => null);
-    if (cached) {return cached;}
+    const cached = availabilityCache.get<BedAvailabilityRow[]>(cacheKey);
+    if (cached) {return cached.map((row) => ({ ...row }));}
 
     const { rows } = await query(
       `SELECT * FROM check_availability($1::date, $2::date, $3::bed_gender)`,
@@ -53,8 +51,8 @@ export class AvailabilityService {
       isOccupied: r.is_occupied,
       isAvailable: r.is_available
     }));
-    await redisClient.set(cacheKey, mapped, CACHE_TTL_SECONDS).catch(() => undefined);
-    return mapped;
+    availabilityCache.set(cacheKey, mapped);
+    return mapped.map((row) => ({ ...row }));
   }
 
   /** Disponibilidad global agregada -- usada por check-availability.ts. */
@@ -273,7 +271,7 @@ export class AvailabilityService {
   }
 
   async clearCache(): Promise<void> {
-    await redisClient.delPattern('availability:*');
+    availabilityCache.invalidate();
     logger.info('Availability cache cleared');
   }
 }

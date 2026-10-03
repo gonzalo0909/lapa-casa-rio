@@ -155,5 +155,5 @@ y son re-ejecutables sin dejar residuos.
   repositories) queda obsoleto: fue escrito contra un schema distinto
   (`cuid`, sin `reservation_beds`/`channels`/etc.) y será reemplazado
   íntegramente en el schema de Prisma. `backend/src/database/prisma/seed.ts` quedó
-  además colgando sin su `schema.prisma` (se borró en esta ventana junto con
+  además colgando sin su `schema.prisma` (se borró junto con
   las migraciones viejas, incompatibles con este diseño).

@@ -32,7 +32,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- ============================================================
 -- get_season_type: determina la temporada de una fecha. Carnaval se lee
 -- desde system_config (fechas moviles, ver alerta de mantenimiento anual
--- mas adelante) -- por eso es STABLE y no IMMUTABLE.
+-- en la documentacion de mantenimiento) -- por eso es STABLE y no IMMUTABLE.
 -- ============================================================
 CREATE OR REPLACE FUNCTION get_season_type(p_date DATE)
 RETURNS season_type AS $$

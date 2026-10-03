@@ -14,7 +14,7 @@
 // de configuracion dinamica.
 //
 // UID propio de exportacion: `lapacasa-{reservation_id}@lapacasario.com`
-// (pedido literalmente por el prompt de esta ventana). Al reimportar el
+// (requisito del feed). Al reimportar el
 // propio feed exportado, cualquier evento cuyo UID empiece con
 // "lapacasa-" se descarta -- evita el bucle "mi propia disponibilidad
 // reimportada como reserva nueva".
@@ -752,7 +752,7 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
  * (unica fuente de la regla de disponibilidad, Requisito Critico #6) en
  * vez de reimplementar el calculo de camas libres en JS.
  *
- * Antes de esta ventana ninguna parte del repo la poblaba (confirmado en
+ * Antes ninguna parte del repo la poblaba (confirmado en
  * services/stats-service.ts, que por eso calcula ocupacion en vivo en
  * vez de leer de aca) -- La tabla quedó poblada por primera vez, para
  * que una futura exportacion/reporte rapido pueda leerla en vez de

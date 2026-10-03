@@ -1,4 +1,4 @@
-# que las vulnerabilidades de dependencias se
+# Detecta las vulnerabilidades de dependencias se
 # detecten solas en vez de en rondas manuales. Agrupa
 # actualizaciones menores/parche para no inundar de PRs -- las mayores
 # siempre llegan aparte, para revisarlas con cuidado (algunas, como la

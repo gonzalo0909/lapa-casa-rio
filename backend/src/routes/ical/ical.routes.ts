@@ -2,7 +2,7 @@
 // Reescrito completo. La version anterior no estaba montada en
 // routes/index.ts (nunca respondia a ningun request real) e importaba
 // `authenticate` de middleware/auth.ts, que no existe (el real es
-// `authenticateToken`) -- bug ya señalado en el prompt de esta ventana,
+// `authenticateToken`) -- bug conocido,
 // junto con requireRole(...) recibiendo un string suelto en vez de
 // string[]. Tambien consultaba una tabla `ical_feeds` que nunca existio
 // en el schema real -- los feeds configurados viven en `system_config`

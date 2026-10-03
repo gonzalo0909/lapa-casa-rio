@@ -225,7 +225,8 @@ async function detectConflicts(): Promise<{ newlyDetected: number; autoResolved:
       AND rb2.reservation_id > rb1.reservation_id
       AND daterange(rb1.check_in, rb1.check_out, '[)') && daterange(rb2.check_in, rb2.check_out, '[)')
      JOIN reservations ra ON ra.id = rb1.reservation_id AND ra.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
-     JOIN reservations rb ON rb.id = rb2.reservation_id AND rb.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')`
+     JOIN reservations rb ON rb.id = rb2.reservation_id AND rb.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
+     WHERE rb1.check_out >= CURRENT_DATE AND rb2.check_out >= CURRENT_DATE`
   );
 
   let newlyDetected = 0;

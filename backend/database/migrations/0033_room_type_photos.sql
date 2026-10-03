@@ -6,8 +6,7 @@
 -- anterior había creado -- toda la gestión de fotos de habitaciones/
 -- apartamentos daba error 500 desde que se escribió ese código.
 -- Encontrado probando el panel de admin y el de dueños de apartamento
--- contra una base de datos real (idea #49, roadmap.html -- verificación
--- de todo lo construido en la sesión).
+-- contra una base de datos real..
 
 CREATE TABLE IF NOT EXISTS room_type_photos (
   id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

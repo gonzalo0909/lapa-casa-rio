@@ -1,5 +1,5 @@
 //
-// Idea #48 (roadmap.html): "Chat de WhatsApp visible como opción de
+// "Chat de WhatsApp visible como opción de
 // consulta pre-reserva (ya existe integración, falta exponerla como canal
 // de venta activo)". La home, /hostel y /apartamentos -- las páginas con
 // más visitas -- no tienen ningún footer (SiteFooter solo se usa en las

@@ -2,7 +2,7 @@
 -- Lapa Casa Hostel - Channel Manager
 --
 -- REQUISITO CRITICO #6: estas funciones son la UNICA implementacion de
--- las reglas de negocio de pricing. Los servicios Node (Ventana 2) las
+-- las reglas de negocio de pricing. Los servicios Node las
 -- invocan via $queryRaw, nunca las reimplementan en JavaScript.
 --
 -- Volatilidad: STABLE para las que leen system_config/rate_plans/channels
@@ -32,7 +32,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- ============================================================
 -- get_season_type: determina la temporada de una fecha. Carnaval se lee
 -- desde system_config (fechas moviles, ver alerta de mantenimiento anual
--- en Ventana 6) -- por eso es STABLE y no IMMUTABLE.
+-- en la documentacion de mantenimiento) -- por eso es STABLE y no IMMUTABLE.
 -- ============================================================
 CREATE OR REPLACE FUNCTION get_season_type(p_date DATE)
 RETURNS season_type AS $$

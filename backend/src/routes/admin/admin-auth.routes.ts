@@ -65,7 +65,7 @@ router.post('/', validate(LoginSchema), async (req, res, next) => {
       return;
     }
 
-    // 2FA opcional (idea #22, roadmap.html) -- solo se exige si el admin
+    // 2FA opcional -- solo se exige si el admin
     // lo activó desde /admin/2fa. Código 'TOTP_REQUIRED' distinto de
     // 'credenciales inválidas' para que el frontend sepa mostrar el
     // segundo campo en vez de decir que la contraseña está mal.

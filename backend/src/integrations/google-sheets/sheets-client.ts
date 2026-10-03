@@ -1,7 +1,7 @@
 //
 // Cliente de bajo nivel contra la API de Google Sheets. Reescrito
 // contra el schema real (0002_tables.sql) y la estructura de columnas
-// A-N del prompt de esta ventana -- la version anterior apuntaba a una
+// A-N -- la version anterior apuntaba a una
 // tabla `rooms` y columnas (`total_price`, `notes`, `room_id`) que no
 // existen en el schema real, y nunca se probo.
 //

@@ -2,7 +2,7 @@
 #
 # Backup del Supabase real (proyecto rpowardrcwnhbkzjsiok) via pg_dump
 # directo contra DATABASE_URL. Supabase ya hace backups automaticos
-# (checklist de Ventana 6), esto es para tener una copia local/portable
+# (checklist de operacion), esto es para tener una copia local/portable
 # ademas -- antes de una migracion riesgosa, antes de un deploy grande,
 # o para restaurar en un Postgres local de desarrollo.
 #

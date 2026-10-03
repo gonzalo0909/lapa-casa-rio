@@ -1,5 +1,5 @@
 --
--- Programa de referidos (idea #49, roadmap.html): cada huésped que
+-- Programa de referidos: cada huésped que
 -- completa una reserva recibe un código propio para compartir. Reusa
 -- apartment_offers en vez de una tabla nueva -- create-booking.ts y
 -- POST /offers/validate ya validan y aplican códigos de ahí para

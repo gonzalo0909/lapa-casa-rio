@@ -1,6 +1,6 @@
 //
 // 2FA (TOTP, Google Authenticator/Authy compatibles) para el login de
-// admin (idea #22, roadmap.html). otplib v13 cambió a una API funcional
+// admin. otplib v13 cambió a una API funcional
 // -- generateSecret/generateURI/verify -- distinta de la clásica
 // `authenticator.*` de versiones anteriores.
 

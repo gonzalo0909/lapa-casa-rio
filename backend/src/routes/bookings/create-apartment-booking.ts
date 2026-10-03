@@ -281,7 +281,7 @@ export const createApartmentBookingHandler = async (
 
     logger.info('Apartment booking created', { bookingId: booking.id, totalPrice: pricingDetails.totalPrice });
 
-    // Programa de referidos (idea #49, roadmap.html)
+    // Programa de referidos
     let ownReferralCode: string | null = null;
     try {
       const { rows: existing } = await query<{ code: string }>(

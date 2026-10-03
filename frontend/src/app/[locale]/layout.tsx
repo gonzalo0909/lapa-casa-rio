@@ -42,7 +42,7 @@ const cormorant = Cormorant_Garamond({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
 
 // themeColor vive aparte de Metadata desde Next 14 -- mismo color que
-// manifest.json (idea #45, roadmap.html) para que la barra del navegador
+// manifest.json para que la barra del navegador
 // en mobile combine con la app instalada.
 export const viewport: Viewport = {
   themeColor: '#0ea5e9',
@@ -103,7 +103,7 @@ export async function generateMetadata({
       icon: '/favicon.ico',
       apple: '/apple-touch-icon.png',
     },
-    // Idea #45 (roadmap.html): PWA real instalable -- el manifest.json ya
+    // PWA real instalable -- el manifest.json ya
     // existía con contenido correcto, pero nada lo enlazaba desde el HTML
     // (sin <link rel="manifest">, ningún navegador lo descubre, así que
     // nunca aparecía el prompt de instalar). También referenciaba

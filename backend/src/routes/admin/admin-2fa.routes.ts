@@ -1,5 +1,5 @@
 //
-// 2FA (TOTP) para el login de admin (idea #22, roadmap.html). Montado
+// 2FA (TOTP) para el login de admin. Montado
 // bajo /admin/2fa en admin.routes.ts -- hereda authenticateToken,
 // requireRole(['admin']) y verifyCsrf ya aplicados en el punto de
 // montaje de /admin (routes/index.ts), así que estas rutas ya requieren

@@ -5,15 +5,15 @@
 -- "ESTADOS DEL SISTEMA (ENUMS CLAVE)".
 --
 -- Politica de migraciones (Maestro v1.1, "FORMA DE TRABAJO" punto 7): el
--- schema completo, incluidos todos los valores de ENUMs, se define aca en
--- Ventana 1. Ninguna ventana posterior deberia requerir ALTER TYPE/ALTER
+-- schema completo, incluidos todos los valores de ENUMs, se define aca.
+-- Ninguna migracion posterior deberia requerir ALTER TYPE/ALTER
 -- TABLE retroactivo sobre lo cerrado aca.
 --
 -- payment_type y payment_provider no estan listados textualmente en la
 -- seccion "ESTADOS DEL SISTEMA" del Maestro, pero son requeridos por las
 -- reglas de depositos/pagos (30%/50%, Stripe/MercadoPago, mismo proveedor
--- en reintentos). Se agregan aca, en Ventana 1, para no violar la politica
--- de "nunca ALTER TYPE en silencio" en una ventana posterior.
+-- en reintentos). Se agregan aca para no violar la politica
+-- de "nunca ALTER TYPE en silencio" en una migracion posterior.
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_guests_email ON guests(email);
 -- channel_id -> RESTRICT: se necesita el canal para reportes de comision
 -- neta; no se puede borrar un canal con historial de reservas.
 --
--- guest_gender: decision de diseno agregada en Ventana 1 (no aparece
+-- guest_gender: decision de diseno agregada en el diseno inicial (no aparece
 -- explicita en el Maestro) para poder implementar la regla de Flexible 7
 -- ("solo mujeres pueden ocupar F1-F7 hasta 48h antes"): el sistema
 -- necesita saber el genero del huesped/grupo para validar la asignacion.

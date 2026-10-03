@@ -2,7 +2,7 @@
 -- Lapa Casa Hostel - Channel Manager
 --
 -- Procedimientos programados. Estos procedimientos NO se autoejecutan y
--- NO usan pg_cron: quedan inertes hasta que Ventana 4 los invoque desde
+-- NO usan pg_cron: quedan inertes hasta que el worker los invoque desde
 -- BullMQ con `CALL sp_x()` (ver ARQUITECTURA DEL SISTEMA, punto 6, y
 -- REQUISITO CRITICO #1, punto 7 del Maestro).
 

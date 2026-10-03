@@ -72,7 +72,7 @@ $$ LANGUAGE plpgsql STABLE;
 -- genero. Es de solo lectura (STABLE); NO decide cuantas camas alcanzan
 -- para un grupo -- eso lo hace el servicio Node (availability-service),
 -- que agrega este resultado por habitacion y compara contra
--- requestedBeds (Ventana 2, REQUISITO CRITICO #6: la funcion SQL es la
+-- requestedBeds (REQUISITO CRITICO #6: la funcion SQL es la
 -- unica fuente de verdad sobre que esta libre; la agregacion/asignacion
 -- es un detalle de presentacion, no una regla de negocio nueva).
 --
@@ -135,8 +135,8 @@ $$ LANGUAGE sql STABLE;
 -- ============================================================
 -- acquire_bed_locks: adquiere un pg_advisory_xact_lock por cada cama en
 -- p_bed_ids, DENTRO de la transaccion actual (se libera solo al hacer
--- COMMIT/ROLLBACK -- no existe liberacion manual, ver lock-middleware en
--- Ventana 2). Es una OPTIMIZACION para evitar reintentos costosos bajo
+-- COMMIT/ROLLBACK -- no existe liberacion manual, ver lock-middleware).
+-- Es una OPTIMIZACION para evitar reintentos costosos bajo
 -- alta contencion; el EXCLUDE constraint (migracion 0003) sigue siendo
 -- la autoridad final aunque este lock nunca se llamara.
 --

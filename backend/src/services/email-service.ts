@@ -1179,7 +1179,7 @@ export class EmailService {
   }
 
   /**
-   * Email al referidor cuando alguien usa su código (idea #49, roadmap.html).
+   * Email al referidor cuando alguien usa su código.
    * No recibe un `BookingWithGuest` completo -- se dispara desde
    * create-booking.ts sobre el GUEST del referidor (una reserva vieja
    * suya), no sobre la reserva nueva que acaba de redimir el código.

@@ -1,7 +1,6 @@
 //
-// Estadísticas para el dashboard/panel admin. El prompt de esta ventana
-// dice "las estadísticas usan availability_cache (tabla real) para
-// consultas rápidas" -- se verificó que availability_cache
+// Estadísticas para el dashboard/panel admin. Se evaluo usar availability_cache
+// (tabla real) para consultas rápidas, pero se verificó que availability_cache
 // (0002_tables.sql) no la puebla nada en todo el repo (ni un cron, ni
 // una función SQL, ni un trigger): leer de ahí devolvería siempre cero.
 // Se calcula en cambio directo sobre reservation_beds/reservations,

@@ -108,7 +108,7 @@ Ninguna debe reimplementarse en JavaScript.
 - **`payment_type` y `payment_provider`**: no están en la lista literal de
   "ESTADOS DEL SISTEMA" del Maestro, pero son necesarios para modelar
   depósito/saldo y Stripe/MercadoPago. Se agregan en las migraciones iniciales para no violar
-  la política de "nunca `ALTER TYPE` en silencio en una ventana posterior".
+  la política de "nunca `ALTER TYPE` en silencio en una migracion posterior".
 - **`reservations.guest_gender`**: no aparece explícito en el Maestro, pero es
   necesario para poder validar la regla "solo mujeres en F1-F7 hasta 48h antes".
 - **`audit_logs.guest_id` / `audit_logs.reservation_id`**: columnas explícitas
@@ -155,5 +155,5 @@ y son re-ejecutables sin dejar residuos.
   repositories) queda obsoleto: fue escrito contra un schema distinto
   (`cuid`, sin `reservation_beds`/`channels`/etc.) y será reemplazado
   íntegramente en el schema de Prisma. `backend/src/database/prisma/seed.ts` quedó
-  además colgando sin su `schema.prisma` (se borró en esta ventana junto con
+  además colgando sin su `schema.prisma` (se borró junto con
   las migraciones viejas, incompatibles con este diseño).

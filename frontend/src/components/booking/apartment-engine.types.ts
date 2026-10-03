@@ -54,7 +54,7 @@ export interface CreatedBooking {
   deposit: number;
   remaining: number;
   checkIn: string;
-  /** Código de referido propio, generado al confirmar (idea #49, roadmap.html). */
+  /** Código de referido propio, generado al confirmar. */
   referralCode?: string | null;
 }
 

@@ -25,6 +25,7 @@ import guestRepo from '../database/repositories/guest-repository';
 import { acquireLock } from '../database/lock-middleware';
 import { insertUnitBlock, isApartmentRoomType, isUnitOccupied } from './apartment-unit';
 import { conflictService } from './conflict-service';
+import { emailService } from './email-service';
 import { resolveRoomCodeFromName } from '../config/channels';
 import { logger } from '../utils/logger';
 import type { ChannelCode } from '../types/database';
@@ -217,6 +218,7 @@ async function findSameStayReservation(
   return rows[0] ? { id: rows[0].id, externalId: rows[0].external_reservation_id } : null;
 }
 
+/** Misma regla que isUnitOccupied (apartment-unit.ts): cualquier reserva no cancelada ocupa la unidad, tambien no_show y completed. */
 async function findBlockingReservation(
   roomTypeId: string,
   checkIn: string,
@@ -228,7 +230,7 @@ async function findBlockingReservation(
      JOIN reservations r ON r.id = rb.reservation_id
      JOIN channels c ON c.id = r.channel_id
      WHERE rb.room_type_id = $1
-       AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
+       AND r.status <> 'cancelled'
        AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
      ORDER BY r.created_at ASC
      LIMIT 1`,
@@ -236,6 +238,33 @@ async function findBlockingReservation(
   );
   if (rows.length === 0) {return null;}
   return { id: rows[0].id, channelCode: rows[0].channel_code };
+}
+
+async function alertUnplacedOtaBooking(
+  roomTypeId: string,
+  bookingData: IncomingOtaBooking,
+  channelCode: ChannelCode,
+  channelId: string
+): Promise<void> {
+  const key = `ota_unplaced:${channelId}:${bookingData.externalReservationId}:${bookingData.checkIn}:${bookingData.checkOut}`.slice(0, 250);
+  const { rows } = await query(
+    `INSERT INTO system_config (key, value, description)
+     VALUES ($1, $2::jsonb, 'Reserva OTA rechazada sin bloqueador (ya avisada al admin)')
+     ON CONFLICT (key) DO NOTHING RETURNING key`,
+    [key, JSON.stringify({ roomTypeId, channelCode, detectedAt: new Date().toISOString() })]
+  );
+  if (rows.length === 0) {return;} // ya se aviso
+  await emailService
+    .sendAdminAlert('Reserva de OTA rechazada sin reserva que la bloquee', {
+      canal: channelCode,
+      habitacion: roomTypeId,
+      reservaExterna: bookingData.externalReservationId,
+      entrada: bookingData.checkIn,
+      salida: bookingData.checkOut,
+      huesped: bookingData.guestName,
+      motivo: 'No hay lugar para esta reserva y no se encontró ninguna reserva que la bloquee: revisar la disponibilidad a mano',
+    })
+    .catch((error) => logger.warn('No se pudo avisar la reserva OTA sin bloqueador', { error: error instanceof Error ? error.message : String(error) }));
 }
 
 async function recordAvailabilityConflict(
@@ -248,10 +277,13 @@ async function recordAvailabilityConflict(
   if (!blocker) {
     // No hay ninguna reserva real bloqueando -- no es un conflicto entre canales, sino que
     // se pidieron mas camas de las que la habitacion tiene fisicamente. booking_conflicts.reservation_id_a
-    // es NOT NULL (siempre debe referenciar una reserva real), asi que no corresponde registrar aca.
+    // es NOT NULL (siempre debe referenciar una reserva real), asi que no se puede registrar ahi.
+    // Antes quedaba solo en el log y la reserva de la OTA se perdia sin que nadie lo supiera: se avisa
+    // al admin por email, una sola vez por evento (el feed lo repite en cada sync, cada 5 min).
     logger.error('Reserva OTA rechazada sin bloqueador identificable (¿capacidad insuficiente de la habitación?)', {
       roomTypeId, channelCode: incomingChannelCode, externalReservationId: bookingData.externalReservationId
     });
+    await alertUnplacedOtaBooking(roomTypeId, bookingData, incomingChannelCode, channelId);
     return;
   }
   // El intento rechazado no se guarda como reserva, asi que el feed lo vuelve a traer en cada sync

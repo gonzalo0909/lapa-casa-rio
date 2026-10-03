@@ -393,5 +393,3 @@ export class WhatsAppClient {
     }
   }
 }
-
-export const whatsAppClient = new WhatsAppClient();

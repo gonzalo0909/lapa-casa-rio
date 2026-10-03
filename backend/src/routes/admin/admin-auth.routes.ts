@@ -14,7 +14,7 @@ import {
   durationToSeconds,
   generateCsrfToken,
 } from '../../utils/encryption';
-import { authenticateToken, requireRole } from '../../middleware/auth';
+import { authenticateToken, markTokenRevoked, requireRole } from '../../middleware/auth';
 import { verifyCsrf } from '../../middleware/csrf';
 import { redisCache } from '../../config/redis';
 import { logger } from '../../utils/logger';
@@ -209,11 +209,9 @@ router.post('/logout', authenticateToken, verifyCsrf('lch_admin_csrf'), async (r
       // TTL de la blacklist = TTL real del JWT -- antes estaba fijo en 86400s (24h)
       // sin importar JWT_EXPIRES_IN. Si ese valor se configura a más de 24h, el token
       // "revocado" volvería a ser válido apenas la entrada de Redis expirara.
-      await redisCache.set(
-        `${REVOKED_PREFIX}${token}`,
-        '1',
-        durationToSeconds(process.env.JWT_EXPIRES_IN || '24h', 86400),
-      );
+      const revokeTtl = durationToSeconds(process.env.JWT_EXPIRES_IN || '24h', 86400);
+      await redisCache.set(`${REVOKED_PREFIX}${token}`, '1', revokeTtl);
+      markTokenRevoked(token, revokeTtl);
     }
 
     const { refreshToken } = req.body as { refreshToken?: string };
@@ -284,11 +282,9 @@ router.post(
       const cookieToken = (req.cookies as Record<string, string> | undefined)?.['lch_admin'];
       const token = (authHeader && authHeader.split(' ')[1]) || cookieToken;
       if (token) {
-        await redisCache.set(
-          `${REVOKED_PREFIX}${token}`,
-          '1',
-          durationToSeconds(process.env.JWT_EXPIRES_IN || '24h', 86400),
-        );
+        const revokeTtl = durationToSeconds(process.env.JWT_EXPIRES_IN || '24h', 86400);
+        await redisCache.set(`${REVOKED_PREFIX}${token}`, '1', revokeTtl);
+        markTokenRevoked(token, revokeTtl);
       }
       res.clearCookie('lch_admin', { httpOnly: true, sameSite: 'strict', path: '/' });
       res.clearCookie('lch_admin_csrf', { httpOnly: false, sameSite: 'strict', path: '/' });

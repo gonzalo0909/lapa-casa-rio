@@ -135,7 +135,7 @@ router.use(
  */
 router.use(
   '/admin/login',
-  rateLimiter({ max: 10, windowMs: 60000, prefix: 'admin-login' }),
+  rateLimiter({ max: 10, windowMs: 60000, prefix: 'admin-login', shared: true }),
   adminAuthRouter,
 );
 
@@ -158,7 +158,7 @@ router.use(
  */
 router.use(
   '/owner/login',
-  rateLimiter({ max: 10, windowMs: 60000, prefix: 'owner-login' }),
+  rateLimiter({ max: 10, windowMs: 60000, prefix: 'owner-login', shared: true }),
   ownerAuthRouter,
 );
 

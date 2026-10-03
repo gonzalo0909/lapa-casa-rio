@@ -232,12 +232,13 @@ export class ICalParser {
     const version = isIP(ip);
     if (version === 4) {
       if (
-        ip === '127.0.0.1' ||
         ip.startsWith('169.254.') || // link-local, incluye 169.254.169.254 (metadata AWS/GCP/Azure)
         ip.startsWith('192.168.') ||
         ip.startsWith('10.') ||
         /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip) ||
-        ip === '0.0.0.0'
+        ip.startsWith('0.') || // 0.0.0.0/8
+        /^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\./.test(ip) || // CGNAT 100.64.0.0/10
+        /^127\./.test(ip) // loopback completo 127.0.0.0/8
       ) {
         return true;
       }
@@ -325,19 +326,27 @@ export class ICalParser {
     const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     try {
-      const response = await fetch(url, {
-        signal: controller.signal,
-        // sin esto, un feed puede redirigir (3xx) hacia una IP interna y
-        // `fetch` lo seguiría, evadiendo la validación de validateUrl().
-        redirect: 'manual',
-        headers: {
-          'User-Agent': 'Lapa-Casa-Hostel/1.0',
-        },
-      });
-
-      if (response.status >= 300 && response.status < 400) {
-        throw new Error('El feed respondió con una redirección, no se sigue por seguridad (SSRF)');
+      let currentUrl = url;
+      let response: Response | undefined;
+      // Se siguen hasta 3 redirecciones a mano y se vuelve a validar cada destino (SSRF): con
+      // redirect:'follow' un feed podria redirigir hacia una IP interna sin pasar por validateUrl().
+      for (let hop = 0; hop <= 3; hop++) {
+        response = await fetch(currentUrl, {
+          signal: controller.signal,
+          redirect: 'manual',
+          headers: {
+            'User-Agent': 'Lapa-Casa-Hostel/1.0',
+          },
+        });
+        if (response.status < 300 || response.status >= 400) {break;}
+        const location = response.headers.get('location');
+        if (!location || hop === 3) {
+          throw new Error('El feed respondió con demasiadas redirecciones');
+        }
+        currentUrl = new URL(location, currentUrl).toString();
+        await this.validateUrl(currentUrl);
       }
+      if (!response) {throw new Error('Sin respuesta del servidor');}
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -413,7 +422,8 @@ export class ICalParser {
   private isBlockedEvent(summary: string, description: string): boolean {
     const combined = `${summary} ${description}`.toLowerCase();
 
-    return BLOCKED_KEYWORDS.some((keyword) => combined.includes(keyword));
+    // Palabra completa: "hold" no debe marcar como bloqueo a un huesped llamado "Holden".
+    return BLOCKED_KEYWORDS.some((keyword) => new RegExp(`\\b${keyword}\\b`).test(combined));
   }
 
   /**

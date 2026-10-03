@@ -92,8 +92,11 @@ function renderFeeds(feeds) {
 async function deleteFeed(id) {
   if (!confirm('¿Eliminar este feed? Dejará de sincronizarse.')) return;
   try {
-    await apiFetch(`/ical/feeds/${id}`, { method: 'DELETE' });
-    showMsg('feeds-msg', 'Feed eliminado.', 'success');
+    const data = await apiFetch(`/ical/feeds/${id}`, { method: 'DELETE' });
+    const n = (data && data.orphanedReservations) || 0;
+    showMsg('feeds-msg', n
+      ? `Feed eliminado. Quedan ${n} reserva(s) importada(s) activas que ya nadie vigila y siguen bloqueando fechas: cancélalas desde Reservas si ya no corresponden.`
+      : 'Feed eliminado.', n ? 'error' : 'success');
     loadFeeds();
   } catch (err) {
     showMsg('feeds-msg', err.message, 'error');

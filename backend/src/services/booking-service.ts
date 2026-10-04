@@ -31,6 +31,24 @@ const exportToSheetsAsync = (
 // sigue siendo la única autoridad), pero sí de UX confusa en el selector
 // de camas específicas. Fire-and-forget: si Redis falla acá, la reserva
 // real ya quedó guardada, no hay nada que revertir.
+/**
+ * Vencimiento exacto del hold de pago: cuando se crea una reserva pendiente de pago se programa, en la
+ * memoria de este proceso, una revision para el instante en que vence (5 min). Si sigue sin pagarse, se
+ * cancela y se liberan las fechas al momento, sin esperar a la limpieza periodica ni consultar Redis.
+ * Si la API se reinicia durante esos 5 minutos el temporizador se pierde; la limpieza periodica
+ * (workers/scheduler.ts) sigue ahi como red de seguridad. Usa el mismo procedimiento que la limpieza.
+ */
+const PENDING_EXPIRY_GRACE_MS = 3_000;
+export const schedulePendingExpiry = (expiresAt: Date | string | null | undefined, delayMsFallback = 5 * 60 * 1000): void => {
+  const at = expiresAt ? new Date(expiresAt).getTime() : Date.now() + delayMsFallback;
+  const delay = Math.max(0, at - Date.now()) + PENDING_EXPIRY_GRACE_MS;
+  setTimeout(() => {
+    query('CALL sp_cleanup_expired_pending()')
+      .then(() => invalidateAvailabilityCache())
+      .catch((error: Error) => logger.warn('No se pudo vencer el hold de pago en el momento', { message: error.message }));
+  }, delay).unref();
+};
+
 const invalidateAvailabilityCache = (): void => {
   availabilityCache.invalidate();
 };
@@ -322,6 +340,9 @@ export class BookingService {
     // revertir una reserva real.
     exportToSheetsAsync(result.id);
     invalidateAvailabilityCache();
+    if (result.status === 'pending_payment') {
+      schedulePendingExpiry(result.pending_expires_at);
+    }
     return result;
   }
 

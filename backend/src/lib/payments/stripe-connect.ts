@@ -6,7 +6,7 @@
 //
 // Comisiones acordadas:
 //   - Lapa Casa retiene 5% de comisión
-//   - El administrador paga 0.99% de tasa de payout
+//   - El administrador paga 1.19% de tasa de payout
 //   - Stripe cobra 3.99% operacional (costo de la plataforma)
 //   - El 30% de depósito se retiene hasta check-in:
 //       5% = comisión de Lapa Casa
@@ -207,8 +207,8 @@ export class StripeConnectHandler {
    *
    * Ejemplo con finalPrice = 1000 BRL:
    *   commissionRate = 0.05  →  50 BRL para Lapa Casa
-   *   payoutFeeRate  = 0.0099 →  9.9 BRL de tasa de payout
-   *   adminReceives  = 1000 - 50 - 9.9 = 940.1 BRL
+   *   payoutFeeRate  = 0.0119 →  11.9 BRL de tasa de payout
+   *   adminReceives  = 1000 - 50 - 11.9 = 938.1 BRL
    */
   calculateAdminAmount(params: {
     finalPrice: number;

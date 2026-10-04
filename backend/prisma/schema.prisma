@@ -42,7 +42,7 @@ model ApartmentOwner {
   onboardingUrl          String?                 @map("onboarding_url")
   onboardingUrlExpiresAt DateTime?               @map("onboarding_url_expires_at")
   commissionRate         Decimal                 @default(0.0500) @map("commission_rate") @db.Decimal(5, 4)
-  payoutFeeRate          Decimal                 @default(0.0099) @map("payout_fee_rate") @db.Decimal(5, 4)
+  payoutFeeRate          Decimal                 @default(0.0119) @map("payout_fee_rate") @db.Decimal(5, 4)
   isActive               Boolean                 @default(true) @map("is_active")
   notes                  String?
   // 0031_apartment_owner_login.sql -- login propio del administrador,

@@ -165,7 +165,7 @@ router.post('/', validate(CreateOwnerSchema), async (req, res, next) => {
         onboardingUrl,
         onboardingUrlExpiresAt,
         commissionRate: commissionRate ?? 0.05,
-        payoutFeeRate: payoutFeeRate ?? 0.0099,
+        payoutFeeRate: payoutFeeRate ?? 0.0119,
         notes: notes ?? null,
         passwordHash,
         mustChangePassword: true,

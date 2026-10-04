@@ -158,8 +158,7 @@ function ContractText() {
         <p>
           <strong>1.2</strong> A Plataforma atua exclusivamente como <strong>marketplace de hospedagem</strong>:
           aproxima hóspedes e administradores, processa o sinal confirmatório de reserva por
-          meio de processadores de pagamento licenciados pelo Banco Central do Brasil (Stripe
-          Payments Brazil Ltda. e/ou Mercado Pago), e oferece ferramentas de gestão. A Plataforma
+          meio de processador de pagamento licenciado pelo Banco Central do Brasil (Stripe Payments Brazil Ltda.), e oferece ferramentas de gestão. A Plataforma
           não é parte do contrato de hospedagem entre hóspede e Administrador, não presta serviço
           de hospedagem diretamente e não é instituição de pagamento.
         </p>
@@ -241,17 +240,16 @@ function ContractText() {
           de 30% antes do repasse.
         </p>
         <p>
-          <strong>4.2 Taxa operacional.</strong> Adicionalmente, a Plataforma retém <strong>1,39%</strong> a
+          <strong>4.2 Taxa operacional.</strong> Adicionalmente, a Plataforma retém <strong>1,59%</strong> a
           título de taxa operacional, composta por:
         </p>
         <ul>
-          <li><strong>0,99%</strong> — taxa do gateway de pagamento (Stripe/Mercado Pago);</li>
-          <li><strong>0,40%</strong> — proteção contra contestações (Stripe Chargeback Protection
-              ou equivalente), que cobre integralmente o risco de estorno em disputas de cartão.</li>
+          <li><strong>1,19%</strong> — taxa do gateway de pagamento (Stripe);</li>
+          <li><strong>0,40%</strong> — proteção contra contestações (Stripe Chargeback Protection), que cobre integralmente o risco de estorno em disputas de cartão.</li>
         </ul>
         <p>
           <strong>4.3 Total retido pela Plataforma.</strong> A retenção total sobre o valor da
-          estadia é de <strong>6,39%</strong> (5% comissão + 1,39% operacional), descontada
+          estadia é de <strong>6,59%</strong> (5% comissão + 1,59% operacional), descontada
           integralmente do sinal de 30%.
         </p>
         <p>
@@ -361,7 +359,7 @@ function ContractText() {
         </p>
         <p>
           <strong>10.2</strong> Os dados poderão ser compartilhados com processadores de pagamento
-          (Stripe, Mercado Pago) e autoridades fiscais, quando exigido por lei.
+          (Stripe) e autoridades fiscais, quando exigido por lei.
         </p>
         <p>
           <strong>10.3</strong> O Administrador poderá exercer seus direitos de acesso, correção

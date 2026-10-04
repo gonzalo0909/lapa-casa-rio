@@ -125,7 +125,7 @@ function ContractPT() {
 
       <Section title="CLÁUSULA 1 — PARTES E NATUREZA DO ACORDO">
         <p><strong>1.1</strong> O presente Termo de Adesão ("Termo") é celebrado entre <strong>Lapa Casa Rio</strong> ("Plataforma"), operada por pessoa física/jurídica brasileira responsável pelo domínio digital e pela infraestrutura de reservas, e o <strong>Administrador</strong>, pessoa física ou jurídica proprietária ou gestora do imóvel cadastrado na Plataforma ("Apartamento"), identificado pelos dados fornecidos no momento do cadastro.</p>
-        <p><strong>1.2</strong> A Plataforma atua exclusivamente como <strong>marketplace de hospedagem</strong>: aproxima hóspedes e administradores, processa o sinal confirmatório de reserva por meio de processadores de pagamento licenciados pelo Banco Central do Brasil (Stripe Payments Brazil Ltda. e/ou Mercado Pago), e oferece ferramentas de gestão. A Plataforma não é parte do contrato de hospedagem entre hóspede e Administrador, não presta serviço de hospedagem diretamente e não é instituição de pagamento.</p>
+        <p><strong>1.2</strong> A Plataforma atua exclusivamente como <strong>marketplace de hospedagem</strong>: aproxima hóspedes e administradores, processa o sinal confirmatório de reserva por meio de processadores de pagamento licenciados pelo Banco Central do Brasil (Stripe Payments Brazil Ltda.), e oferece ferramentas de gestão. A Plataforma não é parte do contrato de hospedagem entre hóspede e Administrador, não presta serviço de hospedagem diretamente e não é instituição de pagamento.</p>
         <p><strong>1.3</strong> A adesão ocorre no momento em que o Administrador conclui o cadastro e aceita eletronicamente este Termo, ficando registrado o carimbo de data/hora e o endereço IP como prova de aceite, nos termos da Lei 14.063/2020 e do Marco Civil da Internet (Lei 12.965/2014).</p>
       </Section>
 
@@ -149,12 +149,12 @@ function ContractPT() {
 
       <Section title="CLÁUSULA 4 — COMISSÃO E TAXAS">
         <p><strong>4.1 Comissão da Plataforma.</strong> Sobre o valor total da estadia (100%), a Plataforma retém uma comissão de <strong>5% (cinco por cento)</strong>, descontada do sinal de 30% antes do repasse.</p>
-        <p><strong>4.2 Taxa operacional.</strong> Adicionalmente, a Plataforma retém <strong>1,39%</strong> a título de taxa operacional, composta por:</p>
+        <p><strong>4.2 Taxa operacional.</strong> Adicionalmente, a Plataforma retém <strong>1,59%</strong> a título de taxa operacional, composta por:</p>
         <ul>
-          <li><strong>0,99%</strong> — taxa do gateway de pagamento (Stripe/Mercado Pago);</li>
-          <li><strong>0,40%</strong> — proteção contra contestações (Stripe Chargeback Protection ou equivalente), que cobre integralmente o risco de estorno em disputas de cartão.</li>
+          <li><strong>1,19%</strong> — taxa do gateway de pagamento (Stripe);</li>
+          <li><strong>0,40%</strong> — proteção contra contestações (Stripe Chargeback Protection), que cobre integralmente o risco de estorno em disputas de cartão.</li>
         </ul>
-        <p><strong>4.3 Total retido pela Plataforma.</strong> A retenção total sobre o valor da estadia é de <strong>6,39%</strong> (5% comissão + 1,39% operacional), descontada integralmente do sinal de 30%.</p>
+        <p><strong>4.3 Total retido pela Plataforma.</strong> A retenção total sobre o valor da estadia é de <strong>6,59%</strong> (5% comissão + 1,59% operacional), descontada integralmente do sinal de 30%.</p>
         <p><strong>4.4 Alteração de taxas.</strong> A Plataforma poderá reajustar as taxas com aviso prévio de <strong>30 dias</strong> por e-mail. O Administrador que não concordar poderá rescindir o contrato sem multa no prazo de aviso.</p>
       </Section>
 
@@ -205,7 +205,7 @@ function ContractPT() {
 
       <Section title="CLÁUSULA 10 — PROTEÇÃO DE DADOS (LGPD)">
         <p><strong>10.1</strong> O Administrador autoriza a Plataforma a tratar seus dados pessoais (nome, CPF/CNPJ, e-mail, telefone, dados bancários/Stripe) para fins de gestão contratual, processamento de pagamentos e comunicações operacionais, nos termos da Lei 13.709/2018 (LGPD).</p>
-        <p><strong>10.2</strong> Os dados poderão ser compartilhados com processadores de pagamento (Stripe, Mercado Pago) e autoridades fiscais, quando exigido por lei.</p>
+        <p><strong>10.2</strong> Os dados poderão ser compartilhados com processadores de pagamento (Stripe) e autoridades fiscais, quando exigido por lei.</p>
         <p><strong>10.3</strong> O Administrador poderá exercer seus direitos de acesso, correção e eliminação de dados conforme a LGPD mediante solicitação ao suporte da Plataforma.</p>
       </Section>
 
@@ -262,7 +262,7 @@ function ContractES() {
 
       <Section title="CLÁUSULA 1 — PARTES Y NATURALEZA DEL ACUERDO">
         <p><strong>1.1</strong> El presente Contrato de Adhesión ("Contrato") es celebrado entre <strong>Lapa Casa Rio</strong> ("Plataforma"), operada por persona física/jurídica brasileña responsable del dominio digital y la infraestructura de reservas, y el <strong>Administrador</strong>, persona física o jurídica propietaria o gestora del inmueble registrado en la Plataforma ("Apartamento"), identificado por los datos proporcionados al momento del registro.</p>
-        <p><strong>1.2</strong> La Plataforma actúa exclusivamente como <strong>marketplace de hospedaje</strong>: conecta huéspedes y administradores, procesa la señal confirmatoria de reserva a través de procesadores de pago autorizados por el Banco Central de Brasil (Stripe Payments Brazil Ltda. y/o Mercado Pago), y ofrece herramientas de gestión. La Plataforma no es parte del contrato de hospedaje entre el huésped y el Administrador, no presta servicio de hospedaje directamente y no es institución de pago.</p>
+        <p><strong>1.2</strong> La Plataforma actúa exclusivamente como <strong>marketplace de hospedaje</strong>: conecta huéspedes y administradores, procesa la señal confirmatoria de reserva a través de procesadores de pago autorizados por el Banco Central de Brasil (Stripe Payments Brazil Ltda.), y ofrece herramientas de gestión. La Plataforma no es parte del contrato de hospedaje entre el huésped y el Administrador, no presta servicio de hospedaje directamente y no es institución de pago.</p>
         <p><strong>1.3</strong> La adhesión ocurre cuando el Administrador completa el registro y acepta electrónicamente este Contrato, quedando registrados el sello de fecha/hora y la dirección IP como prueba de aceptación, conforme a la Ley 14.063/2020 y el Marco Civil de Internet (Ley 12.965/2014).</p>
       </Section>
 
@@ -286,12 +286,12 @@ function ContractES() {
 
       <Section title="CLÁUSULA 4 — COMISIÓN Y TASAS">
         <p><strong>4.1 Comisión de la Plataforma.</strong> Sobre el valor total de la estadía (100%), la Plataforma retiene una comisión del <strong>5% (cinco por ciento)</strong>, descontada de la señal del 30% antes de la transferencia.</p>
-        <p><strong>4.2 Tasa operativa.</strong> Adicionalmente, la Plataforma retiene <strong>1,39%</strong> en concepto de tasa operativa, compuesta por:</p>
+        <p><strong>4.2 Tasa operativa.</strong> Adicionalmente, la Plataforma retiene <strong>1,59%</strong> en concepto de tasa operativa, compuesta por:</p>
         <ul>
-          <li><strong>0,99%</strong> — tasa de la pasarela de pago (Stripe/Mercado Pago);</li>
-          <li><strong>0,40%</strong> — protección contra contracargos (Stripe Chargeback Protection o equivalente), que cubre íntegramente el riesgo de disputa en pagos con tarjeta.</li>
+          <li><strong>1,19%</strong> — tasa de la pasarela de pago (Stripe);</li>
+          <li><strong>0,40%</strong> — protección contra contracargos (Stripe Chargeback Protection), que cubre íntegramente el riesgo de disputa en pagos con tarjeta.</li>
         </ul>
-        <p><strong>4.3 Total retenido por la Plataforma.</strong> La retención total sobre el valor de la estadía es del <strong>6,39%</strong> (5% comisión + 1,39% operativo), descontada íntegramente de la señal del 30%.</p>
+        <p><strong>4.3 Total retenido por la Plataforma.</strong> La retención total sobre el valor de la estadía es del <strong>6,59%</strong> (5% comisión + 1,59% operativo), descontada íntegramente de la señal del 30%.</p>
         <p><strong>4.4 Modificación de tasas.</strong> La Plataforma podrá ajustar las tasas con previo aviso de <strong>30 días</strong> por e-mail. El Administrador que no acepte podrá rescindir el contrato sin multa dentro del plazo de aviso.</p>
       </Section>
 
@@ -342,7 +342,7 @@ function ContractES() {
 
       <Section title="CLÁUSULA 10 — PROTECCIÓN DE DATOS (LGPD)">
         <p><strong>10.1</strong> El Administrador autoriza a la Plataforma a tratar sus datos personales (nombre, CPF/CNPJ, e-mail, teléfono, datos bancarios/Stripe) para fines de gestión contractual, procesamiento de pagos y comunicaciones operativas, conforme a la Ley 13.709/2018 (LGPD).</p>
-        <p><strong>10.2</strong> Los datos podrán ser compartidos con procesadores de pago (Stripe, Mercado Pago) y autoridades fiscales, cuando lo exija la ley.</p>
+        <p><strong>10.2</strong> Los datos podrán ser compartidos con procesadores de pago (Stripe) y autoridades fiscales, cuando lo exija la ley.</p>
         <p><strong>10.3</strong> El Administrador podrá ejercer sus derechos de acceso, corrección y eliminación de datos conforme a la LGPD mediante solicitud al soporte de la Plataforma.</p>
       </Section>
 
@@ -399,7 +399,7 @@ function ContractFR() {
 
       <Section title="CLAUSE 1 — PARTIES ET NATURE DE L'ACCORD">
         <p><strong>1.1</strong> Les présentes Conditions d&apos;Adhésion (« Contrat ») sont conclues entre <strong>Lapa Casa Rio</strong> (« Plateforme »), exploitée par une personne physique/morale brésilienne responsable du domaine numérique et de l&apos;infrastructure de réservations, et le <strong>Gestionnaire</strong>, personne physique ou morale propriétaire ou gestionnaire du bien enregistré sur la Plateforme (« Appartement »), identifié par les données fournies lors de l&apos;inscription.</p>
-        <p><strong>1.2</strong> La Plateforme agit exclusivement en tant que <strong>marketplace d&apos;hébergement</strong> : elle met en relation hôtes et gestionnaires, traite l&apos;acompte confirmatoire de réservation via des processeurs de paiement agréés par la Banque Centrale du Brésil (Stripe Payments Brazil Ltda. et/ou Mercado Pago), et fournit des outils de gestion. La Plateforme n&apos;est pas partie au contrat d&apos;hébergement entre l&apos;hôte et le Gestionnaire, ne preste pas directement de service d&apos;hébergement et n&apos;est pas un établissement de paiement.</p>
+        <p><strong>1.2</strong> La Plateforme agit exclusivement en tant que <strong>marketplace d&apos;hébergement</strong> : elle met en relation hôtes et gestionnaires, traite l&apos;acompte confirmatoire de réservation via des processeurs de paiement agréés par la Banque Centrale du Brésil (Stripe Payments Brazil Ltda.), et fournit des outils de gestion. La Plateforme n&apos;est pas partie au contrat d&apos;hébergement entre l&apos;hôte et le Gestionnaire, ne preste pas directement de service d&apos;hébergement et n&apos;est pas un établissement de paiement.</p>
         <p><strong>1.3</strong> L&apos;adhésion intervient au moment où le Gestionnaire finalise son inscription et accepte électroniquement ce Contrat, l&apos;horodatage et l&apos;adresse IP étant enregistrés comme preuve d&apos;acceptation, conformément à la Loi 14.063/2020 et au Marco Civil da Internet (Loi 12.965/2014).</p>
       </Section>
 
@@ -423,12 +423,12 @@ function ContractFR() {
 
       <Section title="CLAUSE 4 — COMMISSION ET FRAIS">
         <p><strong>4.1 Commission de la Plateforme.</strong> Sur la valeur totale du séjour (100%), la Plateforme retient une commission de <strong>5% (cinq pour cent)</strong>, déduite de l&apos;acompte de 30% avant reversement.</p>
-        <p><strong>4.2 Frais opérationnels.</strong> La Plateforme retient en outre <strong>1,39%</strong> au titre de frais opérationnels, composés de :</p>
+        <p><strong>4.2 Frais opérationnels.</strong> La Plateforme retient en outre <strong>1,59%</strong> au titre de frais opérationnels, composés de :</p>
         <ul>
-          <li><strong>0,99%</strong> — frais de passerelle de paiement (Stripe/Mercado Pago) ;</li>
-          <li><strong>0,40%</strong> — protection contre les contestations (Stripe Chargeback Protection ou équivalent), couvrant intégralement le risque de litige lié aux paiements par carte.</li>
+          <li><strong>1,19%</strong> — frais de passerelle de paiement (Stripe) ;</li>
+          <li><strong>0,40%</strong> — protection contre les contestations (Stripe Chargeback Protection), couvrant intégralement le risque de litige lié aux paiements par carte.</li>
         </ul>
-        <p><strong>4.3 Total retenu par la Plateforme.</strong> La retenue totale sur la valeur du séjour est de <strong>6,39%</strong> (5% commission + 1,39% opérationnel), déduite intégralement de l&apos;acompte de 30%.</p>
+        <p><strong>4.3 Total retenu par la Plateforme.</strong> La retenue totale sur la valeur du séjour est de <strong>6,59%</strong> (5% commission + 1,59% opérationnel), déduite intégralement de l&apos;acompte de 30%.</p>
         <p><strong>4.4 Modification des frais.</strong> La Plateforme peut ajuster les frais avec un préavis de <strong>30 jours</strong> par e-mail. Le Gestionnaire qui n&apos;accepte pas les nouvelles conditions peut résilier le contrat sans pénalité dans le délai de préavis.</p>
       </Section>
 
@@ -479,7 +479,7 @@ function ContractFR() {
 
       <Section title="CLAUSE 10 — PROTECTION DES DONNÉES (LGPD)">
         <p><strong>10.1</strong> Le Gestionnaire autorise la Plateforme à traiter ses données personnelles (nom, CPF/CNPJ, e-mail, téléphone, coordonnées bancaires/Stripe) à des fins de gestion contractuelle, de traitement des paiements et de communications opérationnelles, conformément à la Loi 13.709/2018 (LGPD).</p>
-        <p><strong>10.2</strong> Les données pourront être partagées avec les processeurs de paiement (Stripe, Mercado Pago) et les autorités fiscales, lorsque la loi l&apos;exige.</p>
+        <p><strong>10.2</strong> Les données pourront être partagées avec les processeurs de paiement (Stripe) et les autorités fiscales, lorsque la loi l&apos;exige.</p>
         <p><strong>10.3</strong> Le Gestionnaire peut exercer ses droits d&apos;accès, de rectification et d&apos;effacement des données conformément à la LGPD en adressant une demande au support de la Plateforme.</p>
       </Section>
 

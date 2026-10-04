@@ -8,7 +8,7 @@
 // Flujo de dinero en apartamentos (todo se cobra en la cuenta Stripe de la plataforma):
 //   - Depósito online 30%: 5% comisión Lapa Casa + 25% garantía retenida hasta el check-out.
 //   - Check-in: el huésped paga el 70% en InfinityPay (/admin/payments/mark-received-at-desk).
-//   - Post check-out: 25% garantía − tasa de payout (0,99%) → Transfer Stripe al admin.
+//   - Post check-out: 25% garantía − tasa de payout (1,19%) → Transfer Stripe al admin.
 //
 // Seguridad: requiere authenticateToken + requireRole(['admin']) —
 //            aplicados en index.ts para todo /payments; este endpoint

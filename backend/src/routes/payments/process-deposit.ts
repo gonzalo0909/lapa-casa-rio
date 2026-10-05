@@ -18,8 +18,6 @@ interface ProcessDepositRequest {
   reservationId: string;
   provider: 'stripe' | 'mercadopago';
   installments?: number;
-  /** Con provider 'stripe': 'pix' devuelve QR de Pix (sin recargo); 'card' (default) usa tarjeta. */
-  paymentMethod?: 'card' | 'pix';
 }
 
 export const processDepositHandler = async (
@@ -29,7 +27,6 @@ export const processDepositHandler = async (
 ): Promise<void> => {
   try {
     const { reservationId, provider, installments = 1 } = req.body;
-    const paymentMethod = provider === 'stripe' && req.body.paymentMethod === 'pix' ? 'pix' : undefined;
 
     logger.info('Procesando depósito', { reservationId, provider });
 
@@ -71,9 +68,9 @@ export const processDepositHandler = async (
     const depositPercentage = storedPercent > 0 ? storedPercent : (bedsCount >= 15 ? 0.50 : 0.30);
     const depositAmount = Number(booking.deposit_amount);
 
-    // El recargo solo aplica a tarjeta; PIX (Stripe o Mercado Pago legado)
-    // no lo lleva, así que ahí se cobra el monto justo.
-    const cardSurchargePercent = provider === 'stripe' && paymentMethod !== 'pix' ? await getCardSurchargePercent() : 0;
+    // El recargo solo aplica a tarjeta (Stripe cobra comisión real); PIX
+    // via Mercado Pago no la tiene, así que ahí se cobra el monto justo.
+    const cardSurchargePercent = provider === 'stripe' ? await getCardSurchargePercent() : 0;
     const chargedAmount = Math.round(depositAmount * (1 + cardSurchargePercent / 100) * 100) / 100;
 
     logger.info('Cálculo de depósito', { reservationId, bedsCount, depositPercentage, depositAmount, cardSurchargePercent, chargedAmount });
@@ -88,7 +85,6 @@ export const processDepositHandler = async (
       guest_email: booking.guest?.email ?? '',
       payment_type: 'deposit',
       provider,
-      payment_method: paymentMethod,
       installments,
     });
 

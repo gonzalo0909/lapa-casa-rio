@@ -75,7 +75,7 @@ export function useHostelPayment({
     resId: string,
   ): Promise<{ pixData: { qrCode: string; qrCodeBase64: string } } | { stripeUrl: string } | null> => {
     if (method === 'pix') {
-      const dep = await paymentAPI.processDeposit(resId, 'stripe', undefined, undefined, 'pix');
+      const dep = await paymentAPI.processDeposit(resId, 'mercadopago');
       const p = dep.data?.payment;
       if (p?.qrCodeBase64 || p?.qrCode) {
         return { pixData: { qrCode: p.qrCode ?? '', qrCodeBase64: p.qrCodeBase64 ?? '' } };

@@ -235,7 +235,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
         const res = await (paymentContext === 'apartment'
           ? // Apartamentos: PIX por Stripe (el dinero queda en la plataforma hasta pagar al admin post check-out)
           paymentAPI.processApartmentDeposit(reservationId, 'stripe', undefined, getBookingToken(reservationId) ?? undefined, 'pix')
-          : paymentAPI.processDeposit(reservationId, 'stripe', undefined, getBookingToken(reservationId) ?? undefined, 'pix'));
+          : paymentAPI.processDeposit(reservationId, 'mercadopago', undefined, getBookingToken(reservationId)));
         const raw = (res as any).data;
         const p   = raw?.data?.payment ?? raw?.payment ?? raw?.data ?? raw;
         setPixData({

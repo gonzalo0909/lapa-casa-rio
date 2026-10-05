@@ -64,9 +64,9 @@ export class PaymentService {
     // El proveedor viene siempre en el payload (provider: 'stripe' | 'mercadopago').
     // Se eliminó la heurística por dominio de email — asignaba Stripe a
     // brasileños con Gmail/Outlook, causando fricción innecesaria y
-    // comisiones más altas. Si no viene provider, default a Stripe (Pix y tarjeta).
-    const provider: PaymentProvider = data.provider ?? 'stripe';
-    const preferredMethod = data.payment_method || 'card';
+    // comisiones más altas. Si no viene provider, default a mercadopago (Brasil).
+    const provider: PaymentProvider = data.provider ?? 'mercadopago';
+    const preferredMethod = data.payment_method || (provider === 'mercadopago' ? 'pix' : 'card');
 
     let providerPaymentId: string;
     let pixDetails: { qr_code?: string; qr_code_base64?: string; expires_at?: Date } = {};

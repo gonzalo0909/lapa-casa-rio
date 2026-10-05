@@ -457,8 +457,7 @@ export const paymentAPI = {
     provider: 'stripe' | 'mercadopago',
     installments?: number,
     confirmationToken?: string,
-    paymentMethod?: 'card' | 'pix',
-  ) => api.post('/payments/deposit', { reservationId, provider, installments, confirmationToken, paymentMethod }),
+  ) => api.post('/payments/deposit', { reservationId, provider, installments, confirmationToken }),
 
   /**
    * Process the deposit for an apartment reservation (separate engine from hostel)

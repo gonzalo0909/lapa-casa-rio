@@ -5,6 +5,7 @@ type LegacyPaymentMethod = 'card' | 'credit_card' | 'debit_card' | 'pix' | strin
 
 function resolveProvider(paymentMethod?: LegacyPaymentMethod): 'stripe' | 'mercadopago' {
   if (!paymentMethod) {return 'stripe';}
+  if (paymentMethod === 'pix') {return 'mercadopago';}
   return 'stripe';
 }
 

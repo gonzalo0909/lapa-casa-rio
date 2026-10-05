@@ -93,7 +93,7 @@ const CONTENT: Record<Locale, Content> = {
           'Formas de pagamento do depósito: PIX ou cartão de crédito/débito',
           'O valor restante é pago no check-in, diretamente à equipe do hostel (PIX ou cartão, conforme disponibilidade no momento)',
           "Apartamentos: o saldo restante também é pago pela plataforma (Stripe, PIX ou cartão), no dia do check-in, por link enviado na manhã do check-in",
-          "Pagamentos com cartão têm acréscimo de 10%, cobrado do hóspede",
+          "Apartamentos: pagamentos com cartão têm acréscimo de 10%, cobrado do hóspede",
         ],
       },
       {
@@ -154,7 +154,7 @@ const CONTENT: Record<Locale, Content> = {
           'Formas de pago del depósito: PIX o tarjeta de crédito/débito',
           'El saldo se abona en el check-in, directamente al personal del hostel (PIX o tarjeta, según disponibilidad en el momento)',
           "Apartamentos: el saldo restante también se paga por la plataforma (Stripe, PIX o tarjeta), el día del check-in, mediante un link enviado la mañana del check-in",
-          "Los pagos con tarjeta tienen un recargo del 10%, a cargo del huésped",
+          "Apartamentos: los pagos con tarjeta tienen un recargo del 10%, a cargo del huésped",
         ],
       },
       {
@@ -215,7 +215,7 @@ const CONTENT: Record<Locale, Content> = {
           'Deposit payment methods: PIX or credit/debit card',
           'The remaining balance is paid at check-in, directly to hostel staff (PIX or card, subject to availability at the time)',
           "Apartments: the remaining balance is also paid through the platform (Stripe, PIX or card) on the check-in day, via a link sent on the morning of check-in",
-          "Card payments carry a 10% surcharge, paid by the guest",
+          "Apartments: card payments carry a 10% surcharge, paid by the guest",
         ],
       },
       {
@@ -276,7 +276,7 @@ const CONTENT: Record<Locale, Content> = {
           'Zahlungsarten für die Anzahlung: PIX oder Kredit-/Debitkarte',
           'Der Restbetrag wird beim Check-in direkt beim Hostelpersonal bezahlt (PIX oder Karte, je nach Verfügbarkeit vor Ort)',
           "Apartments: Der Restbetrag wird ebenfalls über die Plattform bezahlt (Stripe, PIX oder Karte), am Tag des Check-ins, über einen Link, der am Morgen des Check-ins versendet wird",
-          "Kartenzahlungen unterliegen einem Aufschlag von 10%, den der Gast trägt",
+          "Apartments: Kartenzahlungen unterliegen einem Aufschlag von 10%, den der Gast trägt",
         ],
       },
       {
@@ -337,7 +337,7 @@ const CONTENT: Record<Locale, Content> = {
           "Moyens de paiement de l'acompte : PIX ou carte de crédit/débit",
           "Le solde est réglé à l'arrivée, directement auprès du personnel du hostel (PIX ou carte, selon disponibilité sur place)",
           "Appartements : le solde restant est également réglé via la plateforme (Stripe, PIX ou carte), le jour du check-in, par un lien envoyé le matin du check-in",
-          "Les paiements par carte comportent une majoration de 10%, à la charge du client",
+          "Appartements : les paiements par carte comportent une majoration de 10%, à la charge du client",
         ],
       },
       {
@@ -398,7 +398,7 @@ const CONTENT: Record<Locale, Content> = {
           'Metodi di pagamento della caparra: PIX o carta di credito/debito',
           "Il saldo viene versato al check-in, direttamente al personale dell'hostel (PIX o carta, in base alla disponibilità sul momento)",
           "Appartamenti: anche il saldo restante viene pagato tramite la piattaforma (Stripe, PIX o carta), il giorno del check-in, con un link inviato la mattina del check-in",
-          "I pagamenti con carta prevedono una maggiorazione del 10%, a carico dell'ospite",
+          "Appartamenti: i pagamenti con carta prevedono una maggiorazione del 10%, a carico dell'ospite",
         ],
       },
       {

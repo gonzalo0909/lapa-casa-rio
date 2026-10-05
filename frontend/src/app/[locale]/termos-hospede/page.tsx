@@ -18,7 +18,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
-const LAST_UPDATED = '2026-09-23';
+const LAST_UPDATED = '2026-10-05';
 
 const META: Record<Locale, { title: string; description: string }> = {
   pt: {
@@ -92,11 +92,13 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Formas de pagamento do depósito: PIX ou cartão de crédito/débito',
           'O valor restante é pago no check-in, diretamente à equipe do hostel (PIX ou cartão, conforme disponibilidade no momento)',
+          "Apartamentos: o saldo restante também é pago pela plataforma (Stripe, PIX ou cartão), no dia do check-in, por link enviado na manhã do check-in",
+          "Pagamentos com cartão têm acréscimo de 10%, cobrado do hóspede",
         ],
       },
       {
         title: '2. Política de cancelamento e no-show',
-        body: 'O depósito pago no ato da reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso.',
+        body: 'O depósito pago no ato da reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso. Nos apartamentos, do sinal de 30% é deduzida a comissão do Lapa Casa Rio e o restante é reembolsado, respeitando os prazos de reembolso do processador de pagamento (Stripe).',
       },
       {
         title: '3. Check-in e check-out',
@@ -151,11 +153,13 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Formas de pago del depósito: PIX o tarjeta de crédito/débito',
           'El saldo se abona en el check-in, directamente al personal del hostel (PIX o tarjeta, según disponibilidad en el momento)',
+          "Apartamentos: el saldo restante también se paga por la plataforma (Stripe, PIX o tarjeta), el día del check-in, mediante un link enviado la mañana del check-in",
+          "Los pagos con tarjeta tienen un recargo del 10%, a cargo del huésped",
         ],
       },
       {
         title: '2. Política de cancelación y no-show',
-        body: 'El depósito abonado al reservar es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso.',
+        body: 'El depósito abonado al reservar es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso. En los apartamentos, de la señal del 30% se deduce la comisión de Lapa Casa Rio y el resto se reembolsa, respetando los plazos de reembolso del procesador de pago (Stripe).',
       },
       {
         title: '3. Check-in y check-out',
@@ -210,11 +214,13 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Deposit payment methods: PIX or credit/debit card',
           'The remaining balance is paid at check-in, directly to hostel staff (PIX or card, subject to availability at the time)',
+          "Apartments: the remaining balance is also paid through the platform (Stripe, PIX or card) on the check-in day, via a link sent on the morning of check-in",
+          "Card payments carry a 10% surcharge, paid by the guest",
         ],
       },
       {
         title: '2. Cancellation and no-show policy',
-        body: 'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
+        body: 'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund. For apartments, Lapa Casa Rio\'s commission is deducted from the 30% deposit and the remainder is refunded, following the refund timelines of the payment processor (Stripe).',
       },
       {
         title: '3. Check-in and check-out',
@@ -269,11 +275,13 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Zahlungsarten für die Anzahlung: PIX oder Kredit-/Debitkarte',
           'Der Restbetrag wird beim Check-in direkt beim Hostelpersonal bezahlt (PIX oder Karte, je nach Verfügbarkeit vor Ort)',
+          "Apartments: Der Restbetrag wird ebenfalls über die Plattform bezahlt (Stripe, PIX oder Karte), am Tag des Check-ins, über einen Link, der am Morgen des Check-ins versendet wird",
+          "Kartenzahlungen unterliegen einem Aufschlag von 10%, den der Gast trägt",
         ],
       },
       {
         title: '2. Stornierungs- und No-Show-Richtlinie',
-        body: 'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
+        body: 'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung. Bei Apartments wird die Provision von Lapa Casa Rio von der Anzahlung von 30% abgezogen und der Rest erstattet, unter Beachtung der Erstattungsfristen des Zahlungsdienstleisters (Stripe).',
       },
       {
         title: '3. Check-in und Check-out',
@@ -328,11 +336,13 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Moyens de paiement de l'acompte : PIX ou carte de crédit/débit",
           "Le solde est réglé à l'arrivée, directement auprès du personnel du hostel (PIX ou carte, selon disponibilité sur place)",
+          "Appartements : le solde restant est également réglé via la plateforme (Stripe, PIX ou carte), le jour du check-in, par un lien envoyé le matin du check-in",
+          "Les paiements par carte comportent une majoration de 10%, à la charge du client",
         ],
       },
       {
         title: "2. Politique d'annulation et de non-présentation",
-        body: "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement.",
+        body: "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement. Pour les appartements, la commission de Lapa Casa Rio est déduite de l'acompte de 30% et le reste est remboursé, dans le respect des délais de remboursement du processeur de paiement (Stripe).",
       },
       {
         title: '3. Arrivée et départ',
@@ -387,11 +397,13 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Metodi di pagamento della caparra: PIX o carta di credito/debito',
           "Il saldo viene versato al check-in, direttamente al personale dell'hostel (PIX o carta, in base alla disponibilità sul momento)",
+          "Appartamenti: anche il saldo restante viene pagato tramite la piattaforma (Stripe, PIX o carta), il giorno del check-in, con un link inviato la mattina del check-in",
+          "I pagamenti con carta prevedono una maggiorazione del 10%, a carico dell'ospite",
         ],
       },
       {
         title: '2. Politica di cancellazione e no-show',
-        body: 'La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
+        body: 'La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso. Per gli appartamenti, dalla caparra del 30% viene detratta la commissione di Lapa Casa Rio e il resto viene rimborsato, nel rispetto dei tempi di rimborso del processore di pagamento (Stripe).',
       },
       {
         title: '3. Check-in e check-out',

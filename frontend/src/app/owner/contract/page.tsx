@@ -144,7 +144,7 @@ function ContractPT() {
         <p><strong>3.3 Reservas com 24 a 48 horas de antecedência — pagamento integral.</strong> O hóspede paga <strong>100%</strong> do valor total no ato da reserva, via processador licenciado.</p>
         <p><strong>3.4 Não pagamento do saldo de 70%.</strong> Se o hóspede não efetuar o pagamento do saldo de 70% antes do check-in, a reserva é cancelada automaticamente e o Administrador retém o sinal de 30% (após dedução das taxas da Cláusula 4), sem direito a reembolso pelo hóspede.</p>
         <p><strong>3.5 Repasse ao Administrador.</strong> Após a confirmação de check-in, a Plataforma repassa ao Administrador o valor total recebido (30% + 70%), já descontadas as taxas previstas na Cláusula 4.</p>
-        <p><strong>3.6 Pagamento via cartão — sobretaxa.</strong> Quando o hóspede optar por pagar com cartão de crédito ou débito, será cobrada uma sobretaxa de <strong>10%</strong> sobre o valor pago online, destinada a cobrir os custos de processamento. Essa sobretaxa é arcada pelo hóspede e informada de forma transparente no checkout.</p>
+        <p><strong>3.6 Pagamento via cartão — sobretaxa.</strong> Quando o hóspede optar por pagar com cartão de crédito ou débito, será cobrada uma sobretaxa de <strong>10%</strong> sobre o valor pago online, destinada a cobrir os custos de processamento. Essa sobretaxa é sempre arcada pelo hóspede e informada de forma transparente no checkout. As taxas de processamento são as mesmas do PIX e saem dessa sobretaxa; o que sobrar fica com a Plataforma, sem alterar o repasse ao Administrador.</p>
       </Section>
 
       <Section title="CLÁUSULA 4 — COMISSÃO E TAXAS">
@@ -160,7 +160,7 @@ function ContractPT() {
 
       <Section title="CLÁUSULA 5 — CANCELAMENTOS E REEMBOLSOS">
         <p><strong>5.1</strong> A política de cancelamento é definida pela Plataforma e informada ao hóspede no momento da reserva. Cabe ao Administrador respeitar a política vigente.</p>
-        <p><strong>5.2</strong> Em caso de cancelamento pelo hóspede com direito a reembolso, a Plataforma devolverá ao hóspede o valor retido (sinal de 30% ou parte dele) e deduzirá o repasse ao Administrador proporcionalmente.</p>
+        <p><strong>5.2</strong> Em caso de cancelamento pelo hóspede com direito a reembolso, a Plataforma deduzirá do sinal de 30% a comissão da Plataforma (Cláusula 4) e devolverá o restante ao hóspede, nos prazos de reembolso do processador de pagamento (Stripe), deduzindo o repasse ao Administrador proporcionalmente.</p>
         <p><strong>5.3 Cancelamento pelo Administrador.</strong> O cancelamento de reserva confirmada pelo Administrador, salvo força maior comprovada (Cláusula 9), sujeita-o ao pagamento de multa equivalente à comissão que seria devida, além de suspensão temporária ou definitiva do perfil na Plataforma.</p>
         <p><strong>5.4 No-show do hóspede.</strong> Em caso de não comparecimento do hóspede sem cancelamento prévio, o sinal de 30% é retido pelo Administrador como compensação, após dedução das taxas previstas na Cláusula 4.</p>
       </Section>
@@ -281,7 +281,7 @@ function ContractES() {
         <p><strong>3.3 Reservas con 24 a 48 horas de anticipación — pago íntegro.</strong> El huésped paga el <strong>100%</strong> del valor total al momento de la reserva, vía procesador autorizado.</p>
         <p><strong>3.4 No pago del saldo del 70%.</strong> Si el huésped no abona el saldo del 70% antes del check-in, la reserva se cancela automáticamente y el Administrador retiene la señal del 30% (tras deducción de las tasas de la Cláusula 4), sin derecho a reembolso por parte del huésped.</p>
         <p><strong>3.5 Transferencia al Administrador.</strong> Tras la confirmación del check-in, la Plataforma transfiere al Administrador el valor total recibido (30% + 70%), ya deducidas las tasas previstas en la Cláusula 4.</p>
-        <p><strong>3.6 Pago con tarjeta — recargo.</strong> Cuando el huésped opte por pagar con tarjeta de crédito o débito, se cobrará un recargo del <strong>10%</strong> sobre el valor pagado online, destinado a cubrir los costos de procesamiento. Este recargo es asumido por el huésped e informado de forma transparente en el checkout.</p>
+        <p><strong>3.6 Pago con tarjeta — recargo.</strong> Cuando el huésped opte por pagar con tarjeta de crédito o débito, se cobrará un recargo del <strong>10%</strong> sobre el valor pagado online, destinado a cubrir los costos de procesamiento. Este recargo es siempre asumido por el huésped e informado de forma transparente en el checkout. Las tasas de procesamiento son las mismas que las del PIX y salen de este recargo; lo que sobre queda con la Plataforma, sin alterar la transferencia al Administrador.</p>
       </Section>
 
       <Section title="CLÁUSULA 4 — COMISIÓN Y TASAS">
@@ -297,7 +297,7 @@ function ContractES() {
 
       <Section title="CLÁUSULA 5 — CANCELACIONES Y REEMBOLSOS">
         <p><strong>5.1</strong> La política de cancelación es definida por la Plataforma e informada al huésped al momento de la reserva. El Administrador debe respetar la política vigente.</p>
-        <p><strong>5.2</strong> En caso de cancelación por el huésped con derecho a reembolso, la Plataforma devolverá al huésped el valor retenido (señal del 30% o parte de ella) y deducirá la transferencia al Administrador proporcionalmente.</p>
+        <p><strong>5.2</strong> En caso de cancelación por el huésped con derecho a reembolso, la Plataforma deducirá de la señal del 30% la comisión de la Plataforma (Cláusula 4) y devolverá el resto al huésped, dentro de los plazos de reembolso del procesador de pago (Stripe), deduciendo la transferencia al Administrador proporcionalmente.</p>
         <p><strong>5.3 Cancelación por el Administrador.</strong> La cancelación de una reserva confirmada por el Administrador, salvo fuerza mayor comprobada (Cláusula 9), lo sujeta al pago de una multa equivalente a la comisión que hubiera correspondido, además de suspensión temporal o definitiva del perfil en la Plataforma.</p>
         <p><strong>5.4 No-show del huésped.</strong> En caso de no presentación del huésped sin cancelación previa, la señal del 30% queda retenida por el Administrador como compensación, tras deducción de las tasas previstas en la Cláusula 4.</p>
       </Section>
@@ -418,7 +418,7 @@ function ContractFR() {
         <p><strong>3.3 Réservations avec 24 à 48 heures d&apos;avance — paiement intégral.</strong> L&apos;hôte paie <strong>100%</strong> du montant total au moment de la réservation, via le processeur agréé.</p>
         <p><strong>3.4 Non-paiement du solde de 70%.</strong> Si l&apos;hôte n&apos;effectue pas le paiement du solde de 70% avant le check-in, la réservation est automatiquement annulée et le Gestionnaire conserve l&apos;acompte de 30% (après déduction des frais de la Clause 4), sans remboursement pour l&apos;hôte.</p>
         <p><strong>3.5 Reversement au Gestionnaire.</strong> Après la confirmation du check-in, la Plateforme reverse au Gestionnaire le montant total reçu (30% + 70%), déduction faite des frais prévus à la Clause 4.</p>
-        <p><strong>3.6 Paiement par carte — majoration.</strong> Lorsque l&apos;hôte opte pour un paiement par carte de crédit ou de débit, une majoration de <strong>10%</strong> est appliquée sur le montant payé en ligne, destinée à couvrir les coûts de traitement. Cette majoration est à la charge de l&apos;hôte et clairement indiquée lors du paiement.</p>
+        <p><strong>3.6 Paiement par carte — majoration.</strong> Lorsque l&apos;hôte opte pour un paiement par carte de crédit ou de débit, une majoration de <strong>10%</strong> est appliquée sur le montant payé en ligne, destinée à couvrir les coûts de traitement. Cette majoration est toujours à la charge de l&apos;hôte et clairement indiquée lors du paiement. Les frais de traitement sont les mêmes que ceux du PIX et sont prélevés sur cette majoration ; le solde reste à la Plateforme, sans modifier le reversement au Gestionnaire.</p>
       </Section>
 
       <Section title="CLAUSE 4 — COMMISSION ET FRAIS">
@@ -434,7 +434,7 @@ function ContractFR() {
 
       <Section title="CLAUSE 5 — ANNULATIONS ET REMBOURSEMENTS">
         <p><strong>5.1</strong> La politique d&apos;annulation est définie par la Plateforme et communiquée à l&apos;hôte lors de la réservation. Le Gestionnaire doit respecter la politique en vigueur.</p>
-        <p><strong>5.2</strong> En cas d&apos;annulation par l&apos;hôte ouvrant droit à remboursement, la Plateforme restituera à l&apos;hôte le montant retenu (acompte de 30% ou partie) et déduira le reversement au Gestionnaire en proportion.</p>
+        <p><strong>5.2</strong> En cas d&apos;annulation par l&apos;hôte ouvrant droit à remboursement, la Plateforme déduira de l&apos;acompte de 30% la commission de la Plateforme (Clause 4) et restituera le reste à l&apos;hôte, dans les délais de remboursement du processeur de paiement (Stripe), en déduisant le reversement au Gestionnaire en proportion.</p>
         <p><strong>5.3 Annulation par le Gestionnaire.</strong> L&apos;annulation d&apos;une réservation confirmée par le Gestionnaire, sauf force majeure dûment justifiée (Clause 9), entraîne le paiement d&apos;une pénalité équivalente à la commission qui aurait été due, ainsi qu&apos;une suspension temporaire ou définitive du profil sur la Plateforme.</p>
         <p><strong>5.4 No-show de l&apos;hôte.</strong> En cas de non-présentation de l&apos;hôte sans annulation préalable, l&apos;acompte de 30% est conservé par le Gestionnaire à titre d&apos;indemnisation, après déduction des frais prévus à la Clause 4.</p>
       </Section>

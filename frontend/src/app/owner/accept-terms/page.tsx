@@ -227,9 +227,10 @@ function ContractText() {
         <p>
           <strong>3.6 Pagamento via cartão — sobretaxa.</strong> Quando o hóspede optar por
           pagar com cartão de crédito ou débito, será cobrada uma sobretaxa de{' '}
-          <strong>10%</strong> sobre o valor processado, destinada a cobrir os custos de
-          processamento de cartão (taxa do gateway + proteção contra estornos). Essa sobretaxa
-          é arcada pelo hóspede e informada de forma transparente no checkout.
+          <strong>10%</strong> sobre o valor pago online, destinada a cobrir os custos de
+          processamento. Essa sobretaxa é sempre arcada pelo hóspede e informada de forma
+          transparente no checkout. As taxas de processamento são as mesmas do PIX e saem dessa
+          sobretaxa; o que sobrar fica com a Plataforma, sem alterar o repasse ao Administrador.
         </p>
       </Section>
 
@@ -266,8 +267,9 @@ function ContractText() {
         </p>
         <p>
           <strong>5.2</strong> Em caso de cancelamento pelo hóspede com direito a reembolso, a
-          Plataforma devolverá ao hóspede o valor retido (sinal de 30% ou parte dele) e deduzirá
-          o repasse ao Administrador proporcionalmente.
+          Plataforma deduzirá do sinal de 30% a comissão da Plataforma (Cláusula 4) e devolverá o
+          restante ao hóspede, nos prazos de reembolso do processador de pagamento (Stripe),
+          deduzindo o repasse ao Administrador proporcionalmente.
         </p>
         <p>
           <strong>5.3 Cancelamento pelo Administrador.</strong> O cancelamento de reserva confirmada

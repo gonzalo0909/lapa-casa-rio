@@ -29,6 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Páginas legales
     { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
     { path: '/termos-hospede', changeFrequency: 'yearly', priority: 0.3 },
+    { path: '/termos-apartamentos', changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   return locales.flatMap((locale) =>

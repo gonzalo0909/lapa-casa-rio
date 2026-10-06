@@ -830,7 +830,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               {t.rich('termsAcceptText', {
                 link: (chunks) => (
                   <a
-                    href={`/${locale}/termos-hospede`}
+                    href={`/${locale}/termos-apartamentos`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.termsAcceptLink}

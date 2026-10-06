@@ -1,8 +1,6 @@
 //
 // Termo de Reserva e Hospedagem — página real, antes inexistente.
-// apartment-guest-form.tsx linkeaba a "/termos-hospede" (checkbox de
-// aceite obligatorio para reservar) mas a rota nunca existió: 404 en
-// producción en un paso crítico del flujo de pago.
+// Solo hostel. Los apartamentos tienen su propia página: /termos-apartamentos.
 //
 // Contenido basado únicamente en políticas verificadas en el código real:
 // - Depósito reembolsable si se cancela con 7+ días de antecedencia al
@@ -84,7 +82,7 @@ const CONTENT: Record<Locale, Content> = {
   pt: {
     headline: 'Termo de Reserva e Hospedagem',
     updatedLabel: 'Última atualização',
-    intro: 'Este termo se aplica a todas as reservas feitas no Lapa Casa Rio (dormitórios compartilhados e apartamentos), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Ao marcar a caixa de aceite no formulário de reserva, você confirma que leu e concorda com as condições abaixo.',
+    intro: 'Este termo se aplica a todas as reservas feitas no Lapa Casa Rio (dormitórios compartilhados), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Ao marcar a caixa de aceite no formulário de reserva, você confirma que leu e concorda com as condições abaixo.',
     sections: [
       {
         title: '1. Confirmação da reserva',
@@ -92,13 +90,11 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Formas de pagamento do depósito: PIX ou cartão de crédito/débito',
           'O valor restante é pago no check-in, diretamente à equipe do hostel (PIX ou cartão, conforme disponibilidade no momento)',
-          "Apartamentos: o saldo restante também é pago pela plataforma (Stripe, PIX ou cartão), no dia do check-in, por link enviado na manhã do check-in",
-          "Apartamentos: pagamentos com cartão têm acréscimo de 10%, cobrado do hóspede",
         ],
       },
       {
         title: '2. Política de cancelamento e no-show',
-        body: 'O depósito pago no ato da reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso. Nos apartamentos, do sinal de 30% é deduzida a comissão do Lapa Casa Rio e o restante é reembolsado, respeitando os prazos de reembolso do processador de pagamento (Stripe).',
+        body: 'O depósito pago no ato da reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso.',
       },
       {
         title: '3. Check-in e check-out',
@@ -125,7 +121,7 @@ const CONTENT: Record<Locale, Content> = {
         title: '7. Programa de indicação de amigos',
         body: 'Ao concluir uma reserva, o hóspede recebe um código de desconto pessoal (10%) para compartilhar com amigos.',
         items: [
-          'O código do hóspede dá ao amigo 10% de desconto na reserva de hostel ou apartamento',
+          'O código do hóspede dá ao amigo 10% de desconto na reserva de hostel',
           'Após o check-out do amigo que usou o código, o titular recebe R$5 de desconto para uma futura estadia',
           'Os códigos são válidos até 31/12/2026',
           'Os códigos não são aplicáveis em reservas que incluam feriados nacionais do Brasil',
@@ -145,7 +141,7 @@ const CONTENT: Record<Locale, Content> = {
   es: {
     headline: 'Términos de Reserva y Hospedaje',
     updatedLabel: 'Última actualización',
-    intro: 'Estos términos se aplican a todas las reservas realizadas en Lapa Casa Rio (dormitorios compartidos y apartamentos), Rua Silvio Romero 22, Santa Teresa, Río de Janeiro. Al marcar la casilla de aceptación en el formulario de reserva, confirmás que leíste y aceptás las condiciones a continuación.',
+    intro: 'Estos términos se aplican a todas las reservas realizadas en Lapa Casa Rio (dormitorios compartidos), Rua Silvio Romero 22, Santa Teresa, Río de Janeiro. Al marcar la casilla de aceptación en el formulario de reserva, confirmás que leíste y aceptás las condiciones a continuación.',
     sections: [
       {
         title: '1. Confirmación de la reserva',
@@ -153,13 +149,11 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Formas de pago del depósito: PIX o tarjeta de crédito/débito',
           'El saldo se abona en el check-in, directamente al personal del hostel (PIX o tarjeta, según disponibilidad en el momento)',
-          "Apartamentos: el saldo restante también se paga por la plataforma (Stripe, PIX o tarjeta), el día del check-in, mediante un link enviado la mañana del check-in",
-          "Apartamentos: los pagos con tarjeta tienen un recargo del 10%, a cargo del huésped",
         ],
       },
       {
         title: '2. Política de cancelación y no-show',
-        body: 'El depósito abonado al reservar es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso. En los apartamentos, de la señal del 30% se deduce la comisión de Lapa Casa Rio y el resto se reembolsa, respetando los plazos de reembolso del procesador de pago (Stripe).',
+        body: 'El depósito abonado al reservar es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso.',
       },
       {
         title: '3. Check-in y check-out',
@@ -186,7 +180,7 @@ const CONTENT: Record<Locale, Content> = {
         title: '7. Programa de recomendación de amigos',
         body: 'Al completar una reserva, el huésped recibe un código de descuento personal (10%) para compartir con amigos.',
         items: [
-          'El código da a un amigo un 10% de descuento en una reserva de hostel o apartamento',
+          'El código da a un amigo un 10% de descuento en una reserva de hostel',
           'Tras el check-out del amigo que usó el código, el titular recibe R$5 de descuento para una futura estadia',
           'Los códigos son válidos hasta el 31/12/2026',
           'Los códigos no aplican en reservas que incluyan feriados nacionales de Brasil',
@@ -206,7 +200,7 @@ const CONTENT: Record<Locale, Content> = {
   en: {
     headline: 'Booking & Stay Terms',
     updatedLabel: 'Last updated',
-    intro: 'These terms apply to all bookings made at Lapa Casa Rio (shared dorms and apartments), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. By checking the acceptance box on the booking form, you confirm you have read and agree to the conditions below.',
+    intro: 'These terms apply to all bookings made at Lapa Casa Rio (shared dorms), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. By checking the acceptance box on the booking form, you confirm you have read and agree to the conditions below.',
     sections: [
       {
         title: '1. Booking confirmation',
@@ -214,13 +208,11 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Deposit payment methods: PIX or credit/debit card',
           'The remaining balance is paid at check-in, directly to hostel staff (PIX or card, subject to availability at the time)',
-          "Apartments: the remaining balance is also paid through the platform (Stripe, PIX or card) on the check-in day, via a link sent on the morning of check-in",
-          "Apartments: card payments carry a 10% surcharge, paid by the guest",
         ],
       },
       {
         title: '2. Cancellation and no-show policy',
-        body: 'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund. For apartments, Lapa Casa Rio\'s commission is deducted from the 30% deposit and the remainder is refunded, following the refund timelines of the payment processor (Stripe).',
+        body: 'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
       },
       {
         title: '3. Check-in and check-out',
@@ -247,7 +239,7 @@ const CONTENT: Record<Locale, Content> = {
         title: '7. Friend referral programme',
         body: 'Upon completing a booking, guests receive a personal discount code (10%) to share with friends.',
         items: [
-          "The code gives a friend 10% off a hostel or apartment booking",
+          "The code gives a friend 10% off a hostel booking",
           'After the friend who used the code checks out, the code owner receives R$5 off a future stay',
           'Codes are valid until 31 Dec 2026',
           'Codes cannot be applied to bookings that include Brazilian national public holidays',
@@ -267,7 +259,7 @@ const CONTENT: Record<Locale, Content> = {
   de: {
     headline: 'Buchungs- und Aufenthaltsbedingungen',
     updatedLabel: 'Zuletzt aktualisiert',
-    intro: 'Diese Bedingungen gelten für alle Buchungen im Lapa Casa Rio (Gemeinschaftsschlafsäle und Apartments), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Mit dem Ankreuzen des Zustimmungsfelds im Buchungsformular bestätigen Sie, die folgenden Bedingungen gelesen zu haben und ihnen zuzustimmen.',
+    intro: 'Diese Bedingungen gelten für alle Buchungen im Lapa Casa Rio (Gemeinschaftsschlafsäle), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Mit dem Ankreuzen des Zustimmungsfelds im Buchungsformular bestätigen Sie, die folgenden Bedingungen gelesen zu haben und ihnen zuzustimmen.',
     sections: [
       {
         title: '1. Buchungsbestätigung',
@@ -275,13 +267,11 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Zahlungsarten für die Anzahlung: PIX oder Kredit-/Debitkarte',
           'Der Restbetrag wird beim Check-in direkt beim Hostelpersonal bezahlt (PIX oder Karte, je nach Verfügbarkeit vor Ort)',
-          "Apartments: Der Restbetrag wird ebenfalls über die Plattform bezahlt (Stripe, PIX oder Karte), am Tag des Check-ins, über einen Link, der am Morgen des Check-ins versendet wird",
-          "Apartments: Kartenzahlungen unterliegen einem Aufschlag von 10%, den der Gast trägt",
         ],
       },
       {
         title: '2. Stornierungs- und No-Show-Richtlinie',
-        body: 'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung. Bei Apartments wird die Provision von Lapa Casa Rio von der Anzahlung von 30% abgezogen und der Rest erstattet, unter Beachtung der Erstattungsfristen des Zahlungsdienstleisters (Stripe).',
+        body: 'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
       },
       {
         title: '3. Check-in und Check-out',
@@ -308,7 +298,7 @@ const CONTENT: Record<Locale, Content> = {
         title: '7. Freunde-Empfehlungsprogramm',
         body: 'Nach Abschluss einer Buchung erhält der Gast einen persönlichen Rabattcode (10%) zum Teilen mit Freunden.',
         items: [
-          'Der Code gibt einem Freund 10% Rabatt auf eine Hostel- oder Apartment-Buchung',
+          'Der Code gibt einem Freund 10% Rabatt auf eine Hostel-Buchung',
           'Nach dem Check-out des Freundes, der den Code genutzt hat, erhält der Code-Inhaber R$5 Rabatt auf einen künftigen Aufenthalt',
           'Codes sind gültig bis 31.12.2026',
           'Codes sind nicht anwendbar auf Buchungen, die brasilianische nationale Feiertage beinhalten',
@@ -328,7 +318,7 @@ const CONTENT: Record<Locale, Content> = {
   fr: {
     headline: 'Conditions de Réservation et de Séjour',
     updatedLabel: 'Dernière mise à jour',
-    intro: "Ces conditions s'appliquent à toutes les réservations effectuées au Lapa Casa Rio (dortoirs partagés et appartements), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. En cochant la case d'acceptation du formulaire de réservation, vous confirmez avoir lu et accepté les conditions ci-dessous.",
+    intro: "Ces conditions s'appliquent à toutes les réservations effectuées au Lapa Casa Rio (dortoirs partagés), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. En cochant la case d'acceptation du formulaire de réservation, vous confirmez avoir lu et accepté les conditions ci-dessous.",
     sections: [
       {
         title: '1. Confirmation de la réservation',
@@ -336,13 +326,11 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Moyens de paiement de l'acompte : PIX ou carte de crédit/débit",
           "Le solde est réglé à l'arrivée, directement auprès du personnel du hostel (PIX ou carte, selon disponibilité sur place)",
-          "Appartements : le solde restant est également réglé via la plateforme (Stripe, PIX ou carte), le jour du check-in, par un lien envoyé le matin du check-in",
-          "Appartements : les paiements par carte comportent une majoration de 10%, à la charge du client",
         ],
       },
       {
         title: "2. Politique d'annulation et de non-présentation",
-        body: "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement. Pour les appartements, la commission de Lapa Casa Rio est déduite de l'acompte de 30% et le reste est remboursé, dans le respect des délais de remboursement du processeur de paiement (Stripe).",
+        body: "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement.",
       },
       {
         title: '3. Arrivée et départ',
@@ -369,7 +357,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "7. Programme de parrainage d'amis",
         body: "À la fin d'une réservation, le client reçoit un code de réduction personnel (10%) à partager avec des amis.",
         items: [
-          "Le code offre à un ami 10% de réduction sur une réservation de dortoir ou d'appartement",
+          "Le code offre à un ami 10% de réduction sur une réservation de dortoir",
           "Après le check-out de l'ami ayant utilisé le code, le titulaire reçoit R$5 de réduction pour un futur séjour",
           'Les codes sont valables jusqu\'au 31/12/2026',
           'Les codes ne sont pas applicables aux réservations incluant des jours fériés nationaux brésiliens',
@@ -389,7 +377,7 @@ const CONTENT: Record<Locale, Content> = {
   it: {
     headline: 'Termini di Prenotazione e Soggiorno',
     updatedLabel: 'Ultimo aggiornamento',
-    intro: 'Questi termini si applicano a tutte le prenotazioni effettuate presso il Lapa Casa Rio (dormitori condivisi e appartamenti), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Selezionando la casella di accettazione nel modulo di prenotazione, confermi di aver letto e accettato le condizioni seguenti.',
+    intro: 'Questi termini si applicano a tutte le prenotazioni effettuate presso il Lapa Casa Rio (dormitori condivisi), Rua Silvio Romero 22, Santa Teresa, Rio de Janeiro. Selezionando la casella di accettazione nel modulo di prenotazione, confermi di aver letto e accettato le condizioni seguenti.',
     sections: [
       {
         title: '1. Conferma della prenotazione',
@@ -397,13 +385,11 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           'Metodi di pagamento della caparra: PIX o carta di credito/debito',
           "Il saldo viene versato al check-in, direttamente al personale dell'hostel (PIX o carta, in base alla disponibilità sul momento)",
-          "Appartamenti: anche il saldo restante viene pagato tramite la piattaforma (Stripe, PIX o carta), il giorno del check-in, con un link inviato la mattina del check-in",
-          "Appartamenti: i pagamenti con carta prevedono una maggiorazione del 10%, a carico dell'ospite",
         ],
       },
       {
         title: '2. Politica di cancellazione e no-show',
-        body: 'La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso. Per gli appartamenti, dalla caparra del 30% viene detratta la commissione di Lapa Casa Rio e il resto viene rimborsato, nel rispetto dei tempi di rimborso del processore di pagamento (Stripe).',
+        body: 'La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
       },
       {
         title: '3. Check-in e check-out',
@@ -430,7 +416,7 @@ const CONTENT: Record<Locale, Content> = {
         title: '7. Programma referral amici',
         body: "Al termine di una prenotazione, l'ospite riceve un codice sconto personale (10%) da condividere con gli amici.",
         items: [
-          "Il codice offre a un amico il 10% di sconto su una prenotazione in dormitorio o appartamento",
+          "Il codice offre a un amico il 10% di sconto su una prenotazione in dormitorio",
           "Dopo il check-out dell'amico che ha utilizzato il codice, il titolare riceve R$5 di sconto per un futuro soggiorno",
           'I codici sono validi fino al 31/12/2026',
           'I codici non sono applicabili a prenotazioni che includono festività nazionali brasiliane',

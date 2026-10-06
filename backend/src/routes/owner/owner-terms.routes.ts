@@ -37,7 +37,7 @@ router.post('/', validate(AcceptTermsSchema), async (req, res, next) => {
   try {
     const ownerId = req.user?.ownerId;
     if (!ownerId) {
-      res.status(401).json(ApiResponse.error('Access token required'));
+      res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
       return;
     }
 

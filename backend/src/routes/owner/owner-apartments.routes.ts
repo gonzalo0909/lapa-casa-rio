@@ -67,7 +67,7 @@ async function flagListingPendingReview(roomTypeId: string): Promise<void> {
 // en vez de repetirla en cada handler.
 router.use((req, res, next) => {
   if (!getOwnerId(req)) {
-    res.status(401).json(ApiResponse.error('Access token required'));
+    res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
     return;
   }
   next();
@@ -80,7 +80,7 @@ router.param('id', async (req, res, next, id) => {
   try {
     const ownerId = getOwnerId(req)!;
     if (!(await ownsRoomType(ownerId, id))) {
-      res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+      res.status(404).json(ApiResponse.error('Apartamento não encontrado'));
       return;
     }
     next();
@@ -115,13 +115,13 @@ const UpdateApartmentSchema = z
     important_notices: z.array(z.string().trim().min(1).max(300)).max(12).nullable().optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), {
-    message: 'Nada para actualizar',
+    message: 'Nada para atualizar',
   })
   .refine((v) => !v.checkin_from || !v.checkin_to || v.checkin_from <= v.checkin_to, {
-    message: 'El horario de check-in "desde" debe ser anterior a "hasta"',
+    message: 'O horário de check-in "a partir de" deve ser anterior a "até"',
   })
   .refine((v) => !v.checkout_from || !v.checkout_to || v.checkout_from <= v.checkout_to, {
-    message: 'El horario de check-out "desde" debe ser anterior a "hasta"',
+    message: 'O horário de check-out "a partir de" deve ser anterior a "até"',
   });
 
 const UploadPhotoSchema = z.object({ altText: z.string().optional() });
@@ -135,7 +135,7 @@ const PatchPhotoSchema = z
   .refine(
     (v) => v.isPrimary !== undefined || v.altText !== undefined || v.displayOrder !== undefined,
     {
-      message: 'Nada para actualizar',
+      message: 'Nada para atualizar',
     },
   );
 
@@ -150,7 +150,7 @@ const CreateReviewSchema = z.object({
 
 const UpdateReviewSchema = CreateReviewSchema.partial().refine(
   (v) => Object.values(v).some((x) => x !== undefined),
-  { message: 'Nada para actualizar' },
+  { message: 'Nada para atualizar' },
 );
 
 const CreateBlockSchema = z.object({
@@ -338,7 +338,7 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
       new_data: req.body,
     });
 
-    res.status(200).json(ApiResponse.success(rows[0], 'Apartamento actualizado'));
+    res.status(200).json(ApiResponse.success(rows[0], 'Apartamento atualizado'));
   } catch (error) {
     next(error);
   }
@@ -362,7 +362,7 @@ router.post('/:id/submit-for-review', async (req, res, next) => {
       [id],
     );
     if (rows.length === 0) {
-      res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+      res.status(404).json(ApiResponse.error('Apartamento não encontrado'));
       return;
     }
 
@@ -403,7 +403,7 @@ router.post(
     try {
       const { id } = req.params;
       if (!req.file) {
-        res.status(400).json(ApiResponse.error('Falta el archivo de imagen (campo "photo")'));
+        res.status(400).json(ApiResponse.error('Envie o arquivo da imagem.'));
         return;
       }
       const { altText } = req.body as z.infer<typeof UploadPhotoSchema>;
@@ -418,7 +418,7 @@ router.post(
       if (dupRows.length > 0) {
         res
           .status(409)
-          .json(ApiResponse.error('Esta foto ya fue subida para este apartamento', undefined, 'DUPLICATE_PHOTO'));
+          .json(ApiResponse.error('Esta foto já foi enviada para este apartamento', undefined, 'DUPLICATE_PHOTO'));
         return;
       }
 
@@ -436,7 +436,7 @@ router.post(
         // Devolver el motivo real al cliente (evita que se enmascare como
         // "An unexpected error occurred" por el error handler de producción).
         // Se sanitiza: solo se expone el mensaje de la librería, no el stack.
-        const msg: string = uploadErr?.message || 'Error al subir la foto. Inténtelo de nuevo.';
+        const msg: string = uploadErr?.message || 'Erro ao enviar a foto. Tente novamente.';
         res.status(422).json(ApiResponse.error(msg));
         return;
       }
@@ -458,7 +458,7 @@ router.post(
           await deleteApartmentPhoto(uploaded.publicId).catch(() => {});
           res
             .status(409)
-            .json(ApiResponse.error('Esta foto ya fue subida para este apartamento', undefined, 'DUPLICATE_PHOTO'));
+            .json(ApiResponse.error('Esta foto já foi enviada para este apartamento', undefined, 'DUPLICATE_PHOTO'));
           return;
         }
         throw insertErr;
@@ -466,7 +466,7 @@ router.post(
 
       await flagListingPendingReview(id);
 
-      res.status(201).json(ApiResponse.success({ photo: rows[0] }, 'Foto subida'));
+      res.status(201).json(ApiResponse.success({ photo: rows[0] }, 'Foto enviada'));
     } catch (error) {
       next(error);
     }
@@ -479,7 +479,7 @@ router.patch('/photos/:photoId', validate(PatchPhotoSchema), async (req, res, ne
     const { photoId } = req.params;
     const roomTypeId = await ownsRoomTypeOf('room_type_photos', photoId, ownerId);
     if (!roomTypeId) {
-      res.status(404).json(ApiResponse.error('Foto no encontrada'));
+      res.status(404).json(ApiResponse.error('Foto não encontrada'));
       return;
     }
 
@@ -518,7 +518,7 @@ router.patch('/photos/:photoId', validate(PatchPhotoSchema), async (req, res, ne
 
     await flagListingPendingReview(roomTypeId);
 
-    res.status(200).json(ApiResponse.success({ photo: rows[0] }, 'Foto actualizada'));
+    res.status(200).json(ApiResponse.success({ photo: rows[0] }, 'Foto atualizada'));
   } catch (error) {
     next(error);
   }
@@ -530,7 +530,7 @@ router.delete('/photos/:photoId', async (req, res, next) => {
     const { photoId } = req.params;
     const roomTypeId = await ownsRoomTypeOf('room_type_photos', photoId, ownerId);
     if (!roomTypeId) {
-      res.status(404).json(ApiResponse.error('Foto no encontrada'));
+      res.status(404).json(ApiResponse.error('Foto não encontrada'));
       return;
     }
 
@@ -560,7 +560,7 @@ router.delete('/photos/:photoId', async (req, res, next) => {
 
     await flagListingPendingReview(roomTypeId);
 
-    res.status(200).json(ApiResponse.success(null, 'Foto eliminada'));
+    res.status(200).json(ApiResponse.success(null, 'Foto excluída'));
   } catch (error) {
     next(error);
   }
@@ -614,7 +614,7 @@ router.put('/reviews/:reviewId', validate(UpdateReviewSchema), async (req, res, 
     const ownerId = getOwnerId(req)!;
     const { reviewId } = req.params;
     if (!(await ownsRoomTypeOf('apartment_reviews', reviewId, ownerId))) {
-      res.status(404).json(ApiResponse.error('Reseña no encontrada'));
+      res.status(404).json(ApiResponse.error('Avaliação não encontrada'));
       return;
     }
 
@@ -666,7 +666,7 @@ router.delete('/reviews/:reviewId', async (req, res, next) => {
     const ownerId = getOwnerId(req)!;
     const { reviewId } = req.params;
     if (!(await ownsRoomTypeOf('apartment_reviews', reviewId, ownerId))) {
-      res.status(404).json(ApiResponse.error('Reseña no encontrada'));
+      res.status(404).json(ApiResponse.error('Avaliação não encontrada'));
       return;
     }
     await query(`DELETE FROM apartment_reviews WHERE id = $1`, [reviewId]);
@@ -718,7 +718,7 @@ router.post('/:id/blocks', validate(CreateBlockSchema), async (req, res, next) =
         .status(409)
         .json(
           ApiResponse.error(
-            `No se puede bloquear: hay ${conflicts.length} reserva(s) confirmada(s) en ese rango de fechas`,
+            `Não é possível bloquear: há ${conflicts.length} reserva(s) confirmada(s) neste período`,
           ),
         );
       return;
@@ -731,10 +731,10 @@ router.post('/:id/blocks', validate(CreateBlockSchema), async (req, res, next) =
       [req.params.id, start_date, end_date, block_type || 'other', reason ?? null, notes ?? null],
     );
     availabilityCache.invalidate();
-    res.status(201).json(ApiResponse.success(rows[0], 'Bloqueo creado'));
+    res.status(201).json(ApiResponse.success(rows[0], 'Bloqueio criado'));
   } catch (error: any) {
     if (error?.code === '23514') {
-      res.status(400).json(ApiResponse.error('La fecha de fin debe ser posterior a la de inicio'));
+      res.status(400).json(ApiResponse.error('A data final deve ser posterior à data inicial'));
       return;
     }
     next(error);
@@ -746,12 +746,12 @@ router.delete('/blocks/:blockId', async (req, res, next) => {
     const ownerId = getOwnerId(req)!;
     const { blockId } = req.params;
     if (!(await ownsRoomTypeOf('room_blocks', blockId, ownerId))) {
-      res.status(404).json(ApiResponse.error('Bloqueo no encontrado'));
+      res.status(404).json(ApiResponse.error('Bloqueio não encontrado'));
       return;
     }
     await query(`DELETE FROM room_blocks WHERE id = $1`, [blockId]);
     availabilityCache.invalidate();
-    res.status(200).json(ApiResponse.success(null, 'Bloqueo eliminado'));
+    res.status(200).json(ApiResponse.success(null, 'Bloqueio excluído'));
   } catch (error) {
     next(error);
   }
@@ -842,7 +842,7 @@ router.put('/:id/pricing', validate(UnitConfigSchema), async (req, res, next) =>
       bot_enabled: bot_enabled ?? true,
       notes,
     });
-    res.status(200).json(ApiResponse.success(updated, 'Precios actualizados'));
+    res.status(200).json(ApiResponse.success(updated, 'Preços atualizados'));
   } catch (error) {
     next(error);
   }

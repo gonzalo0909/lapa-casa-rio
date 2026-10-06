@@ -49,19 +49,19 @@ router.post('/', upload.single('document'), async (req, res, next) => {
   try {
     const ownerId = req.user?.ownerId;
     if (!ownerId) {
-      res.status(401).json(ApiResponse.error('Access token requerido'));
+      res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
       return;
     }
 
     if (!req.file) {
-      res.status(400).json(ApiResponse.error('Debe adjuntar un archivo (campo: document)'));
+      res.status(400).json(ApiResponse.error('Anexe um arquivo.'));
       return;
     }
 
     const docType = req.body?.docType as string | undefined;
     if (!docType || !DOC_TYPES.has(docType)) {
       res.status(400).json(
-        ApiResponse.error('docType inválido. Valores permitidos: cpf_cnpj, proof_ownership, other'),
+        ApiResponse.error('Tipo de documento inválido.'),
       );
       return;
     }
@@ -74,7 +74,7 @@ router.post('/', upload.single('document'), async (req, res, next) => {
 
     if (owner?.verificationStatus === 'verified') {
       res.status(409).json(
-        ApiResponse.error('Tu cuenta ya está verificada. Contacta al soporte si necesitas actualizar documentos.'),
+        ApiResponse.error('Sua conta já está verificada. Entre em contato com o suporte para atualizar documentos.'),
       );
       return;
     }
@@ -125,7 +125,7 @@ router.get('/', async (req, res, next) => {
   try {
     const ownerId = req.user?.ownerId;
     if (!ownerId) {
-      res.status(401).json(ApiResponse.error('Access token requerido'));
+      res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
       return;
     }
 
@@ -166,7 +166,7 @@ router.delete('/:docId', async (req, res, next) => {
   try {
     const ownerId = req.user?.ownerId;
     if (!ownerId) {
-      res.status(401).json(ApiResponse.error('Access token requerido'));
+      res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
       return;
     }
 
@@ -177,7 +177,7 @@ router.delete('/:docId', async (req, res, next) => {
     });
 
     if (!doc) {
-      res.status(404).json(ApiResponse.error('Documento no encontrado'));
+      res.status(404).json(ApiResponse.error('Documento não encontrado'));
       return;
     }
 
@@ -189,7 +189,7 @@ router.delete('/:docId', async (req, res, next) => {
 
     if (owner?.verificationStatus === 'verified') {
       res.status(409).json(
-        ApiResponse.error('No se puede borrar documentos de una cuenta verificada.'),
+        ApiResponse.error('Não é possível excluir documentos de uma conta verificada.'),
       );
       return;
     }
@@ -199,7 +199,7 @@ router.delete('/:docId', async (req, res, next) => {
 
     logger.info('Documento de owner borrado', { ownerId, docId });
 
-    res.status(200).json(ApiResponse.success({ id: docId }, 'Documento eliminado'));
+    res.status(200).json(ApiResponse.success({ id: docId }, 'Documento excluído'));
   } catch (error) {
     next(error);
   }

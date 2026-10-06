@@ -89,6 +89,8 @@ router.param('id', async (req, res, next, id) => {
   }
 });
 
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 const UpdateApartmentSchema = z
   .object({
     name: z.string().min(1).max(100).optional(),
@@ -106,10 +108,20 @@ const UpdateApartmentSchema = z
     // precio de las reservas. Se acepta solo valores positivos.
     base_price: z.number().positive().optional(),
     // Avisos del paso de reserva (null = usar los por defecto del sitio)
+    checkin_from: z.string().regex(HHMM).nullable().optional(),
+    checkin_to: z.string().regex(HHMM).nullable().optional(),
+    checkout_from: z.string().regex(HHMM).nullable().optional(),
+    checkout_to: z.string().regex(HHMM).nullable().optional(),
     important_notices: z.array(z.string().trim().min(1).max(300)).max(12).nullable().optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), {
     message: 'Nada para actualizar',
+  })
+  .refine((v) => !v.checkin_from || !v.checkin_to || v.checkin_from <= v.checkin_to, {
+    message: 'El horario de check-in "desde" debe ser anterior a "hasta"',
+  })
+  .refine((v) => !v.checkout_from || !v.checkout_to || v.checkout_from <= v.checkout_to, {
+    message: 'El horario de check-out "desde" debe ser anterior a "hasta"',
   });
 
 const UploadPhotoSchema = z.object({ altText: z.string().optional() });
@@ -177,6 +189,7 @@ router.get('/', async (req, res, next) => {
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
               external_rating_label, address, address_number, cep, lat, lng, important_notices,
+              checkin_from, checkin_to, checkout_from, checkout_to,
               listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types
        WHERE owner_id = $1
@@ -211,6 +224,7 @@ router.get('/:id', async (req, res, next) => {
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
               external_rating_label, address, address_number, cep, lat, lng, important_notices,
+              checkin_from, checkin_to, checkout_from, checkout_to,
               listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types WHERE id = $1`,
       [req.params.id],
@@ -285,6 +299,13 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
       params.push(base_price);
       sets.push(`base_price = ${p()}`);
     }
+    for (const col of ['checkin_from', 'checkin_to', 'checkout_from', 'checkout_to'] as const) {
+      const v = (req.body as Record<string, string | null | undefined>)[col];
+      if (v !== undefined) {
+        params.push(v || null);
+        sets.push(`${col} = ${p()}`);
+      }
+    }
     if (important_notices !== undefined) {
       params.push(important_notices === null ? null : JSON.stringify(important_notices));
       sets.push(`important_notices = ${p()}::jsonb`);
@@ -305,6 +326,7 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
        WHERE id = ${p()}
        RETURNING id, code, name, description, neighborhood, bedrooms, bathrooms, amenities,
                  address, address_number, cep, lat, lng, base_price, important_notices,
+                 checkin_from, checkin_to, checkout_from, checkout_to,
                  listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes`,
       params,
     );

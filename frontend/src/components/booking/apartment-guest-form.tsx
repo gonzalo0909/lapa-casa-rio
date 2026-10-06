@@ -9,8 +9,8 @@
 import React, { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  MapPin, Check, X, AlertTriangle, KeyRound, DoorOpen, FileText,
-  Ban, CigaretteOff, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
+  MapPin, Check, X, AlertTriangle, Info, FileText,
+  Ban, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
   Users, Trash2, Upload, Camera,
 } from 'lucide-react';
 import styles from './apartment-engine.module.css';
@@ -728,26 +728,31 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <AlertTriangle size={15} strokeWidth={2.2} /> {t('rulesConfirmTitle')}
           </div>
           <div className={styles.rulesConfirmList}>
-            <div className={styles.rulesConfirmItem}>
-              <KeyRound size={16} />
-              <span>{t.rich('ruleCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.rulesConfirmItem}>
-              <DoorOpen size={16} />
-              <span>{t.rich('ruleCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.rulesConfirmItem}>
-              <FileText size={16} />
-              <span>{t.rich('ruleDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.rulesConfirmItem}>
-              <Ban size={16} />
-              <span>{t.rich('ruleAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.rulesConfirmItem}>
-              <CigaretteOff size={16} />
-              <span>{t.rich('ruleSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
+            {selectedApartment.importantNotices && selectedApartment.importantNotices.length > 0 ? (
+              selectedApartment.importantNotices.map((text, i) => (
+                <div key={i} className={styles.rulesConfirmItem}>
+                  <Info size={16} />
+                  <span>
+                    {text.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
+                      part.startsWith('**') && part.endsWith('**') && part.length > 4
+                        ? <strong key={j}>{part.slice(2, -2)}</strong>
+                        : part,
+                    )}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className={styles.rulesConfirmItem}>
+                  <FileText size={16} />
+                  <span>{t.rich('ruleDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+                </div>
+                <div className={styles.rulesConfirmItem}>
+                  <Ban size={16} />
+                  <span>{t.rich('ruleAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

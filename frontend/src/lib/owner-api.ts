@@ -60,6 +60,8 @@ export interface Apartment {
   address: string | null;
   address_number: string | null;
   cep: string | null;
+  /** Avisos del paso de reserva; null = por defecto del sitio */
+  important_notices: string[] | null;
   listing_status: 'pending_review' | 'approved' | 'rejected';
   listing_submitted_at: string | null;
   listing_reviewed_at: string | null;
@@ -158,7 +160,7 @@ export const ownerApartmentsAPI = {
   update: (
     id: string,
     data: Partial<
-      Pick<Apartment, 'name' | 'description' | 'neighborhood' | 'bedrooms' | 'bathrooms' | 'amenities' | 'address' | 'address_number' | 'cep' | 'base_price'>
+      Pick<Apartment, 'name' | 'description' | 'neighborhood' | 'bedrooms' | 'bathrooms' | 'amenities' | 'address' | 'address_number' | 'cep' | 'base_price' | 'important_notices'>
     >,
   ) =>
     api.put<{ success: boolean; data: Apartment; message: string }>(

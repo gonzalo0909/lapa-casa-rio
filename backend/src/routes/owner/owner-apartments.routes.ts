@@ -105,6 +105,8 @@ const UpdateApartmentSchema = z
     // Precio base editable por el administrador: entra en el cálculo de
     // precio de las reservas. Se acepta solo valores positivos.
     base_price: z.number().positive().optional(),
+    // Avisos del paso de reserva (null = usar los por defecto del sitio)
+    important_notices: z.array(z.string().trim().min(1).max(300)).max(12).nullable().optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), {
     message: 'Nada para actualizar',
@@ -174,7 +176,7 @@ router.get('/', async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
-              external_rating_label, address, address_number, cep, lat, lng,
+              external_rating_label, address, address_number, cep, lat, lng, important_notices,
               listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types
        WHERE owner_id = $1
@@ -208,7 +210,7 @@ router.get('/:id', async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, code, name, capacity, base_price, description, neighborhood,
               bedrooms, bathrooms, amenities, external_rating, external_review_count,
-              external_rating_label, address, address_number, cep, lat, lng,
+              external_rating_label, address, address_number, cep, lat, lng, important_notices,
               listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
        FROM room_types WHERE id = $1`,
       [req.params.id],
@@ -228,7 +230,7 @@ router.get('/:id', async (req, res, next) => {
 router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, neighborhood, bedrooms, bathrooms, amenities, address, address_number, cep, lat, lng, base_price } = req.body as z.infer<
+    const { name, description, neighborhood, bedrooms, bathrooms, amenities, address, address_number, cep, lat, lng, base_price, important_notices } = req.body as z.infer<
       typeof UpdateApartmentSchema
     >;
 
@@ -283,6 +285,10 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
       params.push(base_price);
       sets.push(`base_price = ${p()}`);
     }
+    if (important_notices !== undefined) {
+      params.push(important_notices === null ? null : JSON.stringify(important_notices));
+      sets.push(`important_notices = ${p()}::jsonb`);
+    }
 
     // Cambiar contenido del anuncio (no precio/coordenadas) manda de vuelta
     // a revisión -- ver flagListingPendingReview más arriba.
@@ -298,7 +304,7 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
       `UPDATE room_types SET ${sets.join(', ')}, updated_at = now()
        WHERE id = ${p()}
        RETURNING id, code, name, description, neighborhood, bedrooms, bathrooms, amenities,
-                 address, address_number, cep, lat, lng, base_price,
+                 address, address_number, cep, lat, lng, base_price, important_notices,
                  listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes`,
       params,
     );

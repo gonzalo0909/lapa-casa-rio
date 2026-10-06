@@ -47,6 +47,8 @@ export interface ApartmentAvailability {
   externalRating?: number | null;
   externalReviewCount?: number | null;
   externalRatingLabel?: string | null;
+  /** Avisos importantes definidos por el owner; null = usar los por defecto */
+  importantNotices?: string[] | null;
   /** true cuando el check-in es en < 48h y se requiere el pago completo al reservar */
   fullPaymentRequired?: boolean;
   fullPaymentReason?: 'less_than_48h' | null;

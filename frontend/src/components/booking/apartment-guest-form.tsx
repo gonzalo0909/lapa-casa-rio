@@ -54,6 +54,8 @@ interface ApartmentGuestFormProps {
   onTermsAcceptedChange: (v: boolean) => void;
   /** true cuando el usuario intentó enviar — fuerza mostrar errores en campos de acompañante */
   submitAttempted?: boolean;
+  /** Error de validación/API del paso, mostrado junto al botón de confirmar */
+  formError?: string | null;
   /** Horarios de check-in disponibles (desde backend, editable en /admin/pricing.html). */
   checkinTimes: string[];
 }
@@ -86,6 +88,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   termsAccepted,
   onTermsAcceptedChange,
   submitAttempted = false,
+  formError = null,
   checkinTimes,
 }) => {
   const t = useTranslations('apartments');
@@ -857,7 +860,10 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
         </div>
 
         {/* Aceite dos Termos de Reserva */}
-        <div className={styles.termsAccept}>
+        <div
+          className={styles.termsAccept}
+          style={submitAttempted && !termsAccepted ? { borderColor: 'var(--danger, #dc2626)' } : undefined}
+        >
           <label className={styles.termsAcceptLabel}>
             <input
               type="checkbox"
@@ -881,9 +887,17 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             </span>
           </label>
           {!termsAccepted && (
-            <p className={styles.termsAcceptHint}>{t('termsAcceptHint')}</p>
+            <p
+              className={styles.termsAcceptHint}
+              role={submitAttempted ? 'alert' : undefined}
+              style={submitAttempted ? { color: 'var(--danger, #dc2626)', fontWeight: 600 } : undefined}
+            >
+              {t('termsAcceptHint')}
+            </p>
           )}
         </div>
+
+        {formError && <div className={styles.errorBanner} role="alert">{formError}</div>}
 
         {/* Botón Confirmar y pagar */}
         <button

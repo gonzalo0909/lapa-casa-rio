@@ -596,6 +596,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             companionDocumentPhoto={companionDocumentPhoto}
             onCompanionDocumentPhotoChange={setCompanionDocumentPhoto}
             termsAccepted={termsAccepted}
+            formError={error}
             onTermsAcceptedChange={setTermsAccepted}
             submitAttempted={submitAttempted}
           />

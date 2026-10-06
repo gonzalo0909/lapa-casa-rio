@@ -55,6 +55,13 @@ function todayLocalISODate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Avisos que ve el huésped por defecto (mismos del sitio) -- se precargan
+ *  para que el owner los edite o los reemplace. **texto** = negrita. */
+const DEFAULT_NOTICES = [
+  'O envio de foto do documento de identificação é **obrigatório** antes do check-in, sem exceção.',
+  'As unidades são destinadas exclusivamente a **maiores de 18 anos**.',
+];
+
 function formatCep(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 8);
   if (digits.length > 5) {
@@ -111,6 +118,7 @@ export default function OwnerApartmentEditPage() {
   const [addressNumber, setAddressNumber] = useState('');
   const [cep, setCep] = useState('');
   const [basePrice, setBasePrice] = useState('');
+  const [noticesText, setNoticesText] = useState('');
 
   // Form state — preços dinâmicos
   const [minPrice, setMinPrice] = useState('');
@@ -140,6 +148,7 @@ export default function OwnerApartmentEditPage() {
       setAddressNumber(apt.address_number ?? '');
       setCep(apt.cep ? formatCep(apt.cep) : '');
       setBasePrice(apt.base_price?.toString() ?? '');
+      setNoticesText((apt.important_notices ?? DEFAULT_NOTICES).join('\n'));
       setPhotos(photosRes.data.photos);
       const pricing = pricingRes.data;
       if (pricing) {
@@ -335,6 +344,7 @@ export default function OwnerApartmentEditPage() {
         .filter(Boolean);
 
       const cepDigits = cep.replace(/\D/g, '');
+      const notices = noticesText.split('\n').map((l) => l.trim()).filter(Boolean);
 
       await ownerApartmentsAPI.update(params.id, {
         name: aptName.trim() || undefined,
@@ -347,6 +357,7 @@ export default function OwnerApartmentEditPage() {
         address_number: addressNumber || undefined,
         cep: cepDigits || undefined,
         base_price: basePrice ? parseFloat(basePrice) : undefined,
+        important_notices: notices.length > 0 ? notices : null,
       });
       setSaveMessage('Alterações salvas com sucesso.');
       // Update heading if name changed
@@ -630,6 +641,15 @@ export default function OwnerApartmentEditPage() {
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
                   helperText="Valor cobrado do hóspede por noite -- sem ajustes automáticos"
+                />
+
+                {/* Informações importantes (visíveis ao hóspede ao reservar) */}
+                <Textarea
+                  label="Informações importantes para o hóspede"
+                  value={noticesText}
+                  onChange={(e) => setNoticesText(e.target.value)}
+                  rows={6}
+                  helperText="Uma por linha. Aparecem na tela de reserva deste apartamento (ex: horários de check-in/check-out, regras). Use **texto** para negrito. Deixe vazio para usar o padrão do site."
                 />
 
                 {error && (

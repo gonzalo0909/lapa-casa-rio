@@ -614,6 +614,74 @@ export async function cancelAbsentReservations(
   return cancelled;
 }
 
+
+/**
+ * ¿Todas las noches de [checkIn, checkOut) ya están ocupadas por algo que NACIÓ en Lapa Casa
+ * (una reserva de otro canal o directa, o un bloqueo)? Entonces el "CLOSED - Not available"
+ * que devuelve la OTA no es una reserva suya: es el eco de lo que Lapa le exportó (la OTA cierra
+ * esas fechas al leer nuestro feed y las vuelve a publicar en el suyo). Importarlo creaba
+ * reservas fantasma que además no se iban al borrar el bloqueo original.
+ */
+export async function isEchoOfOwnOccupancy(
+  roomTypeId: string,
+  channelId: string,
+  checkIn: string,
+  checkOut: string,
+): Promise<boolean> {
+  if (checkOut <= checkIn) {return false;}
+  const { rows } = await query<{ covered: boolean | null }>(
+    `SELECT bool_and(occ) AS covered FROM (
+       SELECT (
+         EXISTS (
+           SELECT 1 FROM reservation_beds rb
+           JOIN reservations res ON res.id = rb.reservation_id
+           WHERE rb.room_type_id = $1
+             AND res.status != 'cancelled'
+             AND res.channel_id IS DISTINCT FROM $2
+             AND d::date >= rb.check_in AND d::date < rb.check_out
+         )
+         OR EXISTS (
+           SELECT 1 FROM room_blocks bl
+           WHERE bl.room_type_id = $1
+             AND d::date >= bl.start_date AND d::date < bl.end_date
+         )
+       ) AS occ
+       FROM generate_series($3::date, ($4::date - 1), interval '1 day') d
+     ) t`,
+    [roomTypeId, channelId, checkIn, checkOut]
+  );
+  return rows[0]?.covered === true;
+}
+
+/**
+ * Cancela las reservas "fantasma" ya importadas de este feed (sin huésped: "<canal> (iCal)")
+ * cuyas fechas están 100% cubiertas por ocupación propia de Lapa Casa (ver isEchoOfOwnOccupancy).
+ * Devuelve cuántas canceló.
+ */
+async function cleanEchoReservations(feed: IcalFeedConfig): Promise<number> {
+  const { rows } = await query<{ external_reservation_id: string; check_in: string; check_out: string }>(
+    `SELECT DISTINCT r.external_reservation_id, rb.check_in::text AS check_in, rb.check_out::text AS check_out
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     JOIN guests g ON g.id = r.guest_id
+     WHERE rb.room_type_id = $1
+       AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND rb.check_out >= CURRENT_DATE
+       AND g.full_name = $3
+       AND r.external_reservation_id IS NOT NULL`,
+    [feed.roomTypeId, feed.channelId, `${feed.channelCode} (iCal)`]
+  );
+  let cleaned = 0;
+  for (const row of rows) {
+    if (await isEchoOfOwnOccupancy(feed.roomTypeId, feed.channelId, row.check_in, row.check_out)) {
+      await channelService.handleChannelCancellation(row.external_reservation_id, feed.channelId);
+      cleaned++;
+    }
+  }
+  return cleaned;
+}
+
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   const seenNow = new Set<string>();
@@ -652,6 +720,15 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         continue;
       }
 
+      // Eco de lo que Lapa le exportó a la OTA: no es una reserva de la OTA, no se importa.
+      if (
+        event.isBlocked &&
+        !event.isOwnerBlock &&
+        (await isEchoOfOwnOccupancy(feed.roomTypeId, feed.channelId, event.checkIn, event.checkOut))
+      ) {
+        continue;
+      }
+
       try {
         const result = await channelService.handleChannelBooking(
           {
@@ -681,6 +758,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     const nowIso = new Date().toISOString();
     for (const uid of seenNow) {seen[uid] = nowIso;}
     const cancelledByAbsence = await cancelAbsentReservations(feed, seen, seenNow);
+    const cancelledEchoes = await cleanEchoReservations(feed);
     // Se descartan registros de eventos que dejaron de verse hace mas de 7 dias.
     const keepAfter = Date.now() - 7 * 24 * 60 * 60 * 1000;
     for (const [uid, at] of Object.entries(seen)) {
@@ -696,7 +774,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       imported,
       alreadyKnown,
       updated,
-      cancelled: cancelledDirect + cancelledByAbsence,
+      cancelled: cancelledDirect + cancelledByAbsence + cancelledEchoes,
       skippedOwn,
       errors,
     };

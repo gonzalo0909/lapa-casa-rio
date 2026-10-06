@@ -63,6 +63,13 @@ const UpdateOwnerSchema = z.object({
   notes: z.string().optional(),
 });
 
+// El servicio de email devuelve un id "stub-..." cuando no hay proveedor
+// configurado (ni RESEND_API_KEY ni GMAIL_USER): en ese caso NO se envió nada,
+// aunque no haya tirado error. Sin esta comprobación el panel decía "enviado por
+// email" y el administrador nunca recibía la contraseña.
+const emailDelivered = (r: { id?: string } | undefined): boolean =>
+  !!r && !String(r.id ?? '').startsWith('stub-');
+
 // junta la lista de owners (Prisma) con sus apartamentos asignados
 // (room_types, SQL crudo) en una sola pasada -- evita el N+1 de una
 // query por owner.
@@ -195,13 +202,13 @@ router.post('/', validate(CreateOwnerSchema), async (req, res, next) => {
     // tempPassword sigue en la respuesta como respaldo para reenviarla a mano.
     let welcomeEmailSent = false;
     try {
-      await emailService.sendOwnerWelcome({
+      const sent = await emailService.sendOwnerWelcome({
         to: owner.email,
         ownerName: owner.fullName,
         tempPassword,
         onboardingUrl,
       });
-      welcomeEmailSent = true;
+      welcomeEmailSent = emailDelivered(sent);
     } catch (emailError: any) {
       logger.warn('No se pudo enviar el email de bienvenida al administrador', {
         ownerId: owner.id,
@@ -423,8 +430,8 @@ router.post('/:id/reset-password', async (req, res, next) => {
 
     let resetEmailSent = false;
     try {
-      await emailService.sendOwnerPasswordReissued(owner.email, owner.fullName, tempPassword);
-      resetEmailSent = true;
+      const sent = await emailService.sendOwnerPasswordReissued(owner.email, owner.fullName, tempPassword);
+      resetEmailSent = emailDelivered(sent);
     } catch (emailError: any) {
       logger.warn('No se pudo enviar el email de contraseña reseteada al administrador', {
         ownerId: id,
@@ -517,13 +524,13 @@ router.post('/:id/resend-invitation', async (req, res, next) => {
 
     let emailSent = false;
     try {
-      await emailService.sendOwnerWelcome({
+      const sent = await emailService.sendOwnerWelcome({
         to: owner.email,
         ownerName: owner.fullName,
         tempPassword,
         onboardingUrl,
       });
-      emailSent = true;
+      emailSent = emailDelivered(sent);
     } catch (emailError: any) {
       logger.warn('No se pudo reenviar la invitación al administrador', {
         ownerId: id,

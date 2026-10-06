@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { OwnerCalendar } from '@/components/owner/owner-calendar';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useOwnerAuth } from '@/lib/use-owner-auth';
 import {
@@ -21,6 +22,7 @@ import {
   type Apartment,
   type ApartmentPhoto,
   type ApartmentBlock,
+  type OwnerBooking,
   type HolidayBlockPreset,
 } from '@/lib/owner-api';
 import { handleAPIError, APIError } from '@/lib/api';
@@ -124,6 +126,7 @@ export default function OwnerApartmentEditPage() {
 
   // Bloqueios de datas
   const [blocks, setBlocks] = useState<ApartmentBlock[] | null>(null);
+  const [calBookings, setCalBookings] = useState<OwnerBooking[]>([]);
   const [blockError, setBlockError] = useState<string | null>(null);
   const [blockStart, setBlockStart] = useState('');
   const [blockEnd, setBlockEnd] = useState('');
@@ -216,7 +219,37 @@ export default function OwnerApartmentEditPage() {
   useEffect(() => {
     if (!profile) {return;}
     loadBlocks();
-  }, [profile, loadBlocks]);
+    // Reservas para mostrar no calendário (somente leitura)
+    ownerApartmentsAPI
+      .listBookings(params.id)
+      .then((res) => setCalBookings(res.data.bookings))
+      .catch(() => { /* o calendário funciona só com os bloqueios */ });
+  }, [profile, loadBlocks, params.id]);
+
+  const handleCalendarCreate = async (start: string, endExclusive: string) => {
+    setBlockError(null);
+    try {
+      await ownerApartmentsAPI.createBlock(params.id, {
+        start_date: start,
+        end_date: endExclusive,
+        block_type: 'other',
+        reason: 'Bloqueio do proprietário',
+      });
+      await loadBlocks();
+    } catch (err) {
+      setBlockError(handleAPIError(err, 'pt'));
+    }
+  };
+
+  const handleCalendarDelete = async (blockId: string) => {
+    setBlockError(null);
+    try {
+      await ownerApartmentsAPI.deleteBlock(blockId);
+      setBlocks((prev) => prev?.filter((b) => b.id !== blockId) ?? null);
+    } catch (err) {
+      setBlockError(handleAPIError(err, 'pt'));
+    }
+  };
 
   useEffect(() => {
     // Trae el año elegido + el siguiente -- si solo trajera holidayYear, en
@@ -797,6 +830,12 @@ export default function OwnerApartmentEditPage() {
               <CardTitle size="sm">Datas bloqueadas</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
+              <OwnerCalendar
+                blocks={blocks ?? []}
+                bookings={calBookings}
+                onCreateBlock={handleCalendarCreate}
+                onDeleteBlock={handleCalendarDelete}
+              />
               <p className="text-sm text-neutral-500">
                 Por padrão, seu apartamento fica bloqueado nas datas reais de cada feriado
                 (Carnaval, Réveillon, etc.). Remova um bloqueio abaixo se quiser aceitar

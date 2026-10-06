@@ -281,5 +281,20 @@ export const ownerDocumentsAPI = {
     api.delete<{ success: boolean; message: string }>(`/owner/documents/${docId}`),
 };
 
-const ownerAPI = { ownerAuthAPI, ownerApartmentsAPI, ownerDocumentsAPI };
+export interface OwnerChatMessage {
+  id: string;
+  sender: 'admin' | 'owner';
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export const ownerMessagesAPI = {
+  list: () => api.get<{ success: boolean; data: { messages: OwnerChatMessage[] } }>('/owner/messages'),
+  unread: () => api.get<{ success: boolean; data: { unread: number } }>('/owner/messages/unread-count'),
+  send: (body: string) =>
+    api.post<{ success: boolean; data: OwnerChatMessage; message: string }>('/owner/messages', { body }),
+};
+
+const ownerAPI = { ownerAuthAPI, ownerApartmentsAPI, ownerDocumentsAPI, ownerMessagesAPI };
 export default ownerAPI;

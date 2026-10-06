@@ -15,7 +15,7 @@ export const validate = (schema: ZodSchema) => (
       res.status(400).json({
         success: false,
         // Panel del owner: todo en portugués (el resto del sitio mantiene el mensaje original)
-        error: req.originalUrl.includes('/owner')
+        error: /\/owner(\/|\?|$)/.test(req.originalUrl)
           ? 'Dados inválidos. Verifique os campos e tente novamente.'
           : 'Validation error',
         details: error.errors.map(e => ({

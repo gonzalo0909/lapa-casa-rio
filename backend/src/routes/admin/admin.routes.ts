@@ -30,6 +30,7 @@ import { adminHolidayBlocksRouter } from './holiday-blocks.routes';
 import { adminSpecialPeriodRulesRouter } from './special-period-rules.routes';
 import { roomTypePhotosRouter } from './room-type-photos.routes';
 import { apartmentOwnersRouter } from './apartment-owners.routes';
+import { adminOwnerMessagesRouter } from './owner-messages.routes';
 import { dynamicPricingRouter } from './dynamic-pricing.routes';
 import { guestsRouter } from './guests.routes';
 import { admin2faRouter } from './admin-2fa.routes';
@@ -85,6 +86,7 @@ router.use('/room-types', roomTypePhotosRouter);
  * /admin/apartment-owners — administradores de apartamentos con Stripe Connect
  */
 router.use('/apartment-owners', apartmentOwnersRouter);
+router.use('/owner-messages', adminOwnerMessagesRouter);
 
 /**
  * /admin/dynamic-pricing — bot de precios dinámicos (config, eventos, calendario)

@@ -16,7 +16,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
-const LAST_UPDATED = '2026-10-05';
+const LAST_UPDATED = '2026-10-06';
 
 const META: Record<Locale, { title: string; description: string }> = {
   pt: {

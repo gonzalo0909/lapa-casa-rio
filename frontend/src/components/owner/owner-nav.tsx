@@ -4,9 +4,10 @@
 // Barra de navegação do painel do administrador de apartamento.
 // Usada em todas as páginas autenticadas de /owner.
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ownerAuthAPI } from '@/lib/owner-api';
+import { ownerAuthAPI, ownerMessagesAPI } from '@/lib/owner-api';
 
 interface OwnerNavProps {
   fullName: string;
@@ -14,12 +15,28 @@ interface OwnerNavProps {
 
 const NAV_LINKS = [
   { href: '/owner', label: 'Apartamentos' },
+  { href: '/owner/messages', label: 'Mensagens' },
   { href: '/owner/contract', label: 'Contrato' },
 ];
 
 export function OwnerNav({ fullName }: OwnerNavProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [unread, setUnread] = useState(0);
+
+  // Mensagens não lidas da equipe (badge no menu); consulta a cada 30 s
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      ownerMessagesAPI
+        .unread()
+        .then((res) => { if (!cancelled) {setUnread(res.data.unread);} })
+        .catch(() => { /* badge opcional */ });
+    };
+    load();
+    const id = setInterval(load, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -51,6 +68,9 @@ export function OwnerNav({ fullName }: OwnerNavProps) {
               }`}
             >
               {label}
+              {href === '/owner/messages' && unread > 0 && (
+                <span className="ml-1.5 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{unread}</span>
+              )}
             </Link>
           );
         })}

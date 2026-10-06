@@ -18,12 +18,14 @@ import { ApiResponse } from '../../utils/responses';
 import { ownerApartmentsRouter } from './owner-apartments.routes';
 import { ownerTermsRouter } from './owner-terms.routes';
 import { ownerDocumentsRouter } from './owner-documents.routes';
+import { ownerMessagesRouter } from './owner-messages.routes';
 
 const router = Router();
 
 router.use('/apartments', ownerApartmentsRouter);
 router.use('/accept-terms', ownerTermsRouter);
 router.use('/documents', ownerDocumentsRouter);
+router.use('/messages', ownerMessagesRouter);
 
 // ─── GET /owner/me ────────────────────────────────────────────────────────────
 

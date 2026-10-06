@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mensajes — Admin Lapa Casa</title>
+<link rel="stylesheet" href="/admin/css/admin.css">
+<style>
+  .chat-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 800px) { .chat-layout { grid-template-columns: 1fr; } }
+  .conv-list { display: flex; flex-direction: column; gap: 6px; max-height: 70vh; overflow-y: auto; }
+  .conv-item { text-align: left; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius);
+               background: var(--surface); cursor: pointer; }
+  .conv-item.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .conv-name { font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; gap: 6px; }
+  .conv-last { font-size: 12px; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .unread-badge { background: var(--danger); color: #fff; border-radius: 99px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
+  .thread { display: flex; flex-direction: column; gap: 8px; height: 52vh; overflow-y: auto; padding: 10px;
+            border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg, #fafafa); }
+  .bubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+  .bubble.admin { align-self: flex-end; background: var(--accent); color: #fff; }
+  .bubble.owner { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); }
+  .bubble small { display: block; opacity: .7; font-size: 10px; margin-top: 3px; }
+  .composer { display: flex; gap: 8px; margin-top: 10px; }
+  .composer textarea { flex: 1; min-height: 44px; resize: vertical; }
+  .empty { color: var(--text-muted); font-size: 13px; padding: 24px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main>
+<div id="page-msg"></div>
+<div class="chat-layout">
+  <div class="card">
+    <h2>Administradores</h2>
+    <div class="conv-list" id="conv-list"><p class="empty">Cargando...</p></div>
+  </div>
+  <div class="card">
+    <h2 id="chat-title">Selecciona un administrador</h2>
+    <div class="thread" id="thread"><p class="empty">Elige una conversación a la izquierda.</p></div>
+    <form class="composer" id="composer" style="display:none">
+      <textarea id="msg-input" maxlength="2000" placeholder="Escribe un mensaje..."></textarea>
+      <button type="submit" id="send-btn">Enviar</button>
+    </form>
+  </div>
+</div>
+</main>
+<script src="/admin/js/api.js"></script>
+<script src="/admin/js/nav.js"></script>
+<script src="/admin/js/messages.js"></script>
+</body>
+</html>

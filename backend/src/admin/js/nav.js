@@ -31,6 +31,7 @@ function renderNav(activePage) {
     { href: '/admin/rooms.html', label: 'Hostel', page: 'rooms' },
     { href: '/admin/apartments.html', label: 'Apartamentos', page: 'apartments' },
     { href: '/admin/owners.html', label: 'Administradores', page: 'owners' },
+    { href: '/admin/messages.html', label: 'Mensajes', page: 'messages' },
     { href: '/admin/conflicts.html', label: 'Conflictos', page: 'conflicts' },
     { href: '/admin/photos.html', label: 'Fotos huésp.', page: 'photos' },
     { href: '/admin/gallery.html', label: 'Galería', page: 'gallery' },
@@ -51,6 +52,17 @@ function renderNav(activePage) {
   `;
 
   document.getElementById('logout-btn').addEventListener('click', logout);
+
+  // Badge de mensajes sin leer de los administradores de apartamentos
+  if (typeof apiFetch === 'function') {
+    apiFetch('/admin/owner-messages/unread-count').then((data) => {
+      const n = data && data.unread;
+      const link = root.querySelector('a[href="/admin/messages.html"]');
+      if (n && link) {
+        link.insertAdjacentHTML('beforeend', ` <span style="background:#dc2626;color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:700;">${n}</span>`);
+      }
+    }).catch(() => { /* el badge es opcional */ });
+  }
 }
 
 // Un clic en cualquier parte de un campo de fecha abre el calendario (por defecto

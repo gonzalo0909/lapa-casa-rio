@@ -24,15 +24,15 @@ type DocType = 'cpf_cnpj' | 'proof_ownership' | 'other';
 const DOC_TYPE_LABELS: Record<DocType, { label: string; hint: string }> = {
   cpf_cnpj: {
     label: 'CPF / CNPJ',
-    hint: 'Foto o escáner del documento de identidad (CPF para persona física, CNPJ para empresa)',
+    hint: 'Foto ou digitalização do documento de identidade (CPF para pessoa física, CNPJ para empresa)',
   },
   proof_ownership: {
-    label: 'Comprobante de propiedad',
-    hint: 'Escritura, contrato de compraventa, IPTU o documento equivalente que acredite la titularidad del inmueble',
+    label: 'Comprovante de propriedade',
+    hint: 'Escritura, contrato de compra e venda, IPTU ou documento equivalente que comprove a titularidade do imóvel',
   },
   other: {
-    label: 'Otro documento',
-    hint: 'Cualquier documento complementario que el administrador desee adjuntar',
+    label: 'Outro documento',
+    hint: 'Qualquer documento complementar que o administrador queira anexar',
   },
 };
 

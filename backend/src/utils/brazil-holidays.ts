@@ -40,7 +40,7 @@ export function getBrazilHolidays(year: number): string[] {
     fmt(addDays(easter, -2)),  // Viernes Santo
     fmt(easter),               // Pascua
     `${year}-04-21`, // Tiradentes
-    `${year}-05-01`, // Día del Trabajo
+    `${year}-05-01`, // Dia do Trabalho
     fmt(addDays(easter, 60)),  // Corpus Christi
     `${year}-09-07`, // Independencia
     `${year}-10-12`, // N.S. Aparecida
@@ -91,7 +91,7 @@ export function getHolidayBlockPresets(year: number): HolidayBlockPreset[] {
     { key: 'carnaval', name: `Carnaval ${year}`, startDate: fmt(carnivalStart), endDate: fmt(addDays(carnivalEnd, 1)) },
     { key: 'semana_santa', name: `Semana Santa ${year}`, startDate: fmt(goodFriday), endDate: fmt(addDays(easter, 1)) },
     { key: 'tiradentes', name: `Tiradentes ${year}`, ...single(new Date(year, 3, 21)) },
-    { key: 'trabalho', name: `Día del Trabajo ${year}`, ...single(new Date(year, 4, 1)) },
+    { key: 'trabalho', name: `Dia do Trabalho ${year}`, ...single(new Date(year, 4, 1)) },
     { key: 'corpus_christi', name: `Corpus Christi ${year}`, ...single(addDays(easter, 60)) },
     { key: 'independencia', name: `Independência ${year}`, ...single(new Date(year, 8, 7)) },
     { key: 'aparecida', name: `N.S. Aparecida ${year}`, ...single(new Date(year, 9, 12)) },

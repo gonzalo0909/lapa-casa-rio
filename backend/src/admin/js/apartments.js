@@ -190,7 +190,16 @@
 
   document.getElementById('listing-approve-btn').addEventListener('click', function () {
     if (!currentId) return;
-    submitListingReview('approved');
+    // Primero guarda lo editado en el formulario; recién después aprueba, así el
+    // anuncio publicado incluye esos cambios.
+    var btn = document.getElementById('listing-approve-btn');
+    btn.disabled = true;
+    saveDatos()
+      .then(function () { submitListingReview('approved'); })
+      .catch(function (e) {
+        btn.disabled = false;
+        showMsg('datos-msg', 'No se aprobó: no se pudieron guardar los cambios (' + e.message + ')', 'error');
+      });
   });
 
   document.getElementById('listing-reject-btn').addEventListener('click', function () {
@@ -245,11 +254,10 @@
     });
   }
 
-  var saveDatosBtn = document.getElementById('save-datos-btn');
-  if (saveDatosBtn) saveDatosBtn.addEventListener('click', function () {
-    if (!currentId) return;
-    setDisabled(saveDatosBtn, true);
-    saveDatosBtn.textContent = 'Guardando...';
+  // Guarda el formulario de Datos (datos del apartamento + administrador).
+  // Se usa tanto en "Guardar datos" como al aprobar, para que lo que el admin
+  // editó se publique en la misma aprobación y no se pierda.
+  function saveDatos() {
     var payload = {
       name:          getVal('f-name'),
       neighborhood:  getVal('f-neighborhood'),
@@ -272,8 +280,28 @@
         return lines.length ? lines : null;
       })()
     };
-    apiFetch(RT + '/' + currentId, { method: 'PUT', body: JSON.stringify(payload) })
-      .then(function () { return applyOwnerChange(currentId); })
+    return apiFetch(RT + '/' + currentId, { method: 'PUT', body: JSON.stringify(payload) })
+      .then(function () { return applyOwnerChange(currentId); });
+  }
+
+  // "Editar todos los campos": abre la pestaña Datos y lleva al formulario completo
+  var editAllBtn = document.getElementById('edit-all-btn');
+  if (editAllBtn) editAllBtn.addEventListener('click', function () {
+    var datosTab = document.getElementById('itbtn-datos');
+    if (datosTab) datosTab.click();
+    var nameInput = document.getElementById('f-name');
+    if (nameInput) {
+      nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nameInput.focus();
+    }
+  });
+
+  var saveDatosBtn = document.getElementById('save-datos-btn');
+  if (saveDatosBtn) saveDatosBtn.addEventListener('click', function () {
+    if (!currentId) return;
+    setDisabled(saveDatosBtn, true);
+    saveDatosBtn.textContent = 'Guardando...';
+    saveDatos()
       .then(function () {
         showMsg('datos-msg', 'Datos guardados', 'ok');
         setTimeout(function () { showMsg('datos-msg', '', ''); }, 2500);

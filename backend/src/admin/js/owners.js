@@ -140,15 +140,37 @@ async function refresh() {
 
 // ── Acciones de la tabla ──────────────────────────────────────────────────
 
+// Muestra la contraseña temporal bien visible (arriba de la tabla), con botón
+// de copiar, y lleva la vista hasta ahí: antes quedaba fuera de pantalla y el
+// admin no la veía.
+function showTempPassword(intro, email, tempPassword) {
+  showMsg(
+    'temp-pass-msg',
+    `${intro}<br>Contraseña temporal para <strong>${escapeHtml(email)}</strong>: ` +
+    `<strong id="temp-pass-value" style="font-size:16px;letter-spacing:.5px;">${escapeHtml(tempPassword)}</strong> ` +
+    `<button type="button" id="temp-pass-copy" style="margin-left:8px;">Copiar</button><br>` +
+    `<small>Compártela por WhatsApp o email. No se vuelve a mostrar.</small>`,
+    'success',
+  );
+  const btn = document.getElementById('temp-pass-copy');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(tempPassword);
+        btn.textContent = '¡Copiada!';
+      } catch (_) {
+        btn.textContent = 'Selecciónala y copia manualmente';
+      }
+    });
+  }
+  const box = document.getElementById('temp-pass-msg');
+  if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 async function resetPassword(ownerId) {
   try {
     const data = await apiFetch(`${OW}/${ownerId}/reset-password`, { method: 'POST' });
-    showMsg(
-      'temp-pass-msg',
-      `Contraseña temporal para <strong>${escapeHtml(data.email)}</strong>: ` +
-      `<strong>${escapeHtml(data.tempPassword)}</strong> — compartila por WhatsApp/email, no se vuelve a mostrar.`,
-      'success',
-    );
+    showTempPassword('Contraseña reseteada.', data.email, data.tempPassword);
   } catch (err) {
     showMsg('page-msg', err.message, 'error');
   }
@@ -161,12 +183,7 @@ async function resendInvitation(ownerId, btn) {
     if (data.emailSent) {
       showMsg('page-msg', `Invitación enviada a <strong>${escapeHtml(data.email)}</strong>.`, 'success');
     } else {
-      showMsg(
-        'temp-pass-msg',
-        `El email falló. Contraseña temporal para <strong>${escapeHtml(data.email)}</strong>: ` +
-        `<strong>${escapeHtml(data.tempPassword)}</strong> — compartila por WhatsApp, no se vuelve a mostrar.`,
-        'success',
-      );
+      showTempPassword('El email no se pudo enviar.', data.email, data.tempPassword);
     }
   } catch (err) {
     showMsg('page-msg', err.message, 'error');

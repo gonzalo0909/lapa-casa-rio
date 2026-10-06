@@ -55,6 +55,38 @@ function todayLocalISODate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Comodidades selecionáveis. O valor guardado (value) é o mesmo da lista do admin
+ *  para que as opções marquem igual nos dois painéis; o texto mostrado é em português. */
+const AMENITY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Wifi', label: 'Wi-Fi' },
+  { value: 'Aire acondicionado', label: 'Ar-condicionado' },
+  { value: 'Cocina equipada', label: 'Cozinha equipada' },
+  { value: 'Lavadora', label: 'Máquina de lavar' },
+  { value: 'Secadora', label: 'Secadora' },
+  { value: 'TV', label: 'TV' },
+  { value: 'Balcon', label: 'Varanda' },
+  { value: 'Vista a la calle', label: 'Vista para a rua' },
+  { value: 'Bano privado', label: 'Banheiro privativo' },
+  { value: 'Calefaccion', label: 'Aquecimento' },
+  { value: 'Microondas', label: 'Micro-ondas' },
+  { value: 'Nevera', label: 'Geladeira' },
+  { value: 'Congelador', label: 'Freezer' },
+  { value: 'Horno', label: 'Forno' },
+  { value: 'Cafetera', label: 'Cafeteira' },
+  { value: 'Ropa de cama', label: 'Roupa de cama' },
+  { value: 'Toallas', label: 'Toalhas' },
+  { value: 'Parking', label: 'Estacionamento' },
+  { value: 'Ascensor', label: 'Elevador' },
+  { value: 'Piscina', label: 'Piscina' },
+  { value: 'Terraza', label: 'Terraço' },
+  { value: 'Parrilla / Churrasqueira', label: 'Churrasqueira' },
+  { value: 'Escritorio', label: 'Escritório' },
+  { value: 'Cuna disponible', label: 'Berço disponível' },
+  { value: 'Primera linea de playa', label: 'Frente para a praia' },
+  { value: 'Vista al mar', label: 'Vista para o mar' },
+  { value: 'Jardin', label: 'Jardim' },
+];
+
 /** Avisos que ve el huésped por defecto (mismos del sitio) -- se precargan
  *  para que el owner los edite o los reemplace. **texto** = negrita. */
 const DEFAULT_NOTICES = [
@@ -113,7 +145,7 @@ export default function OwnerApartmentEditPage() {
   const [neighborhood, setNeighborhood] = useState('');
   const [bedrooms, setBedrooms] = useState('');
   const [bathrooms, setBathrooms] = useState('');
-  const [amenitiesText, setAmenitiesText] = useState('');
+  const [amenities, setAmenities] = useState<string[]>([]);
   const [address, setAddress] = useState('');
   const [addressNumber, setAddressNumber] = useState('');
   const [cep, setCep] = useState('');
@@ -146,7 +178,7 @@ export default function OwnerApartmentEditPage() {
       setNeighborhood(apt.neighborhood ?? '');
       setBedrooms(apt.bedrooms?.toString() ?? '');
       setBathrooms(apt.bathrooms?.toString() ?? '');
-      setAmenitiesText(Array.isArray(apt.amenities) ? apt.amenities.join(', ') : '');
+      setAmenities(Array.isArray(apt.amenities) ? (apt.amenities as string[]) : []);
       setAddress(apt.address ?? '');
       setAddressNumber(apt.address_number ?? '');
       setCep(apt.cep ? formatCep(apt.cep) : '');
@@ -344,11 +376,6 @@ export default function OwnerApartmentEditPage() {
     setSaveMessage(null);
     setSaving(true);
     try {
-      const amenities = amenitiesText
-        .split(',')
-        .map((a) => a.trim())
-        .filter(Boolean);
-
       const cepDigits = cep.replace(/\D/g, '');
       const notices = noticesText.split('\n').map((l) => l.trim()).filter(Boolean);
 
@@ -610,6 +637,7 @@ export default function OwnerApartmentEditPage() {
                 {/* Descrição */}
                 <Textarea
                   label="Descrição"
+                  placeholder="Descrição do apartamento (aparece no site e nos mecanismos de busca)..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
@@ -633,13 +661,36 @@ export default function OwnerApartmentEditPage() {
                   />
                 </div>
 
-                {/* Comodidades */}
-                <Input
-                  label="Comodidades"
-                  value={amenitiesText}
-                  onChange={(e) => setAmenitiesText(e.target.value)}
-                  helperText="Separadas por vírgula, ex: Wi-Fi, Ar condicionado, Cozinha"
-                />
+                {/* Comodidades: seleção por opções */}
+                <div>
+                  <p className="mb-2 text-sm font-medium">Comodidades</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[...AMENITY_OPTIONS.map((o) => o.value), ...amenities.filter((a) => !AMENITY_OPTIONS.some((o) => o.value === a))].map((value) => {
+                      const selected = amenities.includes(value);
+                      const label = AMENITY_OPTIONS.find((o) => o.value === value)?.label ?? value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setAmenities((prev) =>
+                              prev.includes(value) ? prev.filter((a) => a !== value) : [...prev, value],
+                            )
+                          }
+                          className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                            selected
+                              ? 'border-green-600 bg-green-50 font-medium text-green-800'
+                              : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">Toque para marcar ou desmarcar as comodidades do apartamento.</p>
+                </div>
 
                 {/* Preço base */}
                 <Input

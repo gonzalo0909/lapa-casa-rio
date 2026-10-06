@@ -16,6 +16,34 @@
     'Primera linea de playa', 'Vista al mar', 'Jardin'
   ];
   var selectedAmenities = [];
+  var currentOwnerId = '';
+  var ownersLoaded = false;
+
+  // Rellena el selector de administradores (una sola vez)
+  function loadOwnerOptions() {
+    if (ownersLoaded) return Promise.resolve();
+    return apiFetch('/admin/apartment-owners').then(function (owners) {
+      var sel = document.getElementById('f-owner');
+      if (!sel) return;
+      (owners || []).forEach(function (o) {
+        var opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.fullName + (o.isActive ? '' : ' (desactivado)') + ' — ' + o.email;
+        sel.appendChild(opt);
+      });
+      ownersLoaded = true;
+    }).catch(function () { /* el selector queda solo con "Sin administrador" */ });
+  }
+
+  // Aplica el cambio de dueño (asignar/quitar) con los endpoints existentes
+  function applyOwnerChange(roomId) {
+    var next = getVal('f-owner');
+    if (next === currentOwnerId) return Promise.resolve();
+    var req = next
+      ? apiFetch('/admin/apartment-owners/' + next + '/assign-room/' + roomId, { method: 'PUT' })
+      : apiFetch('/admin/apartment-owners/' + currentOwnerId + '/assign-room/' + roomId, { method: 'DELETE' });
+    return req.then(function () { currentOwnerId = next; });
+  }
 
   // ── Tabs internos ─────────────────────────────────────────────────────────
   var INNER_TABS = ['datos', 'fotos', 'resenas'];
@@ -102,6 +130,10 @@
         setVal('f-bathrooms',     apt.bathrooms     != null ? apt.bathrooms : '');
         setVal('f-base-price',    apt.base_price    != null ? Number(apt.base_price).toFixed(2) : '');
         setVal('f-description',   apt.description   || '');
+        setVal('f-lat',           apt.lat != null ? apt.lat : '');
+        setVal('f-lng',           apt.lng != null ? apt.lng : '');
+        currentOwnerId = apt.owner_id || '';
+        loadOwnerOptions().then(function () { setVal('f-owner', currentOwnerId); });
         setVal('f-address',       apt.address        || '');
         setVal('f-address-number', apt.address_number || '');
         setVal('f-cep',           apt.cep            || '');
@@ -227,6 +259,8 @@
       base_price:    Number(getVal('f-base-price')),
       description:   getVal('f-description'),
       amenities:     selectedAmenities.slice(),
+      lat:            getVal('f-lat') !== '' ? Number(getVal('f-lat')) : null,
+      lng:            getVal('f-lng') !== '' ? Number(getVal('f-lng')) : null,
       address:        getVal('f-address'),
       address_number: getVal('f-address-number'),
       cep:            getVal('f-cep').replace(/\D/g, ''),
@@ -239,6 +273,7 @@
       })()
     };
     apiFetch(RT + '/' + currentId, { method: 'PUT', body: JSON.stringify(payload) })
+      .then(function () { return applyOwnerChange(currentId); })
       .then(function () {
         showMsg('datos-msg', 'Datos guardados', 'ok');
         setTimeout(function () { showMsg('datos-msg', '', ''); }, 2500);

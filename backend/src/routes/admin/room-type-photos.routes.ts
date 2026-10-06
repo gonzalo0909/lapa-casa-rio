@@ -51,6 +51,8 @@ const UpdateApartmentSchema = z
     address: z.string().optional(),
     address_number: z.string().max(20).optional(),
     cep: z.string().max(9).optional(),
+    lat: z.number().min(-90).max(90).nullable().optional(),
+    lng: z.number().min(-180).max(180).nullable().optional(),
     checkin_from: z.string().regex(HHMM).nullable().optional(),
     checkin_to: z.string().regex(HHMM).nullable().optional(),
     checkout_to: z.string().regex(HHMM).nullable().optional(),
@@ -310,7 +312,7 @@ router.get('/:id', async (req, res, next) => {
               external_rating, external_review_count, external_rating_label,
               is_flexible, created_at, updated_at,
               listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes,
-              address, address_number, cep, important_notices,
+              address, address_number, cep, important_notices, lat, lng, owner_id,
               checkin_from, checkin_to, checkout_from, checkout_to,
               (SELECT full_name FROM apartment_owners o WHERE o.id = room_types.owner_id) AS owner_name
        FROM room_types
@@ -403,6 +405,12 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
     for (const col of ['address', 'address_number', 'cep', 'checkin_from', 'checkin_to', 'checkout_to'] as const) {
       if (body[col] !== undefined) {
         params.push(body[col] || null);
+        sets.push(`${col} = ${p()}`);
+      }
+    }
+    for (const col of ['lat', 'lng'] as const) {
+      if (body[col] !== undefined) {
+        params.push(body[col] === null ? null : Number(body[col]));
         sets.push(`${col} = ${p()}`);
       }
     }

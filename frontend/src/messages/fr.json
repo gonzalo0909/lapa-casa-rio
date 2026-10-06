@@ -522,6 +522,7 @@
     "noticeCheckout": "Départ (check-out) : jusqu'à <b>12h</b> — pour partir plus tard, mieux vaut réserver une nuit de plus",
     "noticeDocument": "L'envoi d'une photo de la pièce d'identité est <b>obligatoire</b>, sans exception",
     "noticeAge": "Réservé aux <b>personnes majeures (18 ans et plus)</b>",
+    "noticePayment": "Nous acceptons la <b>carte de crédit et le PIX</b>",
     "noticeSmoking": "<b>Il est interdit de fumer</b> dans l'appartement et dans les parties communes de l'immeuble",
     "noticeCapacity": "Capacité maximale de <b>2 personnes</b> par appartement",
     "stepPayment": "Paiement",

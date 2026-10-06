@@ -522,6 +522,7 @@
     "noticeCheckout": "Check-out (partenza): entro le <b>12:00</b> — per partire più tardi, prenota un giorno in più",
     "noticeDocument": "Invio della foto del documento <b>obbligatorio</b>, senza eccezioni",
     "noticeAge": "Solo per <b>maggiori di 18 anni</b>",
+    "noticePayment": "Accettiamo <b>carta di credito e PIX</b>",
     "noticeSmoking": "<b>Vietato fumare</b> nell'appartamento e nelle aree comuni dell'edificio",
     "noticeCapacity": "Capacità massima di <b>2 persone</b> per appartamento",
     "stepPayment": "Pagamento",

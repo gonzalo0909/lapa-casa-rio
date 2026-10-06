@@ -522,6 +522,7 @@
     "noticeCheckout": "Check-out: bis <b>12 Uhr</b> — für eine spätere Abreise buchen Sie besser eine weitere Nacht",
     "noticeDocument": "Das Einsenden eines Fotos des Ausweisdokuments ist <b>Pflicht</b>, ohne Ausnahme",
     "noticeAge": "Nur für <b>Personen ab 18 Jahren</b>",
+    "noticePayment": "Wir akzeptieren <b>Kreditkarte und PIX</b>",
     "noticeSmoking": "<b>Rauchen ist verboten</b> im Apartment und in den Gemeinschaftsbereichen des Gebäudes",
     "noticeCapacity": "Maximale Belegung: <b>2 Personen</b> pro Apartment",
     "stepPayment": "Zahlung",

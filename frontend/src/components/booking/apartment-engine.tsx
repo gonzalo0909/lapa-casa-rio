@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   FileText,
   Ban,
+  CreditCard,
   CheckCircle2,
   Mail,
   Gift,
@@ -511,6 +512,12 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                 <Ban size={16} />
               </span>
               <span>{t.rich('noticeAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
+            </div>
+            <div className={styles.noticeItem}>
+              <span className={styles.noticeIcon}>
+                <CreditCard size={16} />
+              </span>
+              <span>{t.rich('noticePayment', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
           </div>
         </div>

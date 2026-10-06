@@ -207,7 +207,7 @@ export const ownerApartmentsAPI = {
     const responseData = await res.json();
     if (!res.ok) {
       throw new APIError(
-        responseData?.message || responseData?.error || 'Error al subir la foto',
+        responseData?.message || responseData?.error || 'Erro ao enviar a foto',
         res.status,
         responseData?.code,
       );
@@ -266,7 +266,7 @@ export const ownerDocumentsAPI = {
     );
     const data = await res.json();
     if (!res.ok) {
-      throw new APIError(data?.message || data?.error || 'Error al subir el documento', res.status);
+      throw new APIError(data?.message || data?.error || 'Erro ao enviar o documento', res.status);
     }
     return data as { success: boolean; data: OwnerDocument; message: string };
   },

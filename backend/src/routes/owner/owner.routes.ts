@@ -31,7 +31,7 @@ router.get('/me', async (req, res, next) => {
   try {
     const ownerId = req.user?.ownerId;
     if (!ownerId) {
-      res.status(401).json(ApiResponse.error('Access token required'));
+      res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
       return;
     }
 
@@ -53,7 +53,7 @@ router.get('/me', async (req, res, next) => {
     });
 
     if (!owner || !owner.isActive) {
-      res.status(404).json(ApiResponse.error('Administrador no encontrado'));
+      res.status(404).json(ApiResponse.error('Administrador não encontrado'));
       return;
     }
 

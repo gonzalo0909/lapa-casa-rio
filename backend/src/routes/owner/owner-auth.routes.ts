@@ -71,14 +71,14 @@ router.post('/', validate(LoginSchema), async (req, res, next) => {
     // matchea -- no confirmar qué emails están registrados
     if (!owner || !owner.isActive || !owner.passwordHash) {
       logger.warn('Intento de login de administrador fallido', { email });
-      res.status(401).json(ApiResponse.error('Credenciales inválidas'));
+      res.status(401).json(ApiResponse.error('Credenciais inválidas'));
       return;
     }
 
     const valid = await verifyPassword(password, owner.passwordHash);
     if (!valid) {
       logger.warn('Intento de login de administrador fallido', { email });
-      res.status(401).json(ApiResponse.error('Credenciales inválidas'));
+      res.status(401).json(ApiResponse.error('Credenciais inválidas'));
       return;
     }
 
@@ -178,14 +178,14 @@ router.post('/refresh', async (req, res, next) => {
     const incomingRefresh = cookies?.['lch_owner_refresh'];
 
     if (!incomingRefresh) {
-      res.status(401).json(ApiResponse.error('Refresh token requerido'));
+      res.status(401).json(ApiResponse.error('Sessão inválida. Faça login novamente.'));
       return;
     }
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET no configurado — refresh rechazado');
-      res.status(500).json(ApiResponse.error('Server configuration error'));
+      res.status(500).json(ApiResponse.error('Erro de configuração do servidor'));
       return;
     }
 
@@ -197,22 +197,22 @@ router.post('/refresh', async (req, res, next) => {
       }) as AuthPayload;
     } catch (verifyErr) {
       if (verifyErr instanceof jwt.TokenExpiredError) {
-        res.status(401).json(ApiResponse.error('Refresh token expirado — iniciá sesión nuevamente'));
+        res.status(401).json(ApiResponse.error('Sessão expirada. Faça login novamente.'));
         return;
       }
-      res.status(401).json(ApiResponse.error('Refresh token inválido'));
+      res.status(401).json(ApiResponse.error('Sessão inválida. Faça login novamente.'));
       return;
     }
 
     if (decoded.role !== 'owner' || !decoded.ownerId) {
-      res.status(403).json(ApiResponse.error('Permisos insuficientes'));
+      res.status(403).json(ApiResponse.error('Permissões insuficientes'));
       return;
     }
 
     // Rechazar si el refresh token fue revocado (logout explícito o rotación previa)
     const isRevoked = await redisCache.get(`${REVOKED_PREFIX}${incomingRefresh}`);
     if (isRevoked) {
-      res.status(401).json(ApiResponse.error('Refresh token revocado'));
+      res.status(401).json(ApiResponse.error('Sessão encerrada. Faça login novamente.'));
       return;
     }
 
@@ -222,7 +222,7 @@ router.post('/refresh', async (req, res, next) => {
       select: { isActive: true },
     });
     if (!owner || !owner.isActive) {
-      res.status(401).json(ApiResponse.error('Cuenta desactivada'));
+      res.status(401).json(ApiResponse.error('Conta desativada'));
       return;
     }
 
@@ -269,7 +269,7 @@ router.post('/refresh', async (req, res, next) => {
     });
 
     logger.info('Access token de administrador renovado', { ownerId: decoded.ownerId });
-    res.status(200).json(ApiResponse.success({ csrfToken: newCsrfToken }, 'Token renovado'));
+    res.status(200).json(ApiResponse.success({ csrfToken: newCsrfToken }, 'Sessão renovada'));
   } catch (error) {
     next(error);
   }
@@ -374,7 +374,7 @@ router.post(
       const { newPassword } = req.body as z.infer<typeof ChangePasswordSchema>;
       const ownerId = req.user?.ownerId;
       if (!ownerId) {
-        res.status(401).json(ApiResponse.error('Access token required'));
+        res.status(401).json(ApiResponse.error('Acesso não autorizado. Faça login novamente.'));
         return;
       }
 
@@ -420,7 +420,7 @@ router.post('/logout', authenticateOwnerToken, async (req, res, next) => {
     res.clearCookie('lch_owner_csrf', { httpOnly: false, secure: isProdLogout, sameSite: logoutSameSite, path: '/' });
 
     logger.info('Logout de administrador', { ownerId: req.user?.ownerId });
-    res.status(200).json(ApiResponse.success(null, 'Sesión cerrada correctamente'));
+    res.status(200).json(ApiResponse.success(null, 'Sessão encerrada com sucesso'));
   } catch (error) {
     next(error);
   }

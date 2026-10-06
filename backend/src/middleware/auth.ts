@@ -143,7 +143,7 @@ export const authenticateOwnerToken = async (
   if (!token) {
     res.status(401).json({
       success: false,
-      error: 'Access token required',
+      error: 'Acesso não autorizado. Faça login novamente.',
       timestamp: new Date().toISOString(),
     });
     return;
@@ -154,7 +154,7 @@ export const authenticateOwnerToken = async (
     logger.error('JWT_SECRET not configured');
     res.status(500).json({
       success: false,
-      error: 'Server configuration error',
+      error: 'Erro de configuração do servidor',
       timestamp: new Date().toISOString(),
     });
     return;
@@ -169,7 +169,7 @@ export const authenticateOwnerToken = async (
     if (decoded.role !== 'owner' || !decoded.ownerId) {
       res.status(403).json({
         success: false,
-        error: 'Insufficient permissions',
+        error: 'Permissões insuficientes',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -179,7 +179,7 @@ export const authenticateOwnerToken = async (
     if (isRevoked) {
       res.status(401).json({
         success: false,
-        error: 'Token revocado',
+        error: 'Sessão encerrada. Faça login novamente.',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -200,7 +200,7 @@ export const authenticateOwnerToken = async (
     if (!owner || !owner.isActive) {
       res.status(401).json({
         success: false,
-        error: 'Cuenta desactivada',
+        error: 'Conta desativada',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -212,7 +212,7 @@ export const authenticateOwnerToken = async (
     if (err instanceof jwt.TokenExpiredError) {
       res.status(401).json({
         success: false,
-        error: 'Token expired',
+        error: 'Sessão expirada. Faça login novamente.',
         expiredAt: (err as any).expiredAt,
         timestamp: new Date().toISOString(),
       });
@@ -221,7 +221,7 @@ export const authenticateOwnerToken = async (
     if (err instanceof jwt.JsonWebTokenError) {
       res.status(401).json({
         success: false,
-        error: 'Invalid token',
+        error: 'Sessão inválida. Faça login novamente.',
         timestamp: new Date().toISOString(),
       });
       return;

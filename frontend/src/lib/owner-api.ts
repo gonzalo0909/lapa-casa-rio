@@ -158,6 +158,12 @@ export const ownerAuthAPI = {
 export const ownerApartmentsAPI = {
   list: () => api.get<{ success: boolean; data: { apartments: Apartment[] } }>('/owner/apartments'),
 
+  create: (data: { name: string; capacity: number; base_price: number }) =>
+    api.post<{ success: boolean; data: { id: string; code: string; name: string }; message: string }>(
+      '/owner/apartments',
+      data,
+    ),
+
   getById: (id: string) =>
     api.get<{ success: boolean; data: Apartment }>(`/owner/apartments/${id}`),
 

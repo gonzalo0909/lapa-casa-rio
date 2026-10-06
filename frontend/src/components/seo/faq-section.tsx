@@ -297,7 +297,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'O check-in é entre 14h e 16h, dependendo do apartamento. O check-out é entre 10h e 12h, também conforme o apartamento. Confirme o horário exato do seu apartamento pelo WhatsApp antes de chegar.',
+        'O check-in começa às 14h ou às 16h, dependendo do apartamento, e vai até as 22h. O check-out é até as 10h ou até as 12h, também conforme o apartamento. Confirme o horário exato do seu apartamento pelo WhatsApp antes de chegar.',
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
@@ -326,7 +326,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'El check-in es entre las 14:00 y las 16:00, según el apartamento. El check-out es entre las 10:00 y las 12:00, también según el apartamento. Confirma la hora exacta de tu apartamento por WhatsApp antes de llegar.',
+        'El check-in comienza a las 14:00 o a las 16:00, según el apartamento, y llega hasta las 22:00. El check-out es hasta las 10:00 o hasta las 12:00, también según el apartamento. Confirma la hora exacta de tu apartamento por WhatsApp antes de llegar.',
     },
     {
       question: '¿Qué métodos de pago aceptan?',
@@ -355,7 +355,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is between 2:00 PM and 4:00 PM, depending on the apartment. Check-out is between 10:00 AM and 12:00 PM, also depending on the apartment. Confirm the exact time for your apartment on WhatsApp before you arrive.',
+        'Check-in starts at 2:00 PM or 4:00 PM, depending on the apartment, and runs until 10:00 PM. Check-out is by 10:00 AM or by 12:00 PM, also depending on the apartment. Confirm the exact time for your apartment on WhatsApp before you arrive.',
     },
     {
       question: 'What payment methods do you accept?',
@@ -384,7 +384,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Der Check-in ist je nach Apartment zwischen 14:00 und 16:00 Uhr. Check-out ist je nach Apartment zwischen 10:00 und 12:00 Uhr. Bitte bestätigen Sie die genaue Zeit vor der Anreise per WhatsApp.',
+        'Der Check-in beginnt je nach Apartment um 14:00 oder 16:00 Uhr und dauert bis 22:00 Uhr. Check-out ist je nach Apartment bis 10:00 oder bis 12:00 Uhr. Bitte bestätigen Sie die genaue Zeit vor der Anreise per WhatsApp.',
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
@@ -413,7 +413,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "L'arrivée se fait entre 14h00 et 16h00 selon l'appartement. Le départ se fait entre 10h00 et 12h00, également selon l'appartement. Confirmez l'heure exacte sur WhatsApp avant votre arrivée.",
+        "L'arrivée commence à 14h00 ou à 16h00 selon l'appartement, et jusqu'à 22h00. Le départ se fait avant 10h00 ou avant 12h00, également selon l'appartement. Confirmez l'heure exacte sur WhatsApp avant votre arrivée.",
     },
     {
       question: 'Quels modes de paiement acceptez-vous ?',
@@ -443,7 +443,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Il check-in è tra le 14:00 e le 16:00, a seconda dell\'appartamento. Il check-out è tra le 10:00 e le 12:00, sempre a seconda dell\'appartamento. Conferma l\'orario esatto su WhatsApp prima dell\'arrivo.',
+        'Il check-in inizia alle 14:00 o alle 16:00, a seconda dell\'appartamento, e arriva fino alle 22:00. Il check-out è entro le 10:00 o entro le 12:00, sempre a seconda dell\'appartamento. Conferma l\'orario esatto su WhatsApp prima dell\'arrivo.',
     },
     {
       question: 'Quali metodi di pagamento accettate?',

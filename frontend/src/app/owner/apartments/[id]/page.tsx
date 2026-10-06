@@ -121,7 +121,6 @@ export default function OwnerApartmentEditPage() {
   const [noticesText, setNoticesText] = useState('');
   const [checkinFrom, setCheckinFrom] = useState('');
   const [checkinTo, setCheckinTo] = useState('');
-  const [checkoutFrom, setCheckoutFrom] = useState('');
   const [checkoutTo, setCheckoutTo] = useState('');
 
   // Form state — preços dinâmicos
@@ -155,7 +154,6 @@ export default function OwnerApartmentEditPage() {
       setNoticesText((apt.important_notices ?? DEFAULT_NOTICES).join('\n'));
       setCheckinFrom(apt.checkin_from ?? '');
       setCheckinTo(apt.checkin_to ?? '');
-      setCheckoutFrom(apt.checkout_from ?? '');
       setCheckoutTo(apt.checkout_to ?? '');
       setPhotos(photosRes.data.photos);
       const pricing = pricingRes.data;
@@ -368,7 +366,6 @@ export default function OwnerApartmentEditPage() {
         important_notices: notices.length > 0 ? notices : null,
         checkin_from: checkinFrom || null,
         checkin_to: checkinTo || null,
-        checkout_from: checkoutFrom || null,
         checkout_to: checkoutTo || null,
       });
       setSaveMessage('Alterações salvas com sucesso.');
@@ -657,12 +654,11 @@ export default function OwnerApartmentEditPage() {
 
                 {/* Horários de check-in / check-out deste apartamento */}
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Check-in a partir de" type="time" step={1800} value={checkinFrom} onChange={(e) => setCheckinFrom(e.target.value)} />
-                  <Input label="Check-in até" type="time" step={1800} value={checkinTo} onChange={(e) => setCheckinTo(e.target.value)} />
-                  <Input label="Check-out a partir de" type="time" step={1800} value={checkoutFrom} onChange={(e) => setCheckoutFrom(e.target.value)} />
-                  <Input label="Check-out até" type="time" step={1800} value={checkoutTo} onChange={(e) => setCheckoutTo(e.target.value)} />
+                  <Input label="Check-in a partir de" type="time" step={1800} value={checkinFrom} onChange={(e) => setCheckinFrom(e.target.value)} helperText="Ex: 14:00 ou 16:00" />
+                  <Input label="Check-in até" type="time" step={1800} value={checkinTo} onChange={(e) => setCheckinTo(e.target.value)} helperText="Vazio = 22:00" />
+                  <Input label="Check-out até" type="time" step={1800} value={checkoutTo} onChange={(e) => setCheckoutTo(e.target.value)} helperText="Ex: 10:00 ou 12:00" />
                   <p className="col-span-2 text-xs text-muted-foreground">
-                    O hóspede escolhe o horário de chegada dentro da janela de check-in e vê ambos os horários na tela de reserva. Deixe vazio para usar o padrão do site.
+                    O hóspede escolhe o horário de chegada dentro da janela de check-in e vê os horários na tela de reserva. Deixe vazio para usar o padrão do site.
                   </p>
                 </div>
 

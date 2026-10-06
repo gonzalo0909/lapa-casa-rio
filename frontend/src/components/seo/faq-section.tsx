@@ -297,7 +297,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'Os horários de check-in e check-out variam conforme o apartamento. Confirme os horários do apartamento escolhido na reserva ou fale com a nossa equipe pelo WhatsApp antes de chegar.',
+        'O check-in é entre 14h e 16h, dependendo do apartamento. O check-out é até as 12h. Confirme o horário exato do seu apartamento pelo WhatsApp antes de chegar.',
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
@@ -326,7 +326,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'Los horarios de check-in y check-out varían según el apartamento. Confirma los del apartamento elegido en la reserva o escríbenos por WhatsApp antes de llegar.',
+        'El check-in es entre las 14:00 y las 16:00, según el apartamento. El check-out es hasta las 12:00. Confirma la hora exacta de tu apartamento por WhatsApp antes de llegar.',
     },
     {
       question: '¿Qué métodos de pago aceptan?',
@@ -355,7 +355,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in and check-out times vary by apartment. Confirm the times for your chosen apartment when booking, or message our team on WhatsApp before you arrive.',
+        'Check-in is between 2:00 PM and 4:00 PM, depending on the apartment. Check-out is by 12:00 PM. Confirm the exact time for your apartment on WhatsApp before you arrive.',
     },
     {
       question: 'What payment methods do you accept?',
@@ -384,7 +384,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Die Zeiten für Check-in und Check-out variieren je nach Apartment. Bitte bestätigen Sie sie bei der Buchung oder schreiben Sie uns vor der Anreise per WhatsApp.',
+        'Der Check-in ist je nach Apartment zwischen 14:00 und 16:00 Uhr. Check-out bis 12:00 Uhr. Bitte bestätigen Sie die genaue Zeit vor der Anreise per WhatsApp.',
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
@@ -413,7 +413,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "Les horaires d'arrivée et de départ varient selon l'appartement. Confirmez-les lors de la réservation ou écrivez-nous sur WhatsApp avant votre arrivée.",
+        "L'arrivée se fait entre 14h00 et 16h00 selon l'appartement. Le départ est avant 12h00. Confirmez l'heure exacte sur WhatsApp avant votre arrivée.",
     },
     {
       question: 'Quels modes de paiement acceptez-vous ?',
@@ -443,7 +443,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Gli orari di check-in e check-out variano a seconda dell\'appartamento. Confermali al momento della prenotazione o scrivici su WhatsApp prima dell\'arrivo.',
+        'Il check-in è tra le 14:00 e le 16:00, a seconda dell\'appartamento. Il check-out è entro le 12:00. Conferma l\'orario esatto su WhatsApp prima dell\'arrivo.',
     },
     {
       question: 'Quali metodi di pagamento accettate?',

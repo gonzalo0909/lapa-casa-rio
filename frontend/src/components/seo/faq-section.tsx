@@ -314,7 +314,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é a política de cancelamento?',
       answer:
-        'O depósito pago na reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show, não têm direito a reembolso.',
+        'O depósito pago na reserva é reembolsável (descontada a comissão do Lapa Casa Rio) em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show, não têm direito a reembolso.',
     },
     {
       question: 'Tem estacionamento?',
@@ -343,7 +343,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es la política de cancelación?',
       answer:
-        'El depósito abonado en la reserva es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show, no tienen derecho a reembolso.',
+        'El depósito abonado en la reserva es reembolsable (descontada la comisión de Lapa Casa Rio) si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show, no tienen derecho a reembolso.',
     },
     {
       question: '¿Hay estacionamiento?',
@@ -372,7 +372,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What is the cancellation policy?',
       answer:
-        'The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
+        'The deposit paid at booking is refundable (less the Lapa Casa Rio commission) if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund.',
     },
     {
       question: 'Is there parking?',
@@ -401,7 +401,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wie lautet die Stornierungsrichtlinie?',
       answer:
-        'Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
+        'Die bei der Buchung gezahlte Anzahlung wird (abzüglich der Provision von Lapa Casa Rio) erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung.',
     },
     {
       question: 'Gibt es Parkplätze?',
@@ -431,7 +431,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quelle est la politique d'annulation ?",
       answer:
-        "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation, ne donnent pas droit à un remboursement.",
+        "L'acompte versé lors de la réservation est remboursé (déduction faite de la commission de Lapa Casa Rio) en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation, ne donnent pas droit à un remboursement.",
     },
     {
       question: 'Y a-t-il un parking ?',
@@ -461,7 +461,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual è la politica di cancellazione?',
       answer:
-        'Il deposito pagato al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
+        'Il deposito pagato al momento della prenotazione è rimborsabile (al netto della commissione di Lapa Casa Rio) in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso.',
     },
     {
       question: "C'è un parcheggio?",

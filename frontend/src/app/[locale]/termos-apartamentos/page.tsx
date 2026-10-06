@@ -88,7 +88,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Política de cancelamento e no-show",
-        body: "O depósito pago no ato da reserva é reembolsável integralmente em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso. Do sinal de 30% é deduzida a comissão do Lapa Casa Rio e o restante é reembolsado, respeitando os prazos de reembolso do processador de pagamento (Stripe).",
+        body: "O depósito pago no ato da reserva é reembolsável (descontada a comissão do Lapa Casa Rio) em cancelamentos feitos com 7 dias ou mais de antecedência do check-in. Cancelamentos com menos de 7 dias de antecedência, ou no-show (não comparecimento), não têm direito a reembolso. Do sinal de 30% é deduzida a comissão do Lapa Casa Rio e o restante é reembolsado, respeitando os prazos de reembolso do processador de pagamento (Stripe).",
       },
       {
         title: "3. Check-in e check-out",
@@ -147,7 +147,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Política de cancelación y no-show",
-        body: "El depósito abonado al reservar es reembolsable en su totalidad si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso. De la señal del 30% se deduce la comisión de Lapa Casa Rio y el resto se reembolsa, respetando los plazos de reembolso del procesador de pago (Stripe).",
+        body: "El depósito abonado al reservar es reembolsable (descontada la comisión de Lapa Casa Rio) si la cancelación se realiza con 7 días o más de anticipación al check-in. Las cancelaciones con menos de 7 días de anticipación, o el no-show (no presentarse), no tienen derecho a reembolso. De la señal del 30% se deduce la comisión de Lapa Casa Rio y el resto se reembolsa, respetando los plazos de reembolso del procesador de pago (Stripe).",
       },
       {
         title: "3. Check-in y check-out",
@@ -206,7 +206,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Cancellation and no-show policy",
-        body: "The deposit paid at booking is fully refundable if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund. Lapa Casa Rio's commission is deducted from the 30% deposit and the remainder is refunded, following the refund timelines of the payment processor (Stripe).",
+        body: "The deposit paid at booking is refundable (less the Lapa Casa Rio commission) if cancelled 7 or more days before check-in. Cancellations made less than 7 days before check-in, or a no-show, are not eligible for a refund. Lapa Casa Rio's commission is deducted from the 30% deposit and the remainder is refunded, following the refund timelines of the payment processor (Stripe).",
       },
       {
         title: "3. Check-in and check-out",
@@ -265,7 +265,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Stornierung und No-Show",
-        body: "Die bei der Buchung gezahlte Anzahlung wird vollständig erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung. Von der Anzahlung von 30% wird die Provision von Lapa Casa Rio abgezogen und der Rest erstattet, unter Beachtung der Erstattungsfristen des Zahlungsdienstleisters (Stripe).",
+        body: "Die bei der Buchung gezahlte Anzahlung wird (abzüglich der Provision von Lapa Casa Rio) erstattet, wenn die Stornierung 7 Tage oder mehr vor dem Check-in erfolgt. Stornierungen weniger als 7 Tage vor dem Check-in oder Nichterscheinen (No-Show) berechtigen nicht zur Rückerstattung. Von der Anzahlung von 30% wird die Provision von Lapa Casa Rio abgezogen und der Rest erstattet, unter Beachtung der Erstattungsfristen des Zahlungsdienstleisters (Stripe).",
       },
       {
         title: "3. Check-in und Check-out",
@@ -324,7 +324,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Politique d'annulation et no-show",
-        body: "L'acompte versé lors de la réservation est intégralement remboursé en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement. La commission de Lapa Casa Rio est déduite de l'acompte de 30% et le reste est remboursé, dans le respect des délais de remboursement du prestataire de paiement (Stripe).",
+        body: "L'acompte versé lors de la réservation est remboursé (déduction faite de la commission de Lapa Casa Rio) en cas d'annulation effectuée 7 jours ou plus avant le check-in. Les annulations effectuées moins de 7 jours avant le check-in, ou une non-présentation (no-show), ne donnent pas droit à un remboursement. La commission de Lapa Casa Rio est déduite de l'acompte de 30% et le reste est remboursé, dans le respect des délais de remboursement du prestataire de paiement (Stripe).",
       },
       {
         title: "3. Arrivée et départ",
@@ -383,7 +383,7 @@ const CONTENT: Record<Locale, Content> = {
       },
       {
         title: "2. Politica di cancellazione e no-show",
-        body: "La caparra pagata al momento della prenotazione è interamente rimborsabile in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso. Dalla caparra del 30% viene detratta la commissione di Lapa Casa Rio e il resto viene rimborsato, nel rispetto dei tempi di rimborso del processore di pagamento (Stripe).",
+        body: "La caparra pagata al momento della prenotazione è rimborsabile (al netto della commissione di Lapa Casa Rio) in caso di cancellazione effettuata con 7 giorni o più di anticipo rispetto al check-in. Le cancellazioni con meno di 7 giorni di anticipo, o il no-show, non danno diritto al rimborso. Dalla caparra del 30% viene detratta la commissione di Lapa Casa Rio e il resto viene rimborsato, nel rispetto dei tempi di rimborso del processore di pagamento (Stripe).",
       },
       {
         title: "3. Check-in e check-out",

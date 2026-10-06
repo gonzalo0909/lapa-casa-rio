@@ -297,7 +297,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Qual é o horário de check-in e check-out?',
       answer:
-        'O check-in é a partir das 14h. O check-out é até as 12h.',
+        'Os horários de check-in e check-out variam conforme o apartamento. Confirme os horários do apartamento escolhido na reserva ou fale com a nossa equipe pelo WhatsApp antes de chegar.',
     },
     {
       question: 'Quais métodos de pagamento vocês aceitam?',
@@ -305,11 +305,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Os apartamentos têm Wi-Fi?',
-      answer: 'Sim, cada apartamento tem seu próprio Wi-Fi de alta velocidade incluso.',
+      answer: 'A maioria dos apartamentos oferece Wi-Fi, mas as comodidades variam de um para outro. Se o Wi-Fi é essencial para você, confirme com a nossa equipe pelo WhatsApp antes de reservar.',
     },
     {
       question: 'Tem cozinha nos apartamentos?',
-      answer: 'Sim, cada apartamento possui sua própria cozinha privativa e equipada.',
+      answer: 'Depende do apartamento: o tipo de cozinha (completa, cozinha compacta ou nenhuma) varia de um para outro. Se a cozinha é importante para você, confirme com a nossa equipe pelo WhatsApp antes de reservar.',
     },
     {
       question: 'Qual é a política de cancelamento?',
@@ -326,7 +326,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: '¿Cuál es el horario de check-in y check-out?',
       answer:
-        'El check-in es a partir de las 14:00. El check-out es hasta las 12:00.',
+        'Los horarios de check-in y check-out varían según el apartamento. Confirma los del apartamento elegido en la reserva o escríbenos por WhatsApp antes de llegar.',
     },
     {
       question: '¿Qué métodos de pago aceptan?',
@@ -334,11 +334,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: '¿Los apartamentos tienen Wi-Fi?',
-      answer: 'Sí, cada apartamento tiene su propio Wi-Fi de alta velocidad incluido.',
+      answer: 'La mayoría de los apartamentos ofrece Wi-Fi, pero las comodidades varían de uno a otro. Si el Wi-Fi es esencial para ti, confírmalo con nuestro equipo por WhatsApp antes de reservar.',
     },
     {
       question: '¿Hay cocina en los apartamentos?',
-      answer: 'Sí, cada apartamento cuenta con su propia cocina privada y equipada.',
+      answer: 'Depende del apartamento: el tipo de cocina (completa, kitchenette o ninguna) varía de uno a otro. Si la cocina es importante para ti, confírmalo con nuestro equipo por WhatsApp antes de reservar.',
     },
     {
       question: '¿Cuál es la política de cancelación?',
@@ -355,7 +355,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is from 2:00 PM. Check-out is by 12:00 PM.',
+        'Check-in and check-out times vary by apartment. Confirm the times for your chosen apartment when booking, or message our team on WhatsApp before you arrive.',
     },
     {
       question: 'What payment methods do you accept?',
@@ -363,11 +363,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Do the apartments have Wi-Fi?',
-      answer: 'Yes, each apartment has its own high-speed Wi-Fi included.',
+      answer: 'Most apartments offer Wi-Fi, but amenities vary from one to another. If Wi-Fi is essential for you, confirm with our team on WhatsApp before booking.',
     },
     {
       question: 'Is there a kitchen in the apartments?',
-      answer: 'Yes, each apartment has its own private, fully equipped kitchen.',
+      answer: 'It depends on the apartment: the kitchen type (full, kitchenette or none) varies from one to another. If a kitchen matters to you, confirm with our team on WhatsApp before booking.',
     },
     {
       question: 'What is the cancellation policy?',
@@ -384,7 +384,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Wann sind Check-in und Check-out?',
       answer:
-        'Check-in ab 14:00 Uhr. Check-out bis 12:00 Uhr.',
+        'Die Zeiten für Check-in und Check-out variieren je nach Apartment. Bitte bestätigen Sie sie bei der Buchung oder schreiben Sie uns vor der Anreise per WhatsApp.',
     },
     {
       question: 'Welche Zahlungsmethoden akzeptieren Sie?',
@@ -392,11 +392,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Haben die Apartments WLAN?',
-      answer: 'Ja, jedes Apartment hat sein eigenes Hochgeschwindigkeits-WLAN inklusive.',
+      answer: 'Die meisten Apartments bieten WLAN, die Ausstattung variiert jedoch. Wenn WLAN für Sie wichtig ist, bestätigen Sie es vor der Buchung per WhatsApp bei unserem Team.',
     },
     {
       question: 'Gibt es eine Küche in den Apartments?',
-      answer: 'Ja, jedes Apartment verfügt über eine eigene, voll ausgestattete Küche.',
+      answer: 'Das hängt vom Apartment ab: Die Küchenausstattung (komplett, Kochnische oder keine) variiert. Wenn Ihnen eine Küche wichtig ist, bestätigen Sie es vor der Buchung per WhatsApp bei unserem Team.',
     },
     {
       question: 'Wie lautet die Stornierungsrichtlinie?',
@@ -413,7 +413,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: "Quels sont les horaires d'arrivée et de départ ?",
       answer:
-        "L'arrivée est à partir de 14h00. Le départ est avant 12h00.",
+        "Les horaires d'arrivée et de départ varient selon l'appartement. Confirmez-les lors de la réservation ou écrivez-nous sur WhatsApp avant votre arrivée.",
     },
     {
       question: 'Quels modes de paiement acceptez-vous ?',
@@ -422,11 +422,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Les appartements ont-ils le Wi-Fi ?',
-      answer: 'Oui, chaque appartement a son propre Wi-Fi haut débit inclus.',
+      answer: 'La plupart des appartements proposent le Wi-Fi, mais les équipements varient. Si le Wi-Fi est essentiel pour vous, confirmez-le auprès de notre équipe sur WhatsApp avant de réserver.',
     },
     {
       question: 'Y a-t-il une cuisine dans les appartements ?',
-      answer: 'Oui, chaque appartement dispose de sa propre cuisine privée entièrement équipée.',
+      answer: "Cela dépend de l'appartement : le type de cuisine (complète, kitchenette ou aucune) varie. Si la cuisine est importante pour vous, confirmez-le auprès de notre équipe sur WhatsApp avant de réserver.",
     },
     {
       question: "Quelle est la politique d'annulation ?",
@@ -443,7 +443,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'Quali sono gli orari di check-in e check-out?',
       answer:
-        'Il check-in è dalle 14:00. Il check-out è entro le 12:00.',
+        'Gli orari di check-in e check-out variano a seconda dell\'appartamento. Confermali al momento della prenotazione o scrivici su WhatsApp prima dell\'arrivo.',
     },
     {
       question: 'Quali metodi di pagamento accettate?',
@@ -451,12 +451,12 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Gli appartamenti hanno il Wi-Fi?',
-      answer: 'Sì, ogni appartamento ha il proprio Wi-Fi ad alta velocità incluso.',
+      answer: 'La maggior parte degli appartamenti offre il Wi-Fi, ma i servizi variano. Se il Wi-Fi è essenziale per te, confermalo con il nostro team su WhatsApp prima di prenotare.',
     },
     {
       question: "C'è una cucina negli appartamenti?",
       answer:
-        'Sì, ogni appartamento dispone di una propria cucina privata completamente attrezzata.',
+        'Dipende dall\'appartamento: il tipo di cucina (completa, angolo cottura o nessuna) varia. Se la cucina è importante per te, confermalo con il nostro team su WhatsApp prima di prenotare.',
     },
     {
       question: 'Qual è la politica di cancellazione?',

@@ -299,7 +299,10 @@ router.get('/:id', async (req, res, next) => {
               description, neighborhood, amenities, bedrooms, bathrooms,
               external_rating, external_review_count, external_rating_label,
               is_flexible, created_at, updated_at,
-              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes
+              listing_status, listing_submitted_at, listing_reviewed_at, listing_review_notes,
+              address, address_number, cep, important_notices,
+              checkin_from, checkin_to, checkout_from, checkout_to,
+              (SELECT full_name FROM apartment_owners o WHERE o.id = room_types.owner_id) AS owner_name
        FROM room_types
        WHERE id = $1 AND property_type = 'apartment'`,
       [req.params.id],

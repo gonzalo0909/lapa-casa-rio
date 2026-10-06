@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ownerAuthAPI, CURRENT_TERM_VERSION } from '@/lib/owner-api';
+import { ownerAuthAPI, ownerApartmentsAPI, CURRENT_TERM_VERSION } from '@/lib/owner-api';
 import { handleAPIError } from '@/lib/api';
 
 export default function OwnerAcceptTermsPage() {
@@ -43,7 +43,17 @@ export default function OwnerAcceptTermsPage() {
     setLoading(true);
     try {
       await ownerAuthAPI.acceptTerms(CURRENT_TERM_VERSION);
-      router.replace('/owner');
+      // Depois de aceitar, vai direto para editar o apartamento (fotos, dados,
+      // horários) e enviar para aprovação. Com mais de um apartamento, mostra a lista.
+      let next = '/owner';
+      try {
+        const res = await ownerApartmentsAPI.list();
+        const apts = res.data.apartments;
+        if (apts.length === 1 && apts[0]) {next = `/owner/apartments/${apts[0].id}`;}
+      } catch {
+        // se falhar a consulta, cai na lista
+      }
+      router.replace(next);
     } catch (err) {
       setError(handleAPIError(err, 'pt'));
     } finally {

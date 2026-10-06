@@ -14,7 +14,6 @@ interface OwnerNavProps {
 
 const NAV_LINKS = [
   { href: '/owner', label: 'Apartamentos' },
-  { href: '/owner/documents', label: 'Documentos' },
   { href: '/owner/contract', label: 'Contrato' },
 ];
 

@@ -9,7 +9,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { locales, defaultLocale, type Locale } from '@/i18n';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lapacasario.com';
-const LAST_UPDATED = '2026-10-05';
+const LAST_UPDATED = '2026-10-06';
 
 const META: Record<Locale, { title: string; description: string }> = {
   pt: {
@@ -81,7 +81,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "1. Confirmação da reserva e pagamento",
         body: "A reserva só é confirmada após o pagamento do sinal de 30% exibido na tela de pagamento.",
         items: [
-          "Formas de pagamento do sinal: PIX ou cartão de crédito/débito",
+          "Formas de pagamento do sinal: cartão de crédito ou PIX",
           "O saldo restante é pago pela plataforma (Stripe, PIX ou cartão), no dia do check-in, por link enviado na manhã do check-in",
           "Pagamentos com cartão têm acréscimo de 10%, cobrado do hóspede",
         ],
@@ -96,7 +96,7 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Check-in: entre 14h e 16h, dependendo do apartamento",
           "Check-out: entre 10h e 12h, dependendo do apartamento",
-          "O horário exato do seu apartamento é confirmado pela equipe antes da chegada",
+          "O horário exato do seu apartamento aparece em \"Informações importantes\" na tela de reserva e é confirmado pela equipe antes da chegada",
         ],
       },
       {
@@ -104,8 +104,8 @@ const CONTENT: Record<Locale, Content> = {
         body: "O envio da foto de um documento de identidade válido é obrigatório para todas as pessoas hospedadas, sem exceção. A hospedagem é restrita a maiores de 18 anos.",
       },
       {
-        title: "5. Regras",
-        body: "É proibido fumar no apartamento e nas dependências do prédio.",
+        title: "5. Regras de cada apartamento",
+        body: "Cada apartamento pode ter regras próprias (por exemplo, sobre fumar ou capacidade). Elas aparecem em \"Informações importantes\" na tela de reserva e, ao confirmar, você declara estar ciente delas.",
       },
       {
         title: "6. Dados pessoais",
@@ -140,7 +140,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "1. Confirmación de la reserva y pago",
         body: "La reserva se confirma únicamente tras el pago de la señal del 30% indicada en la pantalla de pago.",
         items: [
-          "Formas de pago de la señal: PIX o tarjeta de crédito/débito",
+          "Formas de pago de la señal: tarjeta de crédito o PIX",
           "El saldo restante se paga por la plataforma (Stripe, PIX o tarjeta), el día del check-in, mediante un link enviado la mañana del check-in",
           "Los pagos con tarjeta tienen un recargo del 10%, a cargo del huésped",
         ],
@@ -155,7 +155,7 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Check-in: entre las 14h y las 16h, según el apartamento",
           "Check-out: entre las 10h y las 12h, según el apartamento",
-          "El equipo confirma el horario exacto de tu apartamento antes de la llegada",
+          "El horario exacto de tu apartamento aparece en \"Informaciones importantes\" en la pantalla de reserva y el equipo lo confirma antes de la llegada",
         ],
       },
       {
@@ -163,8 +163,8 @@ const CONTENT: Record<Locale, Content> = {
         body: "El envío de la foto de un documento de identidad válido es obligatorio para todas las personas alojadas, sin excepción. El hospedaje está restringido a mayores de 18 años.",
       },
       {
-        title: "5. Normas",
-        body: "Está prohibido fumar en el apartamento y en las dependencias del edificio.",
+        title: "5. Normas de cada apartamento",
+        body: "Cada apartamento puede tener normas propias (por ejemplo, sobre fumar o capacidad). Aparecen en \"Informaciones importantes\" en la pantalla de reserva y, al confirmar, declarás estar al tanto de ellas.",
       },
       {
         title: "6. Datos personales",
@@ -199,7 +199,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "1. Booking confirmation and payment",
         body: "The booking is confirmed only after payment of the 30% deposit shown on the payment screen.",
         items: [
-          "Deposit payment methods: PIX or credit/debit card",
+          "Deposit payment methods: credit card or PIX",
           "The remaining balance is paid through the platform (Stripe, PIX or card) on the check-in day, via a link sent on the morning of check-in",
           "Card payments carry a 10% surcharge, paid by the guest",
         ],
@@ -214,7 +214,7 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Check-in: between 2 pm and 4 pm, depending on the apartment",
           "Check-out: between 10 am and 12 pm, depending on the apartment",
-          "Our team confirms the exact times for your apartment before arrival",
+          "The exact times for your apartment appear under \"Important information\" on the booking screen and are confirmed by our team before arrival",
         ],
       },
       {
@@ -222,8 +222,8 @@ const CONTENT: Record<Locale, Content> = {
         body: "Uploading a photo of a valid ID is mandatory for all guests staying, no exceptions. Accommodation is restricted to guests 18 or older.",
       },
       {
-        title: "5. Rules",
-        body: "Smoking is prohibited in the apartment and throughout the building.",
+        title: "5. Rules of each apartment",
+        body: "Each apartment may have its own rules (for example, on smoking or capacity). They appear under \"Important information\" on the booking screen and, by confirming, you declare you are aware of them.",
       },
       {
         title: "6. Personal data",
@@ -258,7 +258,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "1. Buchungsbestätigung und Zahlung",
         body: "Die Buchung ist erst nach Zahlung der auf dem Zahlungsbildschirm angezeigten Anzahlung von 30% bestätigt.",
         items: [
-          "Zahlungsarten für die Anzahlung: PIX oder Kredit-/Debitkarte",
+          "Zahlungsarten für die Anzahlung: Kreditkarte oder PIX",
           "Der Restbetrag wird über die Plattform bezahlt (Stripe, PIX oder Karte), am Tag des Check-ins, über einen Link, der am Morgen des Check-ins versendet wird",
           "Kartenzahlungen unterliegen einem Aufschlag von 10%, den der Gast trägt",
         ],
@@ -273,7 +273,7 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Check-in: zwischen 14:00 und 16:00 Uhr, je nach Apartment",
           "Check-out: zwischen 10:00 und 12:00 Uhr, je nach Apartment",
-          "Unser Team bestätigt die genauen Zeiten Ihres Apartments vor der Anreise",
+          "Die genauen Zeiten Ihres Apartments stehen unter \"Wichtige Informationen\" im Buchungsschritt und werden von unserem Team vor der Anreise bestätigt",
         ],
       },
       {
@@ -281,8 +281,8 @@ const CONTENT: Record<Locale, Content> = {
         body: "Das Hochladen eines Fotos eines gültigen Ausweisdokuments ist für alle Gäste ausnahmslos verpflichtend. Die Unterkunft ist Personen ab 18 Jahren vorbehalten.",
       },
       {
-        title: "5. Regeln",
-        body: "Rauchen ist im Apartment und im gesamten Gebäude verboten.",
+        title: "5. Regeln des jeweiligen Apartments",
+        body: "Jedes Apartment kann eigene Regeln haben (z. B. zum Rauchen oder zur Belegung). Sie erscheinen unter \"Wichtige Informationen\" im Buchungsschritt; mit der Bestätigung erklären Sie, diese zur Kenntnis genommen zu haben.",
       },
       {
         title: "6. Personenbezogene Daten",
@@ -317,7 +317,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "1. Confirmation de la réservation et paiement",
         body: "La réservation n'est confirmée qu'après le paiement de l'acompte de 30% indiqué sur l'écran de paiement.",
         items: [
-          "Modes de paiement de l'acompte : PIX ou carte de crédit/débit",
+          "Modes de paiement de l'acompte : carte de crédit ou PIX",
           "Le solde est réglé via la plateforme (Stripe, PIX ou carte), le jour du check-in, par un lien envoyé le matin du check-in",
           "Les paiements par carte comportent une majoration de 10%, à la charge du client",
         ],
@@ -332,7 +332,7 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Arrivée : entre 14h et 16h, selon l'appartement",
           "Départ : entre 10h et 12h, selon l'appartement",
-          "Notre équipe confirme les horaires exacts de votre appartement avant votre arrivée",
+          "Les horaires exacts de votre appartement figurent dans « Informations importantes » lors de la réservation et sont confirmés par notre équipe avant votre arrivée",
         ],
       },
       {
@@ -340,8 +340,8 @@ const CONTENT: Record<Locale, Content> = {
         body: "L'envoi de la photo d'une pièce d'identité valide est obligatoire pour toutes les personnes hébergées, sans exception. L'hébergement est réservé aux personnes majeures (18 ans et plus).",
       },
       {
-        title: "5. Règles",
-        body: "Il est interdit de fumer dans l'appartement et dans les parties communes de l'immeuble.",
+        title: "5. Règles de chaque appartement",
+        body: "Chaque appartement peut avoir ses propres règles (par exemple sur le tabac ou la capacité). Elles figurent dans « Informations importantes » lors de la réservation et, en confirmant, vous déclarez en avoir pris connaissance.",
       },
       {
         title: "6. Données personnelles",
@@ -376,7 +376,7 @@ const CONTENT: Record<Locale, Content> = {
         title: "1. Conferma della prenotazione e pagamento",
         body: "La prenotazione è confermata solo dopo il pagamento della caparra del 30% indicata nella schermata di pagamento.",
         items: [
-          "Metodi di pagamento della caparra: PIX o carta di credito/debito",
+          "Metodi di pagamento della caparra: carta di credito o PIX",
           "Il saldo viene pagato tramite la piattaforma (Stripe, PIX o carta), il giorno del check-in, con un link inviato la mattina del check-in",
           "I pagamenti con carta prevedono una maggiorazione del 10%, a carico dell'ospite",
         ],
@@ -391,7 +391,7 @@ const CONTENT: Record<Locale, Content> = {
         items: [
           "Check-in: tra le 14:00 e le 16:00, a seconda dell'appartamento",
           "Check-out: tra le 10:00 e le 12:00, a seconda dell'appartamento",
-          "Il nostro team conferma gli orari esatti del tuo appartamento prima dell'arrivo",
+          "Gli orari esatti del tuo appartamento compaiono in «Informazioni importanti» nella schermata di prenotazione e sono confermati dal nostro team prima dell'arrivo",
         ],
       },
       {
@@ -399,8 +399,8 @@ const CONTENT: Record<Locale, Content> = {
         body: "L'invio della foto di un documento d'identità valido è obbligatorio per tutte le persone alloggiate, senza eccezioni. L'alloggio è riservato ai maggiori di 18 anni.",
       },
       {
-        title: "5. Regole",
-        body: "È vietato fumare nell'appartamento e nelle aree comuni dell'edificio.",
+        title: "5. Regole di ciascun appartamento",
+        body: "Ogni appartamento può avere regole proprie (ad esempio su fumo o capienza). Compaiono in «Informazioni importanti» nella schermata di prenotazione e, confermando, dichiari di averne preso atto.",
       },
       {
         title: "6. Dati personali",

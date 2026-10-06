@@ -21,7 +21,9 @@ import { logger } from '../../utils/logger';
 
 // Versión actual del término. Incrementar cuando se publique una nueva versión
 // del Termo de Adesão para que quede registro de qué versión aceptó cada owner.
-export const CURRENT_TERM_VERSION = '2.1';
+// Debe coincidir con CURRENT_TERM_VERSION de frontend/src/lib/owner-api.ts: si
+// difieren, el backend rechaza el aceite (400) y el administrador no puede aceptar.
+export const CURRENT_TERM_VERSION = '2.2';
 
 const AcceptTermsSchema = z.object({
   version: z.string().min(1),

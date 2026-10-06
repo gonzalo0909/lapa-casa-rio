@@ -305,11 +305,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Os apartamentos têm Wi-Fi?',
-      answer: 'A maioria dos apartamentos oferece Wi-Fi, mas as comodidades variam de um para outro. Se o Wi-Fi é essencial para você, confirme com a nossa equipe pelo WhatsApp antes de reservar.',
+      answer: 'Sim, cada apartamento tem seu próprio Wi-Fi de alta velocidade incluso.',
     },
     {
       question: 'Tem cozinha nos apartamentos?',
-      answer: 'Depende do apartamento: o tipo de cozinha (completa, cozinha compacta ou nenhuma) varia de um para outro. Se a cozinha é importante para você, confirme com a nossa equipe pelo WhatsApp antes de reservar.',
+      answer: 'Sim, cada apartamento possui sua própria cozinha privativa e equipada.',
     },
     {
       question: 'Qual é a política de cancelamento?',
@@ -334,11 +334,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: '¿Los apartamentos tienen Wi-Fi?',
-      answer: 'La mayoría de los apartamentos ofrece Wi-Fi, pero las comodidades varían de uno a otro. Si el Wi-Fi es esencial para ti, confírmalo con nuestro equipo por WhatsApp antes de reservar.',
+      answer: 'Sí, cada apartamento tiene su propio Wi-Fi de alta velocidad incluido.',
     },
     {
       question: '¿Hay cocina en los apartamentos?',
-      answer: 'Depende del apartamento: el tipo de cocina (completa, kitchenette o ninguna) varía de uno a otro. Si la cocina es importante para ti, confírmalo con nuestro equipo por WhatsApp antes de reservar.',
+      answer: 'Sí, cada apartamento cuenta con su propia cocina privada y equipada.',
     },
     {
       question: '¿Cuál es la política de cancelación?',
@@ -363,11 +363,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Do the apartments have Wi-Fi?',
-      answer: 'Most apartments offer Wi-Fi, but amenities vary from one to another. If Wi-Fi is essential for you, confirm with our team on WhatsApp before booking.',
+      answer: 'Yes, each apartment has its own high-speed Wi-Fi included.',
     },
     {
       question: 'Is there a kitchen in the apartments?',
-      answer: 'It depends on the apartment: the kitchen type (full, kitchenette or none) varies from one to another. If a kitchen matters to you, confirm with our team on WhatsApp before booking.',
+      answer: 'Yes, each apartment has its own private, fully equipped kitchen.',
     },
     {
       question: 'What is the cancellation policy?',
@@ -392,11 +392,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Haben die Apartments WLAN?',
-      answer: 'Die meisten Apartments bieten WLAN, die Ausstattung variiert jedoch. Wenn WLAN für Sie wichtig ist, bestätigen Sie es vor der Buchung per WhatsApp bei unserem Team.',
+      answer: 'Ja, jedes Apartment hat sein eigenes Hochgeschwindigkeits-WLAN inklusive.',
     },
     {
       question: 'Gibt es eine Küche in den Apartments?',
-      answer: 'Das hängt vom Apartment ab: Die Küchenausstattung (komplett, Kochnische oder keine) variiert. Wenn Ihnen eine Küche wichtig ist, bestätigen Sie es vor der Buchung per WhatsApp bei unserem Team.',
+      answer: 'Ja, jedes Apartment verfügt über eine eigene, voll ausgestattete Küche.',
     },
     {
       question: 'Wie lautet die Stornierungsrichtlinie?',
@@ -422,11 +422,11 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Les appartements ont-ils le Wi-Fi ?',
-      answer: 'La plupart des appartements proposent le Wi-Fi, mais les équipements varient. Si le Wi-Fi est essentiel pour vous, confirmez-le auprès de notre équipe sur WhatsApp avant de réserver.',
+      answer: 'Oui, chaque appartement a son propre Wi-Fi haut débit inclus.',
     },
     {
       question: 'Y a-t-il une cuisine dans les appartements ?',
-      answer: "Cela dépend de l'appartement : le type de cuisine (complète, kitchenette ou aucune) varie. Si la cuisine est importante pour vous, confirmez-le auprès de notre équipe sur WhatsApp avant de réserver.",
+      answer: 'Oui, chaque appartement dispose de sa propre cuisine privée entièrement équipée.',
     },
     {
       question: "Quelle est la politique d'annulation ?",
@@ -451,12 +451,12 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     },
     {
       question: 'Gli appartamenti hanno il Wi-Fi?',
-      answer: 'La maggior parte degli appartamenti offre il Wi-Fi, ma i servizi variano. Se il Wi-Fi è essenziale per te, confermalo con il nostro team su WhatsApp prima di prenotare.',
+      answer: 'Sì, ogni appartamento ha il proprio Wi-Fi ad alta velocità incluso.',
     },
     {
       question: "C'è una cucina negli appartamenti?",
       answer:
-        'Dipende dall\'appartamento: il tipo di cucina (completa, angolo cottura o nessuna) varia. Se la cucina è importante per te, confermalo con il nostro team su WhatsApp prima di prenotare.',
+        'Sì, ogni appartamento dispone di una propria cucina privata completamente attrezzata.',
     },
     {
       question: 'Qual è la politica di cancellazione?',

@@ -76,8 +76,17 @@ export const ApartmentSelectorStep: React.FC<ApartmentSelectorStepProps> = ({
 
   const datePill = (
     <div className={styles.datePill}>
-      <strong>{fmtDate(checkIn, locale)}</strong> →{' '}
-      <strong>{fmtDate(checkOut, locale)}</strong> · {nights}{' '}
+      <button
+        type="button"
+        onClick={onBack}
+        title={t('adjustDates')}
+        aria-label={t('adjustDates')}
+        style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', textDecoration: 'underline dotted' }}
+      >
+        <strong>{fmtDate(checkIn, locale)}</strong> →{' '}
+        <strong>{fmtDate(checkOut, locale)}</strong>
+      </button>{' '}
+      · {nights}{' '}
       {nights !== 1 ? t('nights') : t('night')}
       <span className={styles.datePillGuests}>
         <button

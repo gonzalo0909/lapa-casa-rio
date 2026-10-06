@@ -109,25 +109,28 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
 
   // Sincronizar con el padre cuando cambian las fechas globales (ej: otro
   // mini-calendario aplicó fechas nuevas mientras este estaba abierto).
-  useEffect(() => { setCin(toDs(globalCheckIn)); }, [globalCheckIn]);
-  useEffect(() => { setCout(toDs(globalCheckOut)); }, [globalCheckOut]);
+  // Se depende del string (no del objeto Date) porque el padre crea un Date
+  // nuevo en cada render y reiniciaría la selección del usuario.
+  const globalCinDs = toDs(globalCheckIn);
+  const globalCoutDs = toDs(globalCheckOut);
+  useEffect(() => { setCin(globalCinDs); }, [globalCinDs]);
+  useEffect(() => { setCout(globalCoutDs); }, [globalCoutDs]);
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<{ available: boolean; reason?: 'occupied' | 'error' } | null>(null);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [blockedRangeWarn, setBlockedRangeWarn] = useState(false);
   const [hoverDs, setHoverDs] = useState<string | null>(null);
 
-  // Single-month display: offset from the check-in month (0 = check-in month, 1 = next, etc.)
-  const [monthOffset, setMonthOffset] = useState(0);
-
-  const baseMonth = useMemo(() => {
-    const ref = cin ? parseDs(cin) : new Date();
-    let y = ref.getFullYear();
-    let m = ref.getMonth() + monthOffset;
-    while (m > 11) { m -= 12; y += 1; }
-    while (m < 0) { m += 12; y -= 1; }
-    return { y, m };
-  }, [cin, monthOffset]);
+  // Mes visible (absoluto): no depende de cin, para que al tocar un día de
+  // otro mes la vista no salte.
+  const [baseMonth, setBaseMonth] = useState(() => {
+    const ref = parseDs(toDs(globalCheckIn));
+    return { y: ref.getFullYear(), m: ref.getMonth() };
+  });
+  const shiftMonth = (delta: number) => setBaseMonth(({ y, m }) => {
+    const t = y * 12 + m + delta;
+    return { y: Math.floor(t / 12), m: t % 12 };
+  });
 
   // For API: always fetch current + next month for smooth navigation
   const nextApiMonth = useMemo(() => {
@@ -193,7 +196,8 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
     setCout(toDs(globalCheckOut));
     setResult(null);
     setBlockedRangeWarn(false);
-    setMonthOffset(0);
+    const r = parseDs(globalCinDs);
+    setBaseMonth({ y: r.getFullYear(), m: r.getMonth() });
   };
 
   const nights = cin && cout ? Math.round((parseDs(cout).getTime() - parseDs(cin).getTime()) / 86400000) : 0;
@@ -231,7 +235,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
         <button
           type="button"
           className={styles.miniNavBtn}
-          onClick={() => setMonthOffset((o) => o - 1)}
+          onClick={() => shiftMonth(-1)}
           disabled={isAtMinMonth}
           aria-label={t('miniCalPrev')}
         >
@@ -243,7 +247,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
         <button
           type="button"
           className={styles.miniNavBtn}
-          onClick={() => setMonthOffset((o) => o + 1)}
+          onClick={() => shiftMonth(1)}
           aria-label={t('miniCalNext')}
         >
           <ChevronRight size={14} />

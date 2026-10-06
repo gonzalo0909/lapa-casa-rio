@@ -72,6 +72,7 @@ function monthCells(
       !Array.from(blocked).some((b) => b >= cin && b < s);
     let cls = styles.miniDay;
     if (past) { cls += ` ${styles.miniDayPast}`; }
+    else if (isBlocked && !canCheckout && !isCin && !isCout) { cls += ` ${styles.miniDayBlocked}`; }
     else if (isCin || isCout) { cls += ` ${isCin ? styles.miniDayCheckin : styles.miniDayCheckout}`; }
     else if (inRng) { cls += ` ${styles.miniDayInrange}`; }
     else if (isBlocked) { cls += ` ${styles.miniDayBlocked}`; }

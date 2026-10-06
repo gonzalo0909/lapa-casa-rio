@@ -93,7 +93,8 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   // Horarios de llegada: si el owner definió una ventana de check-in para
   // este apartamento se generan turnos de 30 min dentro de ella; si no, se
   // usa la lista por defecto del motor.
-  const { checkinFrom, checkinTo, checkoutFrom, checkoutTo } = selectedApartment;
+  const { checkinFrom, checkoutTo } = selectedApartment;
+  const checkinTo = selectedApartment.checkinTo ?? (checkinFrom ? '22:00' : null);
   const arrivalOptions = React.useMemo(() => {
     const toMin = (hm: string) => parseInt(hm.slice(0, 2), 10) * 60 + parseInt(hm.slice(3, 5), 10);
     const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
@@ -103,7 +104,6 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
       return out;
     }
     if (checkinFrom) { return checkinTimes.filter((ct) => ct >= checkinFrom); }
-    if (checkinTo) { return checkinTimes.filter((ct) => ct <= checkinTo); }
     return checkinTimes;
   }, [checkinFrom, checkinTo, checkinTimes]);
   const hhmm = (v: string) => (v.endsWith(':00') ? v.slice(0, 2) + 'h' : v.slice(0, 2) + 'h' + v.slice(3));
@@ -750,16 +750,16 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <AlertTriangle size={15} strokeWidth={2.2} /> {t('rulesConfirmTitle')}
           </div>
           <div className={styles.rulesConfirmList}>
-            {(checkinFrom || checkinTo) && (
+            {checkinFrom && checkinTo && (
               <div className={styles.rulesConfirmItem}>
                 <KeyRound size={16} />
-                <span>{t.rich('ruleCheckinWindow', { b: (chunks) => <strong>{chunks}</strong>, range: [checkinFrom && hhmm(checkinFrom), checkinTo && hhmm(checkinTo)].filter(Boolean).join(' – ') })}</span>
+                <span>{t.rich('ruleCheckinWindow', { b: (chunks) => <strong>{chunks}</strong>, from: hhmm(checkinFrom), to: hhmm(checkinTo) })}</span>
               </div>
             )}
-            {(checkoutFrom || checkoutTo) && (
+            {checkoutTo && (
               <div className={styles.rulesConfirmItem}>
                 <DoorOpen size={16} />
-                <span>{t.rich('ruleCheckoutWindow', { b: (chunks) => <strong>{chunks}</strong>, range: [checkoutFrom && hhmm(checkoutFrom), checkoutTo && hhmm(checkoutTo)].filter(Boolean).join(' – ') })}</span>
+                <span>{t.rich('ruleCheckoutWindow', { b: (chunks) => <strong>{chunks}</strong>, time: hhmm(checkoutTo) })}</span>
               </div>
             )}
             {selectedApartment.importantNotices && selectedApartment.importantNotices.length > 0 ? (

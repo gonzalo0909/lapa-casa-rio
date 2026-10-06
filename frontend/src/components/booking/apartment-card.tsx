@@ -109,6 +109,7 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
       >
         {hasPhotos ? (
           <>
+            <div className={styles.aptPhotoBackdrop} style={{ backgroundImage: `url(${currentPhoto?.url ?? ''})` }} aria-hidden="true" />
             <Image
               src={currentPhoto?.url ?? ''}
               alt={currentPhoto?.altText ?? apartment.name}
@@ -147,6 +148,22 @@ export const ApartmentCard: React.FC<ApartmentCardProps> = ({
           {apartment.available ? t('available') : t('unavailable')}
         </span>
       </div>
+
+      {photos.length > 1 && (
+        <div className={styles.photoThumbs}>
+          {photos.map((p, i) => (
+            <button
+              key={p.url + i}
+              type="button"
+              className={`${styles.photoThumb} ${i === photoIdx ? styles.photoThumbActive : ''}`}
+              onClick={(e) => { e.stopPropagation(); setPhotoIdx(i); }}
+              aria-label={`${apartment.name} ${i + 1}`}
+            >
+              <Image src={p.url} alt="" fill sizes="56px" style={{ objectFit: 'cover' }} draggable={false} />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.cardBody}>
         <div className={styles.cardHead}>

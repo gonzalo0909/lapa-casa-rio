@@ -73,3 +73,21 @@ document.addEventListener('click', (e) => {
     try { el.showPicker(); } catch (_) { /* ya abierto o no permitido: se deja el comportamiento nativo */ }
   }
 });
+
+// Selectores de hora en formato 24 h (14h, 14h30): reemplazan a <input type="time">,
+// que según el navegador muestra AM/PM. Uso: <select data-time data-step="30">.
+function fillTimeSelects() {
+  document.querySelectorAll('select[data-time]').forEach((sel) => {
+    if (sel.dataset.filled) return;
+    const step = Number(sel.dataset.step) || 30;
+    let html = '<option value="">—</option>';
+    for (let m = 0; m < 24 * 60; m += step) {
+      const hh = String(Math.floor(m / 60)).padStart(2, '0');
+      const mm = String(m % 60).padStart(2, '0');
+      html += `<option value="${hh}:${mm}">${mm === '00' ? `${hh}h` : `${hh}h${mm}`}</option>`;
+    }
+    sel.innerHTML = html;
+    sel.dataset.filled = '1';
+  });
+}
+fillTimeSelects();

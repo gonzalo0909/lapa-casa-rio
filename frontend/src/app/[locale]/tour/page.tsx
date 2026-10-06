@@ -259,7 +259,7 @@ const CONTENT: Record<string, Content> = {
       'The tour is led by a certified tour guide, a partner of Lapa Casa Rio, with years of experience hosting international travelers. Speaks Portuguese, English and Spanish. Small groups for a more personalized experience.',
     practicalTitle: 'Practical info',
     practicalItems: [
-      'Duration: 8 to 10 hours (departs at 8am, returns to hostel by evening)',
+      'Duration: 8 to 10 hours (departs at 08:00, returns to hostel by evening)',
       'Small groups: up to 8 people per departure',
       'Languages: Portuguese, English and Spanish',
       'Available Monday to Saturday, subject to availability',

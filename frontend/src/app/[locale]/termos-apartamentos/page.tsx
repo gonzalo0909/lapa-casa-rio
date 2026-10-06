@@ -212,8 +212,8 @@ const CONTENT: Record<Locale, Content> = {
         title: "3. Check-in and check-out",
         body: "Times vary by apartment:",
         items: [
-          "Check-in: from 2 pm or 4 pm (depending on the apartment) until 10 pm",
-          "Check-out: by 10 am or by 12 pm, depending on the apartment",
+          "Check-in: from 14:00 or 16:00 (depending on the apartment) until 22:00",
+          "Check-out: by 10:00 or by 12:00, depending on the apartment",
           "The exact times for your apartment appear under \"Important information\" on the booking screen and are confirmed by our team before arrival",
         ],
       },

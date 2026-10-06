@@ -57,6 +57,37 @@ function todayLocalISODate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Seletor de hora em formato 24 h (14h, 14h30) -- no lugar do campo de hora nativo,
+ *  que em alguns navegadores mostra AM/PM. Valor no formato 'HH:MM' ('' = vazio). */
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+function HourSelect({ label, value, onChange, helperText }: {
+  label: string; value: string; onChange: (v: string) => void; helperText?: string;
+}) {
+  const options: { value: string; label: string }[] = [];
+  for (let m = 0; m < 24 * 60; m += 30) {
+    const hh = pad2(Math.floor(m / 60));
+    const mm = pad2(m % 60);
+    options.push({ value: `${hh}:${mm}`, label: mm === '00' ? `${hh}h` : `${hh}h${mm}` });
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+      >
+        <option value="">—</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      {helperText && <p className="text-xs text-muted-foreground">{helperText}</p>}
+    </div>
+  );
+}
+
 /** Comodidades selecionáveis. O valor guardado (value) é o mesmo da lista do admin
  *  para que as opções marquem igual nos dois painéis; o texto mostrado é em português. */
 const AMENITY_OPTIONS: { value: string; label: string }[] = [
@@ -738,9 +769,9 @@ export default function OwnerApartmentEditPage() {
 
                 {/* Horários de check-in / check-out deste apartamento */}
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Check-in a partir de" type="time" step={1800} value={checkinFrom} onChange={(e) => setCheckinFrom(e.target.value)} helperText="Ex: 14:00 ou 16:00" />
-                  <Input label="Check-in até" type="time" step={1800} value={checkinTo} onChange={(e) => setCheckinTo(e.target.value)} helperText="Vazio = 22:00" />
-                  <Input label="Check-out até" type="time" step={1800} value={checkoutTo} onChange={(e) => setCheckoutTo(e.target.value)} helperText="Ex: 10:00 ou 12:00" />
+                  <HourSelect label="Check-in a partir de" value={checkinFrom} onChange={setCheckinFrom} helperText="Ex: 14h ou 16h" />
+                  <HourSelect label="Check-in até" value={checkinTo} onChange={setCheckinTo} helperText="Vazio = 22h" />
+                  <HourSelect label="Check-out até" value={checkoutTo} onChange={setCheckoutTo} helperText="Ex: 10h ou 12h" />
                   <p className="col-span-2 text-xs text-muted-foreground">
                     O hóspede escolhe o horário de chegada dentro da janela de check-in e vê os horários na tela de reserva. Deixe vazio para usar o padrão do site.
                   </p>

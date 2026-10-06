@@ -65,6 +65,11 @@ function monthCells(
     const isCout = s === (cout ?? (hoverDs && !cout && cin && hoverDs > cin ? hoverDs : null));
     const inRng = hasEnd && s > (cin as string) && s < (endDs as string);
     const isBlocked = blocked.has(s);
+    // Un día ocupado sí puede ser check-out (se sale por la mañana) si ninguna
+    // noche ocupada queda dentro de la estadía [cin, s).
+    const canCheckout =
+      isBlocked && !past && !!cin && !cout && s > cin &&
+      !Array.from(blocked).some((b) => b >= cin && b < s);
     let cls = styles.miniDay;
     if (past) { cls += ` ${styles.miniDayPast}`; }
     else if (isCin || isCout) { cls += ` ${isCin ? styles.miniDayCheckin : styles.miniDayCheckout}`; }
@@ -76,9 +81,9 @@ function monthCells(
         key={s}
         type="button"
         className={cls}
-        disabled={past || isBlocked}
+        disabled={past || (isBlocked && !canCheckout)}
         onClick={() => onDayClick(s)}
-        onMouseEnter={() => !past && !isBlocked && onDayHover(s)}
+        onMouseEnter={() => !past && (!isBlocked || canCheckout) && onDayHover(s)}
       >
         {d}
       </button>
@@ -172,7 +177,7 @@ export const ApartmentMiniCalendar: React.FC<ApartmentMiniCalendarProps> = ({
       // If any blocked date falls inside (cin, ds) the stay would span an
       // occupied night — start a fresh selection from the clicked date instead
       // and warn the user why the checkout was not accepted.
-      const hasBlockedInRange = Array.from(blockedDates).some((b) => b > cin && b < ds);
+      const hasBlockedInRange = Array.from(blockedDates).some((b) => b >= cin && b < ds);
       if (hasBlockedInRange) {
         setCin(ds);
         setBlockedRangeWarn(true);

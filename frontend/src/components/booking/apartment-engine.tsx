@@ -16,12 +16,8 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
   AlertTriangle,
-  KeyRound,
-  DoorOpen,
   FileText,
   Ban,
-  CigaretteOff,
-  Users,
   CheckCircle2,
   Mail,
   Gift,
@@ -506,18 +502,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
           <div className={styles.noticesGrid}>
             <div className={styles.noticeItem}>
               <span className={styles.noticeIcon}>
-                <KeyRound size={16} />
-              </span>
-              <span>{t.rich('noticeCheckin', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>
-                <DoorOpen size={16} />
-              </span>
-              <span>{t.rich('noticeCheckout', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>
                 <FileText size={16} />
               </span>
               <span>{t.rich('noticeDocument', { b: (chunks) => <strong>{chunks}</strong> })}</span>
@@ -527,18 +511,6 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
                 <Ban size={16} />
               </span>
               <span>{t.rich('noticeAge', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>
-                <CigaretteOff size={16} />
-              </span>
-              <span>{t.rich('noticeSmoking', { b: (chunks) => <strong>{chunks}</strong> })}</span>
-            </div>
-            <div className={styles.noticeItem}>
-              <span className={styles.noticeIcon}>
-                <Users size={16} />
-              </span>
-              <span>{t.rich('noticeCapacity', { b: (chunks) => <strong>{chunks}</strong> })}</span>
             </div>
           </div>
         </div>

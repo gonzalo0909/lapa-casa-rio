@@ -119,12 +119,12 @@ const FAQ_HOSTEL: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in is from 2:00 PM. Check-out is by 12:00 PM.',
+        'Check-in is from 14:00. Check-out is by 12:00.',
     },
     {
-      question: 'What if I arrive after 10 PM?',
+      question: 'What if I arrive after 22:00?',
       answer:
-        'Reception is open until 10 PM. Arrivals after that time are not possible -- choose an arrival time between 2 PM and 10 PM when booking.',
+        'Reception is open until 22:00. Arrivals after that time are not possible -- choose an arrival time between 14:00 and 22:00 when booking.',
     },
     {
       question: 'What payment methods do you accept?',
@@ -355,7 +355,7 @@ const FAQ_APARTMENTS: Record<string, FAQItem[]> = {
     {
       question: 'What are the check-in and check-out times?',
       answer:
-        'Check-in starts at 2:00 PM or 4:00 PM, depending on the apartment, and runs until 10:00 PM. Check-out is by 10:00 AM or by 12:00 PM, also depending on the apartment. Confirm the exact time for your apartment on WhatsApp before you arrive.',
+        'Check-in starts at 14:00 or 16:00, depending on the apartment, and runs until 22:00. Check-out is by 10:00 or by 12:00, also depending on the apartment. Confirm the exact time for your apartment on WhatsApp before you arrive.',
     },
     {
       question: 'What payment methods do you accept?',

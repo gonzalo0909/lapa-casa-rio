@@ -216,7 +216,7 @@ const CONTENT: Record<string, Content> = {
         body: 'Santa Teresa is considered one of the safest neighborhoods for tourists in Rio. The local community is active and the streets around the hostel are well-lit. As with any major city, we recommend:',
         items: [
           'Avoid displaying valuables in busy areas',
-          'Prefer Uber/taxi after 11 PM when heading to other neighborhoods',
+          'Prefer Uber/taxi after 23:00 when heading to other neighborhoods',
           'Ask hostel staff about the best routes',
           'Walk in groups — especially at night toward Lapa',
         ],

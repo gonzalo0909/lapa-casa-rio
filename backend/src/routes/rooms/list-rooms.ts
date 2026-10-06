@@ -102,7 +102,7 @@ export const listRoomsHandler = async (
             'Rooftop terrace with city views',
             'TV room',
             'Laundry facilities',
-            'Reception until 10 PM',
+            'Reception until 22:00',
             'Free Wi-Fi throughout',
             'Luggage storage',
             'Tour desk',

@@ -218,8 +218,8 @@ const CONTENT: Record<Locale, Content> = {
         title: '3. Check-in and check-out',
         body: 'Standard arrival and departure times:',
         items: [
-          'Check-in: 2 pm to 10 pm',
-          'Check-out: by 12 pm',
+          'Check-in: 14:00 to 22:00',
+          'Check-out: by 12:00',
           'Arrivals outside check-in hours or later departures must be arranged in advance and may require booking an extra night',
         ],
       },

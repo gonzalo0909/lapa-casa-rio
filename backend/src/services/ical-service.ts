@@ -574,7 +574,9 @@ async function saveSeen(feedId: string, seen: Record<string, string>): Promise<v
 
 /**
  * Cancela las reservas importadas de este feed que faltan en el feed actual desde hace mas de
- * ABSENCE_GRACE_MS. Una reserva sin registro previo arranca su plazo ahora (nunca se cancela
+ * ABSENCE_GRACE_MS. SOLO las que todavia no empezaron (check_in > hoy): una estadia en curso nunca
+ * se cancela por ausencia, porque si la OTA omite el evento por un fallo del feed se liberaria un
+ * apartamento ocupado; si realmente se cancela, la OTA lo marca con STATUS:CANCELLED. Una reserva sin registro previo arranca su plazo ahora (nunca se cancela
  * en la primera lectura). Devuelve cuantas cancelo. Exportada solo para pruebas.
  */
 export async function cancelAbsentReservations(
@@ -590,7 +592,7 @@ export async function cancelAbsentReservations(
      WHERE rb.room_type_id = $1
        AND r.channel_id = $2
        AND r.status IN ('confirmed', 'pending_ota_confirmation')
-       AND rb.check_out >= CURRENT_DATE
+       AND rb.check_in > CURRENT_DATE
        AND r.external_reservation_id IS NOT NULL`,
     [feed.roomTypeId, feed.channelId]
   );

@@ -20,6 +20,12 @@ const VERIF_LABELS = {
   rejected: { label: 'Rechazado',  cls: 'badge-verif-rejected' },
 };
 
+const LISTING_LABELS = {
+  pending_review: { label: 'Pendiente de revisión', cls: 'badge-verif-pending' },
+  approved:       { label: 'Aprobado',              cls: 'badge-verif-verified' },
+  rejected:       { label: 'Rechazado',             cls: 'badge-verif-rejected' },
+};
+
 const DOC_TYPE_LABELS = {
   cpf_cnpj: 'CPF / CNPJ',
   proof_ownership: 'Comprobante de propiedad',
@@ -72,14 +78,14 @@ function renderTable(owners) {
         <button data-action="edit-rates" style="font-size:12px;padding:3px 9px;">% Editar</button>
       </td>
       <td>
-        <div style="margin-bottom:6px;">
-          <span class="${(VERIF_LABELS[o.verificationStatus] || VERIF_LABELS.pending).cls}">
-            ${(VERIF_LABELS[o.verificationStatus] || VERIF_LABELS.pending).label}
-          </span>
-        </div>
-        <button data-action="view-docs" style="font-size:12px;padding:3px 9px;">
-          📄 Ver documentos
-        </button>
+        ${o.apartments.map((a) => {
+          const st = LISTING_LABELS[a.listingStatus] || LISTING_LABELS.pending_review;
+          return `<div style="margin-bottom:6px;font-size:12px;">
+            <div>${escapeHtml(a.name)}</div>
+            <span class="${st.cls}">${st.label}</span>
+            <a href="apartments.html?id=${encodeURIComponent(a.id)}" style="margin-left:6px;">Revisar →</a>
+          </div>`;
+        }).join('') || '<span style="color:#888;font-size:12px;">Sin apartamentos</span>'}
       </td>
       <td>
         <div style="margin-bottom:6px;">
@@ -114,9 +120,6 @@ function renderTable(owners) {
       const owner = allOwners.find((o) => o.id === btn.closest('tr').dataset.ownerId);
       if (owner) openRatesModal(owner);
     });
-  });
-  tbody.querySelectorAll('button[data-action="view-docs"]').forEach((btn) => {
-    btn.addEventListener('click', () => openDocsModal(btn.closest('tr').dataset.ownerId));
   });
   tbody.querySelectorAll('button[data-action="resend-invite"]').forEach((btn) => {
     btn.addEventListener('click', () => resendInvitation(btn.closest('tr').dataset.ownerId, btn));

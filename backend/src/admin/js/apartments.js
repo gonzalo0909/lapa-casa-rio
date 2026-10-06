@@ -34,6 +34,7 @@
   }
 
   // ── Lista de apartamentos ─────────────────────────────────────────────────
+  var deepLinkDone = false;
   function loadList() {
     return apiFetch(RT)
       .then(function (data) {
@@ -62,6 +63,13 @@
           btn.addEventListener('click', function () { selectApt(apt.id, apt.name); });
           el.appendChild(btn);
         });
+        // Enlace directo desde Administradores: apartments.html?id=<uuid>
+        if (!currentId && !deepLinkDone) {
+          deepLinkDone = true;
+          var wanted = new URLSearchParams(window.location.search).get('id');
+          var target = wanted && apts.find(function (a) { return a.id === wanted; });
+          if (target) selectApt(target.id, target.name);
+        }
         // Si habia uno seleccionado, lo remarca
         if (currentId) {
           var active = el.querySelector('[data-id="' + currentId + '"]');
@@ -123,6 +131,19 @@
     if (apt.listing_review_notes) detailParts.push('Nota: ' + apt.listing_review_notes);
     detail.textContent = detailParts.join(' · ');
 
+    var info = document.getElementById('listing-owner-info');
+    if (info) {
+      var fmt = function (v) { return v ? String(v) : '—'; };
+      var lines = [
+        'Administrador: ' + fmt(apt.owner_name),
+        'Dirección: ' + fmt([apt.address, apt.address_number].filter(Boolean).join(', ')) + (apt.cep ? ' · CEP ' + apt.cep : ''),
+        'Check-in: ' + fmt(apt.checkin_from) + ' – ' + (apt.checkin_to || (apt.checkin_from ? '22:00' : '—')) + ' · Check-out até: ' + fmt(apt.checkout_to),
+      ];
+      if (Array.isArray(apt.important_notices) && apt.important_notices.length) {
+        lines.push('Informaciones importantes: ' + apt.important_notices.join(' | '));
+      }
+      info.innerHTML = lines.map(function (l) { return '<div>' + esc(l) + '</div>'; }).join('');
+    }
     document.getElementById('listing-approve-btn').disabled = apt.listing_status === 'approved';
     document.getElementById('listing-reject-notes').style.display = 'none';
     document.getElementById('listing-reject-notes').value = '';

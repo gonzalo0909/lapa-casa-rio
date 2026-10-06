@@ -71,14 +71,18 @@ async function attachApartments<T extends { id: string }>(owners: T[]) {
     return owners.map((o) => ({ ...o, apartments: [] as unknown[] }));
   }
   const { rows } = await query(
-    `SELECT id, code, name, owner_id FROM room_types WHERE owner_id = ANY($1)`,
+    `SELECT id, code, name, owner_id, listing_status, listing_submitted_at
+       FROM room_types WHERE owner_id = ANY($1)`,
     [owners.map((o) => o.id)],
   );
   return owners.map((owner) => ({
     ...owner,
     apartments: rows
       .filter((r: any) => r.owner_id === owner.id)
-      .map((r: any) => ({ id: r.id, code: r.code, name: r.name })),
+      .map((r: any) => ({
+        id: r.id, code: r.code, name: r.name,
+        listingStatus: r.listing_status, listingSubmittedAt: r.listing_submitted_at,
+      })),
   }));
 }
 

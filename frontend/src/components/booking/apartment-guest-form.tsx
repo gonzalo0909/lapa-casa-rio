@@ -56,6 +56,8 @@ interface ApartmentGuestFormProps {
   submitAttempted?: boolean;
   /** Error de validación/API del paso, mostrado junto al botón de confirmar */
   formError?: string | null;
+  /** Se incrementa en cada intento de reservar (re-dispara el scroll al error) */
+  attemptTick?: number;
   /** Horarios de check-in disponibles (desde backend, editable en /admin/pricing.html). */
   checkinTimes: string[];
 }
@@ -89,6 +91,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   onTermsAcceptedChange,
   submitAttempted = false,
   formError = null,
+  attemptTick = 0,
   checkinTimes,
 }) => {
   const t = useTranslations('apartments');
@@ -110,6 +113,16 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
     return checkinTimes;
   }, [checkinFrom, checkinTo, checkinTimes]);
   const hhmm = (v: string) => (v.endsWith(':00') ? v.slice(0, 2) + 'h' : v.slice(0, 2) + 'h' + v.slice(3));
+
+  // Al fallar la validación, llevar la vista al error (queda junto al botón):
+  // sin esto, quien está abajo del formulario no ve ningún cambio al tocar.
+  // Se re-dispara con cada intento (submitAttempted/formError cambian de valor
+  // o el contador de intentos) para que un segundo toque vuelva a mostrarlo.
+  React.useEffect(() => {
+    if (formError) {
+      document.getElementById('apt-form-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [formError, attemptTick]);
 
   // ── Estado local ───────────────────────────────────────────────────────────
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -897,7 +910,7 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
           )}
         </div>
 
-        {formError && <div className={styles.errorBanner} role="alert">{formError}</div>}
+        {formError && <div id="apt-form-error" className={styles.errorBanner} role="alert">{formError}</div>}
 
         {/* Botón Confirmar y pagar */}
         <button

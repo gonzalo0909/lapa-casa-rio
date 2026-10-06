@@ -102,6 +102,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
   }));
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  const [attemptTick, setAttemptTick] = useState(0);
   /** true cuando el usuario intentó enviar y debe mostrar errores en campos de acompañante */
   const [submitAttempted, setSubmitAttempted] = useState(false);
   /** Acompañantes declarados por el titular en el checkout (excluyendo al titular) */
@@ -233,6 +234,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
       arrivalTime: true,
     });
     setSubmitAttempted(true);
+    setAttemptTick((n) => n + 1);
     if (!selectedApartment || !checkIn || !checkOut) {
       return;
     }
@@ -597,6 +599,7 @@ export const ApartmentEngine: React.FC<ApartmentEngineProps> = ({ locale = 'pt' 
             onCompanionDocumentPhotoChange={setCompanionDocumentPhoto}
             termsAccepted={termsAccepted}
             formError={error}
+            attemptTick={attemptTick}
             onTermsAcceptedChange={setTermsAccepted}
             submitAttempted={submitAttempted}
           />

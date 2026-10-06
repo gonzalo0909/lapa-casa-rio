@@ -19,6 +19,9 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   checked_in:               { label: 'Check-in feito',   color: 'bg-teal-100 text-teal-800' },
   checked_out:              { label: 'Check-out feito',  color: 'bg-gray-100 text-gray-700' },
   no_show:                  { label: 'No-show',          color: 'bg-red-100 text-red-700' },
+  completed:                { label: 'Concluída',        color: 'bg-gray-100 text-gray-700' },
+  expired:                  { label: 'Expirada',         color: 'bg-red-100 text-red-700' },
+  pending:                  { label: 'Pendente',         color: 'bg-amber-100 text-amber-800' },
 };
 
 function fmt(dateStr: string): string {
@@ -123,7 +126,7 @@ export default function OwnerApartmentBookingsPage() {
 
           <div className="flex flex-col gap-3">
             {bookings.map((b) => {
-              const st = STATUS_LABEL[b.status] ?? { label: b.status, color: 'bg-gray-100 text-gray-700' };
+              const st = STATUS_LABEL[b.status] ?? { label: 'Em andamento', color: 'bg-gray-100 text-gray-700' };
               const n = nights(b.checkIn, b.checkOut);
               const totalPaid = b.depositPaid + b.remainingPaid;
               return (

@@ -83,7 +83,7 @@ function renderTable(owners) {
           return `<div style="margin-bottom:6px;font-size:12px;">
             <div>${escapeHtml(a.name)}</div>
             <span class="${st.cls}">${st.label}</span>
-            <a href="apartments.html?id=${encodeURIComponent(a.id)}" style="margin-left:6px;">Revisar →</a>
+            <a href="apartments.html?id=${encodeURIComponent(a.id)}" style="margin-left:6px;display:inline-block;padding:2px 9px;border:1px solid #ccc;border-radius:5px;text-decoration:none;color:inherit;">✏ Editar</a>
           </div>`;
         }).join('') || '<span style="color:#888;font-size:12px;">Sin apartamentos</span>'}
       </td>

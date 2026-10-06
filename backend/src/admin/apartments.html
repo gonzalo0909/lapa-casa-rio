@@ -171,6 +171,34 @@
             <textarea id="f-description" placeholder="Descripcion del apartamento para los motores de busqueda..."></textarea>
           </div>
           <div class="full-col">
+            <label class="field-label">Dirección (calle)</label>
+            <input type="text" id="f-address" maxlength="200">
+          </div>
+          <div>
+            <label class="field-label">Número</label>
+            <input type="text" id="f-address-number" maxlength="20">
+          </div>
+          <div>
+            <label class="field-label">CEP</label>
+            <input type="text" id="f-cep" maxlength="9" placeholder="00000-000">
+          </div>
+          <div>
+            <label class="field-label">Check-in a partir de</label>
+            <input type="time" id="f-checkin-from" step="1800">
+          </div>
+          <div>
+            <label class="field-label">Check-in hasta (vacío = 22:00)</label>
+            <input type="time" id="f-checkin-to" step="1800">
+          </div>
+          <div>
+            <label class="field-label">Check-out hasta</label>
+            <input type="time" id="f-checkout-to" step="1800">
+          </div>
+          <div class="full-col">
+            <label class="field-label">Informaciones importantes para el huésped (una por línea, **texto** = negrita; vacío = por defecto)</label>
+            <textarea id="f-notices" placeholder="O envio de foto do documento de identificação é **obrigatório**..."></textarea>
+          </div>
+          <div class="full-col">
             <label class="field-label">Comodidades</label>
             <div class="amenity-grid" id="amenity-grid"></div>
           </div>

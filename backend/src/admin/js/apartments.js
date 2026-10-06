@@ -102,6 +102,13 @@
         setVal('f-bathrooms',     apt.bathrooms     != null ? apt.bathrooms : '');
         setVal('f-base-price',    apt.base_price    != null ? Number(apt.base_price).toFixed(2) : '');
         setVal('f-description',   apt.description   || '');
+        setVal('f-address',       apt.address        || '');
+        setVal('f-address-number', apt.address_number || '');
+        setVal('f-cep',           apt.cep            || '');
+        setVal('f-checkin-from',  apt.checkin_from   || '');
+        setVal('f-checkin-to',    apt.checkin_to     || '');
+        setVal('f-checkout-to',   apt.checkout_to    || '');
+        setVal('f-notices',       Array.isArray(apt.important_notices) ? apt.important_notices.join('\n') : '');
         selectedAmenities = Array.isArray(apt.amenities) ? apt.amenities.slice() : [];
         renderAmenities();
         // ratings
@@ -219,7 +226,17 @@
       bathrooms:     getVal('f-bathrooms') !== '' ? Number(getVal('f-bathrooms')) : null,
       base_price:    Number(getVal('f-base-price')),
       description:   getVal('f-description'),
-      amenities:     selectedAmenities.slice()
+      amenities:     selectedAmenities.slice(),
+      address:        getVal('f-address'),
+      address_number: getVal('f-address-number'),
+      cep:            getVal('f-cep').replace(/\D/g, ''),
+      checkin_from:   getVal('f-checkin-from') || null,
+      checkin_to:     getVal('f-checkin-to') || null,
+      checkout_to:    getVal('f-checkout-to') || null,
+      important_notices: (function () {
+        var lines = getVal('f-notices').split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+        return lines.length ? lines : null;
+      })()
     };
     apiFetch(RT + '/' + currentId, { method: 'PUT', body: JSON.stringify(payload) })
       .then(function () {

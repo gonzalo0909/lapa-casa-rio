@@ -31,6 +31,8 @@ const PatchPhotoSchema = z
     },
   );
 
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 const UpdateApartmentSchema = z
   .object({
     name: z.string().trim().min(1).optional(),
@@ -45,6 +47,14 @@ const UpdateApartmentSchema = z
     external_rating: z.number().nullable().optional(),
     external_review_count: z.number().nullable().optional(),
     external_rating_label: z.string().nullable().optional(),
+    // Datos que también edita el owner (el admin puede corregirlos)
+    address: z.string().optional(),
+    address_number: z.string().max(20).optional(),
+    cep: z.string().max(9).optional(),
+    checkin_from: z.string().regex(HHMM).nullable().optional(),
+    checkin_to: z.string().regex(HHMM).nullable().optional(),
+    checkout_to: z.string().regex(HHMM).nullable().optional(),
+    important_notices: z.array(z.string().trim().min(1).max(300)).max(12).nullable().optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), {
     message: 'Nada para actualizar',
@@ -387,6 +397,18 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
     if (external_rating_label !== undefined) {
       params.push(external_rating_label || null);
       sets.push(`external_rating_label = ${p()}`);
+    }
+
+    const body = req.body as Record<string, unknown>;
+    for (const col of ['address', 'address_number', 'cep', 'checkin_from', 'checkin_to', 'checkout_to'] as const) {
+      if (body[col] !== undefined) {
+        params.push(body[col] || null);
+        sets.push(`${col} = ${p()}`);
+      }
+    }
+    if (body.important_notices !== undefined) {
+      params.push(body.important_notices === null ? null : JSON.stringify(body.important_notices));
+      sets.push(`important_notices = ${p()}::jsonb`);
     }
 
     if (!sets.length) {

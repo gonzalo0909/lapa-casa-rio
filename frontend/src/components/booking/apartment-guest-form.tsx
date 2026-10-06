@@ -9,7 +9,7 @@
 import React, { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  MapPin, Check, X, AlertTriangle, Info, FileText,
+  MapPin, Check, X, AlertTriangle, Info, KeyRound, DoorOpen, FileText,
   Ban, CreditCard, Lock, Zap, RotateCcw, ChevronDown, MessageCircle,
   Users, Trash2, Upload, Camera,
 } from 'lucide-react';
@@ -89,6 +89,24 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
   checkinTimes,
 }) => {
   const t = useTranslations('apartments');
+
+  // Horarios de llegada: si el owner definió una ventana de check-in para
+  // este apartamento se generan turnos de 30 min dentro de ella; si no, se
+  // usa la lista por defecto del motor.
+  const { checkinFrom, checkinTo, checkoutFrom, checkoutTo } = selectedApartment;
+  const arrivalOptions = React.useMemo(() => {
+    const toMin = (hm: string) => parseInt(hm.slice(0, 2), 10) * 60 + parseInt(hm.slice(3, 5), 10);
+    const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    if (checkinFrom && checkinTo) {
+      const out: string[] = [];
+      for (let m = toMin(checkinFrom); m <= toMin(checkinTo); m += 30) { out.push(fmt(m)); }
+      return out;
+    }
+    if (checkinFrom) { return checkinTimes.filter((ct) => ct >= checkinFrom); }
+    if (checkinTo) { return checkinTimes.filter((ct) => ct <= checkinTo); }
+    return checkinTimes;
+  }, [checkinFrom, checkinTo, checkinTimes]);
+  const hhmm = (v: string) => (v.endsWith(':00') ? v.slice(0, 2) + 'h' : v.slice(0, 2) + 'h' + v.slice(3));
 
   // ── Estado local ───────────────────────────────────────────────────────────
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -514,8 +532,12 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
               onBlur={() => onFieldBlur('arrivalTime')}
               className={touched.arrivalTime && !guestForm.arrivalTime ? styles.inputInvalid : ''}
             >
-              <option value="" disabled>{t('arrivalTimeSelectPlaceholder')}</option>
-              {checkinTimes.map((ct) => (
+              <option value="" disabled>
+                {checkinFrom && checkinTo
+                  ? t('arrivalTimeSelectRange', { from: hhmm(checkinFrom), to: hhmm(checkinTo) })
+                  : t('arrivalTimeSelectPlaceholder')}
+              </option>
+              {arrivalOptions.map((ct) => (
                 <option key={ct} value={ct}>{ct}</option>
               ))}
             </select>
@@ -728,6 +750,18 @@ export const ApartmentGuestForm: React.FC<ApartmentGuestFormProps> = ({
             <AlertTriangle size={15} strokeWidth={2.2} /> {t('rulesConfirmTitle')}
           </div>
           <div className={styles.rulesConfirmList}>
+            {(checkinFrom || checkinTo) && (
+              <div className={styles.rulesConfirmItem}>
+                <KeyRound size={16} />
+                <span>{t.rich('ruleCheckinWindow', { b: (chunks) => <strong>{chunks}</strong>, range: [checkinFrom && hhmm(checkinFrom), checkinTo && hhmm(checkinTo)].filter(Boolean).join(' – ') })}</span>
+              </div>
+            )}
+            {(checkoutFrom || checkoutTo) && (
+              <div className={styles.rulesConfirmItem}>
+                <DoorOpen size={16} />
+                <span>{t.rich('ruleCheckoutWindow', { b: (chunks) => <strong>{chunks}</strong>, range: [checkoutFrom && hhmm(checkoutFrom), checkoutTo && hhmm(checkoutTo)].filter(Boolean).join(' – ') })}</span>
+              </div>
+            )}
             {selectedApartment.importantNotices && selectedApartment.importantNotices.length > 0 ? (
               selectedApartment.importantNotices.map((text, i) => (
                 <div key={i} className={styles.rulesConfirmItem}>

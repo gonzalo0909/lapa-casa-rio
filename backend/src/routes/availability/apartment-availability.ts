@@ -87,6 +87,7 @@ export const checkApartmentAvailabilityHandler = async (
       id: string; code: string; capacity: number; base_price: string; available: boolean;
       external_rating: string | null; external_review_count: number | null; external_rating_label: string | null;
       lat: string | null; lng: string | null; important_notices: string[] | null;
+      checkin_from: string | null; checkin_to: string | null; checkout_from: string | null; checkout_to: string | null;
       published_snapshot: {
         name: string; neighborhood: string | null; address: string | null;
         photos: { id: string; image_url: string; is_primary: boolean; alt_text: string | null }[];
@@ -103,6 +104,7 @@ export const checkApartmentAvailabilityHandler = async (
          rt.lat,
          rt.lng,
          rt.important_notices,
+         rt.checkin_from, rt.checkin_to, rt.checkout_from, rt.checkout_to,
          rt.published_snapshot,
          (
            rt.listing_status = 'approved'
@@ -194,6 +196,10 @@ export const checkApartmentAvailabilityHandler = async (
         externalReviewCount: apt.external_review_count ?? undefined,
         externalRatingLabel: apt.external_rating_label ?? undefined,
         importantNotices: apt.important_notices ?? null,
+        checkinFrom: apt.checkin_from ?? null,
+        checkinTo: apt.checkin_to ?? null,
+        checkoutFrom: apt.checkout_from ?? null,
+        checkoutTo: apt.checkout_to ?? null,
         photos: (apt.published_snapshot.photos ?? []).map(p => ({
           id: p.id, url: p.image_url, isPrimary: p.is_primary, altText: p.alt_text,
         })),

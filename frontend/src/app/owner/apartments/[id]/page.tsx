@@ -119,6 +119,10 @@ export default function OwnerApartmentEditPage() {
   const [cep, setCep] = useState('');
   const [basePrice, setBasePrice] = useState('');
   const [noticesText, setNoticesText] = useState('');
+  const [checkinFrom, setCheckinFrom] = useState('');
+  const [checkinTo, setCheckinTo] = useState('');
+  const [checkoutFrom, setCheckoutFrom] = useState('');
+  const [checkoutTo, setCheckoutTo] = useState('');
 
   // Form state — preços dinâmicos
   const [minPrice, setMinPrice] = useState('');
@@ -149,6 +153,10 @@ export default function OwnerApartmentEditPage() {
       setCep(apt.cep ? formatCep(apt.cep) : '');
       setBasePrice(apt.base_price?.toString() ?? '');
       setNoticesText((apt.important_notices ?? DEFAULT_NOTICES).join('\n'));
+      setCheckinFrom(apt.checkin_from ?? '');
+      setCheckinTo(apt.checkin_to ?? '');
+      setCheckoutFrom(apt.checkout_from ?? '');
+      setCheckoutTo(apt.checkout_to ?? '');
       setPhotos(photosRes.data.photos);
       const pricing = pricingRes.data;
       if (pricing) {
@@ -358,6 +366,10 @@ export default function OwnerApartmentEditPage() {
         cep: cepDigits || undefined,
         base_price: basePrice ? parseFloat(basePrice) : undefined,
         important_notices: notices.length > 0 ? notices : null,
+        checkin_from: checkinFrom || null,
+        checkin_to: checkinTo || null,
+        checkout_from: checkoutFrom || null,
+        checkout_to: checkoutTo || null,
       });
       setSaveMessage('Alterações salvas com sucesso.');
       // Update heading if name changed
@@ -642,6 +654,17 @@ export default function OwnerApartmentEditPage() {
                   onChange={(e) => setBasePrice(e.target.value)}
                   helperText="Valor cobrado do hóspede por noite -- sem ajustes automáticos"
                 />
+
+                {/* Horários de check-in / check-out deste apartamento */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Check-in a partir de" type="time" step={1800} value={checkinFrom} onChange={(e) => setCheckinFrom(e.target.value)} />
+                  <Input label="Check-in até" type="time" step={1800} value={checkinTo} onChange={(e) => setCheckinTo(e.target.value)} />
+                  <Input label="Check-out a partir de" type="time" step={1800} value={checkoutFrom} onChange={(e) => setCheckoutFrom(e.target.value)} />
+                  <Input label="Check-out até" type="time" step={1800} value={checkoutTo} onChange={(e) => setCheckoutTo(e.target.value)} />
+                  <p className="col-span-2 text-xs text-muted-foreground">
+                    O hóspede escolhe o horário de chegada dentro da janela de check-in e vê ambos os horários na tela de reserva. Deixe vazio para usar o padrão do site.
+                  </p>
+                </div>
 
                 {/* Informações importantes (visíveis ao hóspede ao reservar) */}
                 <Textarea

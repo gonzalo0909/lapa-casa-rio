@@ -20,7 +20,7 @@
 
 import { Router, type Request } from 'express';
 import multer from 'multer';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { z } from 'zod';
 import { query } from '../../config/database';
 import { uploadApartmentPhoto, deleteApartmentPhoto } from '../../lib/cloudinary/cloudinary-client';
@@ -178,6 +178,54 @@ const upload = multer({
     }
     cb(null, true);
   },
+});
+
+// ─── POST /owner/apartments — el owner agrega un apartamento nuevo ───────────
+// Sin límite de cantidad. Nace SIEMPRE como borrador pendiente de revisión
+// (listing_status = 'pending_review', published_snapshot = NULL): no aparece
+// en el sitio hasta que un admin lo audite y apruebe. Los apartamentos no
+// usan camas (0058), así que alcanza con la fila de room_types.
+const CreateApartmentSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  capacity: z.number().int().min(1).max(20),
+  base_price: z.number().positive(),
+});
+
+router.post('/', validate(CreateApartmentSchema), async (req, res, next) => {
+  try {
+    const ownerId = getOwnerId(req)!;
+    const { name, capacity, base_price } = req.body as z.infer<typeof CreateApartmentSchema>;
+
+    let created: any = null;
+    // code es UNIQUE y VARCHAR(20): 'apt-' + 8 hex; reintenta ante la (muy
+    // improbable) colisión.
+    for (let attempt = 0; attempt < 5 && !created; attempt++) {
+      const code = `apt-${randomBytes(4).toString('hex')}`;
+      const { rows } = await query(
+        `INSERT INTO room_types (code, name, capacity, default_gender, is_flexible, base_price, property_type, owner_id)
+         VALUES ($1, $2, $3, 'mixed', false, $4, 'apartment', $5)
+         ON CONFLICT (code) DO NOTHING
+         RETURNING id, code, name, capacity, base_price, listing_status`,
+        [code, name, capacity, base_price, ownerId],
+      );
+      created = rows[0] ?? null;
+    }
+    if (!created) {
+      res.status(500).json(ApiResponse.error('Não foi possível criar o apartamento. Tente novamente.'));
+      return;
+    }
+
+    await auditLogService.log({
+      entity_type: 'room_type',
+      entity_id: created.id,
+      operation: 'OWNER_CREATE_APARTMENT',
+      new_data: { name, capacity, base_price },
+    });
+
+    res.status(201).json(ApiResponse.success(created, 'Apartamento criado. Complete os dados e envie para análise.'));
+  } catch (error) {
+    next(error);
+  }
 });
 
 // ─── GET /owner/apartments — lista los apartamentos del dueño logueado ───────

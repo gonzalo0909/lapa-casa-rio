@@ -92,6 +92,7 @@ function renderTable(owners) {
       </td>
       <td>
         <div class="actions-cell">
+          <button data-action="resend-invite">Reenviar invitación</button>
           <button data-action="reset-password">Resetear contraseña</button>
           <button data-action="toggle-active" class="${o.isActive ? 'btn-danger' : ''}">
             ${o.isActive ? 'Desactivar' : 'Activar'}
@@ -116,6 +117,9 @@ function renderTable(owners) {
   });
   tbody.querySelectorAll('button[data-action="view-docs"]').forEach((btn) => {
     btn.addEventListener('click', () => openDocsModal(btn.closest('tr').dataset.ownerId));
+  });
+  tbody.querySelectorAll('button[data-action="resend-invite"]').forEach((btn) => {
+    btn.addEventListener('click', () => resendInvitation(btn.closest('tr').dataset.ownerId, btn));
   });
   tbody.querySelectorAll('button[data-action="reset-password"]').forEach((btn) => {
     btn.addEventListener('click', () => resetPassword(btn.closest('tr').dataset.ownerId));
@@ -144,6 +148,27 @@ async function resetPassword(ownerId) {
     );
   } catch (err) {
     showMsg('page-msg', err.message, 'error');
+  }
+}
+
+async function resendInvitation(ownerId, btn) {
+  btn.disabled = true;
+  try {
+    const data = await apiFetch(`${OW}/${ownerId}/resend-invitation`, { method: 'POST' });
+    if (data.emailSent) {
+      showMsg('page-msg', `Invitación enviada a <strong>${escapeHtml(data.email)}</strong>.`, 'success');
+    } else {
+      showMsg(
+        'temp-pass-msg',
+        `El email falló. Contraseña temporal para <strong>${escapeHtml(data.email)}</strong>: ` +
+        `<strong>${escapeHtml(data.tempPassword)}</strong> — compartila por WhatsApp, no se vuelve a mostrar.`,
+        'success',
+      );
+    }
+  } catch (err) {
+    showMsg('page-msg', err.message, 'error');
+  } finally {
+    btn.disabled = false;
   }
 }
 

@@ -443,6 +443,103 @@ router.post('/:id/reset-password', async (req, res, next) => {
   }
 });
 
+// ─── POST /apartment-owners/:id/resend-invitation ────────────────────────────
+// Reenvía la invitación completa (contraseña temporal nueva + link de Stripe
+// si el onboarding todavía no está completo). Reusa el email de bienvenida.
+
+router.post('/:id/resend-invitation', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const owner = await prisma.apartmentOwner.findUnique({
+      where: { id },
+      select: {
+        id: true, fullName: true, email: true, isActive: true,
+        stripeAccountId: true, onboardingStatus: true,
+      },
+    });
+
+    if (!owner) {
+      res.status(404).json(ApiResponse.error('Administrador no encontrado'));
+      return;
+    }
+
+    // Link de Stripe nuevo (el anterior vence a las 24h). Best-effort: si Stripe
+    // falla, la invitación sale igual solo con las credenciales.
+    let onboardingUrl: string | null = null;
+    if (owner.onboardingStatus !== 'active') {
+      try {
+        let stripeAccountId = owner.stripeAccountId;
+        if (!stripeAccountId) {
+          stripeAccountId = await stripeConnectHandler.createExpressAccount(owner.email);
+        }
+        const baseUrl = process.env.FRONTEND_URL ?? 'https://lapacasario.com';
+        const linkResult = await stripeConnectHandler.createOnboardingLink({
+          stripeAccountId,
+          refreshUrl: `${baseUrl}/admin/owners/${stripeAccountId}/onboarding/refresh`,
+          returnUrl: `${baseUrl}/admin/owners/${stripeAccountId}/onboarding/complete`,
+        });
+        onboardingUrl = linkResult.url;
+        await prisma.apartmentOwner.update({
+          where: { id },
+          data: {
+            stripeAccountId,
+            onboardingUrl: linkResult.url,
+            onboardingUrlExpiresAt: linkResult.expiresAt,
+            onboardingStatus: 'in_progress',
+          },
+        });
+      } catch (stripeError: any) {
+        logger.warn('No se pudo regenerar el link de Stripe al reenviar la invitación', {
+          ownerId: id,
+          error: stripeError.message,
+        });
+      }
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+    await prisma.apartmentOwner.update({
+      where: { id },
+      data: { passwordHash, mustChangePassword: true },
+    });
+
+    await auditLogService.log({
+      entity_type: 'apartment_owner',
+      entity_id: id,
+      operation: 'ADMIN_RESEND_OWNER_INVITATION',
+      new_data: { email: owner.email, includesOnboardingLink: onboardingUrl !== null },
+    });
+
+    let emailSent = false;
+    try {
+      await emailService.sendOwnerWelcome({
+        to: owner.email,
+        ownerName: owner.fullName,
+        tempPassword,
+        onboardingUrl,
+      });
+      emailSent = true;
+    } catch (emailError: any) {
+      logger.warn('No se pudo reenviar la invitación al administrador', {
+        ownerId: id,
+        error: emailError.message,
+      });
+    }
+
+    res.status(200).json(
+      ApiResponse.success(
+        { id: owner.id, email: owner.email, tempPassword, emailSent, onboardingUrl },
+        emailSent
+          ? 'Invitación reenviada por email.'
+          : 'Se generó la invitación, pero el email falló -- compartí la contraseña temporal por fuera.',
+      ),
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ─── GET /apartment-owners/:id/status ────────────────────────────────────────
 // Consulta el estado real en Stripe y actualiza el campo en la DB si cambió
 

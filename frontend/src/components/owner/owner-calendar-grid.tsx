@@ -33,6 +33,12 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const toDs = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Reservas importadas por iCal sin nombre real de huésped ("booking (iCal)"): son
+// fechas que la plataforma tiene cerradas, no una reserva con datos del huésped.
+const isIcalPlaceholder = (b: OwnerBooking) => /\(iCal\)\s*$/i.test(b.guestName);
+const displayName = (b: OwnerBooking) =>
+  isIcalPlaceholder(b) ? `${b.guestName.replace(/\s*\(iCal\)\s*$/i, '')} · datas fechadas (iCal)` : b.guestName;
+
 export const addDays = (ds: string, n: number) => {
   const d = new Date(`${ds}T12:00:00`);
   d.setDate(d.getDate() + n);
@@ -214,9 +220,9 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
                             style={{ gridColumn: `span ${s.span}` }}
                             onClick={() => { setSel(null); setInfo({ aptId: apt.id, type: 'booking', booking: s.booking }); }}
                             className="h-10 truncate border-r border-t bg-blue-600 px-2 text-left text-xs font-medium text-white hover:bg-blue-700"
-                            title={`${s.booking.guestName} (${br(s.booking.checkIn)} → ${br(s.booking.checkOut)})`}
+                            title={`${displayName(s.booking)} (${br(s.booking.checkIn)} → ${br(s.booking.checkOut)})`}
                           >
-                            {s.booking.guestName}
+                            {displayName(s.booking)}
                           </button>
                         );
                       }
@@ -277,7 +283,8 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
               {info && info.aptId === apt.id && info.type === 'booking' && (
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-blue-50 p-3 text-sm">
                   <span>
-                    Reserva <strong>#{info.booking.reservationNumber}</strong> — {info.booking.guestName}<br />
+                    Reserva <strong>#{info.booking.reservationNumber}</strong> — {displayName(info.booking)}<br />
+                    {isIcalPlaceholder(info.booking) && <span className="text-xs text-neutral-600">Importada do calendário da plataforma, sem dados de hóspede. Se não for uma reserva real, avise a equipe pelo chat para removê-la.<br /></span>}
                     {br(info.booking.checkIn)} → {br(info.booking.checkOut)} · {brl(info.booking.finalPrice)}
                   </span>
                   <Button type="button" size="sm" variant="ghost" onClick={() => setInfo(null)}>Fechar</Button>

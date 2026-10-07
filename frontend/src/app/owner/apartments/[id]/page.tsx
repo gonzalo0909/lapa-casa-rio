@@ -253,7 +253,9 @@ export default function OwnerApartmentEditPage() {
     // Reservas para mostrar no calendário (somente leitura)
     ownerApartmentsAPI
       .listBookings(params.id)
-      .then((res) => setCalBookings(res.data.bookings))
+      .then((res) =>
+        setCalBookings(res.data.bookings.map((x) => ({ ...x, checkIn: x.checkIn.slice(0, 10), checkOut: x.checkOut.slice(0, 10) }))),
+      )
       .catch(() => { /* o calendário funciona só com os bloqueios */ });
   }, [profile, loadBlocks, params.id]);
 

@@ -68,7 +68,7 @@ async function notifyConflict(conflict: BookingConflictRow): Promise<void> {
 }
 
 /** Persiste un conflicto detectado y notifica al admin. Llamado por channel-service.ts al fallar un intento de reserva OTA. */
-async function recordConflict(input: RecordConflictInput): Promise<BookingConflictRow> {
+async function recordConflict(input: RecordConflictInput, options: { notify?: boolean } = {}): Promise<BookingConflictRow> {
   const { rows } = await query<BookingConflictRow>(
     `INSERT INTO booking_conflicts (reservation_id_a, reservation_id_b, bed_id, channel_a, channel_b, rejected_payload)
      VALUES ($1, $2, $3, $4::channel_code, $5::channel_code, $6::jsonb)
@@ -84,9 +84,11 @@ async function recordConflict(input: RecordConflictInput): Promise<BookingConfli
   );
   const conflict = rows[0];
   logger.warn('Conflicto de reserva registrado', { conflictId: conflict.id, channelA: conflict.channel_a, channelB: conflict.channel_b });
-  await notifyConflict(conflict).catch((error) =>
-    logger.warn('No se pudo notificar el conflicto por email', { conflictId: conflict.id, error: error.message })
-  );
+  if (options.notify !== false) {
+    await notifyConflict(conflict).catch((error) =>
+      logger.warn('No se pudo notificar el conflicto por email', { conflictId: conflict.id, error: error.message })
+    );
+  }
   return conflict;
 }
 
@@ -249,6 +251,48 @@ async function autoResolveByPriority(conflict: BookingConflictRow): Promise<Book
   return updated[0];
 }
 
+/** Horas que un conflicto de probable eco puede seguir abierto antes de avisar por email (default 6). */
+function echoAlertAfterMs(): number {
+  const hours = Number(process.env.ICAL_ECHO_ALERT_HOURS);
+  return (Number.isFinite(hours) && hours >= 1 ? hours : 6) * 60 * 60 * 1000;
+}
+
+/**
+ * Conflictos de probable eco (ver channel-service.recordAvailabilityConflict), registrados sin email:
+ * - si el evento ya no esta en el feed de la OTA (la OTA releyo el feed de Lapa y reabrio las fechas), era
+ *   un eco: se cierran solos;
+ * - si siguen abiertos pasado echoAlertAfterMs, el cierre lo mantiene la OTA, o sea puede ser un overbooking
+ *   real: se avisa una sola vez por email.
+ * `currentFeedIds`: ids de los eventos presentes hoy en los feeds (por canal), o null si no se conocen.
+ */
+async function processEchoConflicts(open: BookingConflictRow[], currentFeedIds?: Map<string, Set<string>>): Promise<number> {
+  let closed = 0;
+  for (const conflict of open) {
+    const payload = conflict.rejected_payload as { probableEcho?: boolean; echoNotifiedAt?: string; externalReservationId?: string; channelId?: string } | null;
+    if (!payload?.probableEcho || conflict.status !== 'open') {continue;}
+
+    const ids = payload.channelId ? currentFeedIds?.get(payload.channelId) : undefined;
+    if (ids && payload.externalReservationId && !ids.has(payload.externalReservationId)) {
+      await query(
+        `UPDATE booking_conflicts SET status = 'resolved_auto', resolved_at = now(), resolution_notes = $2 WHERE id = $1 AND status = 'open'`,
+        [conflict.id, 'Cerrado automáticamente: era el eco de lo que Lapa exportó; el evento ya no está en el feed de la OTA']
+      );
+      closed++;
+      continue;
+    }
+    if (!payload.echoNotifiedAt && Date.now() - new Date(conflict.detected_at).getTime() >= echoAlertAfterMs()) {
+      await notifyConflict(conflict).catch((error) =>
+        logger.warn('No se pudo notificar el conflicto por email', { conflictId: conflict.id, error: error.message })
+      );
+      await query(
+        `UPDATE booking_conflicts SET rejected_payload = rejected_payload || $2::jsonb WHERE id = $1`,
+        [conflict.id, JSON.stringify({ echoNotifiedAt: new Date().toISOString() })]
+      );
+    }
+  }
+  return closed;
+}
+
 /**
  * 1) Escaneo defensivo de superposiciones ilegales en la misma cama
  * (nunca deberían existir gracias al EXCLUDE constraint; si aparecen,
@@ -256,7 +300,7 @@ async function autoResolveByPriority(conflict: BookingConflictRow): Promise<Book
  * 2) Auto-resuelve por prioridad de canal los conflictos que ya estén
  * abiertos (creados en tiempo real por channel-service.ts).
  */
-async function detectConflicts(): Promise<{ newlyDetected: number; autoResolved: number; stillOpen: number }> {
+async function detectConflicts(currentFeedIds?: Map<string, Set<string>>): Promise<{ newlyDetected: number; autoResolved: number; stillOpen: number }> {
   const { rows: overlaps } = await query<{ id_a: string; id_b: string; bed_id: string | null }>(
     `SELECT rb1.reservation_id AS id_a, rb2.reservation_id AS id_b, rb1.bed_id
      FROM reservation_beds rb1
@@ -289,8 +333,12 @@ async function detectConflicts(): Promise<{ newlyDetected: number; autoResolved:
   }
 
   const open = await getConflictHistory({ status: 'open' });
-  let autoResolved = 0;
+  let autoResolved = await processEchoConflicts(open, currentFeedIds);
   for (const conflict of open) {
+    if ((conflict.rejected_payload as { probableEcho?: boolean } | null)?.probableEcho) {
+      const { rows: still } = await query<{ status: string }>(`SELECT status FROM booking_conflicts WHERE id = $1`, [conflict.id]);
+      if (still[0]?.status !== 'open') {continue;}
+    }
     const closed = await autoCloseStaleConflict(conflict);
     const result = closed.status === 'open' ? await autoResolveByPriority(closed) : closed;
     if (result.status !== 'open') {autoResolved++;}

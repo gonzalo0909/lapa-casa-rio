@@ -17,7 +17,7 @@ export async function runOtaSync(): Promise<void> {
     totalCancelled: result.totalCancelled,
   });
 
-  const conflicts = await conflictService.detectConflicts();
+  const conflicts = await conflictService.detectConflicts(result.currentFeedIds);
   if (conflicts.newlyDetected > 0 || conflicts.autoResolved > 0) {
     logger.info('ota-sync: conflictos procesados', conflicts);
   }

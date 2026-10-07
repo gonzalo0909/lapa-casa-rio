@@ -86,6 +86,8 @@ export interface FeedImportResult {
   cancelled: number;
   skippedOwn: number;
   errors: string[];
+  /** ids de todos los eventos ajenos de esta lectura (solo si el feed se leyo bien) */
+  eventIds?: string[];
 }
 
 export interface SyncAllResult {
@@ -95,6 +97,8 @@ export interface SyncAllResult {
   totalImported: number;
   totalCancelled: number;
   results: FeedImportResult[];
+  /** por canal (channelId): ids de eventos vigentes, solo de canales cuyos feeds activos se leyeron todos bien */
+  currentFeedIds: Map<string, Set<string>>;
 }
 
 interface RoomTypeRow {
@@ -921,6 +925,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       cancelled: cancelledDirect + cancelledByAbsence + cancelledEchoes,
       skippedOwn,
       errors,
+      eventIds: feedExternalIds,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'error desconocido';
@@ -982,6 +987,13 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
 
   await refreshAvailabilityCache();
 
+  const currentFeedIds = new Map<string, Set<string>>();
+  for (const channelId of new Set(feeds.map((f) => f.channelId))) {
+    const channelResults = feeds.map((f, i) => ({ f, r: results[i] })).filter(({ f }) => f.channelId === channelId);
+    if (!channelResults.every(({ r }) => r?.success && r.eventIds)) {continue;}
+    currentFeedIds.set(channelId, new Set(channelResults.flatMap(({ r }) => r!.eventIds!)));
+  }
+
   return {
     totalFeeds: feeds.length,
     successfulFeeds: results.filter((r) => r.success).length,
@@ -989,6 +1001,7 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
     totalImported: results.reduce((s, r) => s + r.imported, 0),
     totalCancelled: results.reduce((s, r) => s + r.cancelled, 0),
     results,
+    currentFeedIds,
   };
 }
 

@@ -46,4 +46,16 @@ describe('reserva OTA rechazada sin bloqueador', () => {
     expect(queryMock.mock.calls[4][0]).toContain("r.status <> 'cancelled'");
     expect(conflictService.recordConflict).toHaveBeenCalledTimes(1);
   });
+
+  it('iCal cuyas fechas caben en una reserva de otro canal: conflicto de probable eco, sin email inmediato', async () => {
+    preamble()
+      .mockResolvedValueOnce({ rows: [{ id: 'res-1', channel_code: 'direct', covers: true }] })
+      .mockResolvedValueOnce({ rows: [] });
+    (conflictService.recordConflict as jest.Mock).mockResolvedValue({});
+    const farAway = { ...incoming, source: 'ical' as const, checkIn: '2099-01-10', checkOut: '2099-01-12' };
+    await expect(channelService.handleChannelBooking(farAway, 'ch-1')).rejects.toBeInstanceOf(OtaAvailabilityError);
+    const [input, options] = (conflictService.recordConflict as jest.Mock).mock.calls.at(-1);
+    expect(input.rejectedPayload.probableEcho).toBe(true);
+    expect(options).toEqual({ notify: false });
+  });
 });

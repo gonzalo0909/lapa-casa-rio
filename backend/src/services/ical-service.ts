@@ -745,7 +745,7 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
         ...row,
         verdict: e.status === 'cancelled'
           ? `Existe pero está CANCELADA (${e.reservation_number}, motivo: ${e.cancellation_reason ?? '—'}). ${
-            e.cancellation_reason === 'ota_cancellation' ? 'Se recrea sola en la próxima sincronización.' : 'No se recrea sola.'}`
+            (e.cancellation_reason === 'ota_cancellation' || /^conflict_/.test(e.cancellation_reason ?? '')) ? 'Se recrea sola en la próxima sincronización.' : 'No se recrea sola.'}`
           : `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})`,
       });
       continue;

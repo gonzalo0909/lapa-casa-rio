@@ -682,6 +682,37 @@ async function cleanEchoReservations(feed: IcalFeedConfig): Promise<number> {
   return cleaned;
 }
 
+/**
+ * Una estadía real no dura 6+ meses. Los eventos más largos que esto en un feed de OTA son el
+ * "cierre de horizonte" (la OTA cierra todo lo posterior a su ventana de venta, p. ej. de dentro de
+ * 90 días hasta dentro de 1 año): NO son reservas. Importarlos creaba una "reserva" fantasma de
+ * meses que además se re-exportaba a las demás OTAs bloqueando casi un año.
+ */
+const MAX_IMPORT_NIGHTS = 180;
+
+const nightsBetween = (checkIn: string, checkOut: string): number =>
+  Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000);
+
+/** Cancela las reservas ya importadas de este feed que en realidad son cierres de horizonte. */
+async function cleanHorizonReservations(feed: IcalFeedConfig): Promise<number> {
+  const { rows } = await query<{ external_reservation_id: string }>(
+    `SELECT DISTINCT r.external_reservation_id
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     WHERE rb.room_type_id = $1
+       AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND rb.check_out >= CURRENT_DATE
+       AND (rb.check_out - rb.check_in) > $3
+       AND r.external_reservation_id IS NOT NULL`,
+    [feed.roomTypeId, feed.channelId, MAX_IMPORT_NIGHTS]
+  );
+  for (const row of rows) {
+    await channelService.handleChannelCancellation(row.external_reservation_id, feed.channelId);
+  }
+  return rows.length;
+}
+
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   const seenNow = new Set<string>();
@@ -708,6 +739,8 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       // se corre un dia por dia: no es una reserva, y bloquearia todas esas fechas en Lapa.
       // Se ignoran los eventos que empiezan a mas de 360 dias.
       if (event.checkIn > farFutureLimit) { continue; }
+      // Cierre de horizonte de la OTA, no una estadía: se ignora (ver MAX_IMPORT_NIGHTS).
+      if (nightsBetween(event.checkIn, event.checkOut) > MAX_IMPORT_NIGHTS) { continue; }
       seenNow.add(event.uid);
       // Booking.com exporta sus reservas como "CLOSED - Not available" y Airbnb como
       // "Reserved": el parser las marca isBlocked, pero SON las fechas ocupadas y hay
@@ -758,7 +791,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     const nowIso = new Date().toISOString();
     for (const uid of seenNow) {seen[uid] = nowIso;}
     const cancelledByAbsence = await cancelAbsentReservations(feed, seen, seenNow);
-    const cancelledEchoes = await cleanEchoReservations(feed);
+    const cancelledEchoes = (await cleanEchoReservations(feed)) + (await cleanHorizonReservations(feed));
     // Se descartan registros de eventos que dejaron de verse hace mas de 7 dias.
     const keepAfter = Date.now() - 7 * 24 * 60 * 60 * 1000;
     for (const [uid, at] of Object.entries(seen)) {

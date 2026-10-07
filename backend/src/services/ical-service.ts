@@ -30,7 +30,7 @@ import { randomUUID } from 'crypto';
 import ical, { ICalEventStatus, ICalEventBusyStatus } from 'ical-generator';
 import { query } from '../config/database';
 import { ICalParser, type ParsedBooking } from '../integrations/ical/ical-parser';
-import { channelService } from './channel-service';
+import { channelService, OtaAvailabilityError } from './channel-service';
 import { emailService } from './email-service';
 import { resolveRoomCodeFromName } from '../config/channels';
 import { logger } from '../utils/logger';
@@ -791,8 +791,15 @@ async function countImportedFutureReservations(feed: IcalFeedConfig): Promise<nu
  * descartados por no poder leerse (esas fechas quedarian libres) o feed vacio aunque Lapa tiene reservas
  * futuras importadas de ese canal (suele ser un fallo de la OTA, no que no haya reservas).
  */
-async function alertFeedAnomaly(feed: IcalFeedConfig, parsed: { errors: string[]; metadata: { totalEvents: number; skippedEvents: number } }): Promise<void> {
+async function alertFeedAnomaly(
+  feed: IcalFeedConfig,
+  parsed: { errors: string[]; metadata: { totalEvents: number; skippedEvents: number } },
+  importErrors: string[] = []
+): Promise<void> {
   const problems: string[] = [];
+  if (importErrors.length > 0) {
+    problems.push(`${importErrors.length} evento(s) no se pudieron importar: ${importErrors.slice(0, 3).join(' | ')}`);
+  }
   if (parsed.metadata.skippedEvents > 0) {
     problems.push(`${parsed.metadata.skippedEvents} evento(s) descartado(s) por no poder leerse: ${parsed.errors.slice(0, 3).join(' | ')}`);
   }
@@ -828,6 +835,8 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
   let skippedOwn = 0;
   let cancelledDirect = 0;
   let quarantined = 0;
+  const importErrors: string[] = [];
+  let parsedForAlert: Parameters<typeof alertFeedAnomaly>[1] | null = null;
 
   try {
     // Parser propio por feed: guarda estado interno (errores) y ahora se leen varios feeds en paralelo.
@@ -835,7 +844,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
     const events = toParsedIcalEvents(parsed.bookings);
     errors.push(...parsed.errors);
-    await alertFeedAnomaly(feed, parsed);
+    parsedForAlert = parsed;
     // Ids de todos los eventos de esta lectura: una reserva guardada cuyo id NO esta aca y que se superpone con
     // un evento nuevo del mismo canal es la misma estadia con otras fechas (ver channel-service).
     const feedExternalIds = events.filter((e) => !e.isOwn).map((e) => e.uid);
@@ -893,11 +902,14 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         if (result.matchedExternalId) {seenNow.add(result.matchedExternalId);}
         if (result.updated) {updated++;} else if (result.deduplicated) {alreadyKnown++;} else {imported++;}
       } catch (error) {
-        errors.push(`Evento ${event.uid}: ${error instanceof Error ? error.message : 'error desconocido'}`);
+        const msg = `Evento ${event.uid} (${event.checkIn} → ${event.checkOut}): ${error instanceof Error ? error.message : 'error desconocido'}`;
+        errors.push(msg);
+        if (!(error instanceof OtaAvailabilityError)) {importErrors.push(msg);}
       }
     }
 
     await saveEchoQuarantine(feed.id, echoStillPending);
+    if (parsedForAlert) {await alertFeedAnomaly(feed, parsedForAlert, importErrors);}
     if (quarantined > 0) {logger.info('iCal: eventos retenidos por probable eco de una cancelacion', { feedId: feed.id, quarantined });}
 
     // Cancelacion por ausencia: solo si el evento falta 24 h seguidas (ver cancelAbsentReservations).

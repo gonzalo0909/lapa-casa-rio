@@ -37,7 +37,10 @@ function requireExportToken(req: Request, res: Response, next: NextFunction): vo
     res.status(503).json(ApiResponse.error('Exportación iCal no configurada (falta ICAL_EXPORT_TOKEN)'));
     return;
   }
-  const given = Buffer.from(typeof req.query.token === 'string' ? req.query.token : '');
+  // El token puede ir en la ruta (/feed/:token/...) o en ?token=: algunas OTAs (Booking) no aceptan bien
+  // URLs con parámetros de consulta.
+  const rawToken = typeof req.params.token === 'string' ? req.params.token : req.query.token;
+  const given = Buffer.from(typeof rawToken === 'string' ? rawToken : '');
   const expected = Buffer.from(env.ICAL_EXPORT_TOKEN);
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
     res.status(404).json(ApiResponse.error('No encontrado'));
@@ -49,11 +52,11 @@ function requireExportToken(req: Request, res: Response, next: NextFunction): vo
 const ChannelQuerySchema = z.enum(['direct', 'booking', 'hostelworld', 'airbnb', 'expedia']).optional();
 
 /** ?channel=booking: el feed omite las reservas que vinieron de ese canal (evita el eco OTA -> Lapa -> OTA). */
-const channelOf = (req: Request) => ChannelQuerySchema.parse(req.query.channel);
+const channelOf = (req: Request) => ChannelQuerySchema.parse(req.params.channel ?? req.query.channel);
 
 function sendCalendar(res: Response, filename: string, calendar: string): void {
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.setHeader('X-Robots-Tag', 'noindex');
   res.send(calendar);
@@ -81,6 +84,20 @@ router.get('/export', exportLimiter, requireExportToken, async (req, res) => {
 
 /** GET /api/ical/apartment/export/:roomTypeId — feed iCal público de UN apartamento. */
 router.get('/apartment/export/:roomTypeId', exportLimiter, requireExportToken, async (req, res) => {
+  try {
+    const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId, channelOf(req));
+    sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);
+  } catch (error) {
+    res.status(404).json(ApiResponse.error('No se pudo generar el feed', error instanceof Error ? error.message : 'Error desconocido'));
+  }
+});
+
+/**
+ * GET /api/ical/apartment/feed/:token/:roomTypeId/:channel.ics — mismo feed de UN apartamento, pero con
+ * token y canal en la RUTA (sin ?query) y terminado en .ics. Es la forma más aceptada por los validadores
+ * de Booking.com, que dejaban el enlace con query en "Comprobando conexión".
+ */
+router.get('/apartment/feed/:token/:roomTypeId/:channel.ics', exportLimiter, requireExportToken, async (req, res) => {
   try {
     const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId, channelOf(req));
     sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);

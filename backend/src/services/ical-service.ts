@@ -206,7 +206,7 @@ export async function deleteFeed(feedId: string): Promise<{ orphanedReservations
   const existing = await getFeed(feedId);
   if (!existing) {return null;}
   await query(`DELETE FROM system_config WHERE key = ANY($1::text[])`, [
-    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`, `${FEED_LAST_KEY_PREFIX}${feedId}`, `ical_feed_warn:${feedId}`],
+    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`, `${FEED_LAST_KEY_PREFIX}${feedId}`, `ical_feed_warn:${feedId}`, `${ECHO_KEY_PREFIX}${feedId}`],
   ]);
   return { orphanedReservations: await countOrphanedReservations(existing) };
 }
@@ -646,6 +646,59 @@ async function cleanHorizonReservations(feed: IcalFeedConfig): Promise<number> {
   return rows.length;
 }
 
+/**
+ * Eco tardio: cuando se cancela una reserva de Lapa (directa u otra OTA), la OTA sigue mostrando esas fechas
+ * cerradas hasta que relee nuestro feed (horas). Si en ese lapso se importara su cierre, naceria una reserva
+ * fantasma que ademas se reexporta a las demas OTAs. Un evento NUEVO, sin reserva activa, cuyas fechas quedan
+ * cubiertas por una reserva de otro canal cancelada hace menos de ECHO_WINDOW_MS, se retiene en cuarentena.
+ * Si sigue en el feed pasado ECHO_QUARANTINE_MS, deja de ser eco (la OTA lo mantiene) y se importa normal.
+ * No oculta superposiciones con reservas vigentes: esas siguen generando conflicto (ver 3ecd80e).
+ */
+const ECHO_WINDOW_MS = 24 * 60 * 60 * 1000;
+function echoQuarantineMs(): number {
+  const hours = Number(process.env.ICAL_ECHO_QUARANTINE_HOURS);
+  return (Number.isFinite(hours) && hours >= 1 ? hours : 12) * 60 * 60 * 1000;
+}
+const ECHO_KEY_PREFIX = 'ical_echo:';
+
+async function loadEchoQuarantine(feedId: string): Promise<Record<string, string>> {
+  const { rows } = await query<{ value: Record<string, string> }>(`SELECT value FROM system_config WHERE key = $1`, [`${ECHO_KEY_PREFIX}${feedId}`]);
+  return rows[0]?.value ?? {};
+}
+
+async function saveEchoQuarantine(feedId: string, map: Record<string, string>): Promise<void> {
+  const key = `${ECHO_KEY_PREFIX}${feedId}`;
+  if (Object.keys(map).length === 0) {
+    await query(`DELETE FROM system_config WHERE key = $1`, [key]);
+    return;
+  }
+  await query(
+    `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Eventos de un feed iCal retenidos por probable eco de una cancelacion')
+     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+    [key, JSON.stringify(map)]
+  );
+}
+
+/** true si el evento nuevo es probable eco de una reserva ajena cancelada hace poco (ver ECHO_WINDOW_MS). */
+export async function isRecentCancellationEcho(feed: IcalFeedConfig, checkIn: string, checkOut: string, uid: string): Promise<boolean> {
+  const { rows } = await query(
+    `SELECT 1
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     WHERE rb.room_type_id = $1
+       AND r.status = 'cancelled'
+       AND r.channel_id IS DISTINCT FROM $2
+       AND r.cancelled_at > now() - ($3::bigint * interval '1 millisecond')
+       AND rb.check_in <= $4::date AND rb.check_out >= $5::date
+       AND NOT EXISTS (
+         SELECT 1 FROM reservations x WHERE x.channel_id = $2 AND x.external_reservation_id = $6
+       )
+     LIMIT 1`,
+    [feed.roomTypeId, feed.channelId, ECHO_WINDOW_MS, checkIn, checkOut, uid]
+  );
+  return rows.length > 0;
+}
+
 export interface FeedDiagnosisRow {
   uid: string;
   checkIn: string;
@@ -691,6 +744,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
             e.cancellation_reason === 'ota_cancellation' ? 'Se recrea sola en la próxima sincronización.' : 'No se recrea sola.'}`
           : `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})`,
       });
+      continue;
+    }
+    if (event.isBlocked && !event.isOwnerBlock && (await isRecentCancellationEcho(feed, event.checkIn, event.checkOut, event.uid))) {
+      rows.push({ ...row, verdict: 'Retenido: probable ECO de una reserva cancelada hace menos de 24 h. Se importa solo si sigue en el feed pasadas 12 h' });
       continue;
     }
     const { rows: clash } = await query<{ reservation_number: string; status: string; ci: string; co: string; channel: string | null }>(
@@ -766,6 +823,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
   let updated = 0;
   let skippedOwn = 0;
   let cancelledDirect = 0;
+  let quarantined = 0;
 
   try {
     // Parser propio por feed: guarda estado interno (errores) y ahora se leen varios feeds en paralelo.
@@ -777,6 +835,8 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     // Ids de todos los eventos de esta lectura: una reserva guardada cuyo id NO esta aca y que se superpone con
     // un evento nuevo del mismo canal es la misma estadia con otras fechas (ver channel-service).
     const feedExternalIds = events.filter((e) => !e.isOwn).map((e) => e.uid);
+    const echoQuarantine = await loadEchoQuarantine(feed.id);
+    const echoStillPending: Record<string, string> = {};
 
     for (const event of events) {
       if (event.isOwn) { skippedOwn++; continue; }
@@ -796,6 +856,16 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         await channelService.handleChannelCancellation(event.uid, feed.channelId);
         cancelledDirect++;
         continue;
+      }
+
+      // Eco tardio de una cancelacion: se retiene hasta ECHO_QUARANTINE_MS antes de tratarlo como reserva de la OTA.
+      if (event.isBlocked && !event.isOwnerBlock && (await isRecentCancellationEcho(feed, event.checkIn, event.checkOut, event.uid))) {
+        const since = echoQuarantine[event.uid] ?? new Date().toISOString();
+        echoStillPending[event.uid] = since; // se conserva tambien liberado, para no reiniciar el plazo
+        if (Date.now() - new Date(since).getTime() < echoQuarantineMs()) {
+          quarantined++;
+          continue;
+        }
       }
 
       try {
@@ -822,6 +892,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         errors.push(`Evento ${event.uid}: ${error instanceof Error ? error.message : 'error desconocido'}`);
       }
     }
+
+    await saveEchoQuarantine(feed.id, echoStillPending);
+    if (quarantined > 0) {logger.info('iCal: eventos retenidos por probable eco de una cancelacion', { feedId: feed.id, quarantined });}
 
     // Cancelacion por ausencia: solo si el evento falta 24 h seguidas (ver cancelAbsentReservations).
     // Los eventos que el feed marca expresamente como cancelados (STATUS:CANCELLED) se cancelan al instante.

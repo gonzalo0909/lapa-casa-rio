@@ -261,7 +261,7 @@ async function loadExportURLs() {
     else if (!apartmentsCache.length) { await loadApartments(); }
     const rooms = [
       ...(PROPERTY_TYPE === 'apartment' ? [] : (data.rooms ?? [])).map((r) => ({ ...r, exportPath: `/api/v1/ical/export/${r.id}` })),
-      ...apartmentsCache.map((a) => ({ ...a, name: `${a.name} (apartamento)`, exportPath: `/api/v1/ical/apartment/export/${a.id}` })),
+      ...apartmentsCache.map((a) => ({ ...a, name: `${a.name} (apartamento)`, exportPath: `/api/v1/ical/apartment/export/${a.id}`, apartmentId: a.id })),
     ];
     const base = window.location.origin;
     const el = document.getElementById('export-list');
@@ -283,7 +283,11 @@ async function loadExportURLs() {
       <div style="margin-bottom:18px;">
         <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>
         ${OTAS.map((ota) => {
-          const url = `${base}${r.exportPath}${tokenQs}&channel=${ota}`;
+          // Apartamentos: enlace con token y canal en la ruta y terminado en .ics (Booking lo acepta mejor
+          // que el que lleva ?query). Hostel: formato anterior.
+          const url = r.apartmentId
+            ? `${base}/api/v1/ical/apartment/feed/${encodeURIComponent(tokenData.token)}/${r.apartmentId}/${ota}.ics`
+            : `${base}${r.exportPath}${tokenQs}&channel=${ota}`;
           return `
           <div style="font-size:12px;margin:6px 0 2px;">Para pegar en ${escapeHtml(PLATFORM_LABELS[ota])}:</div>
           <div data-url="${escapeHtml(url)}" style="display:flex;align-items:center;gap:8px;background:var(--bg,#f5f5f5);border:1px solid #ddd;border-radius:6px;padding:8px 12px;">

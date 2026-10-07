@@ -400,6 +400,10 @@ async function applyOtaDateChange(
  * detectado por iCal para Airbnb/Hostelworld). Idempotente por
  * (channelId, externalReservationId).
  */
+/** Cancelaciones hechas por el sistema (ausencia en el feed o conflicto): si la OTA sigue teniendo la reserva, se recrea. */
+export const isAutoCancelReason = (reason: string | null): boolean =>
+  reason === 'ota_cancellation' || /^conflict_/.test(reason ?? '');
+
 async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: string): Promise<ChannelBookingResult> {
   const channel = await getChannelById(channelId);
 
@@ -412,12 +416,12 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
   );
   if (existingRows.length > 0) {
     const existing = existingRows[0];
-    if (existing.status === 'cancelled' && existing.cancellation_reason === 'ota_cancellation') {
+    if (existing.status === 'cancelled' && isAutoCancelReason(existing.cancellation_reason)) {
       // La reserva se cancelo aca por ausencia en el feed (o aviso de la OTA) y el evento volvio a
       // aparecer: la OTA la sigue teniendo. Se libera su id externo (queda como historial) y se
       // sigue de largo para crearla de nuevo con el control normal de disponibilidad. Las
-      // canceladas por un conflicto (conflict_*) NO se reactivan: el evento sigue en el feed y
-      // chocaria de nuevo en cada sync.
+      // canceladas por un conflicto (conflict_*) tambien se recrean: si las fechas siguen ocupadas,
+      // el intento falla sin duplicar el aviso.
       await query(
         `UPDATE reservations SET external_reservation_id = left(external_reservation_id, 230) || '#cancelled-' || left(id::text, 8)
          WHERE id = $1`,

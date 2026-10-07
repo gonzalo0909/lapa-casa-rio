@@ -206,6 +206,21 @@ router.post('/apartment/:roomTypeId/regenerate-token', authenticateToken, requir
   }
 });
 
+/** GET /api/ical/feeds/:id/diagnose — qué hace el sistema con cada evento del feed (no modifica nada). */
+router.get('/feeds/:id/diagnose', authenticateToken, requireRole(['admin']), async (req, res, next) => {
+  try {
+    const feed = await icalService.getFeed(req.params.id);
+    if (!feed) {
+      res.status(404).json(ApiResponse.error('Feed no encontrado'));
+      return;
+    }
+    const rows = await icalService.diagnoseFeed(feed);
+    res.status(200).json(ApiResponse.success({ rows }));
+  } catch (error) {
+    next(error);
+  }
+});
+
 /** GET /api/ical/feeds — feeds de importacion configurados (admin). */
 router.get('/feeds', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
   try {

@@ -646,6 +646,73 @@ async function cleanHorizonReservations(feed: IcalFeedConfig): Promise<number> {
   return rows.length;
 }
 
+export interface FeedDiagnosisRow {
+  uid: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  verdict: string;
+}
+
+/**
+ * Diagnóstico de un feed SIN modificar nada: lee el feed de la OTA y dice, evento por evento, qué hace
+ * (o haría) el sistema con él. Sirve para ver por qué una reserva real no aparece en Lapa Casa.
+ */
+export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisRow[]> {
+  const parsed = await new ICalParser().parseFromUrl(feed.url, feed.channelCode);
+  if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
+  const events = toParsedIcalEvents(parsed.bookings).filter((e) => !e.isOwn);
+  const rows: FeedDiagnosisRow[] = [];
+
+  for (const event of events) {
+    const nights = nightsBetween(event.checkIn, event.checkOut);
+    const row = { uid: event.uid, checkIn: event.checkIn, checkOut: event.checkOut, nights };
+    if (nights > MAX_IMPORT_NIGHTS) {
+      rows.push({ ...row, verdict: 'Ignorado: cierre de horizonte de la plataforma (más de 180 noches)' });
+      continue;
+    }
+    if (event.isCancelled) {
+      rows.push({ ...row, verdict: 'La plataforma lo marca como cancelado' });
+      continue;
+    }
+    const { rows: existing } = await query<{
+      reservation_number: string; status: string; cancellation_reason: string | null; ci: string; co: string;
+    }>(
+      `SELECT reservation_number, status, cancellation_reason, check_in_date::text AS ci, check_out_date::text AS co
+       FROM reservations WHERE channel_id = $1 AND external_reservation_id = $2`,
+      [feed.channelId, event.uid]
+    );
+    if (existing[0]) {
+      const e = existing[0];
+      rows.push({
+        ...row,
+        verdict: e.status === 'cancelled'
+          ? `Existe pero está CANCELADA (${e.reservation_number}, motivo: ${e.cancellation_reason ?? '—'}). ${
+            e.cancellation_reason === 'ota_cancellation' ? 'Se recrea sola en la próxima sincronización.' : 'No se recrea sola.'}`
+          : `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})`,
+      });
+      continue;
+    }
+    const { rows: clash } = await query<{ reservation_number: string; status: string; ci: string; co: string; channel: string | null }>(
+      `SELECT res.reservation_number, res.status, rb.check_in::text AS ci, rb.check_out::text AS co, ch.code AS channel
+       FROM reservation_beds rb
+       JOIN reservations res ON res.id = rb.reservation_id
+       LEFT JOIN channels ch ON ch.id = res.channel_id
+       WHERE rb.room_type_id = $1 AND res.status != 'cancelled'
+         AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+       LIMIT 1`,
+      [feed.roomTypeId, event.checkIn, event.checkOut]
+    );
+    rows.push({
+      ...row,
+      verdict: clash[0]
+        ? `NO se puede importar: choca con la reserva ${clash[0].reservation_number} (${clash[0].channel ?? 'directa'}, ${clash[0].status}, ${clash[0].ci} → ${clash[0].co})`
+        : 'Se importará en la próxima sincronización (cada 5 min)',
+    });
+  }
+  return rows.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+}
+
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   const seenNow = new Set<string>();
@@ -858,6 +925,7 @@ export const icalService = {
   generateAllApartmentFeeds,
   parseICalEvents,
   importICalFeed,
+  diagnoseFeed,
   syncICalFeeds,
   refreshAvailabilityCache,
   mapOTARoomToLocalRoom,

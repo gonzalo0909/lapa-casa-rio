@@ -271,6 +271,9 @@ async function loadExportURLs() {
       return;
     }
     const tokenQs = `?token=${encodeURIComponent(tokenData.token)}`;
+    // Token propio de cada apartamento (si no tiene, devuelve el global)
+    let aptTokens = {};
+    try { aptTokens = (await apiFetch('/ical/apartment-tokens')).tokens || {}; } catch (_) { aptTokens = {}; }
 
     if (!rooms.length) {
       el.innerHTML = '<p style="color:#888;">Sin habitaciones disponibles.</p>';
@@ -281,12 +284,15 @@ async function loadExportURLs() {
     const OTAS = ['booking', 'airbnb'];
     el.innerHTML = rooms.map((r) => `
       <div style="margin-bottom:18px;">
-        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${escapeHtml(r.name)}</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:10px;">
+          <span>${escapeHtml(r.name)}</span>
+          ${r.apartmentId ? `<button data-action="regen-token" data-apt="${escapeHtml(r.apartmentId)}" style="font-size:11px;padding:2px 8px;">Regenerar enlace</button>` : ''}
+        </div>
         ${OTAS.map((ota) => {
           // Apartamentos: enlace con token y canal en la ruta y terminado en .ics (Booking lo acepta mejor
           // que el que lleva ?query). Hostel: formato anterior.
           const url = r.apartmentId
-            ? `${base}/api/v1/ical/apartment/feed/${encodeURIComponent(tokenData.token)}/${r.apartmentId}/${ota}.ics`
+            ? `${base}/api/v1/ical/apartment/feed/${encodeURIComponent(aptTokens[r.apartmentId] || tokenData.token)}/${r.apartmentId}/${ota}.ics`
             : `${base}${r.exportPath}${tokenQs}&channel=${ota}`;
           return `
           <div style="font-size:12px;margin:6px 0 2px;">Para pegar en ${escapeHtml(PLATFORM_LABELS[ota])}:</div>
@@ -304,6 +310,19 @@ async function loadExportURLs() {
       btn.addEventListener('click', () => {
         const url = btn.closest('[data-url]').dataset.url;
         copyToClipboard(url, btn);
+      });
+    });
+    el.querySelectorAll('button[data-action="regen-token"]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Regenerar el enlace de este apartamento?\n\nEl enlace actual deja de funcionar: tendrás que pegar el nuevo en Booking y Airbnb.')) { return; }
+        btn.disabled = true;
+        try {
+          await apiFetch(`/ical/apartment/${btn.dataset.apt}/regenerate-token`, { method: 'POST' });
+          await loadExportURLs();
+        } catch (err) {
+          alert(err.message);
+          btn.disabled = false;
+        }
       });
     });
   } catch (err) {

@@ -8,10 +8,11 @@
 // en el schema real -- los feeds configurados viven en `system_config`
 // (ver services/ical-service.ts).
 
-import { timingSafeEqual } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { env } from '../../config/environment';
+import { query } from '../../config/database';
 import { authenticateToken, requireRole } from '../../middleware/auth';
 import { rateLimiter } from '../../middleware/rate-limiter';
 import { DuplicateFeedError, icalService } from '../../services/ical-service';
@@ -49,6 +50,52 @@ function requireExportToken(req: Request, res: Response, next: NextFunction): vo
   next();
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const safeEqual = (a: string, b: string): boolean => {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+};
+
+/**
+ * Feeds de UN apartamento: se valida con el token PROPIO del apartamento (room_types.ical_export_token)
+ * si tiene uno; si no, con el global ICAL_EXPORT_TOKEN. Así regenerar el enlace de un apartamento
+ * invalida el anterior solo para ese apartamento.
+ */
+async function requireApartmentExportToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roomTypeId = req.params.roomTypeId;
+    const rawToken = typeof req.params.token === 'string' ? req.params.token : req.query.token;
+    const given = typeof rawToken === 'string' ? rawToken : '';
+    if (!roomTypeId || !UUID_RE.test(roomTypeId) || !given) {
+      res.status(404).json(ApiResponse.error('No encontrado'));
+      return;
+    }
+    const { rows } = await query<{ ical_export_token: string | null }>(
+      `SELECT ical_export_token FROM room_types WHERE id = $1 AND property_type = 'apartment'`,
+      [roomTypeId],
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('No encontrado'));
+      return;
+    }
+    const own = rows[0]!.ical_export_token;
+    const expected = own || env.ICAL_EXPORT_TOKEN;
+    if (!expected) {
+      res.status(503).json(ApiResponse.error('Exportación iCal no configurada (falta ICAL_EXPORT_TOKEN)'));
+      return;
+    }
+    if (!safeEqual(given, expected)) {
+      res.status(404).json(ApiResponse.error('No encontrado'));
+      return;
+    }
+    next();
+  } catch (error) {
+    res.status(500).json(ApiResponse.error('Error validando el token', error instanceof Error ? error.message : 'Error desconocido'));
+  }
+}
+
 const ChannelQuerySchema = z.enum(['direct', 'booking', 'hostelworld', 'airbnb', 'expedia']).optional();
 
 /** ?channel=booking: el feed omite las reservas que vinieron de ese canal (evita el eco OTA -> Lapa -> OTA). */
@@ -83,7 +130,7 @@ router.get('/export', exportLimiter, requireExportToken, async (req, res) => {
 });
 
 /** GET /api/ical/apartment/export/:roomTypeId — feed iCal público de UN apartamento. */
-router.get('/apartment/export/:roomTypeId', exportLimiter, requireExportToken, async (req, res) => {
+router.get('/apartment/export/:roomTypeId', exportLimiter, requireApartmentExportToken, async (req, res) => {
   try {
     const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId, channelOf(req));
     sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);
@@ -97,7 +144,7 @@ router.get('/apartment/export/:roomTypeId', exportLimiter, requireExportToken, a
  * token y canal en la RUTA (sin ?query) y terminado en .ics. Es la forma más aceptada por los validadores
  * de Booking.com, que dejaban el enlace con query en "Comprobando conexión".
  */
-router.get('/apartment/feed/:token/:roomTypeId/:channel.ics', exportLimiter, requireExportToken, async (req, res) => {
+router.get('/apartment/feed/:token/:roomTypeId/:channel.ics', exportLimiter, requireApartmentExportToken, async (req, res) => {
   try {
     const calendar = await icalService.generateApartmentICalFeed(req.params.roomTypeId, channelOf(req));
     sendCalendar(res, `apartment-${req.params.roomTypeId}.ics`, calendar);
@@ -119,6 +166,44 @@ router.get('/apartment/export', exportLimiter, requireExportToken, async (req, r
 /** GET /api/ical/export-token — token que el panel admin agrega a las URLs de exportacion. */
 router.get('/export-token', authenticateToken, requireRole(['admin']), (_req, res) => {
   res.status(200).json(ApiResponse.success({ token: env.ICAL_EXPORT_TOKEN || null }));
+});
+
+/** GET /api/ical/apartment-tokens — token efectivo de cada apartamento (propio si tiene, si no el global). */
+router.get('/apartment-tokens', authenticateToken, requireRole(['admin']), async (_req, res, next) => {
+  try {
+    const { rows } = await query<{ id: string; ical_export_token: string | null }>(
+      `SELECT id, ical_export_token FROM room_types WHERE property_type = 'apartment'`,
+    );
+    const tokens: Record<string, string | null> = {};
+    for (const r of rows) {tokens[r.id] = r.ical_export_token || env.ICAL_EXPORT_TOKEN || null;}
+    res.status(200).json(ApiResponse.success({ tokens }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** POST /api/ical/apartment/:roomTypeId/regenerate-token — genera un token nuevo SOLO para este apartamento. */
+router.post('/apartment/:roomTypeId/regenerate-token', authenticateToken, requireRole(['admin']), async (req, res, next) => {
+  try {
+    const roomTypeId = req.params.roomTypeId;
+    if (!roomTypeId || !UUID_RE.test(roomTypeId)) {
+      res.status(400).json(ApiResponse.error('roomTypeId inválido'));
+      return;
+    }
+    const token = randomBytes(32).toString('hex');
+    const { rows } = await query(
+      `UPDATE room_types SET ical_export_token = $1, updated_at = now()
+       WHERE id = $2 AND property_type = 'apartment' RETURNING id`,
+      [token, roomTypeId],
+    );
+    if (rows.length === 0) {
+      res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+      return;
+    }
+    res.status(200).json(ApiResponse.success({ roomTypeId, token }, 'Enlace regenerado: el anterior dejó de funcionar'));
+  } catch (error) {
+    next(error);
+  }
 });
 
 /** GET /api/ical/feeds — feeds de importacion configurados (admin). */

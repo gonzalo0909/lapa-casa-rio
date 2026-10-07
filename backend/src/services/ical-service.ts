@@ -86,6 +86,8 @@ export interface FeedImportResult {
   cancelled: number;
   skippedOwn: number;
   errors: string[];
+  /** ids de todos los eventos ajenos de esta lectura (solo si el feed se leyo bien) */
+  eventIds?: string[];
 }
 
 export interface SyncAllResult {
@@ -95,6 +97,8 @@ export interface SyncAllResult {
   totalImported: number;
   totalCancelled: number;
   results: FeedImportResult[];
+  /** por canal (channelId): ids de eventos vigentes, solo de canales cuyos feeds activos se leyeron todos bien */
+  currentFeedIds: Map<string, Set<string>>;
 }
 
 interface RoomTypeRow {
@@ -206,7 +210,7 @@ export async function deleteFeed(feedId: string): Promise<{ orphanedReservations
   const existing = await getFeed(feedId);
   if (!existing) {return null;}
   await query(`DELETE FROM system_config WHERE key = ANY($1::text[])`, [
-    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`, `${FEED_LAST_KEY_PREFIX}${feedId}`],
+    [`${FEED_KEY_PREFIX}${feedId}`, `${SEEN_KEY_PREFIX}${feedId}`, `${HEALTH_KEY_PREFIX}${feedId}`, `${FEED_LAST_KEY_PREFIX}${feedId}`, `ical_feed_warn:${feedId}`, `${ECHO_KEY_PREFIX}${feedId}`],
   ]);
   return { orphanedReservations: await countOrphanedReservations(existing) };
 }
@@ -574,7 +578,7 @@ async function saveSeen(feedId: string, seen: Record<string, string>): Promise<v
 
 /**
  * Cancela las reservas importadas de este feed que faltan en el feed actual desde hace mas de
- * ABSENCE_GRACE_MS. SOLO las que todavia no empezaron (check_in > hoy): una estadia en curso nunca
+ * ABSENCE_GRACE_MS. SOLO las que todavia no empezaron o empiezan hoy (check_in >= hoy): una estadia en curso nunca
  * se cancela por ausencia, porque si la OTA omite el evento por un fallo del feed se liberaria un
  * apartamento ocupado; si realmente se cancela, la OTA lo marca con STATUS:CANCELLED. Una reserva sin registro previo arranca su plazo ahora (nunca se cancela
  * en la primera lectura). Devuelve cuantas cancelo. Exportada solo para pruebas.
@@ -592,7 +596,7 @@ export async function cancelAbsentReservations(
      WHERE rb.room_type_id = $1
        AND r.channel_id = $2
        AND r.status IN ('confirmed', 'pending_ota_confirmation')
-       AND rb.check_in > CURRENT_DATE
+       AND rb.check_in >= CURRENT_DATE
        AND r.external_reservation_id IS NOT NULL`,
     [feed.roomTypeId, feed.channelId]
   );
@@ -646,6 +650,59 @@ async function cleanHorizonReservations(feed: IcalFeedConfig): Promise<number> {
   return rows.length;
 }
 
+/**
+ * Eco tardio: cuando se cancela una reserva de Lapa (directa u otra OTA), la OTA sigue mostrando esas fechas
+ * cerradas hasta que relee nuestro feed (horas). Si en ese lapso se importara su cierre, naceria una reserva
+ * fantasma que ademas se reexporta a las demas OTAs. Un evento NUEVO, sin reserva activa, cuyas fechas quedan
+ * cubiertas por una reserva de otro canal cancelada hace menos de ECHO_WINDOW_MS, se retiene en cuarentena.
+ * Si sigue en el feed pasado ECHO_QUARANTINE_MS, deja de ser eco (la OTA lo mantiene) y se importa normal.
+ * No oculta superposiciones con reservas vigentes: esas siguen generando conflicto (ver 3ecd80e).
+ */
+const ECHO_WINDOW_MS = 24 * 60 * 60 * 1000;
+function echoQuarantineMs(): number {
+  const hours = Number(process.env.ICAL_ECHO_QUARANTINE_HOURS);
+  return (Number.isFinite(hours) && hours >= 1 ? hours : 12) * 60 * 60 * 1000;
+}
+const ECHO_KEY_PREFIX = 'ical_echo:';
+
+async function loadEchoQuarantine(feedId: string): Promise<Record<string, string>> {
+  const { rows } = await query<{ value: Record<string, string> }>(`SELECT value FROM system_config WHERE key = $1`, [`${ECHO_KEY_PREFIX}${feedId}`]);
+  return rows[0]?.value ?? {};
+}
+
+async function saveEchoQuarantine(feedId: string, map: Record<string, string>): Promise<void> {
+  const key = `${ECHO_KEY_PREFIX}${feedId}`;
+  if (Object.keys(map).length === 0) {
+    await query(`DELETE FROM system_config WHERE key = $1`, [key]);
+    return;
+  }
+  await query(
+    `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Eventos de un feed iCal retenidos por probable eco de una cancelacion')
+     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+    [key, JSON.stringify(map)]
+  );
+}
+
+/** true si el evento nuevo es probable eco de una reserva ajena cancelada hace poco (ver ECHO_WINDOW_MS). */
+export async function isRecentCancellationEcho(feed: IcalFeedConfig, checkIn: string, checkOut: string, uid: string): Promise<boolean> {
+  const { rows } = await query(
+    `SELECT 1
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     WHERE rb.room_type_id = $1
+       AND r.status = 'cancelled'
+       AND r.channel_id IS DISTINCT FROM $2
+       AND r.cancelled_at > now() - ($3::bigint * interval '1 millisecond')
+       AND rb.check_in <= $4::date AND rb.check_out >= $5::date
+       AND NOT EXISTS (
+         SELECT 1 FROM reservations x WHERE x.channel_id = $2 AND x.external_reservation_id = $6
+       )
+     LIMIT 1`,
+    [feed.roomTypeId, feed.channelId, ECHO_WINDOW_MS, checkIn, checkOut, uid]
+  );
+  return rows.length > 0;
+}
+
 export interface FeedDiagnosisRow {
   uid: string;
   checkIn: string;
@@ -693,6 +750,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       });
       continue;
     }
+    if (event.isBlocked && !event.isOwnerBlock && (await isRecentCancellationEcho(feed, event.checkIn, event.checkOut, event.uid))) {
+      rows.push({ ...row, verdict: 'Retenido: probable ECO de una reserva cancelada hace menos de 24 h. Se importa solo si sigue en el feed pasadas 12 h' });
+      continue;
+    }
     const { rows: clash } = await query<{ reservation_number: string; status: string; ci: string; co: string; channel: string | null }>(
       `SELECT res.reservation_number, res.status, rb.check_in::text AS ci, rb.check_out::text AS co, ch.code AS channel
        FROM reservation_beds rb
@@ -713,6 +774,50 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
   return rows.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
 }
 
+async function countImportedFutureReservations(feed: IcalFeedConfig): Promise<number> {
+  const { rows } = await query<{ n: number }>(
+    `SELECT COUNT(DISTINCT r.id)::int AS n
+     FROM reservations r JOIN reservation_beds rb ON rb.reservation_id = r.id
+     WHERE rb.room_type_id = $1 AND r.channel_id = $2
+       AND r.status IN ('confirmed', 'pending_ota_confirmation')
+       AND r.external_reservation_id IS NOT NULL AND rb.check_out >= CURRENT_DATE`,
+    [feed.roomTypeId, feed.channelId]
+  );
+  return rows[0]?.n ?? 0;
+}
+
+/**
+ * Avisa por email (una vez cada 12 h por feed) cuando la lectura de un feed parece incompleta: eventos
+ * descartados por no poder leerse (esas fechas quedarian libres) o feed vacio aunque Lapa tiene reservas
+ * futuras importadas de ese canal (suele ser un fallo de la OTA, no que no haya reservas).
+ */
+async function alertFeedAnomaly(feed: IcalFeedConfig, parsed: { errors: string[]; metadata: { totalEvents: number; skippedEvents: number } }): Promise<void> {
+  const problems: string[] = [];
+  if (parsed.metadata.skippedEvents > 0) {
+    problems.push(`${parsed.metadata.skippedEvents} evento(s) descartado(s) por no poder leerse: ${parsed.errors.slice(0, 3).join(' | ')}`);
+  }
+  if (parsed.metadata.totalEvents === 0 && (await countImportedFutureReservations(feed)) > 0) {
+    problems.push('El feed no trae ningún evento pero Lapa tiene reservas futuras importadas de este canal');
+  }
+  if (problems.length === 0) {return;}
+
+  const key = `ical_feed_warn:${feed.id}`;
+  const { rows } = await query<{ value: { alertedAt: string } }>(`SELECT value FROM system_config WHERE key = $1`, [key]);
+  const last = rows[0]?.value?.alertedAt ? new Date(rows[0].value.alertedAt).getTime() : 0;
+  if (Date.now() - last < REALERT_AFTER_MS) {return;}
+
+  await emailService
+    .sendAdminAlert('Feed iCal con lectura incompleta', { canal: feed.channelCode, habitacion: feed.roomTypeId, feed: feed.url, problemas: problems.join(' ; ') })
+    .then(() =>
+      query(
+        `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Ultimo aviso de lectura incompleta de un feed iCal')
+         ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+        [key, JSON.stringify({ alertedAt: new Date().toISOString() })]
+      )
+    )
+    .catch((error) => logger.warn('No se pudo avisar la lectura incompleta del feed', { feedId: feed.id, error: error instanceof Error ? error.message : String(error) }));
+}
+
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   const seenNow = new Set<string>();
@@ -722,6 +827,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
   let updated = 0;
   let skippedOwn = 0;
   let cancelledDirect = 0;
+  let quarantined = 0;
 
   try {
     // Parser propio por feed: guarda estado interno (errores) y ahora se leen varios feeds en paralelo.
@@ -729,9 +835,12 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
     const events = toParsedIcalEvents(parsed.bookings);
     errors.push(...parsed.errors);
+    await alertFeedAnomaly(feed, parsed);
     // Ids de todos los eventos de esta lectura: una reserva guardada cuyo id NO esta aca y que se superpone con
     // un evento nuevo del mismo canal es la misma estadia con otras fechas (ver channel-service).
     const feedExternalIds = events.filter((e) => !e.isOwn).map((e) => e.uid);
+    const echoQuarantine = await loadEchoQuarantine(feed.id);
+    const echoStillPending: Record<string, string> = {};
 
     for (const event of events) {
       if (event.isOwn) { skippedOwn++; continue; }
@@ -753,6 +862,16 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         continue;
       }
 
+      // Eco tardio de una cancelacion: se retiene hasta ECHO_QUARANTINE_MS antes de tratarlo como reserva de la OTA.
+      if (event.isBlocked && !event.isOwnerBlock && (await isRecentCancellationEcho(feed, event.checkIn, event.checkOut, event.uid))) {
+        const since = echoQuarantine[event.uid] ?? new Date().toISOString();
+        echoStillPending[event.uid] = since; // se conserva tambien liberado, para no reiniciar el plazo
+        if (Date.now() - new Date(since).getTime() < echoQuarantineMs()) {
+          quarantined++;
+          continue;
+        }
+      }
+
       try {
         const result = await channelService.handleChannelBooking(
           {
@@ -763,7 +882,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
             checkOut: event.checkOut,
             source: 'ical',
             feedExternalIds,
-            ownerBlock: event.isOwnerBlock,
+            // Sin huesped real ("<canal> (iCal)"): es un bloqueo de fechas, no una venta. Se guarda sin precio
+            // y fuera de estadisticas (source *_ical_block), pero sigue ocupando la unidad.
+            ownerBlock: event.isOwnerBlock || event.isBlocked,
           },
           feed.channelId
         );
@@ -775,6 +896,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
         errors.push(`Evento ${event.uid}: ${error instanceof Error ? error.message : 'error desconocido'}`);
       }
     }
+
+    await saveEchoQuarantine(feed.id, echoStillPending);
+    if (quarantined > 0) {logger.info('iCal: eventos retenidos por probable eco de una cancelacion', { feedId: feed.id, quarantined });}
 
     // Cancelacion por ausencia: solo si el evento falta 24 h seguidas (ver cancelAbsentReservations).
     // Los eventos que el feed marca expresamente como cancelados (STATUS:CANCELLED) se cancelan al instante.
@@ -801,6 +925,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       cancelled: cancelledDirect + cancelledByAbsence + cancelledEchoes,
       skippedOwn,
       errors,
+      eventIds: feedExternalIds,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'error desconocido';
@@ -862,6 +987,13 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
 
   await refreshAvailabilityCache();
 
+  const currentFeedIds = new Map<string, Set<string>>();
+  for (const channelId of new Set(feeds.map((f) => f.channelId))) {
+    const channelResults = feeds.map((f, i) => ({ f, r: results[i] })).filter(({ f }) => f.channelId === channelId);
+    if (!channelResults.every(({ r }) => r?.success && r.eventIds)) {continue;}
+    currentFeedIds.set(channelId, new Set(channelResults.flatMap(({ r }) => r!.eventIds!)));
+  }
+
   return {
     totalFeeds: feeds.length,
     successfulFeeds: results.filter((r) => r.success).length,
@@ -869,6 +1001,7 @@ export async function syncICalFeeds(filterChannelId?: string): Promise<SyncAllRe
     totalImported: results.reduce((s, r) => s + r.imported, 0),
     totalCancelled: results.reduce((s, r) => s + r.cancelled, 0),
     results,
+    currentFeedIds,
   };
 }
 

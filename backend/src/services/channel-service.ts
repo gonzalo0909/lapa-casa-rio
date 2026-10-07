@@ -258,9 +258,10 @@ async function findBlockingReservation(
   roomTypeId: string,
   checkIn: string,
   checkOut: string
-): Promise<{ id: string; channelCode: ChannelCode } | null> {
-  const { rows } = await query<{ id: string; channel_code: ChannelCode }>(
-    `SELECT r.id, c.code AS channel_code
+): Promise<{ id: string; channelCode: ChannelCode; coversWholeStay: boolean } | null> {
+  const { rows } = await query<{ id: string; channel_code: ChannelCode; covers: boolean }>(
+    `SELECT r.id, c.code AS channel_code,
+            (rb.check_in <= $2::date AND rb.check_out >= $3::date) AS covers
      FROM reservation_beds rb
      JOIN reservations r ON r.id = rb.reservation_id
      JOIN channels c ON c.id = r.channel_id
@@ -272,7 +273,7 @@ async function findBlockingReservation(
     [roomTypeId, checkIn, checkOut]
   );
   if (rows.length === 0) {return null;}
-  return { id: rows[0].id, channelCode: rows[0].channel_code };
+  return { id: rows[0].id, channelCode: rows[0].channel_code, coversWholeStay: rows[0].covers };
 }
 
 async function alertUnplacedOtaBooking(
@@ -301,6 +302,9 @@ async function alertUnplacedOtaBooking(
     })
     .catch((error) => logger.warn('No se pudo avisar la reserva OTA sin bloqueador', { error: error instanceof Error ? error.message : String(error) }));
 }
+
+/** Check-in en los proximos 2 dias: no se espera para avisar, un overbooking real ya es urgente. */
+const isUrgentCheckIn = (checkIn: string): boolean => new Date(checkIn).getTime() - Date.now() <= 2 * 24 * 60 * 60 * 1000;
 
 async function recordAvailabilityConflict(
   roomTypeId: string,
@@ -334,12 +338,19 @@ async function recordAvailabilityConflict(
     [bookingData.externalReservationId, channelId, bookingData.checkIn, bookingData.checkOut]
   );
   if (already.length > 0) {return;}
-  await conflictService.recordConflict({
-    reservationIdA: blocker.id,
-    channelA: blocker.channelCode,
-    channelB: incomingChannelCode,
-    rejectedPayload: { ...bookingData, channelId },
-  });
+  // Probable eco: un iCal sin huesped real (source 'ical') cuyas fechas caben enteras en UNA reserva de otro
+  // canal es, casi siempre, lo que la OTA reexporta de lo que Lapa le cerro. Se registra igual (queda visible
+  // en el panel) pero sin email inmediato: ver conflictService.detectConflicts.
+  const probableEcho = bookingData.source === 'ical' && blocker.coversWholeStay && blocker.channelCode !== incomingChannelCode;
+  await conflictService.recordConflict(
+    {
+      reservationIdA: blocker.id,
+      channelA: blocker.channelCode,
+      channelB: incomingChannelCode,
+      rejectedPayload: { ...bookingData, channelId, ...(probableEcho ? { probableEcho: true } : {}) },
+    },
+    { notify: !probableEcho || isUrgentCheckIn(bookingData.checkIn) }
+  );
 }
 
 /**

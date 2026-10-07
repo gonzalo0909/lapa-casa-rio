@@ -296,6 +296,23 @@
     }
   });
 
+  var deleteAptBtn = document.getElementById('delete-apt-btn');
+  if (deleteAptBtn) deleteAptBtn.addEventListener('click', function () {
+    if (!currentId) return;
+    var name = document.getElementById('editor-title').textContent;
+    if (!confirm('¿Eliminar el apartamento "' + name + '"? Se borran también sus feeds iCal, fotos, bloqueos y reseñas. No se puede deshacer.')) return;
+    setDisabled(deleteAptBtn, true);
+    apiFetch(RT + '/' + currentId, { method: 'DELETE' })
+      .then(function () {
+        currentId = null;
+        document.getElementById('editor').style.display = 'none';
+        showMsg('page-msg', 'Apartamento eliminado', 'success');
+        return loadList();
+      })
+      .catch(function (e) { showMsg('page-msg', e.message, 'error'); })
+      .finally(function () { setDisabled(deleteAptBtn, false); });
+  });
+
   var saveDatosBtn = document.getElementById('save-datos-btn');
   if (saveDatosBtn) saveDatosBtn.addEventListener('click', function () {
     if (!currentId) return;

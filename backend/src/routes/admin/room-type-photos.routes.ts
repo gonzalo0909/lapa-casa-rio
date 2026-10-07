@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { query } from '../../config/database';
+import { query, withTransaction } from '../../config/database';
 import { uploadApartmentPhoto, deleteApartmentPhoto } from '../../lib/cloudinary/cloudinary-client';
 import { isRealImage } from '../../utils/validate-image-bytes';
 import { auditLogService } from '../../services/audit-log-service';
@@ -452,6 +452,62 @@ router.put('/:id', validate(UpdateApartmentSchema), async (req, res, next) => {
 });
 
 // ── Resenas ───────────────────────────────────────────────────────────────
+
+/**
+ * DELETE /admin/room-types/:id — elimina un apartamento. Solo si NUNCA tuvo reservas activas ni históricas
+ * (reservation_beds): con reservas hay que cancelarlas antes. Borra también sus feeds iCal, camas internas
+ * y datos asociados (fotos, bloqueos, reseñas, precios: ON DELETE CASCADE).
+ */
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows: apt } = await query<{ id: string; name: string; code: string }>(
+      `SELECT id, name, code FROM room_types WHERE id = $1 AND property_type = 'apartment'`,
+      [id]
+    );
+    if (apt.length === 0) {
+      res.status(404).json(ApiResponse.error('Apartamento no encontrado'));
+      return;
+    }
+    const { rows: used } = await query<{ n: number }>(
+      `SELECT COUNT(DISTINCT reservation_id)::int AS n FROM reservation_beds WHERE room_type_id = $1`,
+      [id]
+    );
+    if ((used[0]?.n ?? 0) > 0) {
+      res.status(409).json(ApiResponse.error(`No se puede eliminar: tiene ${used[0].n} reserva(s) activa(s) o pasada(s). Cancélalas primero.`));
+      return;
+    }
+
+    await withTransaction(async (client) => {
+      const { rows: feeds } = await client.query<{ key: string }>(
+        `SELECT key FROM system_config WHERE key LIKE 'ical_feed:%' AND value->>'roomTypeId' = $1`,
+        [id]
+      );
+      const keys = feeds.flatMap(({ key }) => {
+        const feedId = key.slice('ical_feed:'.length);
+        return [key, `ical_seen:${feedId}`, `ical_feed_health:${feedId}`, `ical_feed_last:${feedId}`, `ical_feed_warn:${feedId}`, `ical_echo:${feedId}`];
+      });
+      if (keys.length > 0) {await client.query(`DELETE FROM system_config WHERE key = ANY($1::text[])`, [keys]);}
+      await client.query(`DELETE FROM room_conversion_logs WHERE room_type_id = $1`, [id]);
+      await client.query(`DELETE FROM beds WHERE room_type_id = $1`, [id]);
+      await client.query(`DELETE FROM room_types WHERE id = $1`, [id]);
+    });
+
+    await auditLogService.log({
+      entity_type: 'room_type',
+      entity_id: id,
+      operation: 'ADMIN_DELETE_APARTMENT',
+      old_data: apt[0],
+    });
+    res.status(200).json(ApiResponse.success({ deleted: apt[0] }, 'Apartamento eliminado'));
+  } catch (error: any) {
+    if (error?.code === '23503') {
+      res.status(409).json(ApiResponse.error('No se puede eliminar: el apartamento todavía tiene datos asociados.'));
+      return;
+    }
+    next(error);
+  }
+});
 
 /** GET /admin/room-types/:id/reviews */
 router.get('/:id/reviews', async (req, res, next) => {

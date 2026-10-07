@@ -38,7 +38,9 @@ export default function OwnerCalendarPage() {
             ownerApartmentsAPI.listBookings(apartment.id).catch(() => null),
             ownerApartmentsAPI.listBlocks(apartment.id),
           ]);
-          return { apartment, bookings: b?.data.bookings ?? [], blocks: k.data };
+          // Datas só 'AAAA-MM-DD' (sem hora), para comparar com os dias do calendário
+          const bookings = (b?.data.bookings ?? []).map((x) => ({ ...x, checkIn: x.checkIn.slice(0, 10), checkOut: x.checkOut.slice(0, 10) }));
+          return { apartment, bookings, blocks: k.data };
         }),
       );
       setItems(data);

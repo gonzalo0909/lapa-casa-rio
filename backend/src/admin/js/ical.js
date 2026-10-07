@@ -95,6 +95,7 @@ function renderFeeds(feeds, feedStatus) {
       <td><span class="badge ${f.isActive ? 'confirmed' : 'cancelled'}">${f.isActive ? 'Activo' : 'Pausado'}</span></td>
       <td style="font-size:12px;">${feedStatusCell(feedStatus[f.id])}</td>
       <td style="white-space:nowrap;">
+        <button data-action="diagnose-feed">Diagnosticar</button>
         <button data-action="edit-feed">Editar URL</button>
         <button data-action="toggle-feed">${f.isActive ? 'Pausar' : 'Activar'}</button>
         <button data-action="delete-feed">Quitar</button>
@@ -105,12 +106,37 @@ function renderFeeds(feeds, feedStatus) {
   tbody.querySelectorAll('button[data-action="delete-feed"]').forEach((btn) => {
     btn.addEventListener('click', () => deleteFeed(btn.closest('tr').dataset.id));
   });
+  tbody.querySelectorAll('button[data-action="diagnose-feed"]').forEach((btn) => {
+    btn.addEventListener('click', () => diagnoseFeed(btn.closest('tr').dataset.id, btn));
+  });
   tbody.querySelectorAll('button[data-action="edit-feed"]').forEach((btn) => {
     btn.addEventListener('click', () => editFeedUrl(btn.closest('tr')));
   });
   tbody.querySelectorAll('button[data-action="toggle-feed"]').forEach((btn) => {
     btn.addEventListener('click', () => toggleFeed(btn.closest('tr')));
   });
+}
+
+// Muestra, evento por evento, qué hace el sistema con lo que devuelve la plataforma.
+async function diagnoseFeed(feedId, btn) {
+  btn.disabled = true;
+  const box = document.getElementById('feeds-msg');
+  try {
+    const data = await apiFetch(`/ical/feeds/${feedId}/diagnose`);
+    const rows = (data && data.rows) || [];
+    box.innerHTML = rows.length
+      ? `<div class="msg success" style="overflow-x:auto;"><strong>Diagnóstico del feed</strong>
+          <table style="width:100%;font-size:12px;margin-top:6px;border-collapse:collapse;">
+            <tr><th style="text-align:left;">Entrada</th><th style="text-align:left;">Salida</th><th>Noches</th><th style="text-align:left;">Qué hace el sistema</th></tr>
+            ${rows.map((r) => `<tr><td>${escapeHtml(r.checkIn)}</td><td>${escapeHtml(r.checkOut)}</td><td style="text-align:center;">${r.nights}</td><td>${escapeHtml(r.verdict)}</td></tr>`).join('')}
+          </table></div>`
+      : '<div class="msg success">El feed no devolvió ningún evento.</div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (err) {
+    showMsg('feeds-msg', escapeHtml(err.message), 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function editFeedUrl(row) {

@@ -103,6 +103,7 @@ function renderTable(owners) {
           <button data-action="toggle-active" class="${o.isActive ? 'btn-danger' : ''}">
             ${o.isActive ? 'Desactivar' : 'Activar'}
           </button>
+          <button data-action="delete-owner" class="btn-danger">Eliminar</button>
         </div>
       </td>
     </tr>
@@ -126,6 +127,10 @@ function renderTable(owners) {
   });
   tbody.querySelectorAll('button[data-action="reset-password"]').forEach((btn) => {
     btn.addEventListener('click', () => resetPassword(btn.closest('tr').dataset.ownerId));
+  });
+  tbody.querySelectorAll('button[data-action="delete-owner"]').forEach((btn) => {
+    const tr = btn.closest('tr');
+    btn.addEventListener('click', () => deleteOwner(tr.dataset.ownerId, tr.querySelector('td')?.textContent.trim() || ''));
   });
   tbody.querySelectorAll('button[data-action="toggle-active"]').forEach((btn) => {
     const ownerId = btn.closest('tr').dataset.ownerId;
@@ -199,6 +204,17 @@ async function toggleActive(ownerId, activate) {
     } else {
       await apiFetch(`${OW}/${ownerId}`, { method: 'DELETE' });
     }
+    await loadOwners();
+  } catch (err) {
+    showMsg('page-msg', err.message, 'error');
+  }
+}
+
+async function deleteOwner(ownerId, name) {
+  if (!confirm(`¿Eliminar definitivamente al administrador "${name}"? No se puede deshacer.`)) return;
+  try {
+    await apiFetch(`${OW}/${ownerId}/permanent`, { method: 'DELETE' });
+    showMsg('page-msg', 'Administrador eliminado', 'success');
     await loadOwners();
   } catch (err) {
     showMsg('page-msg', err.message, 'error');

@@ -320,6 +320,48 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
+// ─── DELETE /apartment-owners/:id/permanent — elimina definitivamente ───────
+// Solo si no tiene apartamentos asignados ni transferencias de pagos (historial financiero).
+// Documentos y mensajes se borran en cascada.
+
+router.delete('/:id/permanent', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows: owner } = await query<{ id: string; full_name: string; email: string }>(
+      `SELECT id, full_name, email FROM apartment_owners WHERE id = $1`,
+      [id]
+    );
+    if (owner.length === 0) {
+      res.status(404).json(ApiResponse.error('Administrador no encontrado'));
+      return;
+    }
+    const { rows: rooms } = await query<{ n: number }>(`SELECT COUNT(*)::int AS n FROM room_types WHERE owner_id = $1`, [id]);
+    if ((rooms[0]?.n ?? 0) > 0) {
+      res.status(409).json(ApiResponse.error(`No se puede eliminar: tiene ${rooms[0].n} apartamento(s) asignado(s). Quítalos primero en "Gestionar".`));
+      return;
+    }
+    const { rows: transfers } = await query<{ n: number }>(`SELECT COUNT(*)::int AS n FROM owner_transfers WHERE owner_id = $1`, [id]);
+    if ((transfers[0]?.n ?? 0) > 0) {
+      res.status(409).json(ApiResponse.error('No se puede eliminar: tiene pagos registrados. Desactívalo en su lugar.'));
+      return;
+    }
+    await query(`DELETE FROM apartment_owners WHERE id = $1`, [id]);
+    await auditLogService.log({
+      entity_type: 'apartment_owner',
+      entity_id: id,
+      operation: 'ADMIN_DELETE_OWNER',
+      old_data: owner[0],
+    });
+    res.status(200).json(ApiResponse.success({ deleted: owner[0] }, 'Administrador eliminado'));
+  } catch (error: any) {
+    if (error?.code === '23503') {
+      res.status(409).json(ApiResponse.error('No se puede eliminar: el administrador todavía tiene datos asociados. Desactívalo en su lugar.'));
+      return;
+    }
+    next(error);
+  }
+});
+
 // ─── POST /apartment-owners/:id/onboarding-link ──────────────────────────────
 // Regenera el link de onboarding. Se usa cuando:
 //   - El link anterior expiró (24h)

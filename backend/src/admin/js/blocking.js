@@ -11,7 +11,7 @@
 requireAuth();
 renderNav('blocking');
 
-const REASON_LABELS = { maintenance: 'Mantenimiento', owner: 'Reserva del propietario', seasonal: 'Sazonalidade', other: 'Otro' };
+const REASON_LABELS = { maintenance: 'Mantenimiento', owner: 'Reserva del propietario', seasonal: 'Feriado', other: 'Otro' };
 const PROPERTY_TYPE = new URLSearchParams(window.location.search).get('type') === 'apartment' ? 'apartment' : 'hostel';
 
 function showMsg(elId, text, type) {

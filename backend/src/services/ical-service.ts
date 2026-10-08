@@ -732,6 +732,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       rows.push({ ...row, verdict: 'Ignorado: cierre de horizonte de la plataforma (más de 180 noches)' });
       continue;
     }
+    if (event.checkIn > toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000))) {
+      rows.push({ ...row, verdict: 'Ignorado: empieza a más de 360 días (cierre lejano de la plataforma, no se importa)' });
+      continue;
+    }
     if (event.isCancelled) {
       rows.push({ ...row, verdict: 'La plataforma lo marca como cancelado' });
       continue;

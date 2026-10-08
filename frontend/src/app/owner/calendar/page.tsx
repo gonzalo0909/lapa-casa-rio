@@ -35,11 +35,11 @@ export default function OwnerCalendarPage() {
       const data = await Promise.all(
         apartments.map(async (apartment) => {
           const [b, k] = await Promise.all([
-            ownerApartmentsAPI.listBookings(apartment.id).catch(() => null),
+            ownerApartmentsAPI.listBookings(apartment.id),
             ownerApartmentsAPI.listBlocks(apartment.id),
           ]);
           // Datas só 'AAAA-MM-DD' (sem hora), para comparar com os dias do calendário
-          const bookings = (b?.data.bookings ?? []).map((x) => ({ ...x, checkIn: x.checkIn.slice(0, 10), checkOut: x.checkOut.slice(0, 10) }));
+          const bookings = b.data.bookings.map((x) => ({ ...x, checkIn: x.checkIn.slice(0, 10), checkOut: x.checkOut.slice(0, 10) }));
           return { apartment, bookings, blocks: k.data };
         }),
       );

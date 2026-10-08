@@ -342,17 +342,21 @@ export function toCalendarDate(value: string | Date): Date {
  * conoce; devolversela hace que las cierre y las reexporte a Lapa como "reserva nueva": bucle).
  */
 async function fetchBookingsForRoom(roomTypeId: string, excludeChannel?: ChannelCode): Promise<BookingRow[]> {
+  // Mismo criterio que la disponibilidad interna (todo lo no cancelado ocupa), salvo un pendiente de pago
+  // ya vencido que todavia no limpio el cron: no debe cerrar fechas en las OTAs. GROUP BY: un UID por reserva.
   const { rows } = await query<BookingRow>(
-    `SELECT DISTINCT r.id, g.full_name AS "guestName", rb.check_in AS "checkIn", rb.check_out AS "checkOut", r.status
+    `SELECT r.id, MIN(g.full_name) AS "guestName", MIN(rb.check_in) AS "checkIn", MAX(rb.check_out) AS "checkOut", MIN(r.status::text) AS status
      FROM reservations r
      JOIN guests g ON g.id = r.guest_id
      JOIN reservation_beds rb ON rb.reservation_id = r.id
      JOIN channels c ON c.id = r.channel_id
      WHERE rb.room_type_id = $1
-       AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
+       AND r.status <> 'cancelled'
+       AND (r.status <> 'pending_payment' OR r.pending_expires_at IS NULL OR r.pending_expires_at > now())
        AND rb.check_out >= CURRENT_DATE - INTERVAL '7 days'
        AND ($2::text IS NULL OR c.code::text <> $2)
-     ORDER BY rb.check_in`,
+     GROUP BY r.id
+     ORDER BY MIN(rb.check_in)`,
     [roomTypeId, excludeChannel ?? null]
   );
   return rows;

@@ -126,7 +126,7 @@ router.put('/:id', validate(UpdateBlockSchema), async (req, res, next) => {
        FROM reservations r
        JOIN guests g ON g.id = r.guest_id
        JOIN reservation_beds rb ON rb.reservation_id = r.id
-       WHERE rb.room_type_id = $1 AND r.status IN ('confirmed', 'pending_payment')
+       WHERE rb.room_type_id = $1 AND r.status <> 'cancelled'
          AND rb.check_in < $3 AND rb.check_out > $2`,
       [roomTypeId, startDate, endDate]
     );

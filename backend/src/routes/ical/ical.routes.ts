@@ -96,7 +96,10 @@ async function requireApartmentExportToken(req: Request, res: Response, next: Ne
   }
 }
 
-const ChannelQuerySchema = z.enum(['direct', 'booking', 'hostelworld', 'airbnb', 'expedia']).optional();
+const ChannelQuerySchema = z.preprocess(
+  (v) => (typeof v === 'string' ? v.toLowerCase() : v),
+  z.enum(['direct', 'booking', 'hostelworld', 'airbnb', 'expedia']).optional()
+);
 
 /** ?channel=booking: el feed omite las reservas que vinieron de ese canal (evita el eco OTA -> Lapa -> OTA). */
 const channelOf = (req: Request) => ChannelQuerySchema.parse(req.params.channel ?? req.query.channel);

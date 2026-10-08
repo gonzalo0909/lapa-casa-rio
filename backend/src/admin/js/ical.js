@@ -307,7 +307,7 @@ async function loadExportURLs() {
     }
 
     // Un URL por OTA: cada una omite las reservas que vinieron de ella misma (evita el eco).
-    const OTAS = ['booking', 'airbnb'];
+    const OTAS = ['booking', 'airbnb', 'hostelworld', 'expedia'];
     el.innerHTML = rooms.map((r) => `
       <div style="margin-bottom:18px;">
         <div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:10px;">

@@ -757,7 +757,7 @@ router.post('/:id/blocks', validate(CreateBlockSchema), async (req, res, next) =
        FROM reservations r
        JOIN guests g ON g.id = r.guest_id
        JOIN reservation_beds rb ON rb.reservation_id = r.id
-       WHERE rb.room_type_id = $1 AND r.status IN ('confirmed', 'pending_payment')
+       WHERE rb.room_type_id = $1 AND r.status <> 'cancelled'
          AND rb.check_in < $3 AND rb.check_out > $2`,
       [req.params.id, start_date, end_date],
     );
@@ -843,16 +843,13 @@ router.get('/:id/bookings', async (req, res, next) => {
          r.status,
          r.final_price,
          r.created_at,
-         COALESCE(SUM(p.amount)  FILTER (WHERE p.payment_type = 'deposit'   AND p.status = 'succeeded'), 0) AS deposit_paid,
-         COALESCE(SUM(p.amount)  FILTER (WHERE p.payment_type = 'remaining' AND p.status = 'succeeded'), 0) AS remaining_paid,
-         COALESCE(SUM(ot.amount) FILTER (WHERE ot.status = 'succeeded'), 0)                                AS transferred_to_owner,
-         bool_or(ot.status = 'pending')                                                                    AS transfer_pending
+         COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.id AND p.payment_type = 'deposit'   AND p.status = 'succeeded'), 0) AS deposit_paid,
+         COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.id AND p.payment_type = 'remaining' AND p.status = 'succeeded'), 0) AS remaining_paid,
+         COALESCE((SELECT SUM(ot.amount) FROM owner_transfers ot WHERE ot.reservation_id = r.id AND ot.status = 'succeeded'), 0)                       AS transferred_to_owner,
+         EXISTS (SELECT 1 FROM owner_transfers ot WHERE ot.reservation_id = r.id AND ot.status = 'pending')                                             AS transfer_pending
        FROM reservations r
-       JOIN guests          g  ON g.id  = r.guest_id
-       JOIN reservation_beds rb ON rb.reservation_id = r.id AND rb.room_type_id = $1
-       LEFT JOIN payments       p  ON p.reservation_id = r.id
-       LEFT JOIN owner_transfers ot ON ot.reservation_id = r.id
-       GROUP BY r.id, g.full_name
+       JOIN guests g ON g.id = r.guest_id
+       WHERE EXISTS (SELECT 1 FROM reservation_beds rb WHERE rb.reservation_id = r.id AND rb.room_type_id = $1)
        ORDER BY r.check_in_date DESC
        LIMIT 100`,
       [req.params.id]

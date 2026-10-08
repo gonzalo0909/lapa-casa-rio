@@ -342,17 +342,21 @@ export function toCalendarDate(value: string | Date): Date {
  * conoce; devolversela hace que las cierre y las reexporte a Lapa como "reserva nueva": bucle).
  */
 async function fetchBookingsForRoom(roomTypeId: string, excludeChannel?: ChannelCode): Promise<BookingRow[]> {
+  // Mismo criterio que la disponibilidad interna (todo lo no cancelado ocupa), salvo un pendiente de pago
+  // ya vencido que todavia no limpio el cron: no debe cerrar fechas en las OTAs. GROUP BY: un UID por reserva.
   const { rows } = await query<BookingRow>(
-    `SELECT DISTINCT r.id, g.full_name AS "guestName", rb.check_in AS "checkIn", rb.check_out AS "checkOut", r.status
+    `SELECT r.id, MIN(g.full_name) AS "guestName", MIN(rb.check_in) AS "checkIn", MAX(rb.check_out) AS "checkOut", MIN(r.status::text) AS status
      FROM reservations r
      JOIN guests g ON g.id = r.guest_id
      JOIN reservation_beds rb ON rb.reservation_id = r.id
      JOIN channels c ON c.id = r.channel_id
      WHERE rb.room_type_id = $1
-       AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
+       AND r.status <> 'cancelled'
+       AND (r.status <> 'pending_payment' OR r.pending_expires_at IS NULL OR r.pending_expires_at > now())
        AND rb.check_out >= CURRENT_DATE - INTERVAL '7 days'
        AND ($2::text IS NULL OR c.code::text <> $2)
-     ORDER BY rb.check_in`,
+     GROUP BY r.id
+     ORDER BY MIN(rb.check_in)`,
     [roomTypeId, excludeChannel ?? null]
   );
   return rows;
@@ -668,6 +672,16 @@ export async function cancelAbsentReservations(
  */
 const MAX_IMPORT_NIGHTS = 180;
 
+/**
+ * Booking cierra todo lo posterior a hoy+365 y ese cierre llega partido en varios eventos pegados. Un evento que
+ * termina despues de ese limite (o empieza a mas de 360 dias) no es una estadia: se ignora. Se reevalua cada dia,
+ * asi que una estadia real que termina justo en el limite entra uno o dos dias despues.
+ */
+export function isBeyondSalesHorizon(checkIn: string, checkOut: string, now: Date = new Date()): boolean {
+  const day = 24 * 60 * 60 * 1000;
+  return checkIn > toISODate(new Date(now.getTime() + 360 * day)) || checkOut > toISODate(new Date(now.getTime() + 365 * day));
+}
+
 const nightsBetween = (checkIn: string, checkOut: string): number =>
   Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000);
 
@@ -726,15 +740,16 @@ async function saveEchoQuarantine(feedId: string, map: Record<string, string>): 
 
 /** true si el evento nuevo es probable eco de una reserva ajena cancelada hace poco (ver ECHO_WINDOW_MS). */
 export async function isRecentCancellationEcho(feed: IcalFeedConfig, checkIn: string, checkOut: string, uid: string): Promise<boolean> {
+  // Una reserva cancelada ya no tiene reservation_beds (los borra el trigger al cancelar): la habitacion y las
+  // fechas se leen de la propia reserva (cancelled_room_type_id, migracion 0069).
   const { rows } = await query(
     `SELECT 1
      FROM reservations r
-     JOIN reservation_beds rb ON rb.reservation_id = r.id
-     WHERE rb.room_type_id = $1
+     WHERE r.cancelled_room_type_id = $1
        AND r.status = 'cancelled'
        AND r.channel_id IS DISTINCT FROM $2
        AND r.cancelled_at > now() - ($3::bigint * interval '1 millisecond')
-       AND rb.check_in <= $4::date AND rb.check_out >= $5::date
+       AND r.check_in_date <= $4::date AND r.check_out_date >= $5::date
        AND NOT EXISTS (
          SELECT 1 FROM reservations x WHERE x.channel_id = $2 AND x.external_reservation_id = $6
        )
@@ -773,8 +788,8 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       rows.push({ ...row, verdict: 'Ignorado: cierre de horizonte de la plataforma (más de 180 noches)' });
       continue;
     }
-    if (event.checkIn > toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000))) {
-      rows.push({ ...row, verdict: 'Ignorado: empieza a más de 360 días (cierre lejano de la plataforma, no se importa)' });
+    if (isBeyondSalesHorizon(event.checkIn, event.checkOut)) {
+      rows.push({ ...row, verdict: 'Ignorado: más allá de la ventana de venta de la plataforma (cierre de horizonte, más de 1 año)' });
       continue;
     }
     if (event.isCancelled) {
@@ -844,6 +859,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
         : 'Se importará en la próxima sincronización (cada 5 min)',
     });
   }
+  // Eventos que el parser no pudo leer (sin titulo, fechas invalidas, UID repetido): sin esto quedaban invisibles.
+  for (const message of parsed.errors) {
+    rows.push({ uid: '(no leído)', checkIn: '', checkOut: '', nights: 0, verdict: `DESCARTADO por el parser: ${message}` });
+  }
   return rows.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
 }
 
@@ -901,7 +920,6 @@ async function alertFeedAnomaly(
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   const seenNow = new Set<string>();
-  const farFutureLimit = toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000));
   let imported = 0;
   let alreadyKnown = 0;
   let updated = 0;
@@ -929,7 +947,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       // Booking cierra siempre su "horizonte" (desde hoy + 1 año hasta una fecha lejana) y ese cierre
       // se corre un dia por dia: no es una reserva, y bloquearia todas esas fechas en Lapa.
       // Se ignoran los eventos que empiezan a mas de 360 dias.
-      if (event.checkIn > farFutureLimit) { continue; }
+      if (isBeyondSalesHorizon(event.checkIn, event.checkOut)) { continue; }
       // Cierre de horizonte de la OTA, no una estadía: se ignora (ver MAX_IMPORT_NIGHTS).
       if (nightsBetween(event.checkIn, event.checkOut) > MAX_IMPORT_NIGHTS) { continue; }
       seenNow.add(event.uid);
@@ -990,7 +1008,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     const seen = await loadSeen(feed.id);
     const nowIso = new Date().toISOString();
     for (const uid of seenNow) {seen[uid] = nowIso;}
-    const cancelledByAbsence = await cancelAbsentReservations(feed, seen, seenNow);
+    // Si el parser descarto eventos, una reserva real puede faltar en seenNow solo por eso: no se cancela por ausencia.
+    const incompleteRead = parsed.metadata.skippedEvents > 0;
+    const cancelledByAbsence = incompleteRead ? 0 : await cancelAbsentReservations(feed, seen, seenNow);
     const cancelledEchoes = await cleanHorizonReservations(feed);
     // Se descartan registros de eventos que dejaron de verse hace mas de 7 dias.
     const keepAfter = Date.now() - 7 * 24 * 60 * 60 * 1000;

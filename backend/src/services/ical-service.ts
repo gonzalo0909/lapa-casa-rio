@@ -734,19 +734,29 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
     }
     const { rows: existing } = await query<{
       reservation_number: string; status: string; cancellation_reason: string | null; ci: string; co: string;
+      room_ids: string[] | null; room_names: string[] | null;
     }>(
-      `SELECT reservation_number, status, cancellation_reason, check_in_date::text AS ci, check_out_date::text AS co
-       FROM reservations WHERE channel_id = $1 AND external_reservation_id = $2`,
+      `SELECT r.reservation_number, r.status, r.cancellation_reason, r.check_in_date::text AS ci, r.check_out_date::text AS co,
+              array_agg(DISTINCT rt.id::text) FILTER (WHERE rt.id IS NOT NULL) AS room_ids,
+              array_agg(DISTINCT rt.name) FILTER (WHERE rt.id IS NOT NULL) AS room_names
+       FROM reservations r
+       LEFT JOIN reservation_beds rb ON rb.reservation_id = r.id
+       LEFT JOIN room_types rt ON rt.id = rb.room_type_id
+       WHERE r.channel_id = $1 AND r.external_reservation_id = $2
+       GROUP BY r.id`,
       [feed.channelId, event.uid]
     );
     if (existing[0]) {
       const e = existing[0];
+      // La reserva se busca por canal + id del evento, sin mirar la habitación: si otro apartamento tiene configurada
+      // la misma URL de feed, la reserva puede estar guardada en ESE apartamento y no en este.
+      const otherRoom = e.room_ids && e.room_ids.length > 0 && !e.room_ids.includes(feed.roomTypeId)
+        ? ` ⚠ ESTÁ GUARDADA EN OTRO APARTAMENTO: ${(e.room_names ?? []).join(', ')}` : '';
       rows.push({
         ...row,
         verdict: e.status === 'cancelled'
-          ? `Existe pero está CANCELADA (${e.reservation_number}, motivo: ${e.cancellation_reason ?? '—'}). ${
-            'Se recrea sola en la próxima sincronización.'}`
-          : `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})`,
+          ? `Existe pero está CANCELADA (${e.reservation_number}, motivo: ${e.cancellation_reason ?? '—'}). Se recrea sola en la próxima sincronización.`
+          : `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})${otherRoom}`,
       });
       continue;
     }

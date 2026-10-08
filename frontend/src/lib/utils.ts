@@ -117,3 +117,15 @@ export function formatCPF(v: string): string {
   if (digits.length > 3) { return `${digits.slice(0, 3)}.${digits.slice(3)}`; }
   return digits;
 }
+
+/**
+ * Identificador del apartamento para el panel del owner: el número de unidad ("Ap. 417") escrito en el campo
+ * Número de la dirección. El `code` interno (apt-xxxx) es solo un identificador técnico y no significa nada para el
+ * dueño; se usa únicamente si el apartamento no tiene número cargado.
+ */
+export function apartmentLabel(apt: { code: string; address_number?: string | null }): string {
+  const number = apt.address_number?.trim();
+  if (!number) {return apt.code;}
+  const unit = number.match(/\b(?:ap(?:to|artamento)?|apt|unidade|unit)\.?\s*([\w-]+)/i);
+  return unit ? `Ap. ${unit[1]}` : number;
+}

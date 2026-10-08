@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useOwnerAuth } from '@/lib/use-owner-auth';
 import { ownerApartmentsAPI, type Apartment } from '@/lib/owner-api';
 import { handleAPIError } from '@/lib/api';
+import { apartmentLabel } from '@/lib/utils';
 import { OwnerNav } from '@/components/owner/owner-nav';
 
 export default function OwnerDashboardPage() {
@@ -131,7 +132,7 @@ export default function OwnerDashboardPage() {
                 <div>
                   <CardTitle size="sm">{apt.name}</CardTitle>
                   <CardDescription>
-                    {apt.code} · {apt.capacity} hóspedes
+                    {apartmentLabel(apt)} · {apt.capacity} hóspedes
                     {apt.neighborhood ? ` · ${apt.neighborhood}` : ''}
                   </CardDescription>
                 </div>

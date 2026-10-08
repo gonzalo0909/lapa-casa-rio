@@ -1,4 +1,4 @@
-import { validateCPF, formatCPF } from './utils';
+import { validateCPF, formatCPF, apartmentLabel } from './utils';
 
 describe('validateCPF', () => {
   it('acepta un CPF válido (dígito verificador correcto)', () => {
@@ -50,5 +50,19 @@ describe('formatCPF', () => {
 
   it('ignora caracteres no numéricos y trunca a 11 dígitos', () => {
     expect(formatCPF('111.444.777-35999')).toBe('111.444.777-35');
+  });
+});
+
+describe('apartmentLabel', () => {
+  it('muestra el número de unidad cargado en la dirección', () => {
+    expect(apartmentLabel({ code: 'apt-07', address_number: '185, Ap. 417' })).toBe('Ap. 417');
+    expect(apartmentLabel({ code: 'apt-07', address_number: '185 apto 417' })).toBe('Ap. 417');
+  });
+  it('si no hay "Ap.", muestra el número tal cual', () => {
+    expect(apartmentLabel({ code: 'apt-07', address_number: '417' })).toBe('417');
+  });
+  it('sin número cargado, cae al código interno', () => {
+    expect(apartmentLabel({ code: 'apt-07', address_number: null })).toBe('apt-07');
+    expect(apartmentLabel({ code: 'apt-07' })).toBe('apt-07');
   });
 });

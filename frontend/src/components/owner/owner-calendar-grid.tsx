@@ -11,6 +11,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Apartment, ApartmentBlock, OwnerBooking } from '@/lib/owner-api';
+import { apartmentLabel } from '@/lib/utils';
 
 export interface CalendarApartment {
   apartment: Apartment;
@@ -186,7 +187,7 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
               <div className="flex">
                 <div style={{ width: LABEL_W }} className="sticky left-0 z-10 shrink-0 border-r bg-white p-2">
                   <p className="text-sm font-semibold leading-tight">{apt.name}</p>
-                  <p className="text-xs text-neutral-500">{apt.code} · {apt.capacity} hóspedes</p>
+                  <p className="text-xs text-neutral-500">{apartmentLabel(apt)} · {apt.capacity} hóspedes</p>
                   <p className="text-xs text-neutral-500">Preço base {brl(Number(apt.base_price))}</p>
                 </div>
                 <div>

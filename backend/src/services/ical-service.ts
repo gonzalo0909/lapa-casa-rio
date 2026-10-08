@@ -382,6 +382,41 @@ interface BlockRow {
   checkOut: string | Date;
 }
 
+const ymd = (value: string | Date): string => {
+  const d = toCalendarDate(value);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Resta de [start, end) los rangos `cut` (todos [inicio, fin) en 'YYYY-MM-DD'). Devuelve los tramos que sobran. */
+export function subtractRanges(start: string, end: string, cut: Array<{ start: string; end: string }>): Array<{ start: string; end: string }> {
+  let pieces = [{ start, end }];
+  for (const c of cut) {
+    pieces = pieces.flatMap((p) => {
+      if (c.end <= p.start || c.start >= p.end) {return [p];}
+      const out: Array<{ start: string; end: string }> = [];
+      if (c.start > p.start) {out.push({ start: p.start, end: c.start });}
+      if (c.end < p.end) {out.push({ start: c.end, end: p.end });}
+      return out;
+    });
+  }
+  return pieces;
+}
+
+/** Estadías activas de UN canal en la habitación (para no tapar con un bloqueo de Lapa las fechas que ese canal ya ocupa). */
+async function fetchChannelStays(roomTypeId: string, channel: ChannelCode): Promise<Array<{ start: string; end: string }>> {
+  const { rows } = await query<{ start: string; end: string }>(
+    `SELECT DISTINCT rb.check_in::text AS start, rb.check_out::text AS "end"
+     FROM reservations r
+     JOIN reservation_beds rb ON rb.reservation_id = r.id
+     JOIN channels c ON c.id = r.channel_id
+     WHERE rb.room_type_id = $1 AND c.code::text = $2
+       AND r.status IN ('confirmed', 'pending_payment', 'pending_ota_confirmation')
+       AND rb.check_out >= CURRENT_DATE - INTERVAL '7 days'`,
+    [roomTypeId, channel]
+  );
+  return rows;
+}
+
 /** Bloqueos manuales (room_blocks: mantenimiento, uso del propietario, feriados). end_date es exclusivo. */
 async function fetchBlocksForRoom(roomTypeId: string): Promise<BlockRow[]> {
   const { rows } = await query<BlockRow>(
@@ -408,17 +443,23 @@ async function addRoomEvents(
   for (const booking of bookings) {addBookingEvent(calendar, booking, room.name);}
 
   const blocks = await fetchBlocksForRoom(room.id);
+  // Al canal que ya tiene una reserva en esas noches no se le manda el bloqueo encima: la OTA mezclaba ambos
+  // y dejaba de listar su propia reserva en su feed (Lapa la daba por cancelada).
+  const ownStays = excludeChannel ? await fetchChannelStays(room.id, excludeChannel) : [];
   for (const block of blocks) {
-    calendar.createEvent({
-      id: `${OWN_UID_PREFIX}block-${block.id}${OWN_UID_SUFFIX}`,
-      start: toCalendarDate(block.checkIn),
-      end: toCalendarDate(block.checkOut),
-      allDay: true,
-      summary: `Blocked - ${room.name}`,
-      status: ICalEventStatus.CONFIRMED,
-      busystatus: ICalEventBusyStatus.BUSY,
-      created: new Date(),
-      lastModified: new Date(),
+    const pieces = subtractRanges(ymd(block.checkIn), ymd(block.checkOut), ownStays);
+    pieces.forEach((piece, index) => {
+      calendar.createEvent({
+        id: `${OWN_UID_PREFIX}block-${block.id}${index > 0 ? `-${index}` : ''}${OWN_UID_SUFFIX}`,
+        start: toCalendarDate(piece.start),
+        end: toCalendarDate(piece.end),
+        allDay: true,
+        summary: `Blocked - ${room.name}`,
+        status: ICalEventStatus.CONFIRMED,
+        busystatus: ICalEventBusyStatus.BUSY,
+        created: new Date(),
+        lastModified: new Date(),
+      });
     });
   }
 }

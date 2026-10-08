@@ -631,6 +631,16 @@ export async function cancelAbsentReservations(
  */
 const MAX_IMPORT_NIGHTS = 180;
 
+/**
+ * Booking cierra todo lo posterior a hoy+365 y ese cierre llega partido en varios eventos pegados. Un evento que
+ * termina despues de ese limite (o empieza a mas de 360 dias) no es una estadia: se ignora. Se reevalua cada dia,
+ * asi que una estadia real que termina justo en el limite entra uno o dos dias despues.
+ */
+export function isBeyondSalesHorizon(checkIn: string, checkOut: string, now: Date = new Date()): boolean {
+  const day = 24 * 60 * 60 * 1000;
+  return checkIn > toISODate(new Date(now.getTime() + 360 * day)) || checkOut > toISODate(new Date(now.getTime() + 365 * day));
+}
+
 const nightsBetween = (checkIn: string, checkOut: string): number =>
   Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000);
 
@@ -732,6 +742,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       rows.push({ ...row, verdict: 'Ignorado: cierre de horizonte de la plataforma (más de 180 noches)' });
       continue;
     }
+    if (isBeyondSalesHorizon(event.checkIn, event.checkOut)) {
+      rows.push({ ...row, verdict: 'Ignorado: más allá de la ventana de venta de la plataforma (cierre de horizonte, más de 1 año)' });
+      continue;
+    }
     if (event.isCancelled) {
       rows.push({ ...row, verdict: 'La plataforma lo marca como cancelado' });
       continue;
@@ -774,6 +788,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
         ? `NO se puede importar: choca con la reserva ${clash[0].reservation_number} (${clash[0].channel ?? 'directa'}, ${clash[0].status}, ${clash[0].ci} → ${clash[0].co})`
         : 'Se importará en la próxima sincronización (cada 5 min)',
     });
+  }
+  // Eventos que el parser no pudo leer (sin titulo, fechas invalidas, UID repetido): sin esto quedaban invisibles.
+  for (const message of parsed.errors) {
+    rows.push({ uid: '(no leído)', checkIn: '', checkOut: '', nights: 0, verdict: `DESCARTADO por el parser: ${message}` });
   }
   return rows.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
 }
@@ -832,7 +850,6 @@ async function alertFeedAnomaly(
 export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportResult> {
   const errors: string[] = [];
   const seenNow = new Set<string>();
-  const farFutureLimit = toISODate(new Date(Date.now() + 360 * 24 * 60 * 60 * 1000));
   let imported = 0;
   let alreadyKnown = 0;
   let updated = 0;
@@ -860,7 +877,7 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
       // Booking cierra siempre su "horizonte" (desde hoy + 1 año hasta una fecha lejana) y ese cierre
       // se corre un dia por dia: no es una reserva, y bloquearia todas esas fechas en Lapa.
       // Se ignoran los eventos que empiezan a mas de 360 dias.
-      if (event.checkIn > farFutureLimit) { continue; }
+      if (isBeyondSalesHorizon(event.checkIn, event.checkOut)) { continue; }
       // Cierre de horizonte de la OTA, no una estadía: se ignora (ver MAX_IMPORT_NIGHTS).
       if (nightsBetween(event.checkIn, event.checkOut) > MAX_IMPORT_NIGHTS) { continue; }
       seenNow.add(event.uid);
@@ -921,7 +938,9 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     const seen = await loadSeen(feed.id);
     const nowIso = new Date().toISOString();
     for (const uid of seenNow) {seen[uid] = nowIso;}
-    const cancelledByAbsence = await cancelAbsentReservations(feed, seen, seenNow);
+    // Si el parser descarto eventos, una reserva real puede faltar en seenNow solo por eso: no se cancela por ausencia.
+    const incompleteRead = parsed.metadata.skippedEvents > 0;
+    const cancelledByAbsence = incompleteRead ? 0 : await cancelAbsentReservations(feed, seen, seenNow);
     const cancelledEchoes = await cleanHorizonReservations(feed);
     // Se descartan registros de eventos que dejaron de verse hace mas de 7 dias.
     const keepAfter = Date.now() - 7 * 24 * 60 * 60 * 1000;

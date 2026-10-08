@@ -142,6 +142,16 @@ export class ICalParser {
         }
       }
 
+      // node-ical indexa los eventos por UID: con UID repetido el ultimo pisa al anterior y el evento
+      // se pierde sin error. Se compara contra los VEVENT del texto crudo para que no pase en silencio.
+      const rawEventCount = (icalString.match(/^BEGIN:VEVENT\s*$/gm) ?? []).length;
+      if (rawEventCount > totalEvents) {
+        const lost = rawEventCount - totalEvents;
+        this.errors.push(`${lost} evento(s) del feed no se leyeron (UID repetido: un evento pisa al otro)`);
+        skippedEvents += lost;
+        totalEvents += lost;
+      }
+
       return {
         success: true,
         bookings,

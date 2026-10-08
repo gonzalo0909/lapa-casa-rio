@@ -699,15 +699,16 @@ async function saveEchoQuarantine(feedId: string, map: Record<string, string>): 
 
 /** true si el evento nuevo es probable eco de una reserva ajena cancelada hace poco (ver ECHO_WINDOW_MS). */
 export async function isRecentCancellationEcho(feed: IcalFeedConfig, checkIn: string, checkOut: string, uid: string): Promise<boolean> {
+  // Una reserva cancelada ya no tiene reservation_beds (los borra el trigger al cancelar): la habitacion y las
+  // fechas se leen de la propia reserva (cancelled_room_type_id, migracion 0069).
   const { rows } = await query(
     `SELECT 1
      FROM reservations r
-     JOIN reservation_beds rb ON rb.reservation_id = r.id
-     WHERE rb.room_type_id = $1
+     WHERE r.cancelled_room_type_id = $1
        AND r.status = 'cancelled'
        AND r.channel_id IS DISTINCT FROM $2
        AND r.cancelled_at > now() - ($3::bigint * interval '1 millisecond')
-       AND rb.check_in <= $4::date AND rb.check_out >= $5::date
+       AND r.check_in_date <= $4::date AND r.check_out_date >= $5::date
        AND NOT EXISTS (
          SELECT 1 FROM reservations x WHERE x.channel_id = $2 AND x.external_reservation_id = $6
        )

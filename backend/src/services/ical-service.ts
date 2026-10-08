@@ -718,12 +718,16 @@ export interface FeedDiagnosisRow {
 export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisRow[]> {
   const parsed = await new ICalParser().parseFromUrl(feed.url, feed.channelCode);
   if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
-  const events = toParsedIcalEvents(parsed.bookings).filter((e) => !e.isOwn);
+  const events = toParsedIcalEvents(parsed.bookings);
   const rows: FeedDiagnosisRow[] = [];
 
   for (const event of events) {
     const nights = nightsBetween(event.checkIn, event.checkOut);
     const row = { uid: event.uid, checkIn: event.checkIn, checkOut: event.checkOut, nights };
+    if (event.isOwn) {
+      rows.push({ ...row, verdict: 'Evento PROPIO de Lapa Casa (UID lapacasa-…) devuelto por la plataforma: se ignora. Si cubre fechas de una reserva real de la plataforma, esa reserva no llega a importarse' });
+      continue;
+    }
     if (nights > MAX_IMPORT_NIGHTS) {
       rows.push({ ...row, verdict: 'Ignorado: cierre de horizonte de la plataforma (más de 180 noches)' });
       continue;
@@ -762,6 +766,20 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
     }
     if (event.isBlocked && !event.isOwnerBlock && (await isRecentCancellationEcho(feed, event.checkIn, event.checkOut, event.uid))) {
       rows.push({ ...row, verdict: 'Retenido: probable ECO de una reserva cancelada hace menos de 24 h. Se importa solo si sigue en el feed pasadas 12 h' });
+      continue;
+    }
+    const { rows: sameStay } = await query<{ reservation_number: string; status: string }>(
+      `SELECT r.reservation_number, r.status
+       FROM reservations r JOIN reservation_beds rb ON rb.reservation_id = r.id
+       JOIN room_types rt ON rt.id = rb.room_type_id
+       WHERE rb.room_type_id = $1 AND rt.property_type = 'apartment' AND r.channel_id = $2
+         AND r.status IN ('confirmed', 'pending_ota_confirmation')
+         AND r.check_in_date = $3::date AND r.check_out_date = $4::date AND r.external_reservation_id <> $5
+       LIMIT 1`,
+      [feed.roomTypeId, feed.channelId, event.checkIn, event.checkOut, event.uid]
+    );
+    if (sameStay[0]) {
+      rows.push({ ...row, verdict: `Misma estadía ya registrada con otro id: ${sameStay[0].reservation_number} (${sameStay[0].status}). No se duplica` });
       continue;
     }
     const { rows: clash } = await query<{ reservation_number: string; status: string; ci: string; co: string; channel: string | null }>(

@@ -126,11 +126,32 @@ async function diagnoseFeed(feedId, btn) {
     const rows = (data && data.rows) || [];
     box.innerHTML = rows.length
       ? `<div class="msg success" style="overflow-x:auto;"><strong>Diagnóstico del feed</strong>
+          <button type="button" id="copy-diagnosis-btn" style="margin-left:10px;font-size:12px;padding:2px 9px;">Copiar diagnóstico</button>
           <table style="width:100%;font-size:12px;margin-top:6px;border-collapse:collapse;">
             <tr><th style="text-align:left;">Entrada</th><th style="text-align:left;">Salida</th><th>Noches</th><th style="text-align:left;">Qué hace el sistema</th></tr>
             ${rows.map((r) => `<tr><td>${escapeHtml(r.checkIn)}</td><td>${escapeHtml(r.checkOut)}</td><td style="text-align:center;">${r.nights}</td><td>${escapeHtml(r.verdict)}</td></tr>`).join('')}
           </table></div>`
       : '<div class="msg success">El feed no devolvió ningún evento.</div>';
+    const copyBtn = document.getElementById('copy-diagnosis-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const text = ['Entrada\tSalida\tNoches\tUID\tQué hace el sistema']
+          .concat(rows.map((r) => [r.checkIn, r.checkOut, r.nights, r.uid, r.verdict].join('\t')))
+          .join('\n');
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        copyBtn.textContent = '✓ Copiado';
+        setTimeout(() => { copyBtn.textContent = 'Copiar diagnóstico'; }, 2000);
+      });
+    }
     box.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch (err) {
     showMsg('feeds-msg', escapeHtml(err.message), 'error');

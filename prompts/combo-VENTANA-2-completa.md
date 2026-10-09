@@ -329,7 +329,7 @@ Las funciones SQL son la **única implementación** de las reglas de negocio. Lo
 ### Supabase — proyecto `lapa-casa-hostel` (`rpowardrcwnhbkzjsiok`, región `sa-east-1`)
 Las 8 migraciones + seed completo ya están aplicadas en el Supabase real (45 camas, 5 canales, 4 temporadas, políticas de cancelación, config del sistema). Probado en vivo: cálculo de precio, depósito, y rechazo real de una reserva superpuesta (constraint EXCLUDE).
 
-### CORRECCIONES APLICADAS en `backend/src/` (rama `claude/buenas-llvrj9`)
+### CORRECCIONES APLICADAS en `backend/src/` (rama `lapa/buenas-llvrj9`)
 
 | Archivo | Bug encontrado | Corrección |
 |---|---|---|
@@ -379,7 +379,7 @@ Proyecto: `rpowardrcwnhbkzjsiok`, región `sa-east-1`. Herramientas MCP de Supab
 
 ## LIMITACIÓN CONOCIDA: GITHUB (subida manual)
 
-Claude no tiene acceso de escritura a GitHub en este entorno (403 en push/PR). El código corregido queda en el sandbox — se sube manualmente vía la web de GitHub, rama `claude/buenas-llvrj9`: copiar contenido → editar archivo en github.com → pegar → commit. Confirmar cada paso antes de seguir. No asumir que algo "ya está subido" sin confirmarlo viendo el archivo en GitHub.
+www.lapacasario.com no tiene acceso de escritura a GitHub en este entorno (403 en push/PR). El código corregido queda en el sandbox — se sube manualmente vía la web de GitHub, rama `lapa/buenas-llvrj9`: copiar contenido → editar archivo en github.com → pegar → commit. Confirmar cada paso antes de seguir. No asumir que algo "ya está subido" sin confirmarlo viendo el archivo en GitHub.
 
 ---
 
@@ -412,7 +412,7 @@ UUID como PK (`gen_random_uuid()`), TIMESTAMPTZ en America/Sao_Paulo, NUMERIC pa
 
 VENTANA 2: MOTOR DE DISPONIBILIDAD Y ANTI-OVERBOOKING (v2.1 — reescrita y completada contra la implementación real, verificada 3 agosto 2026)
 
-> Esta versión reemplaza a la v2.0. Todo lo que la v2.0 marcaba como PENDIENTE (Redis real, `room-service.ts`, `lock-middleware.ts`, suite de tests formal) ya se construyó y se probó hoy contra Postgres local con las 8 migraciones + seed reales. **Todavía no está subido a GitHub** — vive en el sandbox de esta sesión (worktree de `claude/buenas-llvrj9`), pendiente de subida manual.
+> Esta versión reemplaza a la v2.0. Todo lo que la v2.0 marcaba como PENDIENTE (Redis real, `room-service.ts`, `lock-middleware.ts`, suite de tests formal) ya se construyó y se probó hoy contra Postgres local con las 8 migraciones + seed reales. **Todavía no está subido a GitHub** — vive en el sandbox de esta sesión (worktree de `lapa/buenas-llvrj9`), pendiente de subida manual.
 
 CONTEXTO PREVIO (verificado)
 Ventana 1 completa y verificada contra el Supabase real: 17 tablas, constraint EXCLUDE como autoridad final anti-overbooking, advisory locks, trigger de liberación automática, funciones SQL de precio y disponibilidad, 8 migraciones + seed aplicadas, 45 camas en 5 habitaciones. `backend/package.json` ya no referencia Prisma; el código TypeScript fue reescrito contra el schema real (UUID, `reservation_beds`, `channels`, `full_name`).

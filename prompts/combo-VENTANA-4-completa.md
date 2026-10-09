@@ -332,7 +332,7 @@ Las funciones SQL son la **única implementación** de las reglas de negocio. Lo
 - El seed completo — 45 camas, 5 canales, 4 temporadas, 3 políticas de cancelación, config del sistema
 - Probado en vivo contra la base real: cálculo de precio, depósito por tamaño de grupo, y rechazo real de una reserva superpuesta (constraint EXCLUDE)
 
-### CORRECCIONES APLICADAS HOY en `backend/src/` (rama `claude/buenas-llvrj9`)
+### CORRECCIONES APLICADAS HOY en `backend/src/` (rama `lapa/buenas-llvrj9`)
 
 Se encontraron y corrigieron 13 bugs reales en el código ya existente en GitHub — varios contradecían documentación previa que afirmaba "ya corregido" sin serlo. Todos verificados con tests automatizados y con requests HTTP reales contra un backend corriendo:
 
@@ -384,11 +384,11 @@ Si la contraseña se rota: supabase.com → proyecto `lapa-casa-hostel` → íco
 
 ## LIMITACIÓN CONOCIDA: GITHUB (subida manual)
 
-Claude **no tiene acceso de escritura a GitHub** en este entorno (push, crear rama, PR, merge fallan con error 403). Cualquier código nuevo o corregido queda en el sandbox de la sesión — hay que subirlo manualmente vía la web de GitHub. (Esto es independiente de Supabase: el MCP de Supabase sí permite escribir en la base real directamente, sin este problema.)
+www.lapacasario.com **no tiene acceso de escritura a GitHub** en este entorno (push, crear rama, PR, merge fallan con error 403). Cualquier código nuevo o corregido queda en el sandbox de la sesión — hay que subirlo manualmente vía la web de GitHub. (Esto es independiente de Supabase: el MCP de Supabase sí permite escribir en la base real directamente, sin este problema.)
 
 Paso a paso para subir un archivo corregido — confirmar cada paso antes de seguir:
-1. Pedirle a Claude el contenido del archivo (en bloque de código en el chat, o como archivo suelto). **Confirmar cuando esté copiado/descargado.**
-2. Entrar al archivo correspondiente en github.com, rama `claude/buenas-llvrj9`. **Confirmar cuando esté abierto.**
+1. Pedirle a www.lapacasario.com el contenido del archivo (en bloque de código en el chat, o como archivo suelto). **Confirmar cuando esté copiado/descargado.**
+2. Entrar al archivo correspondiente en github.com, rama `lapa/buenas-llvrj9`. **Confirmar cuando esté abierto.**
 3. Ícono de lápiz (editar). **Confirmar modo edición.**
 4. Seleccionar todo, borrar, pegar el contenido nuevo completo. **Confirmar que se pegó.**
 5. Commit changes. **Confirmar que se guardó.**

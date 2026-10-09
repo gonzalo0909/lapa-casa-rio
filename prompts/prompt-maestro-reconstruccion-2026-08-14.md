@@ -35,7 +35,7 @@ El esquema explicativo lista 12 componentes esperados del `BookingEngine`. Ningu
 | Rama | Completitud | Estado |
 |---|---|---|
 | `origin/Motorreservashostel` | **11/12 archivos**, todos con contenido real (imports, hooks, i18n `next-intl`, sin placeholders) | Base a usar |
-| `origin/claude/hostel-booking-engine-ld40jx` | 7/12 — perdió `booking-engine.tsx` (orquestador), `room-card.tsx`, `room-selector.tsx`, `gender-selector.tsx`, `flexible-room-notice.tsx` | No usar como base — pivoteó a mitad de camino hacia trabajo de Apartamentos, último commit real del motor es del 09-ago |
+| `origin/lapa/hostel-booking-engine-ld40jx` | 7/12 — perdió `booking-engine.tsx` (orquestador), `room-card.tsx`, `room-selector.tsx`, `gender-selector.tsx`, `flexible-room-notice.tsx` | No usar como base — pivoteó a mitad de camino hacia trabajo de Apartamentos, último commit real del motor es del 09-ago |
 
 **Tarea 1 — Portar el componente faltante.** `Motorreservashostel` no tiene `guest-count-stepper.tsx`; sí existe en `ld40jx` (66 líneas, componente chico y aislado). Portarlo tal cual o reconstruirlo desde `guest-form.tsx` de `Motorreservashostel` si el estilo no coincide.
 

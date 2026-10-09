@@ -30,13 +30,13 @@ Estas ramas tienen **contenido único, activo o de referencia crítica** que el 
 - **Por qué mantener:** Es el **respaldo del código anterior**. Muy útil si necesitas comparar cómo evolucionó el diseño.
 - **Acción:** Preservar con prefijo `archived/` pero claramente etiquetada como "motor-v1"
 
-### 3. **claude/lcacopia-real-r7ix16**
+### 3. **lapa/lcacopia-real-r7ix16**
 - **¿Qué es?** Reconstrucción **fiel a LCACOPIA** (prototipo real del hostel)
 - **Contenido:** Motor de apartamentos con diseño real (navy/dorado, no genérico)
 - **Por qué mantener:** Es la **referencia de cómo debe verse**. Si el diseño se va de tema, aquí está el original.
 - **Acción:** Preservar — es documentación de diseño
 
-### 4. **claude/auditoria-mrh1408-zdfd7c**
+### 4. **lapa/auditoria-mrh1408-zdfd7c**
 - **¿Qué es?** Auditoría completa del motor modularizado (6 módulos: calendar, room-selector, guest-form, etc.)
 - **Contenido:** 28 archivos, navegación cruzada PropertyTabs, estado preservado entre motores
 - **Por qué mantener:** Es el **análisis estructural del motor actual**. Util para onboarding: "¿Cómo funciona el motor? Lee esta rama".
@@ -69,12 +69,12 @@ Estas ramas tienen **contenido único, activo o de referencia crítica** que el 
 - **Por qué mantener:** Es el **hito de "apartamentos en producción"**. Útil para ver cómo se wired todo.
 - **Acción:** Preservar (archivo a `archived/mrh1308-deployment`)
 
-### 10. **claude/fix-apartments-i18n** (PR #19)
+### 10. **lapa/fix-apartments-i18n** (PR #19)
 - **¿Qué es?** Traducciones del motor de apartamentos (88 claves nuevas en PT/ES/EN)
 - **Por qué mantener:** Es la **referencia de cómo traducir motor completo**. Si necesitas agregar otro idioma, aquí ves el patrón.
 - **Acción:** Preservar
 
-### 11. **claude/fix-apartments-not-showing** (PR #18)
+### 11. **lapa/fix-apartments-not-showing** (PR #18)
 - **¿Qué es?** Fix crítico: zona horaria Brasil (São Paulo vs UTC)
 - **Por qué mantener:** Es un **bug de producción que ya fue resuelto**. Si reaparece, aquí está la solución.
 - **Acción:** Preservar
@@ -101,18 +101,18 @@ channelbackend                 → archived/channel-cors-config
 
 ### **Fixes de Apartamentos (Ya en Main)**
 ```
-claude/fix-apartment-arrival-time-format
-claude/fix-apartment-property-type
-claude/fix-apartments-payment-expiry-v2
-claude/fix-apartments-phone-ddd55-v2
+lapa/fix-apartment-arrival-time-format
+lapa/fix-apartment-property-type
+lapa/fix-apartments-payment-expiry-v2
+lapa/fix-apartments-phone-ddd55-v2
 ```
 → Todas estas correcciones ya están en main. Se archivan como `archived/fix-apartments-{nombre}` para referencia.
 
 ### **Fixes de Homepage (Ya en Main)**
 ```
-claude/front-homepage-analysis-itaz67
-claude/homepage-booking-engines-bmpg8p
-claude/personal-perturbation-r7ix16
+lapa/front-homepage-analysis-itaz67
+lapa/homepage-booking-engines-bmpg8p
+lapa/personal-perturbation-r7ix16
 ```
 → Homepage ya funciona. Se archivan como `archived/fix-homepage-{nombre}`.
 
@@ -124,21 +124,21 @@ channelhostel                  → archived/channel-hostel-deprecated
 ```
 → Estos eran canales separados (versiones paralelas del sistema). Ya NO se usan — todo está integrado en una sola rama main.
 
-### **Ramas de Análisis Claude (Workbench — Una sola vez)**
+### **Ramas de Análisis www.lapacasario.com (Workbench — Una sola vez)**
 ```
-claude/ai-agents-work-zqb3ix
-claude/analisis-motores-reservas-c62ppd
-claude/apartment-booking-engine-p6jx7n
-claude/artefacto-esquema-explicativo-n5hkmw
-claude/auditoria-mrh1408-lyxbdp
-claude/channel-manager-analysis-jdngge
-claude/escaneo-trabajo-realizado-a542nl
-claude/esquema-explicativo-n2jlpy
-claude/hostel-booking-engine-ld40jx
-claude/lapa-casa-hostel-site-q0dayy
-claude/motor-reservas-problemas-1wwmnv
-claude/multiple-agents-claude-code-4j6ptr
-claude/ventana-5-9kc5f8
+lapa/ai-agents-work-zqb3ix
+lapa/analisis-motores-reservas-c62ppd
+lapa/apartment-booking-engine-p6jx7n
+lapa/artefacto-esquema-explicativo-n5hkmw
+lapa/auditoria-mrh1408-lyxbdp
+lapa/channel-manager-analysis-jdngge
+lapa/escaneo-trabajo-realizado-a542nl
+lapa/esquema-explicativo-n2jlpy
+lapa/hostel-booking-engine-ld40jx
+lapa/lapa-casa-hostel-site-q0dayy
+lapa/motor-reservas-problemas-1wwmnv
+lapa/multiple-agents-www.lapacasario.com-code-4j6ptr
+lapa/ventana-5-9kc5f8
 ```
 → Estas son ramas de **análisis/auditoría de única vez**. Su contenido está documentado o integrado. Son "andamios" que se pueden descartar.
 
@@ -154,13 +154,13 @@ auditoria-09082026             → archived/audit-09082026
 
 ## 🗑️ ELIMINAR — 3 Ramas (Sin Valor, Duplicadas o Muertas)
 
-### ❌ 1. **claude/motorreservas-apartamentos-analisis-soyfii**
+### ❌ 1. **lapa/motorreservas-apartamentos-analisis-soyfii**
 - **Por qué eliminar:** Es un **duplicado exacto** de `backup-main-20260813`. Mismo SHA, misma fecha, misma content.
-- **Acción:** `git push origin --delete claude/motorreservas-apartamentos-analisis-soyfii`
+- **Acción:** `git push origin --delete lapa/motorreservas-apartamentos-analisis-soyfii`
 
-### ❌ 2. **claude/fix-apartment-property-type**
+### ❌ 2. **lapa/fix-apartment-property-type**
 - **Por qué eliminar:** Fix tan pequeño (1-2 líneas) que está en main. No tiene historial de valor aparte.
-- **Acción:** `git push origin --delete claude/fix-apartment-property-type`
+- **Acción:** `git push origin --delete lapa/fix-apartment-property-type`
 
 ### ❌ 3. **motorreservalapartamentosapagon** (REVISAR)
 - **Por qué eliminar:** Nombre sugiere "apagon" (blackout). Rama muerta sin actividad reciente, sin PR.
@@ -172,8 +172,8 @@ auditoria-09082026             → archived/audit-09082026
 
 ### **Paso 1: Eliminar las 3 ramas sin valor**
 ```bash
-git push origin --delete claude/motorreservas-apartamentos-analisis-soyfii
-git push origin --delete claude/fix-apartment-property-type
+git push origin --delete lapa/motorreservas-apartamentos-analisis-soyfii
+git push origin --delete lapa/fix-apartment-property-type
 git push origin --delete motorreservalapartamentosapagon
 ```
 
@@ -191,15 +191,15 @@ git push origin --delete channel1008
 ```
 MrH1408
 motor-de-reserva-main-1608
-claude/lcacopia-real-r7ix16
-claude/auditoria-mrh1408-zdfd7c
+lapa/lcacopia-real-r7ix16
+lapa/auditoria-mrh1408-zdfd7c
 auditoria-mrh1408-finalizado
 backup-main-20260813
 recuperacion/auditoria
 recuperacion/09082026
 mrh1308
-claude/fix-apartments-i18n
-claude/fix-apartments-not-showing
+lapa/fix-apartments-i18n
+lapa/fix-apartments-not-showing
 hostel
 ```
 

@@ -13,20 +13,25 @@ import { useOwnerAuth } from '@/lib/use-owner-auth';
 import { ownerApartmentsAPI } from '@/lib/owner-api';
 import { handleAPIError } from '@/lib/api';
 import { OwnerNav } from '@/components/owner/owner-nav';
-import { OwnerCalendarGrid, addDays, type CalendarApartment } from '@/components/owner/owner-calendar-grid';
+import { OwnerCalendarGrid, type CalendarApartment } from '@/components/owner/owner-calendar-grid';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const todayDs = () => {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
-const DAYS = 45;
+const monthStart = (ds: string) => `${ds.slice(0, 7)}-01`;
+const daysInMonth = (ds: string) => new Date(Number(ds.slice(0, 4)), Number(ds.slice(5, 7)), 0).getDate();
+const shiftMonth = (ds: string, delta: number) => {
+  const d = new Date(Number(ds.slice(0, 4)), Number(ds.slice(5, 7)) - 1 + delta, 1);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`;
+};
 
 export default function OwnerCalendarPage() {
   const { profile, loading: authLoading } = useOwnerAuth();
   const [items, setItems] = useState<CalendarApartment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [start, setStart] = useState(todayDs());
+  const [start, setStart] = useState(monthStart(todayDs()));
 
   const load = useCallback(async () => {
     try {
@@ -99,16 +104,16 @@ export default function OwnerCalendarPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => setStart(addDays(start, -14))}>‹ 14 dias</Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => setStart(todayDs())}>Hoje</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setStart(shiftMonth(start, -1))}>‹ Mês</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setStart(monthStart(todayDs()))}>Hoje</Button>
           <input
             type="date"
             value={start}
-            onChange={(e) => e.target.value && setStart(e.target.value)}
+            onChange={(e) => e.target.value && setStart(monthStart(e.target.value))}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm"
             aria-label="Ir para a data"
           />
-          <Button type="button" variant="outline" size="sm" onClick={() => setStart(addDays(start, 14))}>14 dias ›</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setStart(shiftMonth(start, 1))}>Mês ›</Button>
         </div>
       </div>
 
@@ -134,7 +139,7 @@ export default function OwnerCalendarPage() {
         <OwnerCalendarGrid
           items={items}
           startDate={start}
-          days={DAYS}
+          days={daysInMonth(start)}
           onCreateBlock={handleCreate}
           onDeleteBlock={handleDelete}
         />

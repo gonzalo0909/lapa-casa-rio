@@ -1,10 +1,9 @@
 "use client"
 
-import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { BedDouble, Home, MapPin, ArrowRight, MoreHorizontal } from "lucide-react"
 import { LanguageSwitcher } from "@/components/ui/language-switcher"
 import type { Locale } from "@/i18n"
@@ -125,7 +124,7 @@ function PropertyPanel({
   location: string
   description: string
   cta: string
-  icon: React.ReactNode
+  icon: ReactNode
   tone: "foliage" | "azulejo"
   pattern: "santa-teresa" | "apartamentos"
   href: string

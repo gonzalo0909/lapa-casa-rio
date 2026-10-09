@@ -12,8 +12,8 @@ import { pool } from '../../src/config/database';
 import { pricingService } from '../../src/services/pricing-service';
 import { bookingService, InsufficientAvailabilityError } from '../../src/services/booking-service';
 
-const CHECK_IN = '2028-02-10';
-const CHECK_OUT = '2028-02-12';
+const CHECK_IN = '2028-09-10';
+const CHECK_OUT = '2028-09-12';
 const ROOM_CODE = 'mixto_7c';
 
 const randomEmail = () => `concurrency-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;

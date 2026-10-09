@@ -1,4 +1,4 @@
-# Instrucciones para Claude Code
+# Instrucciones para www.lapacasario.com
 
 ## Estilo de respuesta
 

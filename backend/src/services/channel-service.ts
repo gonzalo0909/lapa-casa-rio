@@ -375,6 +375,26 @@ async function recordAvailabilityConflict(
  * reserva y camas/unidad. Si las fechas nuevas chocan con otra reserva, el EXCLUDE las rechaza:
  * se deja todo como estaba (la reserva sigue bloqueando las fechas viejas) y se avisa en el log.
  */
+/** Aviso al admin (una vez por reserva y fechas) cuando la OTA cambio fechas y Lapa no pudo aplicarlas: quedan noches libres que la OTA ya vendio. */
+async function alertRejectedDateChange(reservationId: string, channelCode: ChannelCode, checkIn: string, checkOut: string): Promise<void> {
+  const key = `ota_datechange_rejected:${reservationId}:${checkIn}:${checkOut}`;
+  const { rows } = await query(
+    `INSERT INTO system_config (key, value, description)
+     VALUES ($1, $2::jsonb, 'Cambio de fechas de una OTA rechazado (ya avisado al admin)')
+     ON CONFLICT (key) DO NOTHING RETURNING key`,
+    [key, JSON.stringify({ detectedAt: new Date().toISOString() })]
+  );
+  if (rows.length === 0) {return;}
+  await emailService
+    .sendAdminAlert('Cambio de fechas de OTA no aplicado', {
+      canal: channelCode,
+      reserva: reservationId,
+      fechasNuevas: `${checkIn} → ${checkOut}`,
+      motivo: 'Las fechas nuevas chocan con otra reserva: Lapa conserva las anteriores y las noches nuevas figuran libres. Revisar a mano.',
+    })
+    .catch((error) => logger.warn('No se pudo avisar el cambio de fechas rechazado', { error: error instanceof Error ? error.message : String(error) }));
+}
+
 async function applyOtaDateChange(
   reservationId: string,
   channelCode: ChannelCode,
@@ -406,6 +426,7 @@ async function applyOtaDateChange(
       logger.warn('Reserva OTA: cambio de fechas rechazado por superposicion, se conservan las fechas anteriores', {
         reservationId, channelCode, checkIn, checkOut,
       });
+      await alertRejectedDateChange(reservationId, channelCode, checkIn, checkOut);
       return false;
     }
     throw error;

@@ -856,7 +856,7 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       ...row,
       verdict: clash[0]
         ? `NO se puede importar: choca con la reserva ${clash[0].reservation_number} (${clash[0].channel ?? 'directa'}, ${clash[0].status}, ${clash[0].ci} → ${clash[0].co})`
-        : 'Se importará en la próxima sincronización (cada 5 min)',
+        : 'Se importará en la próxima sincronización (cada hora)',
     });
   }
   // Eventos que el parser no pudo leer (sin titulo, fechas invalidas, UID repetido): sin esto quedaban invisibles.

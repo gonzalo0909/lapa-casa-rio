@@ -27,7 +27,7 @@ interface Props {
   onDeleteBlock: (apartmentId: string, blockId: string) => Promise<void>;
 }
 
-const COL_W = 56;
+const COL_W = 30; // largura mínima; em telas largas as colunas se esticam para o mês caber inteiro
 const LABEL_W = 190;
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -146,7 +146,7 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
     }
   };
 
-  const gridCols = `repeat(${days}, ${COL_W}px)`;
+  const gridCols = `repeat(${days}, minmax(0, 1fr))`;
   const totalW = LABEL_W + days * COL_W;
 
   return (
@@ -155,7 +155,7 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
         {/* Cabeçalho */}
         <div className="flex border-b bg-neutral-50">
           <div style={{ width: LABEL_W }} className="sticky left-0 z-10 shrink-0 border-r bg-neutral-50" />
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="grid text-xs font-semibold text-neutral-600" style={{ gridTemplateColumns: gridCols }}>
               {monthGroups.map((g, i) => (
                 <div key={i} style={{ gridColumn: `span ${g.span}` }} className="border-r px-2 py-1 capitalize">{g.label}</div>
@@ -190,7 +190,7 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
                   <p className="text-xs text-neutral-500">{apartmentLabel(apt)} · {apt.capacity} hóspedes</p>
                   <p className="text-xs text-neutral-500">Preço base {brl(Number(apt.base_price))}</p>
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   {/* Linha de estado */}
                   <div className="grid" style={{ gridTemplateColumns: gridCols }}>
                     {segs.map((s, idx) => {
@@ -246,9 +246,9 @@ export function OwnerCalendarGrid({ items, startDate, days, onCreateBlock, onDel
                     {dayList.map((ds) => (
                       <div
                         key={ds}
-                        className={`border-r border-t py-1 text-center text-[11px] ${occupied(ds) ? 'bg-red-100 text-neutral-400' : 'text-neutral-700'}`}
+                        className={`border-r border-t py-1 text-center text-[10px] ${occupied(ds) ? 'bg-red-100 text-neutral-400' : 'text-neutral-700'}`}
                       >
-                        {brl(Number(apt.base_price))}
+                        {Number(apt.base_price).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                       </div>
                     ))}
                   </div>

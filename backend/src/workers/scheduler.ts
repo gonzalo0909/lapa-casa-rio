@@ -47,8 +47,8 @@ interface Task {
 }
 
 export const TASKS: Task[] = [
-  // Sincronizacion de calendarios iCal/OTA: cada 5 min.
-  { name: 'ota-sync', due: (c) => c.minute % 5 === 0, run: runOtaSync, runAtStartup: true },
+  // Sincronizacion de calendarios iCal/OTA: cada hora (cuota gratis de tareas).
+  { name: 'ota-sync', due: (c) => c.minute === 0, run: runOtaSync, runAtStartup: true },
   // Limpieza + avisos al huesped: cada 4 h fuera de temporada alta, cada 5 min en dic-mar.
   {
     name: 'cleanup',

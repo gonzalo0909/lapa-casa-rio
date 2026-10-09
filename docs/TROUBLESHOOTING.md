@@ -86,16 +86,15 @@ configurados en el dashboard de la OTA coincidan exactamente con
 ## Conflictos entre canales quedan `open` sin resolverse
 
 `conflictService.detectConflicts()` (auto-resuelve por prioridad de canal) corre
-dentro de `ota-sync.worker.ts`, en el sync horario — si el proceso de workers no
-está corriendo (sin `REDIS_URL`, o caído), los conflictos se acumulan `open` sin que
-nada los resuelva. Confirmar `GET /api/health` → `services.queues.status`.
+dentro de `ota-sync.worker.ts`, en el sync de cada hora (`workers/scheduler.ts`, sin Redis) — si el proceso de
+workers no está corriendo, los conflictos se acumulan `open` sin que nada los resuelva.
 
 ## iCal: una OTA no refleja la disponibilidad real
 
 - **Export** (`GET /api/v1/ical/export`): el feed que este sistema genera. Confirmar
   que la URL pegada en la OTA sea exactamente esa (o `/export/:roomId` si es por
   habitación).
-- **Import**: sincroniza cada hora vía `ota-sync.worker.ts` (requiere `REDIS_URL`).
+- **Import**: sincroniza cada hora vía `workers/scheduler.ts` (tarea `ota-sync`, sin Redis).
   Forzar un sync manual: `POST /api/v1/ical/sync` (admin) o desde el panel.
 - Los eventos que el propio sistema exporta llevan un UID propio para no
   reimportarse a sí mismos como reserva nueva — si una OTA reescribe/normaliza el

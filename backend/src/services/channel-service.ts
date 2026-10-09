@@ -229,15 +229,16 @@ async function findSameStayReservation(
  * Apartamento, mismo canal, fechas que SE SUPERPONEN y un id externo que ya no esta en el feed actual: la OTA
  * no permite dos reservas superpuestas de la misma unidad, asi que es la misma estadia con otras fechas.
  */
-async function findShiftedStayReservation(
+async function findShiftedStayReservations(
   roomTypeId: string,
   channelId: string,
   checkIn: string,
   checkOut: string,
-  feedExternalIds: string[]
-): Promise<{ id: string; externalId: string } | null> {
+  feedExternalIds: string[],
+  exceptReservationId?: string
+): Promise<Array<{ id: string; externalId: string }>> {
   const { rows } = await query<{ id: string; external_reservation_id: string }>(
-    `SELECT r.id, r.external_reservation_id
+    `SELECT DISTINCT r.id, r.external_reservation_id, r.created_at
      FROM reservations r
      JOIN reservation_beds rb ON rb.reservation_id = r.id
      JOIN room_types rt ON rt.id = rb.room_type_id
@@ -247,11 +248,27 @@ async function findShiftedStayReservation(
        AND daterange(rb.check_in, rb.check_out, '[)') && daterange($3::date, $4::date, '[)')
        AND r.external_reservation_id IS NOT NULL
        AND NOT (r.external_reservation_id = ANY($5::text[]))
-     ORDER BY r.created_at ASC
-     LIMIT 1`,
-    [roomTypeId, channelId, checkIn, checkOut, feedExternalIds]
+       AND ($6::uuid IS NULL OR r.id <> $6::uuid)
+     ORDER BY r.created_at ASC`,
+    [roomTypeId, channelId, checkIn, checkOut, feedExternalIds, exceptReservationId ?? null]
   );
-  return rows[0] ? { id: rows[0].id, externalId: rows[0].external_reservation_id } : null;
+  return rows.map((r) => ({ id: r.id, externalId: r.external_reservation_id }));
+}
+
+/**
+ * Booking junta las estadias pegadas (una sale el dia que entra la otra) en UN solo evento, y le cambia el UID/fechas.
+ * Lapa las tenia guardadas por separado: ninguna coincide con el evento nuevo y el cambio de fechas choca con la otra.
+ * Las reservas guardadas que se superponen con el evento y ya no figuran en el feed son pedazos viejos de esa misma
+ * estadia: se cancelan para que la que sobrevive pueda tomar las fechas completas.
+ */
+async function cancelStaleOverlapping(ids: string[]): Promise<void> {
+  for (const id of ids) {
+    await query(
+      `UPDATE reservations SET status = 'cancelled', cancelled_at = now(), cancellation_reason = 'ota_cancellation' WHERE id = $1`,
+      [id]
+    );
+    logger.info('Reserva OTA reemplazada por un evento que junta varias estadias', { reservationId: id });
+  }
 }
 
 async function findBlockingReservation(
@@ -429,7 +446,18 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
     } else {
       const datesChanged = existing.check_in !== bookingData.checkIn || existing.check_out !== bookingData.checkOut;
       if (datesChanged && existing.status !== 'cancelled') {
-        const updated = await applyOtaDateChange(existing.id, channel.code, bookingData.checkIn, bookingData.checkOut);
+        let updated = await applyOtaDateChange(existing.id, channel.code, bookingData.checkIn, bookingData.checkOut);
+        if (!updated && bookingData.source === 'ical' && bookingData.feedExternalIds) {
+          // El cambio choca con pedazos viejos de la misma estadia (ver cancelStaleOverlapping): se limpian y se reintenta.
+          const roomId = await query<{ room_type_id: string }>(`SELECT room_type_id FROM reservation_beds WHERE reservation_id = $1 LIMIT 1`, [existing.id]);
+          const stale = roomId.rows[0]
+            ? await findShiftedStayReservations(roomId.rows[0].room_type_id, channelId, bookingData.checkIn, bookingData.checkOut, bookingData.feedExternalIds, existing.id)
+            : [];
+          if (stale.length > 0) {
+            await cancelStaleOverlapping(stale.map((r) => r.id));
+            updated = await applyOtaDateChange(existing.id, channel.code, bookingData.checkIn, bookingData.checkOut);
+          }
+        }
         return { reservationId: existing.id, deduplicated: true, updated };
       }
       return { reservationId: existing.id, deduplicated: true };
@@ -463,11 +491,15 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
   // iCal: el huesped cambio las fechas en la OTA. El evento llega con otro UID y fechas nuevas, pero la reserva
   // guardada (con el id del webhook) ya no figura en el feed y se superpone con el: es la misma estadia.
   if (bookingData.source === 'ical' && bookingData.feedExternalIds) {
-    const shifted = await findShiftedStayReservation(
+    const shifted = await findShiftedStayReservations(
       roomType.id, channelId, bookingData.checkIn, bookingData.checkOut, bookingData.feedExternalIds
     );
-    if (shifted && (await applyOtaDateChange(shifted.id, channel.code, bookingData.checkIn, bookingData.checkOut))) {
-      return { reservationId: shifted.id, deduplicated: true, updated: true, matchedExternalId: shifted.externalId };
+    if (shifted.length > 0) {
+      const [survivor, ...others] = shifted;
+      await cancelStaleOverlapping(others.map((r) => r.id));
+      if (await applyOtaDateChange(survivor.id, channel.code, bookingData.checkIn, bookingData.checkOut)) {
+        return { reservationId: survivor.id, deduplicated: true, updated: true, matchedExternalId: survivor.externalId };
+      }
     }
   }
 

@@ -9,9 +9,9 @@ import { logger } from '@/utils/logger';
 import { connectDatabase, disconnect } from '@/config/database';
 import { environment } from '@/config/environment';
 import { dynamicPricingService } from './services/dynamic-pricing-service';
-// no queda ningun proceso programado en node-cron -- todo el
-// scheduling (cleanup, flexible-conversion, ota-sync) vive en BullMQ,
-// consumido por el proceso separado `npm run worker` (workers/index.ts).
+import { startScheduler } from './workers/scheduler';
+// El scheduling (cleanup, flexible-conversion, ota-sync, pagos) corre en este mismo
+// proceso via workers/scheduler.ts (sin Redis ni colas).
 // El bot de precios dinámicos usa un setTimeout nativo para no añadir
 // dependencias: corre a las 02:00 UTC todos los dias.
 
@@ -43,6 +43,14 @@ async function startServer(): Promise<void> {
 
       // ── Bot de precios dinámicos: cron nativo a las 02:00 UTC ──────────────
       scheduleDynamicPricingBot();
+
+      // ── Tareas programadas (sync iCal/OTA, pagos, emails) en este mismo proceso ──
+      // Antes corrian en una maquina `worker` aparte que Fly detenia y nadie volvia a prender
+      // (iCal quedo 3 dias sin sincronizar). Esta maquina nunca se detiene (auto_stop off).
+      // DISABLE_SCHEDULER=true lo apaga (por si se vuelve a un worker separado).
+      if (process.env.DISABLE_SCHEDULER !== 'true') {
+        stopScheduler = startScheduler();
+      }
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -50,8 +58,11 @@ async function startServer(): Promise<void> {
   }
 }
 
+let stopScheduler: (() => void) | null = null;
+
 async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
+  stopScheduler?.();
 
   server.close(async () => {
     logger.info('HTTP server closed');

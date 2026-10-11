@@ -79,9 +79,13 @@ sin compartir estado entre instancias. Obligatorio antes de recibir pagos reales
 
 1. Crear una instancia (Upstash Redis, plan gratuito tiene persistencia).
 2. Copiar el connection string (`rediss://...`) a `REDIS_URL` en los Secrets de Fly.
-3. Las tareas programadas (sync iCal/OTA, pagos, emails) corren dentro del proceso `app`
-   (`workers/scheduler.ts`, arrancado desde `server.ts`), que Fly nunca detiene. Ya no hay
-   una máquina `worker` aparte (se detenía y iCal quedaba sin sincronizar).
+3. Las tareas programadas (sync iCal/OTA, pagos, emails) las corren **dos encargados**:
+   el proceso `app` (`workers/scheduler.ts`, arrancado desde `server.ts`, que Fly nunca
+   detiene) y un proceso `worker` aparte (`npm run worker`, con reinicio automático).
+   Si uno falla, el otro sigue. Un candado en la base de datos evita que los dos corran
+   la misma tarea a la vez. Si hace falta apagar uno: `DISABLE_SCHEDULER=true` en `app`.
+   Tras el primer deploy, verificar con `fly status -a lapa-casa-hostel` que existan las
+   dos máquinas (`app` y `worker`); si falta el worker: `fly scale count worker=1`.
 
 ## 6. Webhooks externos
 

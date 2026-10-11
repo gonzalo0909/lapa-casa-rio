@@ -22,10 +22,15 @@ primary_region = 'gru'
   PORT = '5000'
   TIMEZONE = 'America/Sao_Paulo'
 
-# Un solo proceso: la API y las tareas programadas (sync iCal/OTA, emails, pagos,
-# ver workers/scheduler.ts) corren juntas. La maquina nunca se detiene (auto_stop off).
+# Dos encargados de las tareas programadas (sync iCal/OTA de hostel y apartamentos, emails,
+# pagos, ver workers/scheduler.ts):
+#  - `app`: la API, que ademas corre el planificador (la maquina nunca se detiene, auto_stop off).
+#  - `worker`: un proceso aparte que solo corre el planificador, de respaldo por si `app` falla.
+# Los dos pueden trabajar a la vez: un candado en la base de datos (scheduler.ts) hace que cada
+# tarea la corra uno solo y el otro la salte hasta la proxima vuelta.
 [processes]
   app = 'npm run start'
+  worker = 'npm run worker'
 
 [http_service]
   internal_port = 5000
@@ -46,3 +51,14 @@ primary_region = 'gru'
   size = 'shared-cpu-1x'
   memory = '512mb'
   processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+  processes = ['worker']
+
+# Si el worker se cae, Fly lo vuelve a levantar solo (antes quedaba apagado y el iCal
+# estuvo 3 dias sin sincronizar).
+[[restart]]
+  policy = 'always'
+  processes = ['worker']

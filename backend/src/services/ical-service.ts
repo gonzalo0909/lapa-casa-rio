@@ -771,11 +771,34 @@ export interface FeedDiagnosisRow {
  * Diagnóstico de un feed SIN modificar nada: lee el feed de la OTA y dice, evento por evento, qué hace
  * (o haría) el sistema con él. Sirve para ver por qué una reserva real no aparece en Lapa Casa.
  */
+/**
+ * Hostel: una habitacion compartida tiene varias camas, asi que una reserva superpuesta NO la llena.
+ * Un evento de iCal ocupa 1 cama (igual que al importar, channel-service: bedsCount ?? 1): solo "choca"
+ * si no queda ninguna cama libre en esas fechas. Devuelve cuantas camas hay y cuantas quedan libres.
+ */
+async function hostelBedAvailability(roomTypeId: string, checkIn: string, checkOut: string): Promise<{ total: number; free: number }> {
+  const { rows } = await query<{ total: number; free: number }>(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE NOT EXISTS (
+              SELECT 1 FROM reservation_beds rb
+              JOIN reservations res ON res.id = rb.reservation_id
+              WHERE rb.bed_id = b.id AND res.status != 'cancelled'
+                AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+            ))::int AS free
+     FROM beds b
+     WHERE b.room_type_id = $1 AND b.is_active`,
+    [roomTypeId, checkIn, checkOut]
+  );
+  return { total: rows[0]?.total ?? 0, free: rows[0]?.free ?? 0 };
+}
+
 export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisRow[]> {
   const parsed = await new ICalParser().parseFromUrl(feed.url, feed.channelCode);
   if (!parsed.success) {throw new Error(`Parseo fallido: ${parsed.errors.join(', ')}`);}
   const events = toParsedIcalEvents(parsed.bookings);
   const rows: FeedDiagnosisRow[] = [];
+  const { rows: typeRows } = await query<{ property_type: string }>(`SELECT property_type FROM room_types WHERE id = $1`, [feed.roomTypeId]);
+  const isHostelFeed = typeRows[0]?.property_type === 'hostel';
 
   for (const event of events) {
     const nights = nightsBetween(event.checkIn, event.checkOut);
@@ -840,6 +863,16 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
     );
     if (sameStay[0]) {
       rows.push({ ...row, verdict: `Misma estadía ya registrada con otro id: ${sameStay[0].reservation_number} (${sameStay[0].status}). No se duplica` });
+      continue;
+    }
+    if (isHostelFeed) {
+      const beds = await hostelBedAvailability(feed.roomTypeId, event.checkIn, event.checkOut);
+      rows.push({
+        ...row,
+        verdict: beds.free >= 1
+          ? `Se importará en la próxima sincronización (cada hora): hay ${beds.free} de ${beds.total} camas libres en esas fechas`
+          : `NO se puede importar: no queda ninguna cama libre en la habitación (0 de ${beds.total} camas libres en esas fechas)`,
+      });
       continue;
     }
     const { rows: clash } = await query<{ reservation_number: string; status: string; ci: string; co: string; channel: string | null }>(

@@ -9,6 +9,7 @@
 // se solapa consigo misma, y un error nunca tumba el proceso.
 
 import { logger } from '../utils/logger';
+import { getClient } from '../config/database';
 import { runCleanup } from './cleanup.task';
 import { runFlexibleConversion } from './flexible-conversion.task';
 import { runOwnerPayouts } from './owner-payout.task';
@@ -77,11 +78,29 @@ async function execute(task: Task): Promise<void> {
   }
   running.add(task.name);
   const start = Date.now();
+  // "Cartel de ocupado" entre procesos: si hay dos encargados (la app y un worker aparte),
+  // solo uno corre la tarea; el otro la salta y espera a la proxima vuelta. Si la base no
+  // responde, se corre igual (las tareas son idempotentes) para no dejar de sincronizar.
+  let lockClient: Awaited<ReturnType<typeof getClient>> | null = null;
   try {
+    try {
+      lockClient = await getClient();
+      const { rows } = await lockClient.query('SELECT pg_try_advisory_lock(hashtext($1)) AS ok', [`scheduler:${task.name}`]);
+      if (!rows[0]?.ok) {
+        logger.info('Tarea programada ya la está corriendo otro proceso, se omite', { task: task.name });
+        return;
+      }
+    } catch (error: any) {
+      logger.warn('No se pudo tomar el candado de la tarea, se corre igual', { task: task.name, error: error?.message });
+    }
     await task.run();
   } catch (error: any) {
     logger.error('Tarea programada falló', { task: task.name, error: error?.message });
   } finally {
+    if (lockClient) {
+      try { await lockClient.query('SELECT pg_advisory_unlock(hashtext($1))', [`scheduler:${task.name}`]); } catch { /* el candado se libera solo al cerrar la conexión */ }
+      lockClient.release();
+    }
     running.delete(task.name);
     logger.info('Tarea programada terminada', { task: task.name, ms: Date.now() - start });
   }

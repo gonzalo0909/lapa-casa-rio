@@ -103,6 +103,22 @@ export function getHolidayBlockPresets(year: number): HolidayBlockPreset[] {
   ];
 }
 
+/** Periodos en que el hostel NO acepta reservas: solo Carnaval y Réveillon (tramo real, mismas fechas que
+ *  getHolidayBlockPresets y que los bloqueos de room_blocks). Los demas feriados se venden normalmente.
+ *  checkIn/checkOut: YYYY-MM-DD, checkOut exclusivo. Devuelve el nombre del periodo que se pisa, o null. */
+export function overlappingHostelClosedPeriod(checkIn: string, checkOut: string): string | null {
+  const y1 = parseInt(checkIn.substring(0, 4), 10);
+  const y2 = parseInt(checkOut.substring(0, 4), 10);
+  for (let year = y1; year <= y2; year++) {
+    for (const p of getHolidayBlockPresets(year)) {
+      if ((p.key === 'carnaval' || p.key === 'reveillon') && checkIn < p.endDate && checkOut > p.startDate) {
+        return p.name;
+      }
+    }
+  }
+  return null;
+}
+
 export function isBrazilHoliday(dateStr: string): boolean {
   const year = parseInt(dateStr.substring(0, 4), 10);
   const checkDate = new Date(dateStr + 'T00:00:00');

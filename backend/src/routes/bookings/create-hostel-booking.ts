@@ -24,8 +24,8 @@ import {
   insertBookingGuests,
   uploadAdditionalGuestPhotos,
   calcCheckInBounds,
-  isBrazilHoliday,
 } from './create-booking.shared';
+import { overlappingHostelClosedPeriod } from '../../utils/brazil-holidays';
 
 const guestRepo = new GuestRepository();
 const bookingService = new BookingService();
@@ -67,16 +67,14 @@ export const createHostelBookingHandler = async (
       return;
     }
 
-    // Bloqueo total de feriados nacionais do Brasil
-    const cursor = new Date(checkIn);
-    while (cursor < checkOut) {
-      if (isBrazilHoliday(cursor)) {
-        res.status(422).json(ApiResponse.error(
-          'Las fechas seleccionadas incluyen un feriado nacional de Brasil y no están disponibles para reserva.',
-        ));
-        return;
-      }
-      cursor.setDate(cursor.getDate() + 1);
+    // Solo Carnaval y Réveillon cierran el hostel; el resto de los feriados se vende normal.
+    // (Ademas de esto, esas fechas estan en room_blocks, que check_availability ya respeta.)
+    const closedPeriod = overlappingHostelClosedPeriod(bookingData.checkIn, bookingData.checkOut);
+    if (closedPeriod) {
+      res.status(422).json(ApiResponse.error(
+        `Las fechas seleccionadas incluyen ${closedPeriod} y no están disponibles para reserva.`,
+      ));
+      return;
     }
 
     const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));

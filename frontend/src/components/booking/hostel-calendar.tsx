@@ -3,10 +3,10 @@
 // Step 1 — Calendario de check-in / check-out.
 // Componente puro de presentación: toda la lógica de estado queda en el orquestador.
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import type { BookingLocale } from '@/types/global';
 import { T } from './hostel-engine.types';
-import { getSeason, fmtDate, sameDay, inRange, weekdayLabels, monthLabel, getBrazilHolidaySet } from './hostel-engine.utils';
+import { getSeason, fmtDate, sameDay, inRange, weekdayLabels, monthLabel } from './hostel-engine.utils';
 import { minCheckInDs } from '@/lib/utils';
 
 // ─── Props ────────────────────────────────────────────────
@@ -18,6 +18,8 @@ interface HostelCalendarProps {
   hoverDate: Date | null;
   selectingEnd: boolean;
   today: Date;
+  /** Dias sin camas libres segun el servidor (reservas y bloqueos del admin). */
+  blockedDates: Set<string>;
   onCalClick: (date: Date) => void;
   onMonthChange: (delta: number) => void;
   onHoverDate: (date: Date | null) => void;
@@ -26,16 +28,9 @@ interface HostelCalendarProps {
 // ─── Component ────────────────────────────────────────────
 export function HostelCalendar({
   lang, calMonth, checkIn, checkOut, hoverDate, selectingEnd,
-  today, onCalClick, onMonthChange, onHoverDate,
+  today, blockedDates, onCalClick, onMonthChange, onHoverDate,
 }: HostelCalendarProps) {
   const t = T[lang];
-
-  // Feriados memoizados por año del mes visible (cubre año-1, año, año+1).
-  const holidaySet = useMemo(
-    () => getBrazilHolidaySet(calMonth.getFullYear()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [calMonth.getFullYear()],
-  );
 
   // Celdas del grid
   const calCells = (() => {
@@ -94,7 +89,7 @@ export function HostelCalendar({
           const minDs   = minCheckInDs();
           const dateDs  = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
           const isPast    = dateDs < minDs;
-          const isHoliday = holidaySet.has(dateDs);
+          const isHoliday = blockedDates.has(dateDs);
           const isToday = sameDay(date, today);
           const isStart = sameDay(date, checkIn);
           const isEnd   = sameDay(date, checkOut);

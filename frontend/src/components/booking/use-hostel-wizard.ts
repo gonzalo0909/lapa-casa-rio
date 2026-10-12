@@ -37,6 +37,10 @@ export function useHostelWizard(t: Translations) {
   const [revealed, setRevealed]     = useState<Record<string, boolean>>({ cuarto3: false, cuarto5: false });
   const [rooms, setRooms]           = useState<RoomDef[]>(() => localizeRoomNames(DEFAULT_ROOMS, t));
   const [roomsLoaded, setRoomsLoaded] = useState(false);
+  // Dias sin ninguna cama libre (reservas, bloqueos del admin, feriados cargados en la base): lo calcula el servidor.
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  // Precio por cama real (el que carga el admin x multiplicador de temporada) para mostrar antes de elegir fechas.
+  const [basePriceHint, setBasePriceHint] = useState<number | null>(null);
   const [minNightsNotice, setMinNightsNotice] = useState<{ minNights: number; label: string | null; pricePerNight: number } | null>(null);
   const [toast, setToast]           = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -59,6 +63,41 @@ export function useHostelWizard(t: Translations) {
     if (r.id === 'cuarto5') { return !!revealed['cuarto5']; }
     return true;
   });
+
+  // Dias bloqueados del mes que se ve en el calendario: salen del servidor, asi lo que el admin
+  // abre o cierra en Bloqueos / Cuartos se refleja aca (antes los feriados estaban fijos en el codigo).
+  const calMonthKey = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}`;
+  useEffect(() => {
+    let cancelled = false;
+    availabilityAPI
+      .getCalendar({ month: calMonthKey })
+      .then((res) => {
+        if (cancelled) { return; }
+        const days = (res?.data?.days ?? []) as Array<{ date: string; availableBeds: number }>;
+        setBlockedDates(new Set(days.filter((d) => d.availableBeds <= 0).map((d) => d.date)));
+      })
+      .catch(() => { if (!cancelled) { setBlockedDates(new Set()); } });
+    return () => { cancelled = true; };
+  }, [calMonthKey]);
+
+  // Precio real por cama para el pie del calendario, antes de elegir fechas (si falla, se usa el valor de respaldo).
+  useEffect(() => {
+    let cancelled = false;
+    const d1 = new Date(); d1.setDate(d1.getDate() + 1);
+    const d2 = new Date(d1); d2.setDate(d2.getDate() + 1);
+    availabilityAPI
+      .check({ checkIn: toLocalISODate(d1), checkOut: toLocalISODate(d2), beds: 1 })
+      .then((res) => {
+        if (cancelled) { return; }
+        const apiRooms: ApiRoom[] = res.data?.rooms || [];
+        const prices = apiRooms.map((r) => r.basePrice).filter((p) => typeof p === 'number' && p > 0);
+        if (!prices.length) { return; }
+        const mult: number = res.data?.allocationOptions?.[0]?.pricing?.seasonalMultiplier ?? 1;
+        setBasePriceHint(Math.min(...prices) * mult);
+      })
+      .catch(() => { /* sin precio de referencia: queda el valor de respaldo */ });
+    return () => { cancelled = true; };
+  }, []);
 
   // Fetch room availability when dates change
   const errAvail = t.tErrAvail;
@@ -262,7 +301,7 @@ export function useHostelWizard(t: Translations) {
 
   return {
     step, setStep, calMonth, checkIn, checkOut, hoverDate, setHoverDate,
-    selectingEnd, beds, revealed, rooms, roomsLoaded, minNightsNotice, toast, cancelOpen, setCancelOpen,
+    selectingEnd, beds, revealed, rooms, roomsLoaded, blockedDates, basePriceHint, minNightsNotice, toast, cancelOpen, setCancelOpen,
     appliedCoupon, setAppliedCoupon, gpName, setGpName, gpEmail, setGpEmail,
     form, setForm, formErrors, docFeedback, setDocFeedback,
     emailFb, setEmailFb, phoneFb, setPhoneFb,

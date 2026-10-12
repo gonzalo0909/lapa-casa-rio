@@ -11,10 +11,12 @@ interface PricingInput {
   beds: Record<string, number>;
   rooms: RoomDef[];
   totalBeds: number;
+  /** Precio real por cama (admin x temporada) para mostrar antes de elegir fechas. */
+  basePriceHint?: number | null;
   t: Translations;
 }
 
-export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t }: PricingInput) {
+export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, basePriceHint, t }: PricingInput) {
   const [quote, setQuote] = useState<{
     nights: number;
     totalPrice: number;
@@ -96,7 +98,8 @@ export function useHostelPricing({ checkIn, checkOut, beds, rooms, totalBeds, t 
     }
     if (checkIn && !checkOut) { return { main: t.tSelectCheckout, sub: t.tClickCheckout }; }
     const s = getSeason(new Date());
-    return { main: fmtMoney(FALLBACK_BED_PRICE_BRL * s.mult) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
+    const perBed = basePriceHint && basePriceHint > 0 ? basePriceHint : FALLBACK_BED_PRICE_BRL * s.mult;
+    return { main: fmtMoney(perBed) + '/' + t.tBed + '/' + t.tNight, sub: t.tInProgress };
   })();
 
   return { price, cardSurchargeMult, footerPrice, season, minNightsError };

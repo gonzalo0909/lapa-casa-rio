@@ -54,6 +54,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
     beds: wizard.beds,
     rooms: wizard.rooms,
     totalBeds: wizard.totalBeds,
+    basePriceHint: wizard.basePriceHint,
     t,
   });
 
@@ -140,6 +141,7 @@ export function HostelEngine({ locale = 'pt' }: HostelEngineProps) {
                 hoverDate={wizard.hoverDate}
                 selectingEnd={wizard.selectingEnd}
                 today={new Date()}
+                blockedDates={wizard.blockedDates}
                 onCalClick={wizard.handleCalClick}
                 onMonthChange={wizard.handleMonthChange}
                 onHoverDate={wizard.setHoverDate}

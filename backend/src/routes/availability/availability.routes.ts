@@ -118,7 +118,10 @@ router.get('/calendar', async (req, res, next) => {
 
     logger.info('Calendar availability request', { month, from, to, roomId });
 
-    const days = await availabilityService.getDailyOccupancy(from, to, roomId);
+    // getDailyOccupancy trata `to` como fecha de salida (exclusiva): se pasa el dia 1 del mes siguiente
+    // para que el ultimo dia del mes tambien se calcule (antes quedaba siempre fuera y figuraba libre).
+    const toExclusive = new Date(Date.UTC(year, mon, 1)).toISOString().slice(0, 10);
+    const days = await availabilityService.getDailyOccupancy(from, toExclusive, roomId);
 
     res.status(200).json(ApiResponse.success({
       month,

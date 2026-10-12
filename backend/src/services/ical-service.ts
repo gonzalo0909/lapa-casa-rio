@@ -820,10 +820,10 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       continue;
     }
     const { rows: existing } = await query<{
-      reservation_number: string; status: string; cancellation_reason: string | null; ci: string; co: string;
+      id: string; reservation_number: string; status: string; cancellation_reason: string | null; ci: string; co: string;
       room_ids: string[] | null; room_names: string[] | null;
     }>(
-      `SELECT r.reservation_number, r.status, r.cancellation_reason, r.check_in_date::text AS ci, r.check_out_date::text AS co,
+      `SELECT r.id, r.reservation_number, r.status, r.cancellation_reason, r.check_in_date::text AS ci, r.check_out_date::text AS co,
               array_agg(DISTINCT rt.id::text) FILTER (WHERE rt.id IS NOT NULL) AS room_ids,
               array_agg(DISTINCT rt.name) FILTER (WHERE rt.id IS NOT NULL) AS room_names
        FROM reservations r
@@ -839,12 +839,36 @@ export async function diagnoseFeed(feed: IcalFeedConfig): Promise<FeedDiagnosisR
       // la misma URL de feed, la reserva puede estar guardada en ESE apartamento y no en este.
       const otherRoom = e.room_ids && e.room_ids.length > 0 && !e.room_ids.includes(feed.roomTypeId)
         ? ` ⚠ ESTÁ GUARDADA EN OTRO APARTAMENTO: ${(e.room_names ?? []).join(', ')}` : '';
-      rows.push({
-        ...row,
-        verdict: e.status === 'cancelled'
-          ? `Existe pero está CANCELADA (${e.reservation_number}, motivo: ${e.cancellation_reason ?? '—'}). Se recrea sola en la próxima sincronización.`
-          : `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})${otherRoom}`,
-      });
+      if (e.status === 'cancelled') {
+        rows.push({ ...row, verdict: `Existe pero está CANCELADA (${e.reservation_number}, motivo: ${e.cancellation_reason ?? '—'}). Se recrea sola en la próxima sincronización.` });
+        continue;
+      }
+      // Fechas distintas entre la plataforma y Lapa: en la próxima sincronización Lapa intenta igualarlas
+      // (channel-service: applyOtaDateChange). Si otra reserva ocupa esas fechas, el cambio se rechaza y quedan las viejas.
+      if (e.ci !== event.checkIn || e.co !== event.checkOut) {
+        let blocker = '';
+        if (!isHostelFeed) {
+          const { rows: dateClash } = await query<{ reservation_number: string; status: string; ci: string; co: string }>(
+            `SELECT res.reservation_number, res.status, rb.check_in::text AS ci, rb.check_out::text AS co
+             FROM reservation_beds rb JOIN reservations res ON res.id = rb.reservation_id
+             WHERE rb.room_type_id = $1 AND res.id <> $4::uuid AND res.status != 'cancelled'
+               AND daterange(rb.check_in, rb.check_out, '[)') && daterange($2::date, $3::date, '[)')
+             LIMIT 1`,
+            [feed.roomTypeId, event.checkIn, event.checkOut, e.id]
+          );
+          blocker = dateClash[0]
+            ? ` NO se puede igualar: choca con ${dateClash[0].reservation_number} (${dateClash[0].status}, ${dateClash[0].ci} → ${dateClash[0].co}); se conservan las fechas de Lapa y se avisa por email.`
+            : ' No hay otra reserva en esas fechas: se igualan solas en la próxima sincronización (cada hora).';
+        } else {
+          blocker = ' Se intentan igualar en la próxima sincronización (cada hora).';
+        }
+        rows.push({
+          ...row,
+          verdict: `⚠ FECHAS DISTINTAS en ${e.reservation_number} (${e.status}): la plataforma dice ${event.checkIn} → ${event.checkOut} y Lapa tiene ${e.ci} → ${e.co}.${blocker}${otherRoom}`,
+        });
+        continue;
+      }
+      rows.push({ ...row, verdict: `Ya importada: ${e.reservation_number} (${e.status}, ${e.ci} → ${e.co})${otherRoom}` });
       continue;
     }
     if (event.isBlocked && !event.isOwnerBlock && (await isRecentCancellationEcho(feed, event.checkIn, event.checkOut, event.uid))) {

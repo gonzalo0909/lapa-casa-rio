@@ -121,11 +121,11 @@ const generateReservationNumber = (): string =>
 // si el plazo arrancara recién en ese momento.
 const WA_GROUP_INVITE_MSG: Record<'pt' | 'en' | 'es', (url: string) => string> = {
   pt: (url) =>
-    `Olá! Te convido a pagar sua cama para o nosso grupo no Lapa Casa Hostel. Cada um paga a sua:\n${url}\n\nVocê tem 10 minutos a partir de agora para pagar.`,
+    `Olá! Te convido a pagar sua cama para o nosso grupo no Lapa Casa Rio. Cada um paga a sua:\n${url}\n\nVocê tem 10 minutos a partir de agora para pagar.`,
   en: (url) =>
-    `Hi! I'm inviting you to pay for your bed for our group at Lapa Casa Hostel. Everyone pays their own:\n${url}\n\nYou have 10 minutes from now to pay.`,
+    `Hi! I'm inviting you to pay for your bed for our group at Lapa Casa Rio. Everyone pays their own:\n${url}\n\nYou have 10 minutes from now to pay.`,
   es: (url) =>
-    `Hola! Te invito a pagar tu cama para nuestro grupo en Lapa Casa Hostel. Cada uno paga la suya:\n${url}\n\nTenés 10 minutos a partir de ahora para pagar.`,
+    `Hola! Te invito a pagar tu cama para nuestro grupo en Lapa Casa Rio. Cada uno paga la suya:\n${url}\n\nTenés 10 minutos a partir de ahora para pagar.`,
 };
 
 // Mismo criterio que toBackendLang en el frontend (hostel-engine.utils.ts):
@@ -638,7 +638,7 @@ export class GroupPaymentService {
       const { stripeHandler } = await import('../lib/payments/stripe-handler');
       const checkoutSession = await stripeHandler.createCheckoutSession({
         amount: amountCharged,
-        description: `Pago grupal — cama Lapa Casa Hostel`,
+        description: `Pago grupal — cama Lapa Casa Rio`,
         customerEmail: input.guest.email,
         reservationId: session.reservation_id,
         successUrl,
@@ -663,7 +663,7 @@ export class GroupPaymentService {
       const pixResult = await mercadoPagoHandler.createPaymentIntent({
         amount: amountCharged,
         currency: 'BRL',
-        description: `Pago grupal — cama Lapa Casa Hostel`,
+        description: `Pago grupal — cama Lapa Casa Rio`,
         payerEmail: input.guest.email,
         paymentMethod: 'pix',
         metadata: {

@@ -31,7 +31,7 @@ import { z, ZodError } from 'zod';
 import { env } from '../../config/environment';
 import { rateLimiter } from '../../middleware/rate-limiter';
 import { verifyHmacSignature } from '../../utils/encryption';
-import { channelService } from '../../services/channel-service';
+import { channelService, OtaAvailabilityError } from '../../services/channel-service';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { ApiResponse } from '../../utils/responses';
@@ -153,15 +153,23 @@ async function handleOtaWebhook(config: WebhookChannelConfig, req: Request, res:
       res.status(400).json(ApiResponse.error('Payload inválido', error.errors));
       return;
     }
-    // Se responde 200 igual que en los webhooks de pagos (handle-webhook.ts):
-    // un 5xx haría que la OTA reintente indefinidamente el mismo evento ya
-    // registrado en logs; el conflicto/rechazo de disponibilidad ya quedó
-    // persistido en booking_conflicts si correspondía (channel-service.ts).
-    logger.error('Error procesando webhook OTA', {
+    const message = error instanceof Error ? error.message : 'Error desconocido';
+    if (error instanceof OtaAvailabilityError) {
+      // Sin camas: el conflicto ya quedó persistido en booking_conflicts
+      // (channel-service.ts); reintentar no cambia el resultado -> 200.
+      logger.error('Webhook OTA: sin disponibilidad (conflicto registrado)', { channelCode: config.channelCode, error: message });
+      res.status(200).json(ApiResponse.success({ received: true, processed: false }));
+      return;
+    }
+    // Cualquier otro fallo (habitación sin mapear, DB caída, etc.) no deja
+    // registro: se responde 500 para que la OTA reintente. Es seguro porque
+    // handleChannelBooking es idempotente por (channel_id, external_reservation_id).
+    logger.error('Error procesando webhook OTA (la OTA reintentará)', {
       channelCode: config.channelCode,
-      error: error instanceof Error ? error.message : 'Error desconocido',
+      reservationId: req.body?.reservationId,
+      error: message,
     });
-    res.status(200).json(ApiResponse.success({ received: true, processed: false }));
+    res.status(500).json(ApiResponse.error('Error procesando el webhook'));
   }
 }
 

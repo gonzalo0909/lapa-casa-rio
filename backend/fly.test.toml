@@ -1,0 +1,34 @@
+# Copia de PRUEBA del motor. App aparte de la real (lapa-casa-hostel): base vacia propia,
+# sin worker y una sola maquina chica. Nunca apuntar a la base ni a las claves reales.
+app = 'lapa-casa-test'
+primary_region = 'gru'
+
+[build]
+  dockerfile = 'Dockerfile'
+  build-target = 'production'
+
+[env]
+  API_VERSION = 'v1'
+  NODE_ENV = 'production'
+  PORT = '5000'
+  TIMEZONE = 'America/Sao_Paulo'
+  # Se completa cuando exista la pagina de prueba (Vercel).
+  FRONTEND_URL = 'https://lapacasario.com'
+
+[http_service]
+  internal_port = 5000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'

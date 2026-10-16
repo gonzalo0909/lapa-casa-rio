@@ -1,0 +1,25 @@
+name: Deploy PRUEBAS (lapa-casa-test)
+
+# Solo sube a la copia de prueba, nunca al motor real.
+# Se puede lanzar a mano desde GitHub > Actions > "Run workflow" eligiendo la rama.
+on:
+  workflow_dispatch:
+  push:
+    branches: [pruebas]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-test.yml'
+
+jobs:
+  deploy:
+    name: Deploy backend de prueba
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - run: flyctl deploy --remote-only --config fly.test.toml --app lapa-casa-test
+        working-directory: backend
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_TEST }}

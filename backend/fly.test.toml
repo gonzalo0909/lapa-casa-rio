@@ -15,20 +15,26 @@ primary_region = 'gru'
   # Se completa cuando exista la pagina de prueba (Vercel).
   FRONTEND_URL = 'https://lapacasario.com'
 
+# Igual que el real: migra y siembra la base vacia antes de levantar el servidor.
+[processes]
+  app = 'npm run start'
+
 [http_service]
   internal_port = 5000
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
+  processes = ['app']
 
   [[http_service.checks]]
     interval = '30s'
     timeout = '5s'
-    grace_period = '30s'
+    grace_period = '90s'
     method = 'GET'
     path = '/health'
 
 [[vm]]
   size = 'shared-cpu-1x'
   memory = '512mb'
+  processes = ['app']

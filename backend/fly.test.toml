@@ -12,8 +12,9 @@ primary_region = 'gru'
   NODE_ENV = 'production'
   PORT = '5000'
   TIMEZONE = 'America/Sao_Paulo'
-  # Se completa cuando exista la pagina de prueba (Vercel).
-  FRONTEND_URL = 'https://lapacasario.com'
+  # Links de mails y retornos de pago: apuntan a la pagina de prueba, nunca a la real.
+  FRONTEND_URL = 'https://lapa-casa-test.vercel.app'
+  APP_URL = 'https://lapa-casa-test.fly.dev'
 
 # Igual que el real: migra y siembra la base vacia antes de levantar el servidor.
 [processes]

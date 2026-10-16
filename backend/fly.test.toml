@@ -1,5 +1,8 @@
-# Copia de PRUEBA del motor. App aparte de la real (lapa-casa-hostel): base vacia propia,
-# sin worker y una sola maquina chica. Nunca apuntar a la base ni a las claves reales.
+# fly.toml app configuration file generated for lapa-casa-test on 2026-10-16T05:57:52Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'lapa-casa-test'
 primary_region = 'gru'
 
@@ -9,11 +12,10 @@ primary_region = 'gru'
 
 [env]
   API_VERSION = 'v1'
+  FRONTEND_URL = 'https://lapacasario.com'
   NODE_ENV = 'production'
   PORT = '5000'
   TIMEZONE = 'America/Sao_Paulo'
-  # Se completa cuando exista la pagina de prueba (Vercel).
-  FRONTEND_URL = 'https://lapacasario.com'
 
 [http_service]
   internal_port = 5000

@@ -84,8 +84,10 @@ export interface IncomingOtaBooking {
 }
 
 export interface ChannelBookingResult {
-  reservationId: string;
+  reservationId?: string;
   deduplicated: boolean;
+  /** true si la OTA ya habia avisado la cancelacion de esta reserva antes de que llegara: no se crea. */
+  cancelledBeforeArrival?: boolean;
   /** true si la reserva ya existia y la OTA cambio sus fechas (se actualizaron aca). */
   updated?: boolean;
   /**
@@ -485,6 +487,14 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
     }
   }
 
+  if (bookingData.source === 'webhook') {
+    const { rows: cancelledFirst } = await query(`SELECT 1 FROM system_config WHERE key = $1`, [cancelFirstKey(channelId, bookingData.externalReservationId)]);
+    if (cancelledFirst.length > 0) {
+      logger.info('Reserva OTA ya cancelada antes de llegar: no se crea', { channelCode: channel.code, externalReservationId: bookingData.externalReservationId });
+      return { deduplicated: true, cancelledBeforeArrival: true };
+    }
+  }
+
   const roomType = bookingData.roomTypeId
     ? await getRoomTypeById(bookingData.roomTypeId)
     : await mapExternalRoomId(bookingData.roomExternalId ?? '', channelId);
@@ -671,13 +681,33 @@ async function handleChannelBooking(bookingData: IncomingOtaBooking, channelId: 
   }
 }
 
+
+const CANCEL_FIRST_PREFIX = 'ota_cancel_first:';
+const cancelFirstKey = (channelId: string, externalReservationId: string): string =>
+  `${CANCEL_FIRST_PREFIX}${channelId}:${externalReservationId}`;
+
+/** Anota (en system_config, sin migracion) una cancelacion que llego antes que su reserva. Se limpia a los 90 dias. */
+async function rememberCancellationBeforeArrival(channelId: string, externalReservationId: string): Promise<void> {
+  await query(
+    `INSERT INTO system_config (key, value, description) VALUES ($1, $2::jsonb, 'Cancelacion de OTA recibida antes que la reserva')
+     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = now()`,
+    [cancelFirstKey(channelId, externalReservationId), JSON.stringify({ cancelledAt: new Date().toISOString() })]
+  );
+  await query(`DELETE FROM system_config WHERE key LIKE $1 AND updated_at < now() - interval '90 days'`, [`${CANCEL_FIRST_PREFIX}%`]);
+  logger.warn('Cancelacion OTA recibida antes que la reserva: se anota', { channelId, externalReservationId });
+}
+
 /** Cancelacion entrante de OTA (webhook, o inferida por ausencia del evento en un iCal reimportado). Idempotente. */
 async function handleChannelCancellation(externalReservationId: string, channelId: string): Promise<ChannelCancellationResult> {
   const { rows } = await query<{ id: string; status: string }>(
     `SELECT id, status FROM reservations WHERE channel_id = $1 AND external_reservation_id = $2`,
     [channelId, externalReservationId]
   );
-  if (rows.length === 0) {return { found: false };}
+  if (rows.length === 0) {
+    // La OTA avisa la cancelacion antes de que llegue la reserva: se anota para no crearla despues.
+    await rememberCancellationBeforeArrival(channelId, externalReservationId);
+    return { found: false };
+  }
   if (rows[0].status === 'cancelled') {return { found: true, alreadyCancelled: true, reservationId: rows[0].id };}
 
   await query(
@@ -698,8 +728,8 @@ async function getChannelStats(channelId: string): Promise<ChannelStats> {
        COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed'))::int AS confirmed,
        COUNT(*) FILTER (WHERE status = 'pending_ota_confirmation')::int AS pending_confirmation,
        COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled,
-       COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) AS gross_revenue,
-       COALESCE(SUM(calculate_channel_net_revenue(final_price, channel_id)) FILTER (WHERE status IN ('confirmed', 'completed')), 0) AS net_revenue
+       COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed', 'completed', 'pending_ota_confirmation')), 0) AS gross_revenue,
+       COALESCE(SUM(calculate_channel_net_revenue(final_price, channel_id)) FILTER (WHERE status IN ('confirmed', 'completed', 'pending_ota_confirmation')), 0) AS net_revenue
      FROM reservations WHERE channel_id = $1 AND COALESCE(source, '') !~ '_ical_block$'`,
     [channelId]
   );

@@ -22,14 +22,21 @@ const preamble = () => queryMock
   .mockResolvedValueOnce({ rows: [] })
   .mockResolvedValueOnce({ rows: [{ id: 'room-1', code: 'apt1', name: 'Apto 1' }] });
 
+// Igual que preamble, pero para webhooks: despues de "existe por id" se consulta si la OTA ya habia avisado la cancelacion.
+const webhookPreamble = () => queryMock
+  .mockResolvedValueOnce({ rows: [{ id: 'ch-1', code: 'booking' }] })
+  .mockResolvedValueOnce({ rows: [] })
+  .mockResolvedValueOnce({ rows: [] })
+  .mockResolvedValueOnce({ rows: [{ id: 'room-1', code: 'apt1', name: 'Apto 1' }] });
+
 describe('misma estadia: casos con id o fechas distintas', () => {
   beforeEach(() => { queryMock.mockReset(); txMock.mockReset(); });
 
   it('webhook que llega despues del iCal: adopta el id del webhook (para poder cancelarla)', async () => {
-    preamble().mockResolvedValueOnce({ rows: [{ id: 'res-9', external_reservation_id: 'ical-uid' }] }).mockResolvedValueOnce({ rows: [] });
+    webhookPreamble().mockResolvedValueOnce({ rows: [{ id: 'res-9', external_reservation_id: 'ical-uid' }] }).mockResolvedValueOnce({ rows: [] });
     const result = await channelService.handleChannelBooking({ ...base, source: 'webhook' }, 'ch-1');
     expect(result).toEqual({ reservationId: 'res-9', deduplicated: true, matchedExternalId: 'NEW-ID' });
-    const update = queryMock.mock.calls[4];
+    const update = queryMock.mock.calls[5];
     expect(update[0]).toContain('UPDATE reservations SET external_reservation_id');
     expect(update[1]).toEqual(['res-9', 'NEW-ID']);
   });
@@ -51,7 +58,7 @@ describe('misma estadia: casos con id o fechas distintas', () => {
   });
 
   it('sin feedExternalIds (webhook) no busca fechas cambiadas', async () => {
-    preamble().mockResolvedValueOnce({ rows: [] });
+    webhookPreamble().mockResolvedValueOnce({ rows: [] });
     txMock.mockRejectedValue(new Error('stop'));
     await expect(channelService.handleChannelBooking({ ...base, source: 'webhook' }, 'ch-1')).rejects.toThrow('stop');
     expect(queryMock.mock.calls.some((c) => String(c[0]).includes('daterange(rb.check_in, rb.check_out')
@@ -89,5 +96,27 @@ describe('cierre del propietario: sin precio y fuera de estadisticas', () => {
     const params = await run(false);
     expect(params[13]).toBeGreaterThan(0);
     expect(params[14]).toBe('booking');
+  });
+});
+
+describe('cancelacion que llega antes que la reserva', () => {
+  beforeEach(() => { queryMock.mockReset(); txMock.mockReset(); });
+
+  it('si la reserva no existe, anota la cancelacion', async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    const result = await channelService.handleChannelCancellation('EXT-1', 'ch-1');
+    expect(result).toEqual({ found: false });
+    const insert = queryMock.mock.calls.find((c) => String(c[0]).includes('INSERT INTO system_config'));
+    expect(insert?.[1][0]).toBe('ota_cancel_first:ch-1:EXT-1');
+  });
+
+  it('el webhook de la reserva que llega despues no la crea', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ id: 'ch-1', code: 'booking' }] })
+      .mockResolvedValueOnce({ rows: [] }) // no existe por id
+      .mockResolvedValueOnce({ rows: [{ '?column?': 1 }] }); // ya cancelada antes de llegar
+    const result = await channelService.handleChannelBooking({ ...base, externalReservationId: 'EXT-1', source: 'webhook' }, 'ch-1');
+    expect(result).toEqual({ deduplicated: true, cancelledBeforeArrival: true });
+    expect(txMock).not.toHaveBeenCalled();
   });
 });

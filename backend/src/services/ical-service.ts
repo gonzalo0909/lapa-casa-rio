@@ -1066,7 +1066,10 @@ export async function importICalFeed(feed: IcalFeedConfig): Promise<FeedImportRe
     const nowIso = new Date().toISOString();
     for (const uid of seenNow) {seen[uid] = nowIso;}
     // Si el parser descarto eventos, una reserva real puede faltar en seenNow solo por eso: no se cancela por ausencia.
-    const incompleteRead = parsed.metadata.skippedEvents > 0;
+    // Si el feed vino vacio pero Lapa tiene reservas futuras de ese canal, casi seguro es un fallo de la OTA: no se cancela nada
+    // (ya se avisa por email en alertFeedAnomaly) y queda para que lo revise un admin.
+    const emptyFeedWithBookings = parsed.metadata.totalEvents === 0 && (await countImportedFutureReservations(feed)) > 0;
+    const incompleteRead = parsed.metadata.skippedEvents > 0 || emptyFeedWithBookings;
     const cancelledByAbsence = incompleteRead ? 0 : await cancelAbsentReservations(feed, seen, seenNow);
     const cancelledEchoes = await cleanHorizonReservations(feed);
     // Se descartan registros de eventos que dejaron de verse hace mas de 7 dias.

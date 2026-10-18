@@ -409,7 +409,7 @@ export class BookingService {
          COUNT(*) FILTER (WHERE status IN ('confirmed','completed'))::int AS confirmed,
          COUNT(*) FILTER (WHERE status = 'pending_payment')::int AS pending,
          COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled,
-         COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed','completed')), 0) AS revenue
+         COALESCE(SUM(final_price) FILTER (WHERE status IN ('confirmed','completed','pending_ota_confirmation')), 0) AS revenue
        FROM reservations
        WHERE check_in_date >= $1::date AND check_in_date <= $2::date`,
       [from, to],

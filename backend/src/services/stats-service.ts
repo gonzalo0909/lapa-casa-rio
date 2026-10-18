@@ -154,7 +154,7 @@ export class StatsService {
               COALESCE(SUM(calculate_channel_net_revenue(r.final_price, r.channel_id)), 0) AS net_revenue
        FROM reservations r
        JOIN channels c ON c.id = r.channel_id
-       WHERE r.status IN ('confirmed', 'completed')
+       WHERE r.status IN ('confirmed', 'completed', 'pending_ota_confirmation')
          AND r.check_in_date >= $1::date AND r.check_in_date < $2::date
          AND COALESCE(r.source, '') !~ '_ical_block$'
        GROUP BY c.id, c.code, c.name
